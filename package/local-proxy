@@ -1,0 +1,7 @@
+#!/bin/sh
+iptables -t nat -A PREROUTING -p tcp -m conntrack --ctstate NEW -m addrtype --dst-type LOCAL -j DNAT --to ${TARGET}
+iptables -t nat -A POSTROUTING -d ${TARGET} -p tcp -j MASQUERADE
+echo forwarding all traffic to ${TARGET}
+rm -f in
+mkfifo in
+exec cat in

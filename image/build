@@ -1,0 +1,26 @@
+#!/bin/bash
+set -e
+
+cd $(dirname $0)
+
+sudo rm -rf root main.squashfs
+
+DIGEST=$(cat base/* | sha256sum -)
+TAG=${DIGEST:0:8}
+IMAGE=rancher/rio-build:$TAG
+
+if ! docker inspect --type image $IMAGE >/dev/null; then
+    docker pull $IMAGE || true
+fi
+
+if ! docker inspect --type image $IMAGE >/dev/null; then
+    docker build -t $IMAGE base
+fi
+
+docker tag $IMAGE rio-build
+docker build -t bb .
+mkdir root
+docker export $(docker create bb) | sudo tar xvf - -C root
+sudo mksquashfs root main.squashfs
+
+echo If you have privileges push $IMAGE so others can use the cache

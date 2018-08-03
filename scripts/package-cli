@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e
+
+source $(dirname $0)/version
+
+cd $(dirname $0)/../image
+cp -f ../bin/rio-agent ./agent
+./build
+
+cp ../bin/rio-full ../bin/rio
+echo -n "_sqmagic_" >> ../bin/rio
+cat main.squashfs >> ../bin/rio

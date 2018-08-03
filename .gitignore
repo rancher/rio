@@ -1,0 +1,12 @@
+*.swp
+/.dapper
+/.idea
+/.trash-cache
+/bin
+/data-dir
+/dist
+/image/agent
+/image/go_build_agent
+/image/main.squashfs
+/image/root
+/package/rio

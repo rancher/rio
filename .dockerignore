@@ -1,0 +1,10 @@
+./bin
+./.dapper
+./data-dir
+./dist
+./.trash-cache
+./trash.lock
+./image/root
+./image/agent
+./image/go_build_agent
+./image/main.squashfs

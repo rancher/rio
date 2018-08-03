@@ -1,0 +1,18 @@
+#!/bin/bash
+set -e
+
+source $(dirname $0)/version
+
+cd $(dirname $0)/..
+
+mkdir -p bin
+echo Building incluster
+go build -ldflags "-X github.com/rancher/rio/version.Version=$VERSION -s" -o bin/rio-incluster
+echo Building cli full
+go build -tags "k3s ctr" -ldflags "-X github.com/rancher/rio/version.Version=$VERSION -linkmode external -s" -o bin/rio-full ./cli/main.go
+echo Building agent
+go build -tags "k3s ctr" -ldflags "-X github.com/rancher/rio/version.Version=$VERSION -s" -o bin/rio-agent ./agent/main.go
+echo Building windows CLI
+GOOS=windows GOARCH=amd64 go build -ldflags "-X github.com/rancher/rio/version.Version=$VERSION -s" -o bin/rio-windows ./cli/main.go
+echo Building mac CLI
+GOOS=darwin GOARCH=amd64 go build -ldflags "-X github.com/rancher/rio/version.Version=$VERSION -s" -o bin/rio-darwin ./cli/main.go

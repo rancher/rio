@@ -1,0 +1,3 @@
+# /etc/inittab
+::respawn:/usr/bin/containerd
+::respawn:/usr/bin/agent

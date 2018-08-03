@@ -1,0 +1,11 @@
+#!/bin/bash
+
+cd $(dirname $0)/..
+
+. ./scripts/version
+
+mkdir -p dist/artifacts
+
+tar cvzf dist/artifacts/rio-${VERSION}-linux-amd64.tar.gz -h bin/rio --xform='s!^bin!rio-'${VERSION}'-linux-amd64!'
+tar cvzf dist/artifacts/rio-${VERSION}-darwin.tar.gz bin/rio-darwin --xform='s!.*!rio-'${VERSION}'-darwin/rio!'
+tar cvzf dist/artifacts/rio-${VERSION}-windows.tar.gz bin/rio-windows --xform='s!.*!rio-'${VERSION}'-windows/rio.exe!'
