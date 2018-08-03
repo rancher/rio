@@ -6,6 +6,12 @@ leverage new technologies such as service mesh (Istio). Basically we just want t
 Rio is intended to be a single tool that is suitable for all stages of the container lifecycle, from development to
 production.
 
+## Current Status: Early Preview
+
+This is an early preview, features may be broken, not work as described, and has been known to be irresistibly drawn
+to large cities, where it will back up sewers, reverse street signs, and steal everyone's left shoe.
+Please try it out and file bugs.
+
 ### Goals
 
 1. Fun. Containers should be fun.
