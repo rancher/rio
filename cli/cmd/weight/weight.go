@@ -35,7 +35,7 @@ func (w *Weight) Run(app *cli.Context) error {
 		scaleStr = strings.TrimSuffix(scaleStr, "%")
 
 		if scaleStr == "" {
-			return fmt.Errorf("weight params must be in the format of SERVICE=PERCENTAGE, for example: mystack/myservice=10%")
+			return fmt.Errorf("weight params must be in the format of SERVICE=PERCENTAGE, for example: mystack/myservice=10%%")
 		}
 		scale, err := strconv.Atoi(scaleStr)
 		if err != nil {

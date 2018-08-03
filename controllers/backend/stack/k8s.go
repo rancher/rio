@@ -43,7 +43,7 @@ func deployK8sResources(stackName, namespace string, stack *v1beta1.InternalStac
 	}
 
 	if len(globalObjects) > 0 {
-		err := apply.ApplyAnyNamespace(globalObjects, fmt.Sprintf("k8s-global-%s-%s", namespace, stackName), 0)
+		err := apply.AnyNamespace(globalObjects, fmt.Sprintf("k8s-global-%s-%s", namespace, stackName), 0)
 		if err != nil {
 			return err
 		}

@@ -44,6 +44,6 @@ func (r RouteSet) ToInternal(data map[string]interface{}) error {
 	return nil
 }
 
-func (d RouteSet) ModifySchema(schema *types.Schema, schemas *types.Schemas) error {
-	return mapper.ValidateField(d.Field, schema)
+func (r RouteSet) ModifySchema(schema *types.Schema, schemas *types.Schemas) error {
+	return mapper.ValidateField(r.Field, schema)
 }

@@ -1,5 +1,6 @@
 //go:generate go run types/codegen/cleanup/main.go
 //go:generate go run vendor/github.com/jteeuwen/go-bindata/go-bindata/AppendSliceValue.go vendor/github.com/jteeuwen/go-bindata/go-bindata/main.go vendor/github.com/jteeuwen/go-bindata/go-bindata/version.go -o ./stacks/bindata.go -ignore bindata.go -pkg stacks ./stacks/
+//go:generate go fmt stacks/bindata.go
 //go:generate go run types/codegen/main.go
 
 package main

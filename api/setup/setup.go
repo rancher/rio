@@ -25,7 +25,7 @@ import (
 	spaceClient "github.com/rancher/rio/types/client/space/v1beta1"
 )
 
-func SetupTypes(ctx context.Context, context *types.Context) error {
+func Types(ctx context.Context, context *types.Context) error {
 	factory := crd.NewFactoryFromClientGetter(context.ClientGetter)
 	// We create istio types so that our controllers don't error on first start
 	factory.CreateCRDs(ctx, normantypes.DefaultStorageContext,

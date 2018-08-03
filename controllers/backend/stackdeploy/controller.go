@@ -131,7 +131,7 @@ func (s *stackDeployController) deploy(key string, _ *v1beta1.Stack) error {
 
 func (s *stackDeployController) deployMesh(ns string, stack *v1beta1.Stack, stackToDeploy *deploy.StackResources) error {
 	_, err := v1beta1.StackConditionMeshDeployed.Do(stack, func() (runtime.Object, error) {
-		return stack, deploy.DeployMesh(ns, stackToDeploy)
+		return stack, deploy.Mesh(ns, stackToDeploy)
 	})
 	if err == nil {
 		_, err = v1beta1.StackConditionDeployed.Do(stack, func() (runtime.Object, error) {

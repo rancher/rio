@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/api/core/v1"
 )
 
-type ConfigFactory struct {
+type Factory struct {
 	sync.Mutex
 
 	configMapNamespace string
@@ -19,8 +19,8 @@ type ConfigFactory struct {
 	meshConfig         *v1alpha1.MeshConfig
 }
 
-func NewConfigFactory(configMap v1.ConfigMapInterface, configMapNamespace, configMapName, configMapKey string) *ConfigFactory {
-	f := &ConfigFactory{
+func NewConfigFactory(configMap v1.ConfigMapInterface, configMapNamespace, configMapName, configMapKey string) *Factory {
+	f := &Factory{
 		configMapNamespace: configMapNamespace,
 		configMapName:      configMapName,
 		configMapKey:       configMapKey,
@@ -29,7 +29,7 @@ func NewConfigFactory(configMap v1.ConfigMapInterface, configMapNamespace, confi
 	return f
 }
 
-func (c *ConfigFactory) sync(key string, cm *metav1.ConfigMap) error {
+func (c *Factory) sync(key string, cm *metav1.ConfigMap) error {
 	ns, name := kv.Split(key, "/")
 	if ns != c.configMapNamespace && name != c.configMapName {
 		return nil
@@ -48,7 +48,7 @@ func (c *ConfigFactory) sync(key string, cm *metav1.ConfigMap) error {
 		return nil
 	}
 
-	meshConfig, template, err := ConfigAndTemplate(val)
+	meshConfig, template, err := DoConfigAndTemplate(val)
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func (c *ConfigFactory) sync(key string, cm *metav1.ConfigMap) error {
 	return nil
 }
 
-func (c *ConfigFactory) TemplateAndConfig() (*v1alpha1.MeshConfig, string) {
+func (c *Factory) TemplateAndConfig() (*v1alpha1.MeshConfig, string) {
 	c.Lock()
 	defer c.Unlock()
 

@@ -28,7 +28,7 @@ const (
 	refreshInterval = 5 * time.Minute
 )
 
-type GatewayController struct {
+type Controller struct {
 	sync.Mutex
 
 	ports                map[string]bool
@@ -42,7 +42,7 @@ type GatewayController struct {
 }
 
 func Register(ctx context.Context, rContext *types.Context) {
-	gc := &GatewayController{
+	gc := &Controller{
 		ports:                map[string]bool{},
 		gatewayLister:        rContext.Networking.Gateways("").Controller().Lister(),
 		virtualServiceLister: rContext.Networking.VirtualServices("").Controller().Lister(),
@@ -54,7 +54,7 @@ func Register(ctx context.Context, rContext *types.Context) {
 	rContext.Networking.VirtualServices("").Controller().AddHandler("gateway-controller", gc.sync)
 }
 
-func (g *GatewayController) sync(key string, service *v1alpha3.VirtualService) error {
+func (g *Controller) sync(key string, service *v1alpha3.VirtualService) error {
 	if service == nil {
 		return nil
 	}
@@ -77,7 +77,7 @@ func getPorts(service *v1alpha3.VirtualService) []string {
 	return strings.Split(ports, ",")
 }
 
-func (g *GatewayController) refresh() error {
+func (g *Controller) refresh() error {
 	now := time.Now()
 	existingPorts := map[string]bool{}
 	newPorts := map[string]bool{}
@@ -112,7 +112,7 @@ func (g *GatewayController) refresh() error {
 	return nil
 }
 
-func (g *GatewayController) addPorts(ports ...string) error {
+func (g *Controller) addPorts(ports ...string) error {
 	g.Lock()
 	defer g.Unlock()
 
@@ -124,7 +124,7 @@ func (g *GatewayController) addPorts(ports ...string) error {
 	return g.createGateway(newPorts)
 }
 
-func (g *GatewayController) createGateway(newPorts map[string]bool) error {
+func (g *Controller) createGateway(newPorts map[string]bool) error {
 	if err := g.deployDummy(newPorts); err != nil {
 		return err
 	}
@@ -189,7 +189,7 @@ func (g *GatewayController) createGateway(newPorts map[string]bool) error {
 	return err
 }
 
-func (g *GatewayController) getD4xIP() string {
+func (g *Controller) getD4xIP() string {
 	node, err := g.nodeLister.Get("", "docker-for-desktop")
 	if err != nil {
 		return ""
@@ -204,7 +204,7 @@ func (g *GatewayController) getD4xIP() string {
 	return ""
 }
 
-func (g *GatewayController) deployDummy(ports map[string]bool) error {
+func (g *Controller) deployDummy(ports map[string]bool) error {
 	ip := g.getD4xIP()
 	if ip == "" {
 		return nil
@@ -244,10 +244,9 @@ func (g *GatewayController) deployDummy(ports map[string]bool) error {
 		existingLB.Spec = lb.Spec
 		_, err := g.services.Update(existingLB)
 		return err
-	} else {
-		_, err := g.services.Create(lb)
-		return err
 	}
+	_, err = g.services.Create(lb)
+	return err
 }
 
 func addPorts(existingPorts map[string]bool, ports ...string) (map[string]bool, bool) {

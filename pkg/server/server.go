@@ -97,7 +97,7 @@ func StartServer(ctx context.Context, dataDir string, httpPort, httpsPort int, c
 	}
 	rContext.Embedded = embedded
 
-	if err := setup.SetupTypes(ctx, rContext); err != nil {
+	if err := setup.Types(ctx, rContext); err != nil {
 		return nil, err
 	}
 

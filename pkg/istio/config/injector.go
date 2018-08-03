@@ -3,10 +3,10 @@ package config
 import "fmt"
 
 type IstioInjector struct {
-	configFactory *ConfigFactory
+	configFactory *Factory
 }
 
-func NewIstioInjector(cf *ConfigFactory) *IstioInjector {
+func NewIstioInjector(cf *Factory) *IstioInjector {
 	return &IstioInjector{
 		configFactory: cf,
 	}

@@ -5,7 +5,6 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/docker/cli/cli/compose/types"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/pkg/errors"
 )
@@ -14,9 +13,34 @@ import (
 
 const endOfSpec = rune(0)
 
+type ServiceVolumeConfig struct {
+	Type        string               `yaml:",omitempty"`
+	Source      string               `yaml:",omitempty"`
+	Target      string               `yaml:",omitempty"`
+	ReadOnly    bool                 `mapstructure:"read_only" yaml:"read_only,omitempty"`
+	Consistency string               `yaml:",omitempty"`
+	Bind        *ServiceVolumeBind   `yaml:",omitempty"`
+	Volume      *ServiceVolumeVolume `yaml:",omitempty"`
+	Tmpfs       *ServiceVolumeTmpfs  `yaml:",omitempty"`
+}
+
+type ServiceVolumeBind struct {
+	Propagation string `yaml:",omitempty"`
+}
+
+// ServiceVolumeVolume are options for a service volume of type volume
+type ServiceVolumeVolume struct {
+	NoCopy bool `mapstructure:"nocopy" yaml:"nocopy,omitempty"`
+}
+
+// ServiceVolumeTmpfs are options for a service volume of type tmpfs
+type ServiceVolumeTmpfs struct {
+	Size int64 `yaml:",omitempty"`
+}
+
 // ParseVolume parses a volume spec without any knowledge of the target platform
-func ParseVolume(spec string) (types.ServiceVolumeConfig, error) {
-	volume := types.ServiceVolumeConfig{}
+func ParseVolume(spec string) (ServiceVolumeConfig, error) {
+	volume := ServiceVolumeConfig{}
 
 	switch len(spec) {
 	case 0:
@@ -51,7 +75,7 @@ func isWindowsDrive(buffer []rune, char rune) bool {
 	return char == ':' && len(buffer) == 1 && unicode.IsLetter(buffer[0])
 }
 
-func populateFieldFromBuffer(char rune, buffer []rune, volume *types.ServiceVolumeConfig) error {
+func populateFieldFromBuffer(char rune, buffer []rune, volume *ServiceVolumeConfig) error {
 	strBuffer := string(buffer)
 	switch {
 	case len(buffer) == 0:
@@ -76,10 +100,10 @@ func populateFieldFromBuffer(char rune, buffer []rune, volume *types.ServiceVolu
 		case "rw":
 			volume.ReadOnly = false
 		case "nocopy":
-			volume.Volume = &types.ServiceVolumeVolume{NoCopy: true}
+			volume.Volume = &ServiceVolumeVolume{NoCopy: true}
 		default:
 			if isBindOption(option) {
-				volume.Bind = &types.ServiceVolumeBind{Propagation: option}
+				volume.Bind = &ServiceVolumeBind{Propagation: option}
 			}
 			// ignore unknown options
 		}
@@ -96,7 +120,7 @@ func isBindOption(option string) bool {
 	return false
 }
 
-func populateType(volume *types.ServiceVolumeConfig) {
+func populateType(volume *ServiceVolumeConfig) {
 	switch {
 	// Anonymous volume
 	case volume.Source == "":

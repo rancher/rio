@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	PRIVATE_GW = "mesh"
+	privateGw = "mesh"
 )
 
 func virtualservices(objs []runtime.Object, resources *StackResources) ([]runtime.Object, error) {
@@ -69,7 +69,7 @@ func newRoute(externalGW string, published bool, portBinding *v1beta1.PortBindin
 		return 0, nil
 	}
 
-	gw := []string{PRIVATE_GW}
+	gw := []string{privateGw}
 	if published {
 		gw = append(gw, externalGW)
 	}
@@ -192,7 +192,7 @@ func vsFromSpec(serviceName, revision, name, namespace string, serviceSpec *v1be
 	vs := newVirtualService(serviceName, revision, name, namespace)
 	spec := &v1alpha3.VirtualService{
 		Hosts:    []string{name},
-		Gateways: []string{PRIVATE_GW},
+		Gateways: []string{privateGw},
 	}
 	vs.Spec = spec
 

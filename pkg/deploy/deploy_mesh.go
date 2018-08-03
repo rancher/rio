@@ -4,7 +4,7 @@ import (
 	"github.com/rancher/rio/pkg/apply"
 )
 
-func DeployMesh(namespace string, stack *StackResources) error {
+func Mesh(namespace string, stack *StackResources) error {
 	objects, err := IstioObjects(namespace, stack)
 	if err != nil {
 		return err
