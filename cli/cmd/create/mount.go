@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/docker/cli/cli/compose/types"
 	"github.com/rancher/rio/cli/pkg/kv"
 	"github.com/rancher/rio/cli/pkg/volumespec"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
@@ -63,7 +62,7 @@ func parseAdditionalOptions(mount client.Mount, spec string) (client.Mount, erro
 	return mount, nil
 }
 
-func createMount(serviceMount types.ServiceVolumeConfig) client.Mount {
+func createMount(serviceMount volumespec.ServiceVolumeConfig) client.Mount {
 	mount := client.Mount{
 		Kind:     serviceMount.Type,
 		ReadOnly: serviceMount.ReadOnly,

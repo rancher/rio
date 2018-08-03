@@ -38,9 +38,8 @@ func (u *Up) Run(app *cli.Context) error {
 	case 1:
 		if stat, err := os.Stat(args[0]); err == nil && stat.IsDir() {
 			return u.doUpAll(ctx, args[0])
-		} else {
-			return u.doUp(ctx, args[0], "")
 		}
+		return u.doUp(ctx, args[0], "")
 	case 2:
 		return u.doUp(ctx, args[1], args[0])
 	default:

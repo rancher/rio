@@ -63,7 +63,7 @@ func Apply(objects []runtime.Object, groupID string, generation int64, injectors
 	return execApply(ns, whitelist, content, groupID)
 }
 
-func ApplyAnyNamespace(objects []runtime.Object, groupID string, generation int64) error {
+func AnyNamespace(objects []runtime.Object, groupID string, generation int64) error {
 	if len(objects) == 0 {
 		return nil
 	}

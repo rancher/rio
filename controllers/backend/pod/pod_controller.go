@@ -31,7 +31,7 @@ func Register(ctx context.Context, rContext *types.Context) {
 	rdnsClient.SetBaseURL(settings.RDNSURL.Get())
 
 	ns := namespace.StackNamespace(settings.RioSystemNamespace, "istio")
-	pc := &PodController{
+	pc := &Controller{
 		namespace:  ns,
 		rdnsClient: rdnsClient,
 		podLister:  rContext.Core.Pods(ns).Controller().Lister(),
@@ -49,7 +49,7 @@ func Register(ctx context.Context, rContext *types.Context) {
 	}()
 }
 
-type PodController struct {
+type Controller struct {
 	sync.Mutex
 
 	namespace   string
@@ -61,7 +61,7 @@ type PodController struct {
 	refreshTime time.Time
 }
 
-func (p *PodController) renew() error {
+func (p *Controller) renew() error {
 	if err := p.sync("_none_", nil); err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func (p *PodController) renew() error {
 	return err
 }
 
-func (p *PodController) sync(key string, pod *v1.Pod) error {
+func (p *Controller) sync(key string, pod *v1.Pod) error {
 	if !isGateway(pod) {
 		return nil
 	}
@@ -96,7 +96,7 @@ func (p *PodController) sync(key string, pod *v1.Pod) error {
 	return nil
 }
 
-func (p *PodController) update() error {
+func (p *Controller) update() error {
 	var (
 		fqdn string
 		ips  []string
@@ -134,7 +134,7 @@ func nip(ip string) string {
 	return fmt.Sprintf("%s.nip.io", ip)
 }
 
-func (p *PodController) fullSync() error {
+func (p *Controller) fullSync() error {
 	newIps := map[string]string{}
 	req, err := labels.NewRequirement("gateway", selection.Equals, []string{"external"})
 	if err != nil {
@@ -178,7 +178,7 @@ func (p *PodController) fullSync() error {
 	return nil
 }
 
-func (p *PodController) shouldFullSync() bool {
+func (p *Controller) shouldFullSync() bool {
 	return time.Now().Sub(p.refreshTime) > refreshInterval
 }
 
@@ -192,7 +192,7 @@ func isGateway(pod *v1.Pod) bool {
 	return pod.Labels["gateway"] == "external"
 }
 
-func (p *PodController) mod(ips map[string]string, key string, pod *v1.Pod) error {
+func (p *Controller) mod(ips map[string]string, key string, pod *v1.Pod) error {
 	if pod == nil {
 		if _, ok := ips[key]; ok {
 			p.dirty = true

@@ -162,7 +162,7 @@ func AssetNames() []string {
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
 	"stacks/coredns-stack.yml": stacksCorednsStackYml,
-	"stacks/istio-stack.yml": stacksIstioStackYml,
+	"stacks/istio-stack.yml":   stacksIstioStackYml,
 }
 
 // AssetDir returns the file names below a certain
@@ -204,10 +204,11 @@ type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
 }
+
 var _bintree = &bintree{nil, map[string]*bintree{
 	"stacks": &bintree{nil, map[string]*bintree{
 		"coredns-stack.yml": &bintree{stacksCorednsStackYml, map[string]*bintree{}},
-		"istio-stack.yml": &bintree{stacksIstioStackYml, map[string]*bintree{}},
+		"istio-stack.yml":   &bintree{stacksIstioStackYml, map[string]*bintree{}},
 	}},
 }}
 
@@ -257,4 +258,3 @@ func _filePath(dir, name string) string {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	return filepath.Join(append([]string{dir}, strings.Split(cannonicalName, "/")...)...)
 }
-

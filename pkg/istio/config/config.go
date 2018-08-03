@@ -34,7 +34,7 @@ func InjectParams(meshConfig *v1alpha1.MeshConfig) *inject.Params {
 	}
 }
 
-func ConfigAndTemplate(config string) (*v1alpha1.MeshConfig, string, error) {
+func DoConfigAndTemplate(config string) (*v1alpha1.MeshConfig, string, error) {
 	meshConfig, err := model.ApplyMeshConfigDefaults(config)
 	if err != nil {
 		return nil, "", err
