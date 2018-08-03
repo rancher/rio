@@ -1,0 +1,96 @@
+---
+pipeline:
+  build:
+    privileged: true
+    image: rancher/dapper:1.11.2
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    commands:
+    - dapper ci
+
+  stage-binaries:
+    image: rancher/dapper:1.11.2
+    commands:
+    - cp -r ./bin/* ./package/
+    when:
+      branch: master
+      event: [push,tag]
+
+  docker-publish-master:
+    image: plugins/docker
+    dockerfile: package/Dockerfile
+    repo: rancher/rancher
+    context: package/
+    tag: master
+    secrets: [docker_username, docker_password]
+    build_args:
+    - VERSION=master
+    when:
+      branch: master
+      event: push
+
+  docker-publish-master-agent:
+    image: plugins/docker
+    dockerfile: package/Dockerfile.agent
+    repo: rancher/rancher-agent
+    context: package/
+    tag: master
+    secrets: [docker_username, docker_password]
+    build_args:
+    - VERSION=master
+    when:
+      branch: master
+      event: push
+
+  docker-publish:
+    image: plugins/docker
+    dockerfile: package/Dockerfile
+    repo: rancher/rancher
+    context: package/
+    tag: ${DRONE_TAG}
+    secrets: [docker_username, docker_password]
+    build_args:
+    - VERSION=${DRONE_TAG}
+    when:
+      branch: master
+      event: tag
+
+  docker-publish-agent:
+    image: plugins/docker
+    dockerfile: package/Dockerfile.agent
+    repo: rancher/rancher-agent
+    context: package/
+    tag: ${DRONE_TAG}
+    secrets: [docker_username, docker_password]
+    build_args:
+    - VERSION=${DRONE_TAG}
+    when:
+      branch: master
+      event: tag
+
+  github_binary_prerelease:
+    image: plugins/github-release
+    prerelease: true
+    files:
+     - bin/rancher-*
+    checksum:
+     - sha256
+    secrets: [github_token]
+    when:
+      branch: master
+      event: tag
+      ref:
+        include: [ refs/tags/*rc* ]
+
+  github_binary_release:
+    image: plugins/github-release
+    files:
+     - bin/rancher-*
+    checksum:
+     - sha256
+    secrets: [github_token]
+    when:
+      branch: master
+      event: tag
+      ref:
+        exclude: [ refs/tags/*rc* ]

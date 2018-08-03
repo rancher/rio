@@ -1,0 +1,9 @@
+[
+	{
+		"_comment": "This file is auto updated by a robot executing `https://github.com/istio/test-infra/blob/master/prow/test-infra-update-deps.sh`.",
+		"name": "PROXY_REPO_SHA",
+		"repoName": "proxy",
+		"file": "",
+		"lastStableSHA": "456ad786f902fb61b167043d2914544cf4cabdef"
+	}
+]

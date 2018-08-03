@@ -1,0 +1,16 @@
+./bin
+./.dapper
+./build
+./dist
+./.trash-cache
+./.idea
+./default.etcd
+./package/rancher
+./tests/MANIFEST
+./tests/.idea
+./tests/.cache
+./tests/.tox
+./tests/.venv
+**/*.pyc
+**/__pycache__
+./management-state/
