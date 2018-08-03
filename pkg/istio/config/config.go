@@ -2,8 +2,8 @@ package config
 
 import (
 	"bytes"
-
 	"os"
+	"text/template"
 
 	"istio.io/api/mesh/v1alpha1"
 	"istio.io/istio/pilot/pkg/kube/inject"
@@ -41,11 +41,16 @@ func DoConfigAndTemplate(config string) (*v1alpha1.MeshConfig, string, error) {
 	}
 
 	params := InjectParams(meshConfig)
-	template, err := inject.GenerateTemplateFromParams(params)
-	if err != nil {
+	if err := params.Validate(); err != nil {
 		return nil, "", err
 	}
-	return meshConfig, template, nil
+
+	var tmp bytes.Buffer
+	if err := template.Must(template.New("inject").Parse(parameterizedTemplate)).Execute(&tmp, params); err != nil {
+		return nil, "", err
+	}
+
+	return meshConfig, tmp.String(), nil
 }
 
 func Inject(input []byte, template string, meshConfig *v1alpha1.MeshConfig) ([]byte, error) {
