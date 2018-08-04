@@ -20,7 +20,7 @@ fi
 docker tag $IMAGE rio-build
 docker build -t bb .
 mkdir root
-docker export $(docker create bb) | sudo tar xvf - -C root
+docker export $(docker create bb) | sudo tar xf - -C root
 sudo mksquashfs root main.squashfs
 
 echo If you have privileges push $IMAGE so others can use the cache
