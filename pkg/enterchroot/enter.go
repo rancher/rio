@@ -3,14 +3,13 @@ package enterchroot
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
-
-	"io/ioutil"
 
 	"github.com/docker/docker/pkg/mount"
 	"github.com/docker/docker/pkg/reexec"
@@ -91,7 +90,7 @@ func Mount(dataDir string, stdout, stderr io.Writer) error {
 		SysProcAttr: &syscall.SysProcAttr{
 			//Cloneflags:   syscall.CLONE_NEWPID | syscall.CLONE_NEWUTS | syscall.CLONE_NEWIPC,
 			Unshareflags: syscall.CLONE_NEWNS,
-			Pdeathsig:    syscall.SYS_KILL,
+			Pdeathsig:    syscall.SIGKILL,
 		},
 		Stdout: stdout,
 		Stdin:  os.Stdin,

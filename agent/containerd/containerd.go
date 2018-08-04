@@ -26,7 +26,7 @@ func Run() {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.SysProcAttr = &syscall.SysProcAttr{
-			Pdeathsig: syscall.SYS_KILL,
+			Pdeathsig: syscall.SIGKILL,
 		}
 		if err := cmd.Run(); err != nil {
 			fmt.Fprintf(os.Stderr, "containerd: %s\n", err)
