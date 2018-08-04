@@ -8,10 +8,6 @@ cd $(dirname $0)/../package
 TAG=${TAG:-${VERSION}${SUFFIX}}
 REPO=${REPO:-rancher}
 
-if echo $TAG | grep -q dirty; then
-    TAG=dev
-fi
-
 cp ../bin/rio-incluster ./rio
 
 IMAGE=${REPO}/rio:${TAG}
