@@ -1,6 +1,7 @@
 package containerd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -8,12 +9,20 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
+	runtimeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2"
+	"k8s.io/kubernetes/pkg/kubelet/util"
 )
 
-func Run() {
+const (
+	address    = "/run/rio/containerd.sock"
+	maxMsgSize = 1024 * 1024 * 16
+)
+
+func Run(ctx context.Context) {
 	args := []string{
 		"containerd",
-		"-a", "/run/rio/containerd.sock",
+		"-a", address,
 		"--state", "/run/rio/containerd",
 	}
 
@@ -34,5 +43,30 @@ func Run() {
 		os.Exit(1)
 	}()
 
-	time.Sleep(1 * time.Second)
+	for {
+		addr, dailer, err := util.GetAddressAndDialer("unix://" + address)
+		if err != nil {
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
+		conn, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithTimeout(3*time.Second), grpc.WithDialer(dailer), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxMsgSize)))
+		if err != nil {
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		defer conn.Close()
+
+		c := runtimeapi.NewRuntimeServiceClient(conn)
+
+		_, err = c.Version(ctx, &runtimeapi.VersionRequest{
+			Version: "0.1.0",
+		})
+		if err == nil {
+			break
+		}
+
+		logrus.Infof("Waiting for containerd startup")
+		time.Sleep(1 * time.Second)
+	}
 }

@@ -61,7 +61,7 @@ func run() error {
 		panic(err)
 	}
 
-	containerd.Run()
+	containerd.Run(ctx)
 
 	var agentConfig *AgentConfig
 	for {
