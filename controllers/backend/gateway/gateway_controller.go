@@ -108,7 +108,6 @@ func (g *Controller) refresh() error {
 	}
 
 	g.lastRefresh = now
-	g.ports = newPorts
 	return nil
 }
 
@@ -125,6 +124,15 @@ func (g *Controller) addPorts(ports ...string) error {
 }
 
 func (g *Controller) createGateway(newPorts map[string]bool) error {
+	err := g.createGatewayInternal(newPorts)
+	if err != nil {
+		return err
+	}
+	g.ports = newPorts
+	return nil
+}
+
+func (g *Controller) createGatewayInternal(newPorts map[string]bool) error {
 	if err := g.deployDummy(newPorts); err != nil {
 		return err
 	}
@@ -183,8 +191,6 @@ func (g *Controller) createGateway(newPorts map[string]bool) error {
 	if err != nil {
 		return err
 	}
-
-	g.ports = newPorts
 
 	return err
 }
