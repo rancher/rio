@@ -101,7 +101,7 @@ func (p *Ps) services(app *cli.Context, ctx *server.Context) error {
 }
 
 func endpoint(ctx *server.Context, stack *client.Stack, ports []client.PortBinding, service *client.Service) string {
-	if ctx.Domain == "" {
+	if ctx.Domain == "" || stack == nil {
 		return ""
 	}
 
