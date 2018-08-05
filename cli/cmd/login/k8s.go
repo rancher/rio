@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/rancher/rio/cli/pkg/up/questions"
@@ -27,20 +28,24 @@ func (l *Login) k8s(tempFile string) error {
 		return errors.New("no valid kubernetes kubeconfig was found, try using --kubeconfig option")
 	}
 
-	defer func() {
-		for i := 0; i < 60; i++ {
-			_, err := server.SpaceClient(tempFile, true)
-			if err == nil {
-				return
-			}
-			if i == 1 {
-				logrus.Infof("Waiting to connect to Rio")
-			}
-			time.Sleep(2 * time.Second)
-		}
-	}()
+	if err := InstallRioInK8s(clientConfig); err != nil {
+		logrus.Errorf("Failed to install Rio. Please ensure that your current user has cluster-admin privileged")
+		logrus.Errorf("You may need to run \"kubectl create clusterrolebinding cluster-admin-binding --clusterrole cluster-admin --user [USER_ACCOUNT]\"")
+		return err
+	}
 
-	return InstallRioInK8s(clientConfig)
+	for i := 0; i < 60; i++ {
+		_, err := server.SpaceClient(tempFile, true)
+		if err == nil {
+			return nil
+		}
+		if i == 1 {
+			logrus.Infof("Waiting to connect to Rio")
+		}
+		time.Sleep(2 * time.Second)
+	}
+
+	return fmt.Errorf("failed to connect to Rio")
 }
 
 func loadKubeConfig(defConfig string) (clientcmd.ClientConfig, error) {
@@ -118,7 +123,7 @@ func (l *Login) testKubernetes(tempFile string) (clientcmd.ClientConfig, error) 
 			Name: "rio-system",
 		},
 	})
-	if err != nil && !errors2.IsConflict(err) {
+	if err != nil && !errors2.IsAlreadyExists(err) {
 		return nil, err
 	}
 
@@ -130,7 +135,7 @@ func is110OrGreater(info version.Info) bool {
 		return false
 	}
 
-	minor, err := strconv.Atoi(info.Minor)
+	minor, err := strconv.Atoi(strings.TrimSuffix(info.Minor, "+"))
 	if err != nil {
 		return false
 	}
