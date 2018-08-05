@@ -102,8 +102,6 @@ staging/src/k8s.io/apiserver/pkg/storage/storagebackend/factory/etcd2.go
 staging/src/k8s.io/apiserver/plugin/pkg/audit
 staging/src/k8s.io/apiserver/plugin/pkg/authenticator/token
 staging/src/k8s.io/apiserver/plugin/pkg/authorizer/webhook
-staging/src/k8s.io/client-go/plugin/pkg/client/auth/azure
-staging/src/k8s.io/client-go/plugin/pkg/client/auth/gcp
 staging/src/k8s.io/client-go/plugin/pkg/client/auth/openstack
 staging/src/k8s.io/sample-apiserver
 staging/src/k8s.io/sample-controller
