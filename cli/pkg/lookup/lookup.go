@@ -42,34 +42,22 @@ func Lookup(c clientbase.APIBaseClientInterface, name string, typeNames ...strin
 		return &result[0].Resource, nil
 	}
 
-	for {
-		questions.PrintfToTerm("Choose resource for %s:\n", name)
-		for i, r := range result {
-			msg := fmt.Sprintf("[%d] type=%s %s(%s)", i+1, r.Type, r.Name, r.ID)
-			if len(r.Description) > 0 {
-				msg += ": " + r.Description
-			}
-			questions.PrintlnToTerm(msg)
-		}
+	msg := fmt.Sprintf("Choose resource for %s:\n", name)
+	var options []string
 
-		ans, err := questions.Prompt("Select Number [] ", "")
-		if err != nil {
-			return nil, err
+	for i, r := range result {
+		msg := fmt.Sprintf("[%d] type=%s %s(%s)\n", i+1, r.Type, r.Name, r.ID)
+		if len(r.Description) > 0 {
+			msg += ": " + r.Description
 		}
-		num, err := strconv.Atoi(ans)
-		if err != nil {
-			questions.PrintfToTerm("invalid number: %s\n", ans)
-			continue
-		}
-
-		num--
-		if num < 0 || num >= len(result) {
-			questions.PrintlnToTerm("Select a number between 1 and", +len(result))
-			continue
-		}
-
-		return &result[num].Resource, nil
+		options = append(options, msg)
 	}
+
+	num, err := questions.PromptOptions(msg, 0, options...)
+	if err != nil {
+		return nil, err
+	}
+	return &result[num].Resource, nil
 }
 
 type namedResourceCollection struct {

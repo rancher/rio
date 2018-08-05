@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty"
@@ -66,6 +67,38 @@ func (q *question) ask() error {
 	}
 
 	return nil
+}
+
+func PromptOptions(text string, def int, options ...string) (int, error) {
+	PrintToTerm(text)
+	for _, option := range options {
+		PrintToTerm(option)
+	}
+
+	defString := ""
+	if def > 0 {
+		defString = strconv.Itoa(def)
+	}
+
+	for {
+		ans, err := Prompt(fmt.Sprintf("Select Number [%s] ", defString), defString)
+		if err != nil {
+			return 0, err
+		}
+		num, err := strconv.Atoi(ans)
+		if err != nil {
+			PrintfToTerm("Invalid number: %s\n", ans)
+			continue
+		}
+
+		num--
+		if num < 0 || num >= len(options) {
+			PrintlnToTerm("Select a number between 1 and", +len(options))
+			continue
+		}
+
+		return num, nil
+	}
 }
 
 func PromptBool(text string, def bool) (bool, error) {

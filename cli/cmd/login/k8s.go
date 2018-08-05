@@ -4,13 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-
 	"time"
 
 	"github.com/rancher/rio/cli/pkg/up/questions"
 	"github.com/rancher/rio/cli/server"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
+	errors2 "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/kubernetes"
@@ -18,40 +18,18 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
-func (l *Login) k8s(tempFile string) (bool, error) {
-	if l.S_Server != "" || l.T_Token != "" {
-		return false, nil
-	}
-
-	k8s, err := questions.PromptBool("Do you want to try to install Rio on an existing Kubernetes installation?", false)
+func (l *Login) k8s(tempFile string) error {
+	clientConfig, err := l.testKubernetes(tempFile)
 	if err != nil {
-		return false, err
-	}
-	if !k8s {
-		return false, nil
-	}
-
-	clientConfig, err := l.tryKubernetes()
-	if err != nil {
-		return false, err
+		return err
 	}
 	if clientConfig == nil {
-		return false, errors.New("no valid kubernetes kubeconfig was found, try using --kubeconfig option")
-	}
-
-	err = InstallRioInK8s(clientConfig)
-	if err != nil {
-		return false, err
-	}
-
-	cfg, err := clientConfig.RawConfig()
-	if err != nil {
-		return false, err
+		return errors.New("no valid kubernetes kubeconfig was found, try using --kubeconfig option")
 	}
 
 	defer func() {
 		for i := 0; i < 60; i++ {
-			_, err := server.SpaceClient(tempFile, k8s)
+			_, err := server.SpaceClient(tempFile, true)
 			if err == nil {
 				return
 			}
@@ -62,14 +40,60 @@ func (l *Login) k8s(tempFile string) (bool, error) {
 		}
 	}()
 
-	return true, clientcmd.WriteToFile(cfg, tempFile)
+	return InstallRioInK8s(clientConfig)
 }
 
-func (l *Login) tryKubernetes() (clientcmd.ClientConfig, error) {
+func loadKubeConfig(defConfig string) (clientcmd.ClientConfig, error) {
 	rules := clientcmd.NewDefaultClientConfigLoadingRules()
-	rules.ExplicitPath = l.Kubeconfig
-	clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules,
+	rules.ExplicitPath = defConfig
+	cc := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules,
 		&clientcmd.ConfigOverrides{ClusterInfo: clientcmdapi.Cluster{Server: ""}})
+	clientConfig, err := cc.RawConfig()
+	if err == nil && len(clientConfig.Contexts) == 0 {
+		err = errors.New("failed to find a valid Kubernetes configuration")
+	}
+	return cc, err
+}
+
+func (l *Login) selectContextAndWriteToFile(tempFile string) error {
+	cc, err := loadKubeConfig(l.Kubeconfig)
+	if err != nil {
+		return err
+	}
+
+	rawConfig, err := cc.RawConfig()
+	if len(rawConfig.Contexts) > 1 {
+		var options []string
+		optionIndex := map[int]string{}
+
+		i := 0
+		for name := range rawConfig.Contexts {
+			optionIndex[i] = name
+			i++
+			options = append(options, fmt.Sprintf("[%d] %s\n", i, name))
+		}
+
+		num, err := questions.PromptOptions("Select which context to use\n", 1, options...)
+		if err != nil {
+			return err
+		}
+
+		rawConfig.CurrentContext = optionIndex[num]
+	}
+
+	return clientcmd.WriteToFile(rawConfig, tempFile)
+}
+
+func (l *Login) testKubernetes(tempFile string) (clientcmd.ClientConfig, error) {
+	if err := l.selectContextAndWriteToFile(tempFile); err != nil {
+		return nil, err
+	}
+
+	clientConfig, err := loadKubeConfig(tempFile)
+	if err != nil {
+		return nil, err
+	}
+
 	restConfig, err := clientConfig.ClientConfig()
 	if err != nil {
 		return nil, nil
@@ -77,30 +101,26 @@ func (l *Login) tryKubernetes() (clientcmd.ClientConfig, error) {
 
 	client, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 
 	info, err := client.Discovery().ServerVersion()
 	if err != nil {
-		return nil, nil
-	}
-
-	if !is110OrGreater(*info) {
-		logrus.Infof("Found Kubernetes v%s.%s but v1.10 or newer is required", info.Major, info.Minor)
-		return nil, nil
-	}
-
-	ok, err := questions.PromptBool(fmt.Sprintf("You seem to have Kubernetes v%s.%s available at %s, would you like to use that for Rio?",
-		info.Major, info.Minor, restConfig.Host), false)
-	if err != nil || !ok {
 		return nil, err
 	}
 
-	client.CoreV1().Namespaces().Create(&v1.Namespace{
+	if !is110OrGreater(*info) {
+		return nil, fmt.Errorf("Found Kubernetes v%s.%s but v1.10 or newer is required", info.Major, info.Minor)
+	}
+
+	_, err = client.CoreV1().Namespaces().Create(&v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "rio-system",
 		},
 	})
+	if err != nil && !errors2.IsConflict(err) {
+		return nil, err
+	}
 
 	return clientConfig, nil
 }

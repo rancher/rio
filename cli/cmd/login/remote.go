@@ -2,7 +2,6 @@ package login
 
 import (
 	"io/ioutil"
-
 	"strings"
 
 	"github.com/rancher/rio/cli/pkg/up/questions"
