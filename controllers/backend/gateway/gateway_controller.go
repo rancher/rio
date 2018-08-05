@@ -1,13 +1,11 @@
 package gateway
 
 import (
+	"context"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
-
-	"strings"
-
-	"context"
 
 	"github.com/rancher/norman/types/set"
 	"github.com/rancher/rio/pkg/settings"
@@ -128,6 +126,7 @@ func (g *Controller) createGateway(newPorts map[string]bool) error {
 	if err != nil {
 		return err
 	}
+	logrus.Infof("External gateway ports set to %v", newPorts)
 	g.ports = newPorts
 	return nil
 }
