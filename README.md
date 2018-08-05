@@ -25,7 +25,7 @@ need to be an expert in the details.
 
 ## Quick Start
 
-Download: Linux, Mac, Windows
+Download: [Linux, Mac, Windows](https://github.com/rancher/rio/releases)
 
 Prerequisites: If you want to run this on your laptop, then Minikube or Docker for Mac/Windows is recommended.  If you
 don't have those then you need to run a Linux VM (or Linux itself, come to the darkside).  We will make this easier in the future.
@@ -36,7 +36,7 @@ Run: `rio ps` and it will tell you what to do
 
 ## Installation
 
-Download: Linux, Mac, Windows
+Download: [Linux, Mac, Windows](https://github.com/rancher/rio/releases)
 
 Rio will run in two different modes:
 
@@ -75,7 +75,8 @@ INFO[0005] To join node to cluster: rio agent -s https://10.20.0.3:7443 -t R1085
 
 ```
 
-Use those two command to either access the server from the CLI or add another node to the cluster.
+Use those two command to either access the server from the CLI or add another node to the cluster.  If you are root
+on the host that is running the Rio server, `rio login` is not required.
 
 The state of the server will be in `/var/lib/rancher/rio/server` or `${HOME}/.rancher/rio/server` if running as non-root.
 For more robust HA setups that state can be moved to MySQL or etcd (this is still in the works).  The state of the agent
