@@ -1,10 +1,14 @@
 Rio
 ===
 
-Rio is a user oriented end-to-end container solution with a focus on keeping containers simple while continuing to
-leverage new technologies such as service mesh (Istio). Basically we just want to make containers simple and fun again.
-Rio is intended to be a single tool that is suitable for all stages of the container lifecycle, from development to
-production.
+1. Simple, fun, end-to-end container experience
+1. Cloud Native Container Distribution
+
+Rio is a user oriented end-to-end container solution with a focus on keeping containers simple and
+combating the current trend of complexity. It's kept fun and simple through it's familiar and
+opinionted user experience.  Additionally, Rio is a "Cloud Native Container Distribution"
+meaning is includes builtin Cloud Native technologies such as Kubernetes, Istio, Containerd, etc.
+so that the user need not be an expert in installing, using, and maintaining these system.
 
 ## Current Status: Early Preview
 
@@ -565,6 +569,23 @@ $ curl -s http://svc.test.8gr18g.lb.rancher.cloud
 Hello World v3
 
 ```
+
+## Roadmap
+
+| Function | Implementation | Status |
+|----------|----------------|--------|
+| Container Runtime | containerd | included
+| Orchestration | Kubernetes | included
+| Networking | Flannel | included
+| Service Mesh | Istio | included
+| Monitoring | Prometheus
+| Logging | Fluentd
+| Storage | Longhorn |
+| CI | Drone
+| Registry | Docker Registry 2
+| Builder | Moby BuildKit
+| TLS | Let's Encrypt
+| Image Scanning | Clair
 
 ## License
 Copyright (c) 2018 [Rancher Labs, Inc.](http://rancher.com)
