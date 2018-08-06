@@ -11,7 +11,7 @@ pipeline:
   stage-binaries:
     image: rancher/dapper:1.11.2
     commands:
-    - cp -r ./bin/* ./package/
+    - cp -f ./bin/rio-incluster ./package/rio
     when:
       branch: master
       event: tag
