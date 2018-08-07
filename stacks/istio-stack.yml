@@ -22,6 +22,8 @@ configs:
 
 services:
   istio-pilot:
+    labels:
+      istio: pilot
     command: discovery
     configs:
     - mesh:/etc/istio/config/mesh
@@ -39,6 +41,7 @@ services:
     - '* extensions/thirdpartyresources.extensions'
     - '* extensions/ingresses'
     - '* extensions/ingresses/status'
+    - rbac.istio.io/*
     - create,get,list,watch,update configmaps
     - endpoints
     - pods
@@ -46,7 +49,7 @@ services:
     - namespaces
     - nodes
     - secrets
-    image: istio/pilot:0.8.0
+    image: istio/pilot:1.0.0
     secrets: identity:/etc/certs
     sidekicks:
       istio-proxy:
@@ -69,7 +72,7 @@ services:
         secrets: identity:/etc/certs
 
   istio-citadel:
-    image: "istio/citadel:0.8.0"
+    image: "istio/citadel:1.0.0"
     command:
     - --append-dns-names=true
     - --grpc-port=8060
@@ -92,7 +95,7 @@ services:
   istio-gateway:
     labels:
       "gateway": "external"
-    image: "istio/proxyv2:0.8.0"
+    image: "istio/proxyv2:1.0.0"
     net: host
     dns: cluster
     command:
