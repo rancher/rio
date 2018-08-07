@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-
 	"strings"
 
+	"github.com/rancher/norman/types/values"
 	"github.com/rancher/rio/cli/pkg/kv"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/waiter"
@@ -53,10 +53,13 @@ func (w *Weight) Run(app *cli.Context) error {
 		}
 
 		parsedService := lookup.ParseServiceName(name)
-		if rev, ok := service.Revisions[parsedService.Revision]; ok {
-			rev.Weight = int64(scale)
-			service.Revisions[parsedService.Revision] = rev
-			_, err = ctx.Client.Service.Update(service, service)
+		if _, ok := service.Revisions[parsedService.Revision]; ok {
+			data := map[string]interface{}{}
+			values.PutValue(data, int64(scale),
+				client.ServiceFieldRevisions,
+				parsedService.Revision,
+				client.ServiceRevisionFieldWeight)
+			_, err = ctx.Client.Service.Update(service, data)
 		} else {
 			return errors.New("weight can only be added to staged services")
 		}
