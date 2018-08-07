@@ -86,8 +86,7 @@ func serviceSelector(objects []runtime.Object, name, namespace string, service *
 		svc.Spec.ClusterIP = ip
 	}
 
-	objects = append(objects, svc)
-	return objects
+	return append(objects, svc)
 }
 
 func newServiceSelector(name, namespace string, labels map[string]string) *v1.Service {

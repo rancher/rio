@@ -147,10 +147,14 @@ func destsForService(service *v1beta1.Service) []dest {
 		result = append(result, dest{
 			host:   service.Name,
 			weight: int32(weight),
+			subset: rev,
 		})
 	}
 
 	result[0].weight = int32(latestWeight)
+	if result[0].weight == 0 && len(result) > 1 {
+		return result[1:]
+	}
 	return result
 }
 
@@ -189,25 +193,24 @@ func vsFromService(objs []runtime.Object, service *v1beta1.Service) ([]runtime.O
 func vsFromSpec(serviceName, revision, name, namespace string, serviceSpec *v1beta1.ServiceUnversionedSpec, dests ...dest) *IstioObject {
 	publicPorts := map[uint32]bool{}
 
-	vs := newVirtualService(serviceName, revision, name, namespace)
-	spec := &v1alpha3.VirtualService{
-		Hosts:    []string{name},
-		Gateways: []string{privateGw},
-	}
-	vs.Spec = spec
-
 	routes, external := vsRoutes(publicPorts, name, namespace, serviceSpec, dests)
 	if len(routes) == 0 {
 		return nil
 	}
 
-	spec.Http = routes
+	vs := newVirtualService(serviceName, revision, name, namespace)
+	spec := &v1alpha3.VirtualService{
+		Hosts:    appendStringWithPort(nil, name, publicPorts),
+		Gateways: []string{privateGw},
+		Http:     routes,
+	}
+	vs.Spec = spec
 
 	if external && len(publicPorts) > 0 {
 		externalGW := getPublicGateway(name, namespace)
 		externalHost := getExternalDomain(name, namespace)
-		spec.Hosts = append(spec.Hosts, externalHost)
 		spec.Gateways = append(spec.Gateways, externalGW)
+		spec.Hosts = appendStringWithPort(spec.Hosts, externalHost, publicPorts)
 
 		var portList []string
 		for p := range publicPorts {
@@ -221,6 +224,17 @@ func vsFromSpec(serviceName, revision, name, namespace string, serviceSpec *v1be
 	}
 
 	return vs
+}
+
+func appendStringWithPort(base []string, host string, ports map[uint32]bool) []string {
+	for port := range ports {
+		if port == 80 || port == 443 {
+			base = append(base, host)
+		}
+		base = append(base, fmt.Sprintf("%s:%d", host, port))
+	}
+
+	return base
 }
 
 func getPublicGateway(name, namespace string) string {
