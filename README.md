@@ -6,7 +6,7 @@ Rio
 
 Rio is a user oriented end-to-end container solution with a focus on keeping containers simple and
 combating the current trend of complexity. It's kept fun and simple through it's familiar and
-opinionted user experience.  Additionally, Rio is a "Cloud Native Container Distribution"
+opinionated user experience.  Additionally, Rio is a "Cloud Native Container Distribution"
 meaning is includes builtin Cloud Native technologies such as Kubernetes, Istio, Containerd, etc.
 so that the user need not be an expert in installing, using, and maintaining these system.
 
