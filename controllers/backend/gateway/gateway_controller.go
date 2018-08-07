@@ -29,7 +29,6 @@ const (
 type Controller struct {
 	sync.Mutex
 
-	ports                map[string]bool
 	gatewayLister        v1alpha3.GatewayLister
 	virtualServiceLister v1alpha3.VirtualServiceLister
 	gateways             v1alpha3.GatewayInterface
@@ -41,7 +40,6 @@ type Controller struct {
 
 func Register(ctx context.Context, rContext *types.Context) {
 	gc := &Controller{
-		ports:                map[string]bool{},
 		gatewayLister:        rContext.Networking.Gateways("").Controller().Lister(),
 		virtualServiceLister: rContext.Networking.VirtualServices("").Controller().Lister(),
 		gateways:             rContext.Networking.Gateways(""),
@@ -75,16 +73,29 @@ func getPorts(service *v1alpha3.VirtualService) []string {
 	return strings.Split(ports, ",")
 }
 
-func (g *Controller) refresh() error {
-	now := time.Now()
+func (g *Controller) getExistingPorts() (map[string]bool, error) {
 	existingPorts := map[string]bool{}
-	newPorts := map[string]bool{}
 
 	gw, err := g.gatewayLister.Get(settings.RioSystemNamespace, settings.IstionExternalGateway)
-	if err == nil {
-		for _, server := range gw.Spec.Servers {
-			existingPorts[strconv.FormatUint(uint64(server.Port.Number), 10)] = true
-		}
+	if errors.IsNotFound(err) {
+		return existingPorts, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	for _, server := range gw.Spec.Servers {
+		existingPorts[strconv.FormatUint(uint64(server.Port.Number), 10)] = true
+	}
+
+	return existingPorts, nil
+}
+
+func (g *Controller) refresh() error {
+	now := time.Now()
+	newPorts := map[string]bool{}
+	existingPorts, err := g.getExistingPorts()
+	if err != nil {
+		return err
 	}
 
 	vss, err := g.virtualServiceLister.List("", labels.Everything())
@@ -113,7 +124,12 @@ func (g *Controller) addPorts(ports ...string) error {
 	g.Lock()
 	defer g.Unlock()
 
-	newPorts, add := addPorts(g.ports, ports...)
+	existing, err := g.getExistingPorts()
+	if err != nil {
+		return err
+	}
+
+	newPorts, add := addPorts(existing, ports...)
 	if !add {
 		return nil
 	}
@@ -124,10 +140,10 @@ func (g *Controller) addPorts(ports ...string) error {
 func (g *Controller) createGateway(newPorts map[string]bool) error {
 	err := g.createGatewayInternal(newPorts)
 	if err != nil {
+		logrus.Infof("Failed to set gateway ports %v: %v", newPorts, err)
 		return err
 	}
 	logrus.Infof("External gateway ports set to %v", newPorts)
-	g.ports = newPorts
 	return nil
 }
 
@@ -159,11 +175,12 @@ func (g *Controller) createGatewayInternal(newPorts map[string]bool) error {
 		})
 	}
 
+	if len(spec.Servers) == 0 {
+		return nil
+	}
+
 	gw, err := g.gatewayLister.Get(settings.RioSystemNamespace, settings.IstionExternalGateway)
 	if errors.IsNotFound(err) {
-		if len(spec.Servers) == 0 {
-			return nil
-		}
 		_, err := g.gateways.Create(&v1alpha3.Gateway{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "Gateway",
@@ -180,17 +197,9 @@ func (g *Controller) createGatewayInternal(newPorts map[string]bool) error {
 		return err
 	}
 
-	if len(spec.Servers) == 0 {
-		err = g.gateways.DeleteNamespaced(gw.Namespace, gw.Name, nil)
-	} else {
-		gw.Spec = spec
-		_, err = g.gateways.Update(gw)
-	}
-
-	if err != nil {
-		return err
-	}
-
+	gw = gw.DeepCopy()
+	gw.Spec = spec
+	_, err = g.gateways.Update(gw)
 	return err
 }
 
