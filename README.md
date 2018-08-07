@@ -487,7 +487,7 @@ List all configs
 
 Create a config of the given NAME from FILE or from standard input if `-` is passed.
 
-### rio config create NAME FILE|-
+### rio config update NAME FILE|-
 
 Update a config of the given NAME from FILE or from standard input if `-` is passed.
 
