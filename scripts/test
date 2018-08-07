@@ -3,9 +3,30 @@ set -e
 
 cd $(dirname $0)/..
 
+cleanup()
+{
+    local exit=$?
+    if [ -n "$PID" ]; then
+        echo Shutting down $PID
+        kill $PID >/dev/null 2>&1 || true
+        wait $PID >/dev/null 2>&1 || true
+    fi
+    return $exit
+}
+
+trap cleanup EXIT
+
 echo Running tests
 
-PACKAGES=". $(find -name '*.go' | xargs -I{} dirname {} |  cut -f2 -d/ | sort -u | grep -Ev '(^\.$|.git|.trash-cache|vendor|bin)' | sed -e 's!^!./!' -e 's!$!/...!')"
+# prime sudo
+sudo id
+sudo ./bin/rio server | grep -v level=info &
+PID=$!
 
-[ "${ARCH}" == "amd64" ] && RACE=-race
-go test ${RACE} -cover -tags=test ${PACKAGES}
+for i in {1..20}; do
+    curl -sf http://localhost:7080/healthz >/dev/null && break
+    sleep .5
+done
+curl -sf http://localhost:7080/healthz >/dev/null
+
+sudo env PATH=$(pwd)/bin:$PATH bats -r ./tests
