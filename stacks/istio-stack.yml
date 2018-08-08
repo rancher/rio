@@ -24,14 +24,6 @@ services:
   istio-pilot:
     labels:
       istio: pilot
-    command: discovery
-    configs:
-    - mesh:/etc/istio/config/mesh
-    environment:
-    - POD_NAME=$(self/name)
-    - POD_NAMESPACE=$(self/namespace)
-    - PILOT_THROTTLE=500
-    - PILOT_CACHE_SQUASH=5
     global_permissions:
     - '* config.istio.io/*'
     - '* networking.istio.io/*'
@@ -49,9 +41,18 @@ services:
     - namespaces
     - nodes
     - secrets
-    image: istio/pilot:1.0.0
-    secrets: identity:/etc/certs
     sidekicks:
+      discovery:
+        command: discovery
+        configs:
+        - mesh:/etc/istio/config/mesh
+        environment:
+        - POD_NAME=$(self/name)
+        - POD_NAMESPACE=$(self/namespace)
+        - PILOT_THROTTLE=500
+        - PILOT_CACHE_SQUASH=5
+        image: istio/pilot:1.0.0
+        secrets: identity:/etc/certs
       istio-proxy:
         expose:
         - 15007/http
@@ -95,42 +96,44 @@ services:
   istio-gateway:
     labels:
       "gateway": "external"
-    image: "istio/proxyv2:1.0.0"
     net: host
     dns: cluster
-    command:
-    - proxy
-    - router
-    - -v
-    - "2"
-    - --discoveryRefreshDelay
-    - '1s' #discoveryRefreshDelay
-    - --drainDuration
-    - '45s' #drainDuration
-    - --parentShutdownDuration
-    - '1m0s' #parentShutdownDuration
-    - --connectTimeout
-    - '10s' #connectTimeout
-    - --serviceCluster
-    - istio-proxy
-    - --zipkinAddress
-    - ""
-    - --statsdUdpAddress
-    - ""
-    - --proxyAdminPort
-    - "15000"
-    - --controlPlaneAuthPolicy
-    - NONE
-    - --discoveryAddress
-    - istio-pilot:15007
-    env:
-    - POD_NAME=$(self/name)
-    - POD_NAMESPACE=$(self/namespace)
-    - INSTANCE_IP=$(self/ip)
-    - ISTIO_META_POD_NAME=$(self/name)
-    secrets: identity:/etc/certs
     global_permissions:
     - "get,watch,list,update extensions/thirdpartyresources"
     - "get,watch,list,update */virtualservices"
     - "get,watch,list,update */destinationrules"
     - "get,watch,list,update */gateways"
+    sidekicks:
+      istio-proxy:
+        image: "istio/proxyv2:1.0.0"
+        command:
+        - proxy
+        - router
+        - -v
+        - "2"
+        - --discoveryRefreshDelay
+        - '1s' #discoveryRefreshDelay
+        - --drainDuration
+        - '45s' #drainDuration
+        - --parentShutdownDuration
+        - '1m0s' #parentShutdownDuration
+        - --connectTimeout
+        - '10s' #connectTimeout
+        - --serviceCluster
+        - istio-proxy
+        - --zipkinAddress
+        - ""
+        - --statsdUdpAddress
+        - ""
+        - --proxyAdminPort
+        - "15000"
+        - --controlPlaneAuthPolicy
+        - NONE
+        - --discoveryAddress
+        - istio-pilot:15007
+        env:
+        - POD_NAME=$(self/name)
+        - POD_NAMESPACE=$(self/namespace)
+        - INSTANCE_IP=$(self/ip)
+        - ISTIO_META_POD_NAME=$(self/name)
+        secrets: identity:/etc/certs
