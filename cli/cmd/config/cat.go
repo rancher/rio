@@ -21,7 +21,7 @@ func (c *Cat) Run(app *cli.Context) error {
 	defer ctx.Close()
 
 	for _, arg := range app.Args() {
-		c, err := lookup.Lookup(ctx.Client, arg, client.ConfigType)
+		c, err := lookup.Lookup(ctx.ClientLookup, arg, client.ConfigType)
 		if err != nil {
 			return err
 		}

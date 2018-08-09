@@ -31,7 +31,7 @@ func (c *Update) Run(app *cli.Context) error {
 	name := app.Args()[0]
 	file := app.Args()[1]
 
-	resource, err := lookup.Lookup(ctx.Client, name, client.ConfigType)
+	resource, err := lookup.Lookup(ctx.ClientLookup, name, client.ConfigType)
 	if err != nil {
 		return err
 	}

@@ -130,7 +130,7 @@ func stackCreate(app *cli.Context) error {
 			lastErr = err
 		}
 
-		w.Add(stack.ID)
+		w.Add(&stack.Resource)
 	}
 
 	if lastErr != nil {
@@ -156,7 +156,7 @@ func stackRm(app *cli.Context) error {
 
 	var lastErr error
 	for _, name := range names {
-		stack, err := lookup.Lookup(ctx.Client, name, client.StackType)
+		stack, err := lookup.Lookup(ctx.ClientLookup, name, client.StackType)
 		if err != nil {
 			return err
 		}
@@ -167,7 +167,7 @@ func stackRm(app *cli.Context) error {
 			continue
 		}
 
-		w.Add(stack.ID)
+		w.Add(stack)
 	}
 
 	if lastErr != nil {
@@ -197,7 +197,7 @@ func stackUpdate(app *cli.Context) error {
 
 	var lastErr error
 	for _, name := range names {
-		stack, err := lookup.Lookup(ctx.Client, name, client.StackType)
+		stack, err := lookup.Lookup(ctx.ClientLookup, name, client.StackType)
 		if err != nil {
 			return err
 		}
@@ -211,7 +211,7 @@ func stackUpdate(app *cli.Context) error {
 			continue
 		}
 
-		w.Add(stack.ID)
+		w.Add(stack)
 	}
 
 	if lastErr != nil {

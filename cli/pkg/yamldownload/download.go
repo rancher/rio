@@ -12,7 +12,7 @@ import (
 )
 
 func DownloadYAML(ctx *server.Context, contentType, option string, name string, resourceTypes ...string) (*types.Resource, io.ReadCloser, string, error) {
-	obj, err := lookup.Lookup(ctx.Client, name, resourceTypes...)
+	obj, err := lookup.Lookup(ctx.ClientLookup, name, resourceTypes...)
 	if err != nil {
 		return nil, nil, "", err
 	}

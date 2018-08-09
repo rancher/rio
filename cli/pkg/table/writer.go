@@ -43,6 +43,7 @@ func NewWriter(values [][]string, ctx *cli.Context) *Writer {
 			"stackScopedName": FormatStackScopedName,
 			"ago":             FormatCreated,
 			"json":            FormatJSON,
+			"jsoncompact":     FormatJSONCompact,
 			"yaml":            FormatYAML,
 			"first":           FormatFirst,
 		},
@@ -58,6 +59,9 @@ func NewWriter(values [][]string, ctx *cli.Context) *Writer {
 	if customFormat == "json" {
 		t.HeaderFormat = ""
 		t.ValueFormat = "json"
+	} else if customFormat == "jsoncompact" {
+		t.HeaderFormat = ""
+		t.ValueFormat = "jsoncompact"
 	} else if customFormat == "yaml" {
 		t.HeaderFormat = ""
 		t.ValueFormat = "yaml"
@@ -104,6 +108,13 @@ func (t *Writer) Write(obj interface{}) {
 			return
 		}
 		_, t.err = t.Writer.Write([]byte(content + "\n"))
+	} else if t.ValueFormat == "jsoncompact" {
+		content, err := FormatJSONCompact(obj)
+		t.err = err
+		if t.err != nil {
+			return
+		}
+		_, t.err = t.Writer.Write([]byte(content))
 	} else if t.ValueFormat == "yaml" {
 		content, err := FormatYAML(obj)
 		t.err = err
@@ -171,6 +182,11 @@ func FormatCreated(data interface{}) (string, error) {
 
 func FormatJSON(data interface{}) (string, error) {
 	bytes, err := json.MarshalIndent(data, "", "    ")
+	return string(bytes) + "\n", err
+}
+
+func FormatJSONCompact(data interface{}) (string, error) {
+	bytes, err := json.Marshal(data)
 	return string(bytes) + "\n", err
 }
 

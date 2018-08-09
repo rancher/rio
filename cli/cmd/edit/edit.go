@@ -79,7 +79,7 @@ func (edit *Edit) Run(app *cli.Context) error {
 			if err := edit.update(ctx, format, obj, url, content); err != nil {
 				return err
 			}
-			waiter.Add(obj.ID)
+			waiter.Add(obj)
 			return nil
 		})
 

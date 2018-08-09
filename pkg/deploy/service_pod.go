@@ -54,7 +54,13 @@ func podSpec(serviceName string, serviceLabels map[string]string, service *v1bet
 	usedTemplates := map[string]*v1beta1.Volume{}
 
 	podSpec.Containers = append(podSpec.Containers, container(serviceName, serviceName, service.ContainerConfig, volumes, volumeDefs, usedTemplates))
-	for name, sidekick := range service.Sidekicks {
+	// it is possible to have no "main" container.  in this situation there is no image
+	if podSpec.Containers[0].Image == "" {
+		podSpec.Containers = nil
+	}
+
+	for _, name := range sortKeys(service.Sidekicks) {
+		sidekick := service.Sidekicks[name]
 		c := container(serviceName, name, sidekick.ContainerConfig, volumes, volumeDefs, usedTemplates)
 		if sidekick.InitContainer {
 			podSpec.InitContainers = append(podSpec.InitContainers, c)

@@ -112,7 +112,7 @@ func (c *Create) RunCallback(app *cli.Context, cb func(service *client.Service) 
 		return nil, err
 	}
 
-	return s, waiter.WaitFor(ctx, s.ID)
+	return s, waiter.WaitFor(ctx, &s.Resource)
 }
 
 func (c *Create) ToService(args []string) (*client.Service, error) {

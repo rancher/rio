@@ -35,6 +35,7 @@ func Register(ctx context.Context, rContext *types.Context) {
 		namespace:  ns,
 		rdnsClient: rdnsClient,
 		podLister:  rContext.Core.Pods(ns).Controller().Lister(),
+		pods:       rContext.Core.Pods(ns),
 		nodeLister: rContext.Core.Nodes("").Controller().Lister(),
 		ips:        map[string]string{},
 		dirty:      true,
@@ -55,6 +56,7 @@ type Controller struct {
 	namespace   string
 	rdnsClient  *approuter.Client
 	podLister   v12.PodLister
+	pods        v12.PodInterface
 	nodeLister  v12.NodeLister
 	ips         map[string]string
 	dirty       bool
@@ -72,6 +74,12 @@ func (p *Controller) renew() error {
 func (p *Controller) sync(key string, pod *v1.Pod) error {
 	if !isGateway(pod) {
 		return nil
+	}
+
+	if pod != nil {
+		if cont, err := p.checkChangedIP(pod); !cont || err != nil {
+			return err
+		}
 	}
 
 	p.Lock()

@@ -14,7 +14,9 @@ import (
 	client2 "github.com/rancher/rio/types/client/space/v1beta1"
 )
 
-func Lookup(c clientbase.APIBaseClientInterface, name string, typeNames ...string) (*types.Resource, error) {
+type ClientLookup func(typeName string) clientbase.APIBaseClientInterface
+
+func Lookup(c ClientLookup, name string, typeNames ...string) (*types.Resource, error) {
 	var result []*namedResource
 	for _, schemaType := range typeNames {
 		if strings.Contains(name, ":") && !strings.Contains(name, "/") {
@@ -71,10 +73,10 @@ type namedResource struct {
 	Description string `json:"description"`
 }
 
-func byID(c clientbase.APIBaseClientInterface, id, schemaType string) (*namedResource, error) {
+func byID(c ClientLookup, id, schemaType string) (*namedResource, error) {
 	var resource namedResource
 
-	err := c.ByID(schemaType, id, &resource)
+	err := c(schemaType).ByID(schemaType, id, &resource)
 	return &resource, err
 }
 
@@ -106,7 +108,7 @@ func parseStackServiceName(name string) (string, string) {
 	return stackName, serviceName
 }
 
-func setupFilters(c clientbase.APIBaseClientInterface, name, schemaType string) (map[string]interface{}, error) {
+func setupFilters(c ClientLookup, name, schemaType string) (map[string]interface{}, error) {
 	filters := map[string]interface{}{
 		"name":         name,
 		"removed_null": "1",
@@ -135,7 +137,7 @@ func setupFilters(c clientbase.APIBaseClientInterface, name, schemaType string) 
 	return filters, nil
 }
 
-func byName(c clientbase.APIBaseClientInterface, name, schemaType string) (*namedResource, error) {
+func byName(c ClientLookup, name, schemaType string) (*namedResource, error) {
 	var collection namedResourceCollection
 
 	if schemaType == client.StackType && strings.Contains(name, "/") {
@@ -155,7 +157,7 @@ func byName(c clientbase.APIBaseClientInterface, name, schemaType string) (*name
 		return nil, err
 	}
 
-	if err := c.List(schemaType, &types.ListOpts{
+	if err := c(schemaType).List(schemaType, &types.ListOpts{
 		Filters: filters,
 	}, &collection); err != nil {
 		return nil, err

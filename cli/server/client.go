@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/rancher/norman/clientbase"
 	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/cli/pkg/kv"
 	"github.com/rancher/rio/pkg/clientaccess"
@@ -22,10 +23,22 @@ type Context struct {
 	CLIContext       *cli.Context
 	Domain           string
 	Client           *client.Client
+	spaceClientCache *spaceclient.Client
 	DefaultStackName string
 	SpaceID          string
 	builder          *ContextBuilder
 	tempFile         string
+}
+
+func (c *Context) ClientLookup(typeName string) clientbase.APIBaseClientInterface {
+	if _, ok := c.Client.Types[typeName]; ok {
+		return c.Client
+	}
+	sc, err := c.SpaceClient()
+	if err != nil {
+		return c.Client
+	}
+	return sc
 }
 
 func (c *Context) Close() error {
@@ -158,7 +171,14 @@ func NewContext(app *cli.Context) (*Context, error) {
 }
 
 func (c *Context) SpaceClient() (*spaceclient.Client, error) {
-	return c.builder.SpaceClient()
+	if c.spaceClientCache != nil {
+		return c.spaceClientCache, nil
+	}
+	sc, err := c.builder.SpaceClient()
+	if err == nil {
+		c.spaceClientCache = sc
+	}
+	return sc, err
 }
 
 func (c *Context) ResolveSpaceStackName(in string) (string, string, string, error) {

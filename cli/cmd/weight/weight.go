@@ -42,7 +42,7 @@ func (w *Weight) Run(app *cli.Context) error {
 			return fmt.Errorf("failed to parse %s: %v", arg, err)
 		}
 
-		resource, err := lookup.Lookup(ctx.Client, name, client.ServiceType)
+		resource, err := lookup.Lookup(ctx.ClientLookup, name, client.ServiceType)
 		if err != nil {
 			return err
 		}
@@ -64,7 +64,7 @@ func (w *Weight) Run(app *cli.Context) error {
 			return errors.New("weight can only be added to staged services")
 		}
 
-		waiter.Add(service.ID)
+		waiter.Add(&service.Resource)
 	}
 
 	return waiter.Wait()

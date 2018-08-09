@@ -1,7 +1,6 @@
 package inspect
 
 import (
-	"github.com/rancher/norman/clientbase"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/table"
 	"github.com/rancher/rio/cli/server"
@@ -11,14 +10,12 @@ import (
 )
 
 var (
-	inspectTypes = []string{
+	InspectTypes = []string{
 		client.ServiceType,
 		client.ConfigType,
 		client.StackType,
 		client.RouteSetType,
 		client.VolumeType,
-	}
-	spaceInspectType = []string{
 		client2.PodType,
 		client2.NodeType,
 	}
@@ -46,17 +43,8 @@ func (i *Inspect) Run(app *cli.Context) error {
 	}
 	defer ctx.Close()
 
-	spaceClient, err := ctx.SpaceClient()
-	if err != nil {
-		return err
-	}
-
 	for _, arg := range app.Args() {
-		r := find(ctx.Client, arg, i.T_Type, inspectTypes)
-		if r == nil {
-			r = find(spaceClient, arg, i.T_Type, spaceInspectType)
-		}
-
+		r := find(ctx.ClientLookup, arg, i.T_Type, InspectTypes)
 		if r == nil {
 			continue
 		}
@@ -76,14 +64,14 @@ func (i *Inspect) Run(app *cli.Context) error {
 	return nil
 }
 
-func find(c clientbase.APIBaseClientInterface, arg, override string, types []string) map[string]interface{} {
+func find(c lookup.ClientLookup, arg, override string, types []string) map[string]interface{} {
 	if len(override) > 0 {
 		types = []string{override}
 	}
 	r, err := lookup.Lookup(c, arg, types...)
 	if err == nil {
 		data := map[string]interface{}{}
-		err = c.GetLink(*r, "self", &data)
+		err = c(r.Type).GetLink(*r, "self", &data)
 		if err == nil {
 			return data
 		}

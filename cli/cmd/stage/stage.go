@@ -48,7 +48,7 @@ func (r *Stage) Run(app *cli.Context) error {
 	}
 	defer ctx.Close()
 
-	resource, err := lookup.Lookup(ctx.Client, app.Args()[0], client.ServiceType)
+	resource, err := lookup.Lookup(ctx.ClientLookup, app.Args()[0], client.ServiceType)
 	if err != nil {
 		return err
 	}
@@ -96,6 +96,6 @@ func (r *Stage) Run(app *cli.Context) error {
 		return err
 	}
 
-	w.Add(service.ID)
+	w.Add(&service.Resource)
 	return w.Wait()
 }
