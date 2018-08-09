@@ -13,6 +13,7 @@ import (
 	"github.com/rancher/rio/cli/cmd/create"
 	"github.com/rancher/rio/cli/cmd/ctr"
 	"github.com/rancher/rio/cli/cmd/edit"
+	"github.com/rancher/rio/cli/cmd/events"
 	"github.com/rancher/rio/cli/cmd/exec"
 	"github.com/rancher/rio/cli/cmd/export"
 	"github.com/rancher/rio/cli/cmd/inspect"
@@ -195,6 +196,11 @@ func main() {
 			appName+" weight [OPTIONS] [SERVICE_REVISION=PERCENTAGE...]",
 			""),
 		route.Route(app),
+
+		builder.Command(&events.Events{},
+			"Stream change events",
+			appName+" events",
+			""),
 
 		waiter.WaitCommand(),
 
