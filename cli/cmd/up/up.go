@@ -7,12 +7,14 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/rancher/norman/types"
 	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/up"
 	"github.com/rancher/rio/cli/pkg/waiter"
 	"github.com/rancher/rio/cli/server"
 	"github.com/rancher/rio/pkg/yaml"
+	"github.com/rancher/rio/types/client/rio/v1beta1"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
@@ -95,7 +97,10 @@ func (u *Up) doUp(ctx *server.Context, file, stack string) error {
 		return err
 	}
 
-	return waiter.WaitFor(ctx, stackID)
+	return waiter.WaitFor(ctx, &types.Resource{
+		Type: client.StackType,
+		ID:   stackID,
+	})
 }
 
 func readAnswers(answersFile string) (map[string]string, error) {

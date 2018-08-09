@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/rancher/norman/clientbase"
+	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/monitor"
 	"github.com/rancher/rio/cli/server"
@@ -28,7 +29,7 @@ func WaitCommand() cli.Command {
 	}
 }
 
-func WaitFor(ctx *server.Context, resource string) error {
+func WaitFor(ctx *server.Context, resource *types.Resource) error {
 	w, err := NewWaiter(ctx)
 	if err != nil {
 		return err
@@ -51,7 +52,12 @@ func waitForResources(app *cli.Context) error {
 	}
 
 	for _, r := range ctx.CLIContext.Args() {
-		w.Add(r)
+		resource, err := lookup.Lookup(ctx.ClientLookup, r, waitTypes...)
+		if err != nil {
+			logrus.Info("%s does not exist")
+			continue
+		}
+		w.Add(resource)
 	}
 
 	return w.Wait()
@@ -66,20 +72,22 @@ func NewWaiter(ctx *server.Context) (*Waiter, error) {
 	}
 
 	return &Waiter{
-		enabled: ctx.CLIContext.GlobalBool("wait"),
-		timeout: ctx.CLIContext.GlobalInt("wait-timeout"),
-		state:   waitState,
-		client:  client,
+		enabled:      ctx.CLIContext.GlobalBool("wait"),
+		timeout:      ctx.CLIContext.GlobalInt("wait-timeout"),
+		state:        waitState,
+		client:       client,
+		clientLookup: ctx.ClientLookup,
 	}, nil
 }
 
 type Waiter struct {
-	enabled   bool
-	timeout   int
-	state     string
-	resources []string
-	client    *client.Client
-	monitor   *monitor.Monitor
+	enabled      bool
+	timeout      int
+	state        string
+	resources    []*types.Resource
+	client       *client.Client
+	clientLookup lookup.ClientLookup
+	monitor      *monitor.Monitor
 }
 
 type ResourceID string
@@ -98,9 +106,12 @@ func (r ResourceID) Type() string {
 	return str[:strings.Index(str, ":")]
 }
 
-func (w *Waiter) Add(resources ...string) *Waiter {
+func (w *Waiter) Add(resources ...*types.Resource) *Waiter {
 	for _, resource := range resources {
-		fmt.Println(resource)
+		if resource == nil {
+			continue
+		}
+		fmt.Println(resource.ID)
 		w.resources = append(w.resources, resource)
 	}
 	return w
@@ -154,10 +165,13 @@ func (w *Waiter) Wait() error {
 	watching := map[ResourceID]bool{}
 	w.monitor = monitor.New(w.client)
 	sub := w.monitor.Subscribe()
-	go func() { logrus.Fatal(w.monitor.Start()) }()
+	go func() {
+		schema := w.client.Types["subscribe"]
+		logrus.Fatal(w.monitor.Start(&schema))
+	}()
 
 	for _, resource := range w.resources {
-		r, err := lookup.Lookup(w.client, resource, waitTypes...)
+		r, err := lookup.Lookup(w.clientLookup, resource.ID, resource.Type)
 		if err != nil {
 			return err
 		}
@@ -172,13 +186,13 @@ func (w *Waiter) Wait() error {
 	}
 
 	timeout := time.After(time.Duration(w.timeout) * time.Second)
-	every := time.Tick(10 * time.Second)
+	every := time.Tick(2 * time.Second)
 	for len(watching) > 0 {
 		var event *monitor.Event
 		select {
 		case event = <-sub.C:
 		case <-timeout:
-			return fmt.Errorf("Timeout")
+			return fmt.Errorf("timeout")
 		case <-every:
 			for resource := range watching {
 				ok, err := w.done(resource.Type(), resource.ID())
@@ -192,12 +206,15 @@ func (w *Waiter) Wait() error {
 			continue
 		}
 
-		resource := NewResourceID(event.ResourceType, event.ResourceID)
+		resourceType := event.ResourceType()
+		resourceID := event.ResourceID()
+
+		resource := NewResourceID(resourceType, resourceID)
 		if !watching[resource] {
 			continue
 		}
 
-		done, err := w.done(event.ResourceType, event.ResourceID)
+		done, err := w.done(resourceType, resourceID)
 		if err != nil {
 			return err
 		}

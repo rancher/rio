@@ -7,6 +7,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/waiter"
 	"github.com/rancher/rio/cli/server"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
+	spaceClient "github.com/rancher/rio/types/client/space/v1beta1"
 	"github.com/urfave/cli"
 )
 
@@ -15,7 +16,7 @@ type Rm struct {
 }
 
 func (r *Rm) Run(app *cli.Context) error {
-	types := []string{client.ServiceType, client.StackType, client.ConfigType, client.VolumeType}
+	types := []string{client.ServiceType, client.StackType, spaceClient.PodType, client.ConfigType, client.VolumeType}
 	if len(r.T_Type) > 0 {
 		types = []string{r.T_Type}
 	}
@@ -36,7 +37,7 @@ func Remove(app *cli.Context, types ...string) error {
 	}
 
 	for _, arg := range app.Args() {
-		resource, err := lookup.Lookup(ctx.Client, arg, types...)
+		resource, err := lookup.Lookup(ctx.ClientLookup, arg, types...)
 		if err != nil {
 			return err
 		}
@@ -54,15 +55,15 @@ func Remove(app *cli.Context, types ...string) error {
 				}
 			}
 
-			w.Add(resource.ID)
+			w.Add(resource)
 			continue
 		}
 
-		err = ctx.Client.Delete(resource)
+		err = ctx.ClientLookup(resource.Type).Delete(resource)
 		if err != nil {
 			return err
 		}
-		w.Add(resource.ID)
+		w.Add(resource)
 	}
 
 	return w.Wait()

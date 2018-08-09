@@ -9,20 +9,32 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/patrickmn/go-cache"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/norman/clientbase"
+	"github.com/rancher/norman/types"
 	"github.com/sirupsen/logrus"
 )
 
 type Event struct {
-	Name         string                 `json:"name"`
-	ResourceType string                 `json:"resourceType"`
-	ResourceID   string                 `json:"resourceId"`
-	Data         map[string]interface{} `json:"data"`
+	Name string                 `json:"name"`
+	Data map[string]interface{} `json:"data"`
+}
+
+func (e *Event) ResourceType() string {
+	return e.str("type")
+}
+
+func (e *Event) ResourceID() string {
+	return e.str("id")
+}
+
+func (e *Event) str(key string) string {
+	s, _ := e.Data[key].(string)
+	return s
 }
 
 type Monitor struct {
 	sync.Mutex
-	c             *client.Client
+	c             clientbase.APIBaseClientInterface
 	cache         *cache.Cache
 	subCounter    int
 	subscriptions map[int]*Subscription
@@ -55,7 +67,7 @@ type Subscription struct {
 	C  chan *Event
 }
 
-func New(c *client.Client) *Monitor {
+func New(c clientbase.APIBaseClientInterface) *Monitor {
 	return &Monitor{
 		c:             c,
 		cache:         cache.New(5*time.Minute, 30*time.Second),
@@ -63,13 +75,12 @@ func New(c *client.Client) *Monitor {
 	}
 }
 
-func (m *Monitor) Start() error {
-	schema, ok := m.c.Types["subscribe"]
-	if !ok {
+func (m *Monitor) Start(subscribeSchema *types.Schema) error {
+	if subscribeSchema == nil || subscribeSchema.ID == "" {
 		return fmt.Errorf("not authorized to subscribe")
 	}
 
-	urlString := schema.Links["collection"]
+	urlString := subscribeSchema.Links["collection"]
 	u, err := url.Parse(urlString)
 	if err != nil {
 		return err
@@ -81,12 +92,6 @@ func (m *Monitor) Start() error {
 	case "https":
 		u.Scheme = "wss"
 	}
-
-	q := u.Query()
-	q.Add("eventNames", "resource.change")
-	q.Add("eventNames", "service.kubernetes.change")
-
-	u.RawQuery = q.Encode()
 
 	conn, resp, err := m.c.Websocket(u.String(), nil)
 	if err != nil {
@@ -125,11 +130,11 @@ func key(a, b string) string {
 }
 
 func (m *Monitor) put(resourceType, resourceID string, event *Event) {
-	if resourceType == "" && resourceID == "" {
+	if resourceType == "" || resourceID == "" {
 		return
 	}
 
-	m.cache.Replace(key(resourceType, resourceID), event.Data["resource"], cache.DefaultExpiration)
+	m.cache.Replace(key(resourceType, resourceID), event.Data, cache.DefaultExpiration)
 
 	m.Lock()
 	defer m.Unlock()
@@ -151,7 +156,10 @@ func (m *Monitor) watch(conn *websocket.Conn) error {
 			continue
 		}
 
-		logrus.Debugf("Event: %s %s %s %v", v.Name, v.ResourceType, v.ResourceID, v.Data)
-		m.put(v.ResourceType, v.ResourceID, &v)
+		resourceType, _ := v.Data["type"].(string)
+		resourceID, _ := v.Data["id"].(string)
+
+		logrus.Debugf("Event: %s %s %s %v", v.Name, resourceType, resourceID, v.Data)
+		m.put(resourceType, resourceID, &v)
 	}
 }

@@ -34,7 +34,7 @@ func (s *Scale) Run(app *cli.Context) error {
 			return fmt.Errorf("failed to parse %s: %v", arg, err)
 		}
 
-		resource, err := lookup.Lookup(ctx.Client, name, client.ServiceType)
+		resource, err := lookup.Lookup(ctx.ClientLookup, name, client.ServiceType)
 		if err != nil {
 			return err
 		}
@@ -62,7 +62,7 @@ func (s *Scale) Run(app *cli.Context) error {
 			return fmt.Errorf("failed to update scale on %s: %v", name, err)
 		}
 
-		waiter.Add(service.ID)
+		waiter.Add(&service.Resource)
 	}
 
 	return waiter.Wait()

@@ -25,7 +25,7 @@ func (p *Promote) Run(app *cli.Context) error {
 	}
 
 	for _, arg := range app.Args() {
-		resource, err := lookup.Lookup(ctx.Client, arg, client.ServiceType)
+		resource, err := lookup.Lookup(ctx.ClientLookup, arg, client.ServiceType)
 		if err != nil {
 			return err
 		}
@@ -47,7 +47,7 @@ func (p *Promote) Run(app *cli.Context) error {
 			if err != nil {
 				return err
 			}
-			w.Add(resource.ID)
+			w.Add(resource)
 		}
 	}
 
