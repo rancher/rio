@@ -227,7 +227,11 @@ func (g *Controller) setServicePorts(ns string, ports map[string]bool) ([]string
 	var ips []string
 	hostPorts := false
 	for _, ingress := range svc.Status.LoadBalancer.Ingress {
-		ips = append(ips, ingress.IP)
+		if ingress.Hostname == "localhost" {
+			ips = append(ips, "127.0.0.1")
+		} else if ingress.IP != "" {
+			ips = append(ips, ingress.IP)
+		}
 	}
 
 	if len(ips) == 0 {
@@ -256,7 +260,8 @@ func (g *Controller) setServicePorts(ns string, ports map[string]bool) ([]string
 		}
 	}
 
-	if !set.Changed(ports, existingPorts) {
+	// you can't update a service to zero ports
+	if !set.Changed(ports, existingPorts) || len(ports) == 0 {
 		return ips, hostPorts, nil
 	}
 
