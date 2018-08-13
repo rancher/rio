@@ -19,12 +19,16 @@ func addGlobalRoles(objects []runtime.Object, name, namespace string, labels map
 			continue
 		}
 		rule := v1.PolicyRule{
-			Verbs:     perm.Verbs,
-			Resources: []string{perm.Resource},
-			APIGroups: []string{perm.APIGroup},
+			Verbs: perm.Verbs,
 		}
-		if perm.Name != "" {
-			rule.ResourceNames = []string{perm.Name}
+		if perm.URL == "" {
+			rule.Resources = []string{perm.Resource}
+			rule.APIGroups = []string{perm.APIGroup}
+			if perm.Name != "" {
+				rule.ResourceNames = []string{perm.Name}
+			}
+		} else {
+			rule.NonResourceURLs = []string{perm.URL}
 		}
 
 		role.Rules = append(role.Rules, rule)
