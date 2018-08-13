@@ -29,4 +29,7 @@ for i in {1..20}; do
 done
 curl -sf http://localhost:7080/healthz >/dev/null
 
-sudo env PATH=$(pwd)/bin:$PATH bats -r ./tests
+sudo env PATH=$(pwd)/bin:$PATH bats -r ./tests || {
+    tail -n 100 /var/lib/rancher/rio/agent/agent.log
+    exit 1
+}
