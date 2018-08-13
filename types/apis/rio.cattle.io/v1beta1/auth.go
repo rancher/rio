@@ -28,6 +28,7 @@ type Permission struct {
 	Verbs    []string `json:"verbs,omitempty"`
 	APIGroup string   `json:"apiGroup,omitempty"`
 	Resource string   `json:"resource,omitempty"`
+	URL      string   `json:"url,omitempty"`
 	Name     string   `json:"name,omitempty"`
 }
 
@@ -44,16 +45,21 @@ func (p Permission) MaybeString() interface{} {
 		buf.WriteString(" ")
 	}
 
-	if p.APIGroup != "" {
-		buf.WriteString(p.APIGroup)
-		buf.WriteString("/")
-	}
+	if p.URL == "" {
+		if p.APIGroup != "" || strings.Contains(p.Resource, "/") {
+			buf.WriteString(p.APIGroup)
+			buf.WriteString("/")
+		}
 
-	buf.WriteString(p.Resource)
+		buf.WriteString(p.Resource)
 
-	if p.Name != "" {
-		buf.WriteString(" ")
-		buf.WriteString(p.Name)
+		if p.Name != "" {
+			buf.WriteString(" ")
+			buf.WriteString(p.Name)
+		}
+	} else {
+		buf.WriteString("url=")
+		buf.WriteString(p.URL)
 	}
 
 	return buf.String()
