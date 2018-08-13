@@ -66,18 +66,17 @@ type ScaleStatus struct {
 }
 
 type PodConfig struct {
-	Hostname               string        `json:"hostname,omitempty"`
-	Global                 bool          `json:"global,omitempty"`
-	Scheduling             Scheduling    `json:"scheduling,omitempty"`
-	StopGracePeriodSeconds *int          `json:"stopGracePeriod,omitempty"`                                                           // support friendly numbers
-	RestartPolicy          string        `json:"restart,omitempty" norman:"type=enum,options=never|on-failure|always,default=always"` //support no and OnFailure
-	DNS                    []string      `json:"dns,omitempty"`                                                                       // support string
-	DNSOptions             []string      `json:"dnsOptions,omitempty"`                                                                // support string
-	DNSSearch              []string      `json:"dnsSearch,omitempty"`                                                                 // support string
-	ExtraHosts             []string      `json:"extraHosts,omitempty"`                                                                // support map
-	GlobalPermissions      []Permission  `json:"globalPermissions,omitempty"`
-	Permissions            []Permission  `json:"permissions,omitempty"`
-	PortBindings           []PortBinding `json:"ports,omitempty"` // support []string
+	Hostname               string       `json:"hostname,omitempty"`
+	Global                 bool         `json:"global,omitempty"`
+	Scheduling             Scheduling   `json:"scheduling,omitempty"`
+	StopGracePeriodSeconds *int         `json:"stopGracePeriod,omitempty"`                                                           // support friendly numbers
+	RestartPolicy          string       `json:"restart,omitempty" norman:"type=enum,options=never|on-failure|always,default=always"` //support no and OnFailure
+	DNS                    []string     `json:"dns,omitempty"`                                                                       // support string
+	DNSOptions             []string     `json:"dnsOptions,omitempty"`                                                                // support string
+	DNSSearch              []string     `json:"dnsSearch,omitempty"`                                                                 // support string
+	ExtraHosts             []string     `json:"extraHosts,omitempty"`                                                                // support map
+	GlobalPermissions      []Permission `json:"globalPermissions,omitempty"`
+	Permissions            []Permission `json:"permissions,omitempty"`
 }
 
 type Scheduling struct {
@@ -170,12 +169,14 @@ type ContainerConfig struct {
 	Environment            []string      `json:"environment,omitempty"` // alias env, support map
 	ExposedPorts           []ExposedPort `json:"expose,omitempty"`      // support []string, map
 	Healthcheck            *HealthConfig `json:"healthcheck,omitempty"`
+	Readycheck             *HealthConfig `json:"readycheck,omitempty"`
 	Image                  string        `json:"image,omitempty"`
 	ImagePullPolicy        string        `json:"imagePullPolicy,omitempty" norman:"type=enum,options=always|never|not-present,default=not-present"`
 	Init                   bool          `json:"init,omitempty"`
 	MemoryLimitBytes       int64         `json:"memoryLimitBytes,omitempty"`
 	MemoryReservationBytes int64         `json:"memoryReservationBytes,omitempty"`
 	OpenStdin              bool          `json:"stdinOpen,omitempty"` // alias interactive
+	PortBindings           []PortBinding `json:"ports,omitempty"`     // support []string
 	ReadonlyRootfs         bool          `json:"readOnly,omitempty"`
 	Tmpfs                  []Tmpfs       `json:"tmpfs,omitempty"` // support []string too
 	Tty                    bool          `json:"tty,omitempty"`

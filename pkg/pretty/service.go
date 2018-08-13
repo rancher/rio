@@ -37,6 +37,7 @@ func containerMappers() []types.Mapper {
 		pm.AliasField{Field: "memory", Names: []string{"mem", "memoryReservationBytes"}},
 		mapper.Move{From: "nanoCpus", To: "cpus"},
 		pm.AliasField{Field: "cpus", Names: []string{"nanoCpus"}},
+		pm.HealthMapper{Field: "readycheck"},
 		pm.NewSecretMapping("secrets"),
 		pm.MapToSlice{Field: "secrets", Sep: ":"},
 		pm.SingleSlice{Field: "secrets"},
