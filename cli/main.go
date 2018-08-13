@@ -69,6 +69,8 @@ func main() {
 		return
 	}
 
+	args := reformatArgs(os.Args)
+
 	app := cli.NewApp()
 	app.Name = appName
 	app.Usage = "Containers made simple, as they should be"
@@ -217,6 +219,7 @@ func main() {
 			clientbase.Debug = true
 			logrus.SetLevel(logrus.DebugLevel)
 		}
+		logrus.Debugf("ARGS: %v", args)
 		return nil
 	}
 	app.ExitErrHandler = func(context *cli.Context, err error) {
@@ -227,7 +230,7 @@ func main() {
 		}
 	}
 
-	err := app.Run(reformatArgs(os.Args))
+	err := app.Run(args)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -250,22 +253,25 @@ If you are just looking for general "rio" CLI usage then run
 
 func reformatArgs(args []string) []string {
 	var result []string
-	words := -1
+	words := 0
 	for i, arg := range args {
 		if arg == "--" {
 			return append(result, args[i:]...)
 		}
 
-		if len(arg) > 0 && arg[0:1] != "-" {
+		if arg == "" {
+			result = append(result, arg)
+			continue
+		}
+
+		if arg[0:1] != "-" {
 			words++
-			if words > 1 {
+			if words > 2 {
 				return append(result, args[i:]...)
 			}
 			result = append(result, arg)
 			continue
 		}
-
-		words = 0
 
 		if len(arg) <= 2 || arg[1:2] == "-" {
 			result = append(result, arg)

@@ -2,6 +2,7 @@ package ps
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 
 	"github.com/rancher/norman/types/convert"
@@ -18,6 +19,29 @@ type ServiceData struct {
 	Service  *client.Service
 	Stack    *client.Stack
 	Endpoint string
+}
+
+func FormatImage(data interface{}) (string, error) {
+	s, ok := data.(*client.Service)
+	if !ok {
+		return fmt.Sprint(data), nil
+	}
+	if s.Image == "" || len(s.Sidekicks) > 0 {
+		return s.Sidekicks[firstSortedKey(s.Sidekicks)].Image, nil
+	}
+	return s.Image, nil
+}
+
+func firstSortedKey(m map[string]client.SidekickConfig) string {
+	var keys []string
+	for k := range m {
+		keys = append(keys, k)
+	}
+	if len(keys) == 0 {
+		return ""
+	}
+	sort.Strings(keys)
+	return keys[0]
 }
 
 func FormatScale(data, data2 interface{}) (string, error) {
@@ -52,7 +76,7 @@ func (p *Ps) services(app *cli.Context, ctx *server.Context) error {
 
 	writer := table.NewWriter([][]string{
 		{"NAME", "{{stackScopedName .Stack.Name .Service.Name}}"},
-		{"IMAGE", "Service.Image"},
+		{"IMAGE", "{{.Service | image}}"},
 		{"CREATED", "{{.Service.Created | ago}}"},
 		{"SCALE", "{{scale .Service.Scale .Service.ScaleStatus}}"},
 		{"STATE", "Service.State"},
@@ -61,6 +85,7 @@ func (p *Ps) services(app *cli.Context, ctx *server.Context) error {
 	}, app)
 	defer writer.Close()
 
+	writer.AddFormatFunc("image", FormatImage)
 	writer.AddFormatFunc("scale", FormatScale)
 
 	stackByID, err := util.StacksByID(ctx)
