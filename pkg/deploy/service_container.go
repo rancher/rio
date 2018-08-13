@@ -5,6 +5,11 @@ import (
 	"strconv"
 	"strings"
 
+	"fmt"
+
+	"crypto/md5"
+	"encoding/hex"
+
 	"github.com/rancher/rio/cli/pkg/kv"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
 	"github.com/sirupsen/logrus"
@@ -73,7 +78,7 @@ func container(serviceName, name string, container v1beta1.ContainerConfig, volu
 
 	populateEnv(&c, container)
 
-	c.LivenessProbe, c.ReadinessProbe = toProbes(container.Healthcheck)
+	c.LivenessProbe, c.ReadinessProbe = toProbes(container)
 
 	for _, volume := range container.Volumes {
 		addVolumes(&c, volume, volumes, volumeDefs, usedTemplates)
@@ -81,8 +86,47 @@ func container(serviceName, name string, container v1beta1.ContainerConfig, volu
 
 	addConfigs(&c, container, volumes)
 	addSecrets(serviceName, &c, container, volumes)
+	addPorts(&c, container)
 
 	return c
+}
+
+func addPorts(c *v1.Container, container v1beta1.ContainerConfig) {
+	added := map[int32]bool{}
+	for _, ep := range allExposedPorts(&container) {
+		cp := v1.ContainerPort{
+			Name:          ep.Name,
+			ContainerPort: int32(ep.TargetPort),
+			HostPort:      int32(ep.Port),
+			HostIP:        ep.IP,
+		}
+
+		if added[cp.ContainerPort] {
+			continue
+		}
+		added[cp.ContainerPort] = true
+
+		cp.Protocol = v1.ProtocolTCP
+		if strings.EqualFold(ep.Protocol, "udp") {
+			cp.Protocol = v1.ProtocolUDP
+		}
+
+		if cp.Name == "" {
+			cp.Name = fmt.Sprintf("%s-%d-%d", ep.Protocol, ep.Port, ep.TargetPort)
+			cp.Name = limitName(cp.Name, 15)
+		}
+
+		c.Ports = append(c.Ports, cp)
+	}
+}
+
+func limitName(s string, count int) string {
+	if len(s) < count {
+		return s
+	}
+	h := md5.Sum([]byte(s))
+	d := hex.EncodeToString(h[:])
+	return fmt.Sprintf("%s-%s", s[:count-6], d[:5])
 }
 
 func addConfigs(c *v1.Container, container v1beta1.ContainerConfig, volumes map[string]v1.Volume) {
@@ -231,9 +275,19 @@ func populateResources(c *v1.Container, container v1beta1.ContainerConfig) {
 	}
 }
 
-func toProbes(healthcheck *v1beta1.HealthConfig) (*v1.Probe, *v1.Probe) {
+func toProbes(container v1beta1.ContainerConfig) (*v1.Probe, *v1.Probe) {
+	health := toProbe(container.Healthcheck)
+	ready := health
+	if container.Readycheck != nil {
+		ready = toProbe(container.Readycheck)
+	}
+
+	return health, ready
+}
+
+func toProbe(healthcheck *v1beta1.HealthConfig) *v1.Probe {
 	if healthcheck == nil {
-		return nil, nil
+		return nil
 	}
 
 	probe := v1.Probe{
@@ -266,6 +320,11 @@ func toProbes(healthcheck *v1beta1.HealthConfig) (*v1.Probe, *v1.Probe) {
 				probe.HTTPGet.Port = intstr.Parse(u.Port())
 			}
 
+			probe.HTTPGet.HTTPHeaders = append(probe.HTTPGet.HTTPHeaders, v1.HTTPHeader{
+				Name:  "Host",
+				Value: u.Host,
+			})
+
 			for i := 1; i < len(healthcheck.Test); i++ {
 				name, value := kv.Split(healthcheck.Test[i], "=")
 				probe.HTTPGet.HTTPHeaders = append(probe.HTTPGet.HTTPHeaders, v1.HTTPHeader{
@@ -281,27 +340,29 @@ func toProbes(healthcheck *v1beta1.HealthConfig) (*v1.Probe, *v1.Probe) {
 				Port: intstr.Parse(u.Port()),
 			}
 		}
-	} else if test == "CMD" {
+	} else if strings.EqualFold(test, "CMD") {
 		probe.Exec = &v1.ExecAction{
 			Command: healthcheck.Test[1:],
 		}
-	} else if test == "CMD-SHELL" {
+	} else if strings.EqualFold(test, "CMD-SHELL") {
 		if len(healthcheck.Test) == 2 {
 			probe.Exec = &v1.ExecAction{
 				Command: []string{"sh", "-c", healthcheck.Test[1]},
 			}
 		}
-	} else if test == "NONE" {
-		return nil, nil
+	} else if strings.EqualFold(test, "NONE") {
+		return nil
 	} else {
 		probe.Exec = &v1.ExecAction{
 			Command: healthcheck.Test,
 		}
 	}
 
-	liveness := probe
-	liveness.SuccessThreshold = 1
-	return &liveness, &probe
+	if probe.SuccessThreshold <= 0 {
+		probe.SuccessThreshold = 1
+	}
+
+	return &probe
 }
 
 func toCaps(args []string) []v1.Capability {

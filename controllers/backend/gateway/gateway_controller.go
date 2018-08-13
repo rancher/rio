@@ -4,64 +4,151 @@ import (
 	"context"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/rancher/norman/types/set"
+	"github.com/rancher/rancher/pkg/controllers/user/approuter"
+	"github.com/rancher/rancher/pkg/ticker"
+	"github.com/rancher/rio/pkg/namespace"
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
-	v1beta22 "github.com/rancher/types/apis/apps/v1beta2"
+	"github.com/rancher/types/apis/apps/v1beta2"
 	v12 "github.com/rancher/types/apis/core/v1"
-	"github.com/sirupsen/logrus"
-	"k8s.io/api/apps/v1beta2"
 	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 const (
-	refreshInterval = 5 * time.Minute
+	all = "_all_"
+)
+
+var (
+	addressTypes = []v1.NodeAddressType{
+		v1.NodeExternalIP,
+		v1.NodeInternalIP,
+	}
 )
 
 type Controller struct {
-	sync.Mutex
-
-	gatewayLister        v1alpha3.GatewayLister
-	virtualServiceLister v1alpha3.VirtualServiceLister
-	gateways             v1alpha3.GatewayInterface
-	daemonSets           v1beta22.DaemonSetInterface
-	nodeLister           v12.NodeLister
-	services             v12.ServiceInterface
-	lastRefresh          time.Time
+	gateways                 v1alpha3.GatewayInterface
+	gatewayLister            v1alpha3.GatewayLister
+	virtualServiceLister     v1alpha3.VirtualServiceLister
+	virtualServiceController v1alpha3.VirtualServiceController
+	services                 v12.ServiceInterface
+	serviceLister            v12.ServiceLister
+	endpointsLister          v12.EndpointsLister
+	nodeLister               v12.NodeLister
+	deploymentsLister        v1beta2.DeploymentLister
+	deployments              v1beta2.DeploymentInterface
+	pods                     v12.PodInterface
+	rdnsClient               *approuter.Client
+	previousIPs              []string
 }
 
 func Register(ctx context.Context, rContext *types.Context) {
+	rdnsClient := approuter.NewClient(rContext.Core.Secrets(""),
+		rContext.Core.Secrets("").Controller().Lister(),
+		settings.RioSystemNamespace)
+	rdnsClient.SetBaseURL(settings.RDNSURL.Get())
+
 	gc := &Controller{
-		gatewayLister:        rContext.Networking.Gateways("").Controller().Lister(),
-		virtualServiceLister: rContext.Networking.VirtualServices("").Controller().Lister(),
-		gateways:             rContext.Networking.Gateways(""),
-		daemonSets:           rContext.Apps.DaemonSets(""),
-		services:             rContext.Core.Services(""),
-		nodeLister:           rContext.Core.Nodes("").Controller().Lister(),
+		gateways:                 rContext.Networking.Gateways(""),
+		gatewayLister:            rContext.Networking.Gateways("").Controller().Lister(),
+		virtualServiceLister:     rContext.Networking.VirtualServices("").Controller().Lister(),
+		virtualServiceController: rContext.Networking.VirtualServices("").Controller(),
+		services:                 rContext.Core.Services(""),
+		serviceLister:            rContext.Core.Services("").Controller().Lister(),
+		endpointsLister:          rContext.Core.Endpoints("").Controller().Lister(),
+		deploymentsLister:        rContext.Apps.Deployments("").Controller().Lister(),
+		deployments:              rContext.Apps.Deployments(""),
+		pods:                     rContext.Core.Pods(""),
+		nodeLister:               rContext.Core.Nodes("").Controller().Lister(),
+		rdnsClient:               rdnsClient,
 	}
 	rContext.Networking.VirtualServices("").Controller().AddHandler("gateway-controller", gc.sync)
+	rContext.Core.Services("").Controller().AddHandler("gateway-service-controller", gc.serviceChanged)
+	rContext.Core.Pods("").Controller().AddHandler("gateway-pod-controller", gc.podChanged)
+
+	go func() {
+		for range ticker.Context(ctx, 6*time.Hour) {
+			gc.renew()
+		}
+	}()
 }
 
-func (g *Controller) sync(key string, service *v1alpha3.VirtualService) error {
-	if service == nil {
+func (g *Controller) podChanged(key string, pod *v1.Pod) error {
+	if pod == nil {
 		return nil
 	}
 
-	g.Lock()
-	if time.Now().Sub(g.lastRefresh) > refreshInterval {
-		g.refresh()
+	if pod.Labels["gateway"] != "external" {
+		return nil
 	}
-	g.Unlock()
 
-	return g.addPorts(getPorts(service)...)
+	if pod.Status.HostIP == "" {
+		return nil
+	}
+
+	hostIP := pod.Annotations["rio.cattle.io/host-ip"]
+	if hostIP != pod.Status.HostIP {
+		g.virtualServiceController.Enqueue("", all)
+
+		pod = pod.DeepCopy()
+		if pod.Annotations == nil {
+			pod.Annotations = map[string]string{}
+		}
+
+		pod.Annotations["rio.cattle.io/host-ip"] = pod.Status.HostIP
+		_, err := g.pods.Update(pod)
+		return err
+	}
+
+	return nil
+}
+
+func (g *Controller) serviceChanged(key string, service *v1.Service) error {
+	if service != nil && service.Name == settings.IstionExternalLB {
+		g.virtualServiceController.Enqueue("", all)
+	}
+	return nil
+}
+
+func (g *Controller) sync(key string, service *v1alpha3.VirtualService) error {
+	if key != all {
+		g.virtualServiceController.Enqueue("", all)
+		return nil
+	}
+
+	vss, err := g.virtualServiceLister.List("", labels.Everything())
+	if err != nil {
+		return err
+	}
+
+	ports := map[string]bool{}
+	for _, vs := range vss {
+		for _, port := range getPorts(vs) {
+			ports[port] = true
+		}
+	}
+
+	ns := namespace.StackNamespace(settings.RioSystemNamespace, settings.IstioStackName.Get())
+
+	ips, hostPorts, err := g.setServicePorts(ns, ports)
+	if err != nil {
+		return err
+	}
+
+	if err := g.updateDomain(ips); err != nil {
+		return err
+	}
+
+	if err := g.setGatewayPorts(ns, ports); err != nil {
+		return err
+	}
+
+	return g.setHostPorts(ns, hostPorts, ports)
 }
 
 func getPorts(service *v1alpha3.VirtualService) []string {
@@ -73,98 +160,32 @@ func getPorts(service *v1alpha3.VirtualService) []string {
 	return strings.Split(ports, ",")
 }
 
-func (g *Controller) getExistingPorts() (map[string]bool, error) {
+func (g *Controller) setGatewayPorts(ns string, ports map[string]bool) error {
 	existingPorts := map[string]bool{}
 
-	gw, err := g.gatewayLister.Get(settings.RioSystemNamespace, settings.IstionExternalGateway)
-	if errors.IsNotFound(err) {
-		return existingPorts, nil
-	} else if err != nil {
-		return nil, err
+	gw, err := g.gatewayLister.Get(ns, settings.IstionExternalGateway)
+	if err != nil {
+		return err
 	}
 
 	for _, server := range gw.Spec.Servers {
 		existingPorts[strconv.FormatUint(uint64(server.Port.Number), 10)] = true
 	}
 
-	return existingPorts, nil
-}
-
-func (g *Controller) refresh() error {
-	now := time.Now()
-	newPorts := map[string]bool{}
-	existingPorts, err := g.getExistingPorts()
-	if err != nil {
-		return err
-	}
-
-	vss, err := g.virtualServiceLister.List("", labels.Everything())
-	if err != nil {
-		return err
-	}
-
-	for _, vs := range vss {
-		newPorts, _ = addPorts(newPorts, getPorts(vs)...)
-	}
-
-	toCreate, toDelete, _ := set.Diff(newPorts, existingPorts)
-	if len(toCreate) > 0 || len(toDelete) > 0 {
-		err = g.createGateway(newPorts)
-	}
-
-	if err != nil {
-		return err
-	}
-
-	g.lastRefresh = now
-	return nil
-}
-
-func (g *Controller) addPorts(ports ...string) error {
-	g.Lock()
-	defer g.Unlock()
-
-	existing, err := g.getExistingPorts()
-	if err != nil {
-		return err
-	}
-
-	newPorts, add := addPorts(existing, ports...)
-	if !add {
+	if !set.Changed(ports, existingPorts) {
 		return nil
 	}
 
-	return g.createGateway(newPorts)
-}
+	gw = gw.DeepCopy()
+	gw.Spec.Servers = nil
 
-func (g *Controller) createGateway(newPorts map[string]bool) error {
-	err := g.createGatewayInternal(newPorts)
-	if err != nil {
-		logrus.Infof("Failed to set gateway ports %v: %v", newPorts, err)
-		return err
-	}
-	logrus.Infof("External gateway ports set to %v", newPorts)
-	return nil
-}
-
-func (g *Controller) createGatewayInternal(newPorts map[string]bool) error {
-	if err := g.deployDummy(newPorts); err != nil {
-		return err
-	}
-
-	spec := v1alpha3.GatewaySpec{
-		Selector: map[string]string{
-			"gateway": "external",
-		},
-	}
-
-	for portStr := range newPorts {
+	for portStr := range ports {
 		port, err := strconv.ParseUint(portStr, 10, 32)
 		if err != nil {
 			continue
 		}
 
-		spec.Servers = append(spec.Servers, &v1alpha3.Server{
+		gw.Spec.Servers = append(gw.Spec.Servers, &v1alpha3.Server{
 			Hosts: []string{
 				"*",
 			},
@@ -175,211 +196,135 @@ func (g *Controller) createGatewayInternal(newPorts map[string]bool) error {
 		})
 	}
 
-	if len(spec.Servers) == 0 {
-		return nil
-	}
-
-	gw, err := g.gatewayLister.Get(settings.RioSystemNamespace, settings.IstionExternalGateway)
-	if errors.IsNotFound(err) {
-		_, err := g.gateways.Create(&v1alpha3.Gateway{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "Gateway",
-				APIVersion: "networking.istio.io/v1alpha3",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: settings.RioSystemNamespace,
-				Name:      settings.IstionExternalGateway,
-			},
-			Spec: spec,
-		})
-		return err
-	} else if err != nil {
-		return err
-	}
-
-	gw = gw.DeepCopy()
-	gw.Spec = spec
 	_, err = g.gateways.Update(gw)
 	return err
 }
 
-func (g *Controller) getD4xIP() string {
-	node, err := g.nodeLister.Get("", "docker-for-desktop")
-	if err != nil {
-		return ""
-	}
-
-	for _, addr := range node.Status.Addresses {
-		if addr.Type == v1.NodeInternalIP {
-			return addr.Address
+func getNodeIP(node *v1.Node) string {
+	for _, addrType := range addressTypes {
+		for _, addr := range node.Status.Addresses {
+			if addrType == addr.Type {
+				return addr.Address
+			}
 		}
 	}
 
 	return ""
 }
 
-func (g *Controller) deployDummy(ports map[string]bool) error {
-	ip := g.getD4xIP()
-	if ip == "" {
-		return nil
+func (g *Controller) setServicePorts(ns string, ports map[string]bool) ([]string, bool, error) {
+	existingPorts := map[string]bool{}
+
+	svc, err := g.serviceLister.Get(ns, settings.IstionExternalLB)
+	if err != nil {
+		return nil, false, err
 	}
 
-	ds := newDummyDS(ip)
-	existing, err := g.daemonSets.GetNamespaced(ds.Namespace, ds.Name, metav1.GetOptions{})
-	if err == nil {
-		existing.Spec = ds.Spec
-		_, err = g.daemonSets.Update(existing)
-	} else {
-		_, err = g.daemonSets.Create(ds)
+	for _, port := range svc.Spec.Ports {
+		existingPorts[strconv.FormatUint(uint64(port.Port), 10)] = true
 	}
 
+	var ips []string
+	hostPorts := false
+	for _, ingress := range svc.Status.LoadBalancer.Ingress {
+		ips = append(ips, ingress.IP)
+	}
+
+	if len(ips) == 0 {
+		hostPorts = true
+		ep, err := g.endpointsLister.Get(svc.Namespace, svc.Name)
+		if err != nil {
+			return nil, false, err
+		}
+
+		for _, subset := range ep.Subsets {
+			for _, addr := range subset.Addresses {
+				if addr.NodeName == nil {
+					continue
+				}
+
+				node, err := g.nodeLister.Get("", *addr.NodeName)
+				if err != nil {
+					return nil, false, err
+				}
+
+				nodeIP := getNodeIP(node)
+				if nodeIP != "" {
+					ips = append(ips, nodeIP)
+				}
+			}
+		}
+	}
+
+	if !set.Changed(ports, existingPorts) {
+		return ips, hostPorts, nil
+	}
+
+	svc = svc.DeepCopy()
+	svc.Spec.Ports = nil
+
+	for portStr := range ports {
+		port, err := strconv.ParseInt(portStr, 10, 32)
+		if err != nil {
+			continue
+		}
+
+		svc.Spec.Ports = append(svc.Spec.Ports, v1.ServicePort{
+			Name:       "http-" + portStr,
+			Protocol:   v1.ProtocolTCP,
+			Port:       int32(port),
+			TargetPort: intstr.FromInt(int(port)),
+		})
+	}
+
+	_, err = g.services.Update(svc)
+	return ips, hostPorts, err
+}
+
+func (g *Controller) setHostPorts(ns string, hostPorts bool, ports map[string]bool) error {
+	gatewayDep, err := g.deploymentsLister.Get(ns, settings.IstionExternalGatewayDeployment)
 	if err != nil {
 		return err
 	}
 
-	lb := newService()
-	for p := range ports {
-		portNum, err := strconv.Atoi(p)
+	existingPorts := map[string]bool{}
+	for _, port := range gatewayDep.Spec.Template.Spec.Containers[0].Ports {
+		if port.HostPort > 0 {
+			existingPorts[strconv.FormatInt(int64(port.HostPort), 10)] = true
+		}
+	}
+
+	if !hostPorts {
+		ports = nil
+	}
+
+	toCreate, toDelete, _ := set.Diff(ports, existingPorts)
+	if len(toCreate) == 0 && len(toDelete) == 0 {
+		return nil
+	}
+
+	if hostPorts && len(toCreate) == 0 {
+		// For host ports we don't care too much about closing ports.  So if all we are doing is deleting ports
+		// then just skip it for now
+		return nil
+	}
+
+	gatewayDep = gatewayDep.DeepCopy()
+	gatewayDep.Spec.Template.Spec.Containers[0].Ports = nil
+	for portStr := range ports {
+		p, err := strconv.ParseInt(portStr, 10, 0)
 		if err != nil {
-			logrus.Errorf("failed to parse port %s: %v", p, err)
-			continue
+			return err
 		}
-		lb.Spec.Ports = append(lb.Spec.Ports, v1.ServicePort{
-			TargetPort: intstr.FromInt(portNum),
-			Port:       int32(portNum),
-			Name:       "port-" + p,
-			Protocol:   v1.ProtocolTCP,
-		})
-	}
 
-	existingLB, err := g.services.GetNamespaced(ds.Namespace, ds.Name, metav1.GetOptions{})
-	if err == nil {
-		lb.Spec.ClusterIP = existingLB.Spec.ClusterIP
-		existingLB.Spec = lb.Spec
-		_, err := g.services.Update(existingLB)
-		return err
+		gatewayDep.Spec.Template.Spec.Containers[0].Ports =
+			append(gatewayDep.Spec.Template.Spec.Containers[0].Ports, v1.ContainerPort{
+				Name:          "port-" + portStr,
+				HostPort:      int32(p),
+				Protocol:      v1.ProtocolTCP,
+				ContainerPort: int32(p),
+			})
 	}
-	_, err = g.services.Create(lb)
+	_, err = g.deployments.Update(gatewayDep)
 	return err
-}
-
-func addPorts(existingPorts map[string]bool, ports ...string) (map[string]bool, bool) {
-	newPorts := map[string]bool{}
-	add := false
-
-	for _, port := range ports {
-		if _, ok := existingPorts[port]; ok {
-			continue
-		}
-		add = true
-		newPorts[port] = true
-	}
-
-	if !add {
-		return nil, false
-	}
-
-	for k, v := range existingPorts {
-		newPorts[k] = v
-	}
-
-	return newPorts, true
-}
-
-func newService() *v1.Service {
-	return &v1.Service{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Service",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Labels: map[string]string{
-				"rio.cattle.io": "true",
-			},
-			Namespace: settings.RioSystemNamespace,
-			Name:      "d4x",
-		},
-		Spec: v1.ServiceSpec{
-			Selector: map[string]string{
-				"rio.cattle.io": "true",
-				"app":           "d4x",
-			},
-			Type: v1.ServiceTypeLoadBalancer,
-		},
-	}
-}
-
-func newDummyDS(ip string) *v1beta2.DaemonSet {
-	return &v1beta2.DaemonSet{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "DaemonSet",
-			APIVersion: "apps/v1beta2",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Labels: map[string]string{
-				"rio.cattle.io": "true",
-			},
-			Namespace: settings.RioSystemNamespace,
-			Name:      "d4x",
-		},
-		Spec: v1beta2.DaemonSetSpec{
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"rio.cattle.io": "true",
-					"app":           "d4x",
-				},
-			},
-			Template: v1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"rio.cattle.io": "true",
-						"app":           "d4x",
-					},
-				},
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{
-						{
-							Name:  "d4x",
-							Image: settings.RioFullImage(),
-							Command: []string{
-								"/local-proxy",
-							},
-							Env: []v1.EnvVar{
-								{
-									Name:  "TARGET",
-									Value: ip,
-								},
-							},
-							SecurityContext: &v1.SecurityContext{
-								Capabilities: &v1.Capabilities{
-									Add: []v1.Capability{
-										"NET_ADMIN",
-									},
-								},
-							},
-						},
-					},
-					Affinity: &v1.Affinity{
-						NodeAffinity: &v1.NodeAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: &v1.NodeSelector{
-								NodeSelectorTerms: []v1.NodeSelectorTerm{
-									{
-										MatchExpressions: []v1.NodeSelectorRequirement{
-											{
-												Key:      "kubernetes.io/hostname",
-												Operator: v1.NodeSelectorOpIn,
-												Values: []string{
-													"docker-for-desktop",
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
 }

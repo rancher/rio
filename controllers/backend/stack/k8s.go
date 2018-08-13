@@ -35,7 +35,7 @@ func deployK8sResources(stackName, namespace string, stack *v1beta1.InternalStac
 	}
 
 	if stack.Kubernetes.NamespacedManifest != "" {
-		objs, err := readManifest(namespace, stack.Kubernetes.Manifest)
+		objs, err := readManifest(namespace, stack.Kubernetes.NamespacedManifest)
 		if err != nil {
 			return err
 		}

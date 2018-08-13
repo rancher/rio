@@ -97,9 +97,6 @@ func podSpec(serviceName string, serviceLabels map[string]string, service *v1bet
 
 	scheduling(&podSpec, service, serviceLabels)
 
-	// Must be done after the first container is added
-	ports(&podSpec, service)
-
 	return usedTemplates, podSpec
 }
 
@@ -175,30 +172,5 @@ func dns(podSpec *v1.PodSpec, service *v1beta1.ServiceUnversionedSpec) {
 
 	if len(dnsConfig.Options) > 0 || len(dnsConfig.Searches) > 0 || len(dnsConfig.Nameservers) > 0 {
 		podSpec.DNSConfig = dnsConfig
-	}
-}
-
-func ports(podSpec *v1.PodSpec, service *v1beta1.ServiceUnversionedSpec) {
-	for _, portBinding := range service.PortBindings {
-		if portBinding.Port <= 0 {
-			continue
-		}
-
-		port := v1.ContainerPort{
-			HostPort:      int32(portBinding.Port),
-			ContainerPort: int32(portBinding.TargetPort),
-			HostIP:        portBinding.IP,
-		}
-
-		switch portBinding.Protocol {
-		case "tcp":
-			port.Protocol = v1.ProtocolTCP
-		case "udp":
-			port.Protocol = v1.ProtocolUDP
-		default:
-			continue
-		}
-
-		podSpec.Containers[0].Ports = append(podSpec.Containers[0].Ports, port)
 	}
 }

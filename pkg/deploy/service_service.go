@@ -12,23 +12,28 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func serviceNamedPorts(service *v1beta1.ServiceUnversionedSpec) ([]v1.ServicePort, string) {
-	var result []v1.ServicePort
+func allExposedPorts(con *v1beta1.ContainerConfig) []v1beta1.ExposedPort {
+	var eps []v1beta1.ExposedPort
+	eps = append(eps, con.ExposedPorts...)
 
-	eps := service.ExposedPorts
-	for _, k := range sortKeys(service.Sidekicks) {
-		container := service.Sidekicks[k]
-		eps = append(eps, container.ExposedPorts...)
-	}
-
-	for _, portBindings := range service.PortBindings {
+	for _, portBindings := range con.PortBindings {
 		eps = append(eps, v1beta1.ExposedPort{
 			PortBinding: v1beta1.PortBinding{
 				TargetPort: portBindings.TargetPort,
-				Port:       portBindings.TargetPort,
 				Protocol:   portBindings.Protocol,
 			},
 		})
+	}
+
+	return eps
+}
+
+func serviceNamedPorts(service *v1beta1.ServiceUnversionedSpec) ([]v1.ServicePort, string) {
+	var result []v1.ServicePort
+
+	var eps []v1beta1.ExposedPort
+	for _, con := range containers(service) {
+		eps = append(eps, allExposedPorts(con)...)
 	}
 
 	ip := ""
