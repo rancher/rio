@@ -3,20 +3,9 @@ set -e
 
 cd $(dirname $0)/..
 
-cleanup()
-{
-    local exit=$?
-    if [ -n "$PID" ]; then
-        echo Shutting down $PID
-        kill $PID >/dev/null 2>&1 || true
-        wait $PID >/dev/null 2>&1 || true
-    fi
-    return $exit
-}
-
-trap cleanup EXIT
-
 echo Running tests
+
+mkdir -p ./build
 
 # prime sudo
 sudo id
