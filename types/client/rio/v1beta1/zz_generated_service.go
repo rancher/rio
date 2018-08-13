@@ -43,6 +43,7 @@ const (
 	ServiceFieldPortBindings           = "ports"
 	ServiceFieldPrivileged             = "privileged"
 	ServiceFieldReadonlyRootfs         = "readOnly"
+	ServiceFieldReadycheck             = "readycheck"
 	ServiceFieldRemoved                = "removed"
 	ServiceFieldRestartPolicy          = "restart"
 	ServiceFieldRevisions              = "revisions"
@@ -107,6 +108,7 @@ type Service struct {
 	PortBindings           []PortBinding              `json:"ports,omitempty" yaml:"ports,omitempty"`
 	Privileged             bool                       `json:"privileged,omitempty" yaml:"privileged,omitempty"`
 	ReadonlyRootfs         bool                       `json:"readOnly,omitempty" yaml:"readOnly,omitempty"`
+	Readycheck             *HealthConfig              `json:"readycheck,omitempty" yaml:"readycheck,omitempty"`
 	Removed                string                     `json:"removed,omitempty" yaml:"removed,omitempty"`
 	RestartPolicy          string                     `json:"restart,omitempty" yaml:"restart,omitempty"`
 	Revisions              map[string]ServiceRevision `json:"revisions,omitempty" yaml:"revisions,omitempty"`
