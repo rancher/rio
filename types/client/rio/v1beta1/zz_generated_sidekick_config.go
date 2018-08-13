@@ -20,8 +20,10 @@ const (
 	SidekickConfigFieldMemoryLimitBytes       = "memoryLimitBytes"
 	SidekickConfigFieldMemoryReservationBytes = "memoryReservationBytes"
 	SidekickConfigFieldOpenStdin              = "stdinOpen"
+	SidekickConfigFieldPortBindings           = "ports"
 	SidekickConfigFieldPrivileged             = "privileged"
 	SidekickConfigFieldReadonlyRootfs         = "readOnly"
+	SidekickConfigFieldReadycheck             = "readycheck"
 	SidekickConfigFieldSecrets                = "secrets"
 	SidekickConfigFieldTmpfs                  = "tmpfs"
 	SidekickConfigFieldTty                    = "tty"
@@ -50,8 +52,10 @@ type SidekickConfig struct {
 	MemoryLimitBytes       int64           `json:"memoryLimitBytes,omitempty" yaml:"memoryLimitBytes,omitempty"`
 	MemoryReservationBytes int64           `json:"memoryReservationBytes,omitempty" yaml:"memoryReservationBytes,omitempty"`
 	OpenStdin              bool            `json:"stdinOpen,omitempty" yaml:"stdinOpen,omitempty"`
+	PortBindings           []PortBinding   `json:"ports,omitempty" yaml:"ports,omitempty"`
 	Privileged             bool            `json:"privileged,omitempty" yaml:"privileged,omitempty"`
 	ReadonlyRootfs         bool            `json:"readOnly,omitempty" yaml:"readOnly,omitempty"`
+	Readycheck             *HealthConfig   `json:"readycheck,omitempty" yaml:"readycheck,omitempty"`
 	Secrets                []SecretMapping `json:"secrets,omitempty" yaml:"secrets,omitempty"`
 	Tmpfs                  []Tmpfs         `json:"tmpfs,omitempty" yaml:"tmpfs,omitempty"`
 	Tty                    bool            `json:"tty,omitempty" yaml:"tty,omitempty"`

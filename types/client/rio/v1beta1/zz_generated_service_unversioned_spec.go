@@ -37,6 +37,7 @@ const (
 	ServiceUnversionedSpecFieldPortBindings           = "ports"
 	ServiceUnversionedSpecFieldPrivileged             = "privileged"
 	ServiceUnversionedSpecFieldReadonlyRootfs         = "readOnly"
+	ServiceUnversionedSpecFieldReadycheck             = "readycheck"
 	ServiceUnversionedSpecFieldRestartPolicy          = "restart"
 	ServiceUnversionedSpecFieldScale                  = "scale"
 	ServiceUnversionedSpecFieldScheduling             = "scheduling"
@@ -89,6 +90,7 @@ type ServiceUnversionedSpec struct {
 	PortBindings           []PortBinding             `json:"ports,omitempty" yaml:"ports,omitempty"`
 	Privileged             bool                      `json:"privileged,omitempty" yaml:"privileged,omitempty"`
 	ReadonlyRootfs         bool                      `json:"readOnly,omitempty" yaml:"readOnly,omitempty"`
+	Readycheck             *HealthConfig             `json:"readycheck,omitempty" yaml:"readycheck,omitempty"`
 	RestartPolicy          string                    `json:"restart,omitempty" yaml:"restart,omitempty"`
 	Scale                  int64                     `json:"scale,omitempty" yaml:"scale,omitempty"`
 	Scheduling             *Scheduling               `json:"scheduling,omitempty" yaml:"scheduling,omitempty"`

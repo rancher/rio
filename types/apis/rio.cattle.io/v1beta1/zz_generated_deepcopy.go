@@ -192,6 +192,20 @@ func (in *ContainerConfig) DeepCopyInto(out *ContainerConfig) {
 			(*in).DeepCopyInto(*out)
 		}
 	}
+	if in.Readycheck != nil {
+		in, out := &in.Readycheck, &out.Readycheck
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(HealthConfig)
+			(*in).DeepCopyInto(*out)
+		}
+	}
+	if in.PortBindings != nil {
+		in, out := &in.PortBindings, &out.PortBindings
+		*out = make([]PortBinding, len(*in))
+		copy(*out, *in)
+	}
 	if in.Tmpfs != nil {
 		in, out := &in.Tmpfs, &out.Tmpfs
 		*out = make([]Tmpfs, len(*in))
@@ -593,11 +607,6 @@ func (in *PodConfig) DeepCopyInto(out *PodConfig) {
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
-	}
-	if in.PortBindings != nil {
-		in, out := &in.PortBindings, &out.PortBindings
-		*out = make([]PortBinding, len(*in))
-		copy(*out, *in)
 	}
 	return
 }

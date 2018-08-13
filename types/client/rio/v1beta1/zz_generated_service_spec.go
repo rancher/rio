@@ -36,6 +36,7 @@ const (
 	ServiceSpecFieldPortBindings           = "ports"
 	ServiceSpecFieldPrivileged             = "privileged"
 	ServiceSpecFieldReadonlyRootfs         = "readOnly"
+	ServiceSpecFieldReadycheck             = "readycheck"
 	ServiceSpecFieldRestartPolicy          = "restart"
 	ServiceSpecFieldRevisions              = "revisions"
 	ServiceSpecFieldScale                  = "scale"
@@ -91,6 +92,7 @@ type ServiceSpec struct {
 	PortBindings           []PortBinding              `json:"ports,omitempty" yaml:"ports,omitempty"`
 	Privileged             bool                       `json:"privileged,omitempty" yaml:"privileged,omitempty"`
 	ReadonlyRootfs         bool                       `json:"readOnly,omitempty" yaml:"readOnly,omitempty"`
+	Readycheck             *HealthConfig              `json:"readycheck,omitempty" yaml:"readycheck,omitempty"`
 	RestartPolicy          string                     `json:"restart,omitempty" yaml:"restart,omitempty"`
 	Revisions              map[string]ServiceRevision `json:"revisions,omitempty" yaml:"revisions,omitempty"`
 	Scale                  int64                      `json:"scale,omitempty" yaml:"scale,omitempty"`

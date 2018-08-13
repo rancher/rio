@@ -39,6 +39,7 @@ const (
 	ServiceRevisionFieldPrivileged             = "privileged"
 	ServiceRevisionFieldPromote                = "promote"
 	ServiceRevisionFieldReadonlyRootfs         = "readOnly"
+	ServiceRevisionFieldReadycheck             = "readycheck"
 	ServiceRevisionFieldRestartPolicy          = "restart"
 	ServiceRevisionFieldScale                  = "scale"
 	ServiceRevisionFieldScaleStatus            = "scaleStatus"
@@ -98,6 +99,7 @@ type ServiceRevision struct {
 	Privileged             bool                      `json:"privileged,omitempty" yaml:"privileged,omitempty"`
 	Promote                bool                      `json:"promote,omitempty" yaml:"promote,omitempty"`
 	ReadonlyRootfs         bool                      `json:"readOnly,omitempty" yaml:"readOnly,omitempty"`
+	Readycheck             *HealthConfig             `json:"readycheck,omitempty" yaml:"readycheck,omitempty"`
 	RestartPolicy          string                    `json:"restart,omitempty" yaml:"restart,omitempty"`
 	Scale                  int64                     `json:"scale,omitempty" yaml:"scale,omitempty"`
 	ScaleStatus            *ScaleStatus              `json:"scaleStatus,omitempty" yaml:"scaleStatus,omitempty"`
