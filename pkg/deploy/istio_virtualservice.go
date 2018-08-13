@@ -45,19 +45,21 @@ func vsRoutes(publicPorts map[uint32]bool, name, namespace string, serviceSpec *
 	external := false
 	var result []*v1alpha3.HTTPRoute
 
-	for _, exposed := range serviceSpec.ExposedPorts {
-		_, route := newRoute(getPublicGateway(name, namespace), false, &exposed.PortBinding, dests)
-		if route != nil {
-			result = append(result, route)
+	for _, con := range containers(serviceSpec) {
+		for _, exposed := range con.ExposedPorts {
+			_, route := newRoute(getPublicGateway(name, namespace), false, &exposed.PortBinding, dests)
+			if route != nil {
+				result = append(result, route)
+			}
 		}
-	}
 
-	for _, binding := range serviceSpec.PortBindings {
-		publicPort, route := newRoute(getPublicGateway(name, namespace), true, &binding, dests)
-		if route != nil {
-			external = true
-			publicPorts[publicPort] = true
-			result = append(result, route)
+		for _, binding := range con.PortBindings {
+			publicPort, route := newRoute(getPublicGateway(name, namespace), true, &binding, dests)
+			if route != nil {
+				external = true
+				publicPorts[publicPort] = true
+				result = append(result, route)
+			}
 		}
 	}
 

@@ -27,27 +27,29 @@ func nodePorts(objects []runtime.Object, name, namespace string, service *v1beta
 		},
 	}
 
-	for i, portBinding := range service.PortBindings {
-		if portBinding.Port > 0 {
-			continue
-		}
+	for _, con := range containers(service) {
+		for i, portBinding := range con.PortBindings {
+			if portBinding.Port > 0 {
+				continue
+			}
 
-		servicePort := v1.ServicePort{
-			Name:       fmt.Sprintf("port-%d", i),
-			TargetPort: intstr.FromInt(int(portBinding.TargetPort)),
-			Port:       int32(portBinding.TargetPort),
-		}
+			servicePort := v1.ServicePort{
+				Name:       fmt.Sprintf("port-%d", i),
+				TargetPort: intstr.FromInt(int(portBinding.TargetPort)),
+				Port:       int32(portBinding.TargetPort),
+			}
 
-		switch portBinding.Protocol {
-		case "tcp":
-			servicePort.Protocol = v1.ProtocolTCP
-		case "udp":
-			servicePort.Protocol = v1.ProtocolUDP
-		default:
-			continue
-		}
+			switch portBinding.Protocol {
+			case "tcp":
+				servicePort.Protocol = v1.ProtocolTCP
+			case "udp":
+				servicePort.Protocol = v1.ProtocolUDP
+			default:
+				continue
+			}
 
-		nodePortService.Spec.Ports = append(nodePortService.Spec.Ports, servicePort)
+			nodePortService.Spec.Ports = append(nodePortService.Spec.Ports, servicePort)
+		}
 	}
 
 	if len(nodePortService.Spec.Ports) > 0 {
@@ -55,4 +57,16 @@ func nodePorts(objects []runtime.Object, name, namespace string, service *v1beta
 	}
 
 	return objects
+}
+
+func containers(service *v1beta1.ServiceUnversionedSpec) []*v1beta1.ContainerConfig {
+	var result []*v1beta1.ContainerConfig
+	result = append(result, &service.ContainerConfig)
+
+	for _, k := range sortKeys(service.Sidekicks) {
+		sk := service.Sidekicks[k]
+		result = append(result, &sk.ContainerConfig)
+	}
+
+	return result
 }
