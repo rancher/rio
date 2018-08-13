@@ -34,6 +34,11 @@ func ParsePermissions(perms []string) ([]client.Permission, error) {
 }
 
 func assignAPIGroupResource(result *client.Permission, input string) {
+	if strings.HasPrefix(input, "url=") {
+		result.URL = strings.TrimPrefix(input, "url=")
+		return
+	}
+
 	apiGroup, resource := kv.Split(input, "/")
 	if resource == "" {
 		result.APIGroup = ""
