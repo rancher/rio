@@ -18,7 +18,6 @@ configs:
         interceptionMode: REDIRECT
         proxyAdminPort: 15000
         controlPlaneAuthPolicy: NONE
-        statsdUdpAddress: istio-statsd-prom-bridge.default-265db573:9125
         discoveryAddress: istio-pilot.${NAMESPACE}:15007
 
 services:
