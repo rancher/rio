@@ -1,19 +1,18 @@
 package stack
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
+	"io"
+	"reflect"
 	"strings"
 
-	"bufio"
-	"io"
-
-	"bytes"
-
-	"reflect"
-
 	"github.com/rancher/norman/name"
+	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/rio/pkg/apply"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	"github.com/sirupsen/logrus"
 	v1beta12 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -23,8 +22,16 @@ import (
 
 func deployK8sResources(stackName, namespace string, stack *v1beta1.InternalStack) error {
 	var nsObjects []runtime.Object
-	globalObjects := crdsForCRDDefs(true, stack.Kubernetes.NamespacedCustomResourceDefinitions)
-	globalObjects = append(globalObjects, crdsForCRDDefs(false, stack.Kubernetes.CustomResourceDefinitions)...)
+	globalObjects, err := crdsForCRDDefs(true, stack.Kubernetes.NamespacedCustomResourceDefinitions)
+	if err != nil {
+		return err
+	}
+
+	globalCRDs, err := crdsForCRDDefs(false, stack.Kubernetes.CustomResourceDefinitions)
+	if err != nil {
+		return err
+	}
+	globalObjects = append(globalObjects, globalCRDs...)
 
 	if stack.Kubernetes.Manifest != "" {
 		objs, err := readManifest("", stack.Kubernetes.Manifest)
@@ -59,7 +66,7 @@ func deployK8sResources(stackName, namespace string, stack *v1beta1.InternalStac
 	return nil
 }
 
-func crdsForCRDDefs(namespaced bool, crdDefs []v1beta1.CustomResourceDefinition) []runtime.Object {
+func crdsForCRDDefs(namespaced bool, crdDefs []v1beta1.CustomResourceDefinition) ([]runtime.Object, error) {
 	var objs []runtime.Object
 	for _, crdDef := range crdDefs {
 		plural := name.GuessPluralName(strings.ToLower(crdDef.Kind))
@@ -87,10 +94,21 @@ func crdsForCRDDefs(namespaced bool, crdDefs []v1beta1.CustomResourceDefinition)
 			crd.Spec.Scope = v1beta12.NamespaceScoped
 		}
 
-		objs = append(objs, crd)
+		// k8s 1.11 will not accept CRD with status field and marshalling CRD will always put a status field
+		// so workaround by converting to map
+		crdObj, err := convert.EncodeToMap(crd)
+		if err != nil {
+			logrus.Errorf("failed to marshal CRD %v: %v", crd, err)
+			return nil, err
+		}
+		delete(crdObj, "status")
+
+		objs = append(objs, &unstructured.Unstructured{
+			Object: crdObj,
+		})
 	}
 
-	return objs
+	return objs, nil
 }
 
 func readManifest(namespace, content string) ([]runtime.Object, error) {

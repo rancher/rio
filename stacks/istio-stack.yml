@@ -182,3 +182,9 @@ kubernetes:
     spec:
       selector:
         gateway: external
+      servers:
+      - port:
+          protocol: "tcp"
+          number: 80
+        hosts:
+        - "*"
