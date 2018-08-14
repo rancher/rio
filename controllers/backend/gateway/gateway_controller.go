@@ -172,7 +172,8 @@ func (g *Controller) setGatewayPorts(ns string, ports map[string]bool) error {
 		existingPorts[strconv.FormatUint(uint64(server.Port.Number), 10)] = true
 	}
 
-	if !set.Changed(ports, existingPorts) {
+	// can't set a gateway to zero ports, it will cause panics in pilot (v1.0.0)
+	if !set.Changed(ports, existingPorts) || len(ports) == 0 {
 		return nil
 	}
 
@@ -308,7 +309,7 @@ func (g *Controller) setHostPorts(ns string, hostPorts bool, ports map[string]bo
 		return nil
 	}
 
-	if hostPorts && len(toCreate) == 0 {
+	if hostPorts && len(toCreate) == 0 && len(ports) != 0 {
 		// For host ports we don't care too much about closing ports.  So if all we are doing is deleting ports
 		// then just skip it for now
 		return nil

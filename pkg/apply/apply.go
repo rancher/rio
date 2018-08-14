@@ -2,13 +2,12 @@ package apply
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"fmt"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
-
-	"crypto/sha1"
 
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/ghodss/yaml"
@@ -93,6 +92,9 @@ func execApply(ns string, whitelist map[string]bool, content []byte, groupID str
 	cmd.Stderr = errOutput
 
 	if err := cmd.Run(); err != nil {
+		if logrus.GetLevel() >= logrus.DebugLevel {
+			fmt.Printf("Failed to apply: %v\n%s", errOutput.String(), content)
+		}
 		logrus.Errorf("Failed to apply %s: %s", errOutput.String(), string(content))
 		return fmt.Errorf("failed to apply: %s", errOutput.String())
 	}
