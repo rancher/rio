@@ -43,7 +43,7 @@ services:
     - secrets
     sidekicks:
       discovery:
-        command: discovery --log_output_level=debug
+        command: discovery --log_output_level=debug --resync=2h
         configs:
         - mesh:/etc/istio/config/mesh
         environment:
