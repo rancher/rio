@@ -1,10 +1,11 @@
 package run
 
 import (
+	"fmt"
+	"os"
 	"time"
 
-	"fmt"
-
+	"github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty"
 	"github.com/rancher/rio/cli/cmd/attach"
 	"github.com/rancher/rio/cli/cmd/create"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
@@ -25,7 +26,11 @@ func (r *Run) Run(app *cli.Context) error {
 		return err
 	}
 
-	if !r.Detach && service.OpenStdin && service.Tty {
+	istty := isatty.IsTerminal(os.Stdout.Fd()) &&
+		isatty.IsTerminal(os.Stderr.Fd()) &&
+		isatty.IsTerminal(os.Stdin.Fd())
+
+	if istty && !r.Detach && service.OpenStdin && service.Tty {
 		fmt.Println("Attaching...")
 		return attach.RunAttach(app, time.Minute, true, true, service.ID)
 	}

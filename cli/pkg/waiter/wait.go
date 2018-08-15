@@ -51,13 +51,22 @@ func waitForResources(app *cli.Context) error {
 		return err
 	}
 
+	timeout := app.GlobalInt("wait-timeout")
+	end := time.Now().Add(time.Duration(timeout) * time.Second)
+
 	for _, r := range ctx.CLIContext.Args() {
-		resource, err := lookup.Lookup(ctx.ClientLookup, r, waitTypes...)
-		if err != nil {
-			logrus.Info("%s does not exist")
-			continue
+		for {
+			resource, err := lookup.Lookup(ctx.ClientLookup, r, waitTypes...)
+			if err != nil {
+				if time.Now().After(end) {
+					return fmt.Errorf("timeout waiting for %s to exist", r)
+				}
+				time.Sleep(time.Second)
+				continue
+			}
+			w.Add(resource)
+			break
 		}
-		w.Add(resource)
 	}
 
 	return w.Wait()

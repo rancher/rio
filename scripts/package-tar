@@ -11,6 +11,7 @@ tar cvzf dist/artifacts/rio-${VERSION}-darwin.tar.gz bin/rio-darwin --xform='s!.
 
 W=rio-${VERSION}-windows
 mkdir -p $W
+trap "rm -rf $W" EXIT
 
 cp -f bin/rio-windows $W/rio.exe
 zip dist/artifacts/rio-${VERSION}-windows.zip $W/rio.exe

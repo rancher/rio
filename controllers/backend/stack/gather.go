@@ -41,6 +41,12 @@ func (s *stackController) gatherObjects(ns string, stack *v1beta1.Stack, interna
 		newResource.Namespace = ns
 		newResource.Spec.SpaceName = stack.Namespace
 		newResource.Spec.StackName = ref.FromStrings(stack.Namespace, stack.Name)
+		newResource.Status.Conditions = []v1beta1.Condition{
+			{
+				Type:   "Pending",
+				Status: "Unknown",
+			},
+		}
 
 		resources = append(resources, newResource)
 	}

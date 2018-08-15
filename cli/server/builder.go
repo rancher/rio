@@ -123,20 +123,23 @@ func NewContextBuilder(config string, k8s bool) (*ContextBuilder, error) {
 }
 
 func createPrepareFunc(cfg *rest.Config) (func(req *http.Request) (*url.URL, error), error) {
-	rt, err := rest.HTTPWrappersForConfig(cfg, &fakeRT{})
-	if err != nil {
-		return nil, err
-	}
-
 	return func(req *http.Request) (*url.URL, error) {
-		_, err := rt.RoundTrip(req)
+		capture := &rtCapture{}
+		rt, err := rest.HTTPWrappersForConfig(cfg, capture)
+		if err != nil {
+			return nil, err
+		}
+		_, err = rt.RoundTrip(req)
+		*req = *capture.req
 		return nil, err
 	}, nil
 }
 
-type fakeRT struct {
+type rtCapture struct {
+	req *http.Request
 }
 
-func (*fakeRT) RoundTrip(r *http.Request) (*http.Response, error) {
+func (r *rtCapture) RoundTrip(req *http.Request) (*http.Response, error) {
+	r.req = req
 	return nil, nil
 }

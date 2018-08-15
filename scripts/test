@@ -7,10 +7,10 @@ echo Running tests
 
 mkdir -p ./build
 
-# prime sudo
-sudo id
-sudo ./bin/rio server | grep -v level=info &
-PID=$!
+mkdir -p /var/lib/rancher/rio/agent
+mount -t tmpfs none /var/lib/rancher/rio/agent
+
+./bin/rio server --disable-agent | grep -v level=info > /var/lib/rancher/rio/agent/agent.log 2>&1 &
 
 for i in {1..20}; do
     curl -sf http://localhost:7080/healthz >/dev/null && break
@@ -18,7 +18,18 @@ for i in {1..20}; do
 done
 curl -sf http://localhost:7080/healthz >/dev/null
 
-sudo env PATH=$(pwd)/bin:$PATH bats -r ./tests || {
+ENTER_ROOT=$(pwd)/image/root ./bin/rio agent -s https://localhost:7443 -t $(</var/lib/rancher/rio/server/node-token) >>/var/lib/rancher/rio/agent/agent.log 2>&1 &
+
+export PATH=$(pwd)/bin:$PATH
+
+rio login -s https://localhost:7443 -t /var/lib/rancher/rio/server/client-token
+
+echo Waiting for istio/gateway
+rio --workspace=rio-system wait istio/istio-gateway
+rio --workspace=rio-system ps
+rio --workspace=rio-system ps -c
+
+bats -r ./tests || {
     tail -n 100 /var/lib/rancher/rio/agent/agent.log
     exit 1
 }

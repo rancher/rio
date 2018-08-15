@@ -57,10 +57,12 @@ func Command(obj interface{}, usage, usageText, description string) cli.Command 
 	objValue := ptrValue.Elem()
 
 	c := cli.Command{
-		Name:        strings.ToLower(strings.Replace(objValue.Type().Name(), "Command", "", 1)),
-		Usage:       usage,
-		UsageText:   usageText,
-		Description: description,
+		Name:                   strings.ToLower(strings.Replace(objValue.Type().Name(), "Command", "", 1)),
+		Usage:                  usage,
+		UsageText:              usageText,
+		Description:            description,
+		UseShortOptionHandling: true,
+		SkipArgReorder:         true,
 	}
 
 	for _, info := range fields(obj) {

@@ -6,7 +6,7 @@ ENV DAPPER_RUN_ARGS --privileged
 ENV HOST_ARCH=${DAPPER_HOST_ARCH} ARCH=${DAPPER_HOST_ARCH}
 
 RUN apt-get update && \
-    apt-get install -y npm zip squashfs-tools sudo gcc ca-certificates git wget curl vim less file && \
+    apt-get install -y npm zip squashfs-tools sudo gcc ca-certificates git wget curl vim less file jq && \
     rm -f /bin/sh && ln -s /bin/bash /bin/sh
 
 RUN npm install -g bats
