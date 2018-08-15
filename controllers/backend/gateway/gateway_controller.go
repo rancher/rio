@@ -16,6 +16,7 @@ import (
 	"github.com/rancher/types/apis/apps/v1beta2"
 	v12 "github.com/rancher/types/apis/core/v1"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -68,6 +69,7 @@ func Register(ctx context.Context, rContext *types.Context) {
 		rdnsClient:               rdnsClient,
 	}
 	rContext.Networking.VirtualServices("").Controller().AddHandler("gateway-controller", gc.sync)
+	rContext.Core.Endpoints("").Controller().AddHandler("gateway-endpoints-controller", gc.endpointChanged)
 	rContext.Core.Services("").Controller().AddHandler("gateway-service-controller", gc.serviceChanged)
 	rContext.Core.Pods("").Controller().AddHandler("gateway-pod-controller", gc.podChanged)
 
@@ -115,6 +117,13 @@ func (g *Controller) serviceChanged(key string, service *v1.Service) error {
 	return nil
 }
 
+func (g *Controller) endpointChanged(key string, ep *v1.Endpoints) error {
+	if ep != nil && ep.Name == settings.IstionExternalLB {
+		g.virtualServiceController.Enqueue("", all)
+	}
+	return nil
+}
+
 func (g *Controller) sync(key string, service *v1alpha3.VirtualService) error {
 	if key != all {
 		g.virtualServiceController.Enqueue("", all)
@@ -136,7 +145,9 @@ func (g *Controller) sync(key string, service *v1alpha3.VirtualService) error {
 	ns := namespace.StackNamespace(settings.RioSystemNamespace, settings.IstioStackName.Get())
 
 	ips, hostPorts, err := g.setServicePorts(ns, ports)
-	if err != nil {
+	if errors.IsNotFound(err) {
+		return nil
+	} else if err != nil {
 		return err
 	}
 
