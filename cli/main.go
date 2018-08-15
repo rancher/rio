@@ -69,7 +69,7 @@ func main() {
 		return
 	}
 
-	args := reformatArgs(os.Args)
+	args := os.Args
 
 	app := cli.NewApp()
 	app.Name = appName
@@ -249,39 +249,4 @@ If you are just looking for general "rio" CLI usage then run
 
 `)
 	os.Exit(1)
-}
-
-func reformatArgs(args []string) []string {
-	var result []string
-	words := 0
-	for i, arg := range args {
-		if arg == "--" {
-			return append(result, args[i:]...)
-		}
-
-		if arg == "" {
-			result = append(result, arg)
-			continue
-		}
-
-		if arg[0:1] != "-" {
-			words++
-			if words > 2 {
-				return append(result, args[i:]...)
-			}
-			result = append(result, arg)
-			continue
-		}
-
-		if len(arg) <= 2 || arg[1:2] == "-" {
-			result = append(result, arg)
-			continue
-		}
-
-		for _, chars := range arg[1:] {
-			result = append(result, "-"+string(chars))
-		}
-	}
-
-	return result
 }

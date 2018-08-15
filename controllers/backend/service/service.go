@@ -115,7 +115,7 @@ func (s *serviceController) sync(key string, service *v1beta1.Service) error {
 
 	if isUpgrading {
 		updated.Unknown(newService)
-	} else {
+	} else if hasAvailable(newService.Status.DeploymentStatus.Conditions) {
 		newService.Status.Conditions = nil
 	}
 
@@ -125,4 +125,13 @@ func (s *serviceController) sync(key string, service *v1beta1.Service) error {
 	}
 
 	return nil
+}
+
+func hasAvailable(cond []appsv1beta2.DeploymentCondition) bool {
+	for _, c := range cond {
+		if c.Type == "Available" {
+			return true
+		}
+	}
+	return false
 }
