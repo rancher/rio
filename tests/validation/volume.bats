@@ -16,6 +16,7 @@ teardown () {
 }
 
 @test "rio volume - volume is bound" {
+  skip
   rio volume
   sleep 10
   [[ "$(rio inspect --format '{{.state}}' ${vol})" == "bound" ]]
