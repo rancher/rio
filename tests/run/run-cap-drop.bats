@@ -15,7 +15,7 @@ capAddTestrio() {
   expect=""
 
   while [ $# -gt 0 ]; do
-    cmd="${cmd} --cap-add $1"
+    cmd="${cmd} --cap-drop $1"
     if [[ ! -z "${expect}" ]]; then
       expect="${expect} "
     fi
@@ -28,7 +28,7 @@ capAddTestrio() {
   rio wait ${stk}/${srv}
 
   nsp="$(rio inspect --format '{{.id}}' ${stk}/${srv} | cut -f1 -d:)"
-  got="$(rio inspect --format '{{.capAdd}}' ${stk}/${srv})"
+  got="$(rio inspect --format '{{.capDrop}}' ${stk}/${srv})"
   echo "Expect: ${expect}"
   echo "Got: ${got}"
   [[ "${got}" == "[${expect}]" ]]
@@ -39,7 +39,7 @@ capAddTestk8s() {
   expect=""
 
   while [ $# -gt 0 ]; do
-    cmd="${cmd} --cap-add $1"
+    cmd="${cmd} --cap-drop $1"
     if [[ ! -z "${expect}" ]]; then
       expect="${expect},"
     fi
@@ -52,7 +52,7 @@ capAddTestk8s() {
   rio wait ${stk}/${srv}
 
   nsp="$(rio inspect --format '{{.id}}' ${stk}/${srv} | cut -f1 -d:)"
-  got=$(rio kubectl get -n ${nsp} -o=json deploy/${srv} | jq -r '.spec.template.spec.containers[0].securityContext.capabilities.add | join(",")')
+  got=$(rio kubectl get -n ${nsp} -o=json deploy/${srv} | jq -r '.spec.template.spec.containers[0].securityContext.capabilities.drop | join(",")')
   echo "Expect: ${expect}"
   echo "Got: ${got}"
   [[ "${got}" == "${expect}" ]]
@@ -64,7 +64,7 @@ capAddTestk8s() {
   capAddTestk8s 'ALL'
 }
 
-@test "k8s AUDIT CONTROL and SYSLOG" {
+@test "AUDIT CONTROL and SYSLOG" {
   capAddTestk8s 'AUDIT_CONTROL' 'SYSLOG'
 }
 
@@ -75,4 +75,3 @@ capAddTestk8s() {
 @test "RIO AUDIT CONTROL and SYSLOG" {
   capAddTestrio 'AUDIT_CONTROL' 'SYSLOG'
 }
-
