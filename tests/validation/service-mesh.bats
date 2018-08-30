@@ -15,14 +15,12 @@ riorun() {
     rscl=$2
     rim=$3
     rio run -n ${stk}/${srv} -p ${rpt} --scale=${rscl} ${rim}
-    rio --wait-timeout 10 wait ${stk}/${srv}
 }
 
 riostage() {
     sim=$1
     svs=$2
     rio stage --image=${sim} ${stk}/${srv}:${svs} 
-    rio --wait-timeout 10 wait ${stk}/${srv}
 }
 
 rioweight() {
