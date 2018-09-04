@@ -15,7 +15,7 @@ teardown () {
 
 @test "rio scale - service is listing" {
   rio ps
-  [[ "$(rio inspect --format '{{.name}}' ${srv})" == ${srv} ]]
+  [ "$(rio inspect --format '{{.name}}' ${srv})" == ${srv} ]
 }
 
 @test "rio scale - service state active" {

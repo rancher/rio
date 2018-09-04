@@ -12,19 +12,19 @@ teardown () {
 ## Validation tests ##
 @test "rio volume - volume is listing" {
   rio volume
-  [[ "$(rio inspect --format '{{.name}}' ${vol})" == ${vol} ]]
+  [ "$(rio inspect --format '{{.name}}' ${vol})" == ${vol} ]
 }
 
 @test "rio volume - volume is bound" {
   skip
   rio volume
   sleep 10
-  [[ "$(rio inspect --format '{{.state}}' ${vol})" == "bound" ]]
+  [ "$(rio inspect --format '{{.state}}' ${vol})" == "bound" ]
 }
 
 @test "rio volume - volume size is 10" {
   rio volume
-  [[ "$(rio inspect --format '{{.sizeInGb}}' ${vol})" == "10" ]]
+  [ "$(rio inspect --format '{{.sizeInGb}}' ${vol})" == "10" ]
 }
 
 @test "rio volume - volume exist in k8s" {

@@ -31,7 +31,7 @@ capAddTestrio() {
   got="$(rio inspect --format '{{.capDrop}}' ${stk}/${srv})"
   echo "Expect: ${expect}"
   echo "Got: ${got}"
-  [[ "${got}" == "[${expect}]" ]]
+  [ "${got}" == "[${expect}]" ]
 }
 
 capAddTestk8s() {
@@ -55,7 +55,7 @@ capAddTestk8s() {
   got=$(rio kubectl get -n ${nsp} -o=json deploy/${srv} | jq -r '.spec.template.spec.containers[0].securityContext.capabilities.drop | join(",")')
   echo "Expect: ${expect}"
   echo "Got: ${got}"
-  [[ "${got}" == "${expect}" ]]
+  [ "${got}" == "${expect}" ]
 }
 
 ## Validation tests ##
