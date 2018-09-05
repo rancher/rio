@@ -13,7 +13,7 @@ teardown () {
 ## Validation tests ##
 @test "rio run - service exist" {
   rio ps
-  [[ "$(rio inspect --format '{{.name}}' ${srv})" == ${srv} ]]
+  [[ "$(rio inspect --format '{{.name}}' ${srv})" == ${srv} ]] || false
 }
 
 @test "rio run - service state active" {

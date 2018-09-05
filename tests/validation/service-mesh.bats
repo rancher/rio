@@ -43,7 +43,7 @@ riopromote() {
   expected=${tim}
   echo "Expect: ${expected}"
   echo "Got: ${got}"
-  [[ "${got}" == "${expected}" ]]
+  [ "${got}" == "${expected}" ]
 
 }
 
@@ -54,7 +54,7 @@ riopromote() {
   expected="ibuildthecloud/demo:v3"
   echo "Expect: ${expected}"
   echo "Got: ${got}"
-  [[ "${got}" == "${expected}" ]]
+  [ "${got}" == "${expected}" ]
 }
 
 @test "rio weight percentage check" {
@@ -65,7 +65,7 @@ riopromote() {
   expected="50"
   echo "Expect: ${expected}"
   echo "Got: ${got}"
-  [[ "${got}" == "${expected}" ]]
+  [ "${got}" == "${expected}" ]
 
 }
 
@@ -78,6 +78,6 @@ riopromote() {
   expected="ibuildthecloud/demo:v3"
   echo "Expect: ${expected}"
   echo "Got: ${got}"
-  [[ "${got}" == "${expected}" ]]
-  
+  [ "${got}" == "${expected}" ]
+    
 }

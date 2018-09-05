@@ -15,17 +15,17 @@ teardown () {
 ## Validation tests ##
 @test "rio stack - stack is listing" {
   rio ps -q ${stack}
-  [[ "$(rio inspect --format '{{.name}}' ${stack})" == ${stack} ]]
+  [ "$(rio inspect --format '{{.name}}' ${stack})" == ${stack} ]
 }
 
 @test "rio stack - stack is active" {
   rio ps -q ${stack}
-  [[ "$(rio inspect --format '{{.state}}' ${stack})" == "active" ]]
+  [ "$(rio inspect --format '{{.state}}' ${stack})" == "active" ]
 }
 
 @test "rio stack - serivce was added to stack" {
   rio ps -q ${stack}
-  [[ "$(rio inspect --format '{{.stackId}}' ${stack}/${srv} | cut -f2 -d:)" == "${stack}" ]]
+  [ "$(rio inspect --format '{{.stackId}}' ${stack}/${srv} | cut -f2 -d:)" == "${stack}" ]
 }
 
 @test "rio stack - service added to existing stack" {
@@ -33,7 +33,7 @@ teardown () {
   srv2=tsrv${RANDOM}
   rio run -n ${stack}/${srv2} nginx
   rio wait ${stack}/${srv2}
-  [[ "$(rio inspect --format '{{.stackId}}' ${stack}/${srv2}  | cut -f2 -d:)" == "${stack}" ]]
+  [ "$(rio inspect --format '{{.stackId}}' ${stack}/${srv2}  | cut -f2 -d:)" == "${stack}" ]
 }
 
 @test "rio stack - service exist in k8s" {

@@ -13,7 +13,7 @@ teardown () {
 ## Validation tests ##
 @test "rio create - service is listing" {
   rio ps
-  [[ "$(rio ps --format '{{.Service.Name}}')" =~ ${srv} ]]
+  [[ "$(rio ps --format '{{.Service.Name}}')" =~ ${srv} ]] || false
 }
 
 @test "rio create - service created" {

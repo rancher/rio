@@ -1,3 +1,4 @@
+#!/usr/bin/env bats
 ## Setup ##
 
 setup() {
@@ -15,7 +16,7 @@ capAddTestrio() {
   expect=""
 
   while [ $# -gt 0 ]; do
-    cmd="${cmd} --cap-add $1"
+    cmd="${cmd} -e $1"
     if [[ ! -z "${expect}" ]]; then
       expect="${expect} "
     fi
@@ -28,8 +29,8 @@ capAddTestrio() {
   rio wait ${stk}/${srv}
 
   nsp="$(rio inspect --format '{{.id}}' ${stk}/${srv} | cut -f1 -d:)"
-  got="$(rio inspect --format '{{.capAdd}}' ${stk}/${srv})"
-  echo "Expect: ${expect}"
+  got="$(rio inspect --format '{{.environment}}' ${stk}/${srv})"
+  echo "Expect: [${expect}]"
   echo "Got: ${got}"
   [ "${got}" == "[${expect}]" ]
 }
@@ -37,13 +38,12 @@ capAddTestrio() {
 capAddTestk8s() {
   cmd="rio run -n ${stk}/${srv}"
   expect=""
+  i=0
+  count=$#
 
   while [ $# -gt 0 ]; do
-    cmd="${cmd} --cap-add $1"
-    if [[ ! -z "${expect}" ]]; then
-      expect="${expect},"
-    fi
-    expect="${expect}$1"
+    cmd="${cmd} -e $1"
+    expect="${expect},${1}"
     shift
   done
   cmd="${cmd} tfiduccia/counting"
@@ -51,28 +51,41 @@ capAddTestk8s() {
   $cmd
   rio wait ${stk}/${srv}
 
+
   nsp="$(rio inspect --format '{{.id}}' ${stk}/${srv} | cut -f1 -d:)"
-  got=$(rio kubectl get -n ${nsp} -o=json deploy/${srv} | jq -r '.spec.template.spec.containers[0].securityContext.capabilities.add | join(",")')
+  
+  got=""
+  while [ $i -lt $count ]; do
+    filter=".spec.template.spec.containers[0].env[${i}] | join(\"=\")"
+    more=$(rio kubectl get -n ${nsp} -o=json deploy/${srv} | jq -r "${filter}")
+    got="${got},${more}"
+    let i=$i+1
+  done
+
   echo "Expect: ${expect}"
   echo "Got: ${got}"
   [ "${got}" == "${expect}" ]
+
 }
 
 ## Validation tests ##
 
-@test "k8s ALL" {
-  capAddTestk8s 'ALL'
+@test "rio foo=bar" {
+  capAddTestrio 'foo=bar'
 }
 
-@test "k8s AUDIT CONTROL and SYSLOG" {
-  capAddTestk8s 'AUDIT_CONTROL' 'SYSLOG'
+@test "rio foo=bar foo2=bar2" {
+  capAddTestrio 'foo=bar' 'foo2=bar2'
 }
 
-@test "RIO ALL" {
-  capAddTestrio 'ALL'
+@test "k8s foo=bar" {
+  capAddTestk8s 'foo=bar'
 }
 
-@test "RIO AUDIT CONTROL and SYSLOG" {
-  capAddTestrio 'AUDIT_CONTROL' 'SYSLOG'
+@test "k8s foo=bar foo2=bar2" {
+  capAddTestk8s 'foo=bar' 'foo2=bar2'
 }
+
+
+
 

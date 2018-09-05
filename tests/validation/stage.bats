@@ -17,5 +17,5 @@ teardown () {
 ## Validation tests ##
 @test "rio stage - ensure v1 service is active" {
   #rio ps
-  [[ "$(rio ps --format '{{.Service.Name}}')" =~ ${srv} ]]
+  [[ "$(rio ps --format '{{.Service.Name}}')" =~ ${srv} ]] || false
 }

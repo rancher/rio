@@ -5,6 +5,11 @@ cd $(dirname $0)/..
 
 echo Running validation
 
+if grep -r '^[[:space:]]*\[\[.*]][[:space:]]*$' tests; then
+    echo "Add \"|| false\" to bats tests in any place you use [[ ... ]]"
+    exit 1
+fi
+
 PACKAGES="$(go list ./...)"
 
 echo Running: go vet
