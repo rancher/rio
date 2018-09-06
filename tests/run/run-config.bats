@@ -12,7 +12,7 @@ teardown () {
 
 createAddConfigFile() {
 
-  cfile=$(mktemp -t rio-test)
+  cfile=$(mktemp -t rio-test.XXXXX)
 
   while [ $# -gt 0 ]; do
     echo $1 >> ${cfile}
