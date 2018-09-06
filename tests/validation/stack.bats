@@ -36,7 +36,7 @@ teardown () {
   [ "$(rio inspect --format '{{.stackId}}' ${stack}/${srv2}  | cut -f2 -d:)" == "${stack}" ]
 }
 
-@test "rio stack - service exist in k8s" {
+@test "k8s stack - service exist" {
     nsp="$(rio inspect --format '{{.id}}' ${stack}/${srv} | cut -f1 -d:)"
     [ "$(rio kubectl get -n ${nsp} -o=json deploy/${srv} | jq -r .status.replicas)" == "1" ]
 }

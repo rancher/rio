@@ -26,7 +26,7 @@ teardown () {
   [ "$(rio inspect --format '{{.scale}}' ${srv})" == "1" ]
 }
 
-@test "rio run - service is active in kubernetes" {
+@test "k8s run - service is active" {
     nsp="$(rio inspect --format '{{.id}}' ${srv} | cut -f1 -d:)"
     [ "$(rio kubectl get -n ${nsp} -o=json deploy/${srv} | jq -r .status.replicas)" == "1" ]
 }

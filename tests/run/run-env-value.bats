@@ -11,7 +11,7 @@ teardown () {
   rio rm ${stk}
 }
 
-capAddTestrio() {
+capEnvTestrio() {
   cmd="rio run -n ${stk}/${srv}"
   expect=""
 
@@ -35,7 +35,7 @@ capAddTestrio() {
   [ "${got}" == "[${expect}]" ]
 }
 
-capAddTestk8s() {
+capEnvTestk8s() {
   cmd="rio run -n ${stk}/${srv}"
   expect=""
   i=0
@@ -70,20 +70,20 @@ capAddTestk8s() {
 
 ## Validation tests ##
 
-@test "rio foo=bar" {
-  capAddTestrio 'foo=bar'
+@test "rio run env - foo=bar" {
+  capEnvTestrio 'foo=bar'
 }
 
-@test "rio foo=bar foo2=bar2" {
-  capAddTestrio 'foo=bar' 'foo2=bar2'
+@test "rio run env - foo=bar foo2=bar2" {
+  capEnvTestrio 'foo=bar' 'foo2=bar2'
 }
 
-@test "k8s foo=bar" {
-  capAddTestk8s 'foo=bar'
+@test "k8s run env - foo=bar" {
+  capEnvTestk8s 'foo=bar'
 }
 
-@test "k8s foo=bar foo2=bar2" {
-  capAddTestk8s 'foo=bar' 'foo2=bar2'
+@test "k8s run env - foo=bar foo2=bar2" {
+  capEnvTestk8s 'foo=bar' 'foo2=bar2'
 }
 
 

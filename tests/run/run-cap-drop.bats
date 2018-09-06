@@ -10,7 +10,7 @@ teardown () {
   rio rm ${stk}
 }
 
-capAddTestrio() {
+capDropTestrio() {
   cmd="rio run -n ${stk}/${srv}"
   expect=""
 
@@ -34,7 +34,7 @@ capAddTestrio() {
   [ "${got}" == "[${expect}]" ]
 }
 
-capAddTestk8s() {
+capDropTestk8s() {
   cmd="rio run -n ${stk}/${srv}"
   expect=""
 
@@ -60,18 +60,19 @@ capAddTestk8s() {
 
 ## Validation tests ##
 
-@test "k8s ALL" {
-  capAddTestk8s 'ALL'
+@test "rio run capdrop - ALL" {
+  capDropTestrio 'ALL'
 }
 
-@test "AUDIT CONTROL and SYSLOG" {
-  capAddTestk8s 'AUDIT_CONTROL' 'SYSLOG'
+@test "rio run capdrop - AUDIT CONTROL and SYSLOG" {
+  capDropTestrio 'AUDIT_CONTROL' 'SYSLOG'
 }
 
-@test "RIO ALL" {
-  capAddTestrio 'ALL'
+@test "k8s run capdrop - ALL" {
+  capDropTestk8s 'ALL'
 }
 
-@test "RIO AUDIT CONTROL and SYSLOG" {
-  capAddTestrio 'AUDIT_CONTROL' 'SYSLOG'
+@test "k8s run capdrop - AUDIT CONTROL and SYSLOG" {
+  capDropTestk8s 'AUDIT_CONTROL' 'SYSLOG'
 }
+
