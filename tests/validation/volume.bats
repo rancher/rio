@@ -27,7 +27,7 @@ teardown () {
   [ "$(rio inspect --format '{{.sizeInGb}}' ${vol})" == "10" ]
 }
 
-@test "rio volume - volume exist in k8s" {
+@test "k8s volume - volume is listing" {
     nsp="$(rio inspect --format '{{.id}}' ${vol} | cut -f1 -d:)"
     rio volume
     sleep 10
