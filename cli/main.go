@@ -75,6 +75,9 @@ func main() {
 	app.Name = appName
 	app.Usage = "Containers made simple, as they should be"
 	app.Version = version.Version
+	cli.VersionPrinter = func(c *cli.Context) {
+		fmt.Printf("%s version %x", app.Name, app.Version)
+	}
 	app.Flags = []cli.Flag{
 		cli.BoolFlag{
 			Name:  "debug",
