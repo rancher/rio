@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/rancher/rio/pkg/namespace"
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
 	"istio.io/api/networking/v1alpha3"
@@ -47,14 +48,14 @@ func vsRoutes(publicPorts map[uint32]bool, name, namespace string, serviceSpec *
 
 	for _, con := range containers(serviceSpec) {
 		for _, exposed := range con.ExposedPorts {
-			_, route := newRoute(getPublicGateway(name, namespace), false, &exposed.PortBinding, dests)
+			_, route := newRoute(getPublicGateway(), false, &exposed.PortBinding, dests)
 			if route != nil {
 				result = append(result, route)
 			}
 		}
 
 		for _, binding := range con.PortBindings {
-			publicPort, route := newRoute(getPublicGateway(name, namespace), true, &binding, dests)
+			publicPort, route := newRoute(getPublicGateway(), true, &binding, dests)
 			if route != nil {
 				external = true
 				publicPorts[publicPort] = true
@@ -209,7 +210,7 @@ func vsFromSpec(serviceName, revision, name, namespace string, serviceSpec *v1be
 	vs.Spec = spec
 
 	if external && len(publicPorts) > 0 {
-		externalGW := getPublicGateway(name, namespace)
+		externalGW := getPublicGateway()
 		externalHost := getExternalDomain(name, namespace)
 		spec.Gateways = append(spec.Gateways, externalGW)
 		spec.Hosts = appendStringWithPort(spec.Hosts, externalHost, publicPorts)
@@ -239,8 +240,9 @@ func appendStringWithPort(base []string, host string, ports map[uint32]bool) []s
 	return base
 }
 
-func getPublicGateway(name, namespace string) string {
-	return fmt.Sprintf("external.%s.svc.cluster.local", settings.RioSystemNamespace)
+func getPublicGateway() string {
+	ns := namespace.StackNamespace(settings.RioSystemNamespace, settings.IstioStackName.Get())
+	return fmt.Sprintf("%s.%s.svc.cluster.local", settings.IstionExternalGateway, ns)
 }
 
 func getExternalDomain(name, namespace string) string {

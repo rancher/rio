@@ -202,7 +202,7 @@ func (g *Controller) setGatewayPorts(ns string, ports map[string]bool) error {
 				"*",
 			},
 			Port: &v1alpha3.Port{
-				Protocol: "http",
+				Protocol: "HTTP",
 				Number:   uint32(port),
 			},
 		})
