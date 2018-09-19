@@ -1,0 +1,13 @@
+[Unit]
+Description=RIO server
+After=network.target
+ConditionPathExists=/usr/bin/rio
+
+[Service]
+ExecStart=/usr/bin/rio server --log /vagrant/.vagrant/rio.log
+KillMode=process
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+Alias=rio.service
