@@ -1,0 +1,16 @@
+# Rio version to use
+version: v0.0.3-rc7
+
+# resources to allocate to the virtual machine
+machine:
+  cpu: "1"
+  # memory in MiB
+  memory: "2048"
+
+# options: 'public' or 'nat'
+# in 'nat' mode, rio services aren't accessible
+# in 'public' mode, user must specify a network to bridge
+network: public
+
+# output inline provisioning script execution logs
+debug: false
