@@ -13,22 +13,11 @@ teardown () {
 
 ## Validation tests ##
 
-@test "rio scale - service is listing" {
-  rio ps
-  [ "$(rio inspect --format '{{.name}}' ${srv})" == ${srv} ]
-}
 
-@test "rio scale - service state active" {
-  rio ps
-  [ "$(rio inspect --format '{{.state}}' ${srv})" == "active" ]
-}
-
-@test "rio scale - service scale = 3" {
+@test "scale - rio scale & k8s replica check" {
   rio ps
   [ "$(rio inspect --format '{{.scale}}' ${srv})" == "3" ]
-}
+  nsp="$(rio inspect --format '{{.id}}' ${srv} | cut -f1 -d:)"
+  [ "$(rio kubectl get -n ${nsp} -o=json deploy/${srv} | jq -r .status.replicas)" == "3" ]
 
-@test "k8s scale - replicas = 3" {
-    nsp="$(rio inspect --format '{{.id}}' ${srv} | cut -f1 -d:)"
-    [ "$(rio kubectl get -n ${nsp} -o=json deploy/${srv} | jq -r .status.replicas)" == "3" ]
 }

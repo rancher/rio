@@ -66,6 +66,7 @@ labelFileTestk8s() {
   createAddLabelFile "foo1=bar1"
   runLabelrio ""
   labelFileTestrio "foo1" "bar1"
+  labelFileTestk8s "foo1" "bar1"
 
 }
 
@@ -74,20 +75,8 @@ labelFileTestk8s() {
   runLabelrio ""
   labelFileTestrio "foo1" "bar1"
   labelFileTestrio "foo2" "bar2"
+  labelFileTestk8s "foo1" "bar1"
+  labelFileTestk8s "foo2" "bar2"
   
 }
 
-@test "k8s file of labels - validate single label" {
-  createAddLabelFile "foo1=bar1"
-  runLabelrio ""
-  labelFileTestk8s "foo1" "bar1"
-
-}
-
-@test "k8s file of labels - validate multiple label" {
-  createAddLabelFile "foo1=bar1" "foo2=bar2"
-  runLabelrio ""
-  labelFileTestk8s "foo1" "bar1"
-  labelFileTestk8s "foo2" "bar2"
-
-}

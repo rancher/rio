@@ -11,24 +11,12 @@ teardown () {
 }
 
 ## Validation tests ##
-@test "rio create - service is listing" {
+@test "rio create - service creation, state & scale test" {
   rio ps
   [[ "$(rio ps --format '{{.Service.Name}}')" =~ ${srv} ]] || false
-}
-
-@test "rio create - service created" {
-  rio ps
   [ "$(rio inspect --format '{{.name}}' ${srv})" == ${srv} ]
-}
-
-@test "rio create - service state inactive" {
-  rio ps
   rio --wait-state inactive wait ${srv}
   [ "$(rio inspect --format '{{.state}}' ${srv})" == "inactive" ]
-}
-
-@test "rio create - service scale = 0" {
-  rio ps
   [ "$(rio inspect --format '{{.scale}}' ${srv})" == "0" ]
-}
 
+}

@@ -60,20 +60,16 @@ capAddTestk8s() {
 
 ## Validation tests ##
 
-@test "rio run capadd - ALL" {
+@test "run capadd - ALL" {
   capAddTestrio 'ALL'
+  capAddTestk8s 'ALL'
+
 }
 
 @test "rio run capadd - AUDIT CONTROL and SYSLOG" {
   capAddTestrio 'AUDIT_CONTROL' 'SYSLOG'
-}
-
-@test "k8s run capadd - ALL" {
-  capAddTestk8s 'ALL'
-}
-
-@test "k8s run capadd - AUDIT CONTROL and SYSLOG" {
   capAddTestk8s 'AUDIT_CONTROL' 'SYSLOG'
+
 }
 
 

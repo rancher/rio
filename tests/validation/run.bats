@@ -11,22 +11,11 @@ teardown () {
 }
 
 ## Validation tests ##
-@test "rio run - service exist" {
-  rio ps
-  [[ "$(rio inspect --format '{{.name}}' ${srv})" == ${srv} ]] || false
-}
 
-@test "rio run - service state active" {
+@test "run - service state active" {
   rio ps
   [ "$(rio inspect --format '{{.state}}' ${srv})" == "active" ]
-}
+  nsp="$(rio inspect --format '{{.id}}' ${srv} | cut -f1 -d:)"
+  [ "$(rio kubectl get -n ${nsp} -o=json deploy/${srv} | jq -r .status.replicas)" == "1" ]
 
-@test "rio run - service scale = 1" {
-  rio ps
-  [ "$(rio inspect --format '{{.scale}}' ${srv})" == "1" ]
-}
-
-@test "k8s run - service is active" {
-    nsp="$(rio inspect --format '{{.id}}' ${srv} | cut -f1 -d:)"
-    [ "$(rio kubectl get -n ${nsp} -o=json deploy/${srv} | jq -r .status.replicas)" == "1" ]
 }
