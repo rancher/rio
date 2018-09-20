@@ -62,17 +62,12 @@ capDropTestk8s() {
 
 @test "rio run capdrop - ALL" {
   capDropTestrio 'ALL'
+  capDropTestk8s 'ALL'
+
 }
 
 @test "rio run capdrop - AUDIT CONTROL and SYSLOG" {
   capDropTestrio 'AUDIT_CONTROL' 'SYSLOG'
-}
-
-@test "k8s run capdrop - ALL" {
-  capDropTestk8s 'ALL'
-}
-
-@test "k8s run capdrop - AUDIT CONTROL and SYSLOG" {
   capDropTestk8s 'AUDIT_CONTROL' 'SYSLOG'
-}
 
+}

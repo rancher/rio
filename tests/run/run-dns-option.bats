@@ -11,25 +11,25 @@ teardown () {
   rio rm ${stk}
 }
 
-runEnvrio() {
-  expect=""
+runDnsOptionrio() {
+  value=""
   cmd="rio run -n ${stk}/${srv}"
 
   while [ $# -gt 0 ]; do
-    cmd="${cmd} -e $1"
-    if [[ ! -z "${expect}" ]]; then
-      expect="${expect} "
+    cmd="${cmd} --dns-option $1"
+    if [[ ! -z "${value}" ]]; then
+      expect="${value} "
     fi
-    expect="${expect}$1"
+    expect="${value}$1"
     shift
   done
-  cmd="${cmd} tfiduccia/counting"
+  cmd="${cmd} nginx"
 
   $cmd
 }
 
 
-capEnvTestrio() {
+dnsOptionTestrio() {
   expect=""
 
     while [ $# -gt 0 ]; do
@@ -43,14 +43,13 @@ capEnvTestrio() {
 
   rio wait ${stk}/${srv}
 
-  nsp="$(rio inspect --format '{{.id}}' ${stk}/${srv} | cut -f1 -d:)"
-  got="$(rio inspect --format '{{.environment}}' ${stk}/${srv})"
+  got="$(rio inspect --format '{{.dnsOptions}}' ${stk}/${srv})"
   echo "Expect: [${expect}]"
   echo "Got: ${got}"
   [ "${got}" == "[${expect}]" ]
 }
 
-capEnvTestk8s() {
+dnsOptionTestk8s() {
   expect=""
   i=0
   count=$#
@@ -65,7 +64,7 @@ capEnvTestk8s() {
   
   got=""
   while [ $i -lt $count ]; do
-    filter=".spec.template.spec.containers[0].env[${i}] | join(\"=\")"
+    filter=".spec.template.spec.dnsConfig.options[${i}] | join(\"=\")"
     more=$(rio kubectl get -n ${nsp} -o=json deploy/${srv} | jq -r "${filter}")
     got="${got},${more}"
     let i=$i+1
@@ -79,16 +78,16 @@ capEnvTestk8s() {
 
 ## Validation tests ##
 
-@test "run env - foo=bar" {
-  runEnvrio 'foo=bar'
-  capEnvTestrio 'foo=bar'
-  capEnvTestk8s 'foo=bar'
+@test "run dns-option - debug" {
+  runDnsOptionrio 'debug'
+  dnsOptionTestrio 'debug'
+  dnsOptionTestk8s 'debug'
 
 }
 
-@test "run env - foo=bar foo2=bar2" {
-  runEnvrio 'foo=bar' 'foo2=bar2'
-  capEnvTestrio 'foo=bar' 'foo2=bar2'
-  capEnvTestk8s 'foo=bar' 'foo2=bar2'
+@test "run dns-option - debug attempts:2" {
+  runDnsOptionrio 'debug' 'attempts:2'
+  dnsOptionTestrio 'debug' 'attempts:2'
+  dnsOptionTestk8s 'debug' 'attempts:2'
   
 }

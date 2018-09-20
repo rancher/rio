@@ -11,25 +11,26 @@ teardown () {
   rio rm ${stk}
 }
 
-runEnvrio() {
-  expect=""
+runDnsSearchrio() {
+  value=""
   cmd="rio run -n ${stk}/${srv}"
 
   while [ $# -gt 0 ]; do
-    cmd="${cmd} -e $1"
-    if [[ ! -z "${expect}" ]]; then
-      expect="${expect} "
+    cmd="${cmd} --dns-search $1"
+    if [[ ! -z "${value}" ]]; then
+      expect="${value} "
     fi
-    expect="${expect}$1"
+    expect="${value}$1"
     shift
   done
-  cmd="${cmd} tfiduccia/counting"
+  cmd="${cmd} nginx"
 
   $cmd
+  rio wait ${stk}/${srv}
 }
 
 
-capEnvTestrio() {
+dnsSearchTestrio() {
   expect=""
 
     while [ $# -gt 0 ]; do
@@ -43,14 +44,13 @@ capEnvTestrio() {
 
   rio wait ${stk}/${srv}
 
-  nsp="$(rio inspect --format '{{.id}}' ${stk}/${srv} | cut -f1 -d:)"
-  got="$(rio inspect --format '{{.environment}}' ${stk}/${srv})"
+  got="$(rio inspect --format '{{.dnsSearch}}' ${stk}/${srv})"
   echo "Expect: [${expect}]"
   echo "Got: ${got}"
   [ "${got}" == "[${expect}]" ]
 }
 
-capEnvTestk8s() {
+dnsSearchTestk8s() {
   expect=""
   i=0
   count=$#
@@ -65,7 +65,7 @@ capEnvTestk8s() {
   
   got=""
   while [ $i -lt $count ]; do
-    filter=".spec.template.spec.containers[0].env[${i}] | join(\"=\")"
+    filter=".spec.template.spec.dnsConfig.searches[${i}]"
     more=$(rio kubectl get -n ${nsp} -o=json deploy/${srv} | jq -r "${filter}")
     got="${got},${more}"
     let i=$i+1
@@ -79,16 +79,16 @@ capEnvTestk8s() {
 
 ## Validation tests ##
 
-@test "run env - foo=bar" {
-  runEnvrio 'foo=bar'
-  capEnvTestrio 'foo=bar'
-  capEnvTestk8s 'foo=bar'
+@test "run dns-search - example.com" {
+  runDnsSearchrio 'example.com'
+  dnsSearchTestrio 'example.com'
+  dnsSearchTestk8s 'example.com'
 
 }
 
-@test "run env - foo=bar foo2=bar2" {
-  runEnvrio 'foo=bar' 'foo2=bar2'
-  capEnvTestrio 'foo=bar' 'foo2=bar2'
-  capEnvTestk8s 'foo=bar' 'foo2=bar2'
+@test "run dns-Search- example.com example2.com" {
+  runDnsSearchrio 'example.com' 'example2.com'
+  dnsSearchTestrio 'example.com' 'example2.com'
+  dnsSearchTestk8s 'example.com' 'example2.com'
   
 }

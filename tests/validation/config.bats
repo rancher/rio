@@ -17,12 +17,10 @@ teardown () {
   [ "$(rio inspect --format '{{.name}}' ${config})" == ${config} ]
 }
 
-@test "rio config - contents are correct" {
+@test "config - contents are correct" {
   rio config
   [ "$(rio inspect --format '{{.content}}' ${config})" == "foo=bar" ]
-}
+  nsp="$(rio inspect --format '{{.id}}' ${config} | cut -f1 -d:)"
+  [ "$(rio kubectl get config -n ${nsp} -o=json ${config} | jq -r .spec.content)" == "foo=bar" ]
 
-@test "k8s config - contents are correct" {
-    nsp="$(rio inspect --format '{{.id}}' ${config} | cut -f1 -d:)"
-    [ "$(rio kubectl get config -n ${nsp} -o=json ${config} | jq -r .spec.content)" == "foo=bar" ]
 }

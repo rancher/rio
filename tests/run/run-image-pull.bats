@@ -10,14 +10,20 @@ teardown () {
   rio rm ${stk}
 }
 
-
-imagePullTestrio() {
+runImagerio() {
   cmd="rio run -n ${stk}/${srv}"
   value=$1
 
   cmd="${cmd} --image-pull-policy ${value} nginx"
   $cmd
   rio wait ${stk}/${srv}
+
+}
+ 
+
+
+imagePullTestrio() {
+  value=$1
 
   got=$(rio inspect --format '{{.imagePullPolicy}}' ${stk}/${srv})
   echo "Expect: ${value}"
@@ -26,13 +32,8 @@ imagePullTestrio() {
 }
 
 imagePullTestk8s() {
-  cmd="rio run -n ${stk}/${srv}"
   value=$1
   expect=$2
-
-  cmd="${cmd} --image-pull-policy ${value} nginx"
-  $cmd
-  rio wait ${stk}/${srv}
 
   nsp="$(rio inspect --format '{{.id}}' ${stk}/${srv} | cut -f1 -d:)"
   filter=".spec.template.spec.containers[0].imagePullPolicy"
@@ -55,25 +56,22 @@ imagePullTestk8s() {
 }
 
 @test "rio image pull policy - always" {
+  runImagerio "always"
   imagePullTestrio "always"
+  imagePullTestk8s "always" "Always"
+
 }
 
 @test "rio image pull policy - never" {
+  runImagerio "never"
   imagePullTestrio "never"
+  imagePullTestk8s "never" "Never"
+
 }
 
 @test "rio image pull policy - not-present" {
+  runImagerio "not-present"
   imagePullTestrio "not-present"
-}
-
-@test "k8s image pull policy - always" {
-  imagePullTestk8s "always" "Always"
-}
-
-@test "k8s image pull policy - never" {
-  imagePullTestk8s "never" "Never"
-}
-
-@test "k8s image pull policy - not-present" {
   imagePullTestk8s "not-present" "IfNotPresent"
+
 }

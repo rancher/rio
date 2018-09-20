@@ -62,24 +62,13 @@ labelTestk8s() {
 @test "rio label - validate single label" {
   runLabelrio "foo1=bar1"
   labelTestrio "foo1" "bar1"
-
+  labelTestk8s "foo1" "bar1"
 }
 
 @test "rio label - validate multiple labels" {
   runLabelrio "foo1=bar1" "foo2=bar2"
   labelTestrio "foo1" "bar1"
   labelTestrio "foo2" "bar2"
-
-}
-
-@test "k8s label - validate single label" {
-  runLabelrio "foo1=bar1"
-  labelTestk8s "foo1" "bar1"
-
-}
-
-@test "k8s label - validate multiple label" {
-  runLabelrio "foo1=bar1" "foo2=bar2"
   labelTestk8s "foo1" "bar1"
   labelTestk8s "foo2" "bar2"
 
