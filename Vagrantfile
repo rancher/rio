@@ -31,7 +31,6 @@ module OS
 end
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  # TODO: select custom box based on rio version
   config.vm.box = "ubuntu/xenial64"
   
   # forward rio plaintext/tls ports to localhost
@@ -59,11 +58,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # download requisite binaries in guest
   Set.new(["linux-amd64", hostOS]).each do |target|
-    config.vm.provision "shell", inline: download(target)
+    config.vm.provision "shell", inline: download(CONFIG['version'], target)
   end
 
   # install and start rio server on guest
-  config.vm.provision "shell", inline: install("/vagrant/.vagrant", "/usr/bin", "linux-amd64")
+  config.vm.provision "shell", inline: install(
+    CONFIG['version'], "/vagrant/.vagrant", "/usr/bin", "linux-amd64")
   config.vm.provision "shell", inline: daemonize
   config.vm.provision "shell", inline: login('guest', 'root')
   config.vm.provision "shell", inline: login('guest', 'vagrant')
@@ -72,45 +72,48 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   if OS.windows?
     puts 'WARNING: windows host provisioning not implemented'  # TODO
   else
-    config.vm.provision "host_shell", inline: install(".vagrant", "/usr/local/bin", hostOS)
+    config.vm.provision "host_shell", inline: install(
+      CONFIG['version'], ".vagrant", "/usr/local/bin", hostOS)
     config.vm.provision "host_shell", inline: login('host', '')
   end
 end
 
-def download(rioOSArch)
+def download(version, rioOSArch)
+  rioOSArch == "windows" ? ext = "zip" : ext = "tar.gz"
   return <<-EOF
     if #{CONFIG['debug']}; then set -x; fi
-    RIO_FILENAME=rio-#{CONFIG['version']}-#{rioOSArch}.tar.gz
+    RIO_FILENAME=rio-#{version}-#{rioOSArch}.#{ext}
     RIO_URLBASE=https://github.com/rancher/rio/releases/download
-    RIO_URL=${RIO_URLBASE}/#{CONFIG['version']}/${RIO_FILENAME}
+    RIO_URL=${RIO_URLBASE}/#{version}/${RIO_FILENAME}
     RIO_FILEPATH=/vagrant/.vagrant/${RIO_FILENAME}
 
     if [ ! -f ${RIO_FILEPATH} ]; then
-      echo Downloading Rio #{CONFIG['version']} for #{rioOSArch}...
+      echo Downloading Rio #{version} for #{rioOSArch}...
       curl -sSfL ${RIO_URL} -o ${RIO_FILEPATH}
-      echo Downloaded Rio #{CONFIG['version']} to ${RIO_FILEPATH}
+      echo Downloaded Rio #{version} to ${RIO_FILEPATH}
     else
-      echo Rio #{CONFIG['version']} for #{rioOSArch} already downloaded
+      echo Rio #{version} for #{rioOSArch} already downloaded
     fi
   EOF
 end
 
-def install(installPath, binPath, rioOSArch)
+def install(version, installPath, binPath, rioOSArch)
+  rioOSArch == "windows" ? ext = "zip" : ext = "tar.gz"
   return <<-EOF
     if #{CONFIG['debug']}; then set -x; fi
-    RIO_FILENAME=rio-#{CONFIG['version']}-#{rioOSArch}.tar.gz
+    RIO_FILENAME=rio-#{version}-#{rioOSArch}.#{ext}
     RIO_FILEPATH=#{installPath}/${RIO_FILENAME}
 
-    if [ ! -f #{binPath}/rio ] || [[ `rio -v | grep #{CONFIG['version']}` == "" ]]; then
+    if [ ! -f #{binPath}/rio ] || [[ `rio -v | grep #{version}` == "" ]]; then
       if [ ! -f ${RIO_FILEPATH} ]; then
         echo "Couldn't find file: ${RIO_FILENAME}"
         exit 1
       fi
       rm -f #{binPath}/rio
       tar xvzf ${RIO_FILEPATH} -C #{binPath} --strip-components 1
-      echo Installed Rio #{CONFIG['version']} to #{binPath}
+      echo Installed Rio #{version} to #{binPath}
     else
-      echo Rio #{CONFIG['version']} already installed
+      echo Rio #{version} already installed
     fi
   EOF
 end
@@ -142,7 +145,8 @@ def login(target, user)
       token=`#{token}`
       if [ "$token" != "" ]; then
         if #{userset}; then
-          sudo -H -u #{user} bash -c "rio login --server https://127.0.0.1:7443 --token $token 2>&1"
+          sudo -H -u #{user} bash -c \
+            "rio login --server https://127.0.0.1:7443 --token $token 2>&1"
         else
           rio login --server https://127.0.0.1:7443 --token $token 2>&1
         fi
