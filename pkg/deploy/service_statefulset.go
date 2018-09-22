@@ -8,6 +8,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
+const useTemplatesLabel = "rio.cattle.io/use-templates"
+
 func statefulset(objects []runtime.Object, labels map[string]string, depName, namespace string, service *v1beta1.ServiceUnversionedSpec, usedTemplates map[string]*v1beta1.Volume, podTemplateSpec v1.PodTemplateSpec) ([]runtime.Object, error) {
 	scaleParams := parseScaleParams(service)
 
@@ -31,6 +33,9 @@ func statefulset(objects []runtime.Object, labels map[string]string, depName, na
 			Template: podTemplateSpec,
 		},
 	}
+	statefulSet.Labels[useTemplatesLabel] = "true"
+	statefulSet.Spec.Selector.MatchLabels[useTemplatesLabel] = "true"
+	statefulSet.Spec.Template.Labels[useTemplatesLabel] = "true"
 
 	if service.UpdateStrategy == "on-delete" {
 		statefulSet.Spec.UpdateStrategy.Type = appsv1.OnDeleteStatefulSetStrategyType
