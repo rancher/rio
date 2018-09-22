@@ -58,27 +58,30 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # download requisite binaries in guest
   Set.new(["linux-amd64", hostOS]).each do |target|
-    config.vm.provision "shell", inline: download(CONFIG['version'], target)
+    config.vm.provision "shell", inline: download_unix(
+      CONFIG['version'], target)
   end
 
   # install and start rio server on guest
-  config.vm.provision "shell", inline: install(
+  config.vm.provision "shell", inline: install_unix(
     CONFIG['version'], "/vagrant/.vagrant", "/usr/bin", "linux-amd64")
   config.vm.provision "shell", inline: daemonize
-  config.vm.provision "shell", inline: login('guest', 'root')
-  config.vm.provision "shell", inline: login('guest', 'vagrant')
+  config.vm.provision "shell", inline: login_unix('guest', 'root')
+  config.vm.provision "shell", inline: login_unix('guest', 'vagrant')
 
   # install and configure rio client on host
   if OS.windows?
-    puts 'WARNING: windows host provisioning not implemented'  # TODO
+    config.vm.provision "host_shell", inline: install_windows(
+      CONFIG['version'], "C:\\Windows\\system32")
+    config.vm.provision "host_shell", inline: login_windows
   else
-    config.vm.provision "host_shell", inline: install(
+    config.vm.provision "host_shell", inline: install_unix(
       CONFIG['version'], ".vagrant", "/usr/local/bin", hostOS)
-    config.vm.provision "host_shell", inline: login('host', '')
+    config.vm.provision "host_shell", inline: login_unix('host', '')
   end
 end
 
-def download(version, rioOSArch)
+def download_unix(version, rioOSArch)
   rioOSArch == "windows" ? ext = "zip" : ext = "tar.gz"
   return <<-EOF
     if #{CONFIG['debug']}; then set -x; fi
@@ -97,7 +100,7 @@ def download(version, rioOSArch)
   EOF
 end
 
-def install(version, installPath, binPath, rioOSArch)
+def install_unix(version, installPath, binPath, rioOSArch)
   rioOSArch == "windows" ? ext = "zip" : ext = "tar.gz"
   return <<-EOF
     if #{CONFIG['debug']}; then set -x; fi
@@ -118,22 +121,31 @@ def install(version, installPath, binPath, rioOSArch)
   EOF
 end
 
-def daemonize()
+def install_windows(version, binPath)
   return <<-EOF
-    if #{CONFIG['debug']}; then set -x; fi
-    # TODO: detect gateway? override cloud-init? rio config param?
-    # hack: configure default route so rio chooses the correct IP address
-    route del default gw 10.0.2.2
-    route add default gw 192.168.0.1
-    # add rio to systemd and start it
-    sudo cp /vagrant/vagrant/rio.service /etc/systemd/system/multi-user.target.wants/
-    sudo systemctl daemon-reload
-    sudo systemctl restart rio
-    echo Rio started
+    if ($#{CONFIG['debug']}) { Set-PSDebug -Trace 1 }
+    if ((Test-Path #{binPath}\\rio.exe) -And ((rio.exe -v) -like ('*#{version}'))) {
+      Write-Host Rio #{version} already installed;
+    } else {
+      $tempdir = [System.IO.Path]::GetTempPath();
+      $dirname = 'rio-#{version}-windows';
+      $filename = $dirname + '.zip';
+      Add-Type -A System.IO.Compression.FileSystem;
+      [IO.Compression.ZipFile]::ExtractToDirectory('.vagrant\\' + $filename, $tempdir);
+      Start-Process -FilePath powershell.exe -Verb runAs -Wait -ArgumentList \\"-Command Move-Item -Path $tempdir$dirname\\rio.exe -Destination #{binPath}\\rio.exe -Force\\";
+      # process completes before file is moved...
+      Start-Sleep -Seconds 1;
+      Remove-Item $tempdir$dirname -Recurse -Force;
+      if (Test-Path #{binPath}\\rio.exe) {
+        Write-Host Installed Rio #{version} to #{binPath};
+      } else {
+        Write-Host Failed to install Rio #{version} to #{binPath};
+      }
+    }
   EOF
 end
 
-def login(target, user)
+def login_unix(target, user)
   target == 'guest' ?
     token = 'sudo cat /var/lib/rancher/rio/server/client-token 2>/dev/null' :
     token = 'vagrant ssh -c \'sudo cat /var/lib/rancher/rio/server/client-token\' 2>/dev/null'
@@ -156,5 +168,37 @@ def login(target, user)
       fi
       sleep 1
     done
+  EOF
+end
+
+def login_windows()
+  return <<-EOF
+    if ($#{CONFIG['debug']}) { Set-PSDebug -Trace 1; }
+    while($true) {
+      $token = (vagrant ssh -c 'sudo cat /var/lib/rancher/rio/server/client-token');
+      if ($token -ne '') {
+        $result = rio login --server https://127.0.0.1:7443 --token $token 2>&1
+        if ($result -like ('*Log in successful*')) {
+          Write-Host $result
+          break
+        }
+      }
+      Start-Sleep -Seconds 1;
+    }
+  EOF
+end
+
+def daemonize()
+  return <<-EOF
+    if #{CONFIG['debug']}; then set -x; fi
+    # TODO: detect gateway? override cloud-init? rio config param?
+    # hack: configure default route so rio chooses the correct IP address
+    route del default gw 10.0.2.2
+    route add default gw 192.168.0.1
+    # add rio to systemd and start it
+    sudo cp /vagrant/vagrant/rio.service /etc/systemd/system/multi-user.target.wants/
+    sudo systemctl daemon-reload
+    sudo systemctl restart rio
+    echo Rio started
   EOF
 end

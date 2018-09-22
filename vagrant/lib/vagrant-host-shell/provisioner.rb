@@ -22,13 +22,23 @@ module VagrantPlugins::HostShell
       @machine.ui.detail(I18n.t("vagrant.provisioners.shell.running",
         script: "host inline script"))
 
+      if Vagrant::Util::Platform.windows?
+        shell = "powershell"
+        flag = "-Command"
+        pathEnv = "PATH"
+      else
+        shell = "bash"
+        flag = "-c"
+        pathEnv = "VAGRANT_OLD_ENV_PATH"
+      end
+
       result = Vagrant::Util::Subprocess.execute(
-        'bash',
-        '-c',
+        shell,
+        flag,
         config.inline,
         :notify => [:stdout, :stderr],
         :workdir => config.cwd,
-        :env => {PATH: ENV["VAGRANT_OLD_ENV_PATH"]},
+        :env => {PATH: ENV[pathEnv]},
       ) do |type, data|
         handle_comm(type, data)
       end
@@ -36,7 +46,6 @@ module VagrantPlugins::HostShell
       if config.abort_on_nonzero && !result.exit_code.zero?      
         raise VagrantPlugins::HostShell::Errors::NonZeroStatusError.new(config.inline, result.exit_code)  
       end
-
     end
   end
 end
