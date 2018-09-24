@@ -2,9 +2,10 @@ package apply
 
 import (
 	"bytes"
+	"crypto/md5"
 	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -29,81 +30,80 @@ type appliedValue struct {
 
 type ConfigInjector func(config []byte) ([]byte, error)
 
-func Content(content []byte) error {
-	errOutput := &bytes.Buffer{}
-	cmd := reexec.Command("kubectl", "apply", "-f", "-")
-	cmd.Stdin = bytes.NewReader(content)
-	cmd.Stdout = nil
-	cmd.Stderr = errOutput
-
-	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "failed to apply: %s", errOutput.String())
-	}
-
-	return nil
-}
-
-func Apply(objects []runtime.Object, groupID string, generation int64, injectors ...ConfigInjector) error {
-	if len(objects) == 0 {
-		return nil
-	}
-
-	ns, whitelist, content, err := constructApplyData(objects, groupID, generation)
+func Apply(objects []runtime.Object, empty []string, namespace, groupID string, injectors ...ConfigInjector) error {
+	whitelist, content, err := constructApplyData(objects, groupID)
 	if err != nil {
 		return err
 	}
 
-	for _, inject := range injectors {
-		if content, err = inject(content); err != nil {
-			return err
+	if len(content) != 0 {
+		for _, inject := range injectors {
+			if content, err = inject(content); err != nil {
+				return err
+			}
 		}
 	}
 
-	return execApply(ns, whitelist, content, groupID)
+	return execApply(namespace, empty, whitelist, content, groupID)
 }
 
-func AnyNamespace(objects []runtime.Object, groupID string, generation int64) error {
-	if len(objects) == 0 {
-		return nil
-	}
-
-	_, whitelist, content, err := constructApplyData(objects, groupID, generation)
-	if err != nil {
-		return err
-	}
-
-	return execApply("", whitelist, content, groupID)
+func hash(id string) string {
+	h := md5.Sum([]byte(id))
+	return hex.EncodeToString(h[:])
 }
 
-func execApply(ns string, whitelist map[string]bool, content []byte, groupID string) error {
+func execApply(ns string, empty []string, whitelist map[string]bool, content []byte, groupID string) error {
 	key, val, ok := shouldApply(ns, content, groupID)
 	if !ok {
 		return nil
 	}
 
+	hashGroupID := hash(groupID)
+	if len(content) > 0 {
+		args := []string{"-n", ns, "apply", "--force", "--grace-period", "120", "--prune", "-l", "apply.cattle.io/groupID=" + hashGroupID, "-o", "json", "-f", "-"}
+		for group := range whitelist {
+			args = append(args, "--prune-whitelist="+group)
+		}
+		err := run(groupID, content, args...)
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(empty) > 0 {
+		args := []string{"-n", ns, "delete", "-l", "apply.cattle.io/groupID=" + hashGroupID, strings.Join(empty, ",")}
+		err := run(groupID, nil, args...)
+		if err != nil {
+			return err
+		}
+	}
+
+	applied.Store(key, val)
+	return nil
+}
+
+func run(groupID string, content []byte, args ...string) error {
 	output := &bytes.Buffer{}
 	errOutput := &bytes.Buffer{}
-	cmd := reexec.Command("kubectl", "-n", ns, "apply", "--force", "--grace-period", "120", "--prune", "-l", "apply.cattle.io/groupID="+groupID, "-o", "json", "-f", "-")
-	for group := range whitelist {
-		cmd.Args = append(cmd.Args, "--prune-whitelist="+group)
-	}
+	cmd := reexec.Command("kubectl")
+	cmd.Args = append(cmd.Args, args...)
 	cmd.Stdin = bytes.NewReader(content)
 	cmd.Stdout = output
 	cmd.Stderr = errOutput
 
 	if err := cmd.Run(); err != nil {
 		if logrus.GetLevel() >= logrus.DebugLevel {
-			fmt.Printf("Failed to apply: %v\n%s", errOutput.String(), content)
+			if len(content) > 0 {
+				fmt.Printf("[\n%s\n]\nFailed to apply %s: %s", content, groupID, errOutput.String())
+			}
 		}
-		logrus.Errorf("Failed to apply %s: %s", errOutput.String(), string(content))
-		return fmt.Errorf("failed to apply: %s", errOutput.String())
+		return fmt.Errorf("failed to apply %s %v: %s", groupID, cmd.Args, errOutput.String())
 	}
 
 	if logrus.GetLevel() >= logrus.DebugLevel {
 		fmt.Printf("Applied: %s", output.String())
 	}
 
-	applied.Store(key, val)
 	return nil
 }
 
@@ -131,7 +131,13 @@ func shouldApply(ns string, content []byte, groupID string) (interface{}, interf
 	return key, val, false
 }
 
-func constructApplyData(objects []runtime.Object, groupID string, generation int64) (string, map[string]bool, []byte, error) {
+func constructApplyData(objects []runtime.Object, groupID string) (map[string]bool, []byte, error) {
+	if len(objects) == 0 {
+		return nil, nil, nil
+	}
+
+	groupID = hash(groupID)
+
 	buffer := &bytes.Buffer{}
 	whitelist := map[string]bool{}
 	ns := ""
@@ -142,12 +148,12 @@ func constructApplyData(objects []runtime.Object, groupID string, generation int
 
 		objType, err := meta.TypeAccessor(obj)
 		if err != nil {
-			return "", nil, nil, fmt.Errorf("resource type data can not be accessed")
+			return nil, nil, fmt.Errorf("resource type data can not be accessed")
 		}
 
 		metaObj, ok := obj.(v1.Object)
 		if !ok {
-			return "", nil, nil, fmt.Errorf("resource type is not a meta object")
+			return nil, nil, fmt.Errorf("resource type is not a meta object")
 		}
 		labels := metaObj.GetLabels()
 		newLabels := map[string]string{}
@@ -155,7 +161,6 @@ func constructApplyData(objects []runtime.Object, groupID string, generation int
 			newLabels[k] = v
 		}
 		newLabels["apply.cattle.io/groupID"] = groupID
-		newLabels["apply.cattle.io/generationID"] = strconv.FormatInt(generation, 10)
 		metaObj.SetLabels(newLabels)
 
 		if len(ns) == 0 {
@@ -170,10 +175,10 @@ func constructApplyData(objects []runtime.Object, groupID string, generation int
 
 		bytes, err := yaml.Marshal(obj)
 		if err != nil {
-			return "", nil, nil, errors.Wrapf(err, "failed to encode %s/%s/%s/%s", objType.GetAPIVersion(), objType.GetKind(), metaObj.GetNamespace(), metaObj.GetName())
+			return nil, nil, errors.Wrapf(err, "failed to encode %s/%s/%s/%s", objType.GetAPIVersion(), objType.GetKind(), metaObj.GetNamespace(), metaObj.GetName())
 		}
 		buffer.Write(bytes)
 	}
 
-	return ns, whitelist, buffer.Bytes(), nil
+	return whitelist, buffer.Bytes(), nil
 }

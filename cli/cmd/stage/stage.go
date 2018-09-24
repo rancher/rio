@@ -4,12 +4,11 @@ import (
 	"fmt"
 
 	"github.com/rancher/norman/types"
-	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/rio/cli/cmd/create"
 	"github.com/rancher/rio/cli/pkg/lookup"
+	"github.com/rancher/rio/cli/pkg/service"
 	"github.com/rancher/rio/cli/pkg/waiter"
 	"github.com/rancher/rio/cli/server"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
 	"github.com/urfave/cli"
 )
 
@@ -48,12 +47,17 @@ func (r *Stage) Run(app *cli.Context) error {
 	}
 	defer ctx.Close()
 
-	resource, err := lookup.Lookup(ctx.ClientLookup, app.Args()[0], client.ServiceType)
+	w, err := waiter.NewWaiter(ctx)
 	if err != nil {
 		return err
 	}
 
-	revision, err := determineRevision(app.Args()[0], resource)
+	service, err := service.Lookup(ctx, app.Args()[0])
+	if err != nil {
+		return err
+	}
+
+	revision, err := determineRevision(app.Args()[0], &service.Resource)
 	if err != nil {
 		return err
 	}
@@ -64,38 +68,19 @@ func (r *Stage) Run(app *cli.Context) error {
 		return err
 	}
 
+	serviceDef.ParentService = service.Name
+	serviceDef.Version = revision
+	serviceDef.Weight = int64(r.Weight)
 	serviceDef.Scale = int64(r.Scale)
-
-	newRevision := &client.ServiceRevision{}
-	if err := convert.ToObj(serviceDef, newRevision); err != nil {
-		return fmt.Errorf("failed to format service revision: %v", err)
+	if serviceDef.Scale == 0 {
+		serviceDef.Scale = service.Scale
 	}
 
-	service, err := ctx.Client.Service.ByID(resource.ID)
+	revService, err := ctx.Client.Service.Create(serviceDef)
 	if err != nil {
 		return err
 	}
 
-	newRevision.Weight = int64(r.Weight)
-	if newRevision.Scale == 0 {
-		newRevision.Scale = service.Scale
-	}
-	if service.Revisions == nil {
-		service.Revisions = map[string]client.ServiceRevision{}
-	}
-
-	service.Revisions[revision] = *newRevision
-
-	_, err = ctx.Client.Service.Replace(service)
-	if err != nil {
-		return err
-	}
-
-	w, err := waiter.NewWaiter(ctx)
-	if err != nil {
-		return err
-	}
-
-	w.Add(&service.Resource)
+	w.Add(&revService.Resource)
 	return w.Wait()
 }

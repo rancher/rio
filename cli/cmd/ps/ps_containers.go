@@ -3,8 +3,8 @@ package ps
 import (
 	"strings"
 
+	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/rio/cli/cmd/util"
-	"github.com/rancher/rio/cli/pkg/kv"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/table"
 	"github.com/rancher/rio/cli/server"

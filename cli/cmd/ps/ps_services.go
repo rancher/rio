@@ -5,9 +5,8 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/rancher/norman/types/convert"
+	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/rio/cli/cmd/util"
-	"github.com/rancher/rio/cli/pkg/kv"
 	"github.com/rancher/rio/cli/pkg/table"
 	"github.com/rancher/rio/cli/server"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
@@ -19,6 +18,24 @@ type ServiceData struct {
 	Service  *client.Service
 	Stack    *client.Stack
 	Endpoint string
+}
+
+func FormatServiceName(data, data2 interface{}) (string, error) {
+	stackName, ok := data.(string)
+	if !ok {
+		return "", nil
+	}
+
+	service, ok := data2.(*client.Service)
+	if !ok {
+		return "", nil
+	}
+
+	if service.ParentService == "" || service.Version == "" {
+		return table.FormatStackScopedName(stackName, service.Name)
+	}
+
+	return table.FormatStackScopedName(stackName, service.Name+":"+service.Version)
 }
 
 func FormatImage(data interface{}) (string, error) {
@@ -75,7 +92,7 @@ func (p *Ps) services(app *cli.Context, ctx *server.Context) error {
 	}
 
 	writer := table.NewWriter([][]string{
-		{"NAME", "{{stackScopedName .Stack.Name .Service.Name}}"},
+		{"NAME", "{{serviceName .Stack.Name .Service}}"},
 		{"IMAGE", "{{.Service | image}}"},
 		{"CREATED", "{{.Service.Created | ago}}"},
 		{"SCALE", "{{scale .Service.Scale .Service.ScaleStatus}}"},
@@ -85,6 +102,7 @@ func (p *Ps) services(app *cli.Context, ctx *server.Context) error {
 	}, app)
 	defer writer.Close()
 
+	writer.AddFormatFunc("serviceName", FormatServiceName)
 	writer.AddFormatFunc("image", FormatImage)
 	writer.AddFormatFunc("scale", FormatScale)
 
@@ -105,26 +123,6 @@ func (p *Ps) services(app *cli.Context, ctx *server.Context) error {
 			Stack:    stack,
 			Endpoint: endpoint(ctx, stack, service.PortBindings, &service),
 		})
-
-		for revName, revision := range service.Revisions {
-			newService := &client.Service{}
-			if err := convert.ToObj(&revision, newService); err != nil {
-				return err
-			}
-			newService.Name += service.Name + ":" + revName
-			newService.Created = service.Created
-			if newService.Image == "" {
-				newService.Image = service.Image
-			}
-
-			writer.Write(&ServiceData{
-				ID:      service.ID,
-				Service: newService,
-				Stack:   stack,
-				// use parent service ports
-				Endpoint: endpoint(ctx, stack, service.PortBindings, newService),
-			})
-		}
 	}
 
 	return writer.Err()

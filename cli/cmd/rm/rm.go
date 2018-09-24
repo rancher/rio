@@ -48,14 +48,20 @@ func Remove(app *cli.Context, types ...string) error {
 			if err != nil {
 				return err
 			}
-			if _, ok := service.Revisions[parsed.Revision]; ok {
-				delete(service.Revisions, parsed.Revision)
-				if _, err := ctx.Client.Service.Replace(service); err != nil {
+
+			if service.Version != parsed.Revision {
+				revService, err := ctx.Client.Service.ByID(resource.ID + "-" + parsed.Revision)
+				if err != nil {
 					return err
+				}
+				if revService.ParentService == service.Name {
+					if err := ctx.Client.Service.Delete(revService); err != nil {
+						return err
+					}
+					w.Add(&revService.Resource)
 				}
 			}
 
-			w.Add(resource)
 			continue
 		}
 

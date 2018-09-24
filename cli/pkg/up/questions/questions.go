@@ -10,9 +10,9 @@ import (
 	"github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty"
 	"github.com/pkg/errors"
 	"github.com/rancher/norman/parse/builder"
+	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/norman/types"
 	"github.com/rancher/norman/types/convert"
-	"github.com/rancher/rio/cli/pkg/kv"
 	"github.com/rancher/types/apis/management.cattle.io/v3"
 )
 

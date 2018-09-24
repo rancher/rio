@@ -8,8 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rancher/norman/clientbase"
+	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/norman/types"
-	"github.com/rancher/rio/cli/pkg/kv"
 	"github.com/rancher/rio/pkg/clientaccess"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
 	spaceclient "github.com/rancher/rio/types/client/space/v1beta1"

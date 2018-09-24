@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/rancher/rio/cli/pkg/kv"
+	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/waiter"
 	"github.com/rancher/rio/cli/server"
@@ -45,19 +45,16 @@ func (s *Scale) Run(app *cli.Context) error {
 		}
 
 		parsedService := lookup.ParseServiceName(name)
-		if _, ok := service.Revisions[parsedService.Revision]; ok {
-			err = ctx.Client.Update(client.ServiceType, resource, map[string]interface{}{
-				"revisions": map[string]interface{}{
-					parsedService.Revision: map[string]interface{}{
-						"scale": scale,
-					},
-				},
-			}, nil)
-		} else {
-			err = ctx.Client.Update(client.ServiceType, resource, map[string]interface{}{
-				"scale": scale,
-			}, nil)
+		if parsedService.Revision != "" && parsedService.Revision != service.Version {
+			service, err = ctx.Client.Service.ByID(resource.ID + "-" + service.Version)
+			if err != nil {
+				return err
+			}
 		}
+
+		err = ctx.Client.Update(client.ServiceType, resource, map[string]interface{}{
+			"scale": scale,
+		}, nil)
 		if err != nil {
 			return fmt.Errorf("failed to update scale on %s: %v", name, err)
 		}

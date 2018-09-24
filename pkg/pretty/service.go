@@ -83,6 +83,5 @@ func serviceMappers() []types.Mapper {
 func services(schemas *types.Schemas) *types.Schemas {
 	return schemas.
 		AddMapperForType(&Version, client.SidekickConfig{}, containerMappers()...).
-		AddMapperForType(&Version, client.ServiceRevision{}, serviceMappers()...).
 		AddMapperForType(&Version, client.Service{}, serviceMappers()...)
 }

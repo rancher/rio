@@ -1,14 +1,14 @@
 package weight
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 
+	service2 "github.com/rancher/rio/cli/pkg/service"
+
+	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/norman/types/values"
-	"github.com/rancher/rio/cli/pkg/kv"
-	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/waiter"
 	"github.com/rancher/rio/cli/server"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
@@ -42,26 +42,18 @@ func (w *Weight) Run(app *cli.Context) error {
 			return fmt.Errorf("failed to parse %s: %v", arg, err)
 		}
 
-		resource, err := lookup.Lookup(ctx.ClientLookup, name, client.ServiceType)
+		service, err := service2.Lookup(ctx, name)
 		if err != nil {
 			return err
 		}
 
-		service, err := ctx.Client.Service.ByID(resource.ID)
+		data := map[string]interface{}{}
+		values.PutValue(data, int64(scale),
+			client.ServiceFieldWeight)
+
+		_, err = ctx.Client.Service.Update(service, data)
 		if err != nil {
 			return err
-		}
-
-		parsedService := lookup.ParseServiceName(name)
-		if _, ok := service.Revisions[parsedService.Revision]; ok {
-			data := map[string]interface{}{}
-			values.PutValue(data, int64(scale),
-				client.ServiceFieldRevisions,
-				parsedService.Revision,
-				client.ServiceRevisionFieldWeight)
-			_, err = ctx.Client.Service.Update(service, data)
-		} else {
-			return errors.New("weight can only be added to staged services")
 		}
 
 		waiter.Add(&service.Resource)

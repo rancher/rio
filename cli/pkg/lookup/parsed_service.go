@@ -1,9 +1,7 @@
 package lookup
 
 import (
-	"strings"
-
-	"github.com/rancher/rio/cli/pkg/kv"
+	"github.com/rancher/norman/pkg/kv"
 )
 
 type ParsedService struct {
@@ -14,13 +12,8 @@ type ParsedService struct {
 
 func ParseServiceNameFromLabels(labels map[string]string) ParsedService {
 	service := labels["rio.cattle.io/service"]
-	ns := labels["rio.cattle.io/namespace"]
-	rev := labels["rio.cattle.io/revision"]
-	i := strings.LastIndex(ns, "-")
-	stack := ns
-	if i != -1 {
-		stack = ns[:i]
-	}
+	stack := labels["rio.cattle.io/stack"]
+	rev := labels["rio.cattle.io/version"]
 
 	return ParsedService{
 		Revision:    rev,

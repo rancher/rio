@@ -3,7 +3,7 @@ package config
 import (
 	"sync"
 
-	"github.com/rancher/rio/cli/pkg/kv"
+	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/types/apis/core/v1"
 	"istio.io/api/mesh/v1alpha1"
 	metav1 "k8s.io/api/core/v1"

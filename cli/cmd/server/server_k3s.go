@@ -6,12 +6,13 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
-
 	"path/filepath"
 
 	"github.com/docker/docker/pkg/reexec"
-	"github.com/emicklei/go-restful-swagger12"
 	"github.com/natefinch/lumberjack"
 	"github.com/rancher/norman/signal"
 	"github.com/rancher/rio/cli/cmd/agent"
@@ -22,9 +23,6 @@ import (
 
 func setupLogging(app *cli.Context) {
 	if !app.GlobalBool("debug") {
-		swagger.LogInfo = func(format string, v ...interface{}) {
-			logrus.Debugf(format, v...)
-		}
 		flag.Set("stderrthreshold", "3")
 		flag.Set("alsologtostderr", "false")
 		flag.Set("logtostderr", "false")
@@ -53,6 +51,13 @@ func (s *Server) runWithLogging(app *cli.Context) error {
 func (s *Server) Run(app *cli.Context) error {
 	if s.Log != "" && os.Getenv("_RIO_REEXEC_") == "" {
 		return s.runWithLogging(app)
+	}
+
+	if s.ProfilePort > 0 {
+		// enable profiler
+		go func() {
+			log.Fatal(http.ListenAndServe(fmt.Sprintf("localhost:%d", s.ProfilePort), nil))
+		}()
 	}
 
 	setupLogging(app)

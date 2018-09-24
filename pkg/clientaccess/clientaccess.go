@@ -13,9 +13,9 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/util/cert"
-	"k8s.io/kubernetes/staging/src/k8s.io/client-go/tools/clientcmd"
 )
 
 var (

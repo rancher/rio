@@ -2,15 +2,14 @@ package route
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
-	"sort"
-
+	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/cli/cmd/create"
-	"github.com/rancher/rio/cli/pkg/kv"
 	"github.com/rancher/rio/cli/server"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
 	"github.com/urfave/cli"

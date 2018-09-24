@@ -51,7 +51,7 @@ services:
         - POD_NAMESPACE=$(self/namespace)
         - PILOT_THROTTLE=500
         - PILOT_CACHE_SQUASH=5
-        image: istio/pilot:1.0.0
+        image: istio/pilot:1.0.2
         secrets: identity:/etc/certs
       istio-proxy:
         expose:
@@ -74,7 +74,7 @@ services:
         secrets: identity:/etc/certs
 
   istio-citadel:
-    image: "istio/citadel:1.0.0"
+    image: "istio/citadel:1.0.2"
     command:
     - --append-dns-names=true
     - --grpc-port=8060
@@ -93,97 +93,3 @@ services:
     - get,list,update,delete extensions/deployments
     - get,list,update,delete extensions/replicasets
     secrets: identity:/etc/certs
-
-  istio-gateway:
-    labels:
-      "gateway": "external"
-    global_permissions:
-    - "get,watch,list,update extensions/thirdpartyresources"
-    - "get,watch,list,update */virtualservices"
-    - "get,watch,list,update */destinationrules"
-    - "get,watch,list,update */gateways"
-    update_order: stop-first
-    sidekicks:
-      istio-proxy:
-        image: "istio/proxyv2:1.0.0"
-        command:
-        - proxy
-        - router
-        - --log_output_level
-        - "default:info"
-        - --discoveryRefreshDelay
-        - '1s' #discoveryRefreshDelay
-        - --drainDuration
-        - '45s' #drainDuration
-        - --parentShutdownDuration
-        - '1m0s' #parentShutdownDuration
-        - --connectTimeout
-        - '10s' #connectTimeout
-        - --serviceCluster
-        - istio-proxy
-        - --zipkinAddress
-        - ""
-        - --statsdUdpAddress
-        - ""
-        - --proxyAdminPort
-        - "15000"
-        - --controlPlaneAuthPolicy
-        - NONE
-        - --discoveryAddress
-        - istio-pilot:15007
-        env:
-        - POD_NAME=$(self/name)
-        - POD_NAMESPACE=$(self/namespace)
-        - INSTANCE_IP=$(self/ip)
-        - ISTIO_META_POD_NAME=$(self/name)
-        secrets: identity:/etc/certs
-
-kubernetes:
-  namespaced_custom_resource_definitions:
-  # config
-  - DestinationPolicy.config.istio.io/v1alpha2
-  - EgressRule.config.istio.io/v1alpha2
-  - RouteRule.config.istio.io/v1alpha2
-  - HTTPAPISpecBinding.config.istio.io/v1alpha2
-  - HTTPAPISpec.config.istio.io/v1alpha2
-  - QuotaSpecBinding.config.istio.io/v1alpha2
-  - QuotaSpec.config.istio.io/v1alpha2
-  # networking
-  - VirtualService.networking.istio.io/v1alpha3
-  - DestinationRule.networking.istio.io/v1alpha3
-  - ServiceEntry.networking.istio.io/v1alpha3
-  - Gateway.networking.istio.io/v1alpha3
-  # authentication
-  - Policy.authentication.istio.io/v1alpha1
-
-  namespaced_manifest: |-
-    apiVersion: v1
-    kind: Service
-    metadata:
-      name: rio-lb
-      annotations:
-      labels:
-        "gateway": "external"
-    spec:
-      type: LoadBalancer
-      selector:
-        "gateway": "external"
-      ports:
-      - name: http-80-80
-        protocol: TCP
-        port: 80
-        targetPort: 80
-    ---
-    apiVersion: networking.istio.io/v1alpha3
-    kind: Gateway
-    metadata:
-      name: rio-gateway
-    spec:
-      selector:
-        gateway: external
-      servers:
-      - port:
-          protocol: "HTTP"
-          number: 80
-        hosts:
-        - "*"

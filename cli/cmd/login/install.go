@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/rancher/rio/cli/server"
-	"github.com/rancher/rio/pkg/deploy"
+	"github.com/rancher/rio/pkg/deploy/stack"
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
 	"github.com/sirupsen/logrus"
@@ -63,7 +63,5 @@ func InstallRioInK8s(config clientcmd.ClientConfig) error {
 	}
 
 	logrus.Infof("Installing Rio")
-	return deploy.Deploy("rio-system", &deploy.StackResources{
-		Services: []*v1beta1.Service{service},
-	})
+	return stack.Deploy("rio-system", nil, nil, []*v1beta1.Service{service}, nil, nil)
 }

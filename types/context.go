@@ -11,7 +11,7 @@ import (
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1/schema"
 	spacev1beta1 "github.com/rancher/rio/types/apis/space.cattle.io/v1beta1"
 	spaceSchema "github.com/rancher/rio/types/apis/space.cattle.io/v1beta1/schema"
-	"github.com/rancher/types/apis/apps/v1beta2"
+	appsv1 "github.com/rancher/types/apis/apps/v1beta2"
 	"github.com/rancher/types/apis/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -21,7 +21,7 @@ type Context struct {
 	LocalConfig  *rest.Config
 	Schemas      *types.Schemas
 	Global       spacev1beta1.Interface
-	Apps         v1beta2.Interface
+	Apps         appsv1.Interface
 	Rio          v1beta1.Interface
 	Core         v1.Interface
 	Networking   v1alpha3.Interface
@@ -31,7 +31,7 @@ type Context struct {
 }
 
 func NewContext(restConfig rest.Config) (*Context, error) {
-	a, err := v1beta2.NewForConfig(restConfig)
+	a, err := appsv1.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
 	}

@@ -14,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	api2 "github.com/rancher/rio/controllers/api"
+
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -55,6 +57,7 @@ func k3sConfig(dataDir string) (*server.ServerConfig, http.Handler, error) {
 		ListenPort:     6443,
 		ClusterIPRange: *clusterIPNet,
 		ServiceIPRange: *serviceIPNet,
+		UseTokenCA:     true,
 		DataDir:        dataDir,
 	}, newTunnel(), nil
 }
@@ -283,6 +286,10 @@ func startServer(ctx context.Context, rContext *types.Context, httpPort, httpsPo
 	}
 
 	server := dynamiclistener.NewServer(ctx, s, handler, httpPort, httpsPort)
+	if err := api2.Register(ctx, rContext); err != nil {
+		return err
+	}
+
 	settings.CACerts.Set(lc.CACerts)
 	_, err = server.Enable(lc)
 	return err

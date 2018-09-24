@@ -30,25 +30,22 @@ func (p *Promote) Run(app *cli.Context) error {
 			return err
 		}
 
-		service, err := ctx.Client.Service.ByID(resource.ID)
+		parsed := lookup.ParseServiceName(arg)
+		rev, err := ctx.Client.Service.ByID(resource.ID + "-" + parsed.Revision)
 		if err != nil {
 			return err
 		}
 
-		parsed := lookup.ParseServiceName(arg)
-		if rev, ok := service.Revisions[parsed.Revision]; ok {
-			if p.Scale > 0 {
-				service.Scale = int64(p.Scale)
-			}
-
-			rev.Promote = true
-			service.Revisions[parsed.Revision] = rev
-			_, err := ctx.Client.Service.Update(service, service)
-			if err != nil {
-				return err
-			}
-			w.Add(resource)
+		if p.Scale > 0 {
+			rev.Scale = int64(p.Scale)
 		}
+
+		rev.Promote = true
+		if _, err := ctx.Client.Service.Update(rev, rev); err != nil {
+			return err
+		}
+
+		w.Add(&rev.Resource)
 	}
 
 	return w.Wait()
