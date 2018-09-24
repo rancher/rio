@@ -136,6 +136,7 @@ type Field struct {
 	InvalidChars string      `json:"invalidChars,omitempty"`
 	Description  string      `json:"description,omitempty"`
 	CodeName     string      `json:"-"`
+	DynamicField bool        `json:"dynamicField,omitempty"`
 }
 
 type Action struct {

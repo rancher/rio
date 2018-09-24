@@ -78,10 +78,10 @@ type ImportedConfig struct {
 }
 
 type ClusterStatus struct {
-	//Conditions represent the latest available observations of an object's current state:
-	//More info: https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#typical-status-properties
+	// Conditions represent the latest available observations of an object's current state:
+	// More info: https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#typical-status-properties
 	Conditions []ClusterCondition `json:"conditions,omitempty"`
-	//Component statuses will represent cluster's components (etcd/controller/scheduler) health
+	// Component statuses will represent cluster's components (etcd/controller/scheduler) health
 	// https://kubernetes.io/docs/api-reference/v1.8/#componentstatus-v1-core
 	Driver                               string                   `json:"driver"`
 	AgentImage                           string                   `json:"agentImage"`
@@ -210,6 +210,10 @@ type AzureKubernetesServiceConfig struct {
 	Subnet string `json:"subnet,omitempty"`
 	// The resource group that the virtual network is in.  If omited it is assumed to match the resource group of the cluster
 	VirtualNetworkResourceGroup string `json:"virtualNetworkResourceGroup,omitempty"`
+	// Additional options for setting a custom virtual network
+	ServiceCIDR      string `json:"serviceCidr,omitempty"`
+	DNSServiceIP     string `json:"dnsServiceIp,omitempty"`
+	DockerBridgeCIDR string `json:"dockerBridgeCidr,omitempty"`
 }
 
 type AmazonElasticContainerServiceConfig struct {
@@ -224,6 +228,7 @@ type AmazonElasticContainerServiceConfig struct {
 	Subnets        []string `json:"subnets,omitempty"`
 	SecurityGroups []string `json:"securityGroups,omitempty"`
 	ServiceRole    string   `json:"serviceRole,omitempty"`
+	AMI            string   `json:"ami,omitempty"`
 }
 
 type ClusterEvent struct {
@@ -252,11 +257,12 @@ type ClusterRegistrationTokenSpec struct {
 }
 
 type ClusterRegistrationTokenStatus struct {
-	InsecureCommand string `json:"insecureCommand"`
-	Command         string `json:"command"`
-	NodeCommand     string `json:"nodeCommand"`
-	ManifestURL     string `json:"manifestUrl"`
-	Token           string `json:"token"`
+	InsecureCommand    string `json:"insecureCommand"`
+	Command            string `json:"command"`
+	WindowsNodeCommand string `json:"windowsNodeCommand"`
+	NodeCommand        string `json:"nodeCommand"`
+	ManifestURL        string `json:"manifestUrl"`
+	Token              string `json:"token"`
 }
 
 type GenerateKubeConfigOutput struct {

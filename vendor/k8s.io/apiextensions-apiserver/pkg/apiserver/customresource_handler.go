@@ -25,9 +25,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/go-openapi/spec"
-	"github.com/go-openapi/strfmt"
-	"github.com/go-openapi/validate"
+	"k8s.io/apiserver/pkg/server"
+
 	"github.com/golang/glog"
 
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
@@ -51,18 +50,15 @@ import (
 	"k8s.io/apiserver/pkg/registry/generic"
 	genericregistry "k8s.io/apiserver/pkg/registry/generic/registry"
 	"k8s.io/apiserver/pkg/storage/storagebackend"
-	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/scale"
 	"k8s.io/client-go/scale/scheme/autoscalingv1"
 	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
-	apiservervalidation "k8s.io/apiextensions-apiserver/pkg/apiserver/validation"
 	informers "k8s.io/apiextensions-apiserver/pkg/client/informers/internalversion/apiextensions/internalversion"
 	listers "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/internalversion"
 	"k8s.io/apiextensions-apiserver/pkg/controller/finalizer"
-	apiextensionsfeatures "k8s.io/apiextensions-apiserver/pkg/features"
 	"k8s.io/apiextensions-apiserver/pkg/registry/customresource"
 	"k8s.io/apiextensions-apiserver/pkg/registry/customresource/tableconvertor"
 )
@@ -87,6 +83,9 @@ type crdHandler struct {
 	delegate          http.Handler
 	restOptionsGetter generic.RESTOptionsGetter
 	admission         admission.Interface
+
+	genericAPIServer *server.GenericAPIServer
+	addRoot          sync.Once
 }
 
 // crdInfo stores enough information to serve the storage for the custom resource
@@ -107,6 +106,7 @@ type crdInfo struct {
 type crdStorageMap map[types.UID]*crdInfo
 
 func NewCustomResourceDefinitionHandler(
+	genericAPIServer *server.GenericAPIServer,
 	versionDiscoveryHandler *versionDiscoveryHandler,
 	groupDiscoveryHandler *groupDiscoveryHandler,
 	requestContextMapper apirequest.RequestContextMapper,
@@ -115,6 +115,7 @@ func NewCustomResourceDefinitionHandler(
 	restOptionsGetter generic.RESTOptionsGetter,
 	admission admission.Interface) *crdHandler {
 	ret := &crdHandler{
+		genericAPIServer:        genericAPIServer,
 		versionDiscoveryHandler: versionDiscoveryHandler,
 		groupDiscoveryHandler:   groupDiscoveryHandler,
 		customStorage:           atomic.Value{},
@@ -126,13 +127,26 @@ func NewCustomResourceDefinitionHandler(
 	}
 
 	crdInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		UpdateFunc: ret.updateCustomResourceDefinition,
+		AddFunc: func(obj interface{}) {
+			ret.updateAPI(obj, false)
+		},
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			ret.updateCustomResourceDefinition(oldObj, newObj)
+			ret.updateAPI(newObj, false)
+		},
 		DeleteFunc: func(obj interface{}) {
+			ret.updateAPI(obj, true)
 			ret.removeDeadStorage()
 		},
 	})
 
 	ret.customStorage.Store(crdStorageMap{})
+
+	go func() {
+		// pretty hacky, but this will install the CRD api group if no CRDs exist
+		time.Sleep(5 * time.Second)
+		ret.updateAPI(nil, false)
+	}()
 
 	return ret
 }
@@ -291,6 +305,44 @@ func (r *crdHandler) serveScale(w http.ResponseWriter, req *http.Request, reques
 	}
 }
 
+func (r *crdHandler) updateAPI(obj interface{}, del bool) {
+	if r.genericAPIServer.DiscoveryGroupManager == nil {
+		return
+	}
+
+	r.addRoot.Do(func() {
+		ver := metav1.GroupVersionForDiscovery{
+			Version:      "v1beta1",
+			GroupVersion: fmt.Sprintf("apiextensions.k8s.io/v1beta1"),
+		}
+		r.genericAPIServer.DiscoveryGroupManager.AddGroup(metav1.APIGroup{
+			Name:             "apiextensions.k8s.io",
+			Versions:         []metav1.GroupVersionForDiscovery{ver},
+			PreferredVersion: ver,
+		})
+	})
+
+	newCRD, ok := obj.(*apiextensions.CustomResourceDefinition)
+	if !ok {
+		return
+	}
+
+	if del {
+		r.genericAPIServer.DiscoveryGroupManager.RemoveGroup(newCRD.Spec.Group)
+		return
+	}
+
+	ver := metav1.GroupVersionForDiscovery{
+		Version:      newCRD.Spec.Version,
+		GroupVersion: fmt.Sprintf("%s/%s", newCRD.Spec.Group, newCRD.Spec.Version),
+	}
+	r.genericAPIServer.DiscoveryGroupManager.AddGroup(metav1.APIGroup{
+		Name:             newCRD.Spec.Group,
+		Versions:         []metav1.GroupVersionForDiscovery{ver},
+		PreferredVersion: ver,
+	})
+}
+
 func (r *crdHandler) updateCustomResourceDefinition(oldObj, newObj interface{}) {
 	oldCRD := oldObj.(*apiextensions.CustomResourceDefinition)
 	newCRD := newObj.(*apiextensions.CustomResourceDefinition)
@@ -397,32 +449,8 @@ func (r *crdHandler) getOrCreateServingInfoFor(crd *apiextensions.CustomResource
 	}
 	creator := unstructuredCreator{}
 
-	validator, _, err := apiservervalidation.NewSchemaValidator(crd.Spec.Validation)
-	if err != nil {
-		return nil, err
-	}
-
 	var statusSpec *apiextensions.CustomResourceSubresourceStatus
-	var statusValidator *validate.SchemaValidator
-	if utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceSubresources) && crd.Spec.Subresources != nil && crd.Spec.Subresources.Status != nil {
-		statusSpec = crd.Spec.Subresources.Status
-
-		// for the status subresource, validate only against the status schema
-		if crd.Spec.Validation != nil && crd.Spec.Validation.OpenAPIV3Schema != nil && crd.Spec.Validation.OpenAPIV3Schema.Properties != nil {
-			if statusSchema, ok := crd.Spec.Validation.OpenAPIV3Schema.Properties["status"]; ok {
-				openapiSchema := &spec.Schema{}
-				if err := apiservervalidation.ConvertJSONSchemaProps(&statusSchema, openapiSchema); err != nil {
-					return nil, err
-				}
-				statusValidator = validate.NewSchemaValidator(openapiSchema, nil, "", strfmt.Default)
-			}
-		}
-	}
-
 	var scaleSpec *apiextensions.CustomResourceSubresourceScale
-	if utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceSubresources) && crd.Spec.Subresources != nil && crd.Spec.Subresources.Scale != nil {
-		scaleSpec = crd.Spec.Subresources.Scale
-	}
 
 	// TODO: identify how to pass printer specification from the CRD
 	table, err := tableconvertor.New(nil)
@@ -437,8 +465,6 @@ func (r *crdHandler) getOrCreateServingInfoFor(crd *apiextensions.CustomResource
 			typer,
 			crd.Spec.Scope == apiextensions.NamespaceScoped,
 			kind,
-			validator,
-			statusValidator,
 			statusSpec,
 			scaleSpec,
 		),

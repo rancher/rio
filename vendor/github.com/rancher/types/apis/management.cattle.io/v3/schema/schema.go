@@ -34,9 +34,7 @@ var (
 		Init(globalTypes).
 		Init(rkeTypes).
 		Init(alertTypes).
-		Init(pipelineTypes).
-		Init(composeType).
-		Init(resourceQuotaTemplateTypes)
+		Init(composeType)
 
 	TokenSchemas = factory.Schemas(&Version).
 			Init(tokens)
@@ -145,6 +143,14 @@ func clusterTypes(schemas *types.Schemas) *types.Schemas {
 		MustImport(&Version, v3.ImportClusterYamlInput{}).
 		MustImport(&Version, v3.ImportYamlOutput{}).
 		MustImport(&Version, v3.ExportOutput{}).
+		MustImportAndCustomize(&Version, v3.ETCDService{}, func(schema *types.Schema) {
+			schema.MustCustomizeField("extraArgs", func(field types.Field) types.Field {
+				field.Default = map[string]interface{}{
+					"election-timeout":   "5000",
+					"heartbeat-interval": "500"}
+				return field
+			})
+		}).
 		MustImportAndCustomize(&Version, v3.Cluster{}, func(schema *types.Schema) {
 			schema.MustCustomizeField("name", func(field types.Field) types.Field {
 				field.Type = "dnsLabel"
@@ -247,6 +253,7 @@ func nodeTypes(schemas *types.Schemas) *types.Schemas {
 			schema.ResourceFields["clusterId"] = clusterField
 			schema.ResourceActions["cordon"] = types.Action{}
 			schema.ResourceActions["uncordon"] = types.Action{}
+			schema.ResourceActions["stopDrain"] = types.Action{}
 			schema.ResourceActions["drain"] = types.Action{
 				Input: "nodeDrainInput",
 			}
@@ -416,32 +423,25 @@ func authnTypes(schemas *types.Schemas) *types.Schemas {
 		MustImport(&Version, v3.FreeIpaTestAndApplyInput{}).
 		// Saml Config
 		// Ping-Saml Config
-		MustImportAndCustomize(&Version, v3.PingConfig{}, func(schema *types.Schema) {
-			schema.BaseType = "authConfig"
-			schema.ResourceActions = map[string]types.Action{
-				"disable": {},
-				"testAndEnable": {
-					Input:  "samlConfigTestInput",
-					Output: "samlConfigTestOutput",
-				},
-			}
-			schema.CollectionMethods = []string{}
-			schema.ResourceMethods = []string{http.MethodGet, http.MethodPut}
-		}).
-		MustImportAndCustomize(&Version, v3.ADFSConfig{}, func(schema *types.Schema) {
-			schema.BaseType = "authConfig"
-			schema.ResourceActions = map[string]types.Action{
-				"disable": {},
-				"testAndEnable": {
-					Input:  "samlConfigTestInput",
-					Output: "samlConfigTestOutput",
-				},
-			}
-			schema.CollectionMethods = []string{}
-			schema.ResourceMethods = []string{http.MethodGet, http.MethodPut}
-		}).
+		// KeyCloak-Saml Configs
+		MustImportAndCustomize(&Version, v3.PingConfig{}, configSchema).
+		MustImportAndCustomize(&Version, v3.ADFSConfig{}, configSchema).
+		MustImportAndCustomize(&Version, v3.KeyCloakConfig{}, configSchema).
 		MustImport(&Version, v3.SamlConfigTestInput{}).
 		MustImport(&Version, v3.SamlConfigTestOutput{})
+}
+
+func configSchema(schema *types.Schema) {
+	schema.BaseType = "authConfig"
+	schema.ResourceActions = map[string]types.Action{
+		"disable": {},
+		"testAndEnable": {
+			Input:  "samlConfigTestInput",
+			Output: "samlConfigTestOutput",
+		},
+	}
+	schema.CollectionMethods = []string{}
+	schema.ResourceMethods = []string{http.MethodGet, http.MethodPut}
 }
 
 func userTypes(schema *types.Schemas) *types.Schemas {
@@ -541,72 +541,6 @@ func alertTypes(schema *types.Schemas) *types.Schemas {
 
 }
 
-func pipelineTypes(schema *types.Schemas) *types.Schemas {
-	return schema.
-		AddMapperForType(&Version, v3.ClusterPipeline{}).
-		AddMapperForType(&Version, v3.Pipeline{},
-			&m.Embed{Field: "status"},
-			m.DisplayName{}).
-		AddMapperForType(&Version, v3.PipelineExecution{},
-			&m.Embed{Field: "status"}).
-		AddMapperForType(&Version, v3.SourceCodeCredential{}).
-		AddMapperForType(&Version, v3.SourceCodeRepository{}).
-		AddMapperForType(&Version, v3.PipelineExecutionLog{}).
-		MustImport(&Version, v3.AuthAppInput{}).
-		MustImport(&Version, v3.AuthUserInput{}).
-		MustImport(&Version, v3.RunPipelineInput{}).
-		MustImportAndCustomize(&Version, v3.ClusterPipeline{}, func(schema *types.Schema) {
-			schema.ResourceActions = map[string]types.Action{
-				"deploy":  {},
-				"destroy": {},
-				"authapp": {
-					Input:  "authAppInput",
-					Output: "clusterPipeline",
-				},
-				"revokeapp": {},
-				"authuser": {
-					Input:  "authUserInput",
-					Output: "sourceCodeCredential",
-				},
-			}
-		}).
-		MustImportAndCustomize(&Version, v3.Pipeline{}, func(schema *types.Schema) {
-			schema.ResourceActions = map[string]types.Action{
-				"activate":   {},
-				"deactivate": {},
-				"run": {
-					Input: "runPipelineInput",
-				},
-			}
-		}).
-		MustImportAndCustomize(&Version, v3.PipelineExecution{}, func(schema *types.Schema) {
-			schema.ResourceActions = map[string]types.Action{
-				"stop":  {},
-				"rerun": {},
-			}
-		}).
-		MustImport(&Version, v3.PipelineExecutionLog{}).
-		MustImportAndCustomize(&Version, v3.SourceCodeCredential{}, func(schema *types.Schema) {
-			delete(schema.ResourceFields, "namespaceId")
-			schema.ResourceMethods = []string{http.MethodGet, http.MethodDelete}
-			schema.ResourceActions = map[string]types.Action{
-				"refreshrepos": {},
-			}
-		}).
-		MustImportAndCustomize(&Version, v3.SourceCodeRepository{}, func(schema *types.Schema) {
-			schema.ResourceMethods = []string{http.MethodGet, http.MethodDelete}
-			delete(schema.ResourceFields, "namespaceId")
-		})
-
-}
-
 func composeType(schemas *types.Schemas) *types.Schemas {
 	return schemas.MustImport(&Version, v3.ComposeConfig{})
-}
-
-func resourceQuotaTemplateTypes(schemas *types.Schemas) *types.Schemas {
-	return schemas.
-		MustImportAndCustomize(&Version, v3.ResourceQuotaTemplate{}, func(schema *types.Schema) {
-			schema.ResourceMethods = []string{http.MethodGet, http.MethodDelete}
-		})
 }
