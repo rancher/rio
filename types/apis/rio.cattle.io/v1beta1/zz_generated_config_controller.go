@@ -43,6 +43,7 @@ type ConfigLister interface {
 }
 
 type ConfigController interface {
+	Generic() controller.GenericController
 	Informer() cache.SharedIndexInformer
 	Lister() ConfigLister
 	AddHandler(name string, handler ConfigHandlerFunc)
@@ -103,6 +104,10 @@ func (l *configLister) Get(namespace, name string) (*Config, error) {
 
 type configController struct {
 	controller.GenericController
+}
+
+func (c *configController) Generic() controller.GenericController {
+	return c.GenericController
 }
 
 func (c *configController) Lister() ConfigLister {

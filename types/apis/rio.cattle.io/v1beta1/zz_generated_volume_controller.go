@@ -43,6 +43,7 @@ type VolumeLister interface {
 }
 
 type VolumeController interface {
+	Generic() controller.GenericController
 	Informer() cache.SharedIndexInformer
 	Lister() VolumeLister
 	AddHandler(name string, handler VolumeHandlerFunc)
@@ -103,6 +104,10 @@ func (l *volumeLister) Get(namespace, name string) (*Volume, error) {
 
 type volumeController struct {
 	controller.GenericController
+}
+
+func (c *volumeController) Generic() controller.GenericController {
+	return c.GenericController
 }
 
 func (c *volumeController) Lister() VolumeLister {

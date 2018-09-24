@@ -43,6 +43,7 @@ type GatewayLister interface {
 }
 
 type GatewayController interface {
+	Generic() controller.GenericController
 	Informer() cache.SharedIndexInformer
 	Lister() GatewayLister
 	AddHandler(name string, handler GatewayHandlerFunc)
@@ -103,6 +104,10 @@ func (l *gatewayLister) Get(namespace, name string) (*Gateway, error) {
 
 type gatewayController struct {
 	controller.GenericController
+}
+
+func (c *gatewayController) Generic() controller.GenericController {
+	return c.GenericController
 }
 
 func (c *gatewayController) Lister() GatewayLister {
