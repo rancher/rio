@@ -47,7 +47,7 @@ Download: [Linux, Mac, Windows](https://github.com/rancher/rio/releases)
 
 Rio will run in two different modes:
 
-**Rio Standalone**: In this mode Rio comes will all the container tech you need built in. All you need are modern Linux
+**Rio Standalone**: In this mode Rio comes with all the container tech you need built in. All you need are modern Linux
  servers.  Rio does not need Docker, Kubernetes or anything else installed on the host.  This mode is good if you want
  to run containers but don't want to be a Kubernetes expert.  Rio will ensure that you have the most secure setup and
  keep all the components up to date.  This is by far the easiest way to run clusters.

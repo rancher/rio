@@ -5,11 +5,10 @@
 Vagrant.require_version '>= 1.6.0'
 VAGRANTFILE_API_VERSION = '2'
 
-# Explicitly specify only supported provider
-ENV['VAGRANT_DEFAULT_PROVIDER'] = 'virtualbox'
-
 # Read YAML config file
-CONFIG = YAML.load_file(File.join(File.dirname(__FILE__), 'vagrant/config.yaml'))
+CONFIG = YAML.load_file(File.join(File.dirname(__FILE__), 'vagrant.yaml'))
+
+ENV['VAGRANT_DEFAULT_PROVIDER'] = CONFIG['provider']
 
 require 'set'
 $LOAD_PATH.unshift File.expand_path('../vagrant/lib', __FILE__)
@@ -31,7 +30,23 @@ module OS
 end
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  config.vm.box = "ubuntu/xenial64"
+  case CONFIG['provider']
+  when "virtualbox"
+    config.vm.box = "ubuntu/xenial64"
+    config.vm.provider "virtualbox" do |provider|
+      provider.cpus = CONFIG['machine']['cpu']
+      provider.memory = CONFIG['machine']['memory']
+    end
+  when "vmware_fusion"
+    config.vm.box = "jamesoliver/xenial64"
+    config.vm.provider "vmware_fusion" do |provider|
+      provider.vmx['memsize'] = CONFIG['machine']['memory']
+      provider.vmx['numvcpus'] = CONFIG['machine']['cpu']
+    end
+  else
+    puts "Unsupported vagrant provider: #{CONFIG['provider']}"
+    Kernel.exit(1)
+  end
   
   # forward rio plaintext/tls ports to localhost
   config.vm.network "forwarded_port", guest: 7080, host: 7080, host_ip: "127.0.0.1"
@@ -42,11 +57,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.vm.network "public_network"
   end
   
-  config.vm.provider "virtualbox" do |vb|
-    vb.cpus = CONFIG['machine']['cpu']
-    vb.memory = CONFIG['machine']['memory']
-  end
-
   # detect host os
   if OS.mac?
     hostOS = "darwin"
@@ -146,25 +156,30 @@ def install_windows(version, binPath)
 end
 
 def login_unix(target, user)
-  target == 'guest' ?
-    token = 'sudo cat /var/lib/rancher/rio/server/client-token 2>/dev/null' :
-    token = 'vagrant ssh -c \'sudo cat /var/lib/rancher/rio/server/client-token\' 2>/dev/null'
-  userset = (user != '')
-
   return <<-EOF
     if #{CONFIG['debug']}; then set -x; fi
     while true; do
-      token=`#{token}`
+      ip=127.0.0.1
+      if [ #{target} == "guest" ]; then
+        token=`sudo cat /var/lib/rancher/rio/server/client-token 2>/dev/null`
+      else
+        token=`vagrant ssh -c 'sudo cat /var/lib/rancher/rio/server/client-token' 2>/dev/null`
+        if [ "#{CONFIG['provider']}" == "vmware_fusion" ]; then
+          ip=`vagrant ssh-config | grep HostName | sed 's/^.*HostName //g'`
+        fi
+      fi
       if [ "$token" != "" ]; then
-        if #{userset}; then
+        if [ "#{user}" != "" ]; then
           sudo -H -u #{user} bash -c \
-            "rio login --server https://127.0.0.1:7443 --token $token 2>&1"
+            "rio login --server https://${ip}:7443 --token $token 2>&1"
         else
-          rio login --server https://127.0.0.1:7443 --token $token 2>&1
+          rio login --server https://${ip}:7443 --token $token 2>&1
         fi
         if [ $? -eq 0 ]; then
           break
         fi
+        # try another IP 
+        host_ip=`vagrant ssh-config | grep HostName | sed 's/^.*HostName //g'`
       fi
       sleep 1
     done
@@ -196,7 +211,21 @@ def daemonize()
     route del default gw 10.0.2.2
     route add default gw 192.168.0.1
     # add rio to systemd and start it
-    sudo cp /vagrant/vagrant/rio.service /etc/systemd/system/multi-user.target.wants/
+    sudo cat << F00F > /etc/systemd/system/multi-user.target.wants/rio.service
+[Unit]
+Description=RIO server
+After=network.target
+ConditionPathExists=/usr/bin/rio
+
+[Service]
+ExecStart=/usr/bin/rio server --log /vagrant/.vagrant/rio.log
+KillMode=process
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+Alias=rio.service
+F00F
     sudo systemctl daemon-reload
     sudo systemctl restart rio
     echo Rio started

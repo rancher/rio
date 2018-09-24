@@ -1,5 +1,8 @@
 # Rio version to use
-version: v0.0.3-rc7
+version: v0.0.3-rc8
+
+# choose vm provider: virtualbox, vmware_fusion
+provider: virtualbox
 
 # resources to allocate to the virtual machine
 machine:
