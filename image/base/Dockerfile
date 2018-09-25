@@ -14,7 +14,7 @@ RUN apt-get install -y \
     python \
     unzip
 RUN mkdir /usr/src/buildroot
-RUN curl -fL https://buildroot.org/downloads/buildroot-2018.02.2.tar.bz2 | tar xvjf - -C /usr/src/buildroot --strip-components=1
+RUN curl -fL https://buildroot.org/downloads/buildroot-2018.02.5.tar.bz2 | tar xvjf - -C /usr/src/buildroot --strip-components=1
 RUN curl -fL https://storage.googleapis.com/buildroot-cache/2018.02.2.tar.gz | tar xvzf - -C /usr/src/buildroot
 WORKDIR /usr/src/buildroot
 COPY tool-config /usr/src/buildroot/.config
