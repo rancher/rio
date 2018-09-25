@@ -58,7 +58,7 @@ services:
         - 15007/http
         - 15010/grpc
         - 9093/http,http-monitoring
-        image: istio/proxyv2:0.8.0
+        image: istio/proxyv2:1.0.2
         command:
         - proxy
         - --serviceCluster
