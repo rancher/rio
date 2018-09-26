@@ -1,19 +1,22 @@
 # Rio version to use
-version: v0.0.3-rc8
+version: v0.0.3
 
 # choose vm provider: virtualbox, vmware_fusion
 provider: virtualbox
 
-# resources to allocate to the virtual machine
+# desired number of nodes (virtual machines) in the rio cluster
+nodes: 2
+
+# resources to allocate to each virtual machine
 machine:
   cpu: "1"
   # memory in MiB
-  memory: "2048"
+  memory: "1536"
 
 # options: 'public' or 'nat'
 # in 'nat' mode, rio services aren't accessible
 # in 'public' mode, user must specify a network to bridge
 network: public
 
-# output inline provisioning script execution logs
+# trace provisioner script execution
 debug: false

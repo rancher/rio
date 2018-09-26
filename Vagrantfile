@@ -16,7 +16,7 @@ require 'vagrant-host-shell'
 
 module OS
   def OS.windows?
-        (/cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM) != nil
+    (/cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM) != nil
   end
   def OS.mac?
     (/darwin/ =~ RUBY_PLATFORM) != nil
@@ -34,12 +34,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   when "virtualbox"
     config.vm.box = "ubuntu/xenial64"
     config.vm.provider "virtualbox" do |provider|
+      provider.linked_clone = true if Gem::Version.new(Vagrant::VERSION) >= Gem::Version.new('1.8.0')
       provider.cpus = CONFIG['machine']['cpu']
       provider.memory = CONFIG['machine']['memory']
     end
   when "vmware_fusion"
     config.vm.box = "jamesoliver/xenial64"
     config.vm.provider "vmware_fusion" do |provider|
+      provider.linked_clone = true if Gem::Version.new(Vagrant::VERSION) >= Gem::Version.new('1.8.0')
       provider.vmx['memsize'] = CONFIG['machine']['memory']
       provider.vmx['numvcpus'] = CONFIG['machine']['cpu']
     end
@@ -47,47 +49,65 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     puts "Unsupported vagrant provider: #{CONFIG['provider']}"
     Kernel.exit(1)
   end
-  
-  # forward rio plaintext/tls ports to localhost
-  config.vm.network "forwarded_port", guest: 7080, host: 7080, host_ip: "127.0.0.1"
-  config.vm.network "forwarded_port", guest: 7443, host: 7443, host_ip: "127.0.0.1"
+
+  config.vm.define "node-01" do |server|
+    server.vm.hostname = "node-01"
+
+    # forward rio plaintext/tls ports to localhost
+    server.vm.network "forwarded_port", guest: 7080, host: 7080, host_ip: "127.0.0.1"
+    server.vm.network "forwarded_port", guest: 7443, host: 7443, host_ip: "127.0.0.1"
+
+    # detect host os
+    if OS.mac?
+      hostOS = "darwin"
+    elsif OS.linux?
+      hostOS = "linux-amd64"
+    else
+      hostOS = "windows"
+    end
+
+    # download requisite binaries in guest
+    Set.new(["linux-amd64", hostOS]).each do |target|
+      server.vm.provision "shell", inline: download_unix(
+        CONFIG['version'], target)
+    end
+
+    # install and start rio server on guest
+    server.vm.provision "shell", inline: install_unix(
+      CONFIG['version'], "/vagrant/.vagrant", "/usr/bin", "linux-amd64")
+    server.vm.provision "shell", inline: default_route_hack
+    server.vm.provision "shell", inline: daemonize_server
+    server.vm.provision "shell", inline: login_unix('guest', 'root')
+    server.vm.provision "shell", inline: login_unix('guest', 'vagrant')
+
+    # install and configure rio client on host
+    if OS.windows?
+      server.vm.provision "host_shell", inline: install_windows(
+        CONFIG['version'], "C:\\Windows\\system32")
+      server.vm.provision "host_shell", inline: login_windows
+    else
+      server.vm.provision "host_shell", inline: install_unix(
+        CONFIG['version'], ".vagrant", "/usr/local/bin", hostOS)
+      server.vm.provision "host_shell", inline: login_unix('host', '')
+    end
+  end
+
+  for i in 2..CONFIG['nodes']
+    name = "node-%02d" %[i]
+    config.vm.define name do |agent|
+      agent.vm.hostname = name
+
+      # install and start rio agent on guest
+      agent.vm.provision "shell", inline: install_unix(
+        CONFIG['version'], "/vagrant/.vagrant", "/usr/bin", "linux-amd64")
+      agent.vm.provision "shell", inline: default_route_hack
+      agent.vm.provision "shell", inline: daemonize_agent(name)
+    end
+  end
 
   # add bridge network, requires user input (select interface to bridge)
   if CONFIG['network'] == "public"
     config.vm.network "public_network"
-  end
-  
-  # detect host os
-  if OS.mac?
-    hostOS = "darwin"
-  elsif OS.linux?
-    hostOS = "linux-amd64"
-  else
-    hostOS = "windows"
-  end
-
-  # download requisite binaries in guest
-  Set.new(["linux-amd64", hostOS]).each do |target|
-    config.vm.provision "shell", inline: download_unix(
-      CONFIG['version'], target)
-  end
-
-  # install and start rio server on guest
-  config.vm.provision "shell", inline: install_unix(
-    CONFIG['version'], "/vagrant/.vagrant", "/usr/bin", "linux-amd64")
-  config.vm.provision "shell", inline: daemonize
-  config.vm.provision "shell", inline: login_unix('guest', 'root')
-  config.vm.provision "shell", inline: login_unix('guest', 'vagrant')
-
-  # install and configure rio client on host
-  if OS.windows?
-    config.vm.provision "host_shell", inline: install_windows(
-      CONFIG['version'], "C:\\Windows\\system32")
-    config.vm.provision "host_shell", inline: login_windows
-  else
-    config.vm.provision "host_shell", inline: install_unix(
-      CONFIG['version'], ".vagrant", "/usr/local/bin", hostOS)
-    config.vm.provision "host_shell", inline: login_unix('host', '')
   end
 end
 
@@ -161,11 +181,11 @@ def login_unix(target, user)
     while true; do
       ip=127.0.0.1
       if [ #{target} == "guest" ]; then
-        token=`sudo cat /var/lib/rancher/rio/server/client-token 2>/dev/null`
+        token=`cat /vagrant/.vagrant/client-token`
       else
-        token=`vagrant ssh -c 'sudo cat /var/lib/rancher/rio/server/client-token' 2>/dev/null`
+        token=`cat .vagrant/client-token`
         if [ "#{CONFIG['provider']}" == "vmware_fusion" ]; then
-          ip=`vagrant ssh-config | grep HostName | sed 's/^.*HostName //g'`
+          ip=`vagrant ssh-config node-01 | grep HostName | sed 's/^.*HostName //g'`
         fi
       fi
       if [ "$token" != "" ]; then
@@ -178,8 +198,6 @@ def login_unix(target, user)
         if [ $? -eq 0 ]; then
           break
         fi
-        # try another IP 
-        host_ip=`vagrant ssh-config | grep HostName | sed 's/^.*HostName //g'`
       fi
       sleep 1
     done
@@ -190,7 +208,7 @@ def login_windows()
   return <<-EOF
     if ($#{CONFIG['debug']}) { Set-PSDebug -Trace 1; }
     while($true) {
-      $token = (vagrant ssh -c 'sudo cat /var/lib/rancher/rio/server/client-token');
+      $token = (vagrant ssh node-01 -c 'sudo cat /var/lib/rancher/rio/server/client-token');
       if ($token -ne '') {
         $result = rio login --server https://127.0.0.1:7443 --token $token 2>&1
         if ($result -like ('*Log in successful*')) {
@@ -203,22 +221,40 @@ def login_windows()
   EOF
 end
 
-def daemonize()
+# configure default route so rio chooses the correct IP address
+# TODO: use rio config param once available
+def default_route_hack()
   return <<-EOF
     if #{CONFIG['debug']}; then set -x; fi
-    # TODO: detect gateway? override cloud-init? rio config param?
-    # hack: configure default route so rio chooses the correct IP address
     route del default gw 10.0.2.2
+    # FIXME: won't work unless this is the correct gateway for bridged network
     route add default gw 192.168.0.1
+  EOF
+end
+
+def daemonize_server()
+  case CONFIG['provider']
+  when "virtualbox"
+    iface="enp0s8"
+  when "vmware_fusion"
+    iface="ens38"
+  else
+    puts "Unsupported vagrant provider: #{CONFIG['provider']}"
+    Kernel.exit(1)
+  end
+
+  return <<-EOF
+    if #{CONFIG['debug']}; then set -x; fi
     # add rio to systemd and start it
-    sudo cat << F00F > /etc/systemd/system/multi-user.target.wants/rio.service
+    sudo cat << F00F > /etc/systemd/system/multi-user.target.wants/rio-server.service
 [Unit]
-Description=RIO server
+Description=Rio Server
 After=network.target
 ConditionPathExists=/usr/bin/rio
 
 [Service]
-ExecStart=/usr/bin/rio server --log /vagrant/.vagrant/rio.log
+ExecStart=/usr/bin/rio server \
+  --log /vagrant/.vagrant/node-01.log
 KillMode=process
 Restart=on-failure
 
@@ -227,7 +263,49 @@ WantedBy=multi-user.target
 Alias=rio.service
 F00F
     sudo systemctl daemon-reload
-    sudo systemctl restart rio
-    echo Rio started
+    sudo systemctl restart rio-server
+    echo rio-server started, waiting for tokens
+    while true; do
+      if [ -f /var/lib/rancher/rio/server/client-token ]; then
+        cp /var/lib/rancher/rio/server/client-token /vagrant/.vagrant/client-token
+        if [ -f /var/lib/rancher/rio/server/node-token ]; then
+          cp /var/lib/rancher/rio/server/node-token /vagrant/.vagrant/node-token
+          ifconfig #{iface}|grep 'inet '|tr ' ' '\n'|grep addr|tr ':' '\n'|tail -n1>/vagrant/.vagrant/node-ip
+          break
+        fi
+      fi
+      sleep 1
+    done
+    echo copied tokens
+  EOF
+end
+
+def daemonize_agent(name)
+  return <<-EOF
+    if #{CONFIG['debug']}; then set -x; fi
+    # add rio to systemd and start it
+    ip=`cat /vagrant/.vagrant/node-ip`
+    token=`cat /vagrant/.vagrant/node-token`
+    sudo cat << F00F > /etc/systemd/system/multi-user.target.wants/rio-agent.service
+[Unit]
+Description=Rio Agent
+After=network.target
+ConditionPathExists=/usr/bin/rio
+
+[Service]
+ExecStart=/usr/bin/rio agent \
+  --server https://${ip}:7443 \
+  --token ${token} \
+  --log /vagrant/.vagrant/#{name}.log
+KillMode=process
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+Alias=rio.service
+F00F
+    sudo systemctl daemon-reload
+    sudo systemctl restart rio-agent
+    echo rio-agent started
   EOF
 end
