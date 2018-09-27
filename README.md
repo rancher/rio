@@ -10,6 +10,9 @@ opinionated user experience.  Additionally, Rio is a "Cloud Native Container Dis
 meaning is includes builtin Cloud Native technologies such as Kubernetes, Istio, Containerd, etc.
 so that the user need not be an expert in installing, using, and maintaining these system.
 
+[![Rio Demo](https://img.youtube.com/vi/8YkIycwad2w/0.jpg)](https://www.youtube.com/watch?v=8YkIycwad2w)
+
+
 ## Current Status: Early Preview
 
 This is an early preview, features may be broken, not work as described, and has been known to be irresistibly drawn
