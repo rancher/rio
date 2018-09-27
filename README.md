@@ -8,7 +8,7 @@ Rio is a user oriented end-to-end container solution with a focus on keeping con
 combating the current trend of complexity. It's kept fun and simple through it's familiar and
 opinionated user experience.  Additionally, Rio is a "Cloud Native Container Distribution"
 meaning is includes builtin Cloud Native technologies such as Kubernetes, Istio, Containerd, etc.
-so that the user need not be an expert in installing, using, and maintaining these system.
+so that the user need not be an expert in installing, using, and maintaining these systems.
 
 [![Rio Demo](https://img.youtube.com/vi/8YkIycwad2w/0.jpg)](https://www.youtube.com/watch?v=8YkIycwad2w)
 
@@ -32,14 +32,26 @@ need to be an expert in the details.
 
 ## Quick Start
 
-Download: [Linux, Mac, Windows](https://github.com/rancher/rio/releases)
+### Prerequisites
 
-Prerequisites: If you want to run this on your laptop, then Minikube or Docker for Mac/Windows is recommended.  If you
-don't have those then you need to run a Linux VM (or Linux itself, come to the darkside).  We will make this easier in the future.
-Otherwise you can run this easily with any modern Linux server, nothing is needed to be installed except the kernel.
+1. A supported Virtual Machine provider
+    1. [VirtualBox](https://www.virtualbox.org/wiki/Downloads) is recommended and default
+    1. [VMware Fusion](https://www.vmware.com/products/fusion.html) for Mac users performs better (in theory)
+1. [Vagrant 1.6+](https://www.vagrantup.com/downloads.html)
 
-Run: `rio ps` and it will tell you what to do
+Configure [vagrant.yaml](./vagrant.yaml) for your desired VM provider, if not VirtualBox. You may also change the number of nodes and in your Rio cluster and the resources allocated to each node.
 
+Run `vagrant up` from the project root directory. You may be asked to select a bridged network interface; select the interface being used to connect to the internet. Depending on your host OS and directory permissions, you may be asked to authenticate during `rio` client installation on the host.
+
+Run `rio -v` to ensure rio is installed on your host machine. Run `rio ps` to ensure the client is authenticated with the Rio cluster.
+```
+$ rio -v
+rio version v0.0.3
+$ rio ps
+NAME      IMAGE     CREATED   SCALE     STATE     ENDPOINT   DETAIL
+```
+
+Done! Now try [an example](./README.md#rio-stage-options-service_id_name).
 
 ## Installation
 

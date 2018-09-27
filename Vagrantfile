@@ -35,15 +35,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.vm.box = "ubuntu/xenial64"
     config.vm.provider "virtualbox" do |provider|
       provider.linked_clone = true if Gem::Version.new(Vagrant::VERSION) >= Gem::Version.new('1.8.0')
-      provider.cpus = CONFIG['machine']['cpu']
-      provider.memory = CONFIG['machine']['memory']
+      provider.cpus = CONFIG['resources']['cpu']
+      provider.memory = CONFIG['resources']['memory']
     end
   when "vmware_fusion"
     config.vm.box = "jamesoliver/xenial64"
     config.vm.provider "vmware_fusion" do |provider|
       provider.linked_clone = true if Gem::Version.new(Vagrant::VERSION) >= Gem::Version.new('1.8.0')
-      provider.vmx['memsize'] = CONFIG['machine']['memory']
-      provider.vmx['numvcpus'] = CONFIG['machine']['cpu']
+      provider.vmx['memsize'] = CONFIG['resources']['memory']
+      provider.vmx['numvcpus'] = CONFIG['resources']['cpu']
     end
   else
     puts "Unsupported vagrant provider: #{CONFIG['provider']}"
@@ -137,7 +137,7 @@ def install_unix(version, installPath, binPath, rioOSArch)
     RIO_FILENAME=rio-#{version}-#{rioOSArch}.#{ext}
     RIO_FILEPATH=#{installPath}/${RIO_FILENAME}
 
-    if [ ! -f #{binPath}/rio ] || [[ `rio -v | grep #{version}` == "" ]]; then
+    if [ ! -f #{binPath}/rio ] || [[ `rio -v | grep #{version}$` == "" ]]; then
       if [ ! -f ${RIO_FILEPATH} ]; then
         echo "Couldn't find file: ${RIO_FILENAME}"
         exit 1
@@ -226,9 +226,9 @@ end
 def default_route_hack()
   return <<-EOF
     if #{CONFIG['debug']}; then set -x; fi
-    route del default gw 10.0.2.2
+    route del default gw 10.0.2.2 || true
     # FIXME: won't work unless this is the correct gateway for bridged network
-    route add default gw 192.168.0.1
+    route add default gw 192.168.0.1 || true
   EOF
 end
 
