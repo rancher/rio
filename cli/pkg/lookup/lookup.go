@@ -14,7 +14,7 @@ import (
 	client2 "github.com/rancher/rio/types/client/space/v1beta1"
 )
 
-type ClientLookup func(typeName string) clientbase.APIBaseClientInterface
+type ClientLookup func(typeName string) (clientbase.APIBaseClientInterface, error)
 
 func Lookup(c ClientLookup, name string, typeNames ...string) (*types.Resource, error) {
 	var result []*namedResource
@@ -55,7 +55,7 @@ func Lookup(c ClientLookup, name string, typeNames ...string) (*types.Resource, 
 		options = append(options, msg)
 	}
 
-	num, err := questions.PromptOptions(msg, 0, options...)
+	num, err := questions.PromptOptions(msg, -1, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,12 @@ type namedResource struct {
 func byID(c ClientLookup, id, schemaType string) (*namedResource, error) {
 	var resource namedResource
 
-	err := c(schemaType).ByID(schemaType, id, &resource)
+	client, err := c(schemaType)
+	if err != nil {
+		return nil, err
+	}
+
+	err = client.ByID(schemaType, id, &resource)
 	return &resource, err
 }
 
@@ -157,7 +162,12 @@ func byName(c ClientLookup, name, schemaType string) (*namedResource, error) {
 		return nil, err
 	}
 
-	if err := c(schemaType).List(schemaType, &types.ListOpts{
+	client, err := c(schemaType)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := client.List(schemaType, &types.ListOpts{
 		Filters: filters,
 	}, &collection); err != nil {
 		return nil, err

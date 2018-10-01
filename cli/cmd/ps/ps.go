@@ -1,8 +1,8 @@
 package ps
 
 import (
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/cli/server"
 	"github.com/urfave/cli"
 )
 
@@ -15,15 +15,9 @@ func (p *Ps) Customize(cmd *cli.Command) {
 	cmd.Flags = append(table.WriterFlags(), cmd.Flags...)
 }
 
-func (p *Ps) Run(app *cli.Context) error {
-	ctx, err := server.NewContext(app)
-	if err != nil {
-		return err
+func (p *Ps) Run(ctx *clicontext.CLIContext) error {
+	if p.C_Containers || len(ctx.CLI.Args()) > 0 {
+		return p.containers(ctx)
 	}
-	defer ctx.Close()
-
-	if p.C_Containers || len(app.Args()) > 0 {
-		return p.containers(app, ctx)
-	}
-	return p.services(app, ctx)
+	return p.services(ctx)
 }

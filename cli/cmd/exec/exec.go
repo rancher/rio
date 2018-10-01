@@ -6,9 +6,8 @@ import (
 
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/rio/cli/cmd/ps"
-	"github.com/rancher/rio/cli/server"
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
 )
 
 type Exec struct {
@@ -17,24 +16,18 @@ type Exec struct {
 	C_Container string `desc:"Specific container in pod, default is first container"`
 }
 
-func (e *Exec) Run(app *cli.Context) error {
-	ctx, err := server.NewContext(app)
-	if err != nil {
-		return err
-	}
-	defer ctx.Close()
-
-	c, err := ctx.SpaceClient()
+func (e *Exec) Run(ctx *clicontext.CLIContext) error {
+	cc, err := ctx.ClusterClient()
 	if err != nil {
 		return err
 	}
 
-	args := app.Args()
+	args := ctx.CLI.Args()
 	if len(args) < 2 {
 		return fmt.Errorf("at least two arguments are required CONTAINER CMD")
 	}
 
-	cd, err := ps.ListFirstPod(c, true, e.C_Container, args[0])
+	cd, err := ps.ListFirstPod(cc, true, e.C_Container, args[0])
 	if err != nil {
 		return err
 	}

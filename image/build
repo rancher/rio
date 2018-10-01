@@ -3,24 +3,14 @@ set -e
 
 cd $(dirname $0)
 
-sudo rm -rf root main.squashfs
+sudo rm -rf main.squashfs
 
-DIGEST=$(cat base/* | sha256sum -)
-TAG=${DIGEST:0:8}
-IMAGE=rancher/rio-build:$TAG
+pushd ..
+mkdir -p build
+echo Copying vendor
+tar chf build/vendor.tar.gz --exclude vendor/github.com/coreos/etcd/cmd --exclude vendor/github.com/jteeuwen/go-bindata/testdata vendor
+echo Running agent docker build
+docker build -t bb -f image/Dockerfile .
+popd
 
-if ! docker inspect --type image $IMAGE >/dev/null; then
-    docker pull $IMAGE || true
-fi
-
-if ! docker inspect --type image $IMAGE >/dev/null; then
-    docker build -t $IMAGE base
-fi
-
-docker tag $IMAGE rio-build
-docker build -t bb .
-mkdir root
-docker export $(docker create bb) | sudo tar xf - -C root
-sudo mksquashfs root main.squashfs
-
-echo If you have privileges push $IMAGE so others can use the cache
+docker run --rm -v $(pwd):/target -it bb install -o $(id -u) -g $(id -g) main.squashfs /target

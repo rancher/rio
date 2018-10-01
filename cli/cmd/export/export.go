@@ -4,11 +4,10 @@ import (
 	"io"
 	"os"
 
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/output"
 	"github.com/rancher/rio/cli/pkg/yamldownload"
-	"github.com/rancher/rio/cli/server"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
-	"github.com/urfave/cli"
 )
 
 var (
@@ -23,21 +22,20 @@ type Export struct {
 	O_Output string `desc:"Output format (yaml/json)"`
 }
 
-func (e *Export) Run(app *cli.Context) error {
-	ctx, err := server.NewContext(app)
-	if err != nil {
-		return err
-	}
-	defer ctx.Close()
-
+func (e *Export) Run(ctx *clicontext.CLIContext) error {
 	format, err := output.Format(e.O_Output)
 	if err != nil {
 		return err
 	}
 
-	args := app.Args()
+	cluster, err := ctx.Cluster()
+	if err != nil {
+		return err
+	}
+
+	args := ctx.CLI.Args()
 	if len(args) == 0 {
-		args = []string{ctx.DefaultStackName}
+		args = []string{cluster.DefaultStackName}
 	}
 
 	for _, arg := range args {

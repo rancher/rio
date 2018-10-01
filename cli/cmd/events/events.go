@@ -1,12 +1,12 @@
 package events
 
 import (
+	"context"
 	"sync"
 
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/monitor"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/cli/server"
-	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -18,41 +18,45 @@ type Events struct {
 	Format string `desc:"'json' or 'yaml' or Custom format: '{{.ID}} {{.Stack.Name}}'" default:"jsoncompact"`
 }
 
-func (e *Events) Run(app *cli.Context) error {
-	ctx, err := server.NewContext(app)
-	if err != nil {
-		return err
-	}
-	defer ctx.Close()
-
-	sc, err := ctx.SpaceClient()
+func (e *Events) Run(ctx *clicontext.CLIContext) error {
+	sc, err := ctx.ClusterClient()
 	if err != nil {
 		return err
 	}
 
-	m := monitor.New(ctx.Client)
+	wc, err := ctx.WorkspaceClient()
+	if err != nil {
+		return err
+	}
+
+	m := monitor.New(wc)
 	sm := monitor.New(sc)
 
-	eg := errgroup.Group{}
+	parentCtx, cancel := context.WithCancel(context.Background())
+	eg, childCtx := errgroup.WithContext(parentCtx)
 	eg.Go(func() error {
-		s := ctx.Client.Types["subscribe"]
-		return m.Start(&s)
+		defer cancel()
+		s := wc.Types["subscribe"]
+		return m.Start(childCtx, &s)
 	})
 	eg.Go(func() error {
+		defer cancel()
 		s := sc.Types["subscribe"]
-		return sm.Start(&s)
+		return sm.Start(childCtx, &s)
 	})
 	eg.Go(func() error {
+		defer cancel()
 		for c := range m.Subscribe().C {
-			if err := e.printEvent(c, app); err != nil {
+			if err := e.printEvent(c, ctx); err != nil {
 				return err
 			}
 		}
 		return nil
 	})
 	eg.Go(func() error {
+		defer cancel()
 		for c := range sm.Subscribe().C {
-			if err := e.printEvent(c, app); err != nil {
+			if err := e.printEvent(c, ctx); err != nil {
 				return err
 			}
 		}
@@ -62,11 +66,11 @@ func (e *Events) Run(app *cli.Context) error {
 	return eg.Wait()
 }
 
-func (e *Events) printEvent(event *monitor.Event, app *cli.Context) error {
+func (e *Events) printEvent(event *monitor.Event, ctx *clicontext.CLIContext) error {
 	writeLock.Lock()
 	defer writeLock.Unlock()
 
-	tw := table.NewWriter(nil, app)
+	tw := table.NewWriter(nil, ctx)
 	tw.Write(event)
 	return tw.Close()
 }

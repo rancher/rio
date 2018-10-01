@@ -5,32 +5,29 @@ import (
 	"strconv"
 	"strings"
 
-	service2 "github.com/rancher/rio/cli/pkg/service"
-
 	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/norman/types/values"
+	"github.com/rancher/rio/cli/pkg/clicontext"
+	service2 "github.com/rancher/rio/cli/pkg/service"
 	"github.com/rancher/rio/cli/pkg/waiter"
-	"github.com/rancher/rio/cli/server"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
-	"github.com/urfave/cli"
 )
 
 type Weight struct {
 }
 
-func (w *Weight) Run(app *cli.Context) error {
-	ctx, err := server.NewContext(app)
+func (w *Weight) Run(ctx *clicontext.CLIContext) error {
+	wc, err := ctx.WorkspaceClient()
 	if err != nil {
 		return err
 	}
-	defer ctx.Close()
 
 	waiter, err := waiter.NewWaiter(ctx)
 	if err != nil {
 		return err
 	}
 
-	for _, arg := range app.Args() {
+	for _, arg := range ctx.CLI.Args() {
 		name, scaleStr := kv.Split(arg, "=")
 		scaleStr = strings.TrimSuffix(scaleStr, "%")
 
@@ -51,7 +48,7 @@ func (w *Weight) Run(app *cli.Context) error {
 		values.PutValue(data, int64(scale),
 			client.ServiceFieldWeight)
 
-		_, err = ctx.Client.Service.Update(service, data)
+		_, err = wc.Service.Update(service, data)
 		if err != nil {
 			return err
 		}
@@ -59,5 +56,5 @@ func (w *Weight) Run(app *cli.Context) error {
 		waiter.Add(&service.Resource)
 	}
 
-	return waiter.Wait()
+	return waiter.Wait(ctx.Ctx)
 }

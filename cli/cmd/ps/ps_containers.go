@@ -5,11 +5,10 @@ import (
 
 	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/rio/cli/cmd/util"
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/cli/server"
 	spaceclient "github.com/rancher/rio/types/client/space/v1beta1"
-	"github.com/urfave/cli"
 )
 
 var (
@@ -73,13 +72,13 @@ func ListPods(c *spaceclient.Client, all bool, specificContainerName string, cri
 	return result, nil
 }
 
-func (p *Ps) containers(app *cli.Context, ctx *server.Context) error {
-	c, err := ctx.SpaceClient()
+func (p *Ps) containers(ctx *clicontext.CLIContext) error {
+	cc, err := ctx.ClusterClient()
 	if err != nil {
 		return err
 	}
 
-	cds, err := ListPods(c, p.A_All, "", app.Args()...)
+	cds, err := ListPods(cc, p.A_All, "", ctx.CLI.Args()...)
 	if err != nil {
 		return err
 	}
@@ -92,7 +91,7 @@ func (p *Ps) containers(app *cli.Context, ctx *server.Context) error {
 		{"IP", "Pod.PodIP"},
 		{"STATE", "Container.State"},
 		{"DETAIL", "Container.TransitioningMessage"},
-	}, app)
+	}, ctx)
 	defer writer.Close()
 
 	writer.AddFormatFunc("containerName", containerName)

@@ -7,28 +7,30 @@ import (
 	"unicode/utf8"
 
 	"github.com/rancher/rio/cli/cmd/util"
-	"github.com/rancher/rio/cli/server"
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
-	"github.com/urfave/cli"
 )
 
 type Create struct {
 	L_Label map[string]string `desc:"Set meta data on a config"`
 }
 
-func (c *Create) Run(app *cli.Context) error {
-	ctx, err := server.NewContext(app)
-	if err != nil {
-		return err
-	}
-	defer ctx.Close()
+func (c *Create) Run(ctx *clicontext.CLIContext) error {
+	var (
+		err error
+	)
 
-	if len(app.Args()) != 2 {
+	if len(ctx.CLI.Args()) != 2 {
 		return fmt.Errorf("two arguments are required")
 	}
 
-	name := app.Args()[0]
-	file := app.Args()[1]
+	name := ctx.CLI.Args()[0]
+	file := ctx.CLI.Args()[1]
+
+	wc, err := ctx.WorkspaceClient()
+	if err != nil {
+		return err
+	}
 
 	config := &client.Config{}
 
@@ -50,7 +52,7 @@ func (c *Create) Run(app *cli.Context) error {
 		config.Encoded = true
 	}
 
-	config, err = ctx.Client.Config.Create(config)
+	config, err = wc.Config.Create(config)
 	if err != nil {
 		return err
 	}

@@ -22,6 +22,5 @@ func Populate(stack *input.IstioDeployment, output *output.Deployment) error {
 		populatePorts,
 		populateStack,
 		populateService,
-		populateGateway,
-		populateProxy)
+		populateGateway)
 }

@@ -1,9 +1,9 @@
 package inspect
 
 import (
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/cli/server"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
 	client2 "github.com/rancher/rio/types/client/space/v1beta1"
 	"github.com/urfave/cli"
@@ -36,15 +36,12 @@ func (i *Inspect) Customize(cmd *cli.Command) {
 	}
 }
 
-func (i *Inspect) Run(app *cli.Context) error {
-	ctx, err := server.NewContext(app)
-	if err != nil {
-		return err
-	}
-	defer ctx.Close()
-
-	for _, arg := range app.Args() {
-		r := find(ctx.ClientLookup, arg, i.T_Type, InspectTypes)
+func (i *Inspect) Run(ctx *clicontext.CLIContext) error {
+	for _, arg := range ctx.CLI.Args() {
+		r, err := find(ctx.ClientLookup, arg, i.T_Type, InspectTypes)
+		if err != nil {
+			return err
+		}
 		if r == nil {
 			continue
 		}
@@ -54,7 +51,7 @@ func (i *Inspect) Run(app *cli.Context) error {
 			delete(r, "actions")
 		}
 
-		t := table.NewWriter(nil, app)
+		t := table.NewWriter(nil, ctx)
 		t.Write(r)
 		if err := t.Close(); err != nil {
 			return err
@@ -64,17 +61,21 @@ func (i *Inspect) Run(app *cli.Context) error {
 	return nil
 }
 
-func find(c lookup.ClientLookup, arg, override string, types []string) map[string]interface{} {
+func find(c lookup.ClientLookup, arg, override string, types []string) (map[string]interface{}, error) {
 	if len(override) > 0 {
 		types = []string{override}
 	}
 	r, err := lookup.Lookup(c, arg, types...)
 	if err == nil {
+		client, err := c(r.Type)
+		if err != nil {
+			return nil, err
+		}
 		data := map[string]interface{}{}
-		err = c(r.Type).GetLink(*r, "self", &data)
+		err = client.GetLink(*r, "self", &data)
 		if err == nil {
-			return data
+			return data, nil
 		}
 	}
-	return nil
+	return nil, nil
 }

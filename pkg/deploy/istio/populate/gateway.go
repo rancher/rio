@@ -21,6 +21,16 @@ func populateGateway(input *input.IstioDeployment, output *istioOutput.Deploymen
 		Selector: settings.IstioGatewaySelector,
 	}
 
+	for _, port := range output.Ports {
+		gws.Servers = append(gws.Servers, &v1alpha3.Server{
+			Port: &v1alpha3.Port{
+				Protocol: "HTTP",
+				Number:   uint32(port),
+			},
+			Hosts: []string{"*"},
+		})
+	}
+
 	gateway := &istioOutput.Gateway{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Gateway",
@@ -31,16 +41,6 @@ func populateGateway(input *input.IstioDeployment, output *istioOutput.Deploymen
 			Namespace: settings.RioSystemNamespace,
 		},
 		Spec: gws,
-	}
-
-	for _, port := range output.Ports {
-		gws.Servers = append(gws.Servers, &v1alpha3.Server{
-			Port: &v1alpha3.Port{
-				Protocol: "HTTP",
-				Number:   uint32(port),
-			},
-			Hosts: []string{"*"},
-		})
 	}
 
 	output.Gateways[gateway.Name] = gateway

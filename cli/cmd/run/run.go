@@ -8,8 +8,8 @@ import (
 	"github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty"
 	"github.com/rancher/rio/cli/cmd/attach"
 	"github.com/rancher/rio/cli/cmd/create"
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
-	"github.com/urfave/cli"
 )
 
 type Run struct {
@@ -17,8 +17,8 @@ type Run struct {
 	Scale int `desc:"scale" default:"1"`
 }
 
-func (r *Run) Run(app *cli.Context) error {
-	service, err := r.RunCallback(app, func(service *client.Service) *client.Service {
+func (r *Run) Run(ctx *clicontext.CLIContext) error {
+	service, err := r.RunCallback(ctx, func(service *client.Service) *client.Service {
 		service.Scale = int64(r.Scale)
 		return service
 	})
@@ -32,7 +32,7 @@ func (r *Run) Run(app *cli.Context) error {
 
 	if istty && !r.Detach && service.OpenStdin && service.Tty {
 		fmt.Println("Attaching...")
-		return attach.RunAttach(app, time.Minute, true, true, service.ID)
+		return attach.RunAttach(ctx, time.Minute, true, true, service.ID)
 	}
 
 	return nil

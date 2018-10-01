@@ -7,10 +7,9 @@ import (
 
 	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/rio/cli/cmd/util"
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/cli/server"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
-	"github.com/urfave/cli"
 )
 
 type ServiceData struct {
@@ -85,8 +84,13 @@ func FormatScale(data, data2 interface{}) (string, error) {
 	return fmt.Sprintf("(%d/%d/%d)/%d%s", scaleStatus.Unavailable, scaleStatus.Available, scaleStatus.Ready, scale, percentage), nil
 }
 
-func (p *Ps) services(app *cli.Context, ctx *server.Context) error {
-	services, err := ctx.Client.Service.List(util.DefaultListOpts())
+func (p *Ps) services(ctx *clicontext.CLIContext) error {
+	wc, err := ctx.WorkspaceClient()
+	if err != nil {
+		return err
+	}
+
+	services, err := wc.Service.List(util.DefaultListOpts())
 	if err != nil {
 		return err
 	}
@@ -99,14 +103,14 @@ func (p *Ps) services(app *cli.Context, ctx *server.Context) error {
 		{"STATE", "Service.State"},
 		{"ENDPOINT", "Endpoint"},
 		{"DETAIL", "{{first .Service.TransitioningMessage .Stack.TransitioningMessage}}"},
-	}, app)
+	}, ctx)
 	defer writer.Close()
 
 	writer.AddFormatFunc("serviceName", FormatServiceName)
 	writer.AddFormatFunc("image", FormatImage)
 	writer.AddFormatFunc("scale", FormatScale)
 
-	stackByID, err := util.StacksByID(ctx)
+	stackByID, err := util.StacksByID(wc)
 	if err != nil {
 		return err
 	}
@@ -128,8 +132,18 @@ func (p *Ps) services(app *cli.Context, ctx *server.Context) error {
 	return writer.Err()
 }
 
-func endpoint(ctx *server.Context, stack *client.Stack, ports []client.PortBinding, service *client.Service) string {
-	if ctx.Domain == "" || stack == nil {
+func endpoint(ctx *clicontext.CLIContext, stack *client.Stack, ports []client.PortBinding, service *client.Service) string {
+	cluster, err := ctx.Cluster()
+	if err != nil {
+		return ""
+	}
+
+	domain, err := cluster.Domain()
+	if err != nil {
+		return ""
+	}
+
+	if domain == "" || stack == nil {
 		return ""
 	}
 
@@ -139,7 +153,7 @@ func endpoint(ctx *server.Context, stack *client.Stack, ports []client.PortBindi
 			if rev != "" && rev != "latest" {
 				name = name + "-" + rev
 			}
-			domain := fmt.Sprintf("%s.%s.%s", name, stack.Name, ctx.Domain)
+			domain := fmt.Sprintf("%s.%s.%s", name, stack.Name, domain)
 
 			return "http://" + domain
 		}

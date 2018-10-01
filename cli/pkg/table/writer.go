@@ -8,9 +8,10 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/rancher/rio/cli/pkg/clicontext"
+
 	"github.com/docker/go-units"
 	"github.com/rancher/norman/types/convert"
-	"github.com/urfave/cli"
 	"gopkg.in/yaml.v2"
 )
 
@@ -32,8 +33,8 @@ type Writer struct {
 
 type FormatFunc interface{}
 
-func NewWriter(values [][]string, ctx *cli.Context) *Writer {
-	if ctx.Bool("ids") {
+func NewWriter(values [][]string, ctx *clicontext.CLIContext) *Writer {
+	if ctx.CLI.Bool("ids") {
 		values = append(idsHeader, values...)
 	}
 
@@ -50,12 +51,12 @@ func NewWriter(values [][]string, ctx *cli.Context) *Writer {
 	}
 	t.HeaderFormat, t.ValueFormat = SimpleFormat(values)
 
-	if ctx.Bool("quiet") {
+	if ctx.CLI.Bool("quiet") {
 		t.HeaderFormat = ""
 		t.ValueFormat = "{{.ID}}\n"
 	}
 
-	customFormat := ctx.String("format")
+	customFormat := ctx.CLI.String("format")
 	if customFormat == "json" {
 		t.HeaderFormat = ""
 		t.ValueFormat = "json"

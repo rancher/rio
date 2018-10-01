@@ -1,35 +1,27 @@
 package config
 
 import (
-	"fmt"
-
 	"encoding/base64"
+	"fmt"
 	"unicode/utf8"
 
 	"github.com/rancher/rio/cli/cmd/util"
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
-	"github.com/rancher/rio/cli/server"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
-	"github.com/urfave/cli"
 )
 
 type Update struct {
 	L_Label map[string]string `desc:"Set meta data on a config"`
 }
 
-func (c *Update) Run(app *cli.Context) error {
-	ctx, err := server.NewContext(app)
-	if err != nil {
-		return err
-	}
-	defer ctx.Close()
-
-	if len(app.Args()) != 2 {
+func (c *Update) Run(ctx *clicontext.CLIContext) error {
+	if len(ctx.CLI.Args()) != 2 {
 		return fmt.Errorf("two arguments are required")
 	}
 
-	name := app.Args()[0]
-	file := app.Args()[1]
+	name := ctx.CLI.Args()[0]
+	file := ctx.CLI.Args()[1]
 
 	resource, err := lookup.Lookup(ctx.ClientLookup, name, client.ConfigType)
 	if err != nil {
@@ -48,8 +40,13 @@ func (c *Update) Run(app *cli.Context) error {
 	return err
 }
 
-func RunUpdate(ctx *server.Context, id string, content []byte, labels map[string]string) error {
-	config, err := ctx.Client.Config.ByID(id)
+func RunUpdate(ctx *clicontext.CLIContext, id string, content []byte, labels map[string]string) error {
+	wc, err := ctx.WorkspaceClient()
+	if err != nil {
+		return err
+	}
+
+	config, err := wc.Config.ByID(id)
 	if err != nil {
 		return err
 	}
@@ -65,6 +62,6 @@ func RunUpdate(ctx *server.Context, id string, content []byte, labels map[string
 		config.Encoded = true
 	}
 
-	_, err = ctx.Client.Config.Update(config, config)
+	_, err = wc.Config.Update(config, config)
 	return err
 }

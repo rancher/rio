@@ -3,13 +3,11 @@ set -e
 
 cd $(dirname $0)/../bin
 
-echo Compiling Agent
-go build -tags k3s -o ../image/agent ../agent/main.go
-
-echo Compiling CLI
+# Prime sudo
+sudo echo Compiling CLI
 go build -tags k3s -o rio-agent ../cli/main.go
 
-echo Building image
+echo Building image and agent
 ../image/build
 
 echo Running

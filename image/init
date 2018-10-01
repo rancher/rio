@@ -7,7 +7,7 @@ fi
 
 ln()
 {
-    /usr/lib/ld-linux-x86-64.so.2 /usr/bin/coreutils --coreutils-prog=ln "$@"
+    /usr/lib/ld-musl-x86_64.so.1 /usr/bin/coreutils --coreutils-prog=ln "$@"
 }
 
 ln -sf usr/lib usr/bin usr/sbin .

@@ -1,12 +1,11 @@
 package util
 
 import (
-	"github.com/rancher/rio/cli/server"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
 )
 
-func StacksByID(ctx *server.Context) (map[string]*client.Stack, error) {
-	stacks, err := ctx.Client.Stack.List(nil)
+func StacksByID(wc *client.Client) (map[string]*client.Stack, error) {
+	stacks, err := wc.Stack.List(nil)
 	if err != nil {
 		return nil, err
 	}

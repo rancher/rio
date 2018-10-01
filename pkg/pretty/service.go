@@ -37,6 +37,7 @@ func containerMappers() []types.Mapper {
 		pm.AliasField{Field: "memory", Names: []string{"mem", "memoryReservationBytes"}},
 		mapper.Move{From: "nanoCpus", To: "cpus"},
 		pm.AliasField{Field: "cpus", Names: []string{"nanoCpus"}},
+		pm.NewPortBinding("ports"),
 		pm.HealthMapper{Field: "readycheck"},
 		pm.NewSecretMapping("secrets"),
 		pm.MapToSlice{Field: "secrets", Sep: ":"},
@@ -66,7 +67,6 @@ func serviceMappers() []types.Mapper {
 		},
 		pm.AliasField{Field: "permissions", Names: []string{"perms"}},
 		pm.NewPermission("permissions"),
-		pm.NewPortBinding("ports"),
 		pm.AliasValue{Field: "restart", Alias: map[string][]string{
 			"never":      {"no"},
 			"on-failure": {"OnFailure"}},

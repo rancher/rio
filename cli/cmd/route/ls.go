@@ -2,17 +2,14 @@ package route
 
 import (
 	"fmt"
-
+	"sort"
 	"strconv"
 	"strings"
-
-	"sort"
-
 	"time"
 
 	"github.com/rancher/rio/cli/cmd/util"
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/cli/server"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
 	"github.com/urfave/cli"
@@ -67,14 +64,23 @@ func (l *Ls) Customize(cmd *cli.Command) {
 	cmd.Flags = append(cmd.Flags, table.WriterFlags()...)
 }
 
-func (l *Ls) Run(app *cli.Context) error {
-	ctx, err := server.NewContext(app)
+func (l *Ls) Run(ctx *clicontext.CLIContext) error {
+	cluster, err := ctx.Cluster()
 	if err != nil {
 		return err
 	}
-	defer ctx.Close()
 
-	routeSets, err := ctx.Client.RouteSet.List(util.DefaultListOpts())
+	domain, err := cluster.Domain()
+	if err != nil {
+		return err
+	}
+
+	wc, err := ctx.WorkspaceClient()
+	if err != nil {
+		return err
+	}
+
+	routeSets, err := wc.RouteSet.List(util.DefaultListOpts())
 	if err != nil {
 		return err
 	}
@@ -84,7 +90,7 @@ func (l *Ls) Run(app *cli.Context) error {
 		{"OPTS", "{{ . | formatOpts }}"},
 		{"ACTION", "{{ . | formatAction }}"},
 		{"TARGET", "{{ . | formatTarget }}"},
-	}, app)
+	}, ctx)
 	defer writer.Close()
 
 	writer.AddFormatFunc("formatURL", FormatURL)
@@ -92,7 +98,7 @@ func (l *Ls) Run(app *cli.Context) error {
 	writer.AddFormatFunc("formatAction", FormatAction)
 	writer.AddFormatFunc("formatTarget", FormatTarget)
 
-	stackByID, err := util.StacksByID(ctx)
+	stackByID, err := util.StacksByID(wc)
 	if err != nil {
 		return err
 	}
@@ -105,7 +111,7 @@ func (l *Ls) Run(app *cli.Context) error {
 					RouteSet:  routeSets.Data[i],
 					RouteSpec: routeSets.Data[i].Routes[j],
 					Stack:     stackByID[routeSet.StackID],
-					Domain:    ctx.Domain,
+					Domain:    domain,
 				})
 				continue
 			}
@@ -117,7 +123,7 @@ func (l *Ls) Run(app *cli.Context) error {
 					RouteSpec: routeSets.Data[i].Routes[j],
 					Match:     &routeSets.Data[i].Routes[j].Matches[k],
 					Stack:     stackByID[routeSet.StackID],
-					Domain:    ctx.Domain,
+					Domain:    domain,
 				})
 			}
 		}

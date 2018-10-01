@@ -12,7 +12,6 @@ const (
 	IstioExternalLB     = "rio-lb"
 	IstioGateway        = "rio-gateway"
 	IstioStackName      = "istio"
-	IstioProxyStackName = "istio-proxy"
 )
 
 var (
@@ -21,7 +20,7 @@ var (
 	RDNSURL       = settings.NewSetting("rdns-url", "https://api.lb.rancher.cloud/v1")
 	RioImage      = settings.NewSetting("rio-image", "rancher/rio")
 
-	IstioExternalLBNamespace = namespace.StackNamespace(RioSystemNamespace, IstioProxyStackName)
+	IstioExternalLBNamespace = namespace.StackNamespace(RioSystemNamespace, IstioStackName)
 	IstioGatewaySelector     = map[string]string{
 		"gateway": "external",
 	}

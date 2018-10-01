@@ -1,4 +1,4 @@
-package server
+package clientcfg
 
 import (
 	"io/ioutil"
@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/rancher/norman/clientbase"
+	"github.com/rancher/rio/pkg/clientaccess"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
 	spaceclient "github.com/rancher/rio/types/client/space/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -16,7 +17,13 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-type ContextBuilder struct {
+func (c *clusterClientInfo) url(p string) string {
+	newURL := c.serverURL
+	newURL.Path = path.Join(c.prefix, p)
+	return newURL.String()
+}
+
+type clusterClientInfo struct {
 	cfg        *rest.Config
 	prefix     string
 	serverURL  url.URL
@@ -24,7 +31,23 @@ type ContextBuilder struct {
 	wsDialer   *websocket.Dialer
 }
 
-func (c *ContextBuilder) Domain() (string, error) {
+func (c *clusterClientInfo) spaceClient() (*spaceclient.Client, error) {
+	return spaceclient.NewClient(&clientbase.ClientOpts{
+		URL:        c.url("/v1beta1-rio/schemas"),
+		HTTPClient: c.httpClient,
+		WSDialer:   c.wsDialer,
+	})
+}
+
+func (c *clusterClientInfo) rioClient(space string) (*client.Client, error) {
+	return client.NewClient(&clientbase.ClientOpts{
+		URL:        c.url("/v1beta1-rio/spaces/" + space + "/schemas"),
+		HTTPClient: c.httpClient,
+		WSDialer:   c.wsDialer,
+	})
+}
+
+func (c *clusterClientInfo) Domain() (string, error) {
 	req, err := http.NewRequest(http.MethodGet, c.url("/domain"), nil)
 	if err != nil {
 		return "", err
@@ -40,39 +63,14 @@ func (c *ContextBuilder) Domain() (string, error) {
 	return string(domain), err
 }
 
-func (c *ContextBuilder) Client(space string) (*client.Client, error) {
-	return client.NewClient(&clientbase.ClientOpts{
-		URL:        c.url("/v1beta1-rio/spaces/" + space + "/schemas"),
-		HTTPClient: c.httpClient,
-		WSDialer:   c.wsDialer,
-	})
-}
-
-func (c *ContextBuilder) SpaceClient() (*spaceclient.Client, error) {
-	return spaceclient.NewClient(&clientbase.ClientOpts{
-		URL:        c.url("/v1beta1-rio/schemas"),
-		HTTPClient: c.httpClient,
-		WSDialer:   c.wsDialer,
-	})
-}
-
-func (c *ContextBuilder) url(p string) string {
-	newURL := c.serverURL
-	newURL.Path = path.Join(c.prefix, p)
-	return newURL.String()
-}
-
-func NewContextBuilder(config string, k8s bool) (*ContextBuilder, error) {
-	cfg, err := clientcmd.BuildConfigFromFlags("", config)
+func newClusterClientInfo(info *clientaccess.Info) (*clusterClientInfo, error) {
+	cc := clientcmd.NewDefaultClientConfig(*info.KubeConfig(), nil)
+	cfg, err := cc.ClientConfig()
 	if err != nil {
 		return nil, err
 	}
 
 	prefix := ""
-	if k8s {
-		prefix = "/api/v1/namespaces/rio-system/services/https:rio:https/proxy"
-	}
-
 	if strings.Contains(cfg.Host, "/") {
 		u, err := url.Parse(cfg.Host)
 		if err == nil {
@@ -111,7 +109,7 @@ func NewContextBuilder(config string, k8s bool) (*ContextBuilder, error) {
 		return nil, err
 	}
 
-	return &ContextBuilder{
+	return &clusterClientInfo{
 		cfg:    cfg,
 		prefix: prefix,
 		httpClient: &http.Client{
@@ -142,4 +140,21 @@ type rtCapture struct {
 func (r *rtCapture) RoundTrip(req *http.Request) (*http.Response, error) {
 	r.req = req
 	return nil, nil
+}
+
+type prepareRt struct {
+	rt          http.RoundTripper
+	prepareFunc func(*http.Request)
+}
+
+func newCallback(rt http.RoundTripper, prepare func(*http.Request)) *prepareRt {
+	return &prepareRt{
+		rt:          rt,
+		prepareFunc: prepare,
+	}
+}
+
+func (p *prepareRt) RoundTrip(req *http.Request) (*http.Response, error) {
+	p.prepareFunc(req)
+	return p.rt.RoundTrip(req)
 }

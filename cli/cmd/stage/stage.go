@@ -5,11 +5,10 @@ import (
 
 	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/cli/cmd/create"
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/service"
 	"github.com/rancher/rio/cli/pkg/waiter"
-	"github.com/rancher/rio/cli/server"
-	"github.com/urfave/cli"
 )
 
 type Stage struct {
@@ -36,33 +35,32 @@ func determineRevision(name string, service *types.Resource) (string, error) {
 	return revision, nil
 }
 
-func (r *Stage) Run(app *cli.Context) error {
-	if len(app.Args()) == 0 {
+func (r *Stage) Run(ctx *clicontext.CLIContext) error {
+	if len(ctx.CLI.Args()) == 0 {
 		return fmt.Errorf("must specify the service to update")
 	}
 
-	ctx, err := server.NewContext(app)
+	wc, err := ctx.WorkspaceClient()
 	if err != nil {
 		return err
 	}
-	defer ctx.Close()
 
 	w, err := waiter.NewWaiter(ctx)
 	if err != nil {
 		return err
 	}
 
-	service, err := service.Lookup(ctx, app.Args()[0])
+	service, err := service.Lookup(ctx, ctx.CLI.Args()[0])
 	if err != nil {
 		return err
 	}
 
-	revision, err := determineRevision(app.Args()[0], &service.Resource)
+	revision, err := determineRevision(ctx.CLI.Args()[0], &service.Resource)
 	if err != nil {
 		return err
 	}
 
-	args := append([]string{r.Image}, app.Args()[1:]...)
+	args := append([]string{r.Image}, ctx.CLI.Args()[1:]...)
 	serviceDef, err := r.ToService(args)
 	if err != nil {
 		return err
@@ -76,11 +74,11 @@ func (r *Stage) Run(app *cli.Context) error {
 		serviceDef.Scale = service.Scale
 	}
 
-	revService, err := ctx.Client.Service.Create(serviceDef)
+	revService, err := wc.Service.Create(serviceDef)
 	if err != nil {
 		return err
 	}
 
 	w.Add(&revService.Resource)
-	return w.Wait()
+	return w.Wait(ctx.Ctx)
 }

@@ -70,13 +70,17 @@ func (q *question) ask() error {
 }
 
 func PromptOptions(text string, def int, options ...string) (int, error) {
+	if len(options) == 1 {
+		return 0, nil
+	}
+
 	PrintToTerm(text)
 	for _, option := range options {
 		PrintToTerm(option)
 	}
 
 	defString := ""
-	if def > 0 {
+	if def >= 0 {
 		defString = strconv.Itoa(def)
 	}
 

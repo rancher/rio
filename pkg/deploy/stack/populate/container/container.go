@@ -91,7 +91,7 @@ func Container(name string, container v1beta1.ContainerConfig) v1.Container {
 }
 
 func addPorts(c *v1.Container, container v1beta1.ContainerConfig) {
-	added := map[int32]bool{}
+	added := map[string]bool{}
 	for _, ep := range serviceports.AllExposedPorts(&container) {
 		cp := v1.ContainerPort{
 			Name:          ep.Name,
@@ -100,10 +100,11 @@ func addPorts(c *v1.Container, container v1beta1.ContainerConfig) {
 			HostIP:        ep.IP,
 		}
 
-		if added[cp.ContainerPort] {
+		key := fmt.Sprintf("%d/%d", cp.HostPort, cp.ContainerPort)
+		if added[key] {
 			continue
 		}
-		added[cp.ContainerPort] = true
+		added[key] = true
 
 		cp.Protocol = v1.ProtocolTCP
 		if strings.EqualFold(ep.Protocol, "udp") {

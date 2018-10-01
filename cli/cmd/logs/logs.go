@@ -3,16 +3,13 @@ package logs
 import (
 	"fmt"
 	"io"
-
+	"os"
 	"time"
 
-	"os"
+	"github.com/rancher/rio/cli/pkg/clicontext"
 
-	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/rio/cli/cmd/ps"
-	"github.com/rancher/rio/cli/server"
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -25,54 +22,58 @@ type Logs struct {
 	A_All       bool   `desc:"Include hidden or systems logs when logging"`
 }
 
-func (l *Logs) Run(app *cli.Context) error {
-	ctx, err := server.NewContext(app)
-	if err != nil {
-		return err
-	}
-	defer ctx.Close()
-
-	if len(app.Args()) == 0 {
+func (l *Logs) Run(ctx *clicontext.CLIContext) error {
+	if len(ctx.CLI.Args()) == 0 {
 		return fmt.Errorf("at least one argument is required: CONTAINER_OR_SERVICE")
 	}
 
-	c, err := ctx.SpaceClient()
+	cluster, err := ctx.Cluster()
 	if err != nil {
 		return err
 	}
 
-	cds, err := ps.ListPods(c, l.A_All, l.C_Container, app.Args()...)
+	cc, err := cluster.Client()
+	if err != nil {
+		return err
+	}
+
+	cds, err := ps.ListPods(cc, l.A_All, l.C_Container, ctx.CLI.Args()...)
 	if err != nil {
 		return err
 	}
 
 	if len(cds) == 0 {
-		return fmt.Errorf("failed to find container for %v, container \"%s\"", app.Args(), l.C_Container)
+		return fmt.Errorf("failed to find container for %v, container \"%s\"", ctx.CLI.Args(), l.C_Container)
 	}
 
 	errg := errgroup.Group{}
 	// TODO: make this suck much less.  Like color output, labels by container name, call the k8s API, not run a binary (too much overhead)
 	for _, cd := range cds {
-		cmd := reexec.Command("kubectl", "-n", cd.Pod.Namespace, "logs")
+		var args []string
 		if l.F_Follow {
-			cmd.Args = append(cmd.Args, "-f")
+			args = append(args, "-f")
 		}
 		if l.P_Previous {
-			cmd.Args = append(cmd.Args, "-p")
+			args = append(args, "-p")
 		}
 		if l.S_Since != "" {
 			_, err := time.Parse(time.RFC3339, l.S_Since)
 			if err == nil {
-				cmd.Args = append(cmd.Args, "--since-time="+l.S_Since)
+				args = append(args, "--since-time="+l.S_Since)
 			} else {
-				cmd.Args = append(cmd.Args, "--since="+l.S_Since)
+				args = append(args, "--since="+l.S_Since)
 			}
 		}
 		if l.N_Tail > -1 {
-			cmd.Args = append(cmd.Args, fmt.Sprintf("--tail=%d", l.N_Tail))
+			args = append(args, fmt.Sprintf("--tail=%d", l.N_Tail))
 		}
 
-		cmd.Args = append(cmd.Args, "-c", cd.Container.Name, cd.Pod.Name)
+		args = append(args, "-c", cd.Container.Name, cd.Pod.Name)
+
+		cmd, err := cluster.KubectlCmd(cd.Pod.Namespace, "logs", args...)
+		if err != nil {
+			return err
+		}
 
 		prefix := ""
 		if len(cds) > 1 {

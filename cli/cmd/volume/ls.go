@@ -5,8 +5,8 @@ import (
 
 	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/rio/cli/cmd/util"
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/cli/server"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
 	"github.com/urfave/cli"
 )
@@ -25,14 +25,13 @@ func (l *Ls) Customize(cmd *cli.Command) {
 	cmd.Flags = append(cmd.Flags, table.WriterFlags()...)
 }
 
-func (l *Ls) Run(app *cli.Context) error {
-	ctx, err := server.NewContext(app)
+func (l *Ls) Run(ctx *clicontext.CLIContext) error {
+	wc, err := ctx.WorkspaceClient()
 	if err != nil {
 		return err
 	}
-	defer ctx.Close()
 
-	volumes, err := ctx.Client.Volume.List(util.DefaultListOpts())
+	volumes, err := wc.Volume.List(util.DefaultListOpts())
 	if err != nil {
 		return err
 	}
@@ -45,12 +44,12 @@ func (l *Ls) Run(app *cli.Context) error {
 		{"STATE", "Volume.State"},
 		{"CREATED", "{{.Volume.Created | ago}}"},
 		{"DETAIL", "{{first .Volume.TransitioningMessage .Stack.TransitioningMessage}}"},
-	}, app)
+	}, ctx)
 	defer writer.Close()
 
 	writer.AddFormatFunc("driver", FormatDriver)
 
-	stackByID, err := util.StacksByID(ctx)
+	stackByID, err := util.StacksByID(wc)
 	if err != nil {
 		return err
 	}

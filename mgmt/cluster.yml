@@ -1,0 +1,60 @@
+# APIs
+# /v1/resources/clusters
+# /v1/resources/clusters/x/nodepools
+# /v1/resources/clusters/x/workspaces
+# /v1/resources/appsecrets
+# /v1/resources/pullsecrets
+# /v1/resources/cloudaccounts
+# /v1/preferences
+#
+# /v1/org/rancherlabs/resources/clusters
+# /v1/org/rancherlabs/resources/clusters/x/nodepools
+# /v1/org/rancherlabs/resources/clusters/x/workspaces
+# /v1/org/rancherlabs/resources/appsecrets
+# /v1/org/rancherlabs/resources/pullsecrets
+# /v1/org/rancherlabs/resources/cloudaccounts
+
+# All fields except node_pools and workspaces are fields on the Cluster resource
+ssh:
+  authorized_keys:
+  - ssh-rsa AAAAB3N...
+  - ssh-rsa AAAAB3N...
+  allow_from:
+  - *
+  - 1.2.3.0/24
+  - 1.2.3.4
+
+access_control:
+- subject: asdf
+  roles:
+  - foo
+  - bar
+- subject: asdf
+  roles:
+  - foo
+  - bar
+
+node_pools:
+  foo:
+    gateway: true
+    scale: 4
+    # Either put memory + class or instance_type
+    memory_gb: 5
+    public_ip: true
+    instance_class: cpu/storage/network/generic
+    instance_type: t2.small
+    labels:
+      foo: bar
+
+pull_secrets:
+- secret1
+- secret2
+
+workspaces:
+  foo:
+    stacks:
+    - stack: foo/bar:baz
+      secrets:
+        apassword: referncetosecret
+      answers:
+        foo: bar

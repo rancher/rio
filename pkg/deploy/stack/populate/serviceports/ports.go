@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/rancher/rio/pkg/deploy/stack/populate/containerlist"
-
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -16,11 +15,15 @@ func AllExposedPorts(con *v1beta1.ContainerConfig) []v1beta1.ExposedPort {
 	eps = append(eps, con.ExposedPorts...)
 
 	for _, portBindings := range con.PortBindings {
+		pb := v1beta1.PortBinding{
+			TargetPort: portBindings.TargetPort,
+			Protocol:   portBindings.Protocol,
+		}
+		if portBindings.Port != 0 && strings.EqualFold(pb.Protocol, "tcp") {
+			pb.Port = portBindings.Port
+		}
 		eps = append(eps, v1beta1.ExposedPort{
-			PortBinding: v1beta1.PortBinding{
-				TargetPort: portBindings.TargetPort,
-				Protocol:   portBindings.Protocol,
-			},
+			PortBinding: pb,
 		})
 	}
 

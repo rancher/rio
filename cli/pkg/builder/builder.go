@@ -3,12 +3,11 @@ package builder
 import (
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
-
 	"unsafe"
 
-	"strconv"
-
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/urfave/cli"
 )
 
@@ -17,7 +16,7 @@ var (
 )
 
 type runnable interface {
-	Run(app *cli.Context) error
+	Run(app *clicontext.CLIContext) error
 }
 
 type customizer interface {
@@ -127,11 +126,11 @@ func Command(obj interface{}, usage, usageText, description string) cli.Command 
 
 	run, ok := obj.(runnable)
 	if ok {
-		c.Action = func(app *cli.Context) error {
-			assignSlices(app, slices)
-			assignMaps(app, maps)
-			return run.Run(app)
-		}
+		c.Action = clicontext.Wrap(func(ctx *clicontext.CLIContext) error {
+			assignSlices(ctx.CLI, slices)
+			assignMaps(ctx.CLI, maps)
+			return run.Run(ctx)
+		})
 	}
 
 	cust, ok := obj.(customizer)

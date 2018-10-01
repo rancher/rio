@@ -2,10 +2,10 @@ package node
 
 import (
 	"github.com/rancher/norman/clientbase"
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/table"
 	"github.com/rancher/rio/cli/pkg/waiter"
-	"github.com/rancher/rio/cli/server"
 	spaceclient "github.com/rancher/rio/types/client/space/v1beta1"
 	"github.com/urfave/cli"
 )
@@ -15,7 +15,7 @@ func Node() cli.Command {
 		Name:      "nodes",
 		ShortName: "node",
 		Usage:     "Operations on nodes",
-		Action:    defaultAction(nodeLs),
+		Action:    clicontext.DefaultAction(nodeLs),
 		Flags:     table.WriterFlags(),
 		Category:  "SUB COMMANDS",
 		Subcommands: []cli.Command{
@@ -23,7 +23,7 @@ func Node() cli.Command {
 				Name:      "ls",
 				Usage:     "List nodes",
 				ArgsUsage: "None",
-				Action:    nodeLs,
+				Action:    clicontext.Wrap(nodeLs),
 				Flags:     table.WriterFlags(),
 			},
 			{
@@ -31,7 +31,7 @@ func Node() cli.Command {
 				ShortName: "rm",
 				Usage:     "Delete a node",
 				ArgsUsage: "None",
-				Action:    nodeRm,
+				Action:    clicontext.Wrap(nodeRm),
 			},
 		},
 	}
@@ -42,19 +42,13 @@ type Data struct {
 	Node spaceclient.Node
 }
 
-func nodeLs(app *cli.Context) error {
-	ctx, err := server.NewContext(app)
-	if err != nil {
-		return err
-	}
-	defer ctx.Close()
-
-	c, err := ctx.SpaceClient()
+func nodeLs(ctx *clicontext.CLIContext) error {
+	cc, err := ctx.ClusterClient()
 	if err != nil {
 		return err
 	}
 
-	collection, err := c.Node.List(nil)
+	collection, err := cc.Node.List(nil)
 	if err != nil {
 		return err
 	}
@@ -64,7 +58,7 @@ func nodeLs(app *cli.Context) error {
 		{"STATE", "Node.State"},
 		{"ADDRESS", "{{.Node | address}}"},
 		{"DETAIL", "Node.TransitioningMessage"},
-	}, app)
+	}, ctx)
 	defer writer.Close()
 
 	writer.AddFormatFunc("address", FormatAddress)
@@ -80,16 +74,15 @@ func nodeLs(app *cli.Context) error {
 	return writer.Err()
 }
 
-func nodeRm(app *cli.Context) error {
-	ctx, err := server.NewContext(app)
+func nodeRm(ctx *clicontext.CLIContext) error {
+	names := ctx.CLI.Args()
+
+	w, err := waiter.NewWaiter(ctx)
 	if err != nil {
 		return err
 	}
-	defer ctx.Close()
 
-	names := app.Args()
-
-	w, err := waiter.NewWaiter(ctx)
+	c, err := ctx.WorkspaceClient()
 	if err != nil {
 		return err
 	}
@@ -101,7 +94,7 @@ func nodeRm(app *cli.Context) error {
 			return err
 		}
 
-		err = ctx.Client.Ops.DoDelete(node.Links[clientbase.SELF])
+		err = c.Ops.DoDelete(node.Links[clientbase.SELF])
 		if err != nil {
 			lastErr = err
 			continue
@@ -114,17 +107,7 @@ func nodeRm(app *cli.Context) error {
 		return lastErr
 	}
 
-	return w.Wait()
-}
-
-func defaultAction(fn func(ctx *cli.Context) error) func(ctx *cli.Context) error {
-	return func(ctx *cli.Context) error {
-		if ctx.Bool("help") {
-			cli.ShowAppHelp(ctx)
-			return nil
-		}
-		return fn(ctx)
-	}
+	return w.Wait(ctx.Ctx)
 }
 
 func FormatAddress(data interface{}) (string, error) {
