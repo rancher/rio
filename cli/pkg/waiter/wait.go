@@ -25,18 +25,9 @@ func WaitCommand() cli.Command {
 		Name:      "wait",
 		Usage:     "Wait for resources " + strings.Join(waitTypes, ", "),
 		ArgsUsage: "[ID NAME...]",
-		Action:    waitForResources,
+		Action:    clicontext.Wrap(waitForResources),
 		Flags:     []cli.Flag{},
 	}
-}
-
-func WaitFor(ctx *clicontext.CLIContext, resource *types.Resource) error {
-	w, err := NewWaiter(ctx)
-	if err != nil {
-		return err
-	}
-	w.Add(resource)
-	return w.Wait(ctx.Ctx)
 }
 
 func waitForResources(ctx *clicontext.CLIContext) error {
@@ -68,6 +59,32 @@ func waitForResources(ctx *clicontext.CLIContext) error {
 	return w.Wait(ctx.Ctx)
 }
 
+func WaitFor(ctx *clicontext.CLIContext, objs ...*types.Resource) error {
+	return waitFor(ctx, false, objs...)
+}
+
+func EnsureActive(ctx *clicontext.CLIContext, objs ...*types.Resource) error {
+	return waitFor(ctx, true, objs...)
+}
+
+func waitFor(ctx *clicontext.CLIContext, enable bool, objs ...*types.Resource) error {
+	clientCtx, cancel := context.WithCancel(ctx.Ctx)
+	defer cancel()
+
+	w, err := NewWaiter(ctx)
+	if err != nil {
+		return err
+	}
+	if enable {
+		w.quiet = true
+		w.enabled = true
+	}
+	w.state = "active"
+
+	w.Add(objs...)
+	return w.Wait(clientCtx)
+}
+
 func NewWaiter(ctx *clicontext.CLIContext) (*Waiter, error) {
 	wc, err := ctx.WorkspaceClient()
 	if err != nil {
@@ -89,6 +106,7 @@ func NewWaiter(ctx *clicontext.CLIContext) (*Waiter, error) {
 }
 
 type Waiter struct {
+	quiet        bool
 	enabled      bool
 	timeout      int
 	state        string
@@ -119,7 +137,9 @@ func (w *Waiter) Add(resources ...*types.Resource) *Waiter {
 		if resource == nil {
 			continue
 		}
-		fmt.Println(resource.ID)
+		if !w.quiet {
+			fmt.Println(resource.ID)
+		}
 		w.resources = append(w.resources, resource)
 	}
 	return w
@@ -175,7 +195,15 @@ func (w *Waiter) Wait(ctx context.Context) error {
 	sub := w.monitor.Subscribe()
 	go func() {
 		schema := w.client.Types["subscribe"]
-		logrus.Fatal(w.monitor.Start(ctx, &schema))
+		for {
+			err := w.monitor.Start(ctx, &schema)
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				logrus.Errorf("subscription failed, will retry: %v", err)
+			}
+		}
 	}()
 
 	for _, resource := range w.resources {
@@ -188,7 +216,9 @@ func (w *Waiter) Wait(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		if !ok {
+		if ok {
+			logrus.Debugf("resource %s:%s already done", r.Type, r.ID)
+		} else {
 			watching[NewResourceID(r.Type, r.ID)] = true
 		}
 	}
@@ -208,6 +238,7 @@ func (w *Waiter) Wait(ctx context.Context) error {
 					return err
 				}
 				if ok {
+					logrus.Debugf("resource %s:%s done from polling", resource.Type(), resource.ID())
 					delete(watching, resource)
 				}
 			}
@@ -228,6 +259,7 @@ func (w *Waiter) Wait(ctx context.Context) error {
 		}
 
 		if done {
+			logrus.Debugf("resource %s:%s done from event", resource.Type(), resource.ID())
 			delete(watching, resource)
 		}
 	}

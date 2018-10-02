@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/rancher/rio/cli/pkg/stack"
+
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
 )
@@ -40,7 +42,7 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 		AccessMode: c.AccessMode,
 	}
 
-	volume.SpaceID, volume.StackID, volume.Name, err = ctx.ResolveSpaceStackName(name)
+	volume.SpaceID, volume.StackID, volume.Name, err = stack.ResolveSpaceStackForName(ctx, name)
 	if err != nil {
 		return err
 	}

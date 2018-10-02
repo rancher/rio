@@ -11,6 +11,7 @@ import (
 	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	stackpkg "github.com/rancher/rio/cli/pkg/stack"
 	"github.com/rancher/rio/cli/pkg/up"
 	"github.com/rancher/rio/cli/pkg/waiter"
 	"github.com/rancher/rio/pkg/yaml"
@@ -75,7 +76,7 @@ func (u *Up) doUp(ctx *clicontext.CLIContext, file, stack string) error {
 		stack += "/"
 	}
 
-	_, stackID, _, err := ctx.ResolveSpaceStackName(stack)
+	_, stackID, _, err := stackpkg.ResolveSpaceStackForName(ctx, stack)
 	if err != nil {
 		return err
 	}

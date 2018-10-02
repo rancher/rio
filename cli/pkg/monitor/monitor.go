@@ -119,7 +119,7 @@ func (m *Monitor) Start(parentCtx context.Context, subscribeSchema *types.Schema
 	logrus.Debugf("Connected to: %s", u.String())
 
 	ctx, cancel := context.WithCancel(parentCtx)
-	func() {
+	go func() {
 		<-ctx.Done()
 		conn.Close()
 	}()

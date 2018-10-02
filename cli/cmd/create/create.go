@@ -3,6 +3,8 @@ package create
 import (
 	"fmt"
 
+	"github.com/rancher/rio/cli/pkg/stack"
+
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/kvfile"
 	"github.com/rancher/rio/cli/pkg/waiter"
@@ -100,7 +102,7 @@ func (c *Create) RunCallback(ctx *clicontext.CLIContext, cb func(service *client
 		return nil, err
 	}
 
-	service.SpaceID, service.StackID, service.Name, err = ctx.ResolveSpaceStackName(service.Name)
+	service.SpaceID, service.StackID, service.Name, err = stack.ResolveSpaceStackForName(ctx, service.Name)
 	if err != nil {
 		return nil, err
 	}

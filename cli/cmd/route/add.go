@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rancher/rio/cli/pkg/stack"
+
 	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/cli/cmd/create"
@@ -92,9 +94,9 @@ func (a *Add) validateServiceStack(args []string) error {
 }
 
 func (a *Add) getRouteSet(ctx *clicontext.CLIContext, args []string) (*client.RouteSet, error) {
-	_, service, stack, _, _ := parseMatch(args[0])
+	_, service, stackName, _, _ := parseMatch(args[0])
 
-	spaceID, stackID, name, err := ctx.ResolveSpaceStackName(stack + "/" + service)
+	spaceID, stackID, name, err := stack.ResolveSpaceStackForName(ctx, stackName+"/"+service)
 	if err != nil {
 		return nil, err
 	}

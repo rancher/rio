@@ -24,6 +24,7 @@ runCapAdd () {
   done
   cmd="${cmd} tfiduccia/counting"
 
+  echo $cmd
   $cmd
   rio wait ${stk}/${srv}
 }

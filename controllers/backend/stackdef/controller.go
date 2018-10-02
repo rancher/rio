@@ -37,5 +37,6 @@ func (s *stackController) Updated(stack *v1beta1.Stack) (*v1beta1.Stack, error) 
 	_, err = v1beta1.StackConditionDefined.Do(stack, func() (runtime.Object, error) {
 		return stack, stackdef.Deploy(ns, stack)
 	})
+	v1beta1.PendingCondition.True(stack)
 	return stack, err
 }

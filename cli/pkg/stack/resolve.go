@@ -1,4 +1,4 @@
-package clicontext
+package stack
 
 import (
 	"strings"
@@ -6,10 +6,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/norman/types"
+	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/cli/pkg/waiter"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
 )
 
-func (c *CLIContext) ResolveSpaceStackName(in string) (string, string, string, error) {
+func ResolveSpaceStackForName(c *clicontext.CLIContext, in string) (string, string, string, error) {
 	stackName, name := kv.Split(in, "/")
 	if stackName != "" && name == "" {
 		if !strings.HasSuffix(in, "/") {
@@ -54,6 +56,10 @@ func (c *CLIContext) ResolveSpaceStackName(in string) (string, string, string, e
 		})
 		if err != nil {
 			return "", "", "", errors.Wrapf(err, "failed to create stack %s", stackName)
+		}
+
+		if err := waiter.EnsureActive(c, &s.Resource); err != nil {
+			return "", "", "", err
 		}
 	} else {
 		s = &stacks.Data[0]

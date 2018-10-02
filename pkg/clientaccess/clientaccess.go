@@ -108,7 +108,7 @@ func ParseAndValidateToken(server, token string) (*Info, error) {
 		return nil, fmt.Errorf("only https:// URLs are supported, invalid scheme: %s", server)
 	}
 
-	for url.Path != "/" && strings.HasSuffix(url.Path, "/") {
+	for strings.HasSuffix(url.Path, "/") {
 		url.Path = url.Path[:len(url.Path)-1]
 	}
 
