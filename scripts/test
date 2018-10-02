@@ -34,7 +34,7 @@ rio --workspace=rio-system wait istio-proxy/istio-gateway
 rio --workspace=rio-system ps
 rio --workspace=rio-system ps -c
 
-bats -r ./tests || {
+go run ./tests/runner.go -workers 20 ./tests || {
     tail -n 100 /var/lib/rancher/rio/agent/agent.log
     exit 1
 }

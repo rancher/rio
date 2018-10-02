@@ -70,7 +70,11 @@ func normalizeParent(name string, service *v1beta1.Service) *v1beta1.Service {
 		service.Spec.Revision.Version = "v0"
 	}
 	service.Spec.Revision.ServiceName = name
-	service.Name = name + "-" + service.Spec.Revision.Version
+	if service.Spec.Revision.Version == "v0" {
+		service.Name = name
+	} else {
+		service.Name = name + "-" + service.Spec.Revision.Version
+	}
 
 	return service
 }

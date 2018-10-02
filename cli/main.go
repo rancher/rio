@@ -6,15 +6,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rancher/rio/cli/pkg/clicontext"
-
-	"github.com/rancher/rio/cli/cmd/config"
-	"github.com/rancher/rio/cli/cmd/workspace"
-
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/rio/cli/cmd/agent"
 	"github.com/rancher/rio/cli/cmd/attach"
 	"github.com/rancher/rio/cli/cmd/cluster"
+	"github.com/rancher/rio/cli/cmd/config"
 	"github.com/rancher/rio/cli/cmd/create"
 	"github.com/rancher/rio/cli/cmd/ctr"
 	"github.com/rancher/rio/cli/cmd/edit"
@@ -38,7 +34,9 @@ import (
 	"github.com/rancher/rio/cli/cmd/up"
 	"github.com/rancher/rio/cli/cmd/volume"
 	"github.com/rancher/rio/cli/cmd/weight"
+	"github.com/rancher/rio/cli/cmd/workspace"
 	"github.com/rancher/rio/cli/pkg/builder"
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/clientcfg"
 	"github.com/rancher/rio/cli/pkg/waiter"
 	_ "github.com/rancher/rio/pkg/kubectl"

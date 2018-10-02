@@ -55,6 +55,7 @@ func (c *Config) DefaultClusterName() (string, error) {
 func (c *Config) Validate() error {
 	if c.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
+		logrus.SetOutput(os.Stderr)
 	}
 	home, err := resolvehome.Resolve(c.Home)
 	if err != nil {

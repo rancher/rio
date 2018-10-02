@@ -3,11 +3,12 @@ package stack
 import (
 	"strings"
 
+	"github.com/rancher/rio/cli/pkg/waiter"
+
 	"github.com/pkg/errors"
 	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/waiter"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
 )
 
@@ -57,12 +58,12 @@ func ResolveSpaceStackForName(c *clicontext.CLIContext, in string) (string, stri
 		if err != nil {
 			return "", "", "", errors.Wrapf(err, "failed to create stack %s", stackName)
 		}
-
-		if err := waiter.EnsureActive(c, &s.Resource); err != nil {
-			return "", "", "", err
-		}
 	} else {
 		s = &stacks.Data[0]
+	}
+
+	if err := waiter.EnsureActive(c, &s.Resource); err != nil {
+		return "", "", "", err
 	}
 
 	return s.SpaceID, s.ID, name, nil

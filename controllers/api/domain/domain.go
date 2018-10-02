@@ -84,6 +84,9 @@ func isLB(obj runtime.Object) bool {
 	if err != nil {
 		return false
 	}
+	if o == nil {
+		return false
+	}
 	return o.GetName() == settings.IstioExternalLB && o.GetNamespace() == settings.IstioExternalLBNamespace
 }
 
