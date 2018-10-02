@@ -55,11 +55,11 @@ func AgentAccessInfoToKubeConfig(destFile, server, token string, override *url.U
 }
 
 type Info struct {
-	URL      url.URL `json:"url"`
-	CACerts  []byte  `json:"cacert"`
+	URL      string `json:"url,omitempty"`
+	CACerts  []byte `json:"cacerts,omitempty"`
 	username string
 	password string
-	Token    string `json:"token"`
+	Token    string `json:"token,omitempty"`
 }
 
 func (i *Info) WriteKubeConfig(destFile string) error {
@@ -71,14 +71,19 @@ func (i *Info) KubeConfig() *clientcmdapi.Config {
 
 	cluster := clientcmdapi.NewCluster()
 	cluster.CertificateAuthorityData = i.CACerts
-	cluster.Server = i.URL.String()
+	cluster.Server = i.URL
 
 	authInfo := clientcmdapi.NewAuthInfo()
-	if i.Token == "" {
+	if i.password != "" {
 		authInfo.Username = i.username
 		authInfo.Password = i.password
-	} else {
-		authInfo.Token = i.Token
+	} else if i.Token != "" {
+		if username, pass, ok := ParseUsernamePassword(i.Token); ok {
+			authInfo.Username = username
+			authInfo.Password = pass
+		} else {
+			authInfo.Token = i.Token
+		}
 	}
 
 	context := clientcmdapi.NewContext()
@@ -103,6 +108,10 @@ func ParseAndValidateToken(server, token string) (*Info, error) {
 		return nil, fmt.Errorf("only https:// URLs are supported, invalid scheme: %s", server)
 	}
 
+	for url.Path != "/" && strings.HasSuffix(url.Path, "/") {
+		url.Path = url.Path[:len(url.Path)-1]
+	}
+
 	parsedToken, err := parseToken(token)
 	if err != nil {
 		return nil, err
@@ -117,25 +126,35 @@ func ParseAndValidateToken(server, token string) (*Info, error) {
 		return nil, fmt.Errorf("RIO_TOKEN does not match the server %s != %s", hash, newHash)
 	}
 
-	if err := validateToken(url, cacerts, parsedToken.username, parsedToken.password); err != nil {
+	if err := validateToken(*url, cacerts, parsedToken.username, parsedToken.password); err != nil {
 		return nil, err
 	}
 
 	return &Info{
-		URL:      *url,
+		URL:      url.String(),
 		CACerts:  cacerts,
 		username: parsedToken.username,
 		password: parsedToken.password,
+		Token:    token,
 	}, nil
 }
 
 func accessInfoToKubeConfig(destFile, server, token string, overrideURL *url.URL) ([]byte, *tls.Certificate, error) {
 	info, err := ParseAndValidateToken(server, token)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	if overrideURL == nil {
 		return nil, nil, info.WriteKubeConfig(destFile)
 	}
 
-	nodeCert, nodeKey, err := getNodeCertKey(info.URL, info.username, info.password, info.CACerts)
+	u, err := url.Parse(info.URL)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	nodeCert, nodeKey, err := getNodeCertKey(*u, info.username, info.password, info.CACerts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -149,7 +168,7 @@ func accessInfoToKubeConfig(destFile, server, token string, overrideURL *url.URL
 	}
 
 	overrideInfo := &Info{
-		URL:      *overrideURL,
+		URL:      overrideURL.String(),
 		CACerts:  cert.EncodeCertPEM(certs[1]),
 		username: info.username,
 		password: info.password,
@@ -164,7 +183,7 @@ func accessInfoToKubeConfig(destFile, server, token string, overrideURL *url.URL
 	return info.CACerts, &tlsCert, err
 }
 
-func validateToken(u *url.URL, cacerts []byte, username, password string) error {
+func validateToken(u url.URL, cacerts []byte, username, password string) error {
 	u.Path = "/apis"
 	_, err := get(u.String(), getHTTPClient(cacerts), username, password)
 	if err != nil {

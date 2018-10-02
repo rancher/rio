@@ -39,7 +39,7 @@ func (c *clusterClientInfo) spaceClient() (*spaceclient.Client, error) {
 	})
 }
 
-func (c *clusterClientInfo) rioClient(space string) (*client.Client, error) {
+func (c *clusterClientInfo) workspaceClient(space string) (*client.Client, error) {
 	return client.NewClient(&clientbase.ClientOpts{
 		URL:        c.url("/v1beta1-rio/spaces/" + space + "/schemas"),
 		HTTPClient: c.httpClient,
@@ -64,7 +64,7 @@ func (c *clusterClientInfo) Domain() (string, error) {
 }
 
 func newClusterClientInfo(info *clientaccess.Info) (*clusterClientInfo, error) {
-	cc := clientcmd.NewDefaultClientConfig(*info.KubeConfig(), nil)
+	cc := clientcmd.NewDefaultClientConfig(*info.KubeConfig(), &clientcmd.ConfigOverrides{})
 	cfg, err := cc.ClientConfig()
 	if err != nil {
 		return nil, err

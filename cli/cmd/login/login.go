@@ -2,7 +2,6 @@ package login
 
 import (
 	"io/ioutil"
-	"net/url"
 	"strings"
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
@@ -46,40 +45,29 @@ func (l *Login) Run(ctx *clicontext.CLIContext) (ex error) {
 		l.T_Token = strings.TrimSpace(string(bytes))
 	}
 
-	_, url, err := validate(l.S_Server, l.T_Token)
+	cluster, err := validate(l.S_Server, l.T_Token)
 	if err != nil {
 		return err
 	}
 
-	cluster, _, err := validate(url.String(), l.T_Token)
-	if err != nil {
-		return err
-	}
-
-	cluster.ID = name.Hex(cluster.URL.String(), 5)
+	cluster.ID = name.Hex(cluster.URL, 5)
 	cluster.Name = cluster.ID
 	return ctx.Config.SaveCluster(cluster)
 }
 
-func validate(serverURL, token string) (*clientcfg.Cluster, *url.URL, error) {
+func validate(serverURL, token string) (*clientcfg.Cluster, error) {
 	info, err := clientaccess.ParseAndValidateToken(serverURL, token)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	cluster := &clientcfg.Cluster{
 		Info: *info,
 	}
 
-	cc, err := cluster.Client()
-	if err != nil {
-		return nil, nil, err
+	if _, err := cluster.Client(); err != nil {
+		return nil, err
 	}
 
-	u, err := url.Parse(cc.Types["schema"].Links["collectionUrl"])
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return cluster, u, nil
+	return cluster, nil
 }

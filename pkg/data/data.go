@@ -80,17 +80,5 @@ func addNameSpace(rContext *types.Context) error {
 		return err
 	}
 
-	_, err = rContext.Core.Namespaces("").Create(&v1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: settings.RioDefaultNamespace,
-			Labels: map[string]string{
-				space.SpaceLabel: "true",
-			},
-		},
-	})
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return err
-	}
-
 	return nil
 }

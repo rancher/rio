@@ -19,11 +19,11 @@ import (
 type Cluster struct {
 	clientaccess.Info
 
-	ID                   string  `json:"id"`
+	ID                   string  `json:"id,omitempty"`
 	Checksum             string  `json:"-"`
-	Name                 string  `json:"name"`
-	DefaultStackName     string  `json:"defaultStackName"`
-	DefaultWorkspaceName string  `json:"defaultWorkspaceName"`
+	Name                 string  `json:"name,omitempty"`
+	DefaultStackName     string  `json:"defaultStackName,omitempty"`
+	DefaultWorkspaceName string  `json:"defaultWorkspaceName,omitempty"`
 	Default              bool    `json:"-"`
 	Config               *Config `json:"-"`
 
@@ -68,6 +68,21 @@ func (c *Cluster) getClientInfo() (*clusterClientInfo, error) {
 }
 
 func (c *Cluster) Workspace() (*Workspace, error) {
+	if c.Config.WorkspaceName != "" {
+		workspaces, err := c.workspaces(true)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, w := range workspaces {
+			if w.ID == c.Config.WorkspaceName || w.Name == c.Config.WorkspaceName {
+				return &w, nil
+			}
+		}
+
+		return nil, fmt.Errorf("failed to find workspace %s", c.Config.WorkspaceName)
+	}
+
 	workspaces, err := c.Workspaces()
 	if err != nil {
 		return nil, err
@@ -117,10 +132,14 @@ func (c *Cluster) CreateWorkspace(name string) (*Workspace, error) {
 		return nil, err
 	}
 
-	return c.workspaceFromSpace(space), nil
+	return c.workspaceFromSpace(*space), nil
 }
 
 func (c *Cluster) Workspaces() ([]Workspace, error) {
+	return c.workspaces(false)
+}
+
+func (c *Cluster) workspaces(all bool) ([]Workspace, error) {
 	sc, err := c.Client()
 	if err != nil {
 		return nil, err
@@ -133,10 +152,14 @@ func (c *Cluster) Workspaces() ([]Workspace, error) {
 
 	var result []Workspace
 	for _, w := range workspaces.Data {
-		if w.Name == settings.RioSystemNamespace {
+		if !all && w.ID == settings.RioSystemNamespace {
 			continue
 		}
-		result = append(result, *c.workspaceFromSpace(&w))
+		workspace := c.workspaceFromSpace(w)
+		if w.Name == c.DefaultWorkspaceName {
+			workspace.Default = true
+		}
+		result = append(result, *workspace)
 	}
 
 	sort.Slice(result, func(i, j int) bool {
@@ -146,7 +169,7 @@ func (c *Cluster) Workspaces() ([]Workspace, error) {
 	return result, nil
 }
 
-func (c *Cluster) workspaceFromSpace(space *spaceclient.Space) *Workspace {
+func (c *Cluster) workspaceFromSpace(space spaceclient.Space) *Workspace {
 	return &Workspace{
 		Space:   space,
 		Cluster: c,

@@ -8,10 +8,11 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/rancher/rio/cli/pkg/clicontext"
-
+	"github.com/Masterminds/sprig"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/docker/go-units"
 	"github.com/rancher/norman/types/convert"
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"gopkg.in/yaml.v2"
 )
 
@@ -19,9 +20,20 @@ var (
 	idsHeader = [][]string{
 		{"ID", "ID"},
 	}
+
+	localFuncMap = map[string]interface{}{
+		"stackScopedName": FormatStackScopedName,
+		"ago":             FormatCreated,
+		"json":            FormatJSON,
+		"jsoncompact":     FormatJSONCompact,
+		"yaml":            FormatYAML,
+		"first":           FormatFirst,
+		"dump":            FormatSpew,
+	}
 )
 
 type Writer struct {
+	closed        bool
 	quite         bool
 	HeaderFormat  string
 	ValueFormat   string
@@ -38,17 +50,16 @@ func NewWriter(values [][]string, ctx *clicontext.CLIContext) *Writer {
 		values = append(idsHeader, values...)
 	}
 
-	t := &Writer{
-		Writer: tabwriter.NewWriter(os.Stdout, 10, 1, 3, ' ', 0),
-		funcMap: map[string]interface{}{
-			"stackScopedName": FormatStackScopedName,
-			"ago":             FormatCreated,
-			"json":            FormatJSON,
-			"jsoncompact":     FormatJSONCompact,
-			"yaml":            FormatYAML,
-			"first":           FormatFirst,
-		},
+	funcMap := sprig.TxtFuncMap()
+	for k, v := range localFuncMap {
+		funcMap[k] = v
 	}
+
+	t := &Writer{
+		Writer:  tabwriter.NewWriter(os.Stdout, 10, 1, 3, ' ', 0),
+		funcMap: funcMap,
+	}
+
 	t.HeaderFormat, t.ValueFormat = SimpleFormat(values)
 
 	if ctx.CLI.Bool("quiet") {
@@ -79,7 +90,7 @@ func (t *Writer) AddFormatFunc(name string, f FormatFunc) {
 }
 
 func (t *Writer) Err() error {
-	return t.err
+	return t.Close()
 }
 
 func (t *Writer) writeHeader() {
@@ -130,9 +141,16 @@ func (t *Writer) Write(obj interface{}) {
 }
 
 func (t *Writer) Close() error {
+	if t.closed {
+		return t.err
+	}
 	if t.err != nil {
 		return t.err
 	}
+
+	defer func() {
+		t.closed = true
+	}()
 	t.writeHeader()
 	if t.err != nil {
 		return t.err
@@ -194,6 +212,10 @@ func FormatJSONCompact(data interface{}) (string, error) {
 func FormatYAML(data interface{}) (string, error) {
 	bytes, err := yaml.Marshal(data)
 	return string(bytes) + "\n", err
+}
+
+func FormatSpew(data interface{}) (string, error) {
+	return spew.Sdump(data), nil
 }
 
 func FormatFirst(data, data2 interface{}) (string, error) {

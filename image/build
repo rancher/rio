@@ -2,13 +2,12 @@
 set -e
 
 cd $(dirname $0)
-
-sudo rm -rf main.squashfs
+rm -rf main.squashfs
 
 pushd ..
 mkdir -p build
 echo Copying vendor
-tar chf build/vendor.tar.gz --exclude vendor/github.com/coreos/etcd/cmd --exclude vendor/github.com/jteeuwen/go-bindata/testdata vendor
+tar chf build/vendor.tar --exclude vendor/github.com/coreos/etcd/cmd --exclude vendor/github.com/jteeuwen/go-bindata/testdata vendor
 echo Running agent docker build
 docker build -t bb -f image/Dockerfile .
 popd

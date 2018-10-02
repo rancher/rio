@@ -26,13 +26,13 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 	}
 
 	writer := table.NewWriter([][]string{
-		{"NAME", "Cluster.Name"},
-		{"DEFAULT", "{{.Cluster.Default | boolToStar}}"},
+		{"ID", "Cluster.ID"},
 		{"URL", "Cluster.URL"},
+		{"DEFAULT", "{{.Cluster.Default | boolToStar}}"},
 	}, ctx)
 	defer writer.Close()
 
-	writer.AddFormatFunc("boolToStart", BoolToStar)
+	writer.AddFormatFunc("boolToStar", BoolToStar)
 
 	for i, cluster := range clusters {
 		writer.Write(&Data{

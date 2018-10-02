@@ -6,11 +6,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rancher/norman/signal"
-
 	"github.com/rancher/rio/cli/pkg/clicontext"
 
 	"github.com/rancher/rio/cli/cmd/config"
+	"github.com/rancher/rio/cli/cmd/workspace"
 
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/rio/cli/cmd/agent"
@@ -121,7 +120,6 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:        "cluster,c",
-			Value:       "default",
 			Usage:       "Specify which cluster to use",
 			EnvVar:      "RIO_CLUSTER",
 			Destination: &cfg.ClusterName,
@@ -146,6 +144,7 @@ func main() {
 		config.Config(app),
 		volume.Volume(app),
 		stack.Stack(),
+		workspace.Workspace(app),
 		cluster.Cluster(app),
 		node.Node(),
 
@@ -247,8 +246,7 @@ func main() {
 		}
 		cc := clicontext.CLIContext{
 			Config: &cfg,
-			CLI:    ctx,
-			Ctx:    signal.SigTermCancelContext(context.Background()),
+			Ctx:    context.Background(),
 		}
 		cc.Store(ctx.App.Metadata)
 		return nil

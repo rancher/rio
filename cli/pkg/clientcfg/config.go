@@ -104,6 +104,7 @@ func (c *Config) Cluster() (*Cluster, error) {
 				return &clusters[i], nil
 			}
 		}
+		return nil, fmt.Errorf("failed to find cluster %s", c.ClusterName)
 	}
 
 	var defaultCluster *Cluster
@@ -138,7 +139,7 @@ func (c *Config) Cluster() (*Cluster, error) {
 		if c.ID != "" && c.Name != c.ID {
 			name = fmt.Sprintf("%s(%s)", c.Name, c.ID)
 		}
-		msg := fmt.Sprintf("[%d] %s %s\n", i+1, name, c.URL.String())
+		msg := fmt.Sprintf("[%d] %s %s\n", i+1, name, c.URL)
 		options = append(options, msg)
 	}
 
@@ -187,7 +188,9 @@ func (c *Config) SaveCluster(cluster *Cluster) error {
 		return fmt.Errorf("can not save cluster with no name or ID")
 	}
 
-	clusterDir := c.ClientDir()
+	clusterDir := c.ClusterDir()
+	os.MkdirAll(clusterDir, 0700)
+
 	file := filepath.Join(clusterDir, fmt.Sprintf("%s.json", name))
 
 	out, err := os.Create(file)

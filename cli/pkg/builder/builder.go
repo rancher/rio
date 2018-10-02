@@ -1,6 +1,7 @@
 package builder
 
 import (
+	"fmt"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -17,6 +18,10 @@ var (
 
 type runnable interface {
 	Run(app *clicontext.CLIContext) error
+}
+
+type clirunnable interface {
+	Run(app *cli.Context) error
 }
 
 type customizer interface {
@@ -131,6 +136,10 @@ func Command(obj interface{}, usage, usageText, description string) cli.Command 
 			assignMaps(ctx.CLI, maps)
 			return run.Run(ctx)
 		})
+	} else if run, ok := obj.(clirunnable); ok {
+		c.Action = run.Run
+	} else {
+		panic(fmt.Sprintf("failed to find Action function for %T", obj))
 	}
 
 	cust, ok := obj.(customizer)

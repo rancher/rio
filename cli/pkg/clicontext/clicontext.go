@@ -42,7 +42,9 @@ func (c *CLIContext) Store(data map[string]interface{}) {
 
 func Wrap(f func(*CLIContext) error) func(context2 *cli.Context) error {
 	return func(app *cli.Context) error {
-		return f(Lookup(app.App.Metadata))
+		cc := Lookup(app.App.Metadata)
+		cc.CLI = app
+		return f(cc)
 	}
 }
 

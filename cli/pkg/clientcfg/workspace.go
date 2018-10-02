@@ -6,8 +6,9 @@ import (
 )
 
 type Workspace struct {
-	*spaceclient.Space
+	spaceclient.Space
 	Cluster *Cluster
+	Default bool
 
 	client *client.Client
 }
@@ -22,7 +23,7 @@ func (w *Workspace) Client() (*client.Client, error) {
 		return nil, err
 	}
 
-	client, err := ci.rioClient(w.Name)
+	client, err := ci.workspaceClient(w.ID)
 	if err != nil {
 		return nil, err
 	}

@@ -14,7 +14,7 @@ func NewKubectlCommand() cli.Command {
 		Category:        "DEBUGGING",
 		SkipFlagParsing: true,
 		SkipArgReorder:  true,
-		Action:          kubectl,
+		Action:          clicontext.Wrap(kubectl),
 	}
 }
 
