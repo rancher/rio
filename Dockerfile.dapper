@@ -21,3 +21,5 @@ WORKDIR ${DAPPER_SOURCE}
 
 ENTRYPOINT ["./scripts/entry"]
 CMD ["ci"]
+
+RUN apk -U add zlib-dev sqlite-static
