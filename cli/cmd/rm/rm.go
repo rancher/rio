@@ -1,6 +1,5 @@
 package rm
 
-import "C"
 import (
 	"strings"
 

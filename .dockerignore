@@ -1,6 +1,7 @@
 ./bin
 ./.dapper
 ./data-dir
+./build
 ./dist
 ./.trash-cache
 ./image/root

@@ -1,33 +1,21 @@
-FROM ubuntu:18.04
-# FROM arm=armhf/ubuntu:16.04
+FROM golang:1.11-alpine
 
-ARG DAPPER_HOST_ARCH
+RUN apk -U add bash git gcc musl-dev docker vim less file curl wget ca-certificates jq linux-headers sqlite-dev
+RUN go get -d golang.org/x/lint/golint && \
+    git -C /go/src/golang.org/x/lint/golint checkout -b current 06c8688daad7faa9da5a0c2f163a3d14aac986ca && \
+    go install golang.org/x/lint/golint && \
+    rm -rf /go/src /go/pkg
+RUN go get -d github.com/alecthomas/gometalinter && \
+    git -C /go/src/github.com/alecthomas/gometalinter checkout -b current v2.0.11 && \
+    go install github.com/alecthomas/gometalinter && \
+    gometalinter --install && \
+    rm -rf /go/src /go/pkg
+
 ENV DAPPER_RUN_ARGS --privileged
-ENV HOST_ARCH=${DAPPER_HOST_ARCH} ARCH=${DAPPER_HOST_ARCH}
-
-RUN apt-get update && \
-    apt-get install -y npm zip squashfs-tools sudo gcc ca-certificates git wget curl vim less file jq && \
-    rm -f /bin/sh && ln -s /bin/bash /bin/sh
-
-RUN npm install -g bats
-
-ENV GOLANG_ARCH_amd64=amd64 GOLANG_ARCH_arm=armv6l GOLANG_ARCH=GOLANG_ARCH_${ARCH} \
-    GOPATH=/go PATH=/go/bin:/usr/local/go/bin:${PATH} SHELL=/bin/bash
-
-RUN wget -O - https://storage.googleapis.com/golang/go1.10.3.linux-${!GOLANG_ARCH}.tar.gz | tar -xzf - -C /usr/local && \
-    go get github.com/rancher/trash && go get github.com/golang/lint/golint
-
-ENV DOCKER_URL_amd64=https://get.docker.com/builds/Linux/x86_64/docker-1.10.3 \
-    DOCKER_URL_arm=https://github.com/rancher/docker/releases/download/v1.10.3-ros1/docker-1.10.3_arm \
-    DOCKER_URL=DOCKER_URL_${ARCH}
-
-RUN wget -O - ${!DOCKER_URL} > /usr/bin/docker && chmod +x /usr/bin/docker
-
 ENV DAPPER_ENV REPO TAG DRONE_TAG
 ENV DAPPER_SOURCE /go/src/github.com/rancher/rio/
 ENV DAPPER_OUTPUT ./bin ./dist
 ENV DAPPER_DOCKER_SOCKET true
-ENV TRASH_CACHE ${DAPPER_SOURCE}/.trash-cache
 ENV HOME ${DAPPER_SOURCE}
 WORKDIR ${DAPPER_SOURCE}
 
