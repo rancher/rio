@@ -22,7 +22,7 @@ runCapAdd () {
     value="${value}$1"
     shift
   done
-  cmd="${cmd} tfiduccia/counting"
+  cmd="${cmd} nginx"
 
   $cmd
   rio wait ${stk}/${srv}
@@ -80,7 +80,7 @@ capAddTestk8s() {
 
 }
 
-@test "rio run capadd - AUDIT CONTROL and SYSLOG" {
+@test "run capadd - AUDIT CONTROL and SYSLOG" {
   runCapAdd 'AUDIT_CONTROL' 'SYSLOG'
   capAddTestrio 'AUDIT_CONTROL' 'SYSLOG'
   capAddTestk8s 'AUDIT_CONTROL' 'SYSLOG'
