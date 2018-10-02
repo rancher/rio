@@ -57,9 +57,9 @@ func AgentAccessInfoToKubeConfig(destFile, server, token string, override *url.U
 type Info struct {
 	URL      url.URL `json:"url"`
 	CACerts  []byte  `json:"cacert"`
-	username string  `json:"-"`
-	password string  `json:"-"`
-	Token    string  `json:"token"`
+	username string
+	password string
+	Token    string `json:"token"`
 }
 
 func (i *Info) WriteKubeConfig(destFile string) error {

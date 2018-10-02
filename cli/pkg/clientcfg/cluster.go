@@ -8,13 +8,12 @@ import (
 	"sort"
 
 	"github.com/docker/docker/pkg/reexec"
-	"github.com/sirupsen/logrus"
-
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/up/questions"
 	"github.com/rancher/rio/pkg/clientaccess"
 	"github.com/rancher/rio/pkg/settings"
 	spaceclient "github.com/rancher/rio/types/client/space/v1beta1"
+	"github.com/sirupsen/logrus"
 )
 
 type Cluster struct {
