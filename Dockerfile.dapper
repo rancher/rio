@@ -1,6 +1,7 @@
-FROM golang:1.11-alpine
+FROM golang:1.11-alpine3.8
 
-RUN apk -U add bash git gcc musl-dev docker vim less file curl wget ca-certificates jq linux-headers sqlite-dev sqlite
+RUN apk -U --no-cache add bash git gcc musl-dev docker vim less file curl wget ca-certificates jq linux-headers zlib-dev
+RUN apk -U --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/main/ add sqlite-dev sqlite-static
 RUN go get -d golang.org/x/lint/golint && \
     git -C /go/src/golang.org/x/lint/golint checkout -b current 06c8688daad7faa9da5a0c2f163a3d14aac986ca && \
     go install golang.org/x/lint/golint && \
@@ -22,4 +23,3 @@ WORKDIR ${DAPPER_SOURCE}
 ENTRYPOINT ["./scripts/entry"]
 CMD ["ci"]
 
-RUN apk -U add zlib-dev sqlite-static
