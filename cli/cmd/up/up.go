@@ -93,7 +93,7 @@ func (u *Up) doUp(ctx *server.Context, file, stack string) error {
 	}
 
 	logrus.Infof("Deploying stack [%s] from %s", stackName, file)
-	if err := up.Run(ctx, content, stackID, false, u.Prompt, answers); err != nil {
+	if err := up.Run(ctx, content, stackID, false, u.Prompt, answers, file); err != nil {
 		return err
 	}
 
