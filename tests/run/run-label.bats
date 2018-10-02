@@ -26,7 +26,7 @@ runLabelrio(){
   cmd="${cmd} nginx"
 
   $cmd
-  rio wait ${stk}/${srv}
+  rio wait ${stk}/${srv
 
 }
 
