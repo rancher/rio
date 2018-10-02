@@ -269,7 +269,9 @@ func toProbe(healthcheck *v1beta1.HealthConfig) *v1.Probe {
 	}
 
 	test := healthcheck.Test[0]
-	if strings.HasPrefix(test, "http://") || strings.HasPrefix(test, "https://") {
+
+	switch {
+	case strings.HasPrefix(test, "http://") || strings.HasPrefix(test, "https://"):
 		u, err := url.Parse(test)
 		if err == nil {
 			probe.HTTPGet = &v1.HTTPGetAction{
@@ -303,26 +305,29 @@ func toProbe(healthcheck *v1beta1.HealthConfig) *v1.Probe {
 				})
 			}
 		}
-	} else if strings.HasPrefix(test, "tcp://") {
+
+	case strings.HasPrefix(test, "tcp://"):
 		u, err := url.Parse(test)
 		if err == nil {
 			probe.TCPSocket = &v1.TCPSocketAction{
 				Port: intstr.Parse(u.Port()),
 			}
 		}
-	} else if strings.EqualFold(test, "CMD") {
+
+	case strings.EqualFold(test, "CMD"):
 		probe.Exec = &v1.ExecAction{
 			Command: healthcheck.Test[1:],
 		}
-	} else if strings.EqualFold(test, "CMD-SHELL") {
+
+	case strings.EqualFold(test, "CMD-SHELL"):
 		if len(healthcheck.Test) == 2 {
 			probe.Exec = &v1.ExecAction{
 				Command: []string{"sh", "-c", healthcheck.Test[1]},
 			}
 		}
-	} else if strings.EqualFold(test, "NONE") {
+	case strings.EqualFold(test, "NONE"):
 		return nil
-	} else {
+	default:
 		probe.Exec = &v1.ExecAction{
 			Command: healthcheck.Test,
 		}
