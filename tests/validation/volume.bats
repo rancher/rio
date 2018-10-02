@@ -39,5 +39,4 @@ teardown () {
     rio volume
     sleep 10
     [ "$(rio kubectl get -n ${nsp} -o=json pvc/${vol} | jq -r .spec.resources.requests.storage)" == "10Gi" ]
-
 }

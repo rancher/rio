@@ -49,7 +49,7 @@ func (q *question) ask() error {
 	}
 
 	if q.oldAnswer != "" && !q.forcePrompt {
-		q.result[q.q.Variable] = q.q.Default
+		q.result[q.q.Variable] = q.oldAnswer
 		return nil
 	}
 

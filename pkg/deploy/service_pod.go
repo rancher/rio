@@ -61,7 +61,6 @@ func podSpec(serviceName string, serviceLabels map[string]string, service *v1bet
 
 	for _, name := range sortKeys(service.Sidekicks) {
 		sidekick := service.Sidekicks[name]
-		sidekick.ContainerConfig.Volumes = mergeVolumes(sidekick.ContainerConfig.Volumes, service.ContainerConfig.Volumes)
 		c := container(serviceName, name, sidekick.ContainerConfig, volumes, volumeDefs, usedTemplates)
 		if sidekick.InitContainer {
 			podSpec.InitContainers = append(podSpec.InitContainers, c)
@@ -99,19 +98,6 @@ func podSpec(serviceName string, serviceLabels map[string]string, service *v1bet
 	scheduling(&podSpec, service, serviceLabels)
 
 	return usedTemplates, podSpec
-}
-
-func mergeVolumes(source, toMerge []v1beta1.Mount) []v1beta1.Mount {
-	sourceMount := map[string]struct{}{}
-	for _, m := range source {
-		sourceMount[m.Source+":"+m.Target] = struct{}{}
-	}
-	for _, m := range toMerge {
-		if _, ok := sourceMount[m.Source+":"+m.Target]; !ok {
-			source = append(source, m)
-		}
-	}
-	return source
 }
 
 func scheduling(podSpec *v1.PodSpec, service *v1beta1.ServiceUnversionedSpec, serviceLabels map[string]string) {

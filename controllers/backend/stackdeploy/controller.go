@@ -119,7 +119,8 @@ func (s *stackDeployController) deploy(key string, _ *v1beta1.Stack) error {
 	if stack.Spec.DisableMesh || settings.IstioEnabled.Get() != "true" {
 		err = s.deployNoMesh(ns, newStack, stackToDeploy)
 	} else {
-		err = s.deployMesh(ns, newStack, stackToDeploy)
+		// todo: remove
+		err = s.deployNoMesh(ns, newStack, stackToDeploy)
 	}
 
 	if !reflect.DeepEqual(stack, newStack) {
