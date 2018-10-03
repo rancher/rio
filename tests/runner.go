@@ -20,18 +20,18 @@ var (
 )
 
 func init() {
-	flag.IntVar(&workers, "number of workers", 10, "")
+	flag.IntVar(&workers, "workers", 10, "number of workers")
 }
 
 func main() {
-	if err := run(os.Args[1]); err != nil {
+	flag.Parse()
+
+	if err := run(flag.Arg(0)); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func run(path string) error {
-	flag.Parse()
-
 	files := make(chan string)
 
 	eg := errgroup.Group{}
@@ -42,6 +42,9 @@ func run(path string) error {
 	}
 
 	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 		if !info.IsDir() && strings.HasSuffix(path, ".bats") {
 			files <- path
 		}

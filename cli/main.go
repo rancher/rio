@@ -124,7 +124,6 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:        "workspace,w",
-			Value:       "default",
 			Usage:       "Specify which workspace to use",
 			EnvVar:      "RIO_WORKSPACE",
 			Destination: &cfg.WorkspaceName,
