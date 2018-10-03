@@ -30,7 +30,7 @@ export PATH=$(pwd)/bin:$PATH
 rio login -s https://localhost:7443 -t /var/lib/rancher/rio/server/client-token
 
 echo Waiting for istio/gateway
-rio -w run -p 80/http -n test nginx
+rio --wait run -p 80/http -n test nginx
 rio --workspace=rio-system wait istio/istio-gateway
 rio --workspace=rio-system ps
 rio --workspace=rio-system ps -c
