@@ -7,6 +7,7 @@ import (
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/rio/cli/cmd/ps"
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/types/client/space/v1beta1"
 	"github.com/sirupsen/logrus"
 )
 
@@ -17,26 +18,22 @@ type Exec struct {
 }
 
 func (e *Exec) Run(ctx *clicontext.CLIContext) error {
-	cc, err := ctx.ClusterClient()
-	if err != nil {
-		return err
-	}
-
 	args := ctx.CLI.Args()
 	if len(args) < 2 {
 		return fmt.Errorf("at least two arguments are required CONTAINER CMD")
 	}
 
-	cd, err := ps.ListFirstPod(cc, true, e.C_Container, args[0])
+	pd, err := ps.ListFirstPod(ctx, true, args[0])
 	if err != nil {
 		return err
 	}
 
-	if cd == nil {
+	if pd == nil {
 		return fmt.Errorf("failed to find pod for %s, container \"%s\"", args[0], e.C_Container)
 	}
 
-	podNS, podName, containerName := cd.Pod.Namespace, cd.Pod.Name, cd.Container.Name
+	container := findContainer(pd, e.C_Container)
+	podNS, podName, containerName := pd.Pod.Namespace, pd.Pod.Name, container.Name
 
 	execArgs := []string{"kubectl"}
 	if logrus.GetLevel() >= logrus.DebugLevel {
@@ -60,4 +57,14 @@ func (e *Exec) Run(ctx *clicontext.CLIContext) error {
 	cmd.Stdout = os.Stdout
 
 	return cmd.Run()
+}
+
+func findContainer(pd *ps.PodData, name string) *client.Container {
+	for _, c := range pd.Containers {
+		if c.Name == name {
+			return &c
+		}
+	}
+
+	return &pd.Containers[0]
 }

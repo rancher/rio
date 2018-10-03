@@ -74,10 +74,10 @@ func (edit *Edit) Run(ctx *clicontext.CLIContext) error {
 		}
 
 		updated, err := editLoop(prefix, input, func(content []byte) error {
-			if err := edit.update(ctx, format, obj, url, content); err != nil {
+			if err := edit.update(ctx, format, &obj.Resource, url, content); err != nil {
 				return err
 			}
-			waiter.Add(obj)
+			waiter.Add(&obj.Resource)
 			return nil
 		})
 

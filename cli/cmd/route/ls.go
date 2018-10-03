@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rancher/rio/cli/pkg/clientcfg"
+
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
@@ -93,7 +95,7 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 	}, ctx)
 	defer writer.Close()
 
-	writer.AddFormatFunc("formatURL", FormatURL)
+	writer.AddFormatFunc("formatURL", FormatURL(cluster))
 	writer.AddFormatFunc("formatOpts", FormatOpts)
 	writer.AddFormatFunc("formatAction", FormatAction)
 	writer.AddFormatFunc("formatTarget", FormatTarget)
@@ -306,28 +308,30 @@ func writeStringMatchMap(buf *strings.Builder, prefix string, matches map[string
 	}
 }
 
-func FormatURL(obj interface{}) (string, error) {
-	data, ok := obj.(*Data)
-	if !ok {
-		return "", fmt.Errorf("invalid data")
-	}
-	hostBuf := strings.Builder{}
-	if data.RouteSpec.Websocket {
-		hostBuf.WriteString("ws://")
-	} else {
-		hostBuf.WriteString("http://")
-	}
-	hostBuf.WriteString(data.RouteSet.Name)
-	if data.Stack.Name != "default" {
+func FormatURL(cluster *clientcfg.Cluster) func(obj interface{}) (string, error) {
+	return func(obj interface{}) (string, error) {
+		data, ok := obj.(*Data)
+		if !ok {
+			return "", fmt.Errorf("invalid data")
+		}
+		hostBuf := strings.Builder{}
+		if data.RouteSpec.Websocket {
+			hostBuf.WriteString("ws://")
+		} else {
+			hostBuf.WriteString("http://")
+		}
+		hostBuf.WriteString(data.RouteSet.Name)
+		if data.Stack.Name != cluster.DefaultStackName {
+			hostBuf.WriteString(".")
+			hostBuf.WriteString(data.Stack.Name)
+		}
 		hostBuf.WriteString(".")
-		hostBuf.WriteString(data.Stack.Name)
+		hostBuf.WriteString(data.Domain)
+		if data.port() > 0 {
+			hostBuf.WriteString(":")
+			hostBuf.WriteString(strconv.FormatInt(data.port(), 10))
+		}
+		hostBuf.WriteString(data.path())
+		return hostBuf.String(), nil
 	}
-	hostBuf.WriteString(".")
-	hostBuf.WriteString(data.Domain)
-	if data.port() > 0 {
-		hostBuf.WriteString(":")
-		hostBuf.WriteString(strconv.FormatInt(data.port(), 10))
-	}
-	hostBuf.WriteString(data.path())
-	return hostBuf.String(), nil
 }

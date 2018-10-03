@@ -43,7 +43,7 @@ func waitForResources(ctx *clicontext.CLIContext) error {
 
 	for _, r := range ctx.CLI.Args() {
 		for {
-			resource, err := lookup.Lookup(ctx.ClientLookup, r, waitTypes...)
+			resource, err := lookup.Lookup(ctx, r, waitTypes...)
 			if err != nil {
 				if time.Now().After(end) {
 					return fmt.Errorf("timeout waiting for %s to exist", r)
@@ -51,7 +51,7 @@ func waitForResources(ctx *clicontext.CLIContext) error {
 				time.Sleep(time.Second)
 				continue
 			}
-			w.Add(resource)
+			w.Add(&resource.Resource)
 			break
 		}
 	}
@@ -101,7 +101,7 @@ func NewWaiter(ctx *clicontext.CLIContext) (*Waiter, error) {
 		timeout:      ctx.Config.WaitTimeout,
 		state:        waitState,
 		client:       wc,
-		clientLookup: ctx.ClientLookup,
+		clientLookup: ctx,
 	}, nil
 }
 

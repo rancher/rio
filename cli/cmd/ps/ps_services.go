@@ -5,6 +5,8 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/rancher/rio/cli/pkg/clientcfg"
+
 	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
@@ -19,22 +21,24 @@ type ServiceData struct {
 	Endpoint string
 }
 
-func FormatServiceName(data, data2 interface{}) (string, error) {
-	stackName, ok := data.(string)
-	if !ok {
-		return "", nil
-	}
+func FormatServiceName(cluster *clientcfg.Cluster) func(data, data2 interface{}) (string, error) {
+	return func(data, data2 interface{}) (string, error) {
+		stackName, ok := data.(string)
+		if !ok {
+			return "", nil
+		}
 
-	service, ok := data2.(*client.Service)
-	if !ok {
-		return "", nil
-	}
+		service, ok := data2.(*client.Service)
+		if !ok {
+			return "", nil
+		}
 
-	if service.ParentService == "" || service.Version == "" {
-		return table.FormatStackScopedName(stackName, service.Name)
-	}
+		if service.ParentService == "" || service.Version == "" {
+			return table.FormatStackScopedName(cluster)(stackName, service.Name)
+		}
 
-	return table.FormatStackScopedName(stackName, service.Name+":"+service.Version)
+		return table.FormatStackScopedName(cluster)(stackName, service.Name+":"+service.Version)
+	}
 }
 
 func FormatImage(data interface{}) (string, error) {
@@ -90,6 +94,11 @@ func (p *Ps) services(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
+	cluster, err := ctx.Cluster()
+	if err != nil {
+		return err
+	}
+
 	services, err := wc.Service.List(util.DefaultListOpts())
 	if err != nil {
 		return err
@@ -106,7 +115,7 @@ func (p *Ps) services(ctx *clicontext.CLIContext) error {
 	}, ctx)
 	defer writer.Close()
 
-	writer.AddFormatFunc("serviceName", FormatServiceName)
+	writer.AddFormatFunc("serviceName", FormatServiceName(cluster))
 	writer.AddFormatFunc("image", FormatImage)
 	writer.AddFormatFunc("scale", FormatScale)
 

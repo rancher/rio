@@ -11,6 +11,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/rancher/norman/clientbase"
+
 	"github.com/pkg/errors"
 	"github.com/rancher/rio/cli/pkg/resolvehome"
 	"github.com/rancher/rio/cli/pkg/up/questions"
@@ -55,7 +57,7 @@ func (c *Config) DefaultClusterName() (string, error) {
 func (c *Config) Validate() error {
 	if c.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
-		logrus.SetOutput(os.Stderr)
+		clientbase.Debug = true
 	}
 	home, err := resolvehome.Resolve(c.Home)
 	if err != nil {

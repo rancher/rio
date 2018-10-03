@@ -11,12 +11,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
-
-	api2 "github.com/rancher/rio/controllers/api"
-
-	"strconv"
 
 	"github.com/pkg/errors"
 	"github.com/rancher/norman/api"
@@ -28,6 +25,7 @@ import (
 	"github.com/rancher/rancher/pkg/tls"
 	"github.com/rancher/rio/api/setup"
 	"github.com/rancher/rio/cli/pkg/resolvehome"
+	api2 "github.com/rancher/rio/controllers/api"
 	"github.com/rancher/rio/controllers/backend"
 	"github.com/rancher/rio/pkg/data"
 	"github.com/rancher/rio/types"

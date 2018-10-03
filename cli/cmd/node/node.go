@@ -89,7 +89,7 @@ func nodeRm(ctx *clicontext.CLIContext) error {
 
 	var lastErr error
 	for _, name := range names {
-		node, err := lookup.Lookup(ctx.ClientLookup, name, spaceclient.NodeType)
+		node, err := lookup.Lookup(ctx, name, spaceclient.NodeType)
 		if err != nil {
 			return err
 		}
@@ -100,7 +100,7 @@ func nodeRm(ctx *clicontext.CLIContext) error {
 			continue
 		}
 
-		w.Add(node)
+		w.Add(&node.Resource)
 	}
 
 	if lastErr != nil {

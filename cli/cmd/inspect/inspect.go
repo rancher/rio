@@ -38,7 +38,7 @@ func (i *Inspect) Customize(cmd *cli.Command) {
 
 func (i *Inspect) Run(ctx *clicontext.CLIContext) error {
 	for _, arg := range ctx.CLI.Args() {
-		r, err := find(ctx.ClientLookup, arg, i.T_Type, InspectTypes)
+		r, err := find(ctx, arg, i.T_Type, InspectTypes)
 		if err != nil {
 			return err
 		}
@@ -67,12 +67,12 @@ func find(c lookup.ClientLookup, arg, override string, types []string) (map[stri
 	}
 	r, err := lookup.Lookup(c, arg, types...)
 	if err == nil {
-		client, err := c(r.Type)
+		client, err := c.ClientLookup(r.Type)
 		if err != nil {
 			return nil, err
 		}
 		data := map[string]interface{}{}
-		err = client.GetLink(*r, "self", &data)
+		err = client.GetLink(r.Resource, "self", &data)
 		if err == nil {
 			return data, nil
 		}

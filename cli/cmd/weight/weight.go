@@ -8,7 +8,7 @@ import (
 	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/norman/types/values"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	service2 "github.com/rancher/rio/cli/pkg/service"
+	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/waiter"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
 )
@@ -39,7 +39,7 @@ func (w *Weight) Run(ctx *clicontext.CLIContext) error {
 			return fmt.Errorf("failed to parse %s: %v", arg, err)
 		}
 
-		service, err := service2.Lookup(ctx, name)
+		service, err := lookup.Lookup(ctx, name)
 		if err != nil {
 			return err
 		}
@@ -48,7 +48,7 @@ func (w *Weight) Run(ctx *clicontext.CLIContext) error {
 		values.PutValue(data, int64(scale),
 			client.ServiceFieldWeight)
 
-		_, err = wc.Service.Update(service, data)
+		_, err = wc.Service.Update(&client.Service{Resource: service.Resource}, data)
 		if err != nil {
 			return err
 		}

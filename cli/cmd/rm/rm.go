@@ -1,8 +1,6 @@
 package rm
 
 import (
-	"strings"
-
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/waiter"
@@ -29,38 +27,10 @@ func Remove(ctx *clicontext.CLIContext, types ...string) error {
 		return err
 	}
 
-	wc, err := ctx.WorkspaceClient()
-	if err != nil {
-		return err
-	}
-
 	for _, arg := range ctx.CLI.Args() {
-		resource, err := lookup.Lookup(ctx.ClientLookup, arg, types...)
+		resource, err := lookup.Lookup(ctx, arg, types...)
 		if err != nil {
 			return err
-		}
-
-		if arg != resource.ID && resource.Type == client.ServiceType && strings.Contains(arg, ":") {
-			parsed := lookup.ParseServiceName(arg)
-			service, err := wc.Service.ByID(resource.ID)
-			if err != nil {
-				return err
-			}
-
-			if service.Version != parsed.Revision {
-				revService, err := wc.Service.ByID(resource.ID + "-" + parsed.Revision)
-				if err != nil {
-					return err
-				}
-				if revService.ParentService == service.Name {
-					if err := wc.Service.Delete(revService); err != nil {
-						return err
-					}
-					w.Add(&revService.Resource)
-				}
-			}
-
-			continue
 		}
 
 		client, err := ctx.ClientLookup(resource.Type)
@@ -68,12 +38,12 @@ func Remove(ctx *clicontext.CLIContext, types ...string) error {
 			return err
 		}
 
-		err = client.Delete(resource)
+		err = client.Delete(&resource.Resource)
 		if err != nil {
 			return err
 		}
 
-		w.Add(resource)
+		w.Add(&resource.Resource)
 	}
 
 	return w.Wait(ctx.Ctx)

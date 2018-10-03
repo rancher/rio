@@ -34,21 +34,16 @@ func RunAttach(ctx *clicontext.CLIContext, timeout time.Duration, stdin, tty boo
 		return err
 	}
 
-	c, err := cluster.Client()
-	if err != nil {
-		return err
-	}
-
-	var cd *ps.ContainerData
+	var pd *ps.PodData
 
 	deadline := time.Now().Add(timeout)
 	for {
-		cd, err = ps.ListFirstPod(c, true, "", container)
+		pd, err = ps.ListFirstPod(ctx, true, container)
 		if err != nil {
 			return err
 		}
 
-		if (cd == nil || cd.Container == nil || cd.Container.State != "running") && time.Now().Before(deadline) {
+		if (pd == nil || len(pd.Containers) == 0 || pd.Containers[0].State != "running") && time.Now().Before(deadline) {
 			time.Sleep(750 * time.Millisecond)
 			continue
 		}
@@ -56,14 +51,14 @@ func RunAttach(ctx *clicontext.CLIContext, timeout time.Duration, stdin, tty boo
 		break
 	}
 
-	if cd == nil {
+	if pd == nil {
 		return fmt.Errorf("failed to find a container for %s", container)
 	}
 
 	execArgs := []string{
 		fmt.Sprintf("--pod-running-timeout=%s", timeout),
-		cd.Pod.Name,
-		"-c", cd.Container.Name,
+		pd.Pod.Name,
+		"-c", pd.Containers[0].Name,
 	}
 	if stdin {
 		execArgs = append(execArgs, "-i")
@@ -72,5 +67,5 @@ func RunAttach(ctx *clicontext.CLIContext, timeout time.Duration, stdin, tty boo
 		execArgs = append(execArgs, "-t")
 	}
 
-	return cluster.Kubectl(cd.Pod.Namespace, "attach", execArgs...)
+	return cluster.Kubectl(pd.Pod.Namespace, "attach", execArgs...)
 }

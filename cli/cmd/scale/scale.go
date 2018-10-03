@@ -32,32 +32,19 @@ func (s *Scale) Run(ctx *clicontext.CLIContext) error {
 			return fmt.Errorf("failed to parse %s: %v", arg, err)
 		}
 
-		resource, err := lookup.Lookup(ctx.ClientLookup, name, client.ServiceType)
+		resource, err := lookup.Lookup(ctx, name, client.ServiceType)
 		if err != nil {
 			return err
 		}
 
-		service, err := wc.Service.ByID(resource.ID)
-		if err != nil {
-			return err
-		}
-
-		parsedService := lookup.ParseServiceName(name)
-		if parsedService.Revision != "" && parsedService.Revision != service.Version {
-			service, err = wc.Service.ByID(resource.ID + "-" + service.Version)
-			if err != nil {
-				return err
-			}
-		}
-
-		err = wc.Update(client.ServiceType, resource, map[string]interface{}{
+		err = wc.Update(client.ServiceType, &resource.Resource, map[string]interface{}{
 			"scale": scale,
 		}, nil)
 		if err != nil {
 			return fmt.Errorf("failed to update scale on %s: %v", name, err)
 		}
 
-		waiter.Add(&service.Resource)
+		waiter.Add(&resource.Resource)
 	}
 
 	return waiter.Wait(ctx.Ctx)

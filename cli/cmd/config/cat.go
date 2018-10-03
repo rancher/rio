@@ -14,7 +14,7 @@ type Cat struct {
 
 func (c *Cat) Run(ctx *clicontext.CLIContext) error {
 	for _, arg := range ctx.CLI.Args() {
-		c, err := lookup.Lookup(ctx.ClientLookup, arg, client.ConfigType)
+		c, err := lookup.Lookup(ctx, arg, client.ConfigType)
 		if err != nil {
 			return err
 		}

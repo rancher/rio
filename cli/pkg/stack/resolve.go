@@ -3,12 +3,11 @@ package stack
 import (
 	"strings"
 
-	"github.com/rancher/rio/cli/pkg/waiter"
-
 	"github.com/pkg/errors"
 	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/cli/pkg/waiter"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
 )
 

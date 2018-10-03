@@ -4,19 +4,11 @@ import (
 	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/norman/types/convert/merge"
 	"github.com/rancher/rio/pkg/deploy/stack/output"
+	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1/schema"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
 )
-
-func Combine(service *v1beta1.Service, revision *v1beta1.Service) (*v1beta1.Service, error) {
-	base, err := convert.EncodeToMap(service)
-	if err != nil {
-		return nil, err
-	}
-
-	return combineAndNormalize(service.Name, base, service, revision)
-}
 
 func combineAndNormalize(name string, base map[string]interface{}, service *v1beta1.Service, rev *v1beta1.Service) (*v1beta1.Service, error) {
 	data, err := convert.EncodeToMap(rev)
@@ -67,10 +59,10 @@ func servicesByParent(services []*v1beta1.Service) output.Services {
 func normalizeParent(name string, service *v1beta1.Service) *v1beta1.Service {
 	service = service.DeepCopy()
 	if service.Spec.Revision.Version == "" {
-		service.Spec.Revision.Version = "v0"
+		service.Spec.Revision.Version = settings.DefaultServiceVersion
 	}
 	service.Spec.Revision.ServiceName = name
-	if service.Spec.Revision.Version == "v0" {
+	if service.Spec.Revision.Version == settings.DefaultServiceVersion {
 		service.Name = name
 	} else {
 		service.Name = name + "-" + service.Spec.Revision.Version

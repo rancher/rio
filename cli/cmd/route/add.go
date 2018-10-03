@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rancher/rio/cli/pkg/clientcfg"
+
 	"github.com/rancher/rio/cli/pkg/stack"
 
 	"github.com/rancher/norman/pkg/kv"
@@ -48,7 +50,12 @@ func (a *Add) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("at least 3 arguements are required: HOST[/PATH] to|redirect|mirror TARGET")
 	}
 
-	if err := a.validateServiceStack(args); err != nil {
+	cluster, err := ctx.Cluster()
+	if err != nil {
+		return err
+	}
+
+	if err := a.validateServiceStack(cluster, args); err != nil {
 		return err
 	}
 
@@ -81,13 +88,13 @@ func (a *Add) Run(ctx *clicontext.CLIContext) error {
 	return err
 }
 
-func (a *Add) validateServiceStack(args []string) error {
+func (a *Add) validateServiceStack(cluster *clientcfg.Cluster, args []string) error {
 	_, service, stack, _, _ := parseMatch(args[0])
 	if service == "" {
 		return fmt.Errorf("route host/path must be in the format service.stack[/path], for example myservice.mystack/login")
 	}
 	if stack == "" {
-		stack = "default"
+		stack = cluster.DefaultStackName
 	}
 
 	return nil

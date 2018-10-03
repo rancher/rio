@@ -6,9 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/rancher/rio/cli/pkg/clicontext"
-
 	"github.com/rancher/rio/cli/cmd/ps"
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 )
@@ -32,59 +31,60 @@ func (l *Logs) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	cc, err := cluster.Client()
+	pds, err := ps.ListPods(ctx, l.A_All, ctx.CLI.Args()...)
 	if err != nil {
 		return err
 	}
 
-	cds, err := ps.ListPods(cc, l.A_All, l.C_Container, ctx.CLI.Args()...)
-	if err != nil {
-		return err
-	}
-
-	if len(cds) == 0 {
+	if len(pds) == 0 {
 		return fmt.Errorf("failed to find container for %v, container \"%s\"", ctx.CLI.Args(), l.C_Container)
 	}
 
 	errg := errgroup.Group{}
 	// TODO: make this suck much less.  Like color output, labels by container name, call the k8s API, not run a binary (too much overhead)
-	for _, cd := range cds {
-		var args []string
-		if l.F_Follow {
-			args = append(args, "-f")
-		}
-		if l.P_Previous {
-			args = append(args, "-p")
-		}
-		if l.S_Since != "" {
-			_, err := time.Parse(time.RFC3339, l.S_Since)
-			if err == nil {
-				args = append(args, "--since-time="+l.S_Since)
-			} else {
-				args = append(args, "--since="+l.S_Since)
+	for _, pd := range pds {
+		for _, container := range pd.Containers {
+			if l.C_Container != "" && l.C_Container != container.Name {
+				continue
 			}
-		}
-		if l.N_Tail > -1 {
-			args = append(args, fmt.Sprintf("--tail=%d", l.N_Tail))
-		}
 
-		args = append(args, "-c", cd.Container.Name, cd.Pod.Name)
+			var args []string
+			if l.F_Follow {
+				args = append(args, "-f")
+			}
+			if l.P_Previous {
+				args = append(args, "-p")
+			}
+			if l.S_Since != "" {
+				_, err := time.Parse(time.RFC3339, l.S_Since)
+				if err == nil {
+					args = append(args, "--since-time="+l.S_Since)
+				} else {
+					args = append(args, "--since="+l.S_Since)
+				}
+			}
+			if l.N_Tail > -1 {
+				args = append(args, fmt.Sprintf("--tail=%d", l.N_Tail))
+			}
 
-		cmd, err := cluster.KubectlCmd(cd.Pod.Namespace, "logs", args...)
-		if err != nil {
-			return err
-		}
+			args = append(args, "-c", container.Name, pd.Pod.Name)
 
-		prefix := ""
-		if len(cds) > 1 {
-			prefix = fmt.Sprintf("%s/%s| ", cd.Pod.Name, cd.Container.Name)
+			cmd, err := cluster.KubectlCmd(pd.Pod.Namespace, "logs", args...)
+			if err != nil {
+				return err
+			}
+
+			prefix := ""
+			if len(pds) > 1 || len(pd.Containers) > 1 {
+				prefix = fmt.Sprintf("%s/%s| ", pd.Pod.Name, container.Name)
+			}
+			cmd.Stdout = NewPrefixWriter(prefix, os.Stdout)
+			cmd.Stderr = NewPrefixWriter(prefix, os.Stderr)
+			errg.Go(func() error {
+				logrus.Debugf("Running %v, KUBECONFIG=%s", cmd.Args, os.Getenv("KUBECONFIG"))
+				return cmd.Run()
+			})
 		}
-		cmd.Stdout = NewPrefixWriter(prefix, os.Stdout)
-		cmd.Stderr = NewPrefixWriter(prefix, os.Stderr)
-		errg.Go(func() error {
-			logrus.Debugf("Running %v, KUBECONFIG=%s", cmd.Args, os.Getenv("KUBECONFIG"))
-			return cmd.Run()
-		})
 	}
 
 	return errg.Wait()

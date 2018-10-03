@@ -23,7 +23,7 @@ func (c *Update) Run(ctx *clicontext.CLIContext) error {
 	name := ctx.CLI.Args()[0]
 	file := ctx.CLI.Args()[1]
 
-	resource, err := lookup.Lookup(ctx.ClientLookup, name, client.ConfigType)
+	resource, err := lookup.Lookup(ctx, name, client.ConfigType)
 	if err != nil {
 		return err
 	}

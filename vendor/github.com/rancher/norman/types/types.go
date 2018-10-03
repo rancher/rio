@@ -68,6 +68,17 @@ type Resource struct {
 	Actions map[string]string `json:"actions"`
 }
 
+type NamedResource struct {
+	Resource
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+type NamedResourceCollection struct {
+	Collection
+	Data []NamedResource `json:"data,omitempty"`
+}
+
 type APIVersion struct {
 	Group            string `json:"group,omitempty"`
 	Version          string `json:"version,omitempty"`

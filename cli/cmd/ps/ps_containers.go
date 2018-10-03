@@ -1,70 +1,108 @@
 package ps
 
 import (
+	"fmt"
 	"strings"
 
-	"github.com/rancher/norman/pkg/kv"
+	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/cli/pkg/clientcfg"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/table"
+	"github.com/rancher/rio/pkg/settings"
+	"github.com/rancher/rio/types/client/rio/v1beta1"
 	spaceclient "github.com/rancher/rio/types/client/space/v1beta1"
 )
 
-var (
-	ignoreNames = map[string]bool{
-		"istio-proxy":      true,
-		"istio-init":       true,
-		"enable-core-dump": true,
-	}
-)
+type PodData struct {
+	ID         string
+	Name       string
+	Managed    bool
+	Service    *lookup.StackScoped
+	Pod        *spaceclient.Pod
+	Containers []spaceclient.Container
+}
 
 type ContainerData struct {
 	ID        string
 	Pod       *spaceclient.Pod
+	PodData   *PodData
 	Container *spaceclient.Container
 }
 
-func ListFirstPod(c *spaceclient.Client, all bool, specificContainerName string, criteria ...string) (*ContainerData, error) {
-	cds, err := ListPods(c, all, specificContainerName, criteria...)
+func ListFirstPod(ctx *clicontext.CLIContext, all bool, podOrServices ...string) (*PodData, error) {
+	cds, err := ListPods(ctx, all, podOrServices...)
 	if len(cds) == 0 {
 		return nil, err
 	}
-	return cds[0], err
+	return &cds[0], err
 }
 
-func ListPods(c *spaceclient.Client, all bool, specificContainerName string, criteria ...string) ([]*ContainerData, error) {
-	var result []*ContainerData
+func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]PodData, error) {
+	var result []PodData
 
-	pods, err := c.Pod.List(util.DefaultListOpts())
+	w, err := ctx.Workspace()
 	if err != nil {
 		return nil, err
 	}
 
-	filters := filter(criteria)
+	c, err := ctx.ClusterClient()
+	if err != nil {
+		return nil, err
+	}
 
-	for i, pod := range pods.Data {
-		containers := append(pod.Containers, pod.InitContainers...)
-		for j, container := range containers {
-			serviceName := pod.Labels["rio.cattle.io/service"]
-			if !all && (serviceName == "" || ignoreNames[container.Name]) {
-				continue
-			}
+	if w.ID != settings.RioSystemNamespace {
+		all = false
+	}
 
-			cd := &ContainerData{
-				Pod:       &pods.Data[i],
-				Container: &containers[j],
-			}
+	var pods []*types.NamedResource
+	var services []*types.NamedResource
 
-			cd.ID, _ = containerName(cd.Pod, cd.Container)
+	for _, name := range podOrServices {
+		r, err := lookup.Lookup(ctx, name, spaceclient.PodType, client.ServiceType)
+		if err != nil {
+			return nil, err
+		}
+		switch r.Type {
+		case spaceclient.PodType:
+			pods = append(pods, r)
+		case client.ServiceType:
+			services = append(services, r)
+		}
+	}
 
-			if cd.Pod.Transitioning == "error" && cd.Container.TransitioningMessage == "" {
-				cd.Container.State = cd.Pod.State
-				cd.Container.TransitioningMessage = cd.Pod.TransitioningMessage
-			}
+	for _, pod := range pods {
+		pod, err := c.Pod.ByID(pod.ID)
+		if err != nil {
+			return nil, err
+		}
 
-			if !shouldSkip(filters, cd) && (specificContainerName == "" || specificContainerName == cd.Container.Name) {
-				result = append(result, cd)
+		podData, ok := toPodData(w, all, pod)
+		if ok {
+			result = append(result, podData)
+		}
+	}
+
+	if len(pods) > 0 && len(services) == 0 {
+		return result, nil
+	}
+
+	podList, err := c.Pod.List(util.DefaultListOpts())
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range podList.Data {
+		podData, ok := toPodData(w, all, &podList.Data[i])
+		if !ok {
+			continue
+		}
+
+		for _, service := range services {
+			if service.ID == podData.Service.ResourceID {
+				result = append(result, podData)
+				break
 			}
 		}
 	}
@@ -72,23 +110,51 @@ func ListPods(c *spaceclient.Client, all bool, specificContainerName string, cri
 	return result, nil
 }
 
-func (p *Ps) containers(ctx *clicontext.CLIContext) error {
-	cc, err := ctx.ClusterClient()
-	if err != nil {
-		return err
+func toPodData(w *clientcfg.Workspace, all bool, pod *spaceclient.Pod) (PodData, bool) {
+	stackScoped := lookup.StackScopedFromLabels(w, pod.Labels)
+	workspaceID := pod.Labels["rio.cattle.io/workspace"]
+
+	podData := PodData{
+		ID:      pod.ID,
+		Pod:     pod,
+		Service: &stackScoped,
+		Managed: workspaceID != "",
 	}
 
-	cds, err := ListPods(cc, p.A_All, "", ctx.CLI.Args()...)
+	nameParts := strings.Split(pod.Name, "-")
+	if len(nameParts) > 2 {
+		podData.Name = fmt.Sprintf("%s-%s", nameParts[len(nameParts)-2], nameParts[len(nameParts)-1])
+	}
+
+	if !all && (podData.Name == "" || !podData.Managed || workspaceID != w.ID) {
+		return podData, false
+	}
+
+	containers := append(pod.Containers, pod.InitContainers...)
+	for _, container := range containers {
+		if podData.Pod.Transitioning == "error" && container.TransitioningMessage == "" {
+			container.State = podData.Pod.State
+			container.TransitioningMessage = podData.Pod.TransitioningMessage
+		}
+
+		podData.Containers = append(podData.Containers, container)
+	}
+
+	return podData, true
+}
+
+func (p *Ps) containers(ctx *clicontext.CLIContext) error {
+	pds, err := ListPods(ctx, p.A_All, ctx.CLI.Args()...)
 	if err != nil {
 		return err
 	}
 
 	writer := table.NewWriter([][]string{
-		{"NAME", "{{containerName .Pod .Container}}"},
+		{"NAME", "{{containerName .PodData .Container}}"},
 		{"IMAGE", "Container.Image"},
-		{"CREATED", "{{.Pod.Created | ago}}"},
-		{"NODE", "Pod.NodeName"},
-		{"IP", "Pod.PodIP"},
+		{"CREATED", "{{.PodData.Pod.Created | ago}}"},
+		{"NODE", "PodData.Pod.NodeName"},
+		{"IP", "PodData.Pod.PodIP"},
 		{"STATE", "Container.State"},
 		{"DETAIL", "Container.TransitioningMessage"},
 	}, ctx)
@@ -96,65 +162,31 @@ func (p *Ps) containers(ctx *clicontext.CLIContext) error {
 
 	writer.AddFormatFunc("containerName", containerName)
 
-	for _, cd := range cds {
-		writer.Write(cd)
+	for _, pd := range pds {
+		for _, container := range pd.Containers {
+			writer.Write(ContainerData{
+				ID:        pd.ID,
+				PodData:   &pd,
+				Container: &container,
+			})
+		}
 	}
 
 	return writer.Err()
 }
 
-func shouldSkip(filters []func(*ContainerData) bool, cd *ContainerData) bool {
-	if len(filters) == 0 {
-		return false
-	}
-
-	for _, f := range filters {
-		if f(cd) {
-			return false
-		}
-	}
-
-	return true
-}
-
-func filter(args []string) []func(*ContainerData) bool {
-	var result []func(*ContainerData) bool
-
-	for _, arg := range args {
-		con, ok := lookup.ParseContainerName(arg)
-		if ok {
-			result = append(result, func(cd *ContainerData) bool {
-				return cd.Pod.Name == con.PodName && cd.Container.Name == con.ContainerName
-			})
-			continue
-		}
-
-		svc := lookup.ParseServiceName(arg)
-		prefix := svc.String() + "/"
-		result = append(result, func(cd *ContainerData) bool {
-			name, err := containerName(cd.Pod, cd.Container)
-			if err != nil {
-				return false
-			}
-			return strings.HasPrefix(name, prefix)
-		})
-
-		ns, service := kv.Split(arg, ":")
-		result = append(result, func(cd *ContainerData) bool {
-			return cd.Pod.Labels["rio.cattle.io/namespace"] == ns && cd.Pod.Labels["rio.cattle.io/service"] == service
-		})
-	}
-
-	return result
-}
-
 func containerName(obj, obj2 interface{}) (string, error) {
-	pod, _ := obj.(*spaceclient.Pod)
+	podData, _ := obj.(*PodData)
 	container, _ := obj2.(*spaceclient.Container)
 
-	return lookup.ParsedContainer{
-		Service:       lookup.ParseServiceNameFromLabels(pod.Labels),
+	if !podData.Managed {
+		return fmt.Sprintf("%s/%s", strings.Split(podData.ID, ":")[1], container.Name), nil
+	}
+
+	pc := lookup.ParsedContainer{
+		Service:       *podData.Service,
 		ContainerName: container.Name,
-		PodName:       pod.Name,
-	}.String(), nil
+		PodName:       podData.Name,
+	}
+	return pc.String(), nil
 }

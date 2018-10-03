@@ -18,7 +18,7 @@ func (p *Promote) Run(ctx *clicontext.CLIContext) error {
 	}
 
 	for _, arg := range ctx.CLI.Args() {
-		resource, err := lookup.Lookup(ctx.ClientLookup, arg, client.ServiceType)
+		resource, err := lookup.Lookup(ctx, arg, client.ServiceType)
 		if err != nil {
 			return err
 		}
@@ -28,22 +28,19 @@ func (p *Promote) Run(ctx *clicontext.CLIContext) error {
 			return err
 		}
 
-		parsed := lookup.ParseServiceName(arg)
-		rev, err := wc.Service.ByID(resource.ID + "-" + parsed.Revision)
+		updates := &client.Service{
+			Promote: true,
+		}
+		if p.Scale > 0 {
+			updates.Scale = int64(p.Scale)
+		}
+
+		service, err := wc.Service.Update(&client.Service{Resource: resource.Resource}, updates)
 		if err != nil {
 			return err
 		}
 
-		if p.Scale > 0 {
-			rev.Scale = int64(p.Scale)
-		}
-
-		rev.Promote = true
-		if _, err := wc.Service.Update(rev, rev); err != nil {
-			return err
-		}
-
-		w.Add(&rev.Resource)
+		w.Add(&service.Resource)
 	}
 
 	return w.Wait(ctx.Ctx)

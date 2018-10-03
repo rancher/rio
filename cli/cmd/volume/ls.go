@@ -31,6 +31,11 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
+	cluster, err := ctx.Cluster()
+	if err != nil {
+		return err
+	}
+
 	volumes, err := wc.Volume.List(util.DefaultListOpts())
 	if err != nil {
 		return err
@@ -48,6 +53,7 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 	defer writer.Close()
 
 	writer.AddFormatFunc("driver", FormatDriver)
+	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cluster))
 
 	stackByID, err := util.StacksByID(wc)
 	if err != nil {

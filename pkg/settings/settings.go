@@ -7,10 +7,11 @@ import (
 )
 
 const (
-	RioSystemNamespace = "rio-system"
-	IstioExternalLB    = "rio-lb"
-	IstioGateway       = "rio-gateway"
-	IstioStackName     = "istio"
+	RioSystemNamespace    = "rio-system"
+	IstioExternalLB       = "rio-lb"
+	IstioGateway          = "rio-gateway"
+	IstioStackName        = "istio"
+	DefaultServiceVersion = "v0"
 )
 
 var (

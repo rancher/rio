@@ -8,6 +8,8 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/rancher/rio/cli/pkg/clientcfg"
+
 	"github.com/Masterminds/sprig"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/docker/go-units"
@@ -22,13 +24,12 @@ var (
 	}
 
 	localFuncMap = map[string]interface{}{
-		"stackScopedName": FormatStackScopedName,
-		"ago":             FormatCreated,
-		"json":            FormatJSON,
-		"jsoncompact":     FormatJSONCompact,
-		"yaml":            FormatYAML,
-		"first":           FormatFirst,
-		"dump":            FormatSpew,
+		"ago":         FormatCreated,
+		"json":        FormatJSON,
+		"jsoncompact": FormatJSONCompact,
+		"yaml":        FormatYAML,
+		"first":       FormatFirst,
+		"dump":        FormatSpew,
 	}
 )
 
@@ -167,22 +168,24 @@ func (t *Writer) printTemplate(out io.Writer, templateContent string, obj interf
 	return tmpl.Execute(out, obj)
 }
 
-func FormatStackScopedName(data, data2 interface{}) (string, error) {
-	stackName, ok := data.(string)
-	if !ok {
-		return "", nil
-	}
+func FormatStackScopedName(cluster *clientcfg.Cluster) func(interface{}, interface{}) (string, error) {
+	return func(data, data2 interface{}) (string, error) {
+		stackName, ok := data.(string)
+		if !ok {
+			return "", nil
+		}
 
-	serviceName, ok := data2.(string)
-	if !ok {
-		return "", nil
-	}
+		serviceName, ok := data2.(string)
+		if !ok {
+			return "", nil
+		}
 
-	if stackName == "default" {
-		return serviceName, nil
-	}
+		if stackName == cluster.DefaultStackName {
+			return serviceName, nil
+		}
 
-	return stackName + "/" + serviceName, nil
+		return stackName + "/" + serviceName, nil
+	}
 }
 
 func FormatCreated(data interface{}) (string, error) {

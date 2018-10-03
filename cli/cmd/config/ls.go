@@ -32,6 +32,11 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
+	cluster, err := ctx.Cluster()
+	if err != nil {
+		return err
+	}
+
 	configs, err := wc.Config.List(util.DefaultListOpts())
 	if err != nil {
 		return err
@@ -45,6 +50,7 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 	defer writer.Close()
 
 	writer.AddFormatFunc("size", Base64Size)
+	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cluster))
 
 	stackByID, err := util.StacksByID(wc)
 	if err != nil {

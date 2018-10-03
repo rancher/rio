@@ -11,8 +11,8 @@ import (
 	"github.com/rancher/rio/cli/pkg/lookup"
 )
 
-func DownloadYAML(ctx *clicontext.CLIContext, contentType, option string, name string, resourceTypes ...string) (*types.Resource, io.ReadCloser, string, error) {
-	obj, err := lookup.Lookup(ctx.ClientLookup, name, resourceTypes...)
+func DownloadYAML(ctx *clicontext.CLIContext, contentType, option string, name string, resourceTypes ...string) (*types.NamedResource, io.ReadCloser, string, error) {
+	obj, err := lookup.Lookup(ctx, name, resourceTypes...)
 	if err != nil {
 		return nil, nil, "", err
 	}

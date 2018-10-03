@@ -154,7 +154,7 @@ func stackRm(ctx *clicontext.CLIContext) error {
 
 	var lastErr error
 	for _, name := range names {
-		stack, err := lookup.Lookup(ctx.ClientLookup, name, client.StackType)
+		stack, err := lookup.Lookup(ctx, name, client.StackType)
 		if err != nil {
 			return err
 		}
@@ -165,7 +165,7 @@ func stackRm(ctx *clicontext.CLIContext) error {
 			continue
 		}
 
-		w.Add(stack)
+		w.Add(&stack.Resource)
 	}
 
 	if lastErr != nil {
@@ -194,13 +194,13 @@ func stackUpdate(ctx *clicontext.CLIContext) error {
 
 	var lastErr error
 	for _, name := range names {
-		stack, err := lookup.Lookup(ctx.ClientLookup, name, client.StackType)
+		stack, err := lookup.Lookup(ctx, name, client.StackType)
 		if err != nil {
 			return err
 		}
 
 		resp := &client.Stack{}
-		err = wc.Ops.DoUpdate(client.StackType, stack, &client.Stack{
+		err = wc.Ops.DoUpdate(client.StackType, &stack.Resource, &client.Stack{
 			Description: ctx.CLI.String("description"),
 		}, resp)
 		if err != nil {
@@ -208,7 +208,7 @@ func stackUpdate(ctx *clicontext.CLIContext) error {
 			continue
 		}
 
-		w.Add(stack)
+		w.Add(&stack.Resource)
 	}
 
 	if lastErr != nil {
