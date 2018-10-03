@@ -23,7 +23,7 @@ runLabelrio(){
     value="${value}$1"
     shift
   done
-  cmd="${cmd} tfiduccia/counting"
+  cmd="${cmd} nginx"
 
   $cmd
   rio wait ${stk}/${srv}
@@ -59,13 +59,13 @@ labelTestk8s() {
 ## Validation tests ##
 
 
-@test "rio label - validate single label" {
+@test "run label - validate single label" {
   runLabelrio "foo1=bar1"
   labelTestrio "foo1" "bar1"
   labelTestk8s "foo1" "bar1"
 }
 
-@test "rio label - validate multiple labels" {
+@test "run label - validate multiple labels" {
   runLabelrio "foo1=bar1" "foo2=bar2"
   labelTestrio "foo1" "bar1"
   labelTestrio "foo2" "bar2"

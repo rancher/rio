@@ -22,7 +22,7 @@ runMetadatario(){
     value="${value}$1"
     shift
   done
-  cmd="${cmd} tfiduccia/counting"
+  cmd="${cmd} nginx"
 
   $cmd
   rio wait ${stk}/${srv}
@@ -58,14 +58,14 @@ metadataTestk8s() {
 ## Validation tests ##
 
 
-@test "Metadata - validate single metadata value" {
+@test "run metadata - validate single metadata value" {
   runMetadatario "foo1=bar1"
   metadataTestrio "foo1" "bar1"
   metadataTestk8s "foo1" "bar1"
 
 }
 
-@test "Metadata - validate multiple metadata values" {
+@test "run metadata - validate multiple metadata values" {
   runMetadatario "foo1=bar1" "foo2=bar2"
   metadataTestrio "foo1" "bar1"
   metadataTestrio "foo2" "bar2"

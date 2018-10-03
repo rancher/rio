@@ -1,3 +1,4 @@
+#!/usr/bin/env bats
 ## Setup ##
 
 setup() {
@@ -10,30 +11,28 @@ teardown () {
   rio rm ${stk}
 }
 
-runCapDroprio () {
+runEntpntrio() {
   cmd="rio run -n ${stk}/${srv}"
   value=""
 
   while [ $# -gt 0 ]; do
-    cmd="${cmd} --cap-drop $1"
+    cmd="${cmd} --entrypoint $1"
     if [[ ! -z "${value}" ]]; then
-      value="${value} "
+      expect="${value} "
     fi
-    value="${value}$1"
+    expect="${value}$1"
     shift
   done
-  cmd="${cmd} nginx"
-  echo "cmd = ${cmd}"
 
+  cmd="${cmd} nginx"
   $cmd
-  rio wait ${stk}/${srv}
 }
 
 
-capDropTestrio() {
+entpntTestrio() {
   expect=""
 
-  while [ $# -gt 0 ]; do
+    while [ $# -gt 0 ]; do
     if [[ ! -z "${expect}" ]]; then
       expect="${expect} "
     fi
@@ -41,13 +40,15 @@ capDropTestrio() {
     shift
   done
 
-  got="$(rio inspect --format '{{.capDrop}}' ${stk}/${srv})"
-  echo "Expect: ${expect}"
+  got="$(rio inspect --format '{{.entrypoint}}' ${stk}/${srv})"
+  echo "Expect: [${expect}]"
   echo "Got: ${got}"
   [ "${got}" == "[${expect}]" ]
 }
 
-capDropTestk8s() {
+
+entpntTestk8s() {
+
   expect=""
   i=0
   count=$#
@@ -62,7 +63,7 @@ capDropTestk8s() {
   got=""
   
   while [ $i -lt $count ]; do
-    filter=".spec.template.spec.containers[0].securityContext.capabilities.drop[${i}]"
+    filter=".spec.template.spec.containers[0].command[${i}]"
     more=$(rio kubectl get -n ${nsp} -o=json deploy/${srv} | jq -r ${filter})
     got="${got},${more}"
   let i=$i+1
@@ -71,20 +72,22 @@ capDropTestk8s() {
    echo "Expect: ${expect}"
    echo "Got: ${got}"
   [ "${got}" == "${expect}" ]
+  
 }
 
-## Validation tests ##
-
-@test "run capdrop - ALL" {
-  runCapDroprio 'SYSLOG'
-  capDropTestrio 'SYSLOG'
-  capDropTestk8s 'SYSLOG'
+@test "Entrypoint - set to sh" {
+  entpnt="sh"
+  runEntpntrio "${entpnt}"
+  entpntTestrio "${entpnt}"
+  entpntTestk8s "${entpnt}"
 
 }
 
-@test "run capdrop - AUDIT CONTROL and SYSLOG" {
-  runCapDroprio 'AUDIT_CONTROL' 'SYSLOG'
-  capDropTestrio 'AUDIT_CONTROL' 'SYSLOG'
-  capDropTestk8s 'AUDIT_CONTROL' 'SYSLOG'
+@test "Entrypoint - set to sh -i" {
+  entpnt1="sh"
+  entpnt2="-i"
+  runEntpntrio "${entpnt1}" "${entpnt2}"
+  entpntTestrio "${entpnt1}" "${entpnt2}"
+  entpntTestk8s "${entpnt1}" "${entpnt2}"
 
 }

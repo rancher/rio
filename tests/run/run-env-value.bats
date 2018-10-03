@@ -23,7 +23,7 @@ runEnvrio() {
     expect="${expect}$1"
     shift
   done
-  cmd="${cmd} tfiduccia/counting"
+  cmd="${cmd} nginx"
 
   $cmd
 }
