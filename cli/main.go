@@ -5,6 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/rancher/rio/cli/cmd/push"
+
+	"github.com/rancher/rio/cli/cmd/tag"
+
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/norman/clientbase"
 	"github.com/rancher/rio/cli/cmd/agent"
@@ -206,6 +210,12 @@ func main() {
 			"Stream change events",
 			appName+" events",
 			""),
+		builder.Command(&tag.Tag{},
+			"Tag rio stacks",
+			appName+" tag STACK_NAME TAG", ""),
+		builder.Command(&push.Push{},
+			"Push stack file",
+			appName+" push $STACK_NAME $REPO_TAG", ""),
 
 		waiter.WaitCommand(),
 

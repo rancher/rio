@@ -104,7 +104,7 @@ func stacksIstioStackYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/istio-stack.yml", size: 5227, mode: os.FileMode(420), modTime: time.Unix(1537774782, 0)}
+	info := bindataFileInfo{name: "stacks/istio-stack.yml", size: 5227, mode: os.FileMode(420), modTime: time.Unix(1538174695, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

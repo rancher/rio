@@ -74,7 +74,6 @@ func kubelet(config *AgentConfig) {
 		"--eviction-hard", "imagefs.available<5%,nodefs.available<5%",
 		"--eviction-minimum-reclaim", "imagefs.available=10%,nodefs.available=10%",
 		"--fail-swap-on=false",
-		"--feature-gates=MountPropagation=true",
 		"--cgroup-root", "/k3s",
 		"--cgroup-driver", "cgroupfs",
 		"--container-runtime-endpoint", config.RuntimeSocket,

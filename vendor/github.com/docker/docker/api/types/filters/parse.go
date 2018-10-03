@@ -308,3 +308,12 @@ func convertArgsToSlice(f map[string]map[string]bool) map[string][]string {
 	}
 	return m
 }
+
+// ToJSON returns the Args as a JSON encoded string
+func ToJSON(a Args) (string, error) {
+	if a.Len() == 0 {
+		return "", nil
+	}
+	buf, err := json.Marshal(a)
+	return string(buf), err
+}
