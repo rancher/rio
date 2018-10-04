@@ -1,6 +1,9 @@
 package server
 
-import "github.com/urfave/cli"
+import (
+	"github.com/rancher/rio/cli/cmd/agent"
+	"github.com/urfave/cli"
+)
 
 type Server struct {
 	P_HttpsListenPort  int    `desc:"HTTPS listen port" default:"7443"`
@@ -10,6 +13,7 @@ type Server struct {
 	DisableAgent       bool   `desc:"Do not run a local agent and register this server"`
 	ProfilePort        int    `desc:"Profiling port, 0 disables profiling" default:"6060"`
 	Log                string `desc:"Log to file"`
+	agent.AgentShared
 }
 
 func (s *Server) Customize(command *cli.Command) {

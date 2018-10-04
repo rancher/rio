@@ -266,6 +266,7 @@ func getConfig(localURL *url.URL) (*AgentConfig, error) {
 	return &AgentConfig{
 		LocalVolumeDir: filepath.Join(dataDir, "local"),
 		Config: &agent.AgentConfig{
+			NodeIP:        os.Getenv("RIO_NODE_IP"),
 			NodeName:      nodeName,
 			ClusterCIDR:   *cidr,
 			KubeConfig:    kubeConfig,
