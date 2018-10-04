@@ -129,6 +129,8 @@ func toPodData(w *clientcfg.Workspace, all bool, pod *spaceclient.Pod) (PodData,
 	nameParts := strings.Split(pod.Name, "-")
 	if len(nameParts) > 2 {
 		podData.Name = fmt.Sprintf("%s-%s", nameParts[len(nameParts)-2], nameParts[len(nameParts)-1])
+	} else {
+		podData.Name = pod.Name
 	}
 
 	if !all && (podData.Name == "" || !podData.Managed || workspaceID != w.ID) {

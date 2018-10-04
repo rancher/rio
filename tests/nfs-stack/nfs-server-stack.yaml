@@ -1,0 +1,9 @@
+services:
+  nfs-server:
+    image: itsthenetwork/nfs-server-alpine:latest
+    imagePullPolicy: Always
+    environment:
+    - SHARED_DIRECTORY=/var/nfs
+    privileged: true
+    volumes:
+    - nfs:/var/nfs

@@ -16,6 +16,7 @@ const (
 	StackFieldName                      = "name"
 	StackFieldQuestions                 = "questions"
 	StackFieldRemoved                   = "removed"
+	StackFieldRepoTag                   = "repoTag"
 	StackFieldSpaceID                   = "spaceId"
 	StackFieldState                     = "state"
 	StackFieldTemplate                  = "template"
@@ -36,6 +37,7 @@ type Stack struct {
 	Name                      string            `json:"name,omitempty" yaml:"name,omitempty"`
 	Questions                 []Question        `json:"questions,omitempty" yaml:"questions,omitempty"`
 	Removed                   string            `json:"removed,omitempty" yaml:"removed,omitempty"`
+	RepoTag                   []string          `json:"repoTag,omitempty" yaml:"repoTag,omitempty"`
 	SpaceID                   string            `json:"spaceId,omitempty" yaml:"spaceId,omitempty"`
 	State                     string            `json:"state,omitempty" yaml:"state,omitempty"`
 	Template                  string            `json:"template,omitempty" yaml:"template,omitempty"`
