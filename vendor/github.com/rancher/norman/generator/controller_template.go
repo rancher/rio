@@ -49,6 +49,7 @@ type {{.schema.CodeName}}Lister interface {
 }
 
 type {{.schema.CodeName}}Controller interface {
+	Generic() controller.GenericController
 	Informer() cache.SharedIndexInformer
 	Lister() {{.schema.CodeName}}Lister
 	AddHandler(name string, handler {{.schema.CodeName}}HandlerFunc)
@@ -109,6 +110,10 @@ func (l *{{.schema.ID}}Lister) Get(namespace, name string) (*{{.prefix}}{{.schem
 
 type {{.schema.ID}}Controller struct {
 	controller.GenericController
+}
+
+func (c *{{.schema.ID}}Controller) Generic() controller.GenericController {
+	return c.GenericController
 }
 
 func (c *{{.schema.ID}}Controller) Lister() {{.schema.CodeName}}Lister {
@@ -194,13 +199,6 @@ func (s *{{.schema.ID}}Client) ObjectClient() *objectclient.ObjectClient {
 }
 
 func (s *{{.schema.ID}}Client) Create(o *{{.prefix}}{{.schema.CodeName}}) (*{{.prefix}}{{.schema.CodeName}}, error) {
-	{{- if (or (eq .schema.ID "role") (eq .schema.ID "roleBinding") (eq .schema.ID "clusterRole") (eq .schema.ID "clusterRoleBinding"))}}
-	if o.Labels == nil {
-		labels := make(map[string]string)
-		o.Labels = labels
-	}
-	o.Labels["creator.cattle.io/rancher-created"] = "true"
-	{{- end}}
 	obj, err := s.objectClient.Create(o)
 	return obj.(*{{.prefix}}{{.schema.CodeName}}), err
 }
@@ -216,13 +214,6 @@ func (s *{{.schema.ID}}Client) GetNamespaced(namespace, name string, opts metav1
 }
 
 func (s *{{.schema.ID}}Client) Update(o *{{.prefix}}{{.schema.CodeName}}) (*{{.prefix}}{{.schema.CodeName}}, error) {
-	{{- if (or (eq .schema.ID "role") (eq .schema.ID "roleBinding") (eq .schema.ID "clusterRole") (eq .schema.ID "clusterRoleBinding"))}}
-	if o.Labels == nil {
-		labels := make(map[string]string)
-		o.Labels = labels
-	}
-	o.Labels["creator.cattle.io/rancher-created"] = "true"
-	{{- end}}
 	obj, err := s.objectClient.Update(o.Name, o)
 	return obj.(*{{.prefix}}{{.schema.CodeName}}), err
 }

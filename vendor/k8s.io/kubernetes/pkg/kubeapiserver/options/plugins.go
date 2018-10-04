@@ -22,10 +22,8 @@ package options
 import (
 	"k8s.io/kubernetes/plugin/pkg/admission/serviceaccount"
 	"k8s.io/kubernetes/plugin/pkg/admission/storage/storageclass/setdefault"
-
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apiserver/pkg/admission"
-	"k8s.io/apiserver/pkg/admission/plugin/initialization"
 	"k8s.io/apiserver/pkg/admission/plugin/namespace/lifecycle"
 )
 
@@ -34,7 +32,6 @@ var AllOrderedPlugins = []string{
 	lifecycle.PluginName,                    // NamespaceLifecycle
 	serviceaccount.PluginName,               // ServiceAccount
 	setdefault.PluginName,                   // DefaultStorageClass
-	initialization.PluginName,               // Initializers
 }
 
 // RegisterAllAdmissionPlugins registers all admission plugins and

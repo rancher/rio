@@ -27,14 +27,12 @@ import (
 	apps "k8s.io/kubernetes/pkg/apis/apps"
 	autoscaling "k8s.io/kubernetes/pkg/apis/autoscaling"
 	batch "k8s.io/kubernetes/pkg/apis/batch"
-	certificates "k8s.io/kubernetes/pkg/apis/certificates"
 	core "k8s.io/kubernetes/pkg/apis/core"
 	extensions "k8s.io/kubernetes/pkg/apis/extensions"
 	networking "k8s.io/kubernetes/pkg/apis/networking"
 	policy "k8s.io/kubernetes/pkg/apis/policy"
 	rbac "k8s.io/kubernetes/pkg/apis/rbac"
 	scheduling "k8s.io/kubernetes/pkg/apis/scheduling"
-	settings "k8s.io/kubernetes/pkg/apis/settings"
 	storage "k8s.io/kubernetes/pkg/apis/storage"
 )
 
@@ -87,10 +85,6 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Batch().InternalVersion().CronJobs().Informer()}, nil
 	case batch.SchemeGroupVersion.WithResource("jobs"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Batch().InternalVersion().Jobs().Informer()}, nil
-
-		// Group=certificates.k8s.io, Version=internalVersion
-	case certificates.SchemeGroupVersion.WithResource("certificatesigningrequests"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Certificates().InternalVersion().CertificateSigningRequests().Informer()}, nil
 
 		// Group=core, Version=internalVersion
 	case core.SchemeGroupVersion.WithResource("componentstatuses"):
@@ -159,10 +153,6 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		// Group=scheduling.k8s.io, Version=internalVersion
 	case scheduling.SchemeGroupVersion.WithResource("priorityclasses"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Scheduling().InternalVersion().PriorityClasses().Informer()}, nil
-
-		// Group=settings.k8s.io, Version=internalVersion
-	case settings.SchemeGroupVersion.WithResource("podpresets"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Settings().InternalVersion().PodPresets().Informer()}, nil
 
 		// Group=storage.k8s.io, Version=internalVersion
 	case storage.SchemeGroupVersion.WithResource("storageclasses"):

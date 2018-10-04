@@ -17,8 +17,6 @@ limitations under the License.
 package customresource
 
 import (
-	"github.com/go-openapi/validate"
-
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,10 +29,8 @@ import (
 	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
 	apiserverstorage "k8s.io/apiserver/pkg/storage"
 	"k8s.io/apiserver/pkg/storage/names"
-	utilfeature "k8s.io/apiserver/pkg/util/feature"
 
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
-	apiextensionsfeatures "k8s.io/apiextensions-apiserver/pkg/features"
 )
 
 // customResourceStrategy implements behavior for CustomResources.
@@ -48,7 +44,7 @@ type customResourceStrategy struct {
 	scale           *apiextensions.CustomResourceSubresourceScale
 }
 
-func NewStrategy(typer runtime.ObjectTyper, namespaceScoped bool, kind schema.GroupVersionKind, schemaValidator, statusSchemaValidator *validate.SchemaValidator, status *apiextensions.CustomResourceSubresourceStatus, scale *apiextensions.CustomResourceSubresourceScale) customResourceStrategy {
+func NewStrategy(typer runtime.ObjectTyper, namespaceScoped bool, kind schema.GroupVersionKind, status *apiextensions.CustomResourceSubresourceStatus, scale *apiextensions.CustomResourceSubresourceScale) customResourceStrategy {
 	return customResourceStrategy{
 		ObjectTyper:     typer,
 		NameGenerator:   names.SimpleNameGenerator,
@@ -56,10 +52,8 @@ func NewStrategy(typer runtime.ObjectTyper, namespaceScoped bool, kind schema.Gr
 		status:          status,
 		scale:           scale,
 		validator: customResourceValidator{
-			namespaceScoped:       namespaceScoped,
-			kind:                  kind,
-			schemaValidator:       schemaValidator,
-			statusSchemaValidator: statusSchemaValidator,
+			namespaceScoped: namespaceScoped,
+			kind:            kind,
 		},
 	}
 }
@@ -70,23 +64,13 @@ func (a customResourceStrategy) NamespaceScoped() bool {
 
 // PrepareForCreate clears the status of a CustomResource before creation.
 func (a customResourceStrategy) PrepareForCreate(ctx genericapirequest.Context, obj runtime.Object) {
-	if utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceSubresources) && a.status != nil {
-		customResourceObject := obj.(*unstructured.Unstructured)
-		customResource := customResourceObject.UnstructuredContent()
-
-		// create cannot set status
-		if _, ok := customResource["status"]; ok {
-			delete(customResource, "status")
-		}
-	}
-
 	accessor, _ := meta.Accessor(obj)
 	accessor.SetGeneration(1)
 }
 
 // PrepareForUpdate clears fields that are not allowed to be set by end users on update.
 func (a customResourceStrategy) PrepareForUpdate(ctx genericapirequest.Context, obj, old runtime.Object) {
-	if !utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceSubresources) || a.status == nil {
+	if a.status == nil {
 		return
 	}
 

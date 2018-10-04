@@ -30,16 +30,6 @@ import (
 	"github.com/urfave/cli"
 )
 
-func init() {
-	ContainerFlags = append(ContainerFlags, cli.BoolFlag{
-		Name:  "rootfs",
-		Usage: "use custom rootfs that is not managed by containerd snapshotter",
-	}, cli.BoolFlag{
-		Name:  "no-pivot",
-		Usage: "disable use of pivot-root (linux only)",
-	})
-}
-
 // NewContainer creates a new container
 func NewContainer(ctx gocontext.Context, client *containerd.Client, context *cli.Context) (containerd.Container, error) {
 	var (
@@ -122,6 +112,9 @@ func NewContainer(ctx gocontext.Context, client *containerd.Client, context *cli
 			Type: specs.LinuxNamespaceType(parts[0]),
 			Path: parts[1],
 		}))
+	}
+	if context.IsSet("allow-new-privs") {
+		opts = append(opts, oci.WithNewPrivileges)
 	}
 	if context.IsSet("config") {
 		var s specs.Spec
