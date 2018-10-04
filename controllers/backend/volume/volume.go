@@ -3,6 +3,7 @@ package volume
 import (
 	"context"
 	"reflect"
+	"strings"
 
 	"github.com/rancher/rio/types"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
@@ -17,6 +18,7 @@ func Register(ctx context.Context, rContext *types.Context) {
 	}
 
 	rContext.Core.PersistentVolumeClaims("").AddHandler("volume-controller", vc.sync)
+	rContext.Core.PersistentVolumeClaims("").AddLifecycle("volume-template-controller", vc)
 }
 
 type volumeController struct {
@@ -54,4 +56,44 @@ func (v *volumeController) sync(key string, pvc *v1.PersistentVolumeClaim) error
 	newVol.Status.PVCStatus = &pvc.Status
 	_, err = v.volumes.Update(newVol)
 	return err
+}
+
+func (v *volumeController) Create(pvc *v1.PersistentVolumeClaim) (*v1.PersistentVolumeClaim, error) {
+	if pvc == nil {
+		return pvc, nil
+	}
+
+	if pvc.Labels["rio.cattle.io/use-templates"] == "" {
+		return pvc, nil
+	}
+
+	ns := pvc.Namespace
+	serviceName := pvc.Labels["app"]
+	templateName := strings.SplitN(pvc.Name, "-"+serviceName+"-", 2)
+	volTemplate, err := v.volumeLister.Get(ns, templateName[0])
+	if errors.IsNotFound(err) {
+		return pvc, nil
+	} else if err != nil {
+		return pvc, err
+	}
+
+	volume := &v1beta1.Volume{}
+	volume.Spec = volTemplate.Spec
+	volume.Name = pvc.Name
+	volume.Namespace = pvc.Namespace
+	volume.Spec.Template = false
+	volume.Labels = make(map[string]string)
+	volume.Labels["rio.cattle.io/volume-template"] = volTemplate.Name
+	if _, err = v.volumes.Create(volume); err != nil && !errors.IsAlreadyExists(err) {
+		return pvc, err
+	}
+	return pvc, nil
+}
+
+func (v *volumeController) Updated(pvc *v1.PersistentVolumeClaim) (*v1.PersistentVolumeClaim, error) {
+	return pvc, nil
+}
+
+func (v *volumeController) Remove(pvc *v1.PersistentVolumeClaim) (*v1.PersistentVolumeClaim, error) {
+	return pvc, nil
 }

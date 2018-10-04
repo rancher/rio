@@ -130,7 +130,7 @@ func editLoop(prefix, input []byte, update updateFunc) (bool, error) {
 
 func (edit *Edit) update(ctx *clicontext.CLIContext, format string, obj *types.Resource, self string, content []byte) error {
 	if obj.Type == client.StackType {
-		return up.Run(ctx, content, obj.ID, true, edit.Prompt, nil)
+		return up.Run(ctx, content, obj.ID, true, edit.Prompt, nil, "")
 	}
 
 	if obj.Type == client.ConfigType {

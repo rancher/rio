@@ -1240,6 +1240,11 @@ func (in *StackSpec) DeepCopyInto(out *StackSpec) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.RepoTag != nil {
+		in, out := &in.RepoTag, &out.RepoTag
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

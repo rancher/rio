@@ -4,7 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"net/http"
+	"net/url"
 	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/docker/docker/pkg/symlink"
 	"github.com/pkg/errors"
@@ -13,7 +19,28 @@ import (
 	template2 "github.com/rancher/rio/pkg/template"
 )
 
-func readFileInPath(cwd, file string) ([]byte, error) {
+func readFileInPath(cwd, file, filePath string) ([]byte, error) {
+	if strings.HasPrefix(filePath, "http") {
+		base, err := url.Parse(filePath)
+		if err != nil {
+			return nil, err
+		}
+		ref, err := url.Parse(filepath.Join(file))
+		if err != nil {
+			return nil, err
+		}
+		resolved := base.ResolveReference(ref)
+		if err != nil {
+			return nil, err
+		}
+		logrus.Infof(resolved.String())
+		resp, err := http.Get(resolved.String())
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+		return ioutil.ReadAll(resp.Body)
+	}
 	f, err := symlink.FollowSymlinkInScope(file, cwd)
 	if err != nil {
 		return nil, err
@@ -21,7 +48,7 @@ func readFileInPath(cwd, file string) ([]byte, error) {
 	return ioutil.ReadFile(f)
 }
 
-func readFiles(files []string, template *template2.Template, promptReplaceFile bool) error {
+func readFiles(filePath string, files []string, template *template2.Template, promptReplaceFile bool) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return errors.Wrap(err, "getwd")
@@ -29,7 +56,7 @@ func readFiles(files []string, template *template2.Template, promptReplaceFile b
 
 	for _, file := range files {
 		existingContent, exists := template.AdditionalFiles[file]
-		content, err := readFileInPath(cwd, file)
+		content, err := readFileInPath(cwd, file, filePath)
 		if err != nil {
 			if exists {
 				continue
@@ -57,7 +84,7 @@ func readFiles(files []string, template *template2.Template, promptReplaceFile b
 	return nil
 }
 
-func Run(ctx *clicontext.CLIContext, content []byte, stackID string, promptReplaceFile, prompt bool, answers map[string]string) error {
+func Run(ctx *clicontext.CLIContext, content []byte, stackID string, promptReplaceFile, prompt bool, answers map[string]string, file string) error {
 	wc, err := ctx.WorkspaceClient()
 	if err != nil {
 		return err
@@ -72,17 +99,17 @@ func Run(ctx *clicontext.CLIContext, content []byte, stackID string, promptRepla
 	if err != nil {
 		return err
 	}
+	template.Content = content
 
 	files, err := template.RequiredFiles()
 	if err != nil {
 		return err
 	}
 
-	if err := readFiles(files, template, promptReplaceFile); err != nil {
+	if err := readFiles(file, files, template, promptReplaceFile); err != nil {
 		return err
 	}
 
-	template.Content = content
 	if err := template.Validate(); err != nil {
 		return fmt.Errorf("failed to parse template. If you are using go templating the template must execute with no values: %v", err)
 	}

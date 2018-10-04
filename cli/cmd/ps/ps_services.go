@@ -45,7 +45,7 @@ func FormatImage(data interface{}) (string, error) {
 	if !ok {
 		return fmt.Sprint(data), nil
 	}
-	if s.Image == "" || len(s.Sidekicks) > 0 {
+	if s.Image == "" && len(s.Sidekicks) > 0 {
 		return s.Sidekicks[firstSortedKey(s.Sidekicks)].Image, nil
 	}
 	return s.Image, nil

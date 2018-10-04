@@ -102,12 +102,12 @@ func Command(obj interface{}, usage, usageText, description string) cli.Command 
 			c.Flags = append(c.Flags, flag)
 		case reflect.Slice:
 			slices[name(fieldType.Name)] = v
-			defMessage = " (default: [])"
+			defMessage = " "
 			fallthrough
 		case reflect.Map:
 			if defMessage == "" {
 				maps[name(fieldType.Name)] = v
-				defMessage = " (default: map[])"
+				defMessage = " "
 			}
 			flag := cli.StringSliceFlag{
 				Name:   name(fieldType.Name),

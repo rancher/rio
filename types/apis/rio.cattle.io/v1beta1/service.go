@@ -78,7 +78,7 @@ type PodConfig struct {
 	Global                 bool         `json:"global,omitempty"`
 	Scheduling             Scheduling   `json:"scheduling,omitempty"`
 	StopGracePeriodSeconds *int         `json:"stopGracePeriod,omitempty"`                                                           // support friendly numbers
-	RestartPolicy          string       `json:"restart,omitempty" norman:"type=enum,options=never|on-failure|always,default=always"` //support no and OnFailure
+	RestartPolicy          string       `json:"restart,omitempty" norman:"type=enum,options=never|on-failure|always,default=always"` // support no and OnFailure
 	DNS                    []string     `json:"dns,omitempty"`                                                                       // support string
 	DNSOptions             []string     `json:"dnsOptions,omitempty"`                                                                // support string
 	DNSSearch              []string     `json:"dnsSearch,omitempty"`                                                                 // support string
