@@ -13,29 +13,29 @@ import (
 func (c *CLIContext) ByID(id, typeName string) (*types.NamedResource, error) {
 	switch typeName {
 	case spaceclient.PodType:
-		return c.podById(id, typeName)
+		return c.podByID(id, typeName)
 	case client.ServiceType:
 		fallthrough
 	case client.VolumeType:
 		fallthrough
 	case client.ConfigType:
-		return c.stackScopedById(id, typeName)
+		return c.stackScopedByID(id, typeName)
 	}
 
-	return c.defaultById(id, typeName)
+	return c.defaultByID(id, typeName)
 }
 
-func (c *CLIContext) podById(id, schemaType string) (*types.NamedResource, error) {
+func (c *CLIContext) podByID(id, schemaType string) (*types.NamedResource, error) {
 	parts := strings.Split(id, "/")
 	if len(parts) > 2 || !strings.Contains(parts[0], ":") {
 		return nil, nil
 	}
 
-	return c.defaultById(parts[0], schemaType)
+	return c.defaultByID(parts[0], schemaType)
 }
 
-func (c *CLIContext) stackScopedById(id, schemaType string) (*types.NamedResource, error) {
-	result, err := c.defaultById(id, schemaType)
+func (c *CLIContext) stackScopedByID(id, schemaType string) (*types.NamedResource, error) {
+	result, err := c.defaultByID(id, schemaType)
 	if err == nil {
 		return result, err
 	}
@@ -46,10 +46,10 @@ func (c *CLIContext) stackScopedById(id, schemaType string) (*types.NamedResourc
 	}
 
 	scoped := lookup.ParseStackScoped(w, id)
-	return c.defaultById(scoped.ResourceID, schemaType)
+	return c.defaultByID(scoped.ResourceID, schemaType)
 }
 
-func (c *CLIContext) defaultById(id, schemaType string) (*types.NamedResource, error) {
+func (c *CLIContext) defaultByID(id, schemaType string) (*types.NamedResource, error) {
 	var resource types.NamedResource
 
 	if !strings.Contains(id, ":") || strings.Contains(id, "/") {
