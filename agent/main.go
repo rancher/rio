@@ -94,45 +94,9 @@ func run() error {
 		return err
 	}
 
-	//if err := runLocalStorage(agentConfig); err != nil {
-	//	return err
-	//}
-
 	<-ctx.Done()
 	return nil
 }
-
-//func runLocalStorage(config *AgentConfig) error {
-//	os.Setenv("KUBECONFIG", config.Config.KubeConfig)
-//
-//	provisionerConfig := common.ProvisionerConfiguration{
-//		StorageClassConfig: map[string]common.MountConfig{
-//			"local": {
-//				HostDir:  config.LocalVolumeDir,
-//				MountDir: config.LocalVolumeDir,
-//			},
-//		},
-//		MinResyncPeriod: metav1.Duration{Duration: 5 * time.Minute},
-//	}
-//
-//	nodeName := config.Config.NodeName
-//
-//	client := common.SetupClient()
-//	node := getNode(client, nodeName)
-//
-//	glog.Info("Starting controller\n")
-//	procTable := deleter.NewProcTable()
-//	go controller.StartLocalController(client, procTable, &common.UserConfig{
-//		Node:              node,
-//		DiscoveryMap:      provisionerConfig.StorageClassConfig,
-//		NodeLabelsForPV:   provisionerConfig.NodeLabelsForPV,
-//		UseAlphaAPI:       provisionerConfig.UseAlphaAPI,
-//		UseJobForCleaning: provisionerConfig.UseJobForCleaning,
-//		MinResyncPeriod:   provisionerConfig.MinResyncPeriod,
-//	})
-//
-//	return nil
-//}
 
 func waitForNode(config *AgentConfig) error {
 	os.Setenv("KUBECONFIG", config.Config.KubeConfig)
