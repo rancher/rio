@@ -23,6 +23,7 @@ func ParseContainer(workspace *clientcfg.Workspace, name string) (ParsedContaine
 	}
 
 	result.PodName, result.ContainerName = kv.Split(stackScoped.Other, "/")
+	result.Service = stackScoped
 	return result, true
 }
 
