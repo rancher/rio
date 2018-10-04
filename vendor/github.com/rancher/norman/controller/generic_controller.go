@@ -23,7 +23,8 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
-const MetricsEnv = "NORMAN_QUEUE_METRICS"
+const MetricsQueueEnv = "NORMAN_QUEUE_METRICS"
+const MetricsReflectorEnv = "NORMAN_REFLECTOR_METRICS"
 
 var (
 	resyncPeriod = 2 * time.Hour
@@ -31,8 +32,11 @@ var (
 
 // Override the metrics providers
 func init() {
-	if os.Getenv(MetricsEnv) != "true" {
-		DisableAllControllerMetrics()
+	if os.Getenv(MetricsQueueEnv) != "true" {
+		DisableControllerWorkqueuMetrics()
+	}
+	if os.Getenv(MetricsReflectorEnv) != "true" {
+		DisableControllerReflectorMetrics()
 	}
 }
 
@@ -204,7 +208,7 @@ func (g *genericController) processNextWorkItem() bool {
 	}
 	if _, ok := checkErr.(*ForgetError); err == nil || ok {
 		if ok {
-			logrus.Infof("%v %v completed with dropped err: %v", g.name, key, err)
+			logrus.Debugf("%v %v completed with dropped err: %v", g.name, key, err)
 		}
 		g.queue.Forget(key)
 		return true

@@ -73,6 +73,7 @@ type ServerConfig struct {
 	ServiceIPRange net.IPNet
 	DataDir        string
 	LeaderElect    bool
+	UseTokenCA     bool
 
 	tlsCert          string
 	tlsKey           string
@@ -501,6 +502,12 @@ func genServiceAccount(config *ServerConfig) error {
 }
 
 func genTokenCA(config *ServerConfig) error {
+	if !config.UseTokenCA {
+		config.tokenCA = config.tlsCA
+		config.tokenCAKey = config.tlsCAKey
+		return nil
+	}
+
 	caKey, err := certutil.NewPrivateKey()
 	if err != nil {
 		return err
