@@ -36,6 +36,9 @@ rio --workspace=rio-system wait istio/istio-gateway
 rio --workspace=rio-system ps
 rio --workspace=rio-system ps -c
 
+chmod +x ./tests/init-nfs.bash
+./tests/init-nfs.bash
+export RUN_NFS_TEST=true
 bats -r ./tests || {
     tail -n 100 /var/lib/rancher/rio/agent/agent.log
     exit 1

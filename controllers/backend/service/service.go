@@ -60,11 +60,11 @@ func (s *subServiceController) updateStatus(service, newService *v1beta1.Service
 
 	if isUpgrading {
 		updated.Unknown(newService)
-	} else if hasAvailable(newService.Status.DeploymentStatus.Conditions) {
+	} else if hasAvailable(newService.Status.DeploymentStatus) {
 		newService.Status.Conditions = nil
-	} else if hasAvailableDS(newService.Status.DaemonSetStatus.Conditions) {
+	} else if hasAvailableDS(newService.Status.DaemonSetStatus) {
 		newService.Status.Conditions = nil
-	} else if hasAvailableSS(newService.Status.StatefulSetStatus.Conditions) {
+	} else if hasAvailableSS(newService.Status.StatefulSetStatus) {
 		newService.Status.Conditions = nil
 	}
 
@@ -172,28 +172,37 @@ func (s *subServiceController) promote(key string, service *v1beta1.Service) err
 	return nil
 }
 
-func hasAvailable(cond []appsv1.DeploymentCondition) bool {
-	for _, c := range cond {
-		if c.Type == "Available" {
-			return true
+func hasAvailable(status *appsv1.DeploymentStatus) bool {
+	if status != nil {
+		cond := status.Conditions
+		for _, c := range cond {
+			if c.Type == "Available" {
+				return true
+			}
 		}
 	}
 	return false
 }
 
-func hasAvailableDS(cond []appsv1.DaemonSetCondition) bool {
-	for _, c := range cond {
-		if c.Type == "Available" {
-			return true
+func hasAvailableDS(status *appsv1.DaemonSetStatus) bool {
+	if status != nil {
+		cond := status.Conditions
+		for _, c := range cond {
+			if c.Type == "Available" {
+				return true
+			}
 		}
 	}
 	return false
 }
 
-func hasAvailableSS(cond []appsv1.StatefulSetCondition) bool {
-	for _, c := range cond {
-		if c.Type == "Available" {
-			return true
+func hasAvailableSS(status *appsv1.StatefulSetStatus) bool {
+	if status != nil {
+		cond := status.Conditions
+		for _, c := range cond {
+			if c.Type == "Available" {
+				return true
+			}
 		}
 	}
 	return false

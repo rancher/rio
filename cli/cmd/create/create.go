@@ -15,10 +15,9 @@ type Create struct {
 	AddHost            []string          `desc:"Add a custom host-to-IP mapping (host:ip)"`
 	CapAdd             []string          `desc:"Add Linux capabilities"`
 	CapDrop            []string          `desc:"Drop Linux capabilities"`
-	Cidfile            string            `desc:"Write the container ID to the file"`
 	Config             []string          `desc:"Configs to expose to the service (format: name:target)"`
 	Cpus               string            `desc:"Number of CPUs"`
-	DeploymentStrategy string            `json:"Approach to creating containers (parallel|ordered)" default:"parallel"`
+	DeploymentStrategy string            `desc:"Approach to creating containers (parallel|ordered)" default:"parallel"`
 	Detach             bool              `desc:"Do not attach after when -it is specified"`
 	Device             []string          `desc:"Add a host device to the container"`
 	DnsOption          []string          `desc:"Set DNS options"`
@@ -46,7 +45,7 @@ type Create struct {
 	MemoryLimit        string            `desc:"Memory hard limit (format: <number>[<unit>], where unit = b, k, m or g)"`
 	Metadata           map[string]string `desc:"Metadata to attach to this service"`
 	M_Memory           string            `desc:"Memory reservation (format: <number>[<unit>], where unit = b, k, m or g)"`
-	Net_Network        string            `desc:"Connect a container to a network" default:"default"`
+	Net_Network        string            `desc:"Connect a container to a network (default|home)" default:"default"`
 	N_Name             string            `desc:"Assign a name to the container"`
 	Permission         []string          `desc:"Permissions to grant to container's service account in current stack"`
 	Pid                string            `desc:"PID namespace to use"`

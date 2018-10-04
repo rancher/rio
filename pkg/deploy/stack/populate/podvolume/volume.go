@@ -22,7 +22,7 @@ func NameOfVolume(volume v1beta1.Mount) string {
 		return "host-" + strings.Replace(volume.Source, "/", "-", -1)
 	case "volume":
 		if volume.Source == "" {
-			return "anon-" + strings.Replace(volume.Target, "/", "-", -1)
+			return "anon" + strings.Replace(volume.Target, "/", "-", -1)
 		}
 		return volume.Source
 	}
