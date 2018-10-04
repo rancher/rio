@@ -43,6 +43,7 @@ type VirtualServiceLister interface {
 }
 
 type VirtualServiceController interface {
+	Generic() controller.GenericController
 	Informer() cache.SharedIndexInformer
 	Lister() VirtualServiceLister
 	AddHandler(name string, handler VirtualServiceHandlerFunc)
@@ -103,6 +104,10 @@ func (l *virtualServiceLister) Get(namespace, name string) (*VirtualService, err
 
 type virtualServiceController struct {
 	controller.GenericController
+}
+
+func (c *virtualServiceController) Generic() controller.GenericController {
+	return c.GenericController
 }
 
 func (c *virtualServiceController) Lister() VirtualServiceLister {
