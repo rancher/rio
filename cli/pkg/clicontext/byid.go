@@ -36,7 +36,7 @@ func (c *CLIContext) podById(id, schemaType string) (*types.NamedResource, error
 
 func (c *CLIContext) stackScopedById(id, schemaType string) (*types.NamedResource, error) {
 	result, err := c.defaultById(id, schemaType)
-	if err != nil || result != nil {
+	if err == nil {
 		return result, err
 	}
 

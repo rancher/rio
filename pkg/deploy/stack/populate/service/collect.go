@@ -10,13 +10,13 @@ import (
 	"github.com/rancher/rio/types/client/rio/v1beta1"
 )
 
-func combineAndNormalize(name string, base map[string]interface{}, service *v1beta1.Service, rev *v1beta1.Service) (*v1beta1.Service, error) {
+func combineAndNormalize(name string, base map[string]interface{}, rev *v1beta1.Service) (*v1beta1.Service, error) {
 	data, err := convert.EncodeToMap(rev)
 	if err != nil {
 		return nil, err
 	}
 	s := schema.Schemas.Schema(&schema.Version, client.ServiceType)
-	data = merge.APIUpdateMerge(s, schema.Schemas, base, data, false)
+	data = merge.UpdateMerge(s.InternalSchema, schema.Schemas, base, data, false)
 
 	newRev := rev.DeepCopy()
 	err = convert.ToObj(data, &newRev)
@@ -25,7 +25,7 @@ func combineAndNormalize(name string, base map[string]interface{}, service *v1be
 	}
 
 	newRev.Spec.Revision.ServiceName = name
-	return rev, nil
+	return newRev, nil
 }
 
 func servicesByParent(services []*v1beta1.Service) output.Services {
@@ -79,7 +79,7 @@ func mergeRevisions(name string, serviceSet *output.ServiceSet) ([]*v1beta1.Serv
 
 	var newRevisions []*v1beta1.Service
 	for _, rev := range serviceSet.Revisions {
-		rev, err := combineAndNormalize(name, base, serviceSet.Service, rev)
+		rev, err := combineAndNormalize(name, base, rev)
 		if err != nil {
 			return nil, err
 		}

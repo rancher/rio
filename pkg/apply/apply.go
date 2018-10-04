@@ -97,7 +97,12 @@ func run(groupID string, content []byte, args ...string) error {
 				fmt.Printf("[\n%s\n]\nFailed to apply %s: %s", content, groupID, errOutput.String())
 			}
 		}
-		return fmt.Errorf("failed to apply %s %v: %s", groupID, cmd.Args, errOutput.String())
+		logrus.Errorf("failed to apply %s %v: %s", groupID, cmd.Args, errOutput.String())
+		parts := strings.Split(errOutput.String(), ":")
+		if len(parts) >= 3 {
+			return fmt.Errorf("failed to apply: %s", strings.TrimSpace(strings.Join(parts[len(parts)-3:], ": ")))
+		}
+		return fmt.Errorf("failed to apply: %s", strings.TrimSpace(parts[len(parts)-1]))
 	}
 
 	if logrus.GetLevel() >= logrus.DebugLevel {

@@ -32,6 +32,8 @@ func Register(ctx context.Context, rContext *types.Context) {
 	rContext.Apps.Deployments("").AddHandler("sub-service-controller", s.deploymentChanged)
 	rContext.Apps.DaemonSets("").AddHandler("sub-service-controller", s.daemonSetChanged)
 	rContext.Apps.StatefulSets("").AddHandler("sub-service-controller", s.statefulSetChanged)
+
+	rContext.Rio.Services("").AddHandler("service-controller", s.promote)
 }
 
 type subServiceController struct {
@@ -122,47 +124,52 @@ func (s *subServiceController) deploymentChanged(key string, dep *appsv1.Deploym
 	return s.updateStatus(service, newService, dep, dep.Generation, dep.Status.ObservedGeneration)
 }
 
-func (s *subServiceController) promote(service *v1beta1.Service) (bool, error) {
+func (s *subServiceController) promote(key string, service *v1beta1.Service) error {
+	if service == nil {
+		return nil
+	}
+
 	if service.Spec.Revision.ParentService == "" || !service.Spec.Revision.Promote {
-		return false, nil
+		return nil
 	}
 
 	services, err := s.serviceLister.List(service.Namespace, labels.Everything())
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	serviceSets, err := service2.CollectionServices(services)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	serviceSet, ok := serviceSets[service.Spec.Revision.ParentService]
 	if !ok {
-		return false, err
+		return err
 	}
 
 	base := serviceSet.Service
 	if base == nil {
-		return false, nil
+		return nil
 	}
 
 	for _, rev := range serviceSet.Revisions {
 		if rev.Spec.Revision.Promote {
 			newRev := rev.DeepCopy()
 			newRev.Name = base.Name
+			newRev.UID = base.UID
 			newRev.ResourceVersion = base.ResourceVersion
 			newRev.Spec.Revision.ParentService = ""
 			newRev.Spec.Revision.Promote = false
 			newRev.Spec.Revision.Weight = 0
 			if _, err := s.services.Update(newRev); err != nil {
-				return false, errors.Wrapf(err, "failed to promote %s/%s/", rev.Namespace, rev.Name)
+				return errors.Wrapf(err, "failed to promote %s/%s/", rev.Namespace, rev.Name)
 			}
-			return true, s.services.DeleteNamespaced(service.Namespace, service.Name, nil)
+			return s.services.DeleteNamespaced(service.Namespace, service.Name, nil)
 		}
 	}
 
-	return false, nil
+	return nil
 }
 
 func hasAvailable(cond []appsv1.DeploymentCondition) bool {

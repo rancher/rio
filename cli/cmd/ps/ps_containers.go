@@ -99,6 +99,11 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 			continue
 		}
 
+		if len(services) == 0 {
+			result = append(result, podData)
+			continue
+		}
+
 		for _, service := range services {
 			if service.ID == podData.Service.ResourceID {
 				result = append(result, podData)

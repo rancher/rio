@@ -35,8 +35,8 @@ func (p ParsedContainer) String() string {
 }
 
 func (p ParsedContainer) K8sPodName() string {
-	if p.Service.Revision == "" || p.Service.Revision == settings.DefaultServiceVersion {
+	if p.Service.Version == "" || p.Service.Version == settings.DefaultServiceVersion {
 		return fmt.Sprintf("%s-%s", p.Service.ResourceName, p.PodName)
 	}
-	return fmt.Sprintf("%s-%s-%s", p.Service.ResourceName, p.Service.Revision, p.PodName)
+	return fmt.Sprintf("%s-%s-%s", p.Service.ResourceName, p.Service.Version, p.PodName)
 }

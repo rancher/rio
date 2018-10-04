@@ -36,7 +36,7 @@ func (c *CLIContext) defaultByName(filters map[string]interface{}, name string) 
 	}
 
 	stackScoped := lookup.ParseStackScoped(w, name)
-	return c.stackScopedByName(filters, stackScoped.StackName, stackScoped.ResourceName)
+	return c.stackScopedByName(filters, stackScoped.StackName, stackScoped.LookupName())
 }
 
 func (c *CLIContext) routeSetByName(filters map[string]interface{}, name string) (map[string]interface{}, bool, error) {
@@ -79,7 +79,7 @@ func (c *CLIContext) podByName(filters map[string]interface{}, name string) (map
 func (c *CLIContext) stackScopedByName(filters map[string]interface{}, stackName, resourceName string) (map[string]interface{}, bool, error) {
 	w, err := c.Workspace()
 	if err != nil {
-		return nil, true, err
+		return nil, false, err
 	}
 	stackID := fmt.Sprintf("%s:%s", w.ID, stackName)
 	filters["stackId"] = stackID

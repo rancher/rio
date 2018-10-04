@@ -5,11 +5,10 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/rancher/rio/cli/pkg/clientcfg"
-
 	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/cli/pkg/clientcfg"
 	"github.com/rancher/rio/cli/pkg/table"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
 )
@@ -37,7 +36,7 @@ func FormatServiceName(cluster *clientcfg.Cluster) func(data, data2 interface{})
 			return table.FormatStackScopedName(cluster)(stackName, service.Name)
 		}
 
-		return table.FormatStackScopedName(cluster)(stackName, service.Name+":"+service.Version)
+		return table.FormatStackScopedName(cluster)(stackName, service.ParentService+":"+service.Version)
 	}
 }
 

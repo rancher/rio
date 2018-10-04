@@ -52,7 +52,7 @@ func watch(name string, enq Enqueuer, resolve Resolver, genericController contro
 
 		ro, ok := obj.(runtime.Object)
 		if !ok {
-			return nil
+			ro = nil
 		}
 
 		keys, err := resolve(ns, name, ro)

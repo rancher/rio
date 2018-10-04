@@ -39,7 +39,7 @@ func (w *Weight) Run(ctx *clicontext.CLIContext) error {
 			return fmt.Errorf("failed to parse %s: %v", arg, err)
 		}
 
-		service, err := lookup.Lookup(ctx, name)
+		service, err := lookup.Lookup(ctx, name, client.ServiceType)
 		if err != nil {
 			return err
 		}

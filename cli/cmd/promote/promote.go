@@ -1,6 +1,8 @@
 package promote
 
 import (
+	"fmt"
+
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/waiter"
@@ -28,6 +30,15 @@ func (p *Promote) Run(ctx *clicontext.CLIContext) error {
 			return err
 		}
 
+		service, err := wc.Service.ByID(resource.ID)
+		if err != nil {
+			return err
+		}
+
+		if service.ParentService == "" {
+			return fmt.Errorf("can not promote the base version")
+		}
+
 		updates := &client.Service{
 			Promote: true,
 		}
@@ -35,7 +46,7 @@ func (p *Promote) Run(ctx *clicontext.CLIContext) error {
 			updates.Scale = int64(p.Scale)
 		}
 
-		service, err := wc.Service.Update(&client.Service{Resource: resource.Resource}, updates)
+		service, err = wc.Service.Update(&client.Service{Resource: resource.Resource}, updates)
 		if err != nil {
 			return err
 		}

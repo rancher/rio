@@ -27,14 +27,20 @@ func determineRevision(workspace *clientcfg.Workspace, name string, service *typ
 	}
 
 	parsedService := lookup.ParseStackScoped(workspace, name)
-	if parsedService.Revision == settings.DefaultServiceVersion {
+	if parsedService.Version == settings.DefaultServiceVersion {
 		return "", fmt.Errorf("\"%s\" is not a valid revision to stage", settings.DefaultServiceVersion)
 	}
-	if parsedService.Revision != "" {
-		revision = parsedService.Revision
+	if parsedService.Version != "" {
+		revision = parsedService.Version
 	}
 
 	return revision, nil
+}
+
+func stripRevision(workspace *clientcfg.Workspace, name string) lookup.StackScoped {
+	stackScope := lookup.ParseStackScoped(workspace, name)
+	stackScope.Version = ""
+	return lookup.ParseStackScoped(workspace, stackScope.String())
 }
 
 func (r *Stage) Run(ctx *clicontext.CLIContext) error {
@@ -57,9 +63,20 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	resource, err := lookup.Lookup(ctx, ctx.CLI.Args()[0], client.ServiceType)
+	stackScope := stripRevision(workspace, ctx.CLI.Args()[0])
+
+	resource, err := lookup.Lookup(ctx, stackScope.ResourceID, client.ServiceType)
 	if err != nil {
-		return err
+		byID, err2 := wc.Service.ByID(ctx.CLI.Args()[0])
+		if err2 != nil {
+			return err
+		}
+
+		stackScope = stripRevision(workspace, lookup.StackScopedFromLabels(workspace, byID.Labels).String())
+		resource = &types.NamedResource{
+			Resource: byID.Resource,
+			Name:     byID.Name,
+		}
 	}
 
 	baseService, err := wc.Service.ByID(resource.ID)
@@ -70,6 +87,12 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 	revision, err := determineRevision(workspace, ctx.CLI.Args()[0], &resource.Resource)
 	if err != nil {
 		return err
+	}
+
+	stackScope.Version = revision
+	_, err = lookup.Lookup(ctx, stackScope.String(), client.ServiceType)
+	if err == nil {
+		return fmt.Errorf("revision %s already exists", ctx.CLI.Args()[0])
 	}
 
 	args := append([]string{r.Image}, ctx.CLI.Args()[1:]...)

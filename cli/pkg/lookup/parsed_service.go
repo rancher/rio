@@ -14,7 +14,7 @@ type StackScoped struct {
 	StackName    string
 	ResourceName string
 	ResourceID   string
-	Revision     string
+	Version      string
 	Other        string
 }
 
@@ -28,7 +28,7 @@ func StackScopedFromLabels(workspace *clientcfg.Workspace, labels map[string]str
 
 	return StackScoped{
 		Workspace:    workspace,
-		Revision:     rev,
+		Version:      rev,
 		StackName:    stack,
 		ResourceID:   fmt.Sprintf("%s:%s", ns, serviceName),
 		ResourceName: service,
@@ -43,15 +43,22 @@ func ParseStackScoped(workspace *clientcfg.Workspace, serviceName string) StackS
 		result.StackName = workspace.Cluster.DefaultStackName
 	}
 	result.ResourceName, result.Other = kv.Split(result.ResourceName, "/")
-	result.ResourceName, result.Revision = kv.Split(result.ResourceName, ":")
+	result.ResourceName, result.Version = kv.Split(result.ResourceName, ":")
 	result.Workspace = workspace
 
-	name := fmt.Sprintf("%s-%s", result.ResourceName, result.Revision)
-	if result.Revision == "" || result.Revision == settings.DefaultServiceVersion {
+	name := fmt.Sprintf("%s-%s", result.ResourceName, result.Version)
+	if result.Version == "" || result.Version == settings.DefaultServiceVersion {
 		name = result.ResourceName
 	}
-	result.ResourceID = fmt.Sprintf(namespace.StackNamespace(workspace.ID, result.StackName), name)
+	result.ResourceID = fmt.Sprintf("%s:%s", namespace.StackNamespace(workspace.ID, result.StackName), name)
 	return result
+}
+
+func (p StackScoped) LookupName() string {
+	if p.Version == "" || p.Version == settings.DefaultServiceVersion {
+		return p.ResourceName
+	}
+	return fmt.Sprintf("%s-%s", p.ResourceName, p.Version)
 }
 
 func (p StackScoped) String() string {
@@ -65,8 +72,8 @@ func (p StackScoped) String() string {
 
 	result += p.ResourceName
 
-	if p.Revision != "" && p.Revision != settings.DefaultServiceVersion {
-		result += ":" + p.Revision
+	if p.Version != "" && p.Version != settings.DefaultServiceVersion {
+		result += ":" + p.Version
 	}
 
 	if p.Other != "" {
