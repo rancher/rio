@@ -1,70 +1,50 @@
 package rm
 
 import (
-	"strings"
-
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/waiter"
-	"github.com/rancher/rio/cli/server"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
 	spaceClient "github.com/rancher/rio/types/client/space/v1beta1"
-	"github.com/urfave/cli"
 )
 
 type Rm struct {
 	T_Type string `desc:"delete specific type"`
 }
 
-func (r *Rm) Run(app *cli.Context) error {
+func (r *Rm) Run(ctx *clicontext.CLIContext) error {
 	types := []string{client.ServiceType, client.StackType, spaceClient.PodType, client.ConfigType, client.VolumeType}
 	if len(r.T_Type) > 0 {
 		types = []string{r.T_Type}
 	}
 
-	return Remove(app, types...)
+	return Remove(ctx, types...)
 }
 
-func Remove(app *cli.Context, types ...string) error {
-	ctx, err := server.NewContext(app)
-	if err != nil {
-		return err
-	}
-	defer ctx.Close()
-
+func Remove(ctx *clicontext.CLIContext, types ...string) error {
 	w, err := waiter.NewWaiter(ctx)
 	if err != nil {
 		return err
 	}
 
-	for _, arg := range app.Args() {
-		resource, err := lookup.Lookup(ctx.ClientLookup, arg, types...)
+	for _, arg := range ctx.CLI.Args() {
+		resource, err := lookup.Lookup(ctx, arg, types...)
 		if err != nil {
 			return err
 		}
 
-		if arg != resource.ID && resource.Type == client.ServiceType && strings.Contains(arg, ":") {
-			parsed := lookup.ParseServiceName(arg)
-			service, err := ctx.Client.Service.ByID(resource.ID)
-			if err != nil {
-				return err
-			}
-			if _, ok := service.Revisions[parsed.Revision]; ok {
-				delete(service.Revisions, parsed.Revision)
-				if _, err := ctx.Client.Service.Replace(service); err != nil {
-					return err
-				}
-			}
-
-			w.Add(resource)
-			continue
-		}
-
-		err = ctx.ClientLookup(resource.Type).Delete(resource)
+		client, err := ctx.ClientLookup(resource.Type)
 		if err != nil {
 			return err
 		}
-		w.Add(resource)
+
+		err = client.Delete(&resource.Resource)
+		if err != nil {
+			return err
+		}
+
+		w.Add(&resource.Resource)
 	}
 
-	return w.Wait()
+	return w.Wait(ctx.Ctx)
 }

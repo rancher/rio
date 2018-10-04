@@ -3,7 +3,7 @@ package create
 import (
 	"strconv"
 
-	"github.com/rancher/rio/cli/pkg/kv"
+	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
 )
 

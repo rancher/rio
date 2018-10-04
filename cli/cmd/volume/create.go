@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/rancher/rio/cli/server"
+	"github.com/rancher/rio/cli/pkg/stack"
+
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
-	"github.com/urfave/cli"
 )
 
 type Create struct {
@@ -16,19 +17,18 @@ type Create struct {
 	AccessMode string            `desc:"Volume access mode (readWriteOnce|readWriteMany|readOnlyMany)" default:"readWriteOnce"`
 }
 
-func (c *Create) Run(app *cli.Context) error {
-	ctx, err := server.NewContext(app)
-	if err != nil {
-		return err
-	}
-	defer ctx.Close()
-
-	if len(app.Args()) != 2 {
+func (c *Create) Run(ctx *clicontext.CLIContext) error {
+	if len(ctx.CLI.Args()) != 2 {
 		return fmt.Errorf("two arguments are required, name and size in gigabytes")
 	}
 
-	name := app.Args()[0]
-	size := app.Args()[1]
+	wc, err := ctx.WorkspaceClient()
+	if err != nil {
+		return err
+	}
+
+	name := ctx.CLI.Args()[0]
+	size := ctx.CLI.Args()[1]
 	sizeGB, err := strconv.Atoi(size)
 	if err != nil {
 		return fmt.Errorf("invalid number: %s", size)
@@ -42,12 +42,12 @@ func (c *Create) Run(app *cli.Context) error {
 		AccessMode: c.AccessMode,
 	}
 
-	volume.SpaceID, volume.StackID, volume.Name, err = ctx.ResolveSpaceStackName(name)
+	volume.SpaceID, volume.StackID, volume.Name, err = stack.ResolveSpaceStackForName(ctx, name)
 	if err != nil {
 		return err
 	}
 
-	volume, err = ctx.Client.Volume.Create(volume)
+	volume, err = wc.Volume.Create(volume)
 	if err != nil {
 		return err
 	}

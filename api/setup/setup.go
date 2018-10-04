@@ -98,7 +98,17 @@ func setupStacks(ctx context.Context, rContext *types.Context) {
 	s := rContext.Schemas.Schema(&schema.Version, client.StackType)
 	s.Formatter = pretty.Format
 	s.ListHandler = stack.ListHandler
-	s.Store = named.New(s.Store)
+	s.Store = &defaults.DefaultStatusStore{
+		Store: named.New(s.Store),
+		Default: v1beta1.StackStatus{
+			Conditions: []v1beta1.Condition{
+				{
+					Type:   "Pending",
+					Status: "Unknown",
+				},
+			},
+		},
+	}
 }
 
 func setupNodes(ctx context.Context, clientGetter proxy.ClientGetter, rContext *types.Context) {

@@ -1,6 +1,7 @@
 package monitor
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -58,8 +59,21 @@ func (m *Monitor) Unsubscribe(sub *Subscription) {
 	m.Lock()
 	defer m.Unlock()
 
+	m.closeSub(sub)
+}
+
+func (m *Monitor) closeSub(sub *Subscription) {
 	close(sub.C)
 	delete(m.subscriptions, sub.id)
+}
+
+func (m *Monitor) unsubscribeAll() {
+	m.Lock()
+	defer m.Unlock()
+
+	for _, sub := range m.subscriptions {
+		m.closeSub(sub)
+	}
 }
 
 type Subscription struct {
@@ -75,7 +89,7 @@ func New(c clientbase.APIBaseClientInterface) *Monitor {
 	}
 }
 
-func (m *Monitor) Start(subscribeSchema *types.Schema) error {
+func (m *Monitor) Start(parentCtx context.Context, subscribeSchema *types.Schema) error {
 	if subscribeSchema == nil || subscribeSchema.ID == "" {
 		return fmt.Errorf("not authorized to subscribe")
 	}
@@ -103,6 +117,17 @@ func (m *Monitor) Start(subscribeSchema *types.Schema) error {
 	}
 
 	logrus.Debugf("Connected to: %s", u.String())
+
+	ctx, cancel := context.WithCancel(parentCtx)
+	go func() {
+		<-ctx.Done()
+		conn.Close()
+	}()
+	defer func() {
+		conn.Close()
+		cancel()
+		m.unsubscribeAll()
+	}()
 
 	return m.watch(conn)
 }

@@ -1,11 +1,10 @@
 package create
 
 import (
+	"fmt"
 	"strings"
 
-	"fmt"
-
-	"github.com/rancher/rio/cli/pkg/kv"
+	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
 )

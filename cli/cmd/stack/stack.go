@@ -3,12 +3,13 @@ package stack
 import (
 	"fmt"
 
+	"github.com/rancher/rio/cli/pkg/clicontext"
+
 	"github.com/rancher/norman/clientbase"
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/table"
 	"github.com/rancher/rio/cli/pkg/waiter"
-	"github.com/rancher/rio/cli/server"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
 	"github.com/urfave/cli"
 )
@@ -18,7 +19,7 @@ func Stack() cli.Command {
 		Name:      "stacks",
 		ShortName: "stack",
 		Usage:     "Operations on stacks",
-		Action:    defaultAction(stackLs),
+		Action:    clicontext.DefaultAction(stackLs),
 		Flags:     table.WriterFlags(),
 		Category:  "SUB COMMANDS",
 		Subcommands: []cli.Command{
@@ -26,7 +27,7 @@ func Stack() cli.Command {
 				Name:      "ls",
 				Usage:     "List stacks",
 				ArgsUsage: "None",
-				Action:    stackLs,
+				Action:    clicontext.Wrap(stackLs),
 				Flags:     table.WriterFlags(),
 			},
 			{
@@ -39,14 +40,14 @@ func Stack() cli.Command {
 						Usage: "Description for stack",
 					},
 				},
-				Action: stackCreate,
+				Action: clicontext.Wrap(stackCreate),
 			},
 			{
 				Name:      "delete",
 				ShortName: "rm",
 				Usage:     "Delete a stack",
 				ArgsUsage: "None",
-				Action:    stackRm,
+				Action:    clicontext.Wrap(stackRm),
 			},
 			{
 				Name:      "update",
@@ -58,7 +59,7 @@ func Stack() cli.Command {
 						Usage: "Description for stack",
 					},
 				},
-				Action: stackUpdate,
+				Action: clicontext.Wrap(stackUpdate),
 			},
 		},
 	}
@@ -69,14 +70,13 @@ type Data struct {
 	Stack client.Stack
 }
 
-func stackLs(app *cli.Context) error {
-	ctx, err := server.NewContext(app)
+func stackLs(ctx *clicontext.CLIContext) error {
+	wc, err := ctx.WorkspaceClient()
 	if err != nil {
 		return err
 	}
-	defer ctx.Close()
 
-	collection, err := ctx.Client.Stack.List(util.DefaultListOpts())
+	collection, err := wc.Stack.List(util.DefaultListOpts())
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func stackLs(app *cli.Context) error {
 		{"CREATED", "{{.Stack.Created | ago}}"},
 		{"DESC", "Stack.Description"},
 		{"DETAIL", "Stack.TransitioningMessage"},
-	}, app)
+	}, ctx)
 
 	defer writer.Close()
 
@@ -101,16 +101,15 @@ func stackLs(app *cli.Context) error {
 	return writer.Err()
 }
 
-func stackCreate(app *cli.Context) error {
-	ctx, err := server.NewContext(app)
+func stackCreate(ctx *clicontext.CLIContext) error {
+	names := []string{""}
+	if len(ctx.CLI.Args()) > 0 {
+		names = ctx.CLI.Args()
+	}
+
+	wc, err := ctx.WorkspaceClient()
 	if err != nil {
 		return err
-	}
-	defer ctx.Close()
-
-	names := []string{""}
-	if len(app.Args()) > 0 {
-		names = app.Args()
 	}
 
 	w, err := waiter.NewWaiter(ctx)
@@ -122,10 +121,10 @@ func stackCreate(app *cli.Context) error {
 	for _, name := range names {
 		stack := &client.Stack{
 			Name:        name,
-			Description: app.String("description"),
+			Description: ctx.CLI.String("description"),
 		}
 
-		stack, err = ctx.Client.Stack.Create(stack)
+		stack, err = wc.Stack.Create(stack)
 		if err != nil {
 			lastErr = err
 		}
@@ -137,17 +136,16 @@ func stackCreate(app *cli.Context) error {
 		return lastErr
 	}
 
-	return w.Wait()
+	return w.Wait(ctx.Ctx)
 }
 
-func stackRm(app *cli.Context) error {
-	ctx, err := server.NewContext(app)
+func stackRm(ctx *clicontext.CLIContext) error {
+	names := ctx.CLI.Args()
+
+	wc, err := ctx.WorkspaceClient()
 	if err != nil {
 		return err
 	}
-	defer ctx.Close()
-
-	names := app.Args()
 
 	w, err := waiter.NewWaiter(ctx)
 	if err != nil {
@@ -156,39 +154,38 @@ func stackRm(app *cli.Context) error {
 
 	var lastErr error
 	for _, name := range names {
-		stack, err := lookup.Lookup(ctx.ClientLookup, name, client.StackType)
+		stack, err := lookup.Lookup(ctx, name, client.StackType)
 		if err != nil {
 			return err
 		}
 
-		err = ctx.Client.Ops.DoDelete(stack.Links[clientbase.SELF])
+		err = wc.Ops.DoDelete(stack.Links[clientbase.SELF])
 		if err != nil {
 			lastErr = err
 			continue
 		}
 
-		w.Add(stack)
+		w.Add(&stack.Resource)
 	}
 
 	if lastErr != nil {
 		return lastErr
 	}
 
-	return w.Wait()
+	return w.Wait(ctx.Ctx)
 }
 
-func stackUpdate(app *cli.Context) error {
-	ctx, err := server.NewContext(app)
-	if err != nil {
-		return err
-	}
-	defer ctx.Close()
-
-	if len(app.Args()) == 0 {
+func stackUpdate(ctx *clicontext.CLIContext) error {
+	if len(ctx.CLI.Args()) == 0 {
 		return fmt.Errorf("at least on stack name is required")
 	}
 
-	names := app.Args()
+	names := ctx.CLI.Args()
+
+	wc, err := ctx.WorkspaceClient()
+	if err != nil {
+		return err
+	}
 
 	w, err := waiter.NewWaiter(ctx)
 	if err != nil {
@@ -197,36 +194,26 @@ func stackUpdate(app *cli.Context) error {
 
 	var lastErr error
 	for _, name := range names {
-		stack, err := lookup.Lookup(ctx.ClientLookup, name, client.StackType)
+		stack, err := lookup.Lookup(ctx, name, client.StackType)
 		if err != nil {
 			return err
 		}
 
 		resp := &client.Stack{}
-		err = ctx.Client.Ops.DoUpdate(client.StackType, stack, &client.Stack{
-			Description: app.String("description"),
+		err = wc.Ops.DoUpdate(client.StackType, &stack.Resource, &client.Stack{
+			Description: ctx.CLI.String("description"),
 		}, resp)
 		if err != nil {
 			lastErr = err
 			continue
 		}
 
-		w.Add(stack)
+		w.Add(&stack.Resource)
 	}
 
 	if lastErr != nil {
 		return lastErr
 	}
 
-	return w.Wait()
-}
-
-func defaultAction(fn func(ctx *cli.Context) error) func(ctx *cli.Context) error {
-	return func(ctx *cli.Context) error {
-		if ctx.Bool("help") {
-			cli.ShowAppHelp(ctx)
-			return nil
-		}
-		return fn(ctx)
-	}
+	return w.Wait(ctx.Ctx)
 }

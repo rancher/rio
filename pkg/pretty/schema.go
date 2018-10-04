@@ -25,6 +25,7 @@ var (
 		Init(kubernetes).
 		AddMapperForType(&Version, Stack{},
 			pm.RouteSet{Field: "routes"},
+			pm.RevisionMapper{Field: "services"},
 		).
 		MustImport(&Version, Stack{})
 )

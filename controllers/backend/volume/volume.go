@@ -2,7 +2,6 @@ package volume
 
 import (
 	"context"
-
 	"reflect"
 
 	"github.com/rancher/rio/types"
@@ -30,7 +29,7 @@ func (v *volumeController) sync(key string, pvc *v1.PersistentVolumeClaim) error
 		return nil
 	}
 
-	ns, ok := pvc.Labels["rio.cattle.io/namespace"]
+	_, ok := pvc.Labels["rio.cattle.io/workspace"]
 	if !ok {
 		return nil
 	}
@@ -40,7 +39,7 @@ func (v *volumeController) sync(key string, pvc *v1.PersistentVolumeClaim) error
 		return nil
 	}
 
-	vol, err := v.volumeLister.Get(ns, name)
+	vol, err := v.volumeLister.Get(pvc.Namespace, name)
 	if errors.IsNotFound(err) {
 		return nil
 	} else if err != nil {
