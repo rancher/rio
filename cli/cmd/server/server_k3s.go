@@ -86,5 +86,5 @@ func (s *Server) Run(app *cli.Context) error {
 	logFile := filepath.Join(dataDir, "agent/agent.log")
 	url := fmt.Sprintf("https://localhost:%d", s.P_HttpsListenPort)
 	logrus.Infof("Agent starting, logging to %s", logFile)
-	return agent.RunAgent(url, server.FormatToken(sc.NodeToken), dataDir, logFile)
+	return agent.RunAgent(url, server.FormatToken(sc.NodeToken), dataDir, logFile, s.I_NodeIp)
 }

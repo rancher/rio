@@ -135,4 +135,12 @@ if [ "$1" == "--" ]; then
     exec "$@"
 fi
 
-exec env -i -- HOME=/root PATH=/sbin:/bin NODE_NAME=$NODE_NAME RIO_URL=$RIO_URL RIO_TOKEN=$RIO_TOKEN RIO_DATA_DIR=$RIO_DATA_DIR agent
+exec env -i -- \
+    HOME=/root \
+    NODE_NAME=$NODE_NAME \
+    PATH=/sbin:/bin \
+    RIO_DATA_DIR=$RIO_DATA_DIR \
+    RIO_NODE_IP=$RIO_NODE_IP \
+    RIO_TOKEN=$RIO_TOKEN \
+    RIO_URL=$RIO_URL \
+    agent
