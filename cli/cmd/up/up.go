@@ -10,13 +10,13 @@ import (
 	"github.com/rancher/norman/types"
 	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/rio/cli/cmd/util"
+	"github.com/rancher/rio/cli/pkg/clicontext"
+	stackpkg "github.com/rancher/rio/cli/pkg/stack"
 	"github.com/rancher/rio/cli/pkg/up"
 	"github.com/rancher/rio/cli/pkg/waiter"
-	"github.com/rancher/rio/cli/server"
 	"github.com/rancher/rio/pkg/yaml"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
 )
 
 type Up struct {
@@ -24,14 +24,8 @@ type Up struct {
 	Prompt    bool   `desc:"Re-ask all questions if answer is not found in environment variables"`
 }
 
-func (u *Up) Run(app *cli.Context) error {
-	ctx, err := server.NewContext(app)
-	if err != nil {
-		return err
-	}
-	defer ctx.Close()
-
-	args := app.Args()
+func (u *Up) Run(ctx *clicontext.CLIContext) error {
+	args := ctx.CLI.Args()
 	if len(args) > 2 {
 		return fmt.Errorf("either 1 or 2 arguements are required: [[STACK_NAME] FILE|-] or [DIRECTORY]")
 	}
@@ -49,7 +43,7 @@ func (u *Up) Run(app *cli.Context) error {
 	}
 }
 
-func (u *Up) doUpAll(ctx *server.Context, dir string) error {
+func (u *Up) doUpAll(ctx *clicontext.CLIContext, dir string) error {
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return err
@@ -65,7 +59,7 @@ func (u *Up) doUpAll(ctx *server.Context, dir string) error {
 	return nil
 }
 
-func (u *Up) doUp(ctx *server.Context, file, stack string) error {
+func (u *Up) doUp(ctx *clicontext.CLIContext, file, stack string) error {
 	content, err := util.ReadFile(file)
 	if err != nil {
 		return errors.Wrapf(err, "reading %s", file)
@@ -82,7 +76,7 @@ func (u *Up) doUp(ctx *server.Context, file, stack string) error {
 		stack += "/"
 	}
 
-	_, stackID, _, err := ctx.ResolveSpaceStackName(stack)
+	_, stackID, _, err := stackpkg.ResolveSpaceStackForName(ctx, stack)
 	if err != nil {
 		return err
 	}

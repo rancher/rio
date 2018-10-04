@@ -3,10 +3,11 @@
 /.idea
 /.trash-cache
 /bin
+/build
 /data-dir
 /dist
+/image/root
 /image/agent
 /image/go_build_agent
 /image/main.squashfs
-/image/root
 /package/rio

@@ -4,13 +4,13 @@ import (
 	"fmt"
 
 	"github.com/rancher/norman/types"
-	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/rio/cli/cmd/create"
+	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/cli/pkg/clientcfg"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/waiter"
-	"github.com/rancher/rio/cli/server"
+	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
-	"github.com/urfave/cli"
 )
 
 type Stage struct {
@@ -20,73 +20,40 @@ type Stage struct {
 	Image  string `desc:"Runtime image (Docker image/OCI image)"`
 }
 
-func determineRevision(name string, service *types.Resource) (string, error) {
+func determineRevision(workspace *clientcfg.Workspace, name string, service *types.Resource) (string, error) {
 	revision := "next"
 	if name == service.ID {
 		return revision, nil
 	}
 
-	parsedService := lookup.ParseServiceName(name)
-	if parsedService.Revision == "latest" {
-		return "", fmt.Errorf("\"latest\" is not a valid revision to stage")
+	parsedService := lookup.ParseStackScoped(workspace, name)
+	if parsedService.Version == settings.DefaultServiceVersion {
+		return "", fmt.Errorf("\"%s\" is not a valid revision to stage", settings.DefaultServiceVersion)
 	}
-	if parsedService.Revision != "" {
-		revision = parsedService.Revision
+	if parsedService.Version != "" {
+		revision = parsedService.Version
 	}
 
 	return revision, nil
 }
 
-func (r *Stage) Run(app *cli.Context) error {
-	if len(app.Args()) == 0 {
+func stripRevision(workspace *clientcfg.Workspace, name string) lookup.StackScoped {
+	stackScope := lookup.ParseStackScoped(workspace, name)
+	stackScope.Version = ""
+	return lookup.ParseStackScoped(workspace, stackScope.String())
+}
+
+func (r *Stage) Run(ctx *clicontext.CLIContext) error {
+	if len(ctx.CLI.Args()) == 0 {
 		return fmt.Errorf("must specify the service to update")
 	}
 
-	ctx, err := server.NewContext(app)
-	if err != nil {
-		return err
-	}
-	defer ctx.Close()
-
-	resource, err := lookup.Lookup(ctx.ClientLookup, app.Args()[0], client.ServiceType)
+	workspace, err := ctx.Workspace()
 	if err != nil {
 		return err
 	}
 
-	revision, err := determineRevision(app.Args()[0], resource)
-	if err != nil {
-		return err
-	}
-
-	args := append([]string{r.Image}, app.Args()[1:]...)
-	serviceDef, err := r.ToService(args)
-	if err != nil {
-		return err
-	}
-
-	serviceDef.Scale = int64(r.Scale)
-
-	newRevision := &client.ServiceRevision{}
-	if err := convert.ToObj(serviceDef, newRevision); err != nil {
-		return fmt.Errorf("failed to format service revision: %v", err)
-	}
-
-	service, err := ctx.Client.Service.ByID(resource.ID)
-	if err != nil {
-		return err
-	}
-
-	newRevision.Weight = int64(r.Weight)
-	if newRevision.Scale == 0 {
-		newRevision.Scale = service.Scale
-	}
-	if service.Revisions == nil {
-		service.Revisions = map[string]client.ServiceRevision{}
-	}
-
-	service.Revisions[revision] = *newRevision
-
-	_, err = ctx.Client.Service.Replace(service)
+	wc, err := ctx.WorkspaceClient()
 	if err != nil {
 		return err
 	}
@@ -96,6 +63,60 @@ func (r *Stage) Run(app *cli.Context) error {
 		return err
 	}
 
-	w.Add(&service.Resource)
-	return w.Wait()
+	stackScope := stripRevision(workspace, ctx.CLI.Args()[0])
+
+	resource, err := lookup.Lookup(ctx, stackScope.ResourceID, client.ServiceType)
+	if err != nil {
+		byID, err2 := wc.Service.ByID(ctx.CLI.Args()[0])
+		if err2 != nil {
+			return err
+		}
+
+		stackScope = stripRevision(workspace, lookup.StackScopedFromLabels(workspace, byID.Labels).String())
+		resource = &types.NamedResource{
+			Resource: byID.Resource,
+			Name:     byID.Name,
+		}
+	}
+
+	baseService, err := wc.Service.ByID(resource.ID)
+	if err != nil {
+		return err
+	}
+
+	revision, err := determineRevision(workspace, ctx.CLI.Args()[0], &resource.Resource)
+	if err != nil {
+		return err
+	}
+
+	stackScope.Version = revision
+	_, err = lookup.Lookup(ctx, stackScope.String(), client.ServiceType)
+	if err == nil {
+		return fmt.Errorf("revision %s already exists", ctx.CLI.Args()[0])
+	}
+
+	args := append([]string{r.Image}, ctx.CLI.Args()[1:]...)
+	serviceDef, err := r.ToService(args)
+	if err != nil {
+		return err
+	}
+
+	serviceDef.Name = fmt.Sprintf("%s-%s", resource.Name, revision)
+	serviceDef.ParentService = resource.Name
+	serviceDef.Version = revision
+	serviceDef.Weight = int64(r.Weight)
+	serviceDef.Scale = int64(r.Scale)
+	serviceDef.SpaceID = baseService.SpaceID
+	serviceDef.StackID = baseService.StackID
+	if serviceDef.Scale == 0 {
+		serviceDef.Scale = baseService.Scale
+	}
+
+	revService, err := wc.Service.Create(serviceDef)
+	if err != nil {
+		return err
+	}
+
+	w.Add(&revService.Resource)
+	return w.Wait(ctx.Ctx)
 }

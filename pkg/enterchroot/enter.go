@@ -22,6 +22,10 @@ const (
 	magic = "_SQMAGIC_"
 )
 
+var (
+	symlinks = []string{"lib", "bin", "sbin"}
+)
+
 func init() {
 	reexec.Register("enter-root", enter)
 }
@@ -199,6 +203,14 @@ func run(data string) error {
 
 	if err := os.Chdir(data); err != nil {
 		return err
+	}
+
+	for _, p := range symlinks {
+		if _, err := os.Lstat(p); os.IsNotExist(err) {
+			if err := os.Symlink(filepath.Join("usr", p), p); err != nil {
+				return errors.Wrapf(err, "failed to symlink %s", p)
+			}
+		}
 	}
 
 	logrus.Debugf("pivoting to . .root")

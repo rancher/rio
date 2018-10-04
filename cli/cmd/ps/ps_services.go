@@ -5,13 +5,12 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/rancher/norman/types/convert"
+	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/rio/cli/cmd/util"
-	"github.com/rancher/rio/cli/pkg/kv"
+	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/cli/pkg/clientcfg"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/cli/server"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
-	"github.com/urfave/cli"
 )
 
 type ServiceData struct {
@@ -19,6 +18,26 @@ type ServiceData struct {
 	Service  *client.Service
 	Stack    *client.Stack
 	Endpoint string
+}
+
+func FormatServiceName(cluster *clientcfg.Cluster) func(data, data2 interface{}) (string, error) {
+	return func(data, data2 interface{}) (string, error) {
+		stackName, ok := data.(string)
+		if !ok {
+			return "", nil
+		}
+
+		service, ok := data2.(*client.Service)
+		if !ok {
+			return "", nil
+		}
+
+		if service.ParentService == "" || service.Version == "" {
+			return table.FormatStackScopedName(cluster)(stackName, service.Name)
+		}
+
+		return table.FormatStackScopedName(cluster)(stackName, service.ParentService+":"+service.Version)
+	}
 }
 
 func FormatImage(data interface{}) (string, error) {
@@ -68,27 +87,38 @@ func FormatScale(data, data2 interface{}) (string, error) {
 	return fmt.Sprintf("(%d/%d/%d)/%d%s", scaleStatus.Unavailable, scaleStatus.Available, scaleStatus.Ready, scale, percentage), nil
 }
 
-func (p *Ps) services(app *cli.Context, ctx *server.Context) error {
-	services, err := ctx.Client.Service.List(util.DefaultListOpts())
+func (p *Ps) services(ctx *clicontext.CLIContext, stacks map[string]bool) error {
+	wc, err := ctx.WorkspaceClient()
+	if err != nil {
+		return err
+	}
+
+	cluster, err := ctx.Cluster()
+	if err != nil {
+		return err
+	}
+
+	services, err := wc.Service.List(util.DefaultListOpts())
 	if err != nil {
 		return err
 	}
 
 	writer := table.NewWriter([][]string{
-		{"NAME", "{{stackScopedName .Stack.Name .Service.Name}}"},
+		{"NAME", "{{serviceName .Stack.Name .Service}}"},
 		{"IMAGE", "{{.Service | image}}"},
 		{"CREATED", "{{.Service.Created | ago}}"},
 		{"SCALE", "{{scale .Service.Scale .Service.ScaleStatus}}"},
 		{"STATE", "Service.State"},
 		{"ENDPOINT", "Endpoint"},
 		{"DETAIL", "{{first .Service.TransitioningMessage .Stack.TransitioningMessage}}"},
-	}, app)
+	}, ctx)
 	defer writer.Close()
 
+	writer.AddFormatFunc("serviceName", FormatServiceName(cluster))
 	writer.AddFormatFunc("image", FormatImage)
 	writer.AddFormatFunc("scale", FormatScale)
 
-	stackByID, err := util.StacksByID(ctx)
+	stackByID, err := util.StacksByID(wc)
 	if err != nil {
 		return err
 	}
@@ -99,39 +129,33 @@ func (p *Ps) services(app *cli.Context, ctx *server.Context) error {
 			continue
 		}
 
+		if len(stacks) > 0 && !stacks[service.StackID] {
+			continue
+		}
+
 		writer.Write(&ServiceData{
 			ID:       service.ID,
 			Service:  &services.Data[i],
 			Stack:    stack,
 			Endpoint: endpoint(ctx, stack, service.PortBindings, &service),
 		})
-
-		for revName, revision := range service.Revisions {
-			newService := &client.Service{}
-			if err := convert.ToObj(&revision, newService); err != nil {
-				return err
-			}
-			newService.Name += service.Name + ":" + revName
-			newService.Created = service.Created
-			if newService.Image == "" {
-				newService.Image = service.Image
-			}
-
-			writer.Write(&ServiceData{
-				ID:      service.ID,
-				Service: newService,
-				Stack:   stack,
-				// use parent service ports
-				Endpoint: endpoint(ctx, stack, service.PortBindings, newService),
-			})
-		}
 	}
 
 	return writer.Err()
 }
 
-func endpoint(ctx *server.Context, stack *client.Stack, ports []client.PortBinding, service *client.Service) string {
-	if ctx.Domain == "" || stack == nil {
+func endpoint(ctx *clicontext.CLIContext, stack *client.Stack, ports []client.PortBinding, service *client.Service) string {
+	cluster, err := ctx.Cluster()
+	if err != nil {
+		return ""
+	}
+
+	domain, err := cluster.Domain()
+	if err != nil {
+		return ""
+	}
+
+	if domain == "" || stack == nil {
 		return ""
 	}
 
@@ -141,7 +165,7 @@ func endpoint(ctx *server.Context, stack *client.Stack, ports []client.PortBindi
 			if rev != "" && rev != "latest" {
 				name = name + "-" + rev
 			}
-			domain := fmt.Sprintf("%s.%s.%s", name, stack.Name, ctx.Domain)
+			domain := fmt.Sprintf("%s.%s.%s", name, stack.Name, domain)
 
 			return "http://" + domain
 		}

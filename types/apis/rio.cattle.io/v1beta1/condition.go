@@ -1,6 +1,13 @@
 package v1beta1
 
-import "k8s.io/api/core/v1"
+import (
+	"github.com/rancher/norman/condition"
+	"k8s.io/api/core/v1"
+)
+
+var (
+	PendingCondition = condition.Cond("Pending")
+)
 
 type Condition struct {
 	// Type of cluster condition.

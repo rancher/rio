@@ -3,11 +3,12 @@ package create
 import (
 	"fmt"
 
+	"github.com/rancher/rio/cli/pkg/stack"
+
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/kvfile"
 	"github.com/rancher/rio/cli/pkg/waiter"
-	"github.com/rancher/rio/cli/server"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
-	"github.com/urfave/cli"
 )
 
 type Create struct {
@@ -86,35 +87,34 @@ type Scheduling struct {
 	NodePreferred  []string `desc:"Node running containers if possible should match expression"`
 }
 
-func (c *Create) Run(app *cli.Context) error {
-	_, err := c.RunCallback(app, func(s *client.Service) *client.Service {
+func (c *Create) Run(ctx *clicontext.CLIContext) error {
+	_, err := c.RunCallback(ctx, func(s *client.Service) *client.Service {
 		return s
 	})
 	return err
 }
 
-func (c *Create) RunCallback(app *cli.Context, cb func(service *client.Service) *client.Service) (*client.Service, error) {
+func (c *Create) RunCallback(ctx *clicontext.CLIContext, cb func(service *client.Service) *client.Service) (*client.Service, error) {
 	var err error
 
-	service, err := c.ToService(app.Args())
+	service, err := c.ToService(ctx.CLI.Args())
 	if err != nil {
 		return nil, err
 	}
 
-	ctx, err := server.NewContext(app)
+	service.SpaceID, service.StackID, service.Name, err = stack.ResolveSpaceStackForName(ctx, service.Name)
 	if err != nil {
 		return nil, err
 	}
-	defer ctx.Close()
 
-	service.SpaceID, service.StackID, service.Name, err = ctx.ResolveSpaceStackName(service.Name)
+	wc, err := ctx.WorkspaceClient()
 	if err != nil {
 		return nil, err
 	}
 
 	service = cb(service)
 
-	s, err := ctx.Client.Service.Create(service)
+	s, err := wc.Service.Create(service)
 	if err != nil {
 		return nil, err
 	}

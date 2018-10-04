@@ -7,8 +7,8 @@ import (
 func NewCtrCommand() cli.Command {
 	return cli.Command{
 		Name:            "ctr",
-		Usage:           "ctr backdoor",
-		Hidden:          true,
+		Usage:           "Run ctr to troubleshoot containerd backend (required root)",
+		Category:        "DEBUGGING",
 		SkipFlagParsing: true,
 		SkipArgReorder:  true,
 		Action:          ctr,

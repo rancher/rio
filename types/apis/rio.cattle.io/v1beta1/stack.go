@@ -8,11 +8,8 @@ import (
 )
 
 var (
-	StackConditionNamespaceCreated = condition.Cond("NamespaceCreated")
-	StackConditionParsed           = condition.Cond("Parsed")
-	StackConditionDefined          = condition.Cond("Defined")
-	StackConditionDeployed         = condition.Cond("Deployed")
-	StackConditionMeshDeployed     = condition.Cond("MeshDeployed")
+	StackConditionDefined  = condition.Cond("Defined")
+	StackConditionDeployed = condition.Cond("Deployed")
 )
 
 type Stack struct {

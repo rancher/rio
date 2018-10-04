@@ -6,7 +6,6 @@ import (
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
 	"github.com/rancher/rio/types/factory"
 	rm "github.com/rancher/rio/types/mapper"
-	mapper2 "github.com/rancher/types/mapper"
 )
 
 var (
@@ -57,16 +56,10 @@ func routeTypes(schemas *types.Schemas) *types.Schemas {
 func serviceTypes(schemas *types.Schemas) *types.Schemas {
 	return schemas.
 		AddMapperForType(&Version, v1beta1.ServiceRevision{},
-			mapper2.Status{},
-			&mapper.Embed{Field: "spec"},
-			&mapper.ReadOnly{
-				Field:     "status",
-				SubFields: true,
-			},
-			&mapper.Embed{Field: "status"},
-		).
+			mapper.Drop{Field: "serviceName"}).
 		AddMapperForType(&Version, v1beta1.ServiceSpec{},
 			mapper.Move{From: "labels", To: "serviceLabels"},
+			&mapper.Embed{Field: "revision"},
 			rm.NewMetadata("metadata"),
 		).
 		AddMapperForType(&Version, v1beta1.ServiceUnversionedSpec{},

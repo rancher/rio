@@ -1,8 +1,8 @@
 package route
 
 import (
-	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/builder"
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
 	"github.com/urfave/cli"
 )
@@ -16,7 +16,7 @@ func Route(app *cli.App) cli.Command {
 		Name:      "routes",
 		ShortName: "route",
 		Usage:     "Route traffic across the mesh",
-		Action:    util.DefaultAction(ls.Action),
+		Action:    clicontext.DefaultAction(ls.Action),
 		Flags:     table.WriterFlags(),
 		//Category:  "SUB COMMANDS",
 		Subcommands: []cli.Command{

@@ -20,22 +20,22 @@ func AddData(rContext *types.Context, inCluster bool) error {
 		return err
 	}
 
-	return apply.Apply(systemStacks(inCluster), "rio-system-stacks", 0)
+	return apply.Apply(systemStacks(inCluster), nil, settings.RioSystemNamespace, "rio-system-stacks")
 }
 
 func systemStacks(inCluster bool) []runtime.Object {
 	var result []runtime.Object
+
+	result = append(result, stack("istio-crd", v1beta1.StackSpec{
+		DisableMesh:               true,
+		EnableKubernetesResources: true,
+	}))
 
 	if !inCluster {
 		result = append(result, stack("coredns", v1beta1.StackSpec{
 			DisableMesh: true,
 		}))
 	}
-
-	result = append(result, stack("istio", v1beta1.StackSpec{
-		DisableMesh:               true,
-		EnableKubernetesResources: true,
-	}))
 
 	return result
 }
@@ -71,18 +71,6 @@ func addNameSpace(rContext *types.Context) error {
 	_, err := rContext.Core.Namespaces("").Create(&v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: settings.RioSystemNamespace,
-			Labels: map[string]string{
-				space.SpaceLabel: "true",
-			},
-		},
-	})
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return err
-	}
-
-	_, err = rContext.Core.Namespaces("").Create(&v1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: settings.RioDefaultNamespace,
 			Labels: map[string]string{
 				space.SpaceLabel: "true",
 			},

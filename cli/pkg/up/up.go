@@ -8,8 +8,8 @@ import (
 
 	"github.com/docker/docker/pkg/symlink"
 	"github.com/pkg/errors"
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/up/questions"
-	"github.com/rancher/rio/cli/server"
 	template2 "github.com/rancher/rio/pkg/template"
 )
 
@@ -57,8 +57,13 @@ func readFiles(files []string, template *template2.Template, promptReplaceFile b
 	return nil
 }
 
-func Run(ctx *server.Context, content []byte, stackID string, promptReplaceFile, prompt bool, answers map[string]string) error {
-	stack, err := ctx.Client.Stack.ByID(stackID)
+func Run(ctx *clicontext.CLIContext, content []byte, stackID string, promptReplaceFile, prompt bool, answers map[string]string) error {
+	wc, err := ctx.WorkspaceClient()
+	if err != nil {
+		return err
+	}
+
+	stack, err := wc.Stack.ByID(stackID)
 	if err != nil {
 		return err
 	}
@@ -97,7 +102,7 @@ func Run(ctx *server.Context, content []byte, stackID string, promptReplaceFile,
 		return err
 	}
 
-	_, err = ctx.Client.Stack.Update(stack, newStack)
+	_, err = wc.Stack.Update(stack, newStack)
 	return err
 }
 
