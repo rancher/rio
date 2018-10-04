@@ -87,7 +87,7 @@ func FormatScale(data, data2 interface{}) (string, error) {
 	return fmt.Sprintf("(%d/%d/%d)/%d%s", scaleStatus.Unavailable, scaleStatus.Available, scaleStatus.Ready, scale, percentage), nil
 }
 
-func (p *Ps) services(ctx *clicontext.CLIContext) error {
+func (p *Ps) services(ctx *clicontext.CLIContext, stacks map[string]bool) error {
 	wc, err := ctx.WorkspaceClient()
 	if err != nil {
 		return err
@@ -126,6 +126,10 @@ func (p *Ps) services(ctx *clicontext.CLIContext) error {
 	for i, service := range services.Data {
 		stack := stackByID[service.StackID]
 		if stack == nil {
+			continue
+		}
+
+		if len(stacks) > 0 && !stacks[service.StackID] {
 			continue
 		}
 

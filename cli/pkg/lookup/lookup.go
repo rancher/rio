@@ -37,7 +37,7 @@ func Lookup(c ClientLookup, name string, typeNames ...string) (*types.NamedResou
 	}
 
 	if len(result) == 0 {
-		return nil, fmt.Errorf("not found: %s", name)
+		return nil, fmt.Errorf("not found (types=%v): %s", typeNames, name)
 	}
 
 	if len(result) == 1 {
