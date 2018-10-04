@@ -8,9 +8,13 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/rancher/rio/cli/pkg/clientcfg"
+
+	"github.com/Masterminds/sprig"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/docker/go-units"
 	"github.com/rancher/norman/types/convert"
-	"github.com/urfave/cli"
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"gopkg.in/yaml.v2"
 )
 
@@ -18,9 +22,19 @@ var (
 	idsHeader = [][]string{
 		{"ID", "ID"},
 	}
+
+	localFuncMap = map[string]interface{}{
+		"ago":         FormatCreated,
+		"json":        FormatJSON,
+		"jsoncompact": FormatJSONCompact,
+		"yaml":        FormatYAML,
+		"first":       FormatFirst,
+		"dump":        FormatSpew,
+	}
 )
 
 type Writer struct {
+	closed        bool
 	quite         bool
 	HeaderFormat  string
 	ValueFormat   string
@@ -32,30 +46,29 @@ type Writer struct {
 
 type FormatFunc interface{}
 
-func NewWriter(values [][]string, ctx *cli.Context) *Writer {
-	if ctx.Bool("ids") {
+func NewWriter(values [][]string, ctx *clicontext.CLIContext) *Writer {
+	if ctx.CLI.Bool("ids") {
 		values = append(idsHeader, values...)
 	}
 
-	t := &Writer{
-		Writer: tabwriter.NewWriter(os.Stdout, 10, 1, 3, ' ', 0),
-		funcMap: map[string]interface{}{
-			"stackScopedName": FormatStackScopedName,
-			"ago":             FormatCreated,
-			"json":            FormatJSON,
-			"jsoncompact":     FormatJSONCompact,
-			"yaml":            FormatYAML,
-			"first":           FormatFirst,
-		},
+	funcMap := sprig.TxtFuncMap()
+	for k, v := range localFuncMap {
+		funcMap[k] = v
 	}
+
+	t := &Writer{
+		Writer:  tabwriter.NewWriter(os.Stdout, 10, 1, 3, ' ', 0),
+		funcMap: funcMap,
+	}
+
 	t.HeaderFormat, t.ValueFormat = SimpleFormat(values)
 
-	if ctx.Bool("quiet") {
+	if ctx.CLI.Bool("quiet") {
 		t.HeaderFormat = ""
 		t.ValueFormat = "{{.ID}}\n"
 	}
 
-	customFormat := ctx.String("format")
+	customFormat := ctx.CLI.String("format")
 	if customFormat == "json" {
 		t.HeaderFormat = ""
 		t.ValueFormat = "json"
@@ -78,7 +91,7 @@ func (t *Writer) AddFormatFunc(name string, f FormatFunc) {
 }
 
 func (t *Writer) Err() error {
-	return t.err
+	return t.Close()
 }
 
 func (t *Writer) writeHeader() {
@@ -129,9 +142,16 @@ func (t *Writer) Write(obj interface{}) {
 }
 
 func (t *Writer) Close() error {
+	if t.closed {
+		return t.err
+	}
 	if t.err != nil {
 		return t.err
 	}
+
+	defer func() {
+		t.closed = true
+	}()
 	t.writeHeader()
 	if t.err != nil {
 		return t.err
@@ -148,22 +168,24 @@ func (t *Writer) printTemplate(out io.Writer, templateContent string, obj interf
 	return tmpl.Execute(out, obj)
 }
 
-func FormatStackScopedName(data, data2 interface{}) (string, error) {
-	stackName, ok := data.(string)
-	if !ok {
-		return "", nil
-	}
+func FormatStackScopedName(cluster *clientcfg.Cluster) func(interface{}, interface{}) (string, error) {
+	return func(data, data2 interface{}) (string, error) {
+		stackName, ok := data.(string)
+		if !ok {
+			return "", nil
+		}
 
-	serviceName, ok := data2.(string)
-	if !ok {
-		return "", nil
-	}
+		serviceName, ok := data2.(string)
+		if !ok {
+			return "", nil
+		}
 
-	if stackName == "default" {
-		return serviceName, nil
-	}
+		if stackName == cluster.DefaultStackName {
+			return serviceName, nil
+		}
 
-	return stackName + "/" + serviceName, nil
+		return stackName + "/" + serviceName, nil
+	}
 }
 
 func FormatCreated(data interface{}) (string, error) {
@@ -193,6 +215,10 @@ func FormatJSONCompact(data interface{}) (string, error) {
 func FormatYAML(data interface{}) (string, error) {
 	bytes, err := yaml.Marshal(data)
 	return string(bytes) + "\n", err
+}
+
+func FormatSpew(data interface{}) (string, error) {
+	return spew.Sdump(data), nil
 }
 
 func FormatFirst(data, data2 interface{}) (string, error) {

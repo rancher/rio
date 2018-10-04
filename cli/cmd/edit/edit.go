@@ -12,13 +12,12 @@ import (
 	"github.com/rancher/norman/clientbase"
 	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/cli/cmd/config"
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/up"
 	"github.com/rancher/rio/cli/pkg/waiter"
 	"github.com/rancher/rio/cli/pkg/yamldownload"
-	"github.com/rancher/rio/cli/server"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
 	"k8s.io/kubernetes/pkg/kubectl/cmd/util/editor"
 )
 
@@ -41,25 +40,24 @@ type Edit struct {
 	T_Type string `desc:"Specific type to edit"`
 }
 
-func (edit *Edit) Run(app *cli.Context) error {
-	ctx, err := server.NewContext(app)
-	if err != nil {
-		return err
-	}
-	defer ctx.Close()
-
+func (edit *Edit) Run(ctx *clicontext.CLIContext) error {
 	waiter, err := waiter.NewWaiter(ctx)
 	if err != nil {
 		return err
 	}
 
 	if edit.Raw {
-		return edit.rawEdit(app, ctx)
+		return edit.rawEdit(ctx)
 	}
 
-	args := app.Args()
+	cluster, err := ctx.Cluster()
+	if err != nil {
+		return err
+	}
+
+	args := ctx.CLI.Args()
 	if len(args) == 0 {
-		args = []string{ctx.DefaultStackName}
+		args = []string{cluster.DefaultStackName}
 	}
 
 	for _, arg := range args {
@@ -76,10 +74,10 @@ func (edit *Edit) Run(app *cli.Context) error {
 		}
 
 		updated, err := editLoop(prefix, input, func(content []byte) error {
-			if err := edit.update(ctx, format, obj, url, content); err != nil {
+			if err := edit.update(ctx, format, &obj.Resource, url, content); err != nil {
 				return err
 			}
-			waiter.Add(obj)
+			waiter.Add(&obj.Resource)
 			return nil
 		})
 
@@ -92,7 +90,7 @@ func (edit *Edit) Run(app *cli.Context) error {
 		}
 	}
 
-	return waiter.Wait()
+	return waiter.Wait(ctx.Ctx)
 }
 
 type updateFunc func(content []byte) error
@@ -130,9 +128,9 @@ func editLoop(prefix, input []byte, update updateFunc) (bool, error) {
 	return true, nil
 }
 
-func (edit *Edit) update(ctx *server.Context, format string, obj *types.Resource, self string, content []byte) error {
+func (edit *Edit) update(ctx *clicontext.CLIContext, format string, obj *types.Resource, self string, content []byte) error {
 	if obj.Type == client.StackType {
-		return up.Run(ctx, content, obj.ID, true, edit.Prompt, nil)
+		return up.Run(ctx, content, obj.ID, true, edit.Prompt, nil, "")
 	}
 
 	if obj.Type == client.ConfigType {
@@ -154,10 +152,15 @@ func (edit *Edit) update(ctx *server.Context, format string, obj *types.Resource
 		return err
 	}
 
-	ctx.Client.Ops.SetupRequest(req)
+	wc, err := ctx.WorkspaceClient()
+	if err != nil {
+		return err
+	}
+
+	wc.Ops.SetupRequest(req)
 	req.Header.Set("Content-Type", format)
 
-	resp, err := ctx.Client.Ops.Client.Do(req)
+	resp, err := wc.Ops.Client.Do(req)
 	if err != nil {
 		return err
 	}

@@ -1,7 +1,7 @@
 package create
 
 import (
-	"github.com/rancher/rio/cli/pkg/kv"
+	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/rio/cli/pkg/kvfile"
 )
 

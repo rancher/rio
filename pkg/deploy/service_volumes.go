@@ -54,7 +54,7 @@ func addEmptyDir(name string, volume v1beta1.Mount, volumes map[string]v1.Volume
 }
 
 func addAnonVolume(volume v1beta1.Mount, volumes map[string]v1.Volume) string {
-	name := "anon-" + strings.Replace(volume.Target, "/", "-", -1)
+	name := "anon" + strings.Replace(volume.Target, "/", "-", -1)
 	addEmptyDir(name, volume, volumes)
 	return name
 }

@@ -8,11 +8,8 @@ import (
 )
 
 var (
-	StackConditionNamespaceCreated = condition.Cond("NamespaceCreated")
-	StackConditionParsed           = condition.Cond("Parsed")
-	StackConditionDefined          = condition.Cond("Defined")
-	StackConditionDeployed         = condition.Cond("Deployed")
-	StackConditionMeshDeployed     = condition.Cond("MeshDeployed")
+	StackConditionDefined  = condition.Cond("Defined")
+	StackConditionDeployed = condition.Cond("Deployed")
 )
 
 type Stack struct {
@@ -33,6 +30,7 @@ type StackSpec struct {
 	Questions                 []v3.Question     `json:"questions,omitempty"`
 	DisableMesh               bool              `json:"disableMesh,omitempty"`
 	EnableKubernetesResources bool              `json:"enableKubernetesResources,omitempty"`
+	RepoTag                   []string          `json:"repoTag,omitempty"`
 }
 
 type StackStatus struct {

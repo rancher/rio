@@ -1,8 +1,12 @@
 package ps
 
 import (
+	"fmt"
+
+	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/cli/server"
+	"github.com/rancher/rio/types/client/rio/v1beta1"
 	"github.com/urfave/cli"
 )
 
@@ -15,15 +19,30 @@ func (p *Ps) Customize(cmd *cli.Command) {
 	cmd.Flags = append(table.WriterFlags(), cmd.Flags...)
 }
 
-func (p *Ps) Run(app *cli.Context) error {
-	ctx, err := server.NewContext(app)
-	if err != nil {
-		return err
-	}
-	defer ctx.Close()
+func (p *Ps) Run(ctx *clicontext.CLIContext) error {
+	var (
+		stacks    = map[string]bool{}
+		notStacks []string
+	)
 
-	if p.C_Containers || len(app.Args()) > 0 {
-		return p.containers(app, ctx)
+	if !p.C_Containers {
+		for _, arg := range ctx.CLI.Args() {
+			stack, err := lookup.Lookup(ctx, arg, client.StackType)
+			if err == nil {
+				stacks[stack.ID] = true
+			} else {
+				notStacks = append(notStacks, arg)
+			}
+		}
 	}
-	return p.services(app, ctx)
+
+	if p.C_Containers || (len(ctx.CLI.Args()) > 0 && len(stacks) == 0) {
+		return p.containers(ctx)
+	}
+
+	if len(notStacks) > 0 {
+		return fmt.Errorf("failed to find stacks for %v", notStacks)
+	}
+
+	return p.services(ctx, stacks)
 }

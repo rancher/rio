@@ -8,7 +8,7 @@ import (
 	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/norman/types/values"
 	"github.com/rancher/types/mapper"
-	"k8s.io/api/apps/v1beta2"
+	appsv1 "k8s.io/api/apps/v1beta2"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -24,10 +24,11 @@ type Service struct {
 }
 
 type ServiceRevision struct {
-	Spec    ServiceUnversionedSpec `json:"spec,omitempty"`
-	Weight  int                    `json:"weight,omitempty"`
-	Promote bool                   `json:"promote,omitempty"`
-	Status  ServiceStatus          `json:"status,omitempty"`
+	Version       string `json:"version,omitempty"`
+	Weight        int    `json:"weight,omitempty"`
+	Promote       bool   `json:"promote,omitempty"`
+	ServiceName   string `json:"serviceName,omitempty"`
+	ParentService string `json:"parentService,omitempty"`
 }
 
 type ServiceUnversionedSpec struct {
@@ -49,13 +50,20 @@ type ServiceUnversionedSpec struct {
 type ServiceSpec struct {
 	ServiceUnversionedSpec
 	StackScoped
-	Revisions map[string]ServiceRevision `json:"revisions,omitempty"`
+	Revision ServiceRevision `json:"revision,omitempty"`
 }
 
 type ServiceStatus struct {
-	DeploymentStatus *v1beta2.DeploymentStatus `json:"deploymentStatus,omitempty"`
-	ScaleStatus      *ScaleStatus              `json:"scaleStatus,omitempty"`
-	Conditions       []Condition               `json:"conditions,omitempty"`
+	DeploymentStatus  *appsv1.DeploymentStatus  `json:"deploymentStatus,omitempty"`
+	DaemonSetStatus   *appsv1.DaemonSetStatus   `json:"daemonSetStatus,omitempty"`
+	StatefulSetStatus *appsv1.StatefulSetStatus `json:"statefulSetStatus,omitempty"`
+	ScaleStatus       *ScaleStatus              `json:"scaleStatus,omitempty"`
+	Conditions        []Condition               `json:"conditions,omitempty"`
+	Endpoints         []Endpoint                `json:"endpoint,omitempty"`
+}
+
+type Endpoint struct {
+	URL string `json:"url,omitempty"`
 }
 
 type ScaleStatus struct {
@@ -70,7 +78,7 @@ type PodConfig struct {
 	Global                 bool         `json:"global,omitempty"`
 	Scheduling             Scheduling   `json:"scheduling,omitempty"`
 	StopGracePeriodSeconds *int         `json:"stopGracePeriod,omitempty"`                                                           // support friendly numbers
-	RestartPolicy          string       `json:"restart,omitempty" norman:"type=enum,options=never|on-failure|always,default=always"` //support no and OnFailure
+	RestartPolicy          string       `json:"restart,omitempty" norman:"type=enum,options=never|on-failure|always,default=always"` // support no and OnFailure
 	DNS                    []string     `json:"dns,omitempty"`                                                                       // support string
 	DNSOptions             []string     `json:"dnsOptions,omitempty"`                                                                // support string
 	DNSSearch              []string     `json:"dnsSearch,omitempty"`                                                                 // support string

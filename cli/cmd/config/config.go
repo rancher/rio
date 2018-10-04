@@ -1,8 +1,8 @@
 package config
 
 import (
-	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/builder"
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
 	"github.com/urfave/cli"
 )
@@ -24,7 +24,7 @@ func Config(app *cli.App) cli.Command {
 		ShortName: "config",
 		Usage:     "Operations on configs",
 		Category:  "SUB COMMANDS",
-		Action:    util.DefaultAction(ls.Action),
+		Action:    clicontext.DefaultAction(ls.Action),
 		Flags:     table.WriterFlags(),
 		Subcommands: []cli.Command{
 			builder.Command(&Ls{},

@@ -45,9 +45,7 @@ import (
 	"k8s.io/kubernetes/pkg/controller/nodeipam/ipam"
 	lifecyclecontroller "k8s.io/kubernetes/pkg/controller/nodelifecycle"
 	"k8s.io/kubernetes/pkg/controller/podgc"
-	replicationcontroller "k8s.io/kubernetes/pkg/controller/replication"
 	resourcequotacontroller "k8s.io/kubernetes/pkg/controller/resourcequota"
-	routecontroller "k8s.io/kubernetes/pkg/controller/route"
 	servicecontroller "k8s.io/kubernetes/pkg/controller/service"
 	serviceaccountcontroller "k8s.io/kubernetes/pkg/controller/serviceaccount"
 	ttlcontroller "k8s.io/kubernetes/pkg/controller/ttl"
@@ -64,7 +62,6 @@ import (
 
 func startServiceController(ctx ControllerContext) (bool, error) {
 	serviceController, err := servicecontroller.New(
-		ctx.Cloud,
 		ctx.ClientBuilder.ClientOrDie("service-controller"),
 		ctx.InformerFactory.Core().V1().Services(),
 		ctx.InformerFactory.Core().V1().Nodes(),
@@ -104,7 +101,6 @@ func startNodeIpamController(ctx ControllerContext) (bool, error) {
 
 	nodeIpamController, err := nodeipamcontroller.NewNodeIpamController(
 		ctx.InformerFactory.Core().V1().Nodes(),
-		ctx.Cloud,
 		ctx.ClientBuilder.ClientOrDie("node-controller"),
 		clusterCIDR,
 		serviceCIDR,
@@ -123,7 +119,6 @@ func startNodeLifecycleController(ctx ControllerContext) (bool, error) {
 		ctx.InformerFactory.Core().V1().Pods(),
 		ctx.InformerFactory.Core().V1().Nodes(),
 		ctx.InformerFactory.Extensions().V1beta1().DaemonSets(),
-		ctx.Cloud,
 		ctx.ClientBuilder.ClientOrDie("node-controller"),
 		ctx.ComponentConfig.NodeMonitorPeriod.Duration,
 		ctx.ComponentConfig.NodeStartupGracePeriod.Duration,
@@ -134,8 +129,7 @@ func startNodeLifecycleController(ctx ControllerContext) (bool, error) {
 		ctx.ComponentConfig.LargeClusterSizeThreshold,
 		ctx.ComponentConfig.UnhealthyZoneThreshold,
 		ctx.ComponentConfig.EnableTaintManager,
-		utilfeature.DefaultFeatureGate.Enabled(features.TaintBasedEvictions),
-		utilfeature.DefaultFeatureGate.Enabled(features.TaintNodesByCondition),
+		false, false,
 	)
 	if err != nil {
 		return true, err
@@ -144,35 +138,11 @@ func startNodeLifecycleController(ctx ControllerContext) (bool, error) {
 	return true, nil
 }
 
-func startRouteController(ctx ControllerContext) (bool, error) {
-	if !ctx.ComponentConfig.AllocateNodeCIDRs || !ctx.ComponentConfig.ConfigureCloudRoutes {
-		glog.Infof("Will not configure cloud provider routes for allocate-node-cidrs: %v, configure-cloud-routes: %v.", ctx.ComponentConfig.AllocateNodeCIDRs, ctx.ComponentConfig.ConfigureCloudRoutes)
-		return false, nil
-	}
-	if ctx.Cloud == nil {
-		glog.Warning("configure-cloud-routes is set, but no cloud provider specified. Will not configure cloud provider routes.")
-		return false, nil
-	}
-	routes, ok := ctx.Cloud.Routes()
-	if !ok {
-		glog.Warning("configure-cloud-routes is set, but cloud provider does not support routes. Will not configure cloud provider routes.")
-		return false, nil
-	}
-	_, clusterCIDR, err := net.ParseCIDR(ctx.ComponentConfig.ClusterCIDR)
-	if err != nil {
-		glog.Warningf("Unsuccessful parsing of cluster CIDR %v: %v", ctx.ComponentConfig.ClusterCIDR, err)
-	}
-	routeController := routecontroller.New(routes, ctx.ClientBuilder.ClientOrDie("route-controller"), ctx.InformerFactory.Core().V1().Nodes(), ctx.ComponentConfig.ClusterName, clusterCIDR)
-	go routeController.Run(ctx.Stop, ctx.ComponentConfig.RouteReconciliationPeriod.Duration)
-	return true, nil
-}
-
 func startPersistentVolumeBinderController(ctx ControllerContext) (bool, error) {
 	params := persistentvolumecontroller.ControllerParameters{
 		KubeClient:                ctx.ClientBuilder.ClientOrDie("persistent-volume-binder"),
 		SyncPeriod:                ctx.ComponentConfig.PVClaimBinderSyncPeriod.Duration,
-		VolumePlugins:             ProbeControllerVolumePlugins(ctx.Cloud, ctx.ComponentConfig.VolumeConfiguration),
-		Cloud:                     ctx.Cloud,
+		VolumePlugins:             ProbeControllerVolumePlugins(ctx.ComponentConfig.VolumeConfiguration),
 		ClusterName:               ctx.ComponentConfig.ClusterName,
 		VolumeInformer:            ctx.InformerFactory.Core().V1().PersistentVolumes(),
 		ClaimInformer:             ctx.InformerFactory.Core().V1().PersistentVolumeClaims(),
@@ -199,7 +169,6 @@ func startAttachDetachController(ctx ControllerContext) (bool, error) {
 			ctx.InformerFactory.Core().V1().Nodes(),
 			ctx.InformerFactory.Core().V1().PersistentVolumeClaims(),
 			ctx.InformerFactory.Core().V1().PersistentVolumes(),
-			ctx.Cloud,
 			ProbeAttachableVolumePlugins(),
 			GetDynamicPluginProber(ctx.ComponentConfig.VolumeConfiguration),
 			ctx.ComponentConfig.DisableAttachDetachReconcilerSync,
@@ -219,7 +188,6 @@ func startVolumeExpandController(ctx ControllerContext) (bool, error) {
 			ctx.ClientBuilder.ClientOrDie("expand-controller"),
 			ctx.InformerFactory.Core().V1().PersistentVolumeClaims(),
 			ctx.InformerFactory.Core().V1().PersistentVolumes(),
-			ctx.Cloud,
 			ProbeExpandableVolumePlugins(ctx.ComponentConfig.VolumeConfiguration))
 
 		if expandControllerErr != nil {
@@ -238,16 +206,6 @@ func startEndpointController(ctx ControllerContext) (bool, error) {
 		ctx.InformerFactory.Core().V1().Endpoints(),
 		ctx.ClientBuilder.ClientOrDie("endpoint-controller"),
 	).Run(int(ctx.ComponentConfig.ConcurrentEndpointSyncs), ctx.Stop)
-	return true, nil
-}
-
-func startReplicationController(ctx ControllerContext) (bool, error) {
-	go replicationcontroller.NewReplicationManager(
-		ctx.InformerFactory.Core().V1().Pods(),
-		ctx.InformerFactory.Core().V1().ReplicationControllers(),
-		ctx.ClientBuilder.ClientOrDie("replication-controller"),
-		replicationcontroller.BurstReplicas,
-	).Run(int(ctx.ComponentConfig.ConcurrentRCSyncs), ctx.Stop)
 	return true, nil
 }
 

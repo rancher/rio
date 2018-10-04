@@ -5,14 +5,18 @@ source $(dirname $0)/version
 
 cd $(dirname $0)/..
 
+LDFLAGS="-X github.com/rancher/rio/version.Version=$VERSION -w -s"
+STATIC="-extldflags -static"
+STATIC_SQLITE="-extldflags '-static -lm -ldl -lz -lpthread'"
+
 mkdir -p bin
 echo Building incluster
-go build -ldflags "-X github.com/rancher/rio/version.Version=$VERSION -s" -o bin/rio-incluster
+CGO_ENABLED=0 go build -ldflags "$LDFLAGS $STATIC" -o bin/rio-incluster
+
 echo Building cli full
-go build -tags "k3s ctr" -ldflags "-X github.com/rancher/rio/version.Version=$VERSION -linkmode external -s" -o bin/rio-full ./cli/main.go
-echo Building agent
-go build -tags "k3s ctr" -ldflags "-X github.com/rancher/rio/version.Version=$VERSION -s" -o bin/rio-agent ./agent/main.go
+CGO_ENABLED=1 go build -tags "libsqlite3 k3s ctr netgo osusergo" -ldflags "$LDFLAGS $STATIC_SQLITE" -o bin/rio-full ./cli/main.go
+
 echo Building windows CLI
-GOOS=windows GOARCH=amd64 go build -ldflags "-X github.com/rancher/rio/version.Version=$VERSION -s" -o bin/rio-windows ./cli/main.go
+GOOS=windows GOARCH=amd64 go build -ldflags "$LDFLAGS" -o bin/rio-windows ./cli/main.go
 echo Building mac CLI
-GOOS=darwin GOARCH=amd64 go build -ldflags "-X github.com/rancher/rio/version.Version=$VERSION -s" -o bin/rio-darwin ./cli/main.go
+GOOS=darwin GOARCH=amd64 go build -ldflags "$LDFLAGS" -o bin/rio-darwin ./cli/main.go

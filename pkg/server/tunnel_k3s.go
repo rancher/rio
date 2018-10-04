@@ -6,8 +6,8 @@ import (
 	"net"
 	"time"
 
+	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/rancher/pkg/remotedialer"
-	"github.com/rancher/rio/cli/pkg/kv"
 	"k8s.io/kubernetes/cmd/kube-apiserver/app"
 )
 

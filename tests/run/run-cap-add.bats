@@ -24,6 +24,7 @@ runCapAdd () {
   done
   cmd="${cmd} nginx"
 
+  echo $cmd
   $cmd
   rio wait ${stk}/${srv}
 }

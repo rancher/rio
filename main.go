@@ -7,7 +7,10 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"os"
+
+	_ "net/http/pprof"
 
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/norman/signal"
@@ -27,6 +30,10 @@ func main() {
 }
 
 func run() error {
+	go func() {
+		logrus.Fatal(http.ListenAndServe("localhost:6061", nil))
+	}()
+
 	if os.Getenv("RIO_DEBUG") == "true" {
 		logrus.SetLevel(logrus.DebugLevel)
 	}

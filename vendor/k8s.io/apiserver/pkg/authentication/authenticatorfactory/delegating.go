@@ -21,15 +21,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-openapi/spec"
-
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 	"k8s.io/apiserver/pkg/authentication/group"
 	"k8s.io/apiserver/pkg/authentication/request/anonymous"
 	"k8s.io/apiserver/pkg/authentication/request/headerrequest"
 	unionauth "k8s.io/apiserver/pkg/authentication/request/union"
 	"k8s.io/apiserver/pkg/authentication/request/x509"
-	authenticationclient "k8s.io/client-go/kubernetes/typed/authentication/v1beta1"
+	authenticationclient "k8s.io/client-go/kubernetes/typed/authentication/v1"
 	"k8s.io/client-go/util/cert"
 )
 
@@ -49,9 +47,8 @@ type DelegatingAuthenticatorConfig struct {
 	RequestHeaderConfig *RequestHeaderConfig
 }
 
-func (c DelegatingAuthenticatorConfig) New() (authenticator.Request, *spec.SecurityDefinitions, error) {
+func (c DelegatingAuthenticatorConfig) New() (authenticator.Request, error) {
 	authenticators := []authenticator.Request{}
-	securityDefinitions := spec.SecurityDefinitions{}
 
 	// front-proxy first, then remote
 	// Add the front proxy authenticator if requested
@@ -64,7 +61,7 @@ func (c DelegatingAuthenticatorConfig) New() (authenticator.Request, *spec.Secur
 			c.RequestHeaderConfig.ExtraHeaderPrefixes,
 		)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		authenticators = append(authenticators, requestHeaderAuthenticator)
 	}
@@ -73,7 +70,7 @@ func (c DelegatingAuthenticatorConfig) New() (authenticator.Request, *spec.Secur
 	if len(c.ClientCAFile) > 0 {
 		clientCAs, err := cert.NewPool(c.ClientCAFile)
 		if err != nil {
-			return nil, nil, fmt.Errorf("unable to load client CA file %s: %v", c.ClientCAFile, err)
+			return nil, fmt.Errorf("unable to load client CA file %s: %v", c.ClientCAFile, err)
 		}
 		verifyOpts := x509.DefaultVerifyOptions()
 		verifyOpts.Roots = clientCAs
@@ -82,14 +79,14 @@ func (c DelegatingAuthenticatorConfig) New() (authenticator.Request, *spec.Secur
 
 	if len(authenticators) == 0 {
 		if c.Anonymous {
-			return anonymous.NewAuthenticator(), &securityDefinitions, nil
+			return anonymous.NewAuthenticator(), nil
 		}
-		return nil, nil, errors.New("No authentication method configured")
+		return nil, errors.New("No authentication method configured")
 	}
 
 	authenticator := group.NewAuthenticatedGroupAdder(unionauth.New(authenticators...))
 	if c.Anonymous {
 		authenticator = unionauth.NewFailOnError(authenticator, anonymous.NewAuthenticator())
 	}
-	return authenticator, &securityDefinitions, nil
+	return authenticator, nil
 }

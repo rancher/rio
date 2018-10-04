@@ -18,7 +18,7 @@ package nodeipam
 
 import (
 	"net"
-		"github.com/golang/glog"
+	"github.com/golang/glog"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
@@ -30,10 +30,9 @@ import (
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	clientset "k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
-	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/controller"
 	"k8s.io/kubernetes/pkg/controller/nodeipam/ipam"
-		"k8s.io/kubernetes/pkg/util/metrics"
+	"k8s.io/kubernetes/pkg/util/metrics"
 )
 
 func init() {
@@ -45,7 +44,6 @@ func init() {
 type Controller struct {
 	allocatorType ipam.CIDRAllocatorType
 
-	cloud       cloudprovider.Interface
 	clusterCIDR *net.IPNet
 	serviceCIDR *net.IPNet
 	kubeClient  clientset.Interface
@@ -67,7 +65,6 @@ type Controller struct {
 // currently, this should be handled as a fatal error.
 func NewNodeIpamController(
 	nodeInformer coreinformers.NodeInformer,
-	cloud cloudprovider.Interface,
 	kubeClient clientset.Interface,
 	clusterCIDR *net.IPNet,
 	serviceCIDR *net.IPNet,
@@ -100,7 +97,6 @@ func NewNodeIpamController(
 	}
 
 	ic := &Controller{
-		cloud:         cloud,
 		kubeClient:    kubeClient,
 		lookupIP:      net.LookupIP,
 		clusterCIDR:   clusterCIDR,
@@ -110,7 +106,7 @@ func NewNodeIpamController(
 
 	var err error
 	ic.cidrAllocator, err = ipam.New(
-		kubeClient, cloud, nodeInformer, ic.allocatorType, ic.clusterCIDR, ic.serviceCIDR, nodeCIDRMaskSize)
+		kubeClient, nodeInformer, ic.allocatorType, ic.clusterCIDR, ic.serviceCIDR, nodeCIDRMaskSize)
 	if err != nil {
 		return nil, err
 	}

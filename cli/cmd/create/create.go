@@ -3,21 +3,21 @@ package create
 import (
 	"fmt"
 
+	"github.com/rancher/rio/cli/pkg/stack"
+
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/kvfile"
 	"github.com/rancher/rio/cli/pkg/waiter"
-	"github.com/rancher/rio/cli/server"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
-	"github.com/urfave/cli"
 )
 
 type Create struct {
 	AddHost            []string          `desc:"Add a custom host-to-IP mapping (host:ip)"`
 	CapAdd             []string          `desc:"Add Linux capabilities"`
 	CapDrop            []string          `desc:"Drop Linux capabilities"`
-	Cidfile            string            `desc:"Write the container ID to the file"`
 	Config             []string          `desc:"Configs to expose to the service (format: name:target)"`
 	Cpus               string            `desc:"Number of CPUs"`
-	DeploymentStrategy string            `json:"Approach to creating containers (parallel|ordered)" default:"parallel"`
+	DeploymentStrategy string            `desc:"Approach to creating containers (parallel|ordered)" default:"parallel"`
 	Detach             bool              `desc:"Do not attach after when -it is specified"`
 	Device             []string          `desc:"Add a host device to the container"`
 	DnsOption          []string          `desc:"Set DNS options"`
@@ -45,7 +45,7 @@ type Create struct {
 	MemoryLimit        string            `desc:"Memory hard limit (format: <number>[<unit>], where unit = b, k, m or g)"`
 	Metadata           map[string]string `desc:"Metadata to attach to this service"`
 	M_Memory           string            `desc:"Memory reservation (format: <number>[<unit>], where unit = b, k, m or g)"`
-	Net_Network        string            `desc:"Connect a container to a network" default:"default"`
+	Net_Network        string            `desc:"Connect a container to a network (default|home)" default:"default"`
 	N_Name             string            `desc:"Assign a name to the container"`
 	Permission         []string          `desc:"Permissions to grant to container's service account in current stack"`
 	Pid                string            `desc:"PID namespace to use"`
@@ -86,35 +86,34 @@ type Scheduling struct {
 	NodePreferred  []string `desc:"Node running containers if possible should match expression"`
 }
 
-func (c *Create) Run(app *cli.Context) error {
-	_, err := c.RunCallback(app, func(s *client.Service) *client.Service {
+func (c *Create) Run(ctx *clicontext.CLIContext) error {
+	_, err := c.RunCallback(ctx, func(s *client.Service) *client.Service {
 		return s
 	})
 	return err
 }
 
-func (c *Create) RunCallback(app *cli.Context, cb func(service *client.Service) *client.Service) (*client.Service, error) {
+func (c *Create) RunCallback(ctx *clicontext.CLIContext, cb func(service *client.Service) *client.Service) (*client.Service, error) {
 	var err error
 
-	service, err := c.ToService(app.Args())
+	service, err := c.ToService(ctx.CLI.Args())
 	if err != nil {
 		return nil, err
 	}
 
-	ctx, err := server.NewContext(app)
+	service.SpaceID, service.StackID, service.Name, err = stack.ResolveSpaceStackForName(ctx, service.Name)
 	if err != nil {
 		return nil, err
 	}
-	defer ctx.Close()
 
-	service.SpaceID, service.StackID, service.Name, err = ctx.ResolveSpaceStackName(service.Name)
+	wc, err := ctx.WorkspaceClient()
 	if err != nil {
 		return nil, err
 	}
 
 	service = cb(service)
 
-	s, err := ctx.Client.Service.Create(service)
+	s, err := wc.Service.Create(service)
 	if err != nil {
 		return nil, err
 	}

@@ -1,51 +1,38 @@
 package edit
 
 import (
+	"encoding/json"
 	"fmt"
 
-	"encoding/json"
-
-	"github.com/rancher/norman/clientbase"
 	"github.com/rancher/norman/types"
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/cli/server"
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
 )
 
-func (edit *Edit) rawEdit(app *cli.Context, ctx *server.Context) error {
+func (edit *Edit) rawEdit(ctx *clicontext.CLIContext) error {
 	if edit.T_Type == "" {
 		return fmt.Errorf("when using raw edit you must specify a specific type")
 	}
 
-	if len(app.Args()) != 1 {
+	if len(ctx.CLI.Args()) != 1 {
 		return fmt.Errorf("exactly one ID (not name) arguement is required for raw edit")
 	}
 
-	var (
-		c   clientbase.APIBaseClientInterface
-		err error
-	)
-
-	if _, ok := ctx.Client.Types[edit.T_Type]; ok {
-		c = &ctx.Client.APIBaseClient
-	} else {
-		spaceClient, err := ctx.SpaceClient()
-		if err != nil {
-			return err
-		}
-		c = &spaceClient.APIBaseClient
+	c, err := ctx.ClientLookup(edit.T_Type)
+	if err != nil {
+		return err
 	}
 
 	obj := &types.Resource{}
 	jsonObj := map[string]interface{}{}
 
-	err = c.ByID(edit.T_Type, app.Args()[0], obj)
+	err = c.ByID(edit.T_Type, ctx.CLI.Args()[0], obj)
 	if err != nil {
 		return err
 	}
 
-	err = c.ByID(edit.T_Type, app.Args()[0], &jsonObj)
+	err = c.ByID(edit.T_Type, ctx.CLI.Args()[0], &jsonObj)
 	if err != nil {
 		return err
 	}

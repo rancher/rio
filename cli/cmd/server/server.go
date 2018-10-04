@@ -8,6 +8,7 @@ type Server struct {
 	D_DataDir          string `desc:"Folder to hold state default /var/lib/rancher/rio or ${HOME}/.rancher/rio if not root"`
 	DisableControllers bool   `desc:"Don't run controllers (only useful for rio development)"`
 	DisableAgent       bool   `desc:"Do not run a local agent and register this server"`
+	ProfilePort        int    `desc:"Profiling port, 0 disables profiling" default:"6060"`
 	Log                string `desc:"Log to file"`
 }
 

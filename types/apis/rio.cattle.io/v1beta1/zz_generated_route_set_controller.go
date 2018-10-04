@@ -43,6 +43,7 @@ type RouteSetLister interface {
 }
 
 type RouteSetController interface {
+	Generic() controller.GenericController
 	Informer() cache.SharedIndexInformer
 	Lister() RouteSetLister
 	AddHandler(name string, handler RouteSetHandlerFunc)
@@ -103,6 +104,10 @@ func (l *routeSetLister) Get(namespace, name string) (*RouteSet, error) {
 
 type routeSetController struct {
 	controller.GenericController
+}
+
+func (c *routeSetController) Generic() controller.GenericController {
+	return c.GenericController
 }
 
 func (c *routeSetController) Lister() RouteSetLister {

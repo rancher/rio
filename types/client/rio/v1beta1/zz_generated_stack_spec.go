@@ -8,6 +8,7 @@ const (
 	StackSpecFieldDisableMesh               = "disableMesh"
 	StackSpecFieldEnableKubernetesResources = "enableKubernetesResources"
 	StackSpecFieldQuestions                 = "questions"
+	StackSpecFieldRepoTag                   = "repoTag"
 	StackSpecFieldTemplate                  = "template"
 )
 
@@ -18,5 +19,6 @@ type StackSpec struct {
 	DisableMesh               bool              `json:"disableMesh,omitempty" yaml:"disableMesh,omitempty"`
 	EnableKubernetesResources bool              `json:"enableKubernetesResources,omitempty" yaml:"enableKubernetesResources,omitempty"`
 	Questions                 []Question        `json:"questions,omitempty" yaml:"questions,omitempty"`
+	RepoTag                   []string          `json:"repoTag,omitempty" yaml:"repoTag,omitempty"`
 	Template                  string            `json:"template,omitempty" yaml:"template,omitempty"`
 }

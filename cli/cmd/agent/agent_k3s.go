@@ -10,14 +10,14 @@ import (
 	"time"
 
 	"github.com/natefinch/lumberjack"
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/resolvehome"
 	"github.com/rancher/rio/pkg/clientaccess"
 	"github.com/rancher/rio/pkg/enterchroot"
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
 )
 
-func (a *Agent) Run(app *cli.Context) error {
+func (a *Agent) Run(ctx *clicontext.CLIContext) error {
 	if os.Getuid() != 0 {
 		return fmt.Errorf("agent must be ran as root")
 	}
@@ -42,7 +42,7 @@ func RunAgent(server, token, dataDir, logFile string) error {
 	dataDir = filepath.Join(dataDir, "agent")
 
 	for {
-		tmpFile, err := clientaccess.AccessInfoToTempKubeConfig("", server, token)
+		tmpFile, err := clientaccess.AgentAccessInfoToTempKubeConfig("", server, token)
 		if err != nil {
 			logrus.Error(err)
 			time.Sleep(2 * time.Second)

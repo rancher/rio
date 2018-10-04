@@ -1,14 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/docker/docker/pkg/reexec"
-	"github.com/rancher/norman/clientbase"
 	"github.com/rancher/rio/cli/cmd/agent"
 	"github.com/rancher/rio/cli/cmd/attach"
+	"github.com/rancher/rio/cli/cmd/cluster"
 	"github.com/rancher/rio/cli/cmd/config"
 	"github.com/rancher/rio/cli/cmd/create"
 	"github.com/rancher/rio/cli/cmd/ctr"
@@ -33,9 +34,11 @@ import (
 	"github.com/rancher/rio/cli/cmd/up"
 	"github.com/rancher/rio/cli/cmd/volume"
 	"github.com/rancher/rio/cli/cmd/weight"
+	"github.com/rancher/rio/cli/cmd/workspace"
 	"github.com/rancher/rio/cli/pkg/builder"
+	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/cli/pkg/clientcfg"
 	"github.com/rancher/rio/cli/pkg/waiter"
-	server2 "github.com/rancher/rio/cli/server"
 	_ "github.com/rancher/rio/pkg/kubectl"
 	"github.com/rancher/rio/version"
 	"github.com/sirupsen/logrus"
@@ -62,6 +65,7 @@ const (
 
 var (
 	appName = filepath.Base(os.Args[0])
+	cfg     = clientcfg.Config{}
 )
 
 func main() {
@@ -80,42 +84,56 @@ func main() {
 	}
 	app.Flags = []cli.Flag{
 		cli.BoolFlag{
-			Name:  "debug",
-			Usage: "Turn on debug logs",
+			Name:        "debug",
+			Usage:       "Turn on debug logs",
+			Destination: &cfg.Debug,
 		},
 		cli.BoolFlag{
-			Name:  "wait,w",
-			Usage: "Wait for resource to reach resting state",
+			Name:        "wait",
+			Usage:       "Wait for resource to reach resting state",
+			Destination: &cfg.Wait,
 		},
 		cli.IntFlag{
-			Name:  "wait-timeout",
-			Usage: "Timeout in seconds to wait",
-			Value: 600,
+			Name:        "wait-timeout",
+			Usage:       "Timeout in seconds to wait",
+			Value:       600,
+			Destination: &cfg.WaitTimeout,
 		},
 		cli.StringFlag{
-			Name:  "wait-state",
-			Usage: "State to wait for (active, healthy, etc)",
+			Name:        "wait-state",
+			Usage:       "State to wait for (active, healthy, etc)",
+			Destination: &cfg.WaitState,
 		},
 		cli.StringFlag{
-			Name:   "server",
-			Usage:  "Specify the Rio API endpoint URL",
-			EnvVar: "RIO_URL",
+			Name:        "server",
+			Usage:       "Specify the Rio API endpoint URL",
+			EnvVar:      "RIO_URL",
+			Destination: &cfg.ServerURL,
 		},
 		cli.StringFlag{
-			Name:   "token",
-			Usage:  "Specify Rio API token",
-			EnvVar: "RIO_TOKEN",
+			Name:        "token",
+			Usage:       "Specify Rio API token",
+			EnvVar:      "RIO_TOKEN",
+			Destination: &cfg.Token,
 		},
 		cli.StringFlag{
-			Name:   "kubeconfig",
-			Usage:  "Specify Kubeconfig to use to connect to Kubernetes",
-			EnvVar: "RIO_KUBECONFIG",
+			Name:        "cluster,c",
+			Usage:       "Specify which cluster to use",
+			EnvVar:      "RIO_CLUSTER",
+			Destination: &cfg.ClusterName,
 		},
 		cli.StringFlag{
-			Name:   "workspace",
-			Value:  "default",
-			Usage:  "Specify which workspace to use",
-			EnvVar: "RIO_WORKSPACE",
+			Name:        "workspace,w",
+			Usage:       "Specify which workspace to use",
+			EnvVar:      "RIO_WORKSPACE",
+			Destination: &cfg.WorkspaceName,
+		},
+		cli.StringFlag{
+			Name:        "config-dir",
+			Value:       "${HOME}/.rancher/rio",
+			Usage:       "Specify which directory to use for config",
+			EnvVar:      "RIO_CONFIG_DIR",
+			Destination: &cfg.Home,
 		},
 	}
 
@@ -123,6 +141,8 @@ func main() {
 		config.Config(app),
 		volume.Volume(app),
 		stack.Stack(),
+		workspace.Workspace(app),
+		cluster.Cluster(app),
 		node.Node(),
 
 		builder.Command(&ps.Ps{},
@@ -218,15 +238,18 @@ func main() {
 		ctr.NewCtrCommand(),
 	}
 	app.Before = func(ctx *cli.Context) error {
-		if ctx.GlobalBool("debug") {
-			clientbase.Debug = true
-			logrus.SetLevel(logrus.DebugLevel)
+		if err := cfg.Validate(); err != nil {
+			return err
 		}
-		logrus.Debugf("ARGS: %v", args)
+		cc := clicontext.CLIContext{
+			Config: &cfg,
+			Ctx:    context.Background(),
+		}
+		cc.Store(ctx.App.Metadata)
 		return nil
 	}
 	app.ExitErrHandler = func(context *cli.Context, err error) {
-		if err == server2.ErrNoConfig {
+		if err == clientcfg.ErrNoConfig {
 			printConfigUsage()
 		} else {
 			cli.HandleExitCoder(err)
@@ -241,11 +264,11 @@ func main() {
 
 func printConfigUsage() {
 	fmt.Print(`
-No configuration found to contact server.  If you already have a Rio or a Kubernetes cluster running then run
+No configuration found to contact server.  If you already have a Rio cluster running then run
 
     rio login
 
-If you don't have an existing server you should run "rio server" on a Linux server or setup a Kubernetes cluster.
+If you don't have an existing server you should run "rio server" on a Linux server.
 If you are just looking for general "rio" CLI usage then run
 
     rio --help

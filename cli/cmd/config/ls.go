@@ -6,8 +6,8 @@ import (
 
 	"github.com/docker/go-units"
 	"github.com/rancher/rio/cli/cmd/util"
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/cli/server"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
 	"github.com/urfave/cli"
 )
@@ -26,14 +26,18 @@ func (l *Ls) Customize(cmd *cli.Command) {
 	cmd.Flags = append(cmd.Flags, table.WriterFlags()...)
 }
 
-func (l *Ls) Run(app *cli.Context) error {
-	ctx, err := server.NewContext(app)
+func (l *Ls) Run(ctx *clicontext.CLIContext) error {
+	wc, err := ctx.WorkspaceClient()
 	if err != nil {
 		return err
 	}
-	defer ctx.Close()
 
-	configs, err := ctx.Client.Config.List(util.DefaultListOpts())
+	cluster, err := ctx.Cluster()
+	if err != nil {
+		return err
+	}
+
+	configs, err := wc.Config.List(util.DefaultListOpts())
 	if err != nil {
 		return err
 	}
@@ -42,12 +46,13 @@ func (l *Ls) Run(app *cli.Context) error {
 		{"NAME", "{{stackScopedName .Stack.Name .Config.Name}}"},
 		{"CREATED", "{{.Config.Created | ago}}"},
 		{"SIZE", "{{size .Config}}"},
-	}, app)
+	}, ctx)
 	defer writer.Close()
 
 	writer.AddFormatFunc("size", Base64Size)
+	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cluster))
 
-	stackByID, err := util.StacksByID(ctx)
+	stackByID, err := util.StacksByID(wc)
 	if err != nil {
 		return err
 	}

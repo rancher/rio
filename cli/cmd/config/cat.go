@@ -4,28 +4,27 @@ import (
 	"encoding/base64"
 	"os"
 
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
-	"github.com/rancher/rio/cli/server"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
-	"github.com/urfave/cli"
 )
 
 type Cat struct {
 }
 
-func (c *Cat) Run(app *cli.Context) error {
-	ctx, err := server.NewContext(app)
-	if err != nil {
-		return err
-	}
-	defer ctx.Close()
-
-	for _, arg := range app.Args() {
-		c, err := lookup.Lookup(ctx.ClientLookup, arg, client.ConfigType)
+func (c *Cat) Run(ctx *clicontext.CLIContext) error {
+	for _, arg := range ctx.CLI.Args() {
+		c, err := lookup.Lookup(ctx, arg, client.ConfigType)
 		if err != nil {
 			return err
 		}
-		config, err := ctx.Client.Config.ByID(c.ID)
+
+		client, err := ctx.WorkspaceClient()
+		if err != nil {
+			return err
+		}
+
+		config, err := client.Config.ByID(c.ID)
 		if err != nil {
 			return err
 		}

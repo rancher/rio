@@ -7,12 +7,12 @@ import (
 	"net/url"
 
 	"github.com/rancher/norman/types"
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
-	"github.com/rancher/rio/cli/server"
 )
 
-func DownloadYAML(ctx *server.Context, contentType, option string, name string, resourceTypes ...string) (*types.Resource, io.ReadCloser, string, error) {
-	obj, err := lookup.Lookup(ctx.ClientLookup, name, resourceTypes...)
+func DownloadYAML(ctx *clicontext.CLIContext, contentType, option string, name string, resourceTypes ...string) (*types.NamedResource, io.ReadCloser, string, error) {
+	obj, err := lookup.Lookup(ctx, name, resourceTypes...)
 	if err != nil {
 		return nil, nil, "", err
 	}
@@ -25,7 +25,7 @@ func DownloadYAML(ctx *server.Context, contentType, option string, name string, 
 	return obj, body, obj.Links["self"], nil
 }
 
-func download(ctx *server.Context, contentType, option, self string) (io.ReadCloser, error) {
+func download(ctx *clicontext.CLIContext, contentType, option, self string) (io.ReadCloser, error) {
 	parsed, err := url.Parse(self)
 	if err != nil {
 		return nil, err
@@ -39,10 +39,15 @@ func download(ctx *server.Context, contentType, option, self string) (io.ReadClo
 		return nil, err
 	}
 
-	ctx.Client.Ops.SetupRequest(req)
+	wc, err := ctx.WorkspaceClient()
+	if err != nil {
+		return nil, err
+	}
+
+	wc.Ops.SetupRequest(req)
 	req.Header.Set("Accept", contentType)
 
-	resp, err := ctx.Client.Ops.Client.Do(req)
+	resp, err := wc.Ops.Client.Do(req)
 	if err != nil {
 		return nil, err
 	}

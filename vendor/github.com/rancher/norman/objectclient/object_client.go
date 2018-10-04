@@ -94,9 +94,20 @@ func (p *ObjectClient) getAPIPrefix() string {
 
 func (p *ObjectClient) Create(o runtime.Object) (runtime.Object, error) {
 	ns := p.ns
-	if obj, ok := o.(metav1.Object); ok && obj.GetNamespace() != "" {
+	obj, ok := o.(metav1.Object)
+	if ok && obj.GetNamespace() != "" {
 		ns = obj.GetNamespace()
 	}
+
+	if ok {
+		labels := obj.GetLabels()
+		if labels == nil {
+			labels = make(map[string]string)
+		}
+		labels["cattle.io/creator"] = "norman"
+		obj.SetLabels(labels)
+	}
+
 	if t, err := meta.TypeAccessor(o); err == nil {
 		if t.GetKind() == "" {
 			t.SetKind(p.gvk.Kind)
@@ -245,6 +256,10 @@ func (d *structuredDecoder) Decode(data []byte, defaults *schema.GroupVersionKin
 
 	err := json.Unmarshal(data, &into)
 	if err != nil {
+		status := &metav1.Status{}
+		if err := json.Unmarshal(data, status); err == nil && strings.ToLower(status.Kind) == "status" {
+			return status, defaults, nil
+		}
 		return nil, nil, err
 	}
 

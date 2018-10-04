@@ -259,7 +259,6 @@ func NewKubectlCommand(f cmdutil.Factory, in io.Reader, out, err io.Writer) *cob
 			Message: "Basic Commands (Intermediate):",
 			Commands: []*cobra.Command{
 				resource.NewCmdGet(f, out, err),
-				NewCmdExplain(f, out, err),
 				NewCmdEdit(f, out, err),
 				NewCmdDelete(f, out, err),
 			},
@@ -276,7 +275,6 @@ func NewKubectlCommand(f cmdutil.Factory, in io.Reader, out, err io.Writer) *cob
 		{
 			Message: "Cluster Management Commands:",
 			Commands: []*cobra.Command{
-				NewCmdCertificate(f, out),
 				NewCmdClusterInfo(f, out),
 				NewCmdTop(f, out, err),
 				NewCmdCordon(f, out),

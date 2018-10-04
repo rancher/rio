@@ -2,18 +2,20 @@ package route
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
-	"sort"
+	"github.com/rancher/rio/cli/pkg/clientcfg"
 
+	"github.com/rancher/rio/cli/pkg/stack"
+
+	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/cli/cmd/create"
-	"github.com/rancher/rio/cli/pkg/kv"
-	"github.com/rancher/rio/cli/server"
+	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
-	"github.com/urfave/cli"
 )
 
 var (
@@ -42,19 +44,23 @@ type Add struct {
 	Websocket       bool              `desc:"Websocket request"`
 }
 
-func (a *Add) Run(app *cli.Context) error {
-	ctx, err := server.NewContext(app)
-	if err != nil {
-		return err
-	}
-	defer ctx.Close()
-
-	args := app.Args()
+func (a *Add) Run(ctx *clicontext.CLIContext) error {
+	args := ctx.CLI.Args()
 	if len(args) < 3 {
 		return fmt.Errorf("at least 3 arguements are required: HOST[/PATH] to|redirect|mirror TARGET")
 	}
 
-	if err := a.validateServiceStack(args); err != nil {
+	cluster, err := ctx.Cluster()
+	if err != nil {
+		return err
+	}
+
+	if err := a.validateServiceStack(cluster, args); err != nil {
+		return err
+	}
+
+	wc, err := ctx.WorkspaceClient()
+	if err != nil {
 		return err
 	}
 
@@ -71,9 +77,9 @@ func (a *Add) Run(app *cli.Context) error {
 	routeSet.Routes = append(routeSet.Routes, *routeSpec)
 
 	if routeSet.ID == "" {
-		routeSet, err = ctx.Client.RouteSet.Create(routeSet)
+		routeSet, err = wc.RouteSet.Create(routeSet)
 	} else {
-		routeSet, err = ctx.Client.RouteSet.Replace(routeSet)
+		routeSet, err = wc.RouteSet.Replace(routeSet)
 	}
 
 	if err == nil {
@@ -82,22 +88,22 @@ func (a *Add) Run(app *cli.Context) error {
 	return err
 }
 
-func (a *Add) validateServiceStack(args []string) error {
+func (a *Add) validateServiceStack(cluster *clientcfg.Cluster, args []string) error {
 	_, service, stack, _, _ := parseMatch(args[0])
 	if service == "" {
 		return fmt.Errorf("route host/path must be in the format service.stack[/path], for example myservice.mystack/login")
 	}
 	if stack == "" {
-		stack = "default"
+		stack = cluster.DefaultStackName
 	}
 
 	return nil
 }
 
-func (a *Add) getRouteSet(ctx *server.Context, args []string) (*client.RouteSet, error) {
-	_, service, stack, _, _ := parseMatch(args[0])
+func (a *Add) getRouteSet(ctx *clicontext.CLIContext, args []string) (*client.RouteSet, error) {
+	_, service, stackName, _, _ := parseMatch(args[0])
 
-	spaceID, stackID, name, err := ctx.ResolveSpaceStackName(stack + "/" + service)
+	spaceID, stackID, name, err := stack.ResolveSpaceStackForName(ctx, stackName+"/"+service)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +135,7 @@ func actionsString(many bool) string {
 	return strings.Join(s, ", ")
 }
 
-func (a *Add) buildRouteSpec(ctx *server.Context, args []string) (*client.RouteSpec, error) {
+func (a *Add) buildRouteSpec(ctx *clicontext.CLIContext, args []string) (*client.RouteSpec, error) {
 	action, err := parseAction(args[1])
 	if err != nil {
 		return nil, err
@@ -268,7 +274,7 @@ func (a *Add) addFault(routeSpec *client.RouteSpec) error {
 	return nil
 }
 
-func (a *Add) addMatch(ctx *server.Context, matchString string, routeSpec *client.RouteSpec) error {
+func (a *Add) addMatch(ctx *clicontext.CLIContext, matchString string, routeSpec *client.RouteSpec) error {
 	scheme, service, _, path, port := parseMatch(matchString)
 	if service == "" {
 		return fmt.Errorf("route host/path must have a host in the format of SERVICE.STACK, for example myservice.mystack")
@@ -403,8 +409,12 @@ func parseAction(action string) (string, error) {
 	return action, nil
 }
 
-func lookupRoute(ctx *server.Context, spaceID, stackID, name string) (*client.RouteSet, error) {
-	resp, err := ctx.Client.RouteSet.List(&types.ListOpts{
+func lookupRoute(ctx *clicontext.CLIContext, spaceID, stackID, name string) (*client.RouteSet, error) {
+	wc, err := ctx.WorkspaceClient()
+	if err != nil {
+
+	}
+	resp, err := wc.RouteSet.List(&types.ListOpts{
 		Filters: map[string]interface{}{
 			client.RouteSetFieldName:    name,
 			client.RouteSetFieldSpaceID: spaceID,

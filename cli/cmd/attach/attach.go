@@ -2,15 +2,10 @@ package attach
 
 import (
 	"fmt"
-	"os"
-
 	"time"
 
-	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/rio/cli/cmd/ps"
-	"github.com/rancher/rio/cli/server"
-	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/rancher/rio/cli/pkg/clicontext"
 )
 
 type Attach struct {
@@ -19,8 +14,8 @@ type Attach struct {
 	Timeout string `desc:"Timeout waiting for the container to be created to attach to" default:"1m"`
 }
 
-func (a *Attach) Run(app *cli.Context) error {
-	args := app.Args()
+func (a *Attach) Run(ctx *clicontext.CLIContext) error {
+	args := ctx.CLI.Args()
 	if len(args) < 1 {
 		return fmt.Errorf("at least one argument is required: CONTAINER")
 	}
@@ -30,31 +25,25 @@ func (a *Attach) Run(app *cli.Context) error {
 		return err
 	}
 
-	return RunAttach(app, timeout, a.I_Stdin, a.T_Tty, app.Args()[0])
+	return RunAttach(ctx, timeout, a.I_Stdin, a.T_Tty, ctx.CLI.Args()[0])
 }
 
-func RunAttach(app *cli.Context, timeout time.Duration, stdin, tty bool, container string) error {
-	ctx, err := server.NewContext(app)
-	if err != nil {
-		return err
-	}
-	defer ctx.Close()
-
-	c, err := ctx.SpaceClient()
+func RunAttach(ctx *clicontext.CLIContext, timeout time.Duration, stdin, tty bool, container string) error {
+	cluster, err := ctx.Cluster()
 	if err != nil {
 		return err
 	}
 
-	var cd *ps.ContainerData
+	var pd *ps.PodData
 
 	deadline := time.Now().Add(timeout)
 	for {
-		cd, err = ps.ListFirstPod(c, true, "", container)
+		pd, err = ps.ListFirstPod(ctx, true, container)
 		if err != nil {
 			return err
 		}
 
-		if (cd == nil || cd.Container == nil || cd.Container.State != "running") && time.Now().Before(deadline) {
+		if (pd == nil || len(pd.Containers) == 0 || pd.Containers[0].State != "running") && time.Now().Before(deadline) {
 			time.Sleep(750 * time.Millisecond)
 			continue
 		}
@@ -62,19 +51,15 @@ func RunAttach(app *cli.Context, timeout time.Duration, stdin, tty bool, contain
 		break
 	}
 
-	if cd == nil {
+	if pd == nil {
 		return fmt.Errorf("failed to find a container for %s", container)
 	}
 
-	podNS, podName, containerName := cd.Pod.Namespace, cd.Pod.Name, cd.Container.Name
-
-	execArgs := []string{"kubectl"}
-	if logrus.GetLevel() >= logrus.DebugLevel {
-		execArgs = append(execArgs, "-v=9")
+	execArgs := []string{
+		fmt.Sprintf("--pod-running-timeout=%s", timeout),
+		pd.Pod.Name,
+		"-c", pd.Containers[0].Name,
 	}
-	execArgs = append(execArgs, "-n", podNS, "attach")
-	execArgs = append(execArgs, fmt.Sprintf("--pod-running-timeout=%s", timeout))
-	execArgs = append(execArgs, podName, "-c", containerName)
 	if stdin {
 		execArgs = append(execArgs, "-i")
 	}
@@ -82,11 +67,5 @@ func RunAttach(app *cli.Context, timeout time.Duration, stdin, tty bool, contain
 		execArgs = append(execArgs, "-t")
 	}
 
-	logrus.Debugf("%v, KUBECONFIG=%s", execArgs, os.Getenv("KUBECONFIG"))
-	cmd := reexec.Command(execArgs...)
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-
-	return cmd.Run()
+	return cluster.Kubectl(pd.Pod.Namespace, "attach", execArgs...)
 }

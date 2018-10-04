@@ -19,7 +19,6 @@ package authenticator
 import (
 	"time"
 
-	"github.com/go-openapi/spec"
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 	"k8s.io/apiserver/pkg/authentication/group"
 	"k8s.io/apiserver/pkg/authentication/request/bearertoken"
@@ -49,35 +48,24 @@ type AuthenticatorConfig struct {
 
 // New returns an authenticator.Request or an error that supports the standard
 // Kubernetes authentication mechanisms.
-func (config AuthenticatorConfig) New() (authenticator.Request, *spec.SecurityDefinitions, error) {
+func (config AuthenticatorConfig) New() (authenticator.Request, error) {
 	var authenticators []authenticator.Request
 	var tokenAuthenticators []authenticator.Token
-	securityDefinitions := spec.SecurityDefinitions{}
-	hasBasicAuth := false
 
 	if len(config.BasicAuthFile) > 0 {
 		basicAuth, err := newAuthenticatorFromBasicAuthFile(config.BasicAuthFile)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		authenticators = append(authenticators, basicAuth)
-		hasBasicAuth = true
 	}
 
 	if len(config.ServiceAccountKeyFiles) > 0 {
 		serviceAccountAuth, err := newLegacyServiceAccountAuthenticator(config.ServiceAccountKeyFiles, config.ServiceAccountLookup, config.ServiceAccountTokenGetter)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		tokenAuthenticators = append(tokenAuthenticators, serviceAccountAuth)
-	}
-	if hasBasicAuth {
-		securityDefinitions["HTTPBasic"] = &spec.SecurityScheme{
-			SecuritySchemeProps: spec.SecuritySchemeProps{
-				Type:        "basic",
-				Description: "HTTP Basic authentication",
-			},
-		}
 	}
 
 	if len(tokenAuthenticators) > 0 {
@@ -88,26 +76,18 @@ func (config AuthenticatorConfig) New() (authenticator.Request, *spec.SecurityDe
 			tokenAuth = tokencache.New(tokenAuth, config.TokenSuccessCacheTTL, config.TokenFailureCacheTTL)
 		}
 		authenticators = append(authenticators, bearertoken.New(tokenAuth), websocket.NewProtocolAuthenticator(tokenAuth))
-		securityDefinitions["BearerToken"] = &spec.SecurityScheme{
-			SecuritySchemeProps: spec.SecuritySchemeProps{
-				Type:        "apiKey",
-				Name:        "authorization",
-				In:          "header",
-				Description: "Bearer Token authentication",
-			},
-		}
 	}
 
 	switch len(authenticators) {
 	case 0:
-		return nil, &securityDefinitions, nil
+		return nil, nil
 	}
 
 	authenticator := union.New(authenticators...)
 
 	authenticator = group.NewAuthenticatedGroupAdder(authenticator)
 
-	return authenticator, &securityDefinitions, nil
+	return authenticator, nil
 }
 
 // IsValidServiceAccountKeyFile returns true if a valid public RSA key can be read from the given file

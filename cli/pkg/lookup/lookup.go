@@ -10,20 +10,20 @@ import (
 	"github.com/rancher/norman/clientbase"
 	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/cli/pkg/up/questions"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
-	client2 "github.com/rancher/rio/types/client/space/v1beta1"
 )
 
-type ClientLookup func(typeName string) clientbase.APIBaseClientInterface
+type ClientLookup interface {
+	ClientLookup(typeName string) (clientbase.APIBaseClientInterface, error)
+	LookupFilters(name, typeName string) (map[string]interface{}, bool, error)
+	ByID(id, typeName string) (*types.NamedResource, error)
+}
 
-func Lookup(c ClientLookup, name string, typeNames ...string) (*types.Resource, error) {
-	var result []*namedResource
+func Lookup(c ClientLookup, name string, typeNames ...string) (*types.NamedResource, error) {
+	var result []*types.NamedResource
 	for _, schemaType := range typeNames {
-		if strings.Contains(name, ":") && !strings.Contains(name, "/") {
-			resourceByID, err := byID(c, name, schemaType)
-			if err == nil {
-				return &resourceByID.Resource, nil
-			}
+		resourceByID, err := c.ByID(name, schemaType)
+		if err == nil && resourceByID != nil {
+			return resourceByID, nil
 		}
 
 		byName, err := byName(c, name, schemaType)
@@ -37,11 +37,11 @@ func Lookup(c ClientLookup, name string, typeNames ...string) (*types.Resource, 
 	}
 
 	if len(result) == 0 {
-		return nil, fmt.Errorf("not found: %s", name)
+		return nil, fmt.Errorf("not found (types=%v): %s", typeNames, name)
 	}
 
 	if len(result) == 1 {
-		return &result[0].Resource, nil
+		return result[0], nil
 	}
 
 	msg := fmt.Sprintf("Choose resource for %s:\n", name)
@@ -55,109 +55,27 @@ func Lookup(c ClientLookup, name string, typeNames ...string) (*types.Resource, 
 		options = append(options, msg)
 	}
 
-	num, err := questions.PromptOptions(msg, 0, options...)
+	num, err := questions.PromptOptions(msg, -1, options...)
 	if err != nil {
 		return nil, err
 	}
-	return &result[num].Resource, nil
+	return result[num], nil
 }
 
-type namedResourceCollection struct {
-	types.Collection
-	Data []namedResource `json:"data,omitempty"`
-}
+func byName(c ClientLookup, name, schemaType string) (*types.NamedResource, error) {
+	var collection types.NamedResourceCollection
 
-type namedResource struct {
-	types.Resource
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
-
-func byID(c ClientLookup, id, schemaType string) (*namedResource, error) {
-	var resource namedResource
-
-	err := c(schemaType).ByID(schemaType, id, &resource)
-	return &resource, err
-}
-
-func parseStackServiceName(name string) (string, string) {
-	var (
-		stackName   string
-		serviceName string
-	)
-
-	// logic for routes
-	if strings.Contains(name, ".") {
-		parts := strings.SplitN(name, "://", 2)
-		if len(parts) > 1 {
-			parts[0] = parts[1]
-		}
-		parts = strings.Split(parts[0], ".")
-		if len(parts) == 1 {
-			stackName = "default"
-			serviceName = parts[0]
-		} else {
-			stackName = parts[1]
-			serviceName = parts[0]
-		}
-	} else {
-		parsedService := ParseServiceName(name)
-		stackName, serviceName = parsedService.StackName, parsedService.ServiceName
+	filters, ok, err := c.LookupFilters(name, schemaType)
+	if err != nil || !ok {
+		return nil, err
 	}
 
-	return stackName, serviceName
-}
-
-func setupFilters(c ClientLookup, name, schemaType string) (map[string]interface{}, error) {
-	filters := map[string]interface{}{
-		"name":         name,
-		"removed_null": "1",
-	}
-
-	if schemaType == client.StackType {
-		return filters, nil
-	}
-
-	stackName, serviceName := parseStackServiceName(name)
-
-	stack, err := byName(c, stackName, client.StackType)
-	if err != nil {
-		if strings.HasPrefix(err.Error(), "Unknown schema type [") {
-			stack = nil
-		} else {
-			return nil, err
-		}
-	}
-
-	if stack != nil {
-		filters["stackId"] = stack.ID
-	}
-	filters["name"] = serviceName
-
-	return filters, nil
-}
-
-func byName(c ClientLookup, name, schemaType string) (*namedResource, error) {
-	var collection namedResourceCollection
-
-	if schemaType == client.StackType && strings.Contains(name, "/") {
-		// stacks can't be foo/bar
-		return nil, nil
-	}
-
-	if schemaType == client2.PodType {
-		container, ok := ParseContainerName(name)
-		if ok {
-			name = container.PodName
-		}
-	}
-
-	filters, err := setupFilters(c, name, schemaType)
+	client, err := c.ClientLookup(schemaType)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := c(schemaType).List(schemaType, &types.ListOpts{
+	if err := client.List(schemaType, &types.ListOpts{
 		Filters: filters,
 	}, &collection); err != nil {
 		return nil, err

@@ -1,0 +1,37 @@
+services:
+  nfs-provisioner:
+    image: quay.io/external_storage/nfs-client-provisioner:latest
+    env:
+    - PROVISIONER_NAME=nfs
+    - NFS_SERVER=${NFS_SERVER_HOSTNAME}
+    - NFS_PATH=${NFS_SERVER_EXPORT_PATH}
+    volumes:
+    - data:/persistentvolumes
+    global_permissions:
+    - get,list,watch,create,delete persistentvolumes
+    - get,list,watch,update persistentvolumeclaims
+    - get,list,watch storage.k8s.io/storageclasses
+    - create,update,patch events
+    permissions:
+    - get,list,watch,create,update,patch endpoints
+    restart: always
+
+    sidekicks:
+      init-volumes:
+        image: daishan1992/nfs-client:latest
+        command:
+        - "sh"
+        - "-c"
+        - "mount -t nfs4 ${NFS_SERVER_HOSTNAME}:${NFS_SERVER_EXPORT_PATH} /persistentvolumes"
+        volumes:
+        - data:/persistentvolumes:shared
+        privileged: true
+        initContainer: true
+        imagePullPolicy: always
+
+
+questions:
+- variable: NFS_SERVER_HOSTNAME
+  description: "Hostname of NFS server"
+- variable: NFS_SERVER_EXPORT_PATH
+  description: "Export path of NFS server"
