@@ -43,6 +43,7 @@ type StackLister interface {
 }
 
 type StackController interface {
+	Generic() controller.GenericController
 	Informer() cache.SharedIndexInformer
 	Lister() StackLister
 	AddHandler(name string, handler StackHandlerFunc)
@@ -103,6 +104,10 @@ func (l *stackLister) Get(namespace, name string) (*Stack, error) {
 
 type stackController struct {
 	controller.GenericController
+}
+
+func (c *stackController) Generic() controller.GenericController {
+	return c.GenericController
 }
 
 func (c *stackController) Lister() StackLister {
