@@ -1,23 +1,25 @@
 # choose supported vm provider: virtualbox, vmware_fusion
 provider: virtualbox
 
-# number of nodes in the rio cluster
-nodes: 1
-
-# resources allocated to each node
-resources:
+# resources allocated to nodes in the rio cluster
+# the first node is always rio server, the rest are rio agents
+nodes:
+- name: node-01
   cpu: "1"
-  # a minimum of 1280 MiB is strongly recommended
-  # increase for memory-hungry workloads
   memory: "2048"
+- name: node-02
+  cpu: "1"
+  memory: "1024"
+- name: node-03
+  cpu: "1"
+  memory: "1024"
 
-# Rio version to use
-version: v0.0.3
+# Rio version to use such as 'v0.0.4' or 'dev'
+version: dev
 
-# options: 'public' or 'nat'
-# in 'nat' mode, rio services aren't accessible
-# in 'public' mode, vagrant asks user to specify bridged network
-network: public
+# automatically detect network interface to bridge
+# virtualbox provider only
+detect_interface: true
 
 # trace provision script execution
 debug: false
