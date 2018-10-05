@@ -1,0 +1,17 @@
+services:
+  test1:
+    image: nginx:latest
+    volumes:
+    - data:/persistentvolumes
+    deploymentStrategy: ordered
+  test2:
+    image: nginx:latest
+    volumes:
+    - data:/persistentvolumes
+    deploymentStrategy: ordered
+
+volumes:
+  data:
+    driver: nfs
+    sizeInGb: 1
+    template: true

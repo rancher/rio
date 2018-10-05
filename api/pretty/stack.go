@@ -27,6 +27,17 @@ func addStackResources(request *types.APIContext, resourceType, target, stackID 
 	if err != nil || len(collection) == 0 {
 		return
 	}
+	// skip volumes that were created from templates
+	if resourceType == "volume" {
+		filtered := make([]map[string]interface{}, 0)
+		for _, c := range collection {
+			labels := convert.ToMapInterface(c["labels"])
+			if _, ok := labels["rio.cattle.io/volume-template"]; !ok {
+				filtered = append(filtered, c)
+			}
+		}
+		collection = filtered
+	}
 
 	services := map[string]interface{}{}
 	for _, data := range collection {
@@ -34,8 +45,9 @@ func addStackResources(request *types.APIContext, resourceType, target, stackID 
 		delete(data, "name")
 		services[name] = data
 	}
-
-	data[target] = services
+	if len(services) != 0 {
+		data[target] = services
+	}
 }
 
 func byStackID(id string) *types.QueryOptions {
