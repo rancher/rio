@@ -13,14 +13,14 @@ func populateMemory(c *Create, service *client.Service) error {
 	if c.M_Memory != "" {
 		service.MemoryReservationBytes, err = units.RAMInBytes(c.M_Memory)
 		if err != nil {
-			return fmt.Errorf("failed to parse --memory: %v", err)
+			return fmt.Errorf("failed to parse --memory-reservation: %v", err)
 		}
 	}
 
 	if c.MemoryLimit != "" {
 		service.MemoryLimitBytes, err = units.RAMInBytes(c.MemoryLimit)
 		if err != nil {
-			return fmt.Errorf("failed to parse --memory-reservation: %v", err)
+			return fmt.Errorf("failed to parse --memory-limit: %v", err)
 		}
 	}
 
