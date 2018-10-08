@@ -17,7 +17,7 @@ runCpusrio() {
 
   cmd="${cmd} --cpus ${value} nginx"
   ${cmd}
-  
+  sleep 5 
 }
 
 cpusTestrio() {
@@ -44,7 +44,7 @@ cpusTestk8s() {
 
 }
 
-@test "cpus - value set to 0" {
+@test "run cpus - value set to 0" {
   cpus=0
   runCpusrio "${cpus}"
   cpusTestrio "${cpus}"
@@ -52,7 +52,7 @@ cpusTestk8s() {
 
 }
 
-@test "cpus - value set to 1" {
+@test "run cpus - value set to 1" {
   cpus=1
   runCpusrio "${cpus}"
   cpusTestrio "${cpus}"
@@ -60,7 +60,7 @@ cpusTestk8s() {
 
 }
 
-@test "cpus - value set to 5" {
+@test "run cpus - value set to 5" {
   cpus=5
   runCpusrio "${cpus}"
   cpusTestrio "${cpus}"
@@ -68,7 +68,7 @@ cpusTestk8s() {
 
 }
 
-@test "cpus - value set to 10" {
+@test "run cpus - value set to 10" {
   cpus=10
   runCpusrio "${cpus}"
   cpusTestrio "${cpus}"

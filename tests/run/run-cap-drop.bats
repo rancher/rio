@@ -75,7 +75,7 @@ capDropTestk8s() {
 
 ## Validation tests ##
 
-@test "run capdrop - ALL" {
+@test "run capdrop - SYSLOG" {
   runCapDroprio 'SYSLOG'
   capDropTestrio 'SYSLOG'
   capDropTestk8s 'SYSLOG'

@@ -43,7 +43,6 @@ capEnvTestrio() {
 
   rio wait ${stk}/${srv}
 
-  nsp="$(rio inspect --format '{{.id}}' ${stk}/${srv} | cut -f1 -d:)"
   got="$(rio inspect --format '{{.environment}}' ${stk}/${srv})"
   echo "Expect: [${expect}]"
   echo "Got: ${got}"

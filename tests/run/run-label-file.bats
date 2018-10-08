@@ -62,7 +62,7 @@ labelFileTestk8s() {
 ## Validation tests ##
 
 
-@test "rio file of labels - validate single label" {
+@test "run label-file - validate single label" {
   createAddLabelFile "foo1=bar1"
   runLabelrio ""
   labelFileTestrio "foo1" "bar1"
@@ -70,7 +70,7 @@ labelFileTestk8s() {
 
 }
 
-@test "rio file of labels - validate multiple labels" {
+@test "run label-file - validate multiple labels" {
   createAddLabelFile "foo1=bar1" "foo2=bar2"
   runLabelrio ""
   labelFileTestrio "foo1" "bar1"

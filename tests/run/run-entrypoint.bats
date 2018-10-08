@@ -75,7 +75,7 @@ entpntTestk8s() {
   
 }
 
-@test "Entrypoint - set to sh" {
+@test "run entrypoint - set to sh" {
   entpnt="sh"
   runEntpntrio "${entpnt}"
   entpntTestrio "${entpnt}"
@@ -83,7 +83,7 @@ entpntTestk8s() {
 
 }
 
-@test "Entrypoint - set to sh -i" {
+@test "run entrypoint - set to sh -i" {
   entpnt1="sh"
   entpnt2="-i"
   runEntpntrio "${entpnt1}" "${entpnt2}"

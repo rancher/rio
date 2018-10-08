@@ -49,27 +49,27 @@ imagePullTestk8s() {
 ## Validation tests ##
 
 
-@test "rio image pull policy - default" {
+@test "rio image-pull-policy - default" {
     rio run -n ${stk}/${srv} nginx
     got=$(rio inspect --format '{{.imagePullPolicy}}' ${stk}/${srv})
     [ "${got}" = "not-present" ]
 }
 
-@test "rio image pull policy - always" {
+@test "run image-pull-policy - always" {
   runImagerio "always"
   imagePullTestrio "always"
   imagePullTestk8s "always" "Always"
 
 }
 
-@test "rio image pull policy - never" {
+@test "run image-pull-policy - never" {
   runImagerio "never"
   imagePullTestrio "never"
   imagePullTestk8s "never" "Never"
 
 }
 
-@test "rio image pull policy - not-present" {
+@test "run image-pull-policy - not-present" {
   runImagerio "not-present"
   imagePullTestrio "not-present"
   imagePullTestk8s "not-present" "IfNotPresent"

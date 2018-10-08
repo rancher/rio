@@ -79,14 +79,14 @@ dnsTestk8s() {
 
 ## Validation tests ##
 
-@test "run dns-search - 1.1.1.1" {
+@test "run dns - 1.1.1.1" {
   runDnsrio '1.1.1.1'
   dnsTestrio '1.1.1.1'
   dnsTestk8s '1.1.1.1'
 
 }
 
-@test "run dns-Search - 1.1.1.1 2.2.2.2" {
+@test "run dns - 1.1.1.1 2.2.2.2" {
   runDnsrio '1.1.1.1' '2.2.2.2'
   dnsTestrio '1.1.1.1' '2.2.2.2'
   dnsTestk8s '1.1.1.1' '2.2.2.2'

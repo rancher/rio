@@ -63,7 +63,7 @@ configTestk8s() {
 ## Validation tests ##
 
 
-@test "rio config - validate target" {
+@test "run config - validate target" {
   createAddConfigFile "foo=bar" "foo2=bar2"
   runConfigrio ""
   configTestrio "/temp" "target"
@@ -71,7 +71,7 @@ configTestk8s() {
 
 }
 
-@test "rio config - validate source" {
+@test "run config - validate source" {
   createAddConfigFile "foo=bar" "foo2=bar2"
   runConfigrio ""
   configTestrio "${config}" "source"

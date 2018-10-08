@@ -45,31 +45,31 @@ memoryTestk8s() {
 
 }
 
-@test "memory reservation - test byte default 100000000" {
+@test "run memory - test byte default 100000000" {
   runMemoryrio "100000000" ""
   memoryTestrio "100000000"
   memoryTestk8s "100M"
 }
 
-@test "memory reservation - test 100000000b" {
+@test "run memory - test 100000000b" {
   runMemoryrio "100000000" "b"
   memoryTestrio "100000000"
   memoryTestk8s "100M"
 }
 
-@test "memory reservation - test 100000k" {
+@test "run memory - test 100000k" {
   runMemoryrio "100000" "k"
   memoryTestrio "102400000"
   memoryTestk8s "102400k"
 }
 
-@test "memory reservation - test 10m" {
+@test "run memory - test 10m" {
   runMemoryrio "10" "m"
   memoryTestrio "10485760"
   memoryTestk8s "10485760"
 }
 
-@test "memory reservation - test 1g" {
+@test "run memory - test 1g" {
   runMemoryrio "1" "g"
   memoryTestrio "1073741824"
   memoryTestk8s "1073741824"
