@@ -6,7 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rancher/rancher/pkg/settings"
 	settings2 "github.com/rancher/rio/pkg/settings"
-	"k8s.io/kubernetes/cmd/server"
+	"k8s.io/kubernetes/pkg/wrapper/server"
 )
 
 func router(serverConfig *server.ServerConfig, api, k3s, tunnel http.Handler) http.Handler {

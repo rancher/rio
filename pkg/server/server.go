@@ -17,7 +17,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rancher/norman/api"
-	"github.com/rancher/norman/leader"
+	"github.com/rancher/norman/leader12"
 	"github.com/rancher/norman/signal"
 	"github.com/rancher/rancher/k8s"
 	"github.com/rancher/rancher/pkg/dynamiclistener"
@@ -34,7 +34,7 @@ import (
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	net2 "k8s.io/apimachinery/pkg/util/net"
-	"k8s.io/kubernetes/cmd/server"
+	"k8s.io/kubernetes/pkg/wrapper/server"
 )
 
 func k3sConfig(dataDir string) (*server.ServerConfig, http.Handler, error) {
@@ -48,8 +48,8 @@ func k3sConfig(dataDir string) (*server.ServerConfig, http.Handler, error) {
 	_, serviceIPNet, _ := net.ParseCIDR("10.43.0.0/16")
 
 	return &server.ServerConfig{
-		PublicIP:       &listenIP,
-		PublicPort:     6444,
+		AdvertiseIP:    &listenIP,
+		AdvertisePort:  6444,
 		PublicHostname: "localhost",
 		ListenAddr:     listenIP,
 		ListenPort:     6443,
