@@ -9,10 +9,11 @@ const (
 	NodeFieldAddresses            = "addresses"
 	NodeFieldAllocatable          = "allocatable"
 	NodeFieldCapacity             = "capacity"
+	NodeFieldConfig               = "config"
 	NodeFieldConfigSource         = "configSource"
 	NodeFieldCreated              = "created"
 	NodeFieldDaemonEndpoints      = "daemonEndpoints"
-	NodeFieldExternalID           = "externalID"
+	NodeFieldDoNotUse_ExternalID  = "externalID"
 	NodeFieldImages               = "images"
 	NodeFieldLabels               = "labels"
 	NodeFieldName                 = "name"
@@ -36,10 +37,11 @@ type Node struct {
 	Addresses            []NodeAddress        `json:"addresses,omitempty" yaml:"addresses,omitempty"`
 	Allocatable          map[string]string    `json:"allocatable,omitempty" yaml:"allocatable,omitempty"`
 	Capacity             map[string]string    `json:"capacity,omitempty" yaml:"capacity,omitempty"`
+	Config               *NodeConfigStatus    `json:"config,omitempty" yaml:"config,omitempty"`
 	ConfigSource         *NodeConfigSource    `json:"configSource,omitempty" yaml:"configSource,omitempty"`
 	Created              string               `json:"created,omitempty" yaml:"created,omitempty"`
 	DaemonEndpoints      *NodeDaemonEndpoints `json:"daemonEndpoints,omitempty" yaml:"daemonEndpoints,omitempty"`
-	ExternalID           string               `json:"externalID,omitempty" yaml:"externalID,omitempty"`
+	DoNotUse_ExternalID  string               `json:"externalID,omitempty" yaml:"externalID,omitempty"`
 	Images               []ContainerImage     `json:"images,omitempty" yaml:"images,omitempty"`
 	Labels               map[string]string    `json:"labels,omitempty" yaml:"labels,omitempty"`
 	Name                 string               `json:"name,omitempty" yaml:"name,omitempty"`
