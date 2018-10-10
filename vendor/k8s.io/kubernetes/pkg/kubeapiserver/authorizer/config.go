@@ -17,7 +17,6 @@ limitations under the License.
 package authorizer
 
 import (
-	"errors"
 	"fmt"
 
 	"k8s.io/apiserver/pkg/authorization/authorizer"
@@ -25,7 +24,6 @@ import (
 	"k8s.io/apiserver/pkg/authorization/union"
 	versionedinformers "k8s.io/client-go/informers"
 	"k8s.io/kubernetes/pkg/auth/nodeidentifier"
-	informers "k8s.io/kubernetes/pkg/client/informers/informers_generated/internalversion"
 	"k8s.io/kubernetes/pkg/kubeapiserver/authorizer/modes"
 	"k8s.io/kubernetes/plugin/pkg/auth/authorizer/node"
 	"k8s.io/kubernetes/plugin/pkg/auth/authorizer/rbac"
@@ -35,7 +33,10 @@ import (
 type AuthorizationConfig struct {
 	AuthorizationModes []string
 
-	InformerFactory          informers.SharedInformerFactory
+	// Options for ModeABAC
+
+	// Options for ModeWebhook
+
 	VersionedInformerFactory versionedinformers.SharedInformerFactory
 }
 
@@ -43,28 +44,24 @@ type AuthorizationConfig struct {
 // based on the authorizationMode or an error.
 func (config AuthorizationConfig) New() (authorizer.Authorizer, authorizer.RuleResolver, error) {
 	if len(config.AuthorizationModes) == 0 {
-		return nil, nil, errors.New("At least one authorization mode should be passed")
+		return nil, nil, fmt.Errorf("at least one authorization mode must be passed")
 	}
 
 	var (
 		authorizers   []authorizer.Authorizer
 		ruleResolvers []authorizer.RuleResolver
 	)
-	authorizerMap := make(map[string]bool)
 
 	for _, authorizationMode := range config.AuthorizationModes {
-		if authorizerMap[authorizationMode] {
-			return nil, nil, fmt.Errorf("Authorization mode %s specified more than once", authorizationMode)
-		}
-
-		// Keep cases in sync with constant list above.
+		// Keep cases in sync with constant list in k8s.io/kubernetes/pkg/kubeapiserver/authorizer/modes/modes.go.
 		switch authorizationMode {
 		case modes.ModeNode:
 			graph := node.NewGraph()
 			node.AddGraphEventHandlers(
 				graph,
-				config.InformerFactory.Core().InternalVersion().Pods(),
-				config.InformerFactory.Core().InternalVersion().PersistentVolumes(),
+				config.VersionedInformerFactory.Core().V1().Nodes(),
+				config.VersionedInformerFactory.Core().V1().Pods(),
+				config.VersionedInformerFactory.Core().V1().PersistentVolumes(),
 				config.VersionedInformerFactory.Storage().V1beta1().VolumeAttachments(),
 			)
 			nodeAuthorizer := node.NewAuthorizer(graph, nodeidentifier.NewDefaultNodeIdentifier(), bootstrappolicy.NodeRules())
@@ -80,17 +77,16 @@ func (config AuthorizationConfig) New() (authorizer.Authorizer, authorizer.RuleR
 			ruleResolvers = append(ruleResolvers, alwaysDenyAuthorizer)
 		case modes.ModeRBAC:
 			rbacAuthorizer := rbac.New(
-				&rbac.RoleGetter{Lister: config.InformerFactory.Rbac().InternalVersion().Roles().Lister()},
-				&rbac.RoleBindingLister{Lister: config.InformerFactory.Rbac().InternalVersion().RoleBindings().Lister()},
-				&rbac.ClusterRoleGetter{Lister: config.InformerFactory.Rbac().InternalVersion().ClusterRoles().Lister()},
-				&rbac.ClusterRoleBindingLister{Lister: config.InformerFactory.Rbac().InternalVersion().ClusterRoleBindings().Lister()},
+				&rbac.RoleGetter{Lister: config.VersionedInformerFactory.Rbac().V1().Roles().Lister()},
+				&rbac.RoleBindingLister{Lister: config.VersionedInformerFactory.Rbac().V1().RoleBindings().Lister()},
+				&rbac.ClusterRoleGetter{Lister: config.VersionedInformerFactory.Rbac().V1().ClusterRoles().Lister()},
+				&rbac.ClusterRoleBindingLister{Lister: config.VersionedInformerFactory.Rbac().V1().ClusterRoleBindings().Lister()},
 			)
 			authorizers = append(authorizers, rbacAuthorizer)
 			ruleResolvers = append(ruleResolvers, rbacAuthorizer)
 		default:
-			return nil, nil, fmt.Errorf("Unknown authorization mode %s specified", authorizationMode)
+			return nil, nil, fmt.Errorf("unknown authorization mode %s specified", authorizationMode)
 		}
-		authorizerMap[authorizationMode] = true
 	}
 
 	return union.New(authorizers...), union.NewRuleResolvers(ruleResolvers...), nil

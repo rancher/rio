@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ limitations under the License.
 package kubernetes
 
 import (
-	glog "github.com/golang/glog"
 	discovery "k8s.io/client-go/discovery"
 	admissionregistrationv1beta1 "k8s.io/client-go/kubernetes/typed/admissionregistration/v1beta1"
 	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
@@ -28,7 +27,7 @@ import (
 	authenticationv1 "k8s.io/client-go/kubernetes/typed/authentication/v1"
 	authorizationv1 "k8s.io/client-go/kubernetes/typed/authorization/v1"
 	autoscalingv1 "k8s.io/client-go/kubernetes/typed/autoscaling/v1"
-	autoscalingv2beta1 "k8s.io/client-go/kubernetes/typed/autoscaling/v2beta1"
+	autoscalingv2beta2 "k8s.io/client-go/kubernetes/typed/autoscaling/v2beta2"
 	batchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 	batchv1beta1 "k8s.io/client-go/kubernetes/typed/batch/v1beta1"
 	batchv2alpha1 "k8s.io/client-go/kubernetes/typed/batch/v2alpha1"
@@ -37,7 +36,7 @@ import (
 	networkingv1 "k8s.io/client-go/kubernetes/typed/networking/v1"
 	policyv1beta1 "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
 	rbacv1 "k8s.io/client-go/kubernetes/typed/rbac/v1"
-	schedulingv1alpha1 "k8s.io/client-go/kubernetes/typed/scheduling/v1alpha1"
+	schedulingv1beta1 "k8s.io/client-go/kubernetes/typed/scheduling/v1beta1"
 	storagev1 "k8s.io/client-go/kubernetes/typed/storage/v1"
 	storagev1beta1 "k8s.io/client-go/kubernetes/typed/storage/v1beta1"
 	rest "k8s.io/client-go/rest"
@@ -63,7 +62,7 @@ type Interface interface {
 	AutoscalingV1() autoscalingv1.AutoscalingV1Interface
 	// Deprecated: please explicitly pick a version if possible.
 	Autoscaling() autoscalingv1.AutoscalingV1Interface
-	AutoscalingV2beta1() autoscalingv2beta1.AutoscalingV2beta1Interface
+	AutoscalingV2beta2() autoscalingv2beta2.AutoscalingV2beta2Interface
 	BatchV1() batchv1.BatchV1Interface
 	// Deprecated: please explicitly pick a version if possible.
 	Batch() batchv1.BatchV1Interface
@@ -84,9 +83,9 @@ type Interface interface {
 	RbacV1() rbacv1.RbacV1Interface
 	// Deprecated: please explicitly pick a version if possible.
 	Rbac() rbacv1.RbacV1Interface
-	SchedulingV1alpha1() schedulingv1alpha1.SchedulingV1alpha1Interface
+	SchedulingV1beta1() schedulingv1beta1.SchedulingV1beta1Interface
 	// Deprecated: please explicitly pick a version if possible.
-	Scheduling() schedulingv1alpha1.SchedulingV1alpha1Interface
+	Scheduling() schedulingv1beta1.SchedulingV1beta1Interface
 	StorageV1beta1() storagev1beta1.StorageV1beta1Interface
 	StorageV1() storagev1.StorageV1Interface
 	// Deprecated: please explicitly pick a version if possible.
@@ -104,7 +103,7 @@ type Clientset struct {
 	authenticationV1             *authenticationv1.AuthenticationV1Client
 	authorizationV1              *authorizationv1.AuthorizationV1Client
 	autoscalingV1                *autoscalingv1.AutoscalingV1Client
-	autoscalingV2beta1           *autoscalingv2beta1.AutoscalingV2beta1Client
+	autoscalingV2beta2           *autoscalingv2beta2.AutoscalingV2beta2Client
 	batchV1                      *batchv1.BatchV1Client
 	batchV1beta1                 *batchv1beta1.BatchV1beta1Client
 	batchV2alpha1                *batchv2alpha1.BatchV2alpha1Client
@@ -113,7 +112,7 @@ type Clientset struct {
 	networkingV1                 *networkingv1.NetworkingV1Client
 	policyV1beta1                *policyv1beta1.PolicyV1beta1Client
 	rbacV1                       *rbacv1.RbacV1Client
-	schedulingV1alpha1           *schedulingv1alpha1.SchedulingV1alpha1Client
+	schedulingV1beta1            *schedulingv1beta1.SchedulingV1beta1Client
 	storageV1beta1               *storagev1beta1.StorageV1beta1Client
 	storageV1                    *storagev1.StorageV1Client
 }
@@ -183,9 +182,9 @@ func (c *Clientset) Autoscaling() autoscalingv1.AutoscalingV1Interface {
 	return c.autoscalingV1
 }
 
-// AutoscalingV2beta1 retrieves the AutoscalingV2beta1Client
-func (c *Clientset) AutoscalingV2beta1() autoscalingv2beta1.AutoscalingV2beta1Interface {
-	return c.autoscalingV2beta1
+// AutoscalingV2beta2 retrieves the AutoscalingV2beta2Client
+func (c *Clientset) AutoscalingV2beta2() autoscalingv2beta2.AutoscalingV2beta2Interface {
+	return c.autoscalingV2beta2
 }
 
 // BatchV1 retrieves the BatchV1Client
@@ -264,15 +263,15 @@ func (c *Clientset) Rbac() rbacv1.RbacV1Interface {
 	return c.rbacV1
 }
 
-// SchedulingV1alpha1 retrieves the SchedulingV1alpha1Client
-func (c *Clientset) SchedulingV1alpha1() schedulingv1alpha1.SchedulingV1alpha1Interface {
-	return c.schedulingV1alpha1
+// SchedulingV1beta1 retrieves the SchedulingV1beta1Client
+func (c *Clientset) SchedulingV1beta1() schedulingv1beta1.SchedulingV1beta1Interface {
+	return c.schedulingV1beta1
 }
 
 // Deprecated: Scheduling retrieves the default version of SchedulingClient.
 // Please explicitly pick a version.
-func (c *Clientset) Scheduling() schedulingv1alpha1.SchedulingV1alpha1Interface {
-	return c.schedulingV1alpha1
+func (c *Clientset) Scheduling() schedulingv1beta1.SchedulingV1beta1Interface {
+	return c.schedulingV1beta1
 }
 
 // StorageV1beta1 retrieves the StorageV1beta1Client
@@ -335,7 +334,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
-	cs.autoscalingV2beta1, err = autoscalingv2beta1.NewForConfig(&configShallowCopy)
+	cs.autoscalingV2beta2, err = autoscalingv2beta2.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -371,7 +370,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
-	cs.schedulingV1alpha1, err = schedulingv1alpha1.NewForConfig(&configShallowCopy)
+	cs.schedulingV1beta1, err = schedulingv1beta1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -386,7 +385,6 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 
 	cs.DiscoveryClient, err = discovery.NewDiscoveryClientForConfig(&configShallowCopy)
 	if err != nil {
-		glog.Errorf("failed to create the DiscoveryClient: %v", err)
 		return nil, err
 	}
 	return &cs, nil
@@ -403,7 +401,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 	cs.authenticationV1 = authenticationv1.NewForConfigOrDie(c)
 	cs.authorizationV1 = authorizationv1.NewForConfigOrDie(c)
 	cs.autoscalingV1 = autoscalingv1.NewForConfigOrDie(c)
-	cs.autoscalingV2beta1 = autoscalingv2beta1.NewForConfigOrDie(c)
+	cs.autoscalingV2beta2 = autoscalingv2beta2.NewForConfigOrDie(c)
 	cs.batchV1 = batchv1.NewForConfigOrDie(c)
 	cs.batchV1beta1 = batchv1beta1.NewForConfigOrDie(c)
 	cs.batchV2alpha1 = batchv2alpha1.NewForConfigOrDie(c)
@@ -412,7 +410,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 	cs.networkingV1 = networkingv1.NewForConfigOrDie(c)
 	cs.policyV1beta1 = policyv1beta1.NewForConfigOrDie(c)
 	cs.rbacV1 = rbacv1.NewForConfigOrDie(c)
-	cs.schedulingV1alpha1 = schedulingv1alpha1.NewForConfigOrDie(c)
+	cs.schedulingV1beta1 = schedulingv1beta1.NewForConfigOrDie(c)
 	cs.storageV1beta1 = storagev1beta1.NewForConfigOrDie(c)
 	cs.storageV1 = storagev1.NewForConfigOrDie(c)
 
@@ -430,7 +428,7 @@ func New(c rest.Interface) *Clientset {
 	cs.authenticationV1 = authenticationv1.New(c)
 	cs.authorizationV1 = authorizationv1.New(c)
 	cs.autoscalingV1 = autoscalingv1.New(c)
-	cs.autoscalingV2beta1 = autoscalingv2beta1.New(c)
+	cs.autoscalingV2beta2 = autoscalingv2beta2.New(c)
 	cs.batchV1 = batchv1.New(c)
 	cs.batchV1beta1 = batchv1beta1.New(c)
 	cs.batchV2alpha1 = batchv2alpha1.New(c)
@@ -439,7 +437,7 @@ func New(c rest.Interface) *Clientset {
 	cs.networkingV1 = networkingv1.New(c)
 	cs.policyV1beta1 = policyv1beta1.New(c)
 	cs.rbacV1 = rbacv1.New(c)
-	cs.schedulingV1alpha1 = schedulingv1alpha1.New(c)
+	cs.schedulingV1beta1 = schedulingv1beta1.New(c)
 	cs.storageV1beta1 = storagev1beta1.New(c)
 	cs.storageV1 = storagev1.New(c)
 

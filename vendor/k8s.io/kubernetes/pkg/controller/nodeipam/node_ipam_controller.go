@@ -18,6 +18,8 @@ package nodeipam
 
 import (
 	"net"
+	"time"
+
 	"github.com/golang/glog"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -39,6 +41,18 @@ func init() {
 	// Register prometheus metrics
 	Register()
 }
+
+const (
+	// ipamResyncInterval is the amount of time between when the cloud and node
+	// CIDR range assignments are synchronized.
+	ipamResyncInterval = 30 * time.Second
+	// ipamMaxBackoff is the maximum backoff for retrying synchronization of a
+	// given in the error state.
+	ipamMaxBackoff = 10 * time.Second
+	// ipamInitialRetry is the initial retry interval for retrying synchronization of a
+	// given in the error state.
+	ipamInitialBackoff = 250 * time.Millisecond
+)
 
 // Controller is the controller that manages node ipam state.
 type Controller struct {
@@ -81,7 +95,7 @@ func NewNodeIpamController(
 	glog.V(0).Infof("Sending events to api server.")
 	eventBroadcaster.StartRecordingToSink(
 		&v1core.EventSinkImpl{
-			Interface: v1core.New(kubeClient.CoreV1().RESTClient()).Events(""),
+			Interface: kubeClient.CoreV1().Events(""),
 		})
 
 	if kubeClient != nil && kubeClient.CoreV1().RESTClient().GetRateLimiter() != nil {

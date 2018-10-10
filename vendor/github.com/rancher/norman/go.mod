@@ -1,12 +1,13 @@
 module github.com/rancher/norman
 
 require (
+	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
 	github.com/davecgh/go-spew v1.1.1-0.20170626231645-782f4967f2dc // indirect
 	github.com/ghodss/yaml v0.0.0-20150909031657-73d445a93680
 	github.com/gogo/protobuf v0.0.0-20170330071051-c0656edd0d9e // indirect
 	github.com/golang/glog v0.0.0-20141105023935-44145f04b68c // indirect
 	github.com/golang/groupcache v0.0.0-20160516000752-02826c3e7903 // indirect
-	github.com/golang/protobuf v0.0.0-20171021043952-1643683e1b54 // indirect
+	github.com/golang/protobuf v1.2.0 // indirect
 	github.com/google/gofuzz v0.0.0-20161122191042-44d81051d367 // indirect
 	github.com/googleapis/gnostic v0.0.0-20170729233727-0c5108395e2d // indirect
 	github.com/gorilla/websocket v0.0.0-20150714140627-6eb6ad425a89
@@ -17,12 +18,17 @@ require (
 	github.com/kr/pretty v0.0.0-20140812000539-f31442d60e51 // indirect
 	github.com/kr/text v0.0.0-20130911015532-6807e777504f // indirect
 	github.com/maruel/panicparse v1.1.1
+	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v0.0.0-20180320133207-05fbef0ca5da // indirect
 	github.com/onsi/ginkgo v1.2.1-0.20170318221715-67b9df7f55fe // indirect
 	github.com/onsi/gomega v0.0.0-20160911051023-d59fa0ac68bb // indirect
 	github.com/pkg/errors v0.8.0
 	github.com/pmezard/go-difflib v0.0.0-20151028094244-d8ed2627bdf0 // indirect
+	github.com/prometheus/client_golang v0.8.0
+	github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910 // indirect
+	github.com/prometheus/common v0.0.0-20180801064454-c7de2306084e // indirect
+	github.com/prometheus/procfs v0.0.0-20180920065004-418d78d0b9a7 // indirect
 	github.com/sirupsen/logrus v1.0.4-0.20170822132746-89742aefa4b2
 	github.com/spf13/pflag v1.0.1 // indirect
 	github.com/stretchr/testify v1.1.5-0.20170601210322-f6abca593680

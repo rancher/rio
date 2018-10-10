@@ -23,21 +23,21 @@ import (
 
 	"fmt"
 
-	// Cloud providers
-	"k8s.io/kubernetes/pkg/apis/componentconfig"
-
 	// Volume plugins
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/volume"
 	"k8s.io/kubernetes/pkg/volume/csi"
 	"k8s.io/kubernetes/pkg/volume/flexvolume"
 	"k8s.io/kubernetes/pkg/volume/host_path"
+	"k8s.io/kubernetes/pkg/volume/iscsi"
 	"k8s.io/kubernetes/pkg/volume/local"
 	"k8s.io/kubernetes/pkg/volume/nfs"
 	volumeutil "k8s.io/kubernetes/pkg/volume/util"
 
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
+	kubectrlmgrconfig "k8s.io/kubernetes/pkg/controller/apis/config"
 	"k8s.io/kubernetes/pkg/features"
+	"k8s.io/utils/exec"
 )
 
 // ProbeAttachableVolumePlugins collects all volume plugins for the attach/
@@ -47,6 +47,7 @@ import (
 func ProbeAttachableVolumePlugins() []volume.VolumePlugin {
 	allPlugins := []volume.VolumePlugin{}
 
+	allPlugins = append(allPlugins, iscsi.ProbeVolumePlugins()...)
 	if utilfeature.DefaultFeatureGate.Enabled(features.CSIPersistentVolume) {
 		allPlugins = append(allPlugins, csi.ProbeVolumePlugins()...)
 	}
@@ -56,12 +57,12 @@ func ProbeAttachableVolumePlugins() []volume.VolumePlugin {
 // GetDynamicPluginProber gets the probers of dynamically discoverable plugins
 // for the attach/detach controller.
 // Currently only Flexvolume plugins are dynamically discoverable.
-func GetDynamicPluginProber(config componentconfig.VolumeConfiguration) volume.DynamicPluginProber {
-	return flexvolume.GetDynamicPluginProber(config.FlexVolumePluginDir)
+func GetDynamicPluginProber(config kubectrlmgrconfig.VolumeConfiguration) volume.DynamicPluginProber {
+	return flexvolume.GetDynamicPluginProber(config.FlexVolumePluginDir, exec.New() /*exec.Interface*/)
 }
 
 // ProbeExpandableVolumePlugins returns volume plugins which are expandable
-func ProbeExpandableVolumePlugins(config componentconfig.VolumeConfiguration) []volume.VolumePlugin {
+func ProbeExpandableVolumePlugins(config kubectrlmgrconfig.VolumeConfiguration) []volume.VolumePlugin {
 	allPlugins := []volume.VolumePlugin{}
 
 	return allPlugins
@@ -70,7 +71,7 @@ func ProbeExpandableVolumePlugins(config componentconfig.VolumeConfiguration) []
 // ProbeControllerVolumePlugins collects all persistent volume plugins into an
 // easy to use list. Only volume plugins that implement any of
 // provisioner/recycler/deleter interface should be returned.
-func ProbeControllerVolumePlugins(config componentconfig.VolumeConfiguration) []volume.VolumePlugin {
+func ProbeControllerVolumePlugins(config kubectrlmgrconfig.VolumeConfiguration) []volume.VolumePlugin {
 	allPlugins := []volume.VolumePlugin{}
 
 	// The list of plugins to probe is decided by this binary, not

@@ -58,6 +58,10 @@ func VisitPodSecretNames(pod *api.Pod, visitor Visitor) bool {
 			if source.CephFS.SecretRef != nil && !visitor(source.CephFS.SecretRef.Name) {
 				return false
 			}
+		case source.Cinder != nil:
+			if source.Cinder.SecretRef != nil && !visitor(source.Cinder.SecretRef.Name) {
+				return false
+			}
 		case source.FlexVolume != nil:
 			if source.FlexVolume.SecretRef != nil && !visitor(source.FlexVolume.SecretRef.Name) {
 				return false
@@ -242,10 +246,6 @@ func DropDisabledAlphaFields(podSpec *api.PodSpec) {
 		}
 	}
 
-	if podSpec.SecurityContext != nil {
-		podSpec.SecurityContext.ShareProcessNamespace = nil
-	}
-
 	for i := range podSpec.Containers {
 		DropDisabledVolumeMountsAlphaFields(podSpec.Containers[i].VolumeMounts)
 	}
@@ -256,22 +256,46 @@ func DropDisabledAlphaFields(podSpec *api.PodSpec) {
 	DropDisabledVolumeDevicesAlphaFields(podSpec)
 
 	DropDisabledRunAsGroupField(podSpec)
+
+	if podSpec.RuntimeClassName != nil {
+		podSpec.RuntimeClassName = nil
+	}
+
+	DropDisabledProcMountField(podSpec)
 }
 
 // DropDisabledRunAsGroupField removes disabled fields from PodSpec related
 // to RunAsGroup
 func DropDisabledRunAsGroupField(podSpec *api.PodSpec) {
-	if podSpec.SecurityContext != nil {
-		podSpec.SecurityContext.RunAsGroup = nil
+	if !utilfeature.DefaultFeatureGate.Enabled(features.RunAsGroup) {
+		if podSpec.SecurityContext != nil {
+			podSpec.SecurityContext.RunAsGroup = nil
+		}
+		for i := range podSpec.Containers {
+			if podSpec.Containers[i].SecurityContext != nil {
+				podSpec.Containers[i].SecurityContext.RunAsGroup = nil
+			}
+		}
+		for i := range podSpec.InitContainers {
+			if podSpec.InitContainers[i].SecurityContext != nil {
+				podSpec.InitContainers[i].SecurityContext.RunAsGroup = nil
+			}
+		}
 	}
+}
+
+// DropDisabledProcMountField removes disabled fields from PodSpec related
+// to ProcMount
+func DropDisabledProcMountField(podSpec *api.PodSpec) {
+	defProcMount := api.DefaultProcMount
 	for i := range podSpec.Containers {
 		if podSpec.Containers[i].SecurityContext != nil {
-			podSpec.Containers[i].SecurityContext.RunAsGroup = nil
+			podSpec.Containers[i].SecurityContext.ProcMount = &defProcMount
 		}
 	}
 	for i := range podSpec.InitContainers {
 		if podSpec.InitContainers[i].SecurityContext != nil {
-			podSpec.InitContainers[i].SecurityContext.RunAsGroup = nil
+			podSpec.InitContainers[i].SecurityContext.ProcMount = &defProcMount
 		}
 	}
 }

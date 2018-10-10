@@ -145,18 +145,13 @@ func (g *Generic) List(ctx context.Context, revision, limit int64, rangeKey, sta
 		limit = limit + 1
 	}
 
-	var (
-		currentRevision int64
-		foundRevision   int64
-	)
-
+	listRevision := atomic.LoadInt64(&g.revision)
 	if !strings.HasSuffix(rangeKey, "%") && revision <= 0 {
-		currentRevision = atomic.LoadInt64(&g.revision)
 		rows, err = g.QueryContext(ctx, g.GetSQL, rangeKey, limit)
 	} else if revision <= 0 {
-		currentRevision = atomic.LoadInt64(&g.revision)
 		rows, err = g.QueryContext(ctx, g.ListSQL, rangeKey, limit)
 	} else if len(startKey) > 0 {
+		listRevision = revision
 		rows, err = g.QueryContext(ctx, g.ListResumeSQL, revision, rangeKey, startKey, limit)
 	} else {
 		rows, err = g.QueryContext(ctx, g.ListRevisionSQL, revision, rangeKey, limit)
@@ -173,24 +168,15 @@ func (g *Generic) List(ctx context.Context, revision, limit int64, rangeKey, sta
 		if err := scan(rows.Scan, &value); err != nil {
 			return nil, 0, err
 		}
-		if value.Revision > foundRevision {
-			foundRevision = value.Revision
+		if value.Revision > listRevision {
+			listRevision = value.Revision
 		}
 		if value.Del == 0 {
 			resp = append(resp, &value)
 		}
 	}
 
-	// This means revision was <= 0 so if we get back a partial response we should just return the current
-	// otherwise the revision that was found in the response
-	if currentRevision > 0 {
-		if len(resp) >= int(limit) {
-			return resp, currentRevision, nil
-		}
-		return resp, foundRevision, nil
-	}
-
-	return resp, revision, nil
+	return resp, listRevision, nil
 }
 
 func (g *Generic) Delete(ctx context.Context, key string, revision int64) ([]*KeyValue, error) {

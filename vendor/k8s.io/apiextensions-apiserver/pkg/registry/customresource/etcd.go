@@ -17,6 +17,7 @@ limitations under the License.
 package customresource
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -27,7 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/registry/generic"
 	genericregistry "k8s.io/apiserver/pkg/registry/generic/registry"
 	"k8s.io/apiserver/pkg/registry/rest"
@@ -42,7 +42,6 @@ type CustomResourceStorage struct {
 
 func NewStorage(resource schema.GroupResource, listKind schema.GroupVersionKind, strategy customResourceStrategy, optsGetter generic.RESTOptionsGetter, categories []string, tableConvertor rest.TableConvertor) CustomResourceStorage {
 	customResourceREST, customResourceStatusREST := newREST(resource, listKind, strategy, optsGetter, categories, tableConvertor)
-	customResourceRegistry := NewRegistry(customResourceREST)
 
 	s := CustomResourceStorage{
 		CustomResource: customResourceREST,
@@ -59,7 +58,7 @@ func NewStorage(resource schema.GroupResource, listKind schema.GroupVersionKind,
 		}
 
 		s.Scale = &ScaleREST{
-			registry:           customResourceRegistry,
+			store:              customResourceREST.Store,
 			specReplicasPath:   scale.SpecReplicasPath,
 			statusReplicasPath: scale.StatusReplicasPath,
 			labelSelectorPath:  labelSelectorPath,
@@ -108,7 +107,7 @@ func newREST(resource schema.GroupResource, listKind schema.GroupVersionKind, st
 var _ rest.CategoriesProvider = &REST{}
 
 // List returns a list of items matching labels and field according to the store's PredicateFunc.
-func (e *REST) List(ctx genericapirequest.Context, options *metainternalversion.ListOptions) (runtime.Object, error) {
+func (e *REST) List(ctx context.Context, options *metainternalversion.ListOptions) (runtime.Object, error) {
 	l, err := e.Store.List(ctx, options)
 	if err != nil {
 		return nil, err
@@ -126,7 +125,7 @@ func (e *REST) List(ctx genericapirequest.Context, options *metainternalversion.
 	return l, nil
 }
 
-func (r *REST) Get(ctx genericapirequest.Context, name string, options *metav1.GetOptions) (runtime.Object, error) {
+func (r *REST) Get(ctx context.Context, name string, options *metav1.GetOptions) (runtime.Object, error) {
 	o, err := r.Store.Get(ctx, name, options)
 	if err != nil {
 		return nil, err
@@ -170,22 +169,26 @@ type StatusREST struct {
 	store *genericregistry.Store
 }
 
+var _ = rest.Patcher(&StatusREST{})
+
 func (r *StatusREST) New() runtime.Object {
 	return &unstructured.Unstructured{}
 }
 
 // Get retrieves the object from the storage. It is required to support Patch.
-func (r *StatusREST) Get(ctx genericapirequest.Context, name string, options *metav1.GetOptions) (runtime.Object, error) {
+func (r *StatusREST) Get(ctx context.Context, name string, options *metav1.GetOptions) (runtime.Object, error) {
 	return r.store.Get(ctx, name, options)
 }
 
 // Update alters the status subset of an object.
-func (r *StatusREST) Update(ctx genericapirequest.Context, name string, objInfo rest.UpdatedObjectInfo, createValidation rest.ValidateObjectFunc, updateValidation rest.ValidateObjectUpdateFunc) (runtime.Object, bool, error) {
-	return r.store.Update(ctx, name, objInfo, createValidation, updateValidation)
+func (r *StatusREST) Update(ctx context.Context, name string, objInfo rest.UpdatedObjectInfo, createValidation rest.ValidateObjectFunc, updateValidation rest.ValidateObjectUpdateFunc, forceAllowCreate bool, options *metav1.UpdateOptions) (runtime.Object, bool, error) {
+	// We are explicitly setting forceAllowCreate to false in the call to the underlying storage because
+	// subresources should never allow create on update.
+	return r.store.Update(ctx, name, objInfo, createValidation, updateValidation, false, options)
 }
 
 type ScaleREST struct {
-	registry           Registry
+	store              *genericregistry.Store
 	specReplicasPath   string
 	statusReplicasPath string
 	labelSelectorPath  string
@@ -204,11 +207,12 @@ func (r *ScaleREST) New() runtime.Object {
 	return &autoscalingv1.Scale{}
 }
 
-func (r *ScaleREST) Get(ctx genericapirequest.Context, name string, options *metav1.GetOptions) (runtime.Object, error) {
-	cr, err := r.registry.GetCustomResource(ctx, name, options)
+func (r *ScaleREST) Get(ctx context.Context, name string, options *metav1.GetOptions) (runtime.Object, error) {
+	obj, err := r.store.Get(ctx, name, options)
 	if err != nil {
 		return nil, err
 	}
+	cr := obj.(*unstructured.Unstructured)
 
 	scaleObject, replicasFound, err := scaleFromCustomResource(cr, r.specReplicasPath, r.statusReplicasPath, r.labelSelectorPath)
 	if err != nil {
@@ -220,11 +224,12 @@ func (r *ScaleREST) Get(ctx genericapirequest.Context, name string, options *met
 	return scaleObject, err
 }
 
-func (r *ScaleREST) Update(ctx genericapirequest.Context, name string, objInfo rest.UpdatedObjectInfo, createValidation rest.ValidateObjectFunc, updateValidation rest.ValidateObjectUpdateFunc) (runtime.Object, bool, error) {
-	cr, err := r.registry.GetCustomResource(ctx, name, &metav1.GetOptions{})
+func (r *ScaleREST) Update(ctx context.Context, name string, objInfo rest.UpdatedObjectInfo, createValidation rest.ValidateObjectFunc, updateValidation rest.ValidateObjectUpdateFunc, forceAllowCreate bool, options *metav1.UpdateOptions) (runtime.Object, bool, error) {
+	obj, err := r.store.Get(ctx, name, &metav1.GetOptions{})
 	if err != nil {
 		return nil, false, err
 	}
+	cr := obj.(*unstructured.Unstructured)
 
 	const invalidSpecReplicas = -2147483648 // smallest int32
 	oldScale, replicasFound, err := scaleFromCustomResource(cr, r.specReplicasPath, r.statusReplicasPath, r.labelSelectorPath)
@@ -235,7 +240,7 @@ func (r *ScaleREST) Update(ctx genericapirequest.Context, name string, objInfo r
 		oldScale.Spec.Replicas = invalidSpecReplicas // signal that this was not set before
 	}
 
-	obj, err := objInfo.UpdatedObject(ctx, oldScale)
+	obj, err = objInfo.UpdatedObject(ctx, oldScale)
 	if err != nil {
 		return nil, false, err
 	}
@@ -258,10 +263,11 @@ func (r *ScaleREST) Update(ctx genericapirequest.Context, name string, objInfo r
 	}
 	cr.SetResourceVersion(scale.ResourceVersion)
 
-	cr, err = r.registry.UpdateCustomResource(ctx, cr, createValidation, updateValidation)
+	obj, _, err = r.store.Update(ctx, cr.GetName(), rest.DefaultUpdatedObjectInfo(cr), createValidation, updateValidation, false, options)
 	if err != nil {
 		return nil, false, err
 	}
+	cr = obj.(*unstructured.Unstructured)
 
 	newScale, _, err := scaleFromCustomResource(cr, r.specReplicasPath, r.statusReplicasPath, r.labelSelectorPath)
 	if err != nil {

@@ -23,13 +23,16 @@ import (
 
 	"github.com/golang/glog"
 
+	authenticationv1 "k8s.io/api/authentication/v1"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/record"
+	csiclientset "k8s.io/csi-api/pkg/client/clientset/versioned"
 	"k8s.io/kubernetes/pkg/kubelet/configmap"
 	"k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/secret"
-	"k8s.io/kubernetes/pkg/util/io"
+	"k8s.io/kubernetes/pkg/kubelet/token"
 	"k8s.io/kubernetes/pkg/util/mount"
 	"k8s.io/kubernetes/pkg/volume"
 	"k8s.io/kubernetes/pkg/volume/util"
@@ -45,6 +48,7 @@ func NewInitializedVolumePluginMgr(
 	kubelet *Kubelet,
 	secretManager secret.Manager,
 	configMapManager configmap.Manager,
+	tokenManager *token.Manager,
 	plugins []volume.VolumePlugin,
 	prober volume.DynamicPluginProber) (*volume.VolumePluginMgr, error) {
 
@@ -53,6 +57,7 @@ func NewInitializedVolumePluginMgr(
 		volumePluginMgr:  volume.VolumePluginMgr{},
 		secretManager:    secretManager,
 		configMapManager: configMapManager,
+		tokenManager:     tokenManager,
 	}
 
 	if err := kvh.volumePluginMgr.InitPlugins(plugins, prober, kvh); err != nil {
@@ -75,11 +80,16 @@ type kubeletVolumeHost struct {
 	kubelet          *Kubelet
 	volumePluginMgr  volume.VolumePluginMgr
 	secretManager    secret.Manager
+	tokenManager     *token.Manager
 	configMapManager configmap.Manager
 }
 
 func (kvh *kubeletVolumeHost) GetVolumeDevicePluginDir(pluginName string) string {
 	return kvh.kubelet.getVolumeDevicePluginDir(pluginName)
+}
+
+func (kvh *kubeletVolumeHost) GetPodsDir() string {
+	return kvh.kubelet.getPodsDir()
 }
 
 func (kvh *kubeletVolumeHost) GetPodVolumeDir(podUID types.UID, pluginName string, volumeName string) string {
@@ -100,6 +110,10 @@ func (kvh *kubeletVolumeHost) GetPodPluginDir(podUID types.UID, pluginName strin
 
 func (kvh *kubeletVolumeHost) GetKubeClient() clientset.Interface {
 	return kvh.kubelet.kubeClient
+}
+
+func (kvh *kubeletVolumeHost) GetCSIClient() csiclientset.Interface {
+	return kvh.kubelet.csiClient
 }
 
 func (kvh *kubeletVolumeHost) NewWrapperMounter(
@@ -134,7 +148,7 @@ func (kvh *kubeletVolumeHost) NewWrapperUnmounter(volName string, spec volume.Sp
 func (kvh *kubeletVolumeHost) GetMounter(pluginName string) mount.Interface {
 	exec, err := kvh.getMountExec(pluginName)
 	if err != nil {
-		glog.V(2).Info("Error finding mount pod for plugin %s: %s", pluginName, err.Error())
+		glog.V(2).Infof("Error finding mount pod for plugin %s: %s", pluginName, err.Error())
 		// Use the default mounter
 		exec = nil
 	}
@@ -142,10 +156,6 @@ func (kvh *kubeletVolumeHost) GetMounter(pluginName string) mount.Interface {
 		return kvh.kubelet.mounter
 	}
 	return mount.NewExecMounter(exec, kvh.kubelet.mounter)
-}
-
-func (kvh *kubeletVolumeHost) GetWriter() io.Writer {
-	return kvh.kubelet.writer
 }
 
 func (kvh *kubeletVolumeHost) GetHostName() string {
@@ -172,6 +182,10 @@ func (kvh *kubeletVolumeHost) GetConfigMapFunc() func(namespace, name string) (*
 	return kvh.configMapManager.GetConfigMap
 }
 
+func (kvh *kubeletVolumeHost) GetServiceAccountTokenFunc() func(namespace, name string, tr *authenticationv1.TokenRequest) (*authenticationv1.TokenRequest, error) {
+	return kvh.tokenManager.GetServiceAccountToken
+}
+
 func (kvh *kubeletVolumeHost) GetNodeLabels() (map[string]string, error) {
 	node, err := kvh.kubelet.GetNode()
 	if err != nil {
@@ -184,10 +198,14 @@ func (kvh *kubeletVolumeHost) GetNodeName() types.NodeName {
 	return kvh.kubelet.nodeName
 }
 
+func (kvh *kubeletVolumeHost) GetEventRecorder() record.EventRecorder {
+	return kvh.kubelet.recorder
+}
+
 func (kvh *kubeletVolumeHost) GetExec(pluginName string) mount.Exec {
 	exec, err := kvh.getMountExec(pluginName)
 	if err != nil {
-		glog.V(2).Info("Error finding mount pod for plugin %s: %s", pluginName, err.Error())
+		glog.V(2).Infof("Error finding mount pod for plugin %s: %s", pluginName, err.Error())
 		// Use the default exec
 		exec = nil
 	}
@@ -201,7 +219,6 @@ func (kvh *kubeletVolumeHost) GetExec(pluginName string) mount.Exec {
 // utilities. It returns nil,nil when there is no such pod and default mounter /
 // os.Exec should be used.
 func (kvh *kubeletVolumeHost) getMountExec(pluginName string) (mount.Exec, error) {
-	glog.V(5).Infof("using default mounter/exec for %s", pluginName)
 	return nil, nil
 }
 

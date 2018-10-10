@@ -29,10 +29,12 @@ import (
 // If you add something to this list, it should be in a logical grouping.
 // Each of them can be nil to leave the feature unconfigured on ApplyTo.
 type RecommendedOptions struct {
-	Etcd          *EtcdOptions
-	SecureServing *SecureServingOptionsWithLoopback
-	Features      *FeatureOptions
-	CoreAPI       *CoreAPIOptions
+	Etcd           *EtcdOptions
+	SecureServing  *SecureServingOptionsWithLoopback
+	Authentication *DelegatingAuthenticationOptions
+	Audit          *AuditOptions
+	Features       *FeatureOptions
+	CoreAPI        *CoreAPIOptions
 
 	// ExtraAdmissionInitializers is called once after all ApplyTo from the options above, to pass the returned
 	// admission plugin initializers to Admission.ApplyTo.
@@ -51,7 +53,9 @@ func NewRecommendedOptions(prefix string, codec runtime.Codec) *RecommendedOptio
 
 	return &RecommendedOptions{
 		Etcd:                       NewEtcdOptions(storagebackend.NewDefaultConfig(prefix, codec)),
-		SecureServing:              WithLoopback(sso),
+		SecureServing:              sso.WithLoopback(),
+		Authentication:             NewDelegatingAuthenticationOptions(),
+		Audit:                      NewAuditOptions(),
 		Features:                   NewFeatureOptions(),
 		CoreAPI:                    NewCoreAPIOptions(),
 		ExtraAdmissionInitializers: func(c *server.RecommendedConfig) ([]admission.PluginInitializer, error) { return nil, nil },
@@ -62,6 +66,8 @@ func NewRecommendedOptions(prefix string, codec runtime.Codec) *RecommendedOptio
 func (o *RecommendedOptions) AddFlags(fs *pflag.FlagSet) {
 	o.Etcd.AddFlags(fs)
 	o.SecureServing.AddFlags(fs)
+	o.Authentication.AddFlags(fs)
+	o.Audit.AddFlags(fs)
 	o.Features.AddFlags(fs)
 	o.CoreAPI.AddFlags(fs)
 	o.Admission.AddFlags(fs)
@@ -74,7 +80,13 @@ func (o *RecommendedOptions) ApplyTo(config *server.RecommendedConfig, scheme *r
 	if err := o.Etcd.ApplyTo(&config.Config); err != nil {
 		return err
 	}
-	if err := o.SecureServing.ApplyTo(&config.Config); err != nil {
+	if err := o.SecureServing.ApplyTo(&config.Config.SecureServing, &config.Config.LoopbackClientConfig); err != nil {
+		return err
+	}
+	if err := o.Authentication.ApplyTo(&config.Config.Authentication, config.SecureServing); err != nil {
+		return err
+	}
+	if err := o.Audit.ApplyTo(&config.Config); err != nil {
 		return err
 	}
 	if err := o.Features.ApplyTo(&config.Config); err != nil {
@@ -96,6 +108,8 @@ func (o *RecommendedOptions) Validate() []error {
 	errors := []error{}
 	errors = append(errors, o.Etcd.Validate()...)
 	errors = append(errors, o.SecureServing.Validate()...)
+	errors = append(errors, o.Authentication.Validate()...)
+	errors = append(errors, o.Audit.Validate()...)
 	errors = append(errors, o.Features.Validate()...)
 	errors = append(errors, o.CoreAPI.Validate()...)
 	errors = append(errors, o.Admission.Validate()...)
