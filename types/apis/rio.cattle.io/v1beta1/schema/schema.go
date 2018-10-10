@@ -70,6 +70,7 @@ func serviceTypes(schemas *types.Schemas) *types.Schemas {
 			mapper.Drop{Field: "deploymentStatus"},
 		).
 		AddMapperForType(&Version, v1beta1.Service{},
+			mapper.PendingStatus{},
 			mapper.Drop{Field: "namespace"},
 			mapper.Drop{Field: "labels"},
 			mapper.Move{From: "serviceLabels", To: "labels"},
@@ -79,6 +80,7 @@ func serviceTypes(schemas *types.Schemas) *types.Schemas {
 func stackTypes(schemas *types.Schemas) *types.Schemas {
 	return schemas.
 		AddMapperForType(&Version, v1beta1.Stack{},
+			mapper.PendingStatus{},
 			mapper.Move{From: "namespace", To: "spaceId", CodeName: "SpaceID"}).
 		MustImportAndCustomize(&Version, v1beta1.Stack{}, func(schema *types.Schema) {
 			schema.MustCustomizeField("spaceId", func(f types.Field) types.Field {

@@ -85,12 +85,6 @@ func services(ns string, stack *v1beta1.Stack, internalStack *v1beta1.InternalSt
 		newResource.Namespace = ns
 		newResource.Spec.SpaceName = stack.Namespace
 		newResource.Spec.StackName = ref.FromStrings(stack.Namespace, stack.Name)
-		newResource.Status.Conditions = []v1beta1.Condition{
-			{
-				Type:   "Pending",
-				Status: "Unknown",
-			},
-		}
 
 		output.Services[newResource.Name] = newResource
 	}
