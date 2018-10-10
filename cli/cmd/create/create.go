@@ -24,8 +24,8 @@ type Create struct {
 	DnsOption          []string          `desc:"Set DNS options"`
 	DnsSearch          []string          `desc:"Set custom DNS search domains"`
 	Dns                []string          `desc:"Set custom DNS servers"`
-	E_Env              []string          `desc:"Set environment variables"`
 	Entrypoint         []string          `desc:"Overwrite the default ENTRYPOINT of the image"`
+	E_Env              []string          `desc:"Set environment variables"`
 	EnvFile            []string          `desc:"Read in a file of environment variables"`
 	Expose             []string          `desc:"Expose a container's port(s) internally"`
 	GlobalPermission   []string          `desc:"Permissions to grant to container's service account for all stacks"`
@@ -37,21 +37,21 @@ type Create struct {
 	HealthTimeout      string            `desc:"Maximum time to allow one check to run (ms|s|m|h)" default:"0s"`
 	HealthURL          string            `desc:"URL to hit to check health (example: http://localhost:8080/ping)"`
 	Hostname           string            `desc:"Container host name"`
-	I_Interactive      bool              `desc:"Keep STDIN open even if not attached"`
 	ImagePullPolicy    string            `desc:"Behavior determining when to pull the image (never|always|not-present)" default:"not-present"`
 	Init               bool              `desc:"Run an init inside the container that forwards signals and reaps processes"`
+	I_Interactive      bool              `desc:"Keep STDIN open even if not attached"`
 	Ipc                string            `desc:"IPC mode to use"`
-	LabelFile          []string          `desc:"Read in a line delimited file of labels"`
 	L_Label            map[string]string `desc:"Set meta data on a container"`
+	LabelFile          []string          `desc:"Read in a line delimited file of labels"`
+	M_Memory           string            `desc:"Memory reservation (format: <number>[<unit>], where unit = b, k, m or g)"`
 	MemoryLimit        string            `desc:"Memory hard limit (format: <number>[<unit>], where unit = b, k, m or g)"`
 	Metadata           map[string]string `desc:"Metadata to attach to this service"`
-	M_Memory           string            `desc:"Memory reservation (format: <number>[<unit>], where unit = b, k, m or g)"`
-	Net_Network        string            `desc:"Connect a container to a network" default:"default"`
 	N_Name             string            `desc:"Assign a name to the container"`
+	Net_Network        string            `desc:"Connect a container to a network" default:"default"`
 	Permission         []string          `desc:"Permissions to grant to container's service account in current stack"`
 	Pid                string            `desc:"PID namespace to use"`
-	P_Publish          []string          `desc:"Publish a container's port(s) externally"`
 	Privileged         bool              `desc:"Give extended privileges to this container"`
+	P_Publish          []string          `desc:"Publish a container's port(s) externally"`
 	ReadOnly           bool              `desc:"Mount the container's root filesystem as read only"`
 	ReadyCmd           string            `desc:"Command to run to check readiness"`
 	ReadyInterval      string            `desc:"Time between running the check (ms|s|m|h)" default:"0s"`
@@ -81,10 +81,10 @@ type Create struct {
 type Scheduling struct {
 	Global         bool     `desc:"Run one container per node (or some nodes depending on scheduling)"`
 	Node           string   `desc:"Skip scheduling and run service on specified node"`
-	Scheduler      string   `desc:"Use a custom scheduler of the given name"`
-	NodeRequire    []string `desc:"Node running containers must match all expressions"`
-	NodeRequireAny []string `desc:"Node running containers must match one expression"`
 	NodePreferred  []string `desc:"Node running containers if possible should match expression"`
+	NodeRequireAny []string `desc:"Node running containers must match one expression"`
+	NodeRequire    []string `desc:"Node running containers must match all expressions"`
+	Scheduler      string   `desc:"Use a custom scheduler of the given name"`
 }
 
 func (c *Create) Run(ctx *clicontext.CLIContext) error {
