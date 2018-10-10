@@ -22,12 +22,10 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/resource"
 	internalapi "k8s.io/kubernetes/pkg/kubelet/apis/cri"
-	"k8s.io/kubernetes/pkg/kubelet/cm/cpumanager"
 	"k8s.io/kubernetes/pkg/kubelet/config"
-	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/lifecycle"
 	"k8s.io/kubernetes/pkg/kubelet/status"
-	"k8s.io/kubernetes/pkg/scheduler/schedulercache"
+	schedulercache "k8s.io/kubernetes/pkg/scheduler/cache"
 )
 
 type containerManagerStub struct{}
@@ -76,16 +74,8 @@ func (cm *containerManagerStub) GetCapacity() v1.ResourceList {
 	return c
 }
 
-func (cm *containerManagerStub) GetDevicePluginResourceCapacity() (v1.ResourceList, v1.ResourceList, []string) {
-	return nil, nil, []string{}
-}
-
 func (cm *containerManagerStub) NewPodContainerManager() PodContainerManager {
 	return &podContainerManagerStub{}
-}
-
-func (cm *containerManagerStub) GetResources(pod *v1.Pod, container *v1.Container) (*kubecontainer.RunContainerOptions, error) {
-	return &kubecontainer.RunContainerOptions{}, nil
 }
 
 func (cm *containerManagerStub) UpdatePluginResources(*schedulercache.NodeInfo, *lifecycle.PodAdmitAttributes) error {
@@ -93,7 +83,7 @@ func (cm *containerManagerStub) UpdatePluginResources(*schedulercache.NodeInfo, 
 }
 
 func (cm *containerManagerStub) InternalContainerLifecycle() InternalContainerLifecycle {
-	return &internalContainerLifecycleImpl{cpumanager.NewFakeManager()}
+	return &internalContainerLifecycleImpl{}
 }
 
 func (cm *containerManagerStub) GetPodCgroupRoot() string {

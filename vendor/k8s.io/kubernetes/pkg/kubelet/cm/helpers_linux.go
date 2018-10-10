@@ -44,28 +44,27 @@ const (
 )
 
 // MilliCPUToQuota converts milliCPU to CFS quota and period values.
-func MilliCPUToQuota(milliCPU int64) (quota int64, period uint64) {
+func MilliCPUToQuota(milliCPU int64, period int64) (quota int64) {
 	// CFS quota is measured in two values:
-	//  - cfs_period_us=100ms (the amount of time to measure usage across)
+	//  - cfs_period_us=100ms (the amount of time to measure usage across given by period)
 	//  - cfs_quota=20ms (the amount of cpu time allowed to be used across a period)
 	// so in the above example, you are limited to 20% of a single CPU
 	// for multi-cpu environments, you just scale equivalent amounts
+	// see https://www.kernel.org/doc/Documentation/scheduler/sched-bwc.txt for details
 
 	if milliCPU == 0 {
 		return
 	}
 
-	// we set the period to 100ms by default
 	period = QuotaPeriod
 
 	// we then convert your milliCPU to a value normalized over a period
-	quota = (milliCPU * QuotaPeriod) / MilliCPUToCPU
+	quota = (milliCPU * period) / MilliCPUToCPU
 
 	// quota needs to be a minimum of 1ms.
 	if quota < MinQuotaPeriod {
 		quota = MinQuotaPeriod
 	}
-
 	return
 }
 
@@ -103,7 +102,7 @@ func HugePageLimits(resourceList v1.ResourceList) map[int64]int64 {
 }
 
 // ResourceConfigForPod takes the input pod and outputs the cgroup resource config.
-func ResourceConfigForPod(pod *v1.Pod, enforceCPULimits bool) *ResourceConfig {
+func ResourceConfigForPod(pod *v1.Pod, enforceCPULimits bool, cpuPeriod uint64) *ResourceConfig {
 	// sum requests and limits.
 	reqs, limits := resource.PodRequestsAndLimits(pod)
 
@@ -122,7 +121,7 @@ func ResourceConfigForPod(pod *v1.Pod, enforceCPULimits bool) *ResourceConfig {
 
 	// convert to CFS values
 	cpuShares := MilliCPUToShares(cpuRequests)
-	cpuQuota, cpuPeriod := MilliCPUToQuota(cpuLimits)
+	cpuQuota := MilliCPUToQuota(cpuLimits, int64(cpuPeriod))
 
 	// track if limits were applied for each resource.
 	memoryLimitsDeclared := true

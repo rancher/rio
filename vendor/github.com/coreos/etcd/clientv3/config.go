@@ -17,6 +17,8 @@ package clientv3
 import (
 	"crypto/tls"
 	"time"
+
+	"google.golang.org/grpc"
 )
 
 type Config struct {
@@ -35,4 +37,6 @@ type Config struct {
 	TLS *tls.Config
 
 	DialTimeout time.Duration
+
+	DialOptions []grpc.DialOption
 }

@@ -494,7 +494,9 @@ func (rc *reconciler) reconstructVolume(volume podVolume) (*reconstructedVolume,
 			newMounterErr)
 	}
 
+	// TODO: remove feature gate check after no longer needed
 	var volumeMapper volumepkg.BlockVolumeMapper
+
 	reconstructedVolume := &reconstructedVolume{
 		volumeName: uniqueVolumeName,
 		podName:    volume.podName,
@@ -571,7 +573,8 @@ func (rc *reconciler) updateStates(volumesNeedUpdate map[v1.UniqueVolumeName]*re
 			volume.mounter,
 			volume.blockVolumeMapper,
 			volume.outerVolumeSpecName,
-			volume.volumeGidValue)
+			volume.volumeGidValue,
+			volume.volumeSpec)
 		if err != nil {
 			glog.Errorf("Could not add pod to volume information to actual state of world: %v", err)
 			continue

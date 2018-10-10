@@ -152,6 +152,11 @@ func GetContainerPorts(pods ...*v1.Pod) []*v1.ContainerPort {
 	return ports
 }
 
+// PodPriorityEnabled indicates whether pod priority feature is enabled.
+func PodPriorityEnabled() bool {
+	return false
+}
+
 // GetPodFullName returns a name that uniquely identifies a pod.
 func GetPodFullName(pod *v1.Pod) string {
 	// Use underscore as the delimiter because it is not allowed in pod name
