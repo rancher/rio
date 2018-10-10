@@ -9,7 +9,6 @@ import (
 	"github.com/rancher/norman/store/proxy"
 	normantypes "github.com/rancher/norman/types"
 	"github.com/rancher/rio/api/config"
-	"github.com/rancher/rio/api/defaults"
 	"github.com/rancher/rio/api/named"
 	"github.com/rancher/rio/api/pretty"
 	"github.com/rancher/rio/api/resetstack"
@@ -17,7 +16,6 @@ import (
 	"github.com/rancher/rio/api/stack"
 	"github.com/rancher/rio/types"
 	networkSchema "github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3/schema"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1/schema"
 	spaceSchema "github.com/rancher/rio/types/apis/space.cattle.io/v1beta1/schema"
 	networkClient "github.com/rancher/rio/types/client/networking/v1alpha3"
@@ -63,17 +61,7 @@ func setupService(ctx context.Context, rContext *types.Context) {
 	s := rContext.Schemas.Schema(&schema.Version, client.ServiceType)
 	s.Formatter = pretty.Format
 	s.InputFormatter = pretty.InputFormatter
-	s.Store = &defaults.DefaultStatusStore{
-		Store: resetstack.New(named.New(s.Store)),
-		Default: v1beta1.ServiceStatus{
-			Conditions: []v1beta1.Condition{
-				{
-					Type:   "Pending",
-					Status: "Unknown",
-				},
-			},
-		},
-	}
+	s.Store = resetstack.New(named.New(s.Store))
 }
 
 func setupConfig(ctx context.Context, rContext *types.Context) {
@@ -98,17 +86,7 @@ func setupStacks(ctx context.Context, rContext *types.Context) {
 	s := rContext.Schemas.Schema(&schema.Version, client.StackType)
 	s.Formatter = pretty.Format
 	s.ListHandler = stack.ListHandler
-	s.Store = &defaults.DefaultStatusStore{
-		Store: named.New(s.Store),
-		Default: v1beta1.StackStatus{
-			Conditions: []v1beta1.Condition{
-				{
-					Type:   "Pending",
-					Status: "Unknown",
-				},
-			},
-		},
-	}
+	s.Store = named.New(s.Store)
 }
 
 func setupNodes(ctx context.Context, clientGetter proxy.ClientGetter, rContext *types.Context) {
