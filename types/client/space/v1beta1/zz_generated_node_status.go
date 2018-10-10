@@ -6,6 +6,7 @@ const (
 	NodeStatusFieldAllocatable     = "allocatable"
 	NodeStatusFieldCapacity        = "capacity"
 	NodeStatusFieldConditions      = "conditions"
+	NodeStatusFieldConfig          = "config"
 	NodeStatusFieldDaemonEndpoints = "daemonEndpoints"
 	NodeStatusFieldImages          = "images"
 	NodeStatusFieldNodeInfo        = "nodeInfo"
@@ -19,6 +20,7 @@ type NodeStatus struct {
 	Allocatable     map[string]string    `json:"allocatable,omitempty" yaml:"allocatable,omitempty"`
 	Capacity        map[string]string    `json:"capacity,omitempty" yaml:"capacity,omitempty"`
 	Conditions      []NodeCondition      `json:"conditions,omitempty" yaml:"conditions,omitempty"`
+	Config          *NodeConfigStatus    `json:"config,omitempty" yaml:"config,omitempty"`
 	DaemonEndpoints *NodeDaemonEndpoints `json:"daemonEndpoints,omitempty" yaml:"daemonEndpoints,omitempty"`
 	Images          []ContainerImage     `json:"images,omitempty" yaml:"images,omitempty"`
 	NodeInfo        *NodeSystemInfo      `json:"nodeInfo,omitempty" yaml:"nodeInfo,omitempty"`

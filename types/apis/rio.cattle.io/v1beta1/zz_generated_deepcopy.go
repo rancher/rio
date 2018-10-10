@@ -185,21 +185,13 @@ func (in *ContainerConfig) DeepCopyInto(out *ContainerConfig) {
 	}
 	if in.Healthcheck != nil {
 		in, out := &in.Healthcheck, &out.Healthcheck
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(HealthConfig)
-			(*in).DeepCopyInto(*out)
-		}
+		*out = new(HealthConfig)
+		(*in).DeepCopyInto(*out)
 	}
 	if in.Readycheck != nil {
 		in, out := &in.Readycheck, &out.Readycheck
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(HealthConfig)
-			(*in).DeepCopyInto(*out)
-		}
+		*out = new(HealthConfig)
+		(*in).DeepCopyInto(*out)
 	}
 	if in.PortBindings != nil {
 		in, out := &in.PortBindings, &out.PortBindings
@@ -496,21 +488,13 @@ func (in *Mount) DeepCopyInto(out *Mount) {
 	*out = *in
 	if in.BindOptions != nil {
 		in, out := &in.BindOptions, &out.BindOptions
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(BindOptions)
-			**out = **in
-		}
+		*out = new(BindOptions)
+		**out = **in
 	}
 	if in.VolumeOptions != nil {
 		in, out := &in.VolumeOptions, &out.VolumeOptions
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(VolumeOptions)
-			**out = **in
-		}
+		*out = new(VolumeOptions)
+		**out = **in
 	}
 	return
 }
@@ -583,12 +567,8 @@ func (in *PodConfig) DeepCopyInto(out *PodConfig) {
 	in.Scheduling.DeepCopyInto(&out.Scheduling)
 	if in.StopGracePeriodSeconds != nil {
 		in, out := &in.StopGracePeriodSeconds, &out.StopGracePeriodSeconds
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(int)
-			**out = **in
-		}
+		*out = new(int)
+		**out = **in
 	}
 	if in.DNS != nil {
 		in, out := &in.DNS, &out.DNS
@@ -1024,39 +1004,23 @@ func (in *ServiceStatus) DeepCopyInto(out *ServiceStatus) {
 	*out = *in
 	if in.DeploymentStatus != nil {
 		in, out := &in.DeploymentStatus, &out.DeploymentStatus
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(v1beta2.DeploymentStatus)
-			(*in).DeepCopyInto(*out)
-		}
+		*out = new(v1beta2.DeploymentStatus)
+		(*in).DeepCopyInto(*out)
 	}
 	if in.DaemonSetStatus != nil {
 		in, out := &in.DaemonSetStatus, &out.DaemonSetStatus
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(v1beta2.DaemonSetStatus)
-			(*in).DeepCopyInto(*out)
-		}
+		*out = new(v1beta2.DaemonSetStatus)
+		(*in).DeepCopyInto(*out)
 	}
 	if in.StatefulSetStatus != nil {
 		in, out := &in.StatefulSetStatus, &out.StatefulSetStatus
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(v1beta2.StatefulSetStatus)
-			(*in).DeepCopyInto(*out)
-		}
+		*out = new(v1beta2.StatefulSetStatus)
+		(*in).DeepCopyInto(*out)
 	}
 	if in.ScaleStatus != nil {
 		in, out := &in.ScaleStatus, &out.ScaleStatus
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(ScaleStatus)
-			**out = **in
-		}
+		*out = new(ScaleStatus)
+		**out = **in
 	}
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
@@ -1406,12 +1370,8 @@ func (in *VolumeStatus) DeepCopyInto(out *VolumeStatus) {
 	*out = *in
 	if in.PVCStatus != nil {
 		in, out := &in.PVCStatus, &out.PVCStatus
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(v1.PersistentVolumeClaimStatus)
-			(*in).DeepCopyInto(*out)
-		}
+		*out = new(v1.PersistentVolumeClaimStatus)
+		(*in).DeepCopyInto(*out)
 	}
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions

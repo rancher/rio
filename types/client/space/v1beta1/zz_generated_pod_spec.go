@@ -20,7 +20,9 @@ const (
 	PodSpecFieldNodeSelector                  = "nodeSelector"
 	PodSpecFieldPriority                      = "priority"
 	PodSpecFieldPriorityClassName             = "priorityClassName"
+	PodSpecFieldReadinessGates                = "readinessGates"
 	PodSpecFieldRestartPolicy                 = "restartPolicy"
+	PodSpecFieldRuntimeClassName              = "runtimeClassName"
 	PodSpecFieldSchedulerName                 = "schedulerName"
 	PodSpecFieldSecurityContext               = "securityContext"
 	PodSpecFieldServiceAccountName            = "serviceAccountName"
@@ -50,7 +52,9 @@ type PodSpec struct {
 	NodeSelector                  map[string]string      `json:"nodeSelector,omitempty" yaml:"nodeSelector,omitempty"`
 	Priority                      *int64                 `json:"priority,omitempty" yaml:"priority,omitempty"`
 	PriorityClassName             string                 `json:"priorityClassName,omitempty" yaml:"priorityClassName,omitempty"`
+	ReadinessGates                []PodReadinessGate     `json:"readinessGates,omitempty" yaml:"readinessGates,omitempty"`
 	RestartPolicy                 string                 `json:"restartPolicy,omitempty" yaml:"restartPolicy,omitempty"`
+	RuntimeClassName              string                 `json:"runtimeClassName,omitempty" yaml:"runtimeClassName,omitempty"`
 	SchedulerName                 string                 `json:"schedulerName,omitempty" yaml:"schedulerName,omitempty"`
 	SecurityContext               *PodSecurityContext    `json:"securityContext,omitempty" yaml:"securityContext,omitempty"`
 	ServiceAccountName            string                 `json:"serviceAccountName,omitempty" yaml:"serviceAccountName,omitempty"`
