@@ -6,6 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/rancher/rio/cli/cmd/push"
+	"github.com/rancher/rio/cli/cmd/tag"
+
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/rio/cli/cmd/agent"
 	"github.com/rancher/rio/cli/cmd/attach"
@@ -220,6 +223,12 @@ func main() {
 			"Weight a percentage of traffic to a staged service",
 			appName+" weight [OPTIONS] [SERVICE_REVISION=PERCENTAGE...]",
 			""),
+		builder.Command(&tag.Tag{},
+			"Tag stacks",
+			appName+" tag $STACK_NAME $REPO_TAG", ""),
+		builder.Command(&push.Push{},
+			"Push stacks",
+			appName+" push $STACK_NAME $REPO_TAG", ""),
 		route.Route(app),
 
 		builder.Command(&events.Events{},

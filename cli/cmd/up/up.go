@@ -98,13 +98,14 @@ func (u *Up) doUp(ctx *clicontext.CLIContext, file, stack string) error {
 }
 
 func readAnswers(answersFile string) (map[string]string, error) {
-	content, err := util.ReadFile(answersFile)
+	contents, err := util.ReadFile(answersFile)
 	if os.IsNotExist(err) {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, err
 	}
+	content := []byte(contents[util.StackFileKey])
 
 	data, err := yaml.Parse(content)
 	if err != nil {

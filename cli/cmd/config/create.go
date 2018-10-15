@@ -41,10 +41,11 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	content, err := util.ReadFile(file)
+	contents, err := util.ReadFile(file)
 	if err != nil {
 		return err
 	}
+	content := []byte(contents[util.StackFileKey])
 
 	config.Labels = c.L_Label
 	if utf8.Valid(content) {

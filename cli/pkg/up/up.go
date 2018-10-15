@@ -11,18 +11,22 @@ import (
 
 	"github.com/docker/docker/pkg/symlink"
 	"github.com/pkg/errors"
+	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/up/questions"
 	template2 "github.com/rancher/rio/pkg/template"
 )
 
-func readFileInPath(relativePath, file string) ([]byte, error) {
-	if strings.HasPrefix(relativePath, "http") {
-		base, err := url.Parse(relativePath)
+// readFileInPath reads a starting file source, a required file name and an optional content map, returns the content of required file
+// file source can be http url, local disks or docker images
+func readRequiredFiles(fileSource, requiredFile string, contents map[string]string) ([]byte, error) {
+	// http url
+	if strings.HasPrefix(fileSource, "http") {
+		base, err := url.Parse(fileSource)
 		if err != nil {
 			return nil, err
 		}
-		ref, err := url.Parse(file)
+		ref, err := url.Parse(requiredFile)
 		if err != nil {
 			return nil, err
 		}
@@ -37,45 +41,52 @@ func readFileInPath(relativePath, file string) ([]byte, error) {
 		defer resp.Body.Close()
 		return ioutil.ReadAll(resp.Body)
 	}
-	f, err := symlink.FollowSymlinkInScope(file, relativePath)
+
+	// docker registry
+	if _, err := os.Stat(fileSource); err != nil {
+		return []byte(contents[requiredFile]), nil
+	}
+
+	// local disk
+	f, err := symlink.FollowSymlinkInScope(requiredFile, fileSource)
 	if err != nil {
 		return nil, err
 	}
 	return ioutil.ReadFile(f)
 }
 
-func readFiles(relativePath string, files []string, template *template2.Template, promptReplaceFile bool) error {
-	for _, file := range files {
-		existingContent, exists := template.AdditionalFiles[file]
-		content, err := readFileInPath(relativePath, file)
+func readFiles(workingDir string, contents map[string]string, requiredFiles []string, template *template2.Template, promptReplaceFile bool) error {
+	for _, requireFile := range requiredFiles {
+		existingContent, exists := template.AdditionalFiles[requireFile]
+		content, err := readRequiredFiles(workingDir, requireFile, contents)
 		if err != nil {
 			if exists {
 				continue
 			}
-			return fmt.Errorf("failed to read file %s: %v", file, err)
+			return fmt.Errorf("failed to read file %s: %v", requireFile, err)
 		}
 
 		if exists && bytes.Compare(existingContent, content) != 0 {
 			yn := true
 			if promptReplaceFile {
-				yn, err = questions.PromptBool(fmt.Sprintf("The contents of %s have changed, do you want to update", file), false)
+				yn, err = questions.PromptBool(fmt.Sprintf("The contents of %s have changed, do you want to update", requireFile), false)
 				if err != nil {
 					return errors.Wrap(err, "failed to ask question")
 				}
 			}
 
 			if yn {
-				template.AdditionalFiles[file] = content
+				template.AdditionalFiles[requireFile] = content
 			}
 		} else if !exists {
-			template.AdditionalFiles[file] = content
+			template.AdditionalFiles[requireFile] = content
 		}
 	}
 
 	return nil
 }
 
-func Run(ctx *clicontext.CLIContext, content []byte, stackID string, promptReplaceFile, prompt bool, answers map[string]string, file string) error {
+func Run(ctx *clicontext.CLIContext, contents map[string]string, stackID string, promptReplaceFile, prompt bool, answers map[string]string, fileRef string) error {
 	wc, err := ctx.WorkspaceClient()
 	if err != nil {
 		return err
@@ -90,22 +101,19 @@ func Run(ctx *clicontext.CLIContext, content []byte, stackID string, promptRepla
 	if err != nil {
 		return err
 	}
-	template.Content = content
+	template.Content = []byte(contents[util.StackFileKey])
 
-	files, err := template.RequiredFiles()
+	requiredFiles, err := template.RequiredFiles()
 	if err != nil {
 		return err
 	}
 
-	cwd, err := os.Getwd()
+	wd, err := getWorkingDir(fileRef)
 	if err != nil {
 		return err
 	}
-	relativePath := cwd
-	if strings.HasPrefix(file, "http") {
-		relativePath = file
-	}
-	if err := readFiles(relativePath, files, template, promptReplaceFile); err != nil {
+
+	if err := readFiles(wd, contents, requiredFiles, template, promptReplaceFile); err != nil {
 		return err
 	}
 
@@ -130,6 +138,14 @@ func Run(ctx *clicontext.CLIContext, content []byte, stackID string, promptRepla
 
 	_, err = wc.Stack.Update(stack, newStack)
 	return err
+}
+
+// getFileRef gets a file reference
+func getWorkingDir(fileRef string) (string, error) {
+	if _, err := os.Stat(fileRef); err != nil || strings.HasPrefix(fileRef, "http") {
+		return fileRef, nil
+	}
+	return os.Getwd()
 }
 
 func mergeAnswers(template *template2.Template, answers map[string]string) {

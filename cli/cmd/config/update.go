@@ -28,10 +28,11 @@ func (c *Update) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	content, err := util.ReadFile(file)
+	contents, err := util.ReadFile(file)
 	if err != nil {
 		return err
 	}
+	content := []byte(contents[util.StackFileKey])
 
 	err = RunUpdate(ctx, resource.ID, content, c.L_Label)
 	if err == nil {
