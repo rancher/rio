@@ -1,4 +1,5 @@
 ./bin
+./.vagrant
 ./.dapper
 ./data-dir
 ./dist

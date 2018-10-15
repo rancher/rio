@@ -2,6 +2,7 @@
 /.dapper
 /.idea
 /.trash-cache
+/.vagrant
 /bin
 /build
 /data-dir
