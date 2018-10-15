@@ -25,6 +25,7 @@ var (
 		"self/node":           "spec.nodeName",
 		"self/serviceAccount": "spec.serviceAccountName",
 		"self/hostIp":         "status.hostIP",
+		"self/nodeIp":         "status.hostIP",
 		"self/ip":             "status.podIP",
 	}
 	resourceRefs = map[string]string{
