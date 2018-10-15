@@ -12,8 +12,11 @@ wait_for_state() {
 
 wait_for_ip() {
     export ip=""
-    while ! [[ $ip =~ ^10.42.* ]]; do
-        ip=$(rio kubectl get po --all-namespaces -o wide | grep $1 | awk '{print $(NF-1)}')
-        sleep 1
+    for i in {1..30}
+    do
+        if ! [[ $ip =~ ^10.42.* ]]; then
+            ip=$(rio kubectl get po --all-namespaces -o wide | grep $1 | awk '{print $(NF-2)}')
+            sleep 2
+        fi
     done
 }
