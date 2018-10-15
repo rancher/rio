@@ -8,7 +8,6 @@ import (
 
 	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/rio/pkg/deploy/stack/populate/podvolume"
-	"github.com/rancher/rio/pkg/deploy/stack/populate/serviceports"
 	"github.com/rancher/rio/pkg/name"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
 	"github.com/sirupsen/logrus"
@@ -92,7 +91,7 @@ func Container(name string, container v1beta1.ContainerConfig) v1.Container {
 
 func addPorts(c *v1.Container, container v1beta1.ContainerConfig) {
 	added := map[string]bool{}
-	for _, ep := range serviceports.AllExposedPorts(&container) {
+	for _, ep := range allContainerPorts(&container) {
 		cp := v1.ContainerPort{
 			Name:          ep.Name,
 			ContainerPort: int32(ep.TargetPort),

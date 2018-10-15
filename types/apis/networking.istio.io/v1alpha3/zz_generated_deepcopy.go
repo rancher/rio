@@ -72,11 +72,10 @@ func (in *GatewaySpec) DeepCopyInto(out *GatewaySpec) {
 		in, out := &in.Servers, &out.Servers
 		*out = make([]*Server, len(*in))
 		for i := range *in {
-			if (*in)[i] == nil {
-				(*out)[i] = nil
-			} else {
-				(*out)[i] = new(Server)
-				(*in)[i].DeepCopyInto((*out)[i])
+			if (*in)[i] != nil {
+				in, out := &(*in)[i], &(*out)[i]
+				*out = new(Server)
+				(*in).DeepCopyInto(*out)
 			}
 		}
 	}
@@ -121,12 +120,8 @@ func (in *Server) DeepCopyInto(out *Server) {
 	*out = *in
 	if in.Port != nil {
 		in, out := &in.Port, &out.Port
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(Port)
-			**out = **in
-		}
+		*out = new(Port)
+		**out = **in
 	}
 	if in.Hosts != nil {
 		in, out := &in.Hosts, &out.Hosts

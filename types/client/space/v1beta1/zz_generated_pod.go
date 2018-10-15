@@ -36,9 +36,11 @@ const (
 	PodFieldPriority                      = "priority"
 	PodFieldPriorityClassName             = "priorityClassName"
 	PodFieldQOSClass                      = "qosClass"
+	PodFieldReadinessGates                = "readinessGates"
 	PodFieldReason                        = "reason"
 	PodFieldRemoved                       = "removed"
 	PodFieldRestartPolicy                 = "restartPolicy"
+	PodFieldRuntimeClassName              = "runtimeClassName"
 	PodFieldSchedulerName                 = "schedulerName"
 	PodFieldSecurityContext               = "securityContext"
 	PodFieldServiceAccountName            = "serviceAccountName"
@@ -86,9 +88,11 @@ type Pod struct {
 	Priority                      *int64                 `json:"priority,omitempty" yaml:"priority,omitempty"`
 	PriorityClassName             string                 `json:"priorityClassName,omitempty" yaml:"priorityClassName,omitempty"`
 	QOSClass                      string                 `json:"qosClass,omitempty" yaml:"qosClass,omitempty"`
+	ReadinessGates                []PodReadinessGate     `json:"readinessGates,omitempty" yaml:"readinessGates,omitempty"`
 	Reason                        string                 `json:"reason,omitempty" yaml:"reason,omitempty"`
 	Removed                       string                 `json:"removed,omitempty" yaml:"removed,omitempty"`
 	RestartPolicy                 string                 `json:"restartPolicy,omitempty" yaml:"restartPolicy,omitempty"`
+	RuntimeClassName              string                 `json:"runtimeClassName,omitempty" yaml:"runtimeClassName,omitempty"`
 	SchedulerName                 string                 `json:"schedulerName,omitempty" yaml:"schedulerName,omitempty"`
 	SecurityContext               *PodSecurityContext    `json:"securityContext,omitempty" yaml:"securityContext,omitempty"`
 	ServiceAccountName            string                 `json:"serviceAccountName,omitempty" yaml:"serviceAccountName,omitempty"`

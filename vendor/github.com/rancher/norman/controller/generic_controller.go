@@ -9,6 +9,7 @@ import (
 	"time"
 
 	errors2 "github.com/pkg/errors"
+	"github.com/rancher/norman/metrics"
 	"github.com/rancher/norman/objectclient"
 	"github.com/rancher/norman/types"
 	"github.com/sirupsen/logrus"
@@ -261,7 +262,11 @@ func (g *genericController) syncHandler(s string) (err error) {
 	var errs []error
 	for _, handler := range g.handlers {
 		logrus.Debugf("%s calling handler %s %s", g.name, handler.name, s)
+		metrics.IncTotalHandlerExecution(g.name, handler.name)
 		if err := handler.handler(s); err != nil {
+			if !ignoreError(err, false) {
+				metrics.IncTotalHandlerFailure(g.name, handler.name, s)
+			}
 			errs = append(errs, &handlerError{
 				name: handler.name,
 				err:  err,

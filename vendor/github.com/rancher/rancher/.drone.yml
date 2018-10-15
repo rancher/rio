@@ -13,7 +13,7 @@ pipeline:
     commands:
     - cp -r ./bin/* ./package/
     when:
-      branch: master
+      branch: [master, release/*]
       event: [push,tag]
 
   docker-publish-master:
@@ -23,6 +23,8 @@ pipeline:
     context: package/
     tag: master
     secrets: [docker_username, docker_password]
+    env:
+      PLUGIN_CUSTOM_DNS=8.8.8.8
     build_args:
     - VERSION=master
     when:
@@ -36,6 +38,8 @@ pipeline:
     context: package/
     tag: master
     secrets: [docker_username, docker_password]
+    env:
+      PLUGIN_CUSTOM_DNS=8.8.8.8
     build_args:
     - VERSION=master
     when:
@@ -49,10 +53,12 @@ pipeline:
     context: package/
     tag: ${DRONE_TAG}
     secrets: [docker_username, docker_password]
+    env:
+      PLUGIN_CUSTOM_DNS=8.8.8.8
     build_args:
     - VERSION=${DRONE_TAG}
     when:
-      branch: master
+      branch: [master, release/*]
       event: tag
 
   docker-publish-agent:
@@ -62,10 +68,12 @@ pipeline:
     context: package/
     tag: ${DRONE_TAG}
     secrets: [docker_username, docker_password]
+    env:
+      PLUGIN_CUSTOM_DNS=8.8.8.8
     build_args:
     - VERSION=${DRONE_TAG}
     when:
-      branch: master
+      branch: [master, release/*]
       event: tag
 
   github_binary_prerelease:
@@ -77,7 +85,7 @@ pipeline:
      - sha256
     secrets: [github_token]
     when:
-      branch: master
+      branch: [master, release/*]
       event: tag
       ref:
         include: [ refs/tags/*rc* ]
@@ -90,7 +98,7 @@ pipeline:
      - sha256
     secrets: [github_token]
     when:
-      branch: master
+      branch: [master, release/*]
       event: tag
       ref:
         exclude: [ refs/tags/*rc* ]

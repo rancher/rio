@@ -35,10 +35,10 @@ func (a *Agent) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	return RunAgent(a.S_Server, a.T_Token, dataDir, a.L_Log)
+	return RunAgent(a.S_Server, a.T_Token, dataDir, a.L_Log, a.I_NodeIp)
 }
 
-func RunAgent(server, token, dataDir, logFile string) error {
+func RunAgent(server, token, dataDir, logFile, ipAddress string) error {
 	dataDir = filepath.Join(dataDir, "agent")
 
 	for {
@@ -55,6 +55,7 @@ func RunAgent(server, token, dataDir, logFile string) error {
 	os.Setenv("RIO_URL", server)
 	os.Setenv("RIO_TOKEN", token)
 	os.Setenv("RIO_DATA_DIR", filepath.Join(dataDir, "root"))
+	os.Setenv("RIO_NODE_IP", ipAddress)
 
 	os.MkdirAll(dataDir, 0700)
 

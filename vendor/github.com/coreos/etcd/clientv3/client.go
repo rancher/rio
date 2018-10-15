@@ -20,6 +20,7 @@ import (
 
 // Client provides and manages an etcd v3 client session.
 type Client struct {
+	Cluster
 	KV
 	Lease
 	Watcher

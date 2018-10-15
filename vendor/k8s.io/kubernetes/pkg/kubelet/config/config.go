@@ -61,8 +61,8 @@ type PodConfig struct {
 	updates chan kubetypes.PodUpdate
 
 	// contains the list of all configured sources
-	sourcesLock sync.Mutex
-	sources     sets.String
+	sourcesLock       sync.Mutex
+	sources           sets.String
 }
 
 // NewPodConfig creates an object that can merge many configuration sources into a stream
@@ -298,6 +298,9 @@ func (s *podStorage) merge(source string, change interface{}) (adds, updates, de
 		}
 	case kubetypes.RESTORE:
 		glog.V(4).Infof("Restoring pods for source %s", source)
+		for _, value := range update.Pods {
+			restorePods = append(restorePods, value)
+		}
 
 	default:
 		glog.Warningf("Received invalid update type: %v", update)

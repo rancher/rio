@@ -7,10 +7,12 @@ import (
 )
 
 var (
-	settings = map[string]Setting{}
-	provider Provider
+	settings   = map[string]Setting{}
+	provider   Provider
+	RKEVersion string
 
 	AgentImage                      = NewSetting("agent-image", "rancher/rancher-agent:master")
+	WindowsAgentImage               = NewSetting("windows-agent-image", "rancher/rancher-agent:master-nanoserver-1803")
 	CACerts                         = NewSetting("cacerts", "")
 	CLIURLDarwin                    = NewSetting("cli-url-darwin", "https://releases.rancher.com/cli/v1.0.0-alpha8/rancher-darwin-amd64-v1.0.0-alpha8.tar.gz")
 	CLIURLLinux                     = NewSetting("cli-url-linux", "https://releases.rancher.com/cli/v1.0.0-alpha8/rancher-linux-amd64-v1.0.0-alpha8.tar.gz")
@@ -26,7 +28,10 @@ var (
 	KubernetesVersion               = NewSetting("k8s-version", v3.DefaultK8s)
 	KubernetesVersionToSystemImages = NewSetting("k8s-version-to-images", getSystemImages())
 	MachineVersion                  = NewSetting("machine-version", "dev")
+	Namespace                       = NewSetting("namespace", "cattle-system")
+	PeerServices                    = NewSetting("peer-service", "rancher")
 	RDNSServerBaseURL               = NewSetting("rdns-base-url", "https://api.lb.rancher.cloud/v1")
+	RkeVersion                      = NewSetting("rke-version", RKEVersion)
 	ServerImage                     = NewSetting("server-image", "rancher/rancher")
 	ServerURL                       = NewSetting("server-url", "")
 	ServerVersion                   = NewSetting("server-version", "dev")

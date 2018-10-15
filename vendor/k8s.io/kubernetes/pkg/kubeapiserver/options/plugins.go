@@ -20,8 +20,11 @@ package options
 // This should probably be part of some configuration fed into the build for a
 // given binary target.
 import (
+	// Admission policies
 	"k8s.io/kubernetes/plugin/pkg/admission/serviceaccount"
 	"k8s.io/kubernetes/plugin/pkg/admission/storage/storageclass/setdefault"
+	"k8s.io/kubernetes/plugin/pkg/admission/storage/storageobjectinuseprotection"
+
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apiserver/pkg/admission"
 	"k8s.io/apiserver/pkg/admission/plugin/namespace/lifecycle"
@@ -32,6 +35,7 @@ var AllOrderedPlugins = []string{
 	lifecycle.PluginName,                    // NamespaceLifecycle
 	serviceaccount.PluginName,               // ServiceAccount
 	setdefault.PluginName,                   // DefaultStorageClass
+	storageobjectinuseprotection.PluginName, // StorageObjectInUseProtection
 }
 
 // RegisterAllAdmissionPlugins registers all admission plugins and
@@ -39,6 +43,7 @@ var AllOrderedPlugins = []string{
 func RegisterAllAdmissionPlugins(plugins *admission.Plugins) {
 	serviceaccount.Register(plugins)
 	setdefault.Register(plugins)
+	storageobjectinuseprotection.Register(plugins)
 }
 
 // DefaultOffAdmissionPlugins get admission plugins off by default for kube-apiserver.

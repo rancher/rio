@@ -188,7 +188,7 @@ func (a *noNewPrivsAdmitHandler) Admit(attrs *PodAdmitAttributes) PodAdmitResult
 	}
 
 	// Always admit runtimes except docker.
-		return PodAdmitResult{Admit: true}
+	return PodAdmitResult{Admit: true}
 }
 
 func noNewPrivsRequired(pod *v1.Pod) bool {
@@ -199,4 +199,42 @@ func noNewPrivsRequired(pod *v1.Pod) bool {
 		}
 	}
 	return false
+}
+
+func NewProcMountAdmitHandler(runtime kubecontainer.Runtime) PodAdmitHandler {
+	return &procMountAdmitHandler{
+		Runtime: runtime,
+	}
+}
+
+type procMountAdmitHandler struct {
+	kubecontainer.Runtime
+}
+
+func (a *procMountAdmitHandler) Admit(attrs *PodAdmitAttributes) PodAdmitResult {
+	// If the pod is already running or terminated, no need to recheck NoNewPrivs.
+	if attrs.Pod.Status.Phase != v1.PodPending {
+		return PodAdmitResult{Admit: true}
+	}
+
+	// If the containers in a pod only need the default ProcMountType, admit it.
+	if procMountIsDefault(attrs.Pod) {
+		return PodAdmitResult{Admit: true}
+	}
+
+	return PodAdmitResult{Admit: true}
+}
+
+func procMountIsDefault(pod *v1.Pod) bool {
+	// Iterate over pod containers and check if we are using the DefaultProcMountType
+	// for all containers.
+	for _, c := range pod.Spec.Containers {
+		if c.SecurityContext != nil {
+			if c.SecurityContext.ProcMount != nil && *c.SecurityContext.ProcMount != v1.DefaultProcMount {
+				return false
+			}
+		}
+	}
+
+	return true
 }

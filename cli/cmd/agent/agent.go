@@ -7,6 +7,11 @@ type Agent struct {
 	S_Server  string `desc:"Server to connect to" env:"RIO_URL"`
 	D_DataDir string `desc:"Folder to hold state" default:"/var/lib/rancher/rio"`
 	L_Log     string `desc:"log to file"`
+	AgentShared
+}
+
+type AgentShared struct {
+	I_NodeIp string `desc:"IP address to advertise for node"`
 }
 
 func (a *Agent) Customize(command *cli.Command) {

@@ -116,8 +116,8 @@ type basicManager struct {
 	translationByUID map[kubetypes.MirrorPodUID]kubetypes.ResolvedPodUID
 
 	// basicManager is keeping secretManager and configMapManager up-to-date.
-	secretManager    secret.Manager
-	configMapManager configmap.Manager
+	secretManager     secret.Manager
+	configMapManager  configmap.Manager
 
 	// A mirror pod client to create/delete mirror pods.
 	MirrorClient

@@ -8,6 +8,7 @@ const (
 	PodSecurityContextFieldRunAsUser          = "runAsUser"
 	PodSecurityContextFieldSELinuxOptions     = "seLinuxOptions"
 	PodSecurityContextFieldSupplementalGroups = "supplementalGroups"
+	PodSecurityContextFieldSysctls            = "sysctls"
 )
 
 type PodSecurityContext struct {
@@ -17,4 +18,5 @@ type PodSecurityContext struct {
 	RunAsUser          *int64          `json:"runAsUser,omitempty" yaml:"runAsUser,omitempty"`
 	SELinuxOptions     *SELinuxOptions `json:"seLinuxOptions,omitempty" yaml:"seLinuxOptions,omitempty"`
 	SupplementalGroups []int64         `json:"supplementalGroups,omitempty" yaml:"supplementalGroups,omitempty"`
+	Sysctls            []Sysctl        `json:"sysctls,omitempty" yaml:"sysctls,omitempty"`
 }
