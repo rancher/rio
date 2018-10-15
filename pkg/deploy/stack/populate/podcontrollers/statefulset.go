@@ -49,9 +49,9 @@ func statefulSet(stack *input.Stack, service *v1beta1.Service, cp *controllerPar
 
 	for _, volumeTemplate := range usedTemplates {
 		labels := map[string]string{
-			"rio.cattle.io/stack":          stack.Stack.Name,
-			"rio.cattle.io/workspace":      stack.Stack.Namespace,
-			"rio.cattle.io/volumetemplate": volumeTemplate.Name,
+			"rio.cattle.io/stack":           stack.Stack.Name,
+			"rio.cattle.io/workspace":       stack.Stack.Namespace,
+			"rio.cattle.io/volume-template": volumeTemplate.Name,
 		}
 
 		pvc, err := volume.ToPVC(stack.Namespace, labels, *volumeTemplate)
