@@ -30,6 +30,7 @@ type StackSpec struct {
 	Questions                 []v3.Question     `json:"questions,omitempty"`
 	DisableMesh               bool              `json:"disableMesh,omitempty"`
 	EnableKubernetesResources bool              `json:"enableKubernetesResources,omitempty"`
+	RepoTags                  []string          `json:"repoTags,omitempty"`
 }
 
 type StackStatus struct {
