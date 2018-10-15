@@ -46,6 +46,10 @@ func (c *CLIContext) stackScopedByID(id, schemaType string) (*types.NamedResourc
 	}
 
 	scoped := lookup.ParseStackScoped(w, id)
+	if scoped.Other != "" {
+		return nil, fmt.Errorf("invalid stack scoped ID")
+	}
+
 	return c.defaultByID(scoped.ResourceID, schemaType)
 }
 

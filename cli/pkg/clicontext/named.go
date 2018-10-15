@@ -36,6 +36,9 @@ func (c *CLIContext) defaultByName(filters map[string]interface{}, name string) 
 	}
 
 	stackScoped := lookup.ParseStackScoped(w, name)
+	if stackScoped.Other != "" {
+		return nil, false, fmt.Errorf("invalid stack scoped ID")
+	}
 	return c.stackScopedByName(filters, stackScoped.StackName, stackScoped.LookupName())
 }
 
