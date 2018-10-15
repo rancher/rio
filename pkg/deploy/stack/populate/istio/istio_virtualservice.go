@@ -223,8 +223,9 @@ func appendStringWithPort(base []string, host string, ports map[uint32]bool) []s
 	for port := range ports {
 		if port == 80 || port == 443 {
 			base = append(base, host)
+		} else {
+			base = append(base, fmt.Sprintf("%s:%d", host, port))
 		}
-		base = append(base, fmt.Sprintf("%s:%d", host, port))
 	}
 
 	return base
