@@ -21,3 +21,9 @@ teardown () {
 
 }
 
+@test "k8s volume - volume size is 10Gi" {
+    nsp="$(rio inspect --format '{{.id}}' ${vol} | cut -f1 -d:)"
+    rio volume
+    sleep 10
+    [ "$(rio kubectl get -n ${nsp} -o=json pvc/${vol} | jq -r .spec.resources.requests.storage)" == "10Gi" ]
+}

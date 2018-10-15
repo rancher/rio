@@ -9,6 +9,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const useTemplatesLabel = "rio.cattle.io/use-templates"
+
 func statefulSet(stack *input.Stack, service *v1beta1.Service, cp *controllerParams, usedTemplates map[string]*v1beta1.Volume, output *output.Deployment) error {
 	statefulSet := &appsv1.StatefulSet{
 		TypeMeta: metav1.TypeMeta{
@@ -30,6 +32,9 @@ func statefulSet(stack *input.Stack, service *v1beta1.Service, cp *controllerPar
 			Template: cp.PodTemplateSpec,
 		},
 	}
+	statefulSet.Labels[useTemplatesLabel] = "true"
+	statefulSet.Spec.Selector.MatchLabels[useTemplatesLabel] = "true"
+	statefulSet.Spec.Template.Labels[useTemplatesLabel] = "true"
 
 	if service.Spec.UpdateStrategy == "on-delete" {
 		statefulSet.Spec.UpdateStrategy.Type = appsv1.OnDeleteStatefulSetStrategyType
