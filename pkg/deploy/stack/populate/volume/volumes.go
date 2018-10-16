@@ -18,9 +18,14 @@ func ToPVC(namespace string, labels map[string]string, volume v1beta1.Volume) (*
 		cfg.Spec.StorageClassName = &volume.Spec.Driver
 	}
 
-	q, err := resource.ParseQuantity(fmt.Sprintf("%dGi", volume.Spec.SizeInGB))
+	size := volume.Spec.SizeInGB
+	if size == 0 {
+		size = 10
+	}
+
+	q, err := resource.ParseQuantity(fmt.Sprintf("%dGi", size))
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse size [%d] on volume %s", volume.Spec.SizeInGB, volume.Name)
+		return nil, fmt.Errorf("failed to parse size [%d] on volume %s", size, volume.Name)
 	}
 
 	switch strings.ToLower(volume.Spec.AccessMode) {
