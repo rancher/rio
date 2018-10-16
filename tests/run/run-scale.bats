@@ -45,7 +45,7 @@ scaleTestk8s() {
 
 }
 
-@test "Scale - value set to 0" {
+@test "run scale - value set to 0" {
   scale=0
   runScalerio "${scale}"
   scaleTestrio "${scale}"
@@ -53,7 +53,7 @@ scaleTestk8s() {
 
 }
 
-@test "Scale - value set to 1" {
+@test "run scale - value set to 1" {
   scale=1
   runScalerio "${scale}"
   scaleTestrio "${scale}"
@@ -61,7 +61,7 @@ scaleTestk8s() {
 
 }
 
-@test "Scale - value set to 5" {
+@test "run scale - value set to 5" {
   scale=5
   runScalerio "${scale}"
   scaleTestrio "${scale}"
@@ -69,7 +69,7 @@ scaleTestk8s() {
 
 }
 
-@test "Scale - value set to 10" {
+@test "run scale - value set to 10" {
   scale=10
   runScalerio "${scale}"
   scaleTestrio "${scale}"

@@ -45,31 +45,31 @@ memoryLimitTestk8s() {
 
 }
 
-@test "memory limit - test byte default 100000000" {
+@test "run memory-limit - test byte default 100000000" {
   runMemoryLimitrio "100000000" ""
   memoryLimitTestrio "100000000"
   memoryLimitTestk8s "100M"
 }
 
-@test "memory limit - test 100000000b" {
+@test "run memory-limit - test 100000000b" {
   runMemoryLimitrio "100000000" "b"
   memoryLimitTestrio "100000000"
   memoryLimitTestk8s "100M"
 }
 
-@test "memory limit - test 100000k" {
+@test "run memory-limit - test 100000k" {
   runMemoryLimitrio "100000" "k"
   memoryLimitTestrio "102400000"
   memoryLimitTestk8s "102400k"
 }
 
-@test "memory limit - test 10m" {
+@test "run memory-limit - test 10m" {
   runMemoryLimitrio "10" "m"
   memoryLimitTestrio "10485760"
   memoryLimitTestk8s "10485760"
 }
 
-@test "memory limit - test 1g" {
+@test "run memory-limit - test 1g" {
   runMemoryLimitrio "1" "g"
   memoryLimitTestrio "1073741824"
   memoryLimitTestk8s "1073741824"
