@@ -311,11 +311,11 @@ func AddHandlers(h printers.PrintHandler) {
 
 	horizontalPodAutoscalerColumnDefinitions := []metav1beta1.TableColumnDefinition{
 		{Name: "Name", Type: "string", Format: "name", Description: ""},
-		{Name: "Reference", Type: "string", Description:  ""},
-		{Name: "Targets", Type: "string", Description:  ""},
-		{Name: "MinPods", Type: "string", Description:  ""},
-		{Name: "MaxPods", Type: "string", Description:  ""},
-		{Name: "Replicas", Type: "string", Description:  ""},
+		{Name: "Reference", Type: "string", Description: ""},
+		{Name: "Targets", Type: "string", Description: ""},
+		{Name: "MinPods", Type: "string", Description: ""},
+		{Name: "MaxPods", Type: "string", Description: ""},
+		{Name: "Replicas", Type: "string", Description: ""},
 		{Name: "Age", Type: "string", Description: ""},
 	}
 	h.TableHandler(horizontalPodAutoscalerColumnDefinitions, printHorizontalPodAutoscaler)
@@ -337,7 +337,7 @@ func AddHandlers(h printers.PrintHandler) {
 		{Name: "RunAsUser", Type: "string", Description: ""},
 		{Name: "FsGroup", Type: "string", Description: ""},
 		{Name: "SupGroup", Type: "string", Description: ""},
-		{Name: "ReadOnlyRootFs", Type: "string", Description:""},
+		{Name: "ReadOnlyRootFs", Type: "string", Description: ""},
 		{Name: "Volumes", Type: "string", Description: ""},
 	}
 	h.TableHandler(podSecurityPolicyColumnDefinitions, printPodSecurityPolicy)

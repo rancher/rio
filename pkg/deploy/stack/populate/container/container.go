@@ -25,6 +25,7 @@ var (
 		"self/node":           "spec.nodeName",
 		"self/serviceAccount": "spec.serviceAccountName",
 		"self/hostIp":         "status.hostIP",
+		"self/nodeIp":         "status.hostIP",
 		"self/ip":             "status.podIP",
 	}
 	resourceRefs = map[string]string{
@@ -240,7 +241,7 @@ func populateResources(c *v1.Container, container v1beta1.ContainerConfig) {
 		if err == nil {
 			c.Resources.Requests[v1.ResourceCPU] = q
 		}
-		logrus.Errorf("Failed to parse CPU request: %v", err)
+		logrus.Debugf("Failed to parse CPU request: %v", err)
 	}
 }
 

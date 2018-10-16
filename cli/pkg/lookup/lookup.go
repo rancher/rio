@@ -28,7 +28,7 @@ func Lookup(c ClientLookup, name string, typeNames ...string) (*types.NamedResou
 
 		byName, err := byName(c, name, schemaType)
 		if err != nil {
-			return nil, err
+			continue
 		}
 
 		if byName != nil {

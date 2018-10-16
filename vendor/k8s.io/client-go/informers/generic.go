@@ -35,6 +35,7 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	rbacv1beta1 "k8s.io/api/rbac/v1beta1"
 	schedulingv1beta1 "k8s.io/api/scheduling/v1beta1"
 	storagev1 "k8s.io/api/storage/v1"
 	storagev1beta1 "k8s.io/api/storage/v1beta1"
@@ -191,6 +192,16 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rbac().V1().Roles().Informer()}, nil
 	case rbacv1.SchemeGroupVersion.WithResource("rolebindings"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rbac().V1().RoleBindings().Informer()}, nil
+
+		// Group=rbac.authorization.k8s.io, Version=v1beta1
+	case rbacv1beta1.SchemeGroupVersion.WithResource("clusterroles"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Rbac().V1beta1().ClusterRoles().Informer()}, nil
+	case rbacv1beta1.SchemeGroupVersion.WithResource("clusterrolebindings"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Rbac().V1beta1().ClusterRoleBindings().Informer()}, nil
+	case rbacv1beta1.SchemeGroupVersion.WithResource("roles"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Rbac().V1beta1().Roles().Informer()}, nil
+	case rbacv1beta1.SchemeGroupVersion.WithResource("rolebindings"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Rbac().V1beta1().RoleBindings().Informer()}, nil
 
 		// Group=scheduling.k8s.io, Version=v1beta1
 	case schedulingv1beta1.SchemeGroupVersion.WithResource("priorityclasses"):
