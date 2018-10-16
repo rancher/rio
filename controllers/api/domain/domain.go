@@ -6,11 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/apimachinery/pkg/api/meta"
-
 	"github.com/rancher/norman/pkg/changeset"
-	"k8s.io/apimachinery/pkg/runtime"
-
 	"github.com/rancher/norman/types/slice"
 	"github.com/rancher/rancher/pkg/controllers/user/approuter"
 	"github.com/rancher/rancher/pkg/ticker"
@@ -19,7 +15,10 @@ import (
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
 	v12 "github.com/rancher/types/apis/core/v1"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
@@ -115,7 +114,11 @@ func (g *Controller) sync(key string, svc *v1.Service) error {
 	if len(ips) == 0 {
 		ep, err := g.endpointsLister.Get(svc.Namespace, svc.Name)
 		if err != nil {
-			return err
+			if errors.IsNotFound(err) {
+				return nil
+			} else {
+				return err
+			}
 		}
 
 		for _, subset := range ep.Subsets {
