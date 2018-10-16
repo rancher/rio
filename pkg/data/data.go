@@ -30,9 +30,14 @@ func systemStacks(inCluster bool) []runtime.Object {
 		DisableMesh:               true,
 		EnableKubernetesResources: true,
 	}))
+
 	result = append(result, stack("storageclasses", v1beta1.StackSpec{
 		DisableMesh:               true,
 		EnableKubernetesResources: true,
+	}))
+
+	result = append(result, stack("local-storage", v1beta1.StackSpec{
+		DisableMesh: true,
 	}))
 
 	if !inCluster {
