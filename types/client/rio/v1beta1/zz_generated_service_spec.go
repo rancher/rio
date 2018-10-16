@@ -20,6 +20,7 @@ const (
 	ServiceSpecFieldExtraHosts             = "extraHosts"
 	ServiceSpecFieldGlobal                 = "global"
 	ServiceSpecFieldGlobalPermissions      = "globalPermissions"
+	ServiceSpecFieldGroup                  = "group"
 	ServiceSpecFieldHealthcheck            = "healthcheck"
 	ServiceSpecFieldHostname               = "hostname"
 	ServiceSpecFieldImage                  = "image"
@@ -79,6 +80,7 @@ type ServiceSpec struct {
 	ExtraHosts             []string                  `json:"extraHosts,omitempty" yaml:"extraHosts,omitempty"`
 	Global                 bool                      `json:"global,omitempty" yaml:"global,omitempty"`
 	GlobalPermissions      []Permission              `json:"globalPermissions,omitempty" yaml:"globalPermissions,omitempty"`
+	Group                  string                    `json:"group,omitempty" yaml:"group,omitempty"`
 	Healthcheck            *HealthConfig             `json:"healthcheck,omitempty" yaml:"healthcheck,omitempty"`
 	Hostname               string                    `json:"hostname,omitempty" yaml:"hostname,omitempty"`
 	Image                  string                    `json:"image,omitempty" yaml:"image,omitempty"`

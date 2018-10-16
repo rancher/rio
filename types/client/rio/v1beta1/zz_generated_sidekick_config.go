@@ -12,6 +12,7 @@ const (
 	SidekickConfigFieldEntrypoint             = "entrypoint"
 	SidekickConfigFieldEnvironment            = "environment"
 	SidekickConfigFieldExposedPorts           = "expose"
+	SidekickConfigFieldGroup                  = "group"
 	SidekickConfigFieldHealthcheck            = "healthcheck"
 	SidekickConfigFieldImage                  = "image"
 	SidekickConfigFieldImagePullPolicy        = "imagePullPolicy"
@@ -44,6 +45,7 @@ type SidekickConfig struct {
 	Entrypoint             []string        `json:"entrypoint,omitempty" yaml:"entrypoint,omitempty"`
 	Environment            []string        `json:"environment,omitempty" yaml:"environment,omitempty"`
 	ExposedPorts           []ExposedPort   `json:"expose,omitempty" yaml:"expose,omitempty"`
+	Group                  string          `json:"group,omitempty" yaml:"group,omitempty"`
 	Healthcheck            *HealthConfig   `json:"healthcheck,omitempty" yaml:"healthcheck,omitempty"`
 	Image                  string          `json:"image,omitempty" yaml:"image,omitempty"`
 	ImagePullPolicy        string          `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
