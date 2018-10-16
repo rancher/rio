@@ -5,7 +5,6 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/clientcfg"
@@ -137,38 +136,16 @@ func (p *Ps) services(ctx *clicontext.CLIContext, stacks map[string]bool) error 
 			ID:       service.ID,
 			Service:  &services.Data[i],
 			Stack:    stack,
-			Endpoint: endpoint(ctx, stack, service.PortBindings, &service),
+			Endpoint: endpoint(&service),
 		})
 	}
 
 	return writer.Err()
 }
 
-func endpoint(ctx *clicontext.CLIContext, stack *client.Stack, ports []client.PortBinding, service *client.Service) string {
-	cluster, err := ctx.Cluster()
-	if err != nil {
-		return ""
-	}
-
-	domain, err := cluster.Domain()
-	if err != nil {
-		return ""
-	}
-
-	if domain == "" || stack == nil {
-		return ""
-	}
-
-	for _, port := range ports {
-		if port.Protocol == "http" {
-			name, rev := kv.Split(service.Name, ":")
-			if rev != "" && rev != "latest" {
-				name = name + "-" + rev
-			}
-			domain := fmt.Sprintf("%s.%s.%s", name, stack.Name, domain)
-
-			return "http://" + domain
-		}
+func endpoint(service *client.Service) string {
+	if len(service.Endpoints) > 0 {
+		return service.Endpoints[0].URL
 	}
 
 	return ""

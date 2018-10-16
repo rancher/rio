@@ -12,6 +12,7 @@ import (
 	"github.com/rancher/rio/api/named"
 	"github.com/rancher/rio/api/pretty"
 	"github.com/rancher/rio/api/resetstack"
+	"github.com/rancher/rio/api/service"
 	"github.com/rancher/rio/api/space"
 	"github.com/rancher/rio/api/stack"
 	"github.com/rancher/rio/types"
@@ -26,9 +27,13 @@ import (
 func Types(ctx context.Context, context *types.Context) error {
 	factory := crd.NewFactoryFromClientGetter(context.ClientGetter)
 	// We create istio types so that our controllers don't error on first start
-	factory.CreateCRDs(ctx, normantypes.DefaultStorageContext,
+	_, err := factory.CreateCRDs(ctx, normantypes.DefaultStorageContext,
 		networkSchema.Schemas.Schema(&networkSchema.Version, networkClient.GatewayType),
 		networkSchema.Schemas.Schema(&networkSchema.Version, networkClient.VirtualServiceType))
+	if err != nil {
+		return err
+	}
+
 	factory.BatchCreateCRDs(ctx, normantypes.DefaultStorageContext, context.Schemas,
 		&schema.Version,
 		client.ServiceType,
@@ -61,7 +66,7 @@ func setupService(ctx context.Context, rContext *types.Context) {
 	s := rContext.Schemas.Schema(&schema.Version, client.ServiceType)
 	s.Formatter = pretty.Format
 	s.InputFormatter = pretty.InputFormatter
-	s.Store = resetstack.New(named.New(s.Store))
+	s.Store = resetstack.New(service.New(named.New(s.Store)))
 }
 
 func setupConfig(ctx context.Context, rContext *types.Context) {
