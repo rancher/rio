@@ -59,7 +59,7 @@ type ServiceStatus struct {
 	StatefulSetStatus *appsv1.StatefulSetStatus `json:"statefulSetStatus,omitempty"`
 	ScaleStatus       *ScaleStatus              `json:"scaleStatus,omitempty"`
 	Conditions        []Condition               `json:"conditions,omitempty"`
-	Endpoints         []Endpoint                `json:"endpoint,omitempty"`
+	Endpoints         []Endpoint                `json:"endpoints,omitempty"`
 }
 
 type Endpoint struct {

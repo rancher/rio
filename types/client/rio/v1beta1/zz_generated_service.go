@@ -20,7 +20,7 @@ const (
 	ServiceFieldDefaultVolumeDriver    = "defaultVolumeDriver"
 	ServiceFieldDeploymentStrategy     = "deploymentStrategy"
 	ServiceFieldDevices                = "devices"
-	ServiceFieldEndpoints              = "endpoint"
+	ServiceFieldEndpoints              = "endpoints"
 	ServiceFieldEntrypoint             = "entrypoint"
 	ServiceFieldEnvironment            = "environment"
 	ServiceFieldExposedPorts           = "expose"
@@ -91,7 +91,7 @@ type Service struct {
 	DefaultVolumeDriver    string                    `json:"defaultVolumeDriver,omitempty" yaml:"defaultVolumeDriver,omitempty"`
 	DeploymentStrategy     string                    `json:"deploymentStrategy,omitempty" yaml:"deploymentStrategy,omitempty"`
 	Devices                []DeviceMapping           `json:"devices,omitempty" yaml:"devices,omitempty"`
-	Endpoints              []Endpoint                `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
+	Endpoints              []Endpoint                `json:"endpoints,omitempty" yaml:"endpoints,omitempty"`
 	Entrypoint             []string                  `json:"entrypoint,omitempty" yaml:"entrypoint,omitempty"`
 	Environment            []string                  `json:"environment,omitempty" yaml:"environment,omitempty"`
 	ExposedPorts           []ExposedPort             `json:"expose,omitempty" yaml:"expose,omitempty"`
