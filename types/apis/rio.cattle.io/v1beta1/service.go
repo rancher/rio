@@ -176,6 +176,7 @@ type ContainerConfig struct {
 	Entrypoint             []string      `json:"entrypoint,omitempty"`
 	Environment            []string      `json:"environment,omitempty"` // alias env, support map
 	ExposedPorts           []ExposedPort `json:"expose,omitempty"`      // support []string, map
+	Group                  string        `json:"group,omitempty"`
 	Healthcheck            *HealthConfig `json:"healthcheck,omitempty"`
 	Readycheck             *HealthConfig `json:"readycheck,omitempty"`
 	Image                  string        `json:"image,omitempty"`

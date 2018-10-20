@@ -71,8 +71,15 @@ func Container(name string, container v1beta1.ContainerConfig) v1.Container {
 
 	populateResources(&c, container)
 
-	if n, err := strconv.ParseInt(container.User, 10, 0); err == nil {
-		c.SecurityContext.RunAsUser = &n
+	if container.Group != "" {
+		if v, err := strconv.ParseInt(container.Group, 10, 0); err == nil {
+			c.SecurityContext.RunAsGroup = &v
+		}
+	}
+	if container.User != "" {
+		if v, err := strconv.ParseInt(container.User, 10, 0); err == nil {
+			c.SecurityContext.RunAsUser = &v
+		}
 	}
 
 	populateEnv(&c, container)

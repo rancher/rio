@@ -2,6 +2,7 @@ package create
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/rancher/rio/cli/pkg/stack"
 
@@ -28,7 +29,7 @@ type Create struct {
 	EnvFile            []string          `desc:"Read in a file of environment variables"`
 	Expose             []string          `desc:"Expose a container's port(s) internally"`
 	GlobalPermission   []string          `desc:"Permissions to grant to container's service account for all stacks"`
-	GroupAdd           []string          `desc:"Add additional groups to join"`
+	Group              string            `desc:"The GID to run the entrypoint of the container process"`
 	HealthCmd          string            `desc:"Command to run to check health"`
 	HealthInterval     string            `desc:"Time between running the check (ms|s|m|h)" default:"0s"`
 	HealthRetries      int               `desc:"Consecutive successes needed to report healthy"`
@@ -68,7 +69,7 @@ type Create struct {
 	UnreadyRetries     int               `desc:"Consecutive failures needed to report unready"`
 	UpdateOrder        string            `desc:"Update order when doing batched rolling container updates (start-first|stop-first)"`
 	UpdateStrategy     string            `desc:"Approach to updating containers (rolling|on-delete)" default:"rolling"`
-	U_User             string            `desc:"Username or UID (format: <name|uid>[:<group|gid>])"`
+	U_User             string            `desc:"UID[:GID] Sets the UID used and optionally GID for entrypoint process (format: <uid>[:<gid>])"`
 	VolumeDriver       string            `desc:"Optional volume driver for the container"`
 	VolumesFrom        []string          `desc:"Mount volumes from the specified container(s)"`
 	V_Volume           []string          `desc:"Bind mount a volume"`
@@ -166,11 +167,22 @@ func (c *Create) ToService(args []string) (*client.Service, error) {
 			},
 		},
 		Tty:            c.T_Tty,
-		User:           c.U_User,
 		UpdateOrder:    c.UpdateOrder,
 		UpdateStrategy: c.UpdateStrategy,
 		VolumesFrom:    c.VolumesFrom,
 		WorkingDir:     c.W_Workdir,
+	}
+
+	if c.U_User != "" {
+		uidAndGid := strings.Split(c.U_User, ":")
+		service.User = uidAndGid[0]
+		if len(uidAndGid) == 2 {
+			service.Group = uidAndGid[1]
+		}
+	}
+
+	if c.Group != "" {
+		service.Group = c.Group
 	}
 
 	service.Volumes, err = ParseMounts(c.V_Volume)
