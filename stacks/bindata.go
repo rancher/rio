@@ -87,7 +87,7 @@ func stacksCorednsStackYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/coredns-stack.yml", size: 872, mode: os.FileMode(436), modTime: time.Unix(1533317908, 0)}
+	info := bindataFileInfo{name: "stacks/coredns-stack.yml", size: 872, mode: os.FileMode(420), modTime: time.Unix(1534733485, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -107,7 +107,7 @@ func stacksIstioCrdStackYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/istio-crd-stack.yml", size: 627, mode: os.FileMode(436), modTime: time.Unix(1538515811, 0)}
+	info := bindataFileInfo{name: "stacks/istio-crd-stack.yml", size: 627, mode: os.FileMode(420), modTime: time.Unix(1539128986, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -127,7 +127,7 @@ func stacksIstioStackYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/istio-stack.yml", size: 3871, mode: os.FileMode(436), modTime: time.Unix(1539624376, 0)}
+	info := bindataFileInfo{name: "stacks/istio-stack.yml", size: 3871, mode: os.FileMode(420), modTime: time.Unix(1540013546, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -147,7 +147,7 @@ func stacksLocalStorageStackYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/local-storage-stack.yml", size: 780, mode: os.FileMode(436), modTime: time.Unix(1539647764, 0)}
+	info := bindataFileInfo{name: "stacks/local-storage-stack.yml", size: 780, mode: os.FileMode(420), modTime: time.Unix(1540013894, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -167,7 +167,7 @@ func stacksStorageclassesStackYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/storageclasses-stack.yml", size: 432, mode: os.FileMode(436), modTime: time.Unix(1539646753, 0)}
+	info := bindataFileInfo{name: "stacks/storageclasses-stack.yml", size: 432, mode: os.FileMode(420), modTime: time.Unix(1540013894, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

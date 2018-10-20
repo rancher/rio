@@ -11,7 +11,6 @@ const (
 	RouteSpecFieldRewrite       = "rewrite"
 	RouteSpecFieldTimeoutMillis = "timeoutMillis"
 	RouteSpecFieldTo            = "to"
-	RouteSpecFieldWebsocket     = "websocket"
 )
 
 type RouteSpec struct {
@@ -24,5 +23,4 @@ type RouteSpec struct {
 	Rewrite       *Rewrite              `json:"rewrite,omitempty" yaml:"rewrite,omitempty"`
 	TimeoutMillis int64                 `json:"timeoutMillis,omitempty" yaml:"timeoutMillis,omitempty"`
 	To            []WeightedDestination `json:"to,omitempty" yaml:"to,omitempty"`
-	Websocket     bool                  `json:"websocket,omitempty" yaml:"websocket,omitempty"`
 }
