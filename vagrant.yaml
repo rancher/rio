@@ -15,7 +15,7 @@ nodes:
   memory: "1024"
 
 # Rio version to use such as 'v0.0.4' or 'dev'
-version: 0.0.4-rc1
+version: v0.0.4-rc1
 
 # automatically detect network interface to bridge
 # virtualbox provider only
