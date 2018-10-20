@@ -31,6 +31,7 @@ func Populate(stack *v1beta1.Stack, output *output.Deployment) error {
 	configs(ns, stack, internalStack, output)
 	volumes(ns, stack, internalStack, output)
 	services(ns, stack, internalStack, output)
+	routes(ns, stack, internalStack, output)
 
 	return nil
 }
@@ -87,5 +88,19 @@ func services(ns string, stack *v1beta1.Stack, internalStack *v1beta1.InternalSt
 		newResource.Spec.StackName = ref.FromStrings(stack.Namespace, stack.Name)
 
 		output.Services[newResource.Name] = newResource
+	}
+}
+
+func routes(ns string, stack *v1beta1.Stack, internalStack *v1beta1.InternalStack, output *output.Deployment) {
+	for name, routes := range internalStack.Routes {
+		newResource := routes.DeepCopy()
+		newResource.Kind = "RouteSet"
+		newResource.APIVersion = v1beta1.SchemeGroupVersion.String()
+		newResource.Name = name
+		newResource.Namespace = ns
+		newResource.Spec.SpaceName = stack.Namespace
+		newResource.Spec.StackName = ref.FromStrings(stack.Namespace, stack.Name)
+
+		output.Routes[newResource.Name] = newResource
 	}
 }

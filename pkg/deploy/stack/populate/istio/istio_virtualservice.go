@@ -5,12 +5,15 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
+	google_protobuf "github.com/gogo/protobuf/types"
 	"github.com/rancher/rio/pkg/deploy/stack/input"
 	"github.com/rancher/rio/pkg/deploy/stack/output"
 	"github.com/rancher/rio/pkg/deploy/stack/populate/containerlist"
 	"github.com/rancher/rio/pkg/deploy/stack/populate/service"
 	"github.com/rancher/rio/pkg/deploy/stack/populate/servicelabels"
+	"github.com/rancher/rio/pkg/namespace"
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
 	"istio.io/api/networking/v1alpha3"
@@ -34,6 +37,10 @@ func virtualservices(stack *input.Stack) ([]*output.IstioObject, error) {
 		result = append(result, svcs...)
 	}
 
+	routesets := stack.RouteSet
+	svcs := vsFromRoutesets(stack, routesets)
+	result = append(result, svcs...)
+
 	return result, nil
 }
 
@@ -44,7 +51,7 @@ func coalescePort(port, targetPort int64) uint32 {
 	return uint32(port)
 }
 
-func vsRoutes(publicPorts map[uint32]bool, name, namespace string, service *v1beta1.Service, dests []dest) ([]*v1alpha3.HTTPRoute, bool) {
+func vsRoutes(publicPorts map[uint32]bool, service *v1beta1.Service, dests []dest) ([]*v1alpha3.HTTPRoute, bool) {
 	external := false
 	var result []*v1alpha3.HTTPRoute
 
@@ -141,7 +148,7 @@ func destsForService(name string, service *output.ServiceSet) []dest {
 		latestWeight -= weight
 
 		result = append(result, dest{
-			host:   name,
+			host:   rev.Name,
 			weight: int32(weight),
 			subset: rev.Spec.Revision.Version,
 		})
@@ -171,7 +178,7 @@ func vsFromService(stack *input.Stack, name string, service *output.ServiceSet) 
 
 	for _, rev := range service.Revisions {
 		revVs := vsFromSpec(stack, rev.Name, stack.Namespace, rev, dest{
-			host:   name,
+			host:   rev.Name,
 			subset: rev.Spec.Revision.Version,
 			weight: 100,
 		})
@@ -186,7 +193,7 @@ func vsFromService(stack *input.Stack, name string, service *output.ServiceSet) 
 func vsFromSpec(stack *input.Stack, name, namespace string, service *v1beta1.Service, dests ...dest) *output.IstioObject {
 	publicPorts := map[uint32]bool{}
 
-	routes, external := vsRoutes(publicPorts, name, namespace, service, dests)
+	routes, external := vsRoutes(publicPorts, service, dests)
 	if len(routes) == 0 {
 		return nil
 	}
@@ -217,6 +224,179 @@ func vsFromSpec(stack *input.Stack, name, namespace string, service *v1beta1.Ser
 	}
 
 	return vs
+}
+
+func vsFromRoutesets(stack *input.Stack, routesets []*v1beta1.RouteSet) []*output.IstioObject {
+	result := make([]*output.IstioObject, 0)
+	for _, routeset := range routesets {
+		ns := namespace.StackNamespace(stack.Stack.Namespace, stack.Stack.Name)
+		vs := newVirtualServiceFromRouteSet(stack, routeset.Name, ns)
+		spec := &v1alpha3.VirtualService{
+			Gateways: []string{privateGw, getPublicGateway()},
+			Hosts:    []string{getExternalDomain(routeset.Name, stack.Stack.Name)},
+		}
+		// populate http routing
+		for _, routeSpec := range routeset.Spec.Routes {
+			httpRoute := &v1alpha3.HTTPRoute{}
+
+			// populate destinations
+			for _, dest := range routeSpec.To {
+				if dest.Revision == "" {
+					dest.Revision = "v0"
+				}
+				httpRoute.Route = append(httpRoute.Route, &v1alpha3.DestinationWeight{
+					Destination: &v1alpha3.Destination{
+						Host:   dest.Service,
+						Subset: dest.Revision,
+						Port: &v1alpha3.PortSelector{
+							Port: &v1alpha3.PortSelector_Number{
+								Number: uint32(dest.Port),
+							},
+						},
+					},
+				})
+			}
+
+			// populate matches
+			for _, match := range routeSpec.Matches {
+				httpMatch := &v1alpha3.HTTPMatchRequest{}
+				httpMatch.Uri = populateStringMatch(match.Path)
+				httpMatch.Scheme = populateStringMatch(match.Scheme)
+				httpMatch.Method = populateStringMatch(match.Method)
+				httpMatch.Port = uint32(match.Port)
+				httpMatch.Headers = make(map[string]*v1alpha3.StringMatch, 0)
+				for name, cookie := range match.Cookies {
+					httpMatch.Headers[name] = populateStringMatch(cookie)
+				}
+				for name, value := range match.Headers {
+					httpMatch.Headers[name] = populateStringMatch(value)
+				}
+				httpRoute.Match = append(httpRoute.Match, httpMatch)
+			}
+
+			if len(routeSpec.AddHeaders) > 0 {
+				httpRoute.AppendHeaders = convertEnvFromSliceToMap(routeSpec.AddHeaders)
+			}
+
+			if routeSpec.Redirect != nil {
+				httpRoute.Redirect = &v1alpha3.HTTPRedirect{
+					Uri:       routeSpec.Redirect.Path,
+					Authority: routeSpec.Redirect.Host,
+				}
+			}
+
+			if routeSpec.Rewrite != nil {
+				httpRoute.Rewrite = &v1alpha3.HTTPRewrite{
+					Uri:       routeSpec.Rewrite.Path,
+					Authority: routeSpec.Rewrite.Host,
+				}
+			}
+
+			// fault handling
+			if routeSpec.Fault != nil {
+				httpRoute.Fault = &v1alpha3.HTTPFaultInjection{
+					Delay: &v1alpha3.HTTPFaultInjection_Delay{
+						Percent: int32(routeSpec.Fault.Percentage),
+						HttpDelayType: &v1alpha3.HTTPFaultInjection_Delay_FixedDelay{
+							FixedDelay: google_protobuf.DurationProto(time.Millisecond * time.Duration(routeSpec.Fault.DelayMillis)),
+						},
+					},
+					Abort: populateHttpAbort(routeSpec.Fault),
+				}
+			}
+
+			if routeSpec.TimeoutMillis != 0 {
+				httpRoute.Timeout = google_protobuf.DurationProto(time.Millisecond * time.Duration(routeSpec.TimeoutMillis))
+			}
+
+			if routeSpec.Mirror != nil {
+				httpRoute.Mirror = &v1alpha3.Destination{
+					Host:   getExternalDomain(routeSpec.Mirror.Service, routeSpec.Mirror.Stack),
+					Subset: routeSpec.Mirror.Revision,
+					Port: &v1alpha3.PortSelector{
+						Port: &v1alpha3.PortSelector_Number{
+							Number: uint32(routeSpec.Mirror.Port),
+						},
+					},
+				}
+			}
+
+			if routeSpec.Retry != nil {
+				httpRoute.Retries = &v1alpha3.HTTPRetry{
+					Attempts:      int32(routeSpec.Retry.Attempts),
+					PerTryTimeout: google_protobuf.DurationProto(time.Millisecond * time.Duration(routeSpec.Retry.TimeoutMillis)),
+				}
+			}
+
+			spec.Http = append(spec.Http, httpRoute)
+		}
+		// set port to 80 for virtual services that are created from gateway
+		vs.Annotations["rio.cattle.io/ports"] = "80"
+		vs.Spec = spec
+		result = append(result, vs)
+	}
+	return result
+}
+
+func populateHttpAbort(fault *v1beta1.Fault) *v1alpha3.HTTPFaultInjection_Abort {
+	abort := &v1alpha3.HTTPFaultInjection_Abort{
+		Percent: int32(fault.Percentage),
+	}
+	if fault.Abort.GRPCStatus != "" {
+		abort.ErrorType = &v1alpha3.HTTPFaultInjection_Abort_GrpcStatus{
+			GrpcStatus: fault.Abort.GRPCStatus,
+		}
+	} else if fault.Abort.HTTP2Status != "" {
+		abort.ErrorType = &v1alpha3.HTTPFaultInjection_Abort_Http2Error{
+			Http2Error: fault.Abort.HTTP2Status,
+		}
+	} else if fault.Abort.HTTPStatus != 0 {
+		abort.ErrorType = &v1alpha3.HTTPFaultInjection_Abort_HttpStatus{
+			HttpStatus: int32(fault.Abort.HTTPStatus),
+		}
+	}
+	return abort
+}
+
+func populateStringMatch(match v1beta1.StringMatch) *v1alpha3.StringMatch {
+	m := &v1alpha3.StringMatch{}
+	if match.Exact != "" {
+		m.MatchType = getExactMatch(match)
+	} else if match.Prefix != "" {
+		m.MatchType = getPrefixMatch(match)
+	} else if match.Regexp != "" {
+		m.MatchType = getRegexpMatch(match)
+	}
+	return m
+}
+
+func convertEnvFromSliceToMap(envs []string) map[string]string {
+	m := map[string]string{}
+	for _, env := range envs {
+		parts := strings.SplitN(env, "=", 2)
+		if len(parts) == 2 {
+			m[parts[0]] = parts[1]
+		}
+	}
+	return m
+}
+
+func getExactMatch(match v1beta1.StringMatch) *v1alpha3.StringMatch_Exact {
+	return &v1alpha3.StringMatch_Exact{
+		Exact: match.Exact,
+	}
+}
+
+func getPrefixMatch(match v1beta1.StringMatch) *v1alpha3.StringMatch_Prefix {
+	return &v1alpha3.StringMatch_Prefix{
+		Prefix: match.Prefix,
+	}
+}
+
+func getRegexpMatch(match v1beta1.StringMatch) *v1alpha3.StringMatch_Regex {
+	return &v1alpha3.StringMatch_Regex{
+		Regex: match.Regexp,
+	}
 }
 
 func appendStringWithPort(base []string, host string, ports map[uint32]bool) []string {
@@ -251,6 +431,24 @@ func newVirtualService(stack *input.Stack, service *v1beta1.Service) *output.Ist
 			Namespace:   service.Namespace,
 			Annotations: map[string]string{},
 			Labels:      servicelabels.RioOnlyServiceLabels(stack, service),
+		},
+	}
+}
+
+func newVirtualServiceFromRouteSet(stack *input.Stack, name, namespace string) *output.IstioObject {
+	return &output.IstioObject{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "networking.istio.io/v1alpha3",
+			Kind:       "VirtualService",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        name,
+			Namespace:   namespace,
+			Annotations: map[string]string{},
+			Labels: map[string]string{
+				"rio.cattle.io/stack":     stack.Stack.Name,
+				"rio.cattle.io/workspace": stack.Stack.Namespace,
+			},
 		},
 	}
 }

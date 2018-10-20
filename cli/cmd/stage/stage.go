@@ -108,6 +108,7 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 	serviceDef.Scale = int64(r.Scale)
 	serviceDef.SpaceID = baseService.SpaceID
 	serviceDef.StackID = baseService.StackID
+	serviceDef.PortBindings = baseService.PortBindings
 	if serviceDef.Scale == 0 {
 		serviceDef.Scale = baseService.Scale
 	}

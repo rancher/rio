@@ -14,6 +14,7 @@ type Deployment struct {
 	Services   map[string]*v1beta1.Service
 	Configs    map[string]*v1beta1.Config
 	Volumes    map[string]*v1beta1.Volume
+	Routes     map[string]*v1beta1.RouteSet
 	CRDs       map[string]runtime.Object
 	K8sObjects map[string]map[string]runtime.Object
 }
@@ -24,6 +25,7 @@ func NewDeployment() *Deployment {
 		Services:   map[string]*v1beta1.Service{},
 		Configs:    map[string]*v1beta1.Config{},
 		Volumes:    map[string]*v1beta1.Volume{},
+		Routes:     map[string]*v1beta1.RouteSet{},
 		CRDs:       map[string]runtime.Object{},
 		K8sObjects: map[string]map[string]runtime.Object{},
 	}
@@ -42,6 +44,7 @@ func (d *Deployment) Deploy(groupID string) error {
 	ad.Add(d.Namespace, v1beta1.GroupName, "Service", d.Services)
 	ad.Add(d.Namespace, v1beta1.GroupName, "Config", d.Configs)
 	ad.Add(d.Namespace, v1beta1.GroupName, "Volume", d.Volumes)
+	ad.Add(d.Namespace, v1beta1.GroupName, "RouteSet", d.Routes)
 
 	return ad.Apply()
 }
