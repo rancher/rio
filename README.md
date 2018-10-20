@@ -39,6 +39,12 @@ need to be an expert in the details.
     1. [VMware Fusion](https://www.vmware.com/products/fusion.html) for Mac users performs better (in theory)
 1. [Vagrant 1.6+](https://www.vagrantup.com/downloads.html)
 
+Checkout a copy of Rio:
+```
+$ git clone https://github.com/rancher/rio.git
+$ cd rio
+```
+
 Configure [vagrant.yaml](./vagrant.yaml) for your desired VM provider, if not VirtualBox. You may also change the number of nodes and in your Rio cluster and the resources allocated to each node.
 
 Run `vagrant up` from the project root directory. You may be asked to select a bridged network interface; select the interface being used to connect to the internet. Depending on your host OS and directory permissions, you may be asked to authenticate during `rio` client installation on the host.
