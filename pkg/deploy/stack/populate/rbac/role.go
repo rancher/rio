@@ -32,6 +32,19 @@ func addGlobalRoles(name, namespace string, labels map[string]string, globalPerm
 	role := newClusterRole(name, namespace, labels)
 	for _, perm := range globalPermissions {
 		if perm.Role != "" {
+			binding := newGlobalBinding(name, namespace, labels)
+			binding.Subjects = append(binding.Subjects, v1.Subject{
+				Kind:      "ServiceAccount",
+				Name:      name,
+				Namespace: namespace,
+			})
+			binding.RoleRef = v1.RoleRef{
+				Name:     perm.Role,
+				APIGroup: "rbac.authorization.k8s.io",
+				Kind:     "ClusterRole",
+			}
+
+			output.ClusterRoleBindings[binding.Name] = binding
 			continue
 		}
 		rule := v1.PolicyRule{
@@ -89,20 +102,21 @@ func addRoles(name, namespace string, labels map[string]string, service *v1beta1
 			}
 			continue
 		}
+		if i < len(service.Permissions) {
+			binding := newBinding(name+"-"+perm.Role, namespace, labels)
+			binding.Subjects = append(binding.Subjects, v1.Subject{
+				Kind:      serviceAccount.Kind,
+				Name:      name,
+				Namespace: namespace,
+			})
+			binding.RoleRef = v1.RoleRef{
+				Name:     perm.Role,
+				APIGroup: "rbac.authorization.k8s.io",
+				Kind:     role.Kind,
+			}
 
-		binding := newBinding(name+"-"+perm.Role, namespace, labels)
-		binding.Subjects = append(binding.Subjects, v1.Subject{
-			Kind:      serviceAccount.Kind,
-			Name:      name,
-			Namespace: namespace,
-		})
-		binding.RoleRef = v1.RoleRef{
-			Name:     perm.Role,
-			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     role.Kind,
+			output.RoleBindings[binding.Name] = binding
 		}
-
-		output.RoleBindings[binding.Name] = binding
 	}
 
 	if len(role.Rules) > 0 {
