@@ -7,6 +7,7 @@
 // stacks/istio-stack.yml
 // stacks/istio-telemetry-stack.yml
 // stacks/local-storage-stack.yml
+// stacks/nfs-stack.yml
 // stacks/storageclasses-stack.yml
 // DO NOT EDIT!
 
@@ -90,7 +91,7 @@ func stacksCertManagerCrdStackYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/cert-manager-crd-stack.yml", size: 311, mode: os.FileMode(420), modTime: time.Unix(1543265968, 0)}
+	info := bindataFileInfo{name: "stacks/cert-manager-crd-stack.yml", size: 311, mode: os.FileMode(420), modTime: time.Unix(1544031211, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -110,7 +111,7 @@ func stacksCertManagerStackYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/cert-manager-stack.yml", size: 518, mode: os.FileMode(420), modTime: time.Unix(1543265968, 0)}
+	info := bindataFileInfo{name: "stacks/cert-manager-stack.yml", size: 518, mode: os.FileMode(420), modTime: time.Unix(1544031211, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -150,7 +151,7 @@ func stacksIstioCrdStackYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/istio-crd-stack.yml", size: 1090, mode: os.FileMode(420), modTime: time.Unix(1543876102, 0)}
+	info := bindataFileInfo{name: "stacks/istio-crd-stack.yml", size: 1090, mode: os.FileMode(420), modTime: time.Unix(1544040565, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -170,7 +171,7 @@ func stacksIstioStackYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/istio-stack.yml", size: 4111, mode: os.FileMode(420), modTime: time.Unix(1543876102, 0)}
+	info := bindataFileInfo{name: "stacks/istio-stack.yml", size: 4111, mode: os.FileMode(420), modTime: time.Unix(1544040565, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -190,7 +191,7 @@ func stacksIstioTelemetryStackYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/istio-telemetry-stack.yml", size: 40086, mode: os.FileMode(420), modTime: time.Unix(1543878742, 0)}
+	info := bindataFileInfo{name: "stacks/istio-telemetry-stack.yml", size: 40086, mode: os.FileMode(420), modTime: time.Unix(1544040565, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -211,6 +212,26 @@ func stacksLocalStorageStackYml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "stacks/local-storage-stack.yml", size: 780, mode: os.FileMode(420), modTime: time.Unix(1543265968, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _stacksNfsStackYml = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x8c\x53\x4d\x6b\xdb\x40\x10\xbd\xe7\x57\x2c\xa1\x47\x29\xa1\xa5\x87\x46\x90\x43\x28\x2a\xc9\xa1\xb6\x90\x4d\xe8\x4d\x4c\x77\x27\xf2\xe0\xd5\xae\xba\x33\x52\x6a\x4a\xff\x7b\x59\x49\xb5\xa5\xda\x81\xea\x36\xfb\x3e\xb4\xf3\x78\xcb\x18\x7a\xd2\xc8\xd9\x95\x52\xee\x85\xd3\x36\xf8\x9e\x98\xbc\xc3\x10\x8f\x94\xa2\x06\x6a\xcc\xd4\x8f\x0e\x0e\x37\xe4\x6f\xf1\xa7\x60\x70\x60\x2b\x16\x1f\xa0\xc6\xdb\x28\xd2\x96\xd0\xc9\x42\x6b\x41\x90\x65\x70\x40\xd7\x8f\x56\xa9\x2a\xca\xf5\xf3\xd3\xe6\x69\xbd\xca\xcb\x6a\xf5\xf0\x35\xbf\x77\x2f\x3c\x41\xab\x2f\x9b\x6a\x93\x97\xcf\x79\x79\xff\xee\xd7\x69\xa8\x1e\xd7\x9b\x6d\xa4\xfe\x9e\xf1\x8a\x87\xed\xe3\x92\x95\x7f\x2b\xd6\xe5\x76\x00\x46\x62\xef\x6d\xd7\x8c\x6b\x45\x95\x01\x81\xec\xb6\xc5\xc0\xc4\x82\x4e\x26\x78\x40\x6b\xeb\xbf\x83\xad\x5a\x0c\x0d\x71\xbc\xfe\x51\x55\xa3\x24\x96\x58\x92\x57\x10\xbd\x4b\x74\x40\x10\x4c\x0c\x5a\x14\x54\x97\xcd\xce\x44\x5d\x6b\xe0\x02\x5b\x5b\xa0\xe6\xb2\x44\x4d\xd1\xde\xec\x3f\x71\x8c\x7c\x1a\xb5\x05\xe6\xe3\x5f\xa6\xbb\x8c\xee\x49\x3b\xe8\xb0\x47\x27\x23\xe1\xbf\x97\x59\x1a\x38\xd3\x7a\xfa\xeb\x11\x90\x05\x82\x64\x0a\xec\x2b\x1c\xf8\x6a\x38\x64\x32\xb8\x27\xbd\x9f\x6c\x95\x22\x47\x92\x2e\xd2\x9e\xb5\xc6\x00\xf1\x0e\xdc\xfb\xbb\xbb\x0f\xb3\xa2\xcc\xcb\x11\x3f\xed\x9b\x06\x9c\x39\xa9\x53\x75\xcd\xbb\xeb\xf9\x98\xea\xc5\xd8\xf8\xce\x89\x4a\x25\x56\xf6\xa3\xba\xdc\x97\xec\xcd\x82\xa8\xf3\x22\x9c\xdc\xcf\x56\x79\xb3\x3c\x19\xef\x20\xa0\x39\x12\xdb\x40\x3d\x59\xac\xd1\x64\x4a\x42\x87\xa7\x30\x1c\xc9\x67\xef\x04\x28\xbe\x8c\x7f\xb0\x18\x54\xd1\x59\x5b\x78\x4b\xfa\x70\x0c\xfb\x4f\x00\x00\x00\xff\xff\xf0\x70\x7b\xa2\x98\x03\x00\x00")
+
+func stacksNfsStackYmlBytes() ([]byte, error) {
+	return bindataRead(
+		_stacksNfsStackYml,
+		"stacks/nfs-stack.yml",
+	)
+}
+
+func stacksNfsStackYml() (*asset, error) {
+	bytes, err := stacksNfsStackYmlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "stacks/nfs-stack.yml", size: 920, mode: os.FileMode(420), modTime: time.Unix(1544040565, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -294,6 +315,7 @@ var _bindata = map[string]func() (*asset, error){
 	"stacks/istio-stack.yml":            stacksIstioStackYml,
 	"stacks/istio-telemetry-stack.yml":  stacksIstioTelemetryStackYml,
 	"stacks/local-storage-stack.yml":    stacksLocalStorageStackYml,
+	"stacks/nfs-stack.yml":              stacksNfsStackYml,
 	"stacks/storageclasses-stack.yml":   stacksStorageclassesStackYml,
 }
 
@@ -346,6 +368,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		"istio-stack.yml":            &bintree{stacksIstioStackYml, map[string]*bintree{}},
 		"istio-telemetry-stack.yml":  &bintree{stacksIstioTelemetryStackYml, map[string]*bintree{}},
 		"local-storage-stack.yml":    &bintree{stacksLocalStorageStackYml, map[string]*bintree{}},
+		"nfs-stack.yml":              &bintree{stacksNfsStackYml, map[string]*bintree{}},
 		"storageclasses-stack.yml":   &bintree{stacksStorageclassesStackYml, map[string]*bintree{}},
 	}},
 }}

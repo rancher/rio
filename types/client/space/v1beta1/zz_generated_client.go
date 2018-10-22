@@ -12,6 +12,7 @@ type Client struct {
 	Pod          PodOperations
 	Space        SpaceOperations
 	PublicDomain PublicDomainOperations
+	Feature      FeatureOperations
 }
 
 func NewClient(opts *clientbase.ClientOpts) (*Client, error) {
@@ -29,6 +30,7 @@ func NewClient(opts *clientbase.ClientOpts) (*Client, error) {
 	client.Pod = newPodClient(client)
 	client.Space = newSpaceClient(client)
 	client.PublicDomain = newPublicDomainClient(client)
+	client.Feature = newFeatureClient(client)
 
 	return client, nil
 }

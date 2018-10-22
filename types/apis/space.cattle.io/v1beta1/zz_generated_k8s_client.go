@@ -22,11 +22,13 @@ type Interface interface {
 
 	ListenConfigsGetter
 	PublicDomainsGetter
+	FeaturesGetter
 }
 
 type Clients struct {
 	ListenConfig ListenConfigClient
 	PublicDomain PublicDomainClient
+	Feature      FeatureClient
 }
 
 type Client struct {
@@ -36,6 +38,7 @@ type Client struct {
 
 	listenConfigControllers map[string]ListenConfigController
 	publicDomainControllers map[string]PublicDomainController
+	featureControllers      map[string]FeatureController
 }
 
 func Factory(ctx context.Context, config rest.Config) (context.Context, controller.Starter, error) {
@@ -76,6 +79,9 @@ func NewClientsFromInterface(iface Interface) *Clients {
 		PublicDomain: &publicDomainClient2{
 			iface: iface.PublicDomains(""),
 		},
+		Feature: &featureClient2{
+			iface: iface.Features(""),
+		},
 	}
 }
 
@@ -94,6 +100,7 @@ func NewForConfig(config rest.Config) (Interface, error) {
 
 		listenConfigControllers: map[string]ListenConfigController{},
 		publicDomainControllers: map[string]PublicDomainController{},
+		featureControllers:      map[string]FeatureController{},
 	}, nil
 }
 
@@ -129,6 +136,19 @@ type PublicDomainsGetter interface {
 func (c *Client) PublicDomains(namespace string) PublicDomainInterface {
 	objectClient := objectclient.NewObjectClient(namespace, c.restClient, &PublicDomainResource, PublicDomainGroupVersionKind, publicDomainFactory{})
 	return &publicDomainClient{
+		ns:           namespace,
+		client:       c,
+		objectClient: objectClient,
+	}
+}
+
+type FeaturesGetter interface {
+	Features(namespace string) FeatureInterface
+}
+
+func (c *Client) Features(namespace string) FeatureInterface {
+	objectClient := objectclient.NewObjectClient(namespace, c.restClient, &FeatureResource, FeatureGroupVersionKind, featureFactory{})
+	return &featureClient{
 		ns:           namespace,
 		client:       c,
 		objectClient: objectClient,
