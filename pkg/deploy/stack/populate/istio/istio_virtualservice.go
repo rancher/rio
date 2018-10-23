@@ -18,7 +18,8 @@ import (
 )
 
 const (
-	privateGw = "mesh"
+	privateGw              = "mesh"
+	PublicDomainAnnotation = "rio.cattle.io/publicDomain"
 )
 
 func virtualservices(stack *input.Stack) ([]*output.IstioObject, error) {
@@ -214,6 +215,10 @@ func vsFromSpec(stack *input.Stack, name, namespace string, service *v1beta1.Ser
 		})
 
 		vs.Annotations["rio.cattle.io/ports"] = strings.Join(portList, ",")
+	}
+
+	if service.Annotations[PublicDomainAnnotation] != "" {
+		spec.Hosts = append(spec.Hosts, service.Annotations[PublicDomainAnnotation])
 	}
 
 	return vs

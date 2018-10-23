@@ -24,6 +24,7 @@ import (
 	"github.com/rancher/rio/cli/cmd/node"
 	"github.com/rancher/rio/cli/cmd/promote"
 	"github.com/rancher/rio/cli/cmd/ps"
+	"github.com/rancher/rio/cli/cmd/publicdomain"
 	"github.com/rancher/rio/cli/cmd/rm"
 	"github.com/rancher/rio/cli/cmd/route"
 	"github.com/rancher/rio/cli/cmd/run"
@@ -144,6 +145,7 @@ func main() {
 		workspace.Workspace(app),
 		cluster.Cluster(app),
 		node.Node(),
+		publicdomain.PublicDomain(app),
 
 		builder.Command(&ps.Ps{},
 			"List services and containers",
