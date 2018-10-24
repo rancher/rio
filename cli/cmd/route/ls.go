@@ -315,11 +315,7 @@ func FormatURL(cluster *clientcfg.Cluster) func(obj interface{}) (string, error)
 			return "", fmt.Errorf("invalid data")
 		}
 		hostBuf := strings.Builder{}
-		if data.RouteSpec.Websocket {
-			hostBuf.WriteString("ws://")
-		} else {
-			hostBuf.WriteString("http://")
-		}
+		hostBuf.WriteString("http://")
 		hostBuf.WriteString(data.RouteSet.Name)
 		if data.Stack.Name != cluster.DefaultStackName {
 			hostBuf.WriteString(".")

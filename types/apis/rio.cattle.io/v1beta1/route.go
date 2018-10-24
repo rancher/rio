@@ -26,19 +26,18 @@ type RouteSetSpec struct {
 type RouteSpec struct {
 	Matches    []Match               `json:"matches,omitempty"`
 	To         []WeightedDestination `json:"to,omitempty"`
-	Redirect   Redirect              `json:"redirect,omitempty"`
-	Rewrite    Rewrite               `json:"rewrite,omitempty"`
-	Websocket  bool                  `json:"websocket,omitempty"`
+	Redirect   *Redirect             `json:"redirect,omitempty"`
+	Rewrite    *Rewrite              `json:"rewrite,omitempty"`
 	AddHeaders []string              `json:"addHeaders,omitempty"`
 
 	RouteTraffic
 }
 
 type RouteTraffic struct {
-	Fault         Fault       `json:"fault,omitempty"`
-	Mirror        Destination `json:"mirror,omitempty"`
-	TimeoutMillis int         `json:"timeoutMillis,omitempty"`
-	Retry         Retry       `json:"retry,omitempty"`
+	Fault         *Fault       `json:"fault,omitempty"`
+	Mirror        *Destination `json:"mirror,omitempty"`
+	TimeoutMillis int          `json:"timeoutMillis,omitempty"`
+	Retry         *Retry       `json:"retry,omitempty"`
 }
 
 type Retry struct {

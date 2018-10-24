@@ -41,7 +41,6 @@ type Add struct {
 	Timeout         string            `desc:"Timeout for all requests (ms|s|m|h)" default:"0s"`
 	Method          string            `desc:"Match HTTP method"`
 	From            string            `desc:"Match traffic from specific service"`
-	Websocket       bool              `desc:"Websocket request"`
 }
 
 func (a *Add) Run(ctx *clicontext.CLIContext) error {
@@ -156,7 +155,6 @@ func (a *Add) buildRouteSpec(ctx *clicontext.CLIContext, args []string) (*client
 	}
 
 	routeSpec.AddHeaders = a.AddHeader
-	routeSpec.Websocket = a.Websocket
 	if err := a.addFault(routeSpec); err != nil {
 		return nil, err
 	}
