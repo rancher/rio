@@ -13,3 +13,5 @@
 /image/go_build_agent
 /image/main.squashfs
 /package/rio
+__pycache__
+/tests/.vscode
