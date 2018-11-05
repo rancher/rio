@@ -27,8 +27,18 @@ type GatewaySpec struct {
 }
 
 type Server struct {
-	Port  *Port    `json:"port,omitempty"`
-	Hosts []string `json:"hosts,omitempty"`
+	Port  *Port       `json:"port,omitempty"`
+	Hosts []string    `json:"hosts,omitempty"`
+	TLS   *TLSOptions `json:"tls,omitempty"`
+}
+
+type TLSOptions struct {
+	HTTPSRedirect     bool   `json:"httpsRedirect,omitempty"`
+	Mode              string `json:"mode,omitempty"`
+	ServerCertificate string `json:"serverCertificate,omitempty"`
+	PrivateKey        string `json:"privateKey,omitempty"`
+	CaCertificates    string `json:"caCertificates,omitempty"`
+	SubjectAltNames   string `json:"subjectAltNames,omitempty"`
 }
 
 type Port struct {
