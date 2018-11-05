@@ -122,8 +122,10 @@ func ParseAndValidateToken(server, token string) (*Info, error) {
 		return nil, err
 	}
 
-	if ok, hash, newHash := validateCACerts(cacerts, parsedToken.caHash); !ok {
-		return nil, fmt.Errorf("RIO_TOKEN does not match the server %s != %s", hash, newHash)
+	if len(cacerts) > 0 {
+		if ok, hash, newHash := validateCACerts(cacerts, parsedToken.caHash); !ok {
+			return nil, fmt.Errorf("RIO_TOKEN does not match the server %s != %s", hash, newHash)
+		}
 	}
 
 	if err := validateToken(*url, cacerts, parsedToken.username, parsedToken.password); err != nil {
