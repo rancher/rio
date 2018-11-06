@@ -1,9 +1,6 @@
 package populate
 
 import (
-	"fmt"
-	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/rancher/rio/pkg/deploy/istio/input"
@@ -13,10 +10,7 @@ import (
 )
 
 func populatePorts(input *input.IstioDeployment, output *output.Deployment) error {
-	ports, err := sortedPorts(input.VirtualServices)
-	if err != nil {
-		return err
-	}
+	ports := sortedPorts(input.VirtualServices)
 
 	output.Enabled = settings.IstioEnabled.Get() == "true"
 	output.Ports = ports
@@ -37,25 +31,15 @@ func isHostPorts(input *input.IstioDeployment) bool {
 	return false
 }
 
-func sortedPorts(vss []*v1alpha3.VirtualService) ([]int, error) {
-	ports := map[string]bool{}
+func sortedPorts(vss []*v1alpha3.VirtualService) []string {
+	var result []string
 	for _, vs := range vss {
 		for _, port := range getPorts(vs) {
-			ports[port] = true
+			result = append(result, port)
 		}
 	}
 
-	var result []int
-	for port := range ports {
-		intPort, err := strconv.Atoi(strings.SplitN(port, "/", 2)[0])
-		if err != nil {
-			return nil, fmt.Errorf("invalid port %d: %v", intPort, err)
-		}
-		result = append(result, intPort)
-	}
-
-	sort.Ints(result)
-	return result, nil
+	return result
 }
 
 func getPorts(service *v1alpha3.VirtualService) []string {

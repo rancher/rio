@@ -3,13 +3,24 @@ package service
 import (
 	"context"
 	"reflect"
+	"strings"
+
+	"github.com/rancher/rio/pkg/apply"
 
 	"github.com/pkg/errors"
 	"github.com/rancher/norman/condition"
+	"github.com/rancher/rio/pkg/deploy/istio/output"
+	"github.com/rancher/rio/pkg/deploy/stack/populate/istio"
 	service2 "github.com/rancher/rio/pkg/deploy/stack/populate/service"
+	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	"github.com/sirupsen/logrus"
+	"istio.io/api/networking/v1alpha3"
+	"istio.io/istio/pilot/pkg/model"
 	appsv1 "k8s.io/api/apps/v1beta2"
+	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -206,4 +217,93 @@ func hasAvailableSS(status *appsv1.StatefulSetStatus) bool {
 		}
 	}
 	return false
+}
+
+func (s subServiceController) acmeSolver(key string, service *v1.Service) error {
+	if service == nil {
+		return nil
+	}
+	if strings.HasPrefix(service.Name, "cm-acme-http-solver-") {
+		vs := acmeVirtualService(service.Annotations["acme.domain"], service.Name)
+		ds := acmeDestinationRule(service.Name, service.Labels)
+		return apply.Apply([]runtime.Object{vs, ds}, nil, settings.RioSystemNamespace, key)
+	}
+	return nil
+}
+
+func acmeVirtualService(domain, host string) runtime.Object {
+	vss := &v1alpha3.VirtualService{
+		Gateways: []string{istio.GetPublicGateway()},
+		Hosts:    []string{domain},
+	}
+	httpMatch := &v1alpha3.HTTPMatchRequest{}
+	httpMatch.Uri = &v1alpha3.StringMatch{
+		MatchType: &v1alpha3.StringMatch_Prefix{
+			Prefix: "/.well-known/acme-challenge/",
+		},
+	}
+	httpRoute := &v1alpha3.HTTPRoute{}
+	httpRoute.Route = []*v1alpha3.DestinationWeight{
+		{
+			Destination: &v1alpha3.Destination{
+				Host: host,
+				Port: &v1alpha3.PortSelector{
+					Port: &v1alpha3.PortSelector_Number{
+						Number: uint32(8089),
+					},
+				},
+				Subset: host,
+			},
+		},
+	}
+	httpRoute.Match = []*v1alpha3.HTTPMatchRequest{
+		httpMatch,
+	}
+	vss.Http = []*v1alpha3.HTTPRoute{
+		httpRoute,
+	}
+	vs := &output.VirtualService{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "networking.istio.io/v1alpha3",
+			Kind:       "VirtualService",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      host,
+			Namespace: settings.RioSystemNamespace,
+		},
+	}
+	m, err := model.ToJSONMap(vss)
+	if err != nil {
+		logrus.Error(err)
+	}
+	vs.Spec = m
+	return vs
+}
+
+func acmeDestinationRule(host string, labels map[string]string) runtime.Object {
+	des := &output.DestinationRule{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "networking.istio.io/v1alpha3",
+			Kind:       "DestinationRule",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      host,
+			Namespace: settings.RioSystemNamespace,
+		},
+	}
+	desspec := &v1alpha3.DestinationRule{
+		Host: host,
+		Subsets: []*v1alpha3.Subset{
+			{
+				Labels: labels,
+				Name:   host,
+			},
+		},
+	}
+	m, err := model.ToJSONMap(desspec)
+	if err != nil {
+		logrus.Error(err)
+	}
+	des.Spec = m
+	return des
 }

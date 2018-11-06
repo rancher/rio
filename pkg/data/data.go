@@ -20,7 +20,10 @@ func AddData(rContext *types.Context, inCluster bool) error {
 		return err
 	}
 
-	return apply.Apply(systemStacks(inCluster), nil, settings.RioSystemNamespace, "rio-system-stacks")
+	if err := apply.Apply(systemStacks(inCluster), nil, settings.RioSystemNamespace, "rio-system-stacks"); err != nil {
+		return err
+	}
+	return nil
 }
 
 func systemStacks(inCluster bool) []runtime.Object {
@@ -31,12 +34,21 @@ func systemStacks(inCluster bool) []runtime.Object {
 		EnableKubernetesResources: true,
 	}))
 
+	result = append(result, stack("cert-manager-crd", v1beta1.StackSpec{
+		DisableMesh:               true,
+		EnableKubernetesResources: true,
+	}))
+
 	result = append(result, stack("storageclasses", v1beta1.StackSpec{
 		DisableMesh:               true,
 		EnableKubernetesResources: true,
 	}))
 
 	result = append(result, stack("local-storage", v1beta1.StackSpec{
+		DisableMesh: true,
+	}))
+
+	result = append(result, stack("cert-manager", v1beta1.StackSpec{
 		DisableMesh: true,
 	}))
 

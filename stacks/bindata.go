@@ -90,7 +90,7 @@ func stacksCertManagerAcmeSolverStackYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/cert-manager-acme-solver-stack.yml", size: 96, mode: os.FileMode(420), modTime: time.Unix(1540515819, 0)}
+	info := bindataFileInfo{name: "stacks/cert-manager-acme-solver-stack.yml", size: 96, mode: os.FileMode(420), modTime: time.Unix(1541523162, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -110,7 +110,7 @@ func stacksCertManagerCrdStackYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/cert-manager-crd-stack.yml", size: 310, mode: os.FileMode(420), modTime: time.Unix(1540510623, 0)}
+	info := bindataFileInfo{name: "stacks/cert-manager-crd-stack.yml", size: 310, mode: os.FileMode(420), modTime: time.Unix(1541523162, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -130,7 +130,7 @@ func stacksCertManagerStackYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/cert-manager-stack.yml", size: 444, mode: os.FileMode(420), modTime: time.Unix(1541188488, 0)}
+	info := bindataFileInfo{name: "stacks/cert-manager-stack.yml", size: 444, mode: os.FileMode(420), modTime: time.Unix(1541523162, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -190,7 +190,7 @@ func stacksIstioStackYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/istio-stack.yml", size: 3938, mode: os.FileMode(420), modTime: time.Unix(1541205179, 0)}
+	info := bindataFileInfo{name: "stacks/istio-stack.yml", size: 3938, mode: os.FileMode(420), modTime: time.Unix(1541523162, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

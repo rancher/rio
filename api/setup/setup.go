@@ -43,7 +43,8 @@ func Types(ctx context.Context, context *types.Context) error {
 		client.StackType)
 	factory.BatchCreateCRDs(ctx, normantypes.DefaultStorageContext, context.Schemas,
 		&spaceSchema.Version,
-		spaceClient.ListenConfigType)
+		spaceClient.ListenConfigType,
+		spaceClient.PublicDomainType)
 	factory.BatchWait()
 
 	setupSpaces(ctx, factory.ClientGetter, context)

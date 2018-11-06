@@ -2,12 +2,14 @@ package stack
 
 import (
 	"context"
+	"strings"
 
 	"github.com/rancher/norman/pkg/changeset"
 	"github.com/rancher/rio/pkg/deploy/stack"
 	"github.com/rancher/rio/pkg/namespace"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	"github.com/rancher/types/apis/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/cache"
@@ -25,6 +27,7 @@ func Register(ctx context.Context, rContext *types.Context) {
 		configController:   rContext.Rio.Configs("").Controller(),
 		volumeController:   rContext.Rio.Volumes("").Controller(),
 		routeSetController: rContext.Rio.RouteSets("").Controller(),
+		secretsController:  rContext.Core,
 	}
 
 	rContext.Rio.Stacks("").AddLifecycle("stack-deploy-controller", s)
@@ -46,6 +49,7 @@ type stackDeployController struct {
 	stacks             v1beta1.StackInterface
 	stackController    v1beta1.StackController
 	serviceController  v1beta1.ServiceController
+	secretsController  v1.SecretsGetter
 	configController   v1beta1.ConfigController
 	volumeController   v1beta1.VolumeController
 	routeSetController v1beta1.RouteSetController
@@ -89,7 +93,7 @@ func (s *stackDeployController) Create(obj *v1beta1.Stack) (*v1beta1.Stack, erro
 }
 
 func (s *stackDeployController) Remove(obj *v1beta1.Stack) (*v1beta1.Stack, error) {
-	err := stack.Remove(namespace.StackToNamespace(obj), obj)
+	err := stack.Remove(namespace.StackToNamespace(obj), getSpace(obj), obj)
 	return obj, err
 }
 
@@ -129,10 +133,19 @@ func (s *stackDeployController) deploy(obj *v1beta1.Stack) (*v1beta1.Stack, erro
 	}
 
 	err = stack.Deploy(namespace,
+		getSpace(obj),
 		obj,
 		configs,
 		services,
 		volumes,
 		routes)
 	return obj, err
+}
+
+func getSpace(stack *v1beta1.Stack) string {
+	parts := strings.SplitN(stack.Namespace, "-", 2)
+	if len(parts) == 2 {
+		return parts[1]
+	}
+	return ""
 }

@@ -2,6 +2,7 @@ package populate
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/rancher/rio/pkg/deploy/istio/input"
 	"github.com/rancher/rio/pkg/deploy/istio/output"
@@ -23,7 +24,8 @@ func populateStack(input *input.IstioDeployment, output *output.Deployment) erro
 
 	var ports []string
 	for _, port := range output.Ports {
-		ports = append(ports, fmt.Sprintf("%d:%d", port, port))
+		p := strings.SplitN(port, "/", 2)[0]
+		ports = append(ports, fmt.Sprintf("%v:%v", p, p))
 	}
 
 	portStr, err := json.Marshal(&ports)
@@ -49,6 +51,7 @@ func populateStack(input *input.IstioDeployment, output *output.Deployment) erro
 			Template:                  stackContents,
 		},
 	}
+
 	output.Stacks[s.Name] = s
 	return nil
 }
