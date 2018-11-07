@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/rancher/norman/controller"
-	"github.com/rancher/norman/event"
 	"github.com/rancher/norman/objectclient/dynamic"
 	"github.com/rancher/norman/restwatch"
 	"github.com/rancher/norman/signal"
@@ -26,13 +25,10 @@ import (
 	"github.com/rancher/types/peermanager"
 	"github.com/rancher/types/user"
 	"github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
-	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/record"
 )
 
 var (
@@ -143,16 +139,12 @@ func (c *ScaledContext) Start(ctx context.Context) error {
 }
 
 type ManagementContext struct {
-	eventBroadcaster record.EventBroadcaster
-
 	ClientGetter      proxy.ClientGetter
 	LocalConfig       *rest.Config
 	RESTConfig        rest.Config
 	UnversionedClient rest.Interface
 	K8sClient         kubernetes.Interface
 	APIExtClient      clientset.Interface
-	Events            record.EventRecorder
-	EventLogger       event.Logger
 	Schemas           *types.Schemas
 	Scheme            *runtime.Scheme
 	Dialer            dialer.Factory
@@ -310,26 +302,11 @@ func NewManagementContext(config rest.Config) (*ManagementContext, error) {
 	managementv3.AddToScheme(context.Scheme)
 	projectv3.AddToScheme(context.Scheme)
 
-	context.eventBroadcaster = record.NewBroadcaster()
-	context.Events = context.eventBroadcaster.NewRecorder(context.Scheme, v1.EventSource{
-		Component: "CattleManagementServer",
-	})
-	context.EventLogger = event.NewLogger(context.Events)
-
 	return context, err
 }
 
 func (c *ManagementContext) Start(ctx context.Context) error {
 	logrus.Info("Starting management controllers")
-
-	watcher := c.eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{
-		Interface: c.K8sClient.CoreV1().Events(""),
-	})
-
-	go func() {
-		<-ctx.Done()
-		watcher.Stop()
-	}()
 
 	return controller.SyncThenStart(ctx, 50, c.controllers()...)
 }
@@ -428,6 +405,70 @@ func (w *UserContext) StartAndWait(ctx context.Context) error {
 	w.Start(ctx)
 	<-ctx.Done()
 	return ctx.Err()
+}
+
+func NewUserOnlyContext(config rest.Config) (*UserOnlyContext, error) {
+	var err error
+	context := &UserOnlyContext{
+		RESTConfig: config,
+	}
+
+	context.K8sClient, err = kubernetes.NewForConfig(&config)
+	if err != nil {
+		return nil, err
+	}
+
+	context.Apps, err = appsv1beta2.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	context.Core, err = corev1.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	context.Project, err = projectv3.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	context.RBAC, err = rbacv1.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	context.Extensions, err = extv1beta1.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	context.BatchV1, err = batchv1.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	context.BatchV1Beta1, err = batchv1beta1.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	dynamicConfig := config
+	if dynamicConfig.NegotiatedSerializer == nil {
+		dynamicConfig.NegotiatedSerializer = dynamic.NegotiatedSerializer
+	}
+
+	context.UnversionedClient, err = restwatch.UnversionedRESTClientFor(&dynamicConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	context.Schemas = types.NewSchemas().
+		AddSchemas(managementSchema.Schemas).
+		AddSchemas(clusterSchema.Schemas).
+		AddSchemas(projectSchema.Schemas)
+
+	return context, err
 }
 
 func (w *UserOnlyContext) Start(ctx context.Context) error {

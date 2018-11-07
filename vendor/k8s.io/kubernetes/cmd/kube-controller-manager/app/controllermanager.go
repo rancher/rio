@@ -327,6 +327,7 @@ const (
 func NewControllerInitializers() map[string]InitFunc {
 	controllers := map[string]InitFunc{}
 	controllers["endpoint"] = startEndpointController
+	controllers["replicationcontroller"] = startReplicationController
 	controllers["podgc"] = startPodGCController
 	controllers["resourcequota"] = startResourceQuotaController
 	controllers["namespace"] = startNamespaceController
@@ -347,6 +348,7 @@ func NewControllerInitializers() map[string]InitFunc {
 	controllers["persistentvolume-binder"] = startPersistentVolumeBinderController
 	controllers["attachdetach"] = startAttachDetachController
 	controllers["persistentvolume-expander"] = startVolumeExpandController
+	controllers["clusterrole-aggregation"] = startClusterRoleAggregrationController
 	controllers["pvc-protection"] = startPVCProtectionController
 	controllers["pv-protection"] = startPVProtectionController
 

@@ -7,9 +7,9 @@ import (
 )
 
 type ReplicaSetLifecycle interface {
-	Create(obj *v1beta2.ReplicaSet) (*v1beta2.ReplicaSet, error)
-	Remove(obj *v1beta2.ReplicaSet) (*v1beta2.ReplicaSet, error)
-	Updated(obj *v1beta2.ReplicaSet) (*v1beta2.ReplicaSet, error)
+	Create(obj *v1beta2.ReplicaSet) (runtime.Object, error)
+	Remove(obj *v1beta2.ReplicaSet) (runtime.Object, error)
+	Updated(obj *v1beta2.ReplicaSet) (runtime.Object, error)
 }
 
 type replicaSetLifecycleAdapter struct {
@@ -43,10 +43,11 @@ func (w *replicaSetLifecycleAdapter) Updated(obj runtime.Object) (runtime.Object
 func NewReplicaSetLifecycleAdapter(name string, clusterScoped bool, client ReplicaSetInterface, l ReplicaSetLifecycle) ReplicaSetHandlerFunc {
 	adapter := &replicaSetLifecycleAdapter{lifecycle: l}
 	syncFn := lifecycle.NewObjectLifecycleAdapter(name, clusterScoped, adapter, client.ObjectClient())
-	return func(key string, obj *v1beta2.ReplicaSet) error {
-		if obj == nil {
-			return syncFn(key, nil)
+	return func(key string, obj *v1beta2.ReplicaSet) (runtime.Object, error) {
+		newObj, err := syncFn(key, obj)
+		if o, ok := newObj.(runtime.Object); ok {
+			return o, err
 		}
-		return syncFn(key, obj)
+		return nil, err
 	}
 }

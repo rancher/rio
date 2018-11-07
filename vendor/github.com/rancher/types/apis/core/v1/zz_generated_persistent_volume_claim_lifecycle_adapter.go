@@ -7,9 +7,9 @@ import (
 )
 
 type PersistentVolumeClaimLifecycle interface {
-	Create(obj *v1.PersistentVolumeClaim) (*v1.PersistentVolumeClaim, error)
-	Remove(obj *v1.PersistentVolumeClaim) (*v1.PersistentVolumeClaim, error)
-	Updated(obj *v1.PersistentVolumeClaim) (*v1.PersistentVolumeClaim, error)
+	Create(obj *v1.PersistentVolumeClaim) (runtime.Object, error)
+	Remove(obj *v1.PersistentVolumeClaim) (runtime.Object, error)
+	Updated(obj *v1.PersistentVolumeClaim) (runtime.Object, error)
 }
 
 type persistentVolumeClaimLifecycleAdapter struct {
@@ -43,10 +43,11 @@ func (w *persistentVolumeClaimLifecycleAdapter) Updated(obj runtime.Object) (run
 func NewPersistentVolumeClaimLifecycleAdapter(name string, clusterScoped bool, client PersistentVolumeClaimInterface, l PersistentVolumeClaimLifecycle) PersistentVolumeClaimHandlerFunc {
 	adapter := &persistentVolumeClaimLifecycleAdapter{lifecycle: l}
 	syncFn := lifecycle.NewObjectLifecycleAdapter(name, clusterScoped, adapter, client.ObjectClient())
-	return func(key string, obj *v1.PersistentVolumeClaim) error {
-		if obj == nil {
-			return syncFn(key, nil)
+	return func(key string, obj *v1.PersistentVolumeClaim) (runtime.Object, error) {
+		newObj, err := syncFn(key, obj)
+		if o, ok := newObj.(runtime.Object); ok {
+			return o, err
 		}
-		return syncFn(key, obj)
+		return nil, err
 	}
 }

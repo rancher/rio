@@ -34,7 +34,9 @@ var (
 		Init(globalTypes).
 		Init(rkeTypes).
 		Init(alertTypes).
-		Init(composeType)
+		Init(composeType).
+		Init(projectCatalogTypes).
+		Init(clusterCatalogTypes)
 
 	TokenSchemas = factory.Schemas(&Version).
 			Init(tokens)
@@ -126,10 +128,6 @@ func clusterTypes(schemas *types.Schemas) *types.Schemas {
 		AddMapperForType(&Version, v3.ClusterStatus{},
 			m.Drop{Field: "serviceAccountToken"},
 		).
-		AddMapperForType(&Version, v3.ClusterEvent{}, &m.Move{
-			From: "type",
-			To:   "eventType",
-		}).
 		AddMapperForType(&Version, v3.ClusterRegistrationToken{},
 			&m.Embed{Field: "status"},
 		).
@@ -137,7 +135,6 @@ func clusterTypes(schemas *types.Schemas) *types.Schemas {
 			m.Drop{Field: "systemImages"},
 		).
 		MustImport(&Version, v3.Cluster{}).
-		MustImport(&Version, v3.ClusterEvent{}).
 		MustImport(&Version, v3.ClusterRegistrationToken{}).
 		MustImport(&Version, v3.GenerateKubeConfigOutput{}).
 		MustImport(&Version, v3.ImportClusterYamlInput{}).
@@ -217,6 +214,7 @@ func nodeTypes(schemas *types.Schemas) *types.Schemas {
 		AddMapperForType(&Version, v3.NodeStatus{},
 			&m.Drop{Field: "nodeTemplateSpec"},
 			&m.Embed{Field: "internalNodeStatus"},
+			&m.Drop{Field: "config"},
 			&m.SliceMerge{From: []string{"conditions", "nodeConditions"}, To: "conditions"}).
 		AddMapperForType(&Version, v3.Node{},
 			&m.Embed{Field: "status"},
@@ -543,4 +541,38 @@ func alertTypes(schema *types.Schemas) *types.Schemas {
 
 func composeType(schemas *types.Schemas) *types.Schemas {
 	return schemas.MustImport(&Version, v3.ComposeConfig{})
+}
+
+func projectCatalogTypes(schemas *types.Schemas) *types.Schemas {
+	return schemas.
+		AddMapperForType(&Version, v3.ProjectCatalog{},
+			&m.Move{From: "catalogKind", To: "kind"},
+			&m.Embed{Field: "status"},
+			&m.Drop{Field: "helmVersionCommits"},
+			&mapper.NamespaceIDMapper{}).
+		MustImportAndCustomize(&Version, v3.ProjectCatalog{}, func(schema *types.Schema) {
+			schema.ResourceActions = map[string]types.Action{
+				"refresh": {},
+			}
+			schema.CollectionActions = map[string]types.Action{
+				"refresh": {},
+			}
+		})
+}
+
+func clusterCatalogTypes(schemas *types.Schemas) *types.Schemas {
+	return schemas.
+		AddMapperForType(&Version, v3.ClusterCatalog{},
+			&m.Move{From: "catalogKind", To: "kind"},
+			&m.Embed{Field: "status"},
+			&m.Drop{Field: "helmVersionCommits"},
+			&mapper.NamespaceIDMapper{}).
+		MustImportAndCustomize(&Version, v3.ClusterCatalog{}, func(schema *types.Schema) {
+			schema.ResourceActions = map[string]types.Action{
+				"refresh": {},
+			}
+			schema.CollectionActions = map[string]types.Action{
+				"refresh": {},
+			}
+		})
 }
