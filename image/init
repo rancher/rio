@@ -112,12 +112,9 @@ ff02::1		ip6-allnodes
 ff02::2		ip6-allrouters
 EOF
 
-ln -sf /host/etc/resolv.conf /etc/resolv.conf
-if ! grep -q nameserver /host/etc/resolv.conf; then
-    echo Failing back to 8.8.8.8 DNS 1>&2
-    rm -f /etc/resolv.conf
-    echo 'nameserver 8.8.8.8' > /etc/resolv.conf
-fi
+cat > /etc/resolv.conf << EOF
+nameserver 1.1.1.1
+EOF
 
 if [ -e /host/etc/machine-id ]; then
     ln -sf /host/etc/machine-id /etc/machine-id
