@@ -1,4 +1,4 @@
-// +build k3s
+// +build k8s
 
 package agent
 

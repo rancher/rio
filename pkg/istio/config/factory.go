@@ -1,12 +1,14 @@
 package config
 
 import (
+	"context"
 	"sync"
 
 	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/types/apis/core/v1"
 	"istio.io/api/mesh/v1alpha1"
 	metav1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type Factory struct {
@@ -19,20 +21,20 @@ type Factory struct {
 	meshConfig         *v1alpha1.MeshConfig
 }
 
-func NewConfigFactory(configMap v1.ConfigMapInterface, configMapNamespace, configMapName, configMapKey string) *Factory {
+func NewConfigFactory(ctx context.Context, configMap v1.ConfigMapInterface, configMapNamespace, configMapName, configMapKey string) *Factory {
 	f := &Factory{
 		configMapNamespace: configMapNamespace,
 		configMapName:      configMapName,
 		configMapKey:       configMapKey,
 	}
-	configMap.Controller().AddHandler("istio-config-cache", f.sync)
+	configMap.Controller().AddHandler(ctx, "istio-config-cache", f.sync)
 	return f
 }
 
-func (c *Factory) sync(key string, cm *metav1.ConfigMap) error {
+func (c *Factory) sync(key string, cm *metav1.ConfigMap) (runtime.Object, error) {
 	ns, name := kv.Split(key, "/")
 	if ns != c.configMapNamespace && name != c.configMapName {
-		return nil
+		return nil, nil
 	}
 
 	if cm == nil {
@@ -40,17 +42,17 @@ func (c *Factory) sync(key string, cm *metav1.ConfigMap) error {
 		c.template = ""
 		c.meshConfig = nil
 		c.Unlock()
-		return nil
+		return nil, nil
 	}
 
 	val, ok := cm.Data[c.configMapKey]
 	if !ok {
-		return nil
+		return nil, nil
 	}
 
 	meshConfig, template, err := DoConfigAndTemplate(val)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	c.Lock()
@@ -58,7 +60,7 @@ func (c *Factory) sync(key string, cm *metav1.ConfigMap) error {
 	c.meshConfig = meshConfig
 	c.Unlock()
 
-	return nil
+	return nil, nil
 }
 
 func (c *Factory) TemplateAndConfig() (*v1alpha1.MeshConfig, string) {

@@ -181,7 +181,7 @@ func runTunnel(config *AgentConfig) error {
 }
 
 func runProxy(config *AgentConfig) error {
-	proxy, err := proxy2.NewSimpleProxy(config.TargetHost, config.CACerts)
+	proxy, err := proxy2.NewSimpleProxy(config.TargetHost, config.CACerts, true)
 	if err != nil {
 		return err
 	}

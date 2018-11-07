@@ -3,9 +3,12 @@ package setup
 import (
 	"context"
 
+	"github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
+
+	"github.com/rancher/norman/store/crd"
+
 	"github.com/rancher/norman/api/builtin"
 	"github.com/rancher/norman/pkg/subscribe"
-	"github.com/rancher/norman/store/crd"
 	"github.com/rancher/norman/store/proxy"
 	normantypes "github.com/rancher/norman/types"
 	"github.com/rancher/rio/api/config"
@@ -15,87 +18,77 @@ import (
 	"github.com/rancher/rio/api/service"
 	"github.com/rancher/rio/api/space"
 	"github.com/rancher/rio/api/stack"
-	"github.com/rancher/rio/types"
 	networkSchema "github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3/schema"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1/schema"
 	spaceSchema "github.com/rancher/rio/types/apis/space.cattle.io/v1beta1/schema"
-	networkClient "github.com/rancher/rio/types/client/networking/v1alpha3"
 	"github.com/rancher/rio/types/client/rio/v1beta1"
 	spaceClient "github.com/rancher/rio/types/client/space/v1beta1"
 )
 
-func Types(ctx context.Context, context *types.Context) error {
-	factory := crd.NewFactoryFromClientGetter(context.ClientGetter)
+func Types(ctx context.Context, clientGetter proxy.ClientGetter, schemas *normantypes.Schemas) error {
+	//server := norman.GetServer(ctx)
+	factory := crd.NewFactoryFromClientGetter(clientGetter)
 	// We create istio types so that our controllers don't error on first start
 	_, err := factory.CreateCRDs(ctx, normantypes.DefaultStorageContext,
-		networkSchema.Schemas.Schema(&networkSchema.Version, networkClient.GatewayType),
-		networkSchema.Schemas.Schema(&networkSchema.Version, networkClient.VirtualServiceType))
+		networkSchema.Schemas.Schema(&networkSchema.Version, v1alpha3.GatewayGroupVersionKind.Kind),
+		networkSchema.Schemas.Schema(&networkSchema.Version, v1alpha3.VirtualServiceGroupVersionKind.Kind),
+		networkSchema.Schemas.Schema(&networkSchema.Version, v1alpha3.DestinationRuleGroupVersionKind.Kind))
 	if err != nil {
 		return err
 	}
 
-	factory.BatchCreateCRDs(ctx, normantypes.DefaultStorageContext, context.Schemas,
-		&schema.Version,
-		client.ServiceType,
-		client.ConfigType,
-		client.RouteSetType,
-		client.VolumeType,
-		client.StackType)
-	factory.BatchCreateCRDs(ctx, normantypes.DefaultStorageContext, context.Schemas,
-		&spaceSchema.Version,
-		spaceClient.ListenConfigType)
 	factory.BatchWait()
 
-	setupSpaces(ctx, factory.ClientGetter, context)
-	setupNodes(ctx, factory.ClientGetter, context)
-	setupPods(ctx, factory.ClientGetter, context)
-	setupService(ctx, context)
-	setupConfig(ctx, context)
-	setupRoute(ctx, context)
-	setupVolume(ctx, context)
-	setupStacks(ctx, context)
+	setupSpaces(ctx, clientGetter, schemas)
+	setupNodes(ctx, clientGetter, schemas)
+	setupPods(ctx, clientGetter, schemas)
+	setupService(ctx, schemas)
+	setupConfig(ctx, schemas)
+	setupRoute(ctx, schemas)
+	setupVolume(ctx, schemas)
+	setupStacks(ctx, schemas)
 
-	subscribe.Register(&builtin.Version, context.Schemas)
-	subscribe.Register(&schema.Version, context.Schemas)
-	subscribe.Register(&spaceSchema.Version, context.Schemas)
+	subscribe.Register(&builtin.Version, schemas)
+	subscribe.Register(&schema.Version, schemas)
+	subscribe.Register(&spaceSchema.Version, schemas)
 
 	return nil
 }
 
-func setupService(ctx context.Context, rContext *types.Context) {
-	s := rContext.Schemas.Schema(&schema.Version, client.ServiceType)
+func setupService(ctx context.Context, schemas *normantypes.Schemas) {
+	s := schemas.Schema(&schema.Version, client.ServiceType)
 	s.Formatter = pretty.Format
 	s.InputFormatter = pretty.InputFormatter
 	s.Store = resetstack.New(service.New(named.New(s.Store)))
 }
 
-func setupConfig(ctx context.Context, rContext *types.Context) {
-	s := rContext.Schemas.Schema(&schema.Version, client.ConfigType)
+func setupConfig(ctx context.Context, schemas *normantypes.Schemas) {
+	s := schemas.Schema(&schema.Version, client.ConfigType)
 	s.Store = resetstack.New(named.New(s.Store))
 	s.ListHandler = config.ListHandler
 }
 
-func setupRoute(ctx context.Context, rContext *types.Context) {
-	s := rContext.Schemas.Schema(&schema.Version, client.RouteSetType)
+func setupRoute(ctx context.Context, schemas *normantypes.Schemas) {
+	s := schemas.Schema(&schema.Version, client.RouteSetType)
 	s.Formatter = pretty.Format
 	s.InputFormatter = pretty.InputFormatter
 	s.Store = resetstack.New(named.New(s.Store))
 }
 
-func setupVolume(ctx context.Context, rContext *types.Context) {
-	s := rContext.Schemas.Schema(&schema.Version, client.VolumeType)
+func setupVolume(ctx context.Context, schemas *normantypes.Schemas) {
+	s := schemas.Schema(&schema.Version, client.VolumeType)
 	s.Store = resetstack.New(named.New(s.Store))
 }
 
-func setupStacks(ctx context.Context, rContext *types.Context) {
-	s := rContext.Schemas.Schema(&schema.Version, client.StackType)
+func setupStacks(ctx context.Context, schemas *normantypes.Schemas) {
+	s := schemas.Schema(&schema.Version, client.StackType)
 	s.Formatter = pretty.Format
 	s.ListHandler = stack.ListHandler
 	s.Store = named.New(s.Store)
 }
 
-func setupNodes(ctx context.Context, clientGetter proxy.ClientGetter, rContext *types.Context) {
-	s := rContext.Schemas.Schema(&spaceSchema.Version, spaceClient.NodeType)
+func setupNodes(ctx context.Context, clientGetter proxy.ClientGetter, schemas *normantypes.Schemas) {
+	s := schemas.Schema(&spaceSchema.Version, spaceClient.NodeType)
 	s.Store = proxy.NewProxyStore(ctx,
 		clientGetter,
 		normantypes.DefaultStorageContext,
@@ -106,8 +99,8 @@ func setupNodes(ctx context.Context, clientGetter proxy.ClientGetter, rContext *
 		"nodes")
 }
 
-func setupPods(ctx context.Context, clientGetter proxy.ClientGetter, rContext *types.Context) {
-	s := rContext.Schemas.Schema(&spaceSchema.Version, spaceClient.PodType)
+func setupPods(ctx context.Context, clientGetter proxy.ClientGetter, schemas *normantypes.Schemas) {
+	s := schemas.Schema(&spaceSchema.Version, spaceClient.PodType)
 	s.Store = proxy.NewProxyStore(ctx,
 		clientGetter,
 		normantypes.DefaultStorageContext,
@@ -118,8 +111,8 @@ func setupPods(ctx context.Context, clientGetter proxy.ClientGetter, rContext *t
 		"pods")
 }
 
-func setupSpaces(ctx context.Context, clientGetter proxy.ClientGetter, rContext *types.Context) {
-	s := rContext.Schemas.Schema(&spaceSchema.Version, spaceClient.SpaceType)
+func setupSpaces(ctx context.Context, clientGetter proxy.ClientGetter, schemas *normantypes.Schemas) {
+	s := schemas.Schema(&spaceSchema.Version, spaceClient.SpaceType)
 	s.Store = proxy.NewProxyStore(ctx,
 		clientGetter,
 		normantypes.DefaultStorageContext,

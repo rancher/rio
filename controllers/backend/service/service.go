@@ -23,17 +23,19 @@ var (
 	}
 )
 
-func Register(ctx context.Context, rContext *types.Context) {
+func Register(ctx context.Context, rContext *types.Context) error {
 	s := &subServiceController{
 		serviceLister: rContext.Rio.Services("").Controller().Lister(),
 		services:      rContext.Rio.Services(""),
 	}
 
-	rContext.Apps.Deployments("").AddHandler("sub-service-controller", s.deploymentChanged)
-	rContext.Apps.DaemonSets("").AddHandler("sub-service-controller", s.daemonSetChanged)
-	rContext.Apps.StatefulSets("").AddHandler("sub-service-controller", s.statefulSetChanged)
+	rContext.Apps.Deployments("").AddHandler(ctx, "sub-service-controller", s.deploymentChanged)
+	rContext.Apps.DaemonSets("").AddHandler(ctx, "sub-service-controller", s.daemonSetChanged)
+	rContext.Apps.StatefulSets("").AddHandler(ctx, "sub-service-controller", s.statefulSetChanged)
 
-	rContext.Rio.Services("").AddHandler("service-controller", s.promote)
+	rContext.Rio.Services("").AddHandler(ctx, "service-controller", s.promote)
+
+	return nil
 }
 
 type subServiceController struct {
@@ -76,81 +78,81 @@ func (s *subServiceController) updateStatus(service, newService *v1beta1.Service
 	return nil
 }
 
-func (s *subServiceController) daemonSetChanged(key string, dep *appsv1.DaemonSet) error {
+func (s *subServiceController) daemonSetChanged(key string, dep *appsv1.DaemonSet) (runtime.Object, error) {
 	if dep == nil {
-		return nil
+		return nil, nil
 	}
 
 	service := s.getService(dep.Namespace, dep.Labels)
 	if service == nil {
-		return nil
+		return nil, nil
 	}
 
 	newService := service.DeepCopy()
 	newService.Status.DaemonSetStatus = &dep.Status
 
-	return s.updateStatus(service, newService, dep, dep.Generation, dep.Status.ObservedGeneration)
+	return nil, s.updateStatus(service, newService, dep, dep.Generation, dep.Status.ObservedGeneration)
 }
 
-func (s *subServiceController) statefulSetChanged(key string, dep *appsv1.StatefulSet) error {
+func (s *subServiceController) statefulSetChanged(key string, dep *appsv1.StatefulSet) (runtime.Object, error) {
 	if dep == nil {
-		return nil
+		return nil, nil
 	}
 
 	service := s.getService(dep.Namespace, dep.Labels)
 	if service == nil {
-		return nil
+		return nil, nil
 	}
 
 	newService := service.DeepCopy()
 	newService.Status.StatefulSetStatus = &dep.Status
 
-	return s.updateStatus(service, newService, dep, dep.Generation, dep.Status.ObservedGeneration)
+	return nil, s.updateStatus(service, newService, dep, dep.Generation, dep.Status.ObservedGeneration)
 }
 
-func (s *subServiceController) deploymentChanged(key string, dep *appsv1.Deployment) error {
+func (s *subServiceController) deploymentChanged(key string, dep *appsv1.Deployment) (runtime.Object, error) {
 	if dep == nil {
-		return nil
+		return nil, nil
 	}
 
 	service := s.getService(dep.Namespace, dep.Labels)
 	if service == nil {
-		return nil
+		return nil, nil
 	}
 
 	newService := service.DeepCopy()
 	newService.Status.DeploymentStatus = &dep.Status
 
-	return s.updateStatus(service, newService, dep, dep.Generation, dep.Status.ObservedGeneration)
+	return nil, s.updateStatus(service, newService, dep, dep.Generation, dep.Status.ObservedGeneration)
 }
 
-func (s *subServiceController) promote(key string, service *v1beta1.Service) error {
+func (s *subServiceController) promote(key string, service *v1beta1.Service) (runtime.Object, error) {
 	if service == nil {
-		return nil
+		return nil, nil
 	}
 
 	if service.Spec.Revision.ParentService == "" || !service.Spec.Revision.Promote {
-		return nil
+		return nil, nil
 	}
 
 	services, err := s.serviceLister.List(service.Namespace, labels.Everything())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	serviceSets, err := service2.CollectionServices(services)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	serviceSet, ok := serviceSets[service.Spec.Revision.ParentService]
 	if !ok {
-		return err
+		return nil, err
 	}
 
 	base := serviceSet.Service
 	if base == nil {
-		return nil
+		return nil, nil
 	}
 
 	for _, rev := range serviceSet.Revisions {
@@ -163,13 +165,13 @@ func (s *subServiceController) promote(key string, service *v1beta1.Service) err
 			newRev.Spec.Revision.Promote = false
 			newRev.Spec.Revision.Weight = 0
 			if _, err := s.services.Update(newRev); err != nil {
-				return errors.Wrapf(err, "failed to promote %s/%s/", rev.Namespace, rev.Name)
+				return nil, errors.Wrapf(err, "failed to promote %s/%s/", rev.Namespace, rev.Name)
 			}
-			return s.services.DeleteNamespaced(service.Namespace, service.Name, nil)
+			return nil, s.services.DeleteNamespaced(service.Namespace, service.Name, nil)
 		}
 	}
 
-	return nil
+	return nil, nil
 }
 
 func hasAvailable(status *appsv1.DeploymentStatus) bool {

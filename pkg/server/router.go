@@ -9,9 +9,10 @@ import (
 	"k8s.io/kubernetes/pkg/wrapper/server"
 )
 
-func router(serverConfig *server.ServerConfig, api, k3s, tunnel http.Handler) http.Handler {
-	if k3s == nil {
-		k3s = api
+func router(serverConfig *server.ServerConfig, api, tunnel http.Handler) http.Handler {
+	k3s := api
+	if serverConfig != nil && serverConfig.Handler != nil {
+		k3s = serverConfig.Handler
 	}
 
 	authed := mux.NewRouter()
@@ -25,7 +26,7 @@ func router(serverConfig *server.ServerConfig, api, k3s, tunnel http.Handler) ht
 	router := mux.NewRouter()
 	router.NotFoundHandler = authed
 	router.Path("/cacerts").Handler(cacerts())
-	router.Path("/domain").Handler(domain())
+	router.Path("/domain").Handler(domainHandler())
 
 	installHealth(router)
 
@@ -39,7 +40,7 @@ func cacerts() http.Handler {
 	})
 }
 
-func domain() http.Handler {
+func domainHandler() http.Handler {
 	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
 		resp.Header().Set("content-type", "text/plain")
 		resp.Write([]byte(settings2.ClusterDomain.Get()))

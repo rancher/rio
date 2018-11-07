@@ -54,6 +54,7 @@ func (d *Deployment) Deploy(ns, groupID string) error {
 		GroupID:   groupID,
 		Injectors: d.Injectors,
 	}
+	ad.Add(ns, v1.GroupName, "ServiceAccount", d.ServiceAccounts)
 	ad.Add("", rbacv1.GroupName, "ClusterRoleBinding", d.ClusterRoleBindings)
 	ad.Add("", rbacv1.GroupName, "ClusterRole", d.ClusterRoles)
 	ad.Add(ns, v1.GroupName, "ConfigMap", d.ConfigMaps)
@@ -64,7 +65,6 @@ func (d *Deployment) Deploy(ns, groupID string) error {
 	ad.Add(ns, v1beta12.GroupName, "PodDisruptionBudget", d.PodDisruptionBudgets)
 	ad.Add(ns, rbacv1.GroupName, "RoleBinding", d.RoleBindings)
 	ad.Add(ns, rbacv1.GroupName, "Roles", d.Roles)
-	ad.Add(ns, v1.GroupName, "ServiceAccount", d.ServiceAccounts)
 	ad.Add(ns, v1.GroupName, "Service", d.Services)
 	ad.Add(ns, appsv1.GroupName, "StatefulSet", d.StatefulSets)
 	ad.Add(ns, "networking.istio.io", "VirtualService", d.VirtualServices)

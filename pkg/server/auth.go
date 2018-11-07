@@ -10,7 +10,7 @@ import (
 )
 
 func doAuth(serverConfig *server.ServerConfig, next http.Handler, rw http.ResponseWriter, req *http.Request) {
-	if serverConfig.Authenticator == nil {
+	if serverConfig == nil || serverConfig.Authenticator == nil {
 		next.ServeHTTP(rw, req)
 		return
 	}

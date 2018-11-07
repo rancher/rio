@@ -10,7 +10,7 @@ type Status struct {
 }
 
 func (s Status) FromInternal(data map[string]interface{}) {
-	if "active" != data["state"] {
+	if "active" != data["state"] && "pending" != data["state"] {
 		return
 	}
 
