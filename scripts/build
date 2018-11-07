@@ -17,9 +17,10 @@ cross()
     GOOS=darwin GOARCH=amd64 go build -ldflags "$LDFLAGS" -o bin/rio-darwin ./cli/main.go
 }
 
+mkdir -p bin
+
 cross &
 
-mkdir -p bin
 echo Building incluster
 CGO_ENABLED=0 go build -ldflags "$LDFLAGS $STATIC" -o bin/rio-incluster
 

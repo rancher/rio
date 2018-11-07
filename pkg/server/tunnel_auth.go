@@ -3,7 +3,6 @@ package server
 import (
 	"net/http"
 
-	"github.com/rancher/rancher/pkg/remotedialer"
 	"k8s.io/apiserver/pkg/endpoints/request"
 )
 
@@ -23,10 +22,4 @@ func authorizer(req *http.Request) (clientKey string, authed bool, err error) {
 	}
 
 	return nodeName, true, nil
-}
-
-func newTunnel() http.Handler {
-	server := remotedialer.New(authorizer, remotedialer.DefaultErrorWriter)
-	setupK3s(server)
-	return server
 }

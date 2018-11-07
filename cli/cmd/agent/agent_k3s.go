@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/natefinch/lumberjack"
+	"github.com/rancher/norman/pkg/resolvehome"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/resolvehome"
 	"github.com/rancher/rio/pkg/clientaccess"
 	"github.com/rancher/rio/pkg/enterchroot"
 	"github.com/sirupsen/logrus"
