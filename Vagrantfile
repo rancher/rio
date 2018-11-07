@@ -134,13 +134,34 @@ def download_unix(version, rioOSArch)
     if #{CONFIG['debug']}; then set -x; fi
     RIO_FILENAME=rio-#{version}-#{rioOSArch}.#{ext}
     RIO_URLBASE=https://github.com/rancher/rio/releases/download
+    CHECKSUM_URL=${RIO_URLBASE}/#{version}/sha256sum.txt
+    CHECKSUM_FILEPATH=/vagrant/.vagrant/sha256sum.txt
     RIO_URL=${RIO_URLBASE}/#{version}/${RIO_FILENAME}
     RIO_FILEPATH=/vagrant/.vagrant/${RIO_FILENAME}
 
-    if [ ! -f ${RIO_FILEPATH} ]; then
+    echo Downloading Rio #{version} checksums
+    curl -sSfL ${CHECKSUM_URL} -o ${CHECKSUM_FILEPATH}
+    EXPECT=$(grep "dist/artifacts/${RIO_FILENAME}" ${CHECKSUM_FILEPATH} | cut -d ' ' -f 1)
+
+    DOWNLOAD=1
+    if [ -f ${RIO_FILEPATH} ]; then
+      echo Checking existing copy of Rio #{version} for #{rioOSArch}
+      HAVE=$(sha256sum ${RIO_FILEPATH} | cut -d ' ' -f 1)
+      if [ "${HAVE}" = "${EXPECT}" ]; then
+        DOWNLOAD=0
+      fi
+    fi
+
+    if [ $DOWNLOAD -eq 1 ]; then
       echo Downloading Rio #{version} for #{rioOSArch}...
       curl -sSfL ${RIO_URL} -o ${RIO_FILEPATH}
-      echo Downloaded Rio #{version} to ${RIO_FILEPATH}
+      HAVE=$(sha256sum ${RIO_FILEPATH} | cut -d ' ' -f 1)
+      if [ "${HAVE}" = "${EXPECT}" ]; then
+        echo Downloaded Rio #{version} to ${RIO_FILEPATH}
+      else
+        echo "Download of ${RIO_FILEPATH} did not match expected SHA"
+        exit 1
+      fi
     else
       echo Rio #{version} for #{rioOSArch} already downloaded
     fi
