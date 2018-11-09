@@ -7,9 +7,9 @@ import (
 )
 
 type JobLifecycle interface {
-	Create(obj *v1.Job) (*v1.Job, error)
-	Remove(obj *v1.Job) (*v1.Job, error)
-	Updated(obj *v1.Job) (*v1.Job, error)
+	Create(obj *v1.Job) (runtime.Object, error)
+	Remove(obj *v1.Job) (runtime.Object, error)
+	Updated(obj *v1.Job) (runtime.Object, error)
 }
 
 type jobLifecycleAdapter struct {
@@ -43,10 +43,11 @@ func (w *jobLifecycleAdapter) Updated(obj runtime.Object) (runtime.Object, error
 func NewJobLifecycleAdapter(name string, clusterScoped bool, client JobInterface, l JobLifecycle) JobHandlerFunc {
 	adapter := &jobLifecycleAdapter{lifecycle: l}
 	syncFn := lifecycle.NewObjectLifecycleAdapter(name, clusterScoped, adapter, client.ObjectClient())
-	return func(key string, obj *v1.Job) error {
-		if obj == nil {
-			return syncFn(key, nil)
+	return func(key string, obj *v1.Job) (runtime.Object, error) {
+		newObj, err := syncFn(key, obj)
+		if o, ok := newObj.(runtime.Object); ok {
+			return o, err
 		}
-		return syncFn(key, obj)
+		return nil, err
 	}
 }

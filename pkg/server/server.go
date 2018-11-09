@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -15,49 +14,88 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
-	"github.com/rancher/norman/api"
-	"github.com/rancher/norman/leader12"
-	"github.com/rancher/norman/signal"
-	"github.com/rancher/rancher/k8s"
-	"github.com/rancher/rancher/pkg/dynamiclistener"
-	"github.com/rancher/rancher/pkg/settings"
-	"github.com/rancher/rancher/pkg/tls"
-	"github.com/rancher/rio/api/setup"
-	"github.com/rancher/rio/cli/pkg/resolvehome"
-	api2 "github.com/rancher/rio/controllers/api"
 	"github.com/rancher/rio/controllers/backend"
+
+	"github.com/rancher/norman"
+	"github.com/rancher/norman/pkg/resolvehome"
+	"github.com/rancher/norman/signal"
+	"github.com/rancher/norman/types"
+	"github.com/rancher/rancher/pkg/settings"
+	"github.com/rancher/rio/api/setup"
+	"github.com/rancher/rio/controllers/api/domain"
 	"github.com/rancher/rio/pkg/data"
-	"github.com/rancher/rio/types"
-	"github.com/rancher/rio/types/apis/space.cattle.io/v1beta1"
+	rTypes "github.com/rancher/rio/types"
+	"github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
+	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1/schema"
+	spacev1beta1 "github.com/rancher/rio/types/apis/space.cattle.io/v1beta1"
+	spaceschema "github.com/rancher/rio/types/apis/space.cattle.io/v1beta1/schema"
+	"github.com/rancher/rio/types/client/rio/v1beta1"
+	spaceclient "github.com/rancher/rio/types/client/space/v1beta1"
+	"github.com/rancher/types/apis/apps/v1beta2"
+	"github.com/rancher/types/apis/core/v1"
 	"github.com/rancher/types/apis/management.cattle.io/v3"
 	"github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	net2 "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/kubernetes/pkg/wrapper/server"
 )
 
-func k3sConfig(dataDir string) (*server.ServerConfig, http.Handler, error) {
-	dataDir, err := resolvehome.Resolve(dataDir)
+func NewConfig(dataDir string, inCluster bool) (*norman.Config, error) {
+	dataDir, err := resolveDataDir(dataDir)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	listenIP := net.ParseIP("127.0.0.1")
-	_, clusterIPNet, _ := net.ParseCIDR("10.42.0.0/16")
-	_, serviceIPNet, _ := net.ParseCIDR("10.43.0.0/16")
+	return &norman.Config{
+		Name: "rio",
+		Schemas: []*types.Schemas{
+			schema.Schemas,
+			spaceschema.Schemas,
+		},
 
-	return &server.ServerConfig{
-		AdvertiseIP:    &listenIP,
-		AdvertisePort:  6444,
-		PublicHostname: "localhost",
-		ListenAddr:     listenIP,
-		ListenPort:     6443,
-		ClusterIPRange: *clusterIPNet,
-		ServiceIPRange: *serviceIPNet,
-		UseTokenCA:     true,
-		DataDir:        dataDir,
-	}, newTunnel(), nil
+		CRDs: map[*types.APIVersion][]string{
+			&schema.Version: {
+				client.ServiceType,
+				client.ConfigType,
+				client.RouteSetType,
+				client.VolumeType,
+				client.StackType,
+			},
+			&spaceschema.Version: {
+				spaceclient.ListenConfigType,
+			},
+		},
+
+		Clients: []norman.ClientFactory{
+			v1beta1.Factory,
+			spacev1beta1.Factory,
+			v1alpha3.Factory,
+			v1.Factory,
+			v3.Factory,
+			v1beta2.Factory,
+		},
+
+		PerServerControllers: []norman.ControllerRegister{
+			rTypes.Register(domain.Register),
+		},
+
+		CustomizeSchemas: setup.Types,
+
+		GlobalSetup: rTypes.BuildContext,
+
+		MasterSetup: func(ctx context.Context) (context.Context, error) {
+			return ctx, data.AddData(rTypes.From(ctx), inCluster)
+		},
+
+		MasterControllers: []norman.ControllerRegister{
+			rTypes.Register(backend.Register),
+		},
+
+		K3s: norman.K3sConfig{
+			DataDir:                dataDir,
+			RemoteDialerAuthorizer: authorizer,
+		},
+	}, nil
 }
 
 func resolveDataDir(dataDir string) (string, error) {
@@ -76,70 +114,30 @@ func resolveDataDir(dataDir string) (string, error) {
 func StartServer(ctx context.Context, dataDir string, httpPort, httpsPort int, controllers, inCluster bool) (*server.ServerConfig, error) {
 	ctx = signal.SigTermCancelContext(ctx)
 
-	dataDir, err := resolveDataDir(dataDir)
-	if err != nil {
-		return nil, errors.Wrap(err, "resolving data dir")
-	}
-
-	sc, tunnel, err := k3sConfig(dataDir)
-	if err != nil {
-		return nil, err
-	}
-	ctx = k8s.SetK3sConfig(ctx, sc)
-
-	embedded, ctx, restConfig, err := k8s.GetConfig(ctx, "auto", os.Getenv("KUBECONFIG"))
+	config, err := NewConfig(dataDir, inCluster)
 	if err != nil {
 		return nil, err
 	}
 
-	rContext, err := types.NewContext(*restConfig)
+	ctx, srv, err := config.Build(ctx, &norman.Options{
+		DisableControllers: !controllers,
+	})
 	if err != nil {
 		return nil, err
 	}
-	rContext.Embedded = embedded
 
-	if err := setup.Types(ctx, rContext); err != nil {
+	sc, _ := srv.Runtime.K3sServerConfig.(*server.ServerConfig)
+
+	root := router(sc,
+		srv.Runtime.APIHandler,
+		srv.Runtime.K3sTunnelServer)
+
+	if err := startTLS(ctx, httpPort, httpsPort, root); err != nil {
 		return nil, err
 	}
 
-	apiServer := api.NewAPIServer()
-	if err := apiServer.AddSchemas(rContext.Schemas); err != nil {
-		return nil, err
-	}
-
-	apiRContext, err := types.NewContext(*restConfig)
-	if err != nil {
-		return nil, err
-	}
-	apiRContext.Schemas = rContext.Schemas
-	apiRContext.Embedded = embedded
-
-	if controllers {
-		go leader.RunOrDie(ctx, "rio-controllers", rContext.K8s, func(ctx context.Context) {
-			if err := data.AddData(rContext, inCluster); err != nil {
-				panic(err)
-			}
-
-			if err := backend.Register(ctx, rContext); err != nil {
-				panic(err)
-			}
-
-			if err := rContext.Start(ctx); err != nil {
-				panic(err)
-			}
-
-			<-ctx.Done()
-		})
-	}
-
-	root := router(sc, apiServer, sc.Handler, tunnel)
-
-	if err := startServer(ctx, apiRContext, httpPort, httpsPort, root); err != nil {
-		return nil, err
-	}
-
-	if err := apiRContext.Start(ctx); err != nil {
-		return nil, err
+	if sc == nil {
+		return nil, nil
 	}
 
 	var (
@@ -263,96 +261,4 @@ func writeToken(token, file string) error {
 
 	token = FormatToken(token)
 	return ioutil.WriteFile(file, []byte(token+"\n"), 0600)
-}
-
-func startServer(ctx context.Context, rContext *types.Context, httpPort, httpsPort int, handler http.Handler) error {
-	s := &storage{
-		listenConfigs:      rContext.Global.ListenConfigs(""),
-		listenConfigLister: rContext.Global.ListenConfigs("").Controller().Lister(),
-	}
-	s2 := &storage2{
-		listenConfigs: s.listenConfigs,
-	}
-
-	lc, err := tls.ReadTLSConfig(nil)
-	if err != nil {
-		return err
-	}
-
-	if err := tls.SetupListenConfig(s2, false, lc); err != nil {
-		return err
-	}
-
-	server := dynamiclistener.NewServer(ctx, s, handler, httpPort, httpsPort)
-	if err := api2.Register(ctx, rContext); err != nil {
-		return err
-	}
-
-	settings.CACerts.Set(lc.CACerts)
-	_, err = server.Enable(lc)
-	return err
-}
-
-type storage2 struct {
-	listenConfigs v1beta1.ListenConfigInterface
-}
-
-func (s *storage2) Create(lc *v3.ListenConfig) (*v3.ListenConfig, error) {
-	createLC := &v1beta1.ListenConfig{
-		ListenConfig: *lc,
-	}
-	createLC.APIVersion = "space.cattle.io/v1beta1"
-
-	result, err := s.listenConfigs.Create(createLC)
-	if err != nil {
-		return nil, err
-	}
-	return &result.ListenConfig, nil
-}
-
-func (s *storage2) Get(name string, opts metav1.GetOptions) (*v3.ListenConfig, error) {
-	lc, err := s.listenConfigs.Get(name, opts)
-	if err != nil {
-		return nil, err
-	}
-	return &lc.ListenConfig, nil
-}
-
-func (s *storage2) Update(lc *v3.ListenConfig) (*v3.ListenConfig, error) {
-	updateLC := &v1beta1.ListenConfig{
-		ListenConfig: *lc,
-	}
-	updateLC.APIVersion = "space.cattle.io/v1beta1"
-
-	result, err := s.listenConfigs.Update(updateLC)
-	if err != nil {
-		return nil, err
-	}
-	return &result.ListenConfig, nil
-}
-
-type storage struct {
-	listenConfigs      v1beta1.ListenConfigInterface
-	listenConfigLister v1beta1.ListenConfigLister
-}
-
-func (s *storage) Update(lc *v3.ListenConfig) (*v3.ListenConfig, error) {
-	updateLC := &v1beta1.ListenConfig{
-		ListenConfig: *lc,
-	}
-	updateLC.APIVersion = "space.cattle.io/v1beta1"
-
-	updateLC, err := s.listenConfigs.Update(updateLC)
-	if err != nil {
-		return nil, err
-	}
-	return &updateLC.ListenConfig, nil
-}
-
-func (s *storage) Get(namespace, name string) (*v3.ListenConfig, error) {
-	lc, err := s.listenConfigLister.Get(namespace, name)
-	if err != nil {
-		return nil, err
-	}
-	return &lc.ListenConfig, nil
 }

@@ -1,37 +1,12 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
+	"github.com/rancher/norman/generator/cleanup"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
-	if err := run(); err != nil {
-		panic(err)
+	if err := cleanup.Cleanup("./types"); err != nil {
+		logrus.Fatal(err)
 	}
-}
-
-func run() error {
-	return filepath.Walk("./types", func(path string, info os.FileInfo, err error) error {
-		fmt.Println(path)
-
-		if err != nil {
-			return err
-		}
-
-		if strings.Contains(path, "vendor") {
-			return filepath.SkipDir
-		}
-
-		if strings.HasPrefix(info.Name(), "zz_generated") {
-			fmt.Println("Removing", path)
-			if err := os.Remove(path); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
 }

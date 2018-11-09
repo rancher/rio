@@ -6,9 +6,9 @@ import (
 )
 
 type RouteSetLifecycle interface {
-	Create(obj *RouteSet) (*RouteSet, error)
-	Remove(obj *RouteSet) (*RouteSet, error)
-	Updated(obj *RouteSet) (*RouteSet, error)
+	Create(obj *RouteSet) (runtime.Object, error)
+	Remove(obj *RouteSet) (runtime.Object, error)
+	Updated(obj *RouteSet) (runtime.Object, error)
 }
 
 type routeSetLifecycleAdapter struct {
@@ -42,10 +42,11 @@ func (w *routeSetLifecycleAdapter) Updated(obj runtime.Object) (runtime.Object, 
 func NewRouteSetLifecycleAdapter(name string, clusterScoped bool, client RouteSetInterface, l RouteSetLifecycle) RouteSetHandlerFunc {
 	adapter := &routeSetLifecycleAdapter{lifecycle: l}
 	syncFn := lifecycle.NewObjectLifecycleAdapter(name, clusterScoped, adapter, client.ObjectClient())
-	return func(key string, obj *RouteSet) error {
-		if obj == nil {
-			return syncFn(key, nil)
+	return func(key string, obj *RouteSet) (runtime.Object, error) {
+		newObj, err := syncFn(key, obj)
+		if o, ok := newObj.(runtime.Object); ok {
+			return o, err
 		}
-		return syncFn(key, obj)
+		return nil, err
 	}
 }

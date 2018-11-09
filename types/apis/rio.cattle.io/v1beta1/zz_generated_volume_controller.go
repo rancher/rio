@@ -35,7 +35,7 @@ type VolumeList struct {
 	Items           []Volume
 }
 
-type VolumeHandlerFunc func(key string, obj *Volume) error
+type VolumeHandlerFunc func(key string, obj *Volume) (runtime.Object, error)
 
 type VolumeLister interface {
 	List(namespace string, selector labels.Selector) (ret []*Volume, err error)
@@ -46,8 +46,8 @@ type VolumeController interface {
 	Generic() controller.GenericController
 	Informer() cache.SharedIndexInformer
 	Lister() VolumeLister
-	AddHandler(name string, handler VolumeHandlerFunc)
-	AddClusterScopedHandler(name, clusterName string, handler VolumeHandlerFunc)
+	AddHandler(ctx context.Context, name string, handler VolumeHandlerFunc)
+	AddClusterScopedHandler(ctx context.Context, name, clusterName string, handler VolumeHandlerFunc)
 	Enqueue(namespace, name string)
 	Sync(ctx context.Context) error
 	Start(ctx context.Context, threadiness int) error
@@ -65,10 +65,10 @@ type VolumeInterface interface {
 	Watch(opts metav1.ListOptions) (watch.Interface, error)
 	DeleteCollection(deleteOpts *metav1.DeleteOptions, listOpts metav1.ListOptions) error
 	Controller() VolumeController
-	AddHandler(name string, sync VolumeHandlerFunc)
-	AddLifecycle(name string, lifecycle VolumeLifecycle)
-	AddClusterScopedHandler(name, clusterName string, sync VolumeHandlerFunc)
-	AddClusterScopedLifecycle(name, clusterName string, lifecycle VolumeLifecycle)
+	AddHandler(ctx context.Context, name string, sync VolumeHandlerFunc)
+	AddLifecycle(ctx context.Context, name string, lifecycle VolumeLifecycle)
+	AddClusterScopedHandler(ctx context.Context, name, clusterName string, sync VolumeHandlerFunc)
+	AddClusterScopedLifecycle(ctx context.Context, name, clusterName string, lifecycle VolumeLifecycle)
 }
 
 type volumeLister struct {
@@ -116,34 +116,27 @@ func (c *volumeController) Lister() VolumeLister {
 	}
 }
 
-func (c *volumeController) AddHandler(name string, handler VolumeHandlerFunc) {
-	c.GenericController.AddHandler(name, func(key string) error {
-		obj, exists, err := c.Informer().GetStore().GetByKey(key)
-		if err != nil {
-			return err
-		}
-		if !exists {
+func (c *volumeController) AddHandler(ctx context.Context, name string, handler VolumeHandlerFunc) {
+	c.GenericController.AddHandler(ctx, name, func(key string, obj interface{}) (interface{}, error) {
+		if obj == nil {
 			return handler(key, nil)
+		} else if v, ok := obj.(*Volume); ok {
+			return handler(key, v)
+		} else {
+			return nil, nil
 		}
-		return handler(key, obj.(*Volume))
 	})
 }
 
-func (c *volumeController) AddClusterScopedHandler(name, cluster string, handler VolumeHandlerFunc) {
-	c.GenericController.AddHandler(name, func(key string) error {
-		obj, exists, err := c.Informer().GetStore().GetByKey(key)
-		if err != nil {
-			return err
-		}
-		if !exists {
+func (c *volumeController) AddClusterScopedHandler(ctx context.Context, name, cluster string, handler VolumeHandlerFunc) {
+	c.GenericController.AddHandler(ctx, name, func(key string, obj interface{}) (interface{}, error) {
+		if obj == nil {
 			return handler(key, nil)
+		} else if v, ok := obj.(*Volume); ok && controller.ObjectInCluster(cluster, obj) {
+			return handler(key, v)
+		} else {
+			return nil, nil
 		}
-
-		if !controller.ObjectInCluster(cluster, obj) {
-			return nil
-		}
-
-		return handler(key, obj.(*Volume))
 	})
 }
 
@@ -238,20 +231,20 @@ func (s *volumeClient) DeleteCollection(deleteOpts *metav1.DeleteOptions, listOp
 	return s.objectClient.DeleteCollection(deleteOpts, listOpts)
 }
 
-func (s *volumeClient) AddHandler(name string, sync VolumeHandlerFunc) {
-	s.Controller().AddHandler(name, sync)
+func (s *volumeClient) AddHandler(ctx context.Context, name string, sync VolumeHandlerFunc) {
+	s.Controller().AddHandler(ctx, name, sync)
 }
 
-func (s *volumeClient) AddLifecycle(name string, lifecycle VolumeLifecycle) {
+func (s *volumeClient) AddLifecycle(ctx context.Context, name string, lifecycle VolumeLifecycle) {
 	sync := NewVolumeLifecycleAdapter(name, false, s, lifecycle)
-	s.AddHandler(name, sync)
+	s.Controller().AddHandler(ctx, name, sync)
 }
 
-func (s *volumeClient) AddClusterScopedHandler(name, clusterName string, sync VolumeHandlerFunc) {
-	s.Controller().AddClusterScopedHandler(name, clusterName, sync)
+func (s *volumeClient) AddClusterScopedHandler(ctx context.Context, name, clusterName string, sync VolumeHandlerFunc) {
+	s.Controller().AddClusterScopedHandler(ctx, name, clusterName, sync)
 }
 
-func (s *volumeClient) AddClusterScopedLifecycle(name, clusterName string, lifecycle VolumeLifecycle) {
+func (s *volumeClient) AddClusterScopedLifecycle(ctx context.Context, name, clusterName string, lifecycle VolumeLifecycle) {
 	sync := NewVolumeLifecycleAdapter(name+"_"+clusterName, true, s, lifecycle)
-	s.AddClusterScopedHandler(name, clusterName, sync)
+	s.Controller().AddClusterScopedHandler(ctx, name, clusterName, sync)
 }

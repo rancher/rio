@@ -23,6 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 	apiserveroptions "k8s.io/apiserver/pkg/server/options"
+	"k8s.io/apiserver/pkg/storage/storagebackend"
 	certutil "k8s.io/client-go/util/cert"
 	"k8s.io/kubernetes/cmd/kube-apiserver/app"
 	"k8s.io/kubernetes/cmd/kube-apiserver/app/options"
@@ -71,6 +72,11 @@ type ServerConfig struct {
 	DataDir        string
 	LeaderElect    bool
 	UseTokenCA     bool
+	ETCDEndpoints  []string
+	ETCDKeyFile    string
+	ETCDCertFile   string
+	ETCDCAFile     string
+	NoScheduler    bool
 
 	tlsCert          string
 	tlsKey           string
@@ -103,7 +109,9 @@ func Server(ctx context.Context, config *ServerConfig) error {
 	config.Handler = handler
 	config.Authenticator = auth
 
-	scheduler(ctx, config)
+	if !config.NoScheduler {
+		scheduler(ctx, config)
+	}
 	controllerManager(ctx, config)
 
 	return nil
@@ -143,6 +151,13 @@ func apiServer(ctx context.Context, config *ServerConfig) (authenticator.Request
 	}
 
 	s := options.NewServerRunOptions()
+	s.Etcd.StorageConfig.ServerList = config.ETCDEndpoints
+	s.Etcd.StorageConfig.KeyFile = config.ETCDKeyFile
+	s.Etcd.StorageConfig.CertFile = config.ETCDCertFile
+	s.Etcd.StorageConfig.CAFile = config.ETCDCAFile
+	if len(config.ETCDEndpoints) > 0 {
+		s.Etcd.StorageConfig.Type = storagebackend.StorageTypeETCD3
+	}
 	s.InsecureServing.BindPort = 0
 	s.AllowPrivileged = true
 	s.Authorization.Modes = []string{modes.ModeNode, modes.ModeRBAC}
@@ -166,8 +181,6 @@ func apiServer(ctx context.Context, config *ServerConfig) (authenticator.Request
 	s.Authentication.PasswordFile.BasicAuthFile = config.passwdFile
 	s.KubeletConfig.CertFile = config.NodeCert
 	s.KubeletConfig.KeyFile = config.NodeKey
-
-	os.Chdir(config.DataDir)
 
 	sc, err := app.Complete(s)
 	if err != nil {

@@ -42,6 +42,9 @@ const (
 	ClusterDriverImported = "imported"
 	ClusterDriverLocal    = "local"
 	ClusterDriverRKE      = "rancherKubernetesEngine"
+	ClusterDriverGKE      = "googleKubernetesEngine"
+	ClusterDriverEKS      = "amazonElasticContainerService"
+	ClusterDriverAKS      = "azureKubernetesService"
 )
 
 type Cluster struct {
@@ -98,6 +101,7 @@ type ClusterStatus struct {
 	Version                              *version.Info            `json:"version,omitempty"`
 	AppliedPodSecurityPolicyTemplateName string                   `json:"appliedPodSecurityPolicyTemplateId"`
 	AppliedEnableNetworkPolicy           bool                     `json:"appliedEnableNetworkPolicy" norman:"nocreate,noupdate,default=false"`
+	Capabilities                         Capabilities             `json:"capabilities,omitempty"`
 }
 
 type ClusterComponentStatus struct {
@@ -217,24 +221,20 @@ type AzureKubernetesServiceConfig struct {
 }
 
 type AmazonElasticContainerServiceConfig struct {
-	AccessKey string `json:"accessKey" norman:"required"`
-	SecretKey string `json:"secretKey" norman:"required,type=password"`
+	AccessKey    string `json:"accessKey" norman:"required"`
+	SecretKey    string `json:"secretKey" norman:"required,type=password"`
+	SessionToken string `json:"sessionToken,omitempty" norman:"type=password"`
 
-	Region         string   `json:"region"`
-	InstanceType   string   `json:"instanceType"`
-	MinimumNodes   int      `json:"minimumNodes"`
-	MaximumNodes   int      `json:"maximumNodes"`
-	VirtualNetwork string   `json:"virtualNetwork,omitempty"`
-	Subnets        []string `json:"subnets,omitempty"`
-	SecurityGroups []string `json:"securityGroups,omitempty"`
-	ServiceRole    string   `json:"serviceRole,omitempty"`
-	AMI            string   `json:"ami,omitempty"`
-}
-
-type ClusterEvent struct {
-	types.Namespaced
-	v1.Event
-	ClusterName string `json:"clusterName" norman:"type=reference[cluster]"`
+	Region                      string   `json:"region"`
+	InstanceType                string   `json:"instanceType"`
+	MinimumNodes                int      `json:"minimumNodes"`
+	MaximumNodes                int      `json:"maximumNodes"`
+	VirtualNetwork              string   `json:"virtualNetwork,omitempty"`
+	Subnets                     []string `json:"subnets,omitempty"`
+	SecurityGroups              []string `json:"securityGroups,omitempty"`
+	ServiceRole                 string   `json:"serviceRole,omitempty"`
+	AMI                         string   `json:"ami,omitempty"`
+	AssociateWorkerNodePublicIP *bool    `json:"associateWorkerNodePublicIp,omitempty" norman:"default=true"`
 }
 
 type ClusterRegistrationToken struct {
@@ -282,4 +282,23 @@ type ImportClusterYamlInput struct {
 
 type ImportYamlOutput struct {
 	Message string `json:"message,omitempty"`
+}
+
+type Capabilities struct {
+	LoadBalancerCapabilities LoadBalancerCapabilities `json:"loadBalancerCapabilities,omitempty"`
+	IngressCapabilities      []IngressCapabilities    `json:"ingressCapabilities,omitempty"`
+	NodePoolScalingSupported bool                     `json:"nodePoolScalingSupported,omitempty"`
+	NodePortRange            string                   `json:"nodePortRange,omitempty"`
+}
+
+type LoadBalancerCapabilities struct {
+	Enabled              bool     `json:"enabled,omitempty"`
+	Provider             string   `json:"provider,omitempty"`
+	ProtocolsSupported   []string `json:"protocolsSupported,omitempty"`
+	HealthCheckSupported bool     `json:"healthCheckSupported,omitempty"`
+}
+
+type IngressCapabilities struct {
+	IngressProvider      string `json:"ingressProvider,omitempty"`
+	CustomDefaultBackend bool   `json:"customDefaultBackend,omitempty"`
 }

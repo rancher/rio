@@ -5,20 +5,24 @@ import (
 	"reflect"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/runtime"
+
 	"github.com/rancher/rio/types"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 )
 
-func Register(ctx context.Context, rContext *types.Context) {
+func Register(ctx context.Context, rContext *types.Context) error {
 	vc := &volumeController{
 		volumeLister: rContext.Rio.Volumes("").Controller().Lister(),
 		volumes:      rContext.Rio.Volumes(""),
 	}
 
-	rContext.Core.PersistentVolumeClaims("").AddHandler("volume-controller", vc.sync)
-	rContext.Core.PersistentVolumeClaims("").AddHandler("volume-template-controller", vc.syncTemplate)
+	rContext.Core.PersistentVolumeClaims("").AddHandler(ctx, "volume-controller", vc.sync)
+	rContext.Core.PersistentVolumeClaims("").AddHandler(ctx, "volume-template-controller", vc.syncTemplate)
+
+	return nil
 }
 
 type volumeController struct {
@@ -26,45 +30,45 @@ type volumeController struct {
 	volumes      v1beta1.VolumeInterface
 }
 
-func (v *volumeController) sync(key string, pvc *v1.PersistentVolumeClaim) error {
+func (v *volumeController) sync(key string, pvc *v1.PersistentVolumeClaim) (runtime.Object, error) {
 	if pvc == nil {
-		return nil
+		return nil, nil
 	}
 
 	_, ok := pvc.Labels["rio.cattle.io/workspace"]
 	if !ok {
-		return nil
+		return nil, nil
 	}
 
 	name, ok := pvc.Labels["rio.cattle.io/volume"]
 	if !ok {
-		return nil
+		return nil, nil
 	}
 
 	vol, err := v.volumeLister.Get(pvc.Namespace, name)
 	if errors.IsNotFound(err) {
-		return nil
+		return nil, nil
 	} else if err != nil {
-		return err
+		return nil, err
 	}
 
 	if reflect.DeepEqual(vol.Status.PVCStatus, &pvc.Status) {
-		return nil
+		return nil, nil
 	}
 
 	newVol := vol.DeepCopy()
 	newVol.Status.PVCStatus = &pvc.Status
 	_, err = v.volumes.Update(newVol)
-	return err
+	return nil, err
 }
 
-func (v *volumeController) syncTemplate(key string, pvc *v1.PersistentVolumeClaim) error {
+func (v *volumeController) syncTemplate(key string, pvc *v1.PersistentVolumeClaim) (runtime.Object, error) {
 	if pvc == nil {
-		return nil
+		return nil, nil
 	}
 
 	if pvc.Labels["rio.cattle.io/use-templates"] == "" {
-		return nil
+		return nil, nil
 	}
 
 	ns := pvc.Namespace
@@ -72,9 +76,9 @@ func (v *volumeController) syncTemplate(key string, pvc *v1.PersistentVolumeClai
 	templateName := strings.SplitN(pvc.Name, "-"+serviceName+"-", 2)
 	volTemplate, err := v.volumeLister.Get(ns, templateName[0])
 	if errors.IsNotFound(err) {
-		return nil
+		return nil, nil
 	} else if err != nil {
-		return err
+		return nil, err
 	}
 
 	volume := &v1beta1.Volume{}
@@ -87,13 +91,13 @@ func (v *volumeController) syncTemplate(key string, pvc *v1.PersistentVolumeClai
 	if _, err := v.volumeLister.Get(ns, volume.Name); err != nil {
 		if errors.IsNotFound(err) {
 			if _, err = v.volumes.Create(volume); err != nil && !errors.IsAlreadyExists(err) {
-				return err
+				return nil, err
 			}
 		} else {
-			return err
+			return nil, err
 		}
 	}
-	return nil
+	return nil, nil
 }
 
 func (v *volumeController) Updated(pvc *v1.PersistentVolumeClaim) (*v1.PersistentVolumeClaim, error) {

@@ -6,9 +6,9 @@ import (
 )
 
 type ConfigLifecycle interface {
-	Create(obj *Config) (*Config, error)
-	Remove(obj *Config) (*Config, error)
-	Updated(obj *Config) (*Config, error)
+	Create(obj *Config) (runtime.Object, error)
+	Remove(obj *Config) (runtime.Object, error)
+	Updated(obj *Config) (runtime.Object, error)
 }
 
 type configLifecycleAdapter struct {
@@ -42,10 +42,11 @@ func (w *configLifecycleAdapter) Updated(obj runtime.Object) (runtime.Object, er
 func NewConfigLifecycleAdapter(name string, clusterScoped bool, client ConfigInterface, l ConfigLifecycle) ConfigHandlerFunc {
 	adapter := &configLifecycleAdapter{lifecycle: l}
 	syncFn := lifecycle.NewObjectLifecycleAdapter(name, clusterScoped, adapter, client.ObjectClient())
-	return func(key string, obj *Config) error {
-		if obj == nil {
-			return syncFn(key, nil)
+	return func(key string, obj *Config) (runtime.Object, error) {
+		newObj, err := syncFn(key, obj)
+		if o, ok := newObj.(runtime.Object); ok {
+			return o, err
 		}
-		return syncFn(key, obj)
+		return nil, err
 	}
 }

@@ -5,7 +5,7 @@ cd $(dirname $0)/../bin
 
 # Prime sudo
 sudo echo Compiling CLI
-go build -tags k3s -o rio-agent ../cli/main.go
+go build -tags "k8s no_etcd" -o rio-agent ../cli/main.go
 
 echo Building image and agent
 ../image/build

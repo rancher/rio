@@ -1,6 +1,7 @@
 package changeset
 
 import (
+	"context"
 	"strings"
 
 	"github.com/rancher/norman/controller"
@@ -20,17 +21,17 @@ type Enqueuer func(namespace, name string)
 
 type Resolver func(namespace, name string, obj runtime.Object) ([]Key, error)
 
-func Watch(name string, resolve Resolver, enq Enqueuer, controllers ...ControllerProvider) {
+func Watch(ctx context.Context, name string, resolve Resolver, enq Enqueuer, controllers ...ControllerProvider) {
 	for _, c := range controllers {
-		watch(name, enq, resolve, c.Generic())
+		watch(ctx, name, enq, resolve, c.Generic())
 	}
 }
 
-func watch(name string, enq Enqueuer, resolve Resolver, genericController controller.GenericController) {
-	genericController.AddHandler(name, func(key string) error {
+func watch(ctx context.Context, name string, enq Enqueuer, resolve Resolver, genericController controller.GenericController) {
+	genericController.AddHandler(ctx, name, func(key string, obj interface{}) (interface{}, error) {
 		obj, exists, err := genericController.Informer().GetStore().GetByKey(key)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		if !exists {
@@ -57,7 +58,7 @@ func watch(name string, enq Enqueuer, resolve Resolver, genericController contro
 
 		keys, err := resolve(ns, name, ro)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		for _, key := range keys {
@@ -66,6 +67,6 @@ func watch(name string, enq Enqueuer, resolve Resolver, genericController contro
 			}
 		}
 
-		return nil
+		return nil, nil
 	})
 }

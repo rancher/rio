@@ -11,10 +11,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/rancher/norman/clientbase"
-
 	"github.com/pkg/errors"
-	"github.com/rancher/rio/cli/pkg/resolvehome"
+	"github.com/rancher/norman/clientbase"
+	"github.com/rancher/norman/pkg/resolvehome"
 	"github.com/rancher/rio/cli/pkg/up/questions"
 	"github.com/rancher/rio/pkg/clientaccess"
 	"github.com/rancher/rio/types/client/rio/v1beta1"

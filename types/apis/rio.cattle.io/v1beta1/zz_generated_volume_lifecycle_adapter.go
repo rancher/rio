@@ -6,9 +6,9 @@ import (
 )
 
 type VolumeLifecycle interface {
-	Create(obj *Volume) (*Volume, error)
-	Remove(obj *Volume) (*Volume, error)
-	Updated(obj *Volume) (*Volume, error)
+	Create(obj *Volume) (runtime.Object, error)
+	Remove(obj *Volume) (runtime.Object, error)
+	Updated(obj *Volume) (runtime.Object, error)
 }
 
 type volumeLifecycleAdapter struct {
@@ -42,10 +42,11 @@ func (w *volumeLifecycleAdapter) Updated(obj runtime.Object) (runtime.Object, er
 func NewVolumeLifecycleAdapter(name string, clusterScoped bool, client VolumeInterface, l VolumeLifecycle) VolumeHandlerFunc {
 	adapter := &volumeLifecycleAdapter{lifecycle: l}
 	syncFn := lifecycle.NewObjectLifecycleAdapter(name, clusterScoped, adapter, client.ObjectClient())
-	return func(key string, obj *Volume) error {
-		if obj == nil {
-			return syncFn(key, nil)
+	return func(key string, obj *Volume) (runtime.Object, error) {
+		newObj, err := syncFn(key, obj)
+		if o, ok := newObj.(runtime.Object); ok {
+			return o, err
 		}
-		return syncFn(key, obj)
+		return nil, err
 	}
 }

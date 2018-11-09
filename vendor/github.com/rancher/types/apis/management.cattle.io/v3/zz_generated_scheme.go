@@ -59,8 +59,6 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&ProjectRoleTemplateBindingList{},
 		&Cluster{},
 		&ClusterList{},
-		&ClusterEvent{},
-		&ClusterEventList{},
 		&ClusterRegistrationToken{},
 		&ClusterRegistrationTokenList{},
 		&Catalog{},
@@ -108,6 +106,10 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&ProjectAlertList{},
 		&ComposeConfig{},
 		&ComposeConfigList{},
+		&ProjectCatalog{},
+		&ProjectCatalogList{},
+		&ClusterCatalog{},
+		&ClusterCatalogList{},
 	)
 	return nil
 }

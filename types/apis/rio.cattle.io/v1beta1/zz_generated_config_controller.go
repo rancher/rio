@@ -35,7 +35,7 @@ type ConfigList struct {
 	Items           []Config
 }
 
-type ConfigHandlerFunc func(key string, obj *Config) error
+type ConfigHandlerFunc func(key string, obj *Config) (runtime.Object, error)
 
 type ConfigLister interface {
 	List(namespace string, selector labels.Selector) (ret []*Config, err error)
@@ -46,8 +46,8 @@ type ConfigController interface {
 	Generic() controller.GenericController
 	Informer() cache.SharedIndexInformer
 	Lister() ConfigLister
-	AddHandler(name string, handler ConfigHandlerFunc)
-	AddClusterScopedHandler(name, clusterName string, handler ConfigHandlerFunc)
+	AddHandler(ctx context.Context, name string, handler ConfigHandlerFunc)
+	AddClusterScopedHandler(ctx context.Context, name, clusterName string, handler ConfigHandlerFunc)
 	Enqueue(namespace, name string)
 	Sync(ctx context.Context) error
 	Start(ctx context.Context, threadiness int) error
@@ -65,10 +65,10 @@ type ConfigInterface interface {
 	Watch(opts metav1.ListOptions) (watch.Interface, error)
 	DeleteCollection(deleteOpts *metav1.DeleteOptions, listOpts metav1.ListOptions) error
 	Controller() ConfigController
-	AddHandler(name string, sync ConfigHandlerFunc)
-	AddLifecycle(name string, lifecycle ConfigLifecycle)
-	AddClusterScopedHandler(name, clusterName string, sync ConfigHandlerFunc)
-	AddClusterScopedLifecycle(name, clusterName string, lifecycle ConfigLifecycle)
+	AddHandler(ctx context.Context, name string, sync ConfigHandlerFunc)
+	AddLifecycle(ctx context.Context, name string, lifecycle ConfigLifecycle)
+	AddClusterScopedHandler(ctx context.Context, name, clusterName string, sync ConfigHandlerFunc)
+	AddClusterScopedLifecycle(ctx context.Context, name, clusterName string, lifecycle ConfigLifecycle)
 }
 
 type configLister struct {
@@ -116,34 +116,27 @@ func (c *configController) Lister() ConfigLister {
 	}
 }
 
-func (c *configController) AddHandler(name string, handler ConfigHandlerFunc) {
-	c.GenericController.AddHandler(name, func(key string) error {
-		obj, exists, err := c.Informer().GetStore().GetByKey(key)
-		if err != nil {
-			return err
-		}
-		if !exists {
+func (c *configController) AddHandler(ctx context.Context, name string, handler ConfigHandlerFunc) {
+	c.GenericController.AddHandler(ctx, name, func(key string, obj interface{}) (interface{}, error) {
+		if obj == nil {
 			return handler(key, nil)
+		} else if v, ok := obj.(*Config); ok {
+			return handler(key, v)
+		} else {
+			return nil, nil
 		}
-		return handler(key, obj.(*Config))
 	})
 }
 
-func (c *configController) AddClusterScopedHandler(name, cluster string, handler ConfigHandlerFunc) {
-	c.GenericController.AddHandler(name, func(key string) error {
-		obj, exists, err := c.Informer().GetStore().GetByKey(key)
-		if err != nil {
-			return err
-		}
-		if !exists {
+func (c *configController) AddClusterScopedHandler(ctx context.Context, name, cluster string, handler ConfigHandlerFunc) {
+	c.GenericController.AddHandler(ctx, name, func(key string, obj interface{}) (interface{}, error) {
+		if obj == nil {
 			return handler(key, nil)
+		} else if v, ok := obj.(*Config); ok && controller.ObjectInCluster(cluster, obj) {
+			return handler(key, v)
+		} else {
+			return nil, nil
 		}
-
-		if !controller.ObjectInCluster(cluster, obj) {
-			return nil
-		}
-
-		return handler(key, obj.(*Config))
 	})
 }
 
@@ -238,20 +231,20 @@ func (s *configClient) DeleteCollection(deleteOpts *metav1.DeleteOptions, listOp
 	return s.objectClient.DeleteCollection(deleteOpts, listOpts)
 }
 
-func (s *configClient) AddHandler(name string, sync ConfigHandlerFunc) {
-	s.Controller().AddHandler(name, sync)
+func (s *configClient) AddHandler(ctx context.Context, name string, sync ConfigHandlerFunc) {
+	s.Controller().AddHandler(ctx, name, sync)
 }
 
-func (s *configClient) AddLifecycle(name string, lifecycle ConfigLifecycle) {
+func (s *configClient) AddLifecycle(ctx context.Context, name string, lifecycle ConfigLifecycle) {
 	sync := NewConfigLifecycleAdapter(name, false, s, lifecycle)
-	s.AddHandler(name, sync)
+	s.Controller().AddHandler(ctx, name, sync)
 }
 
-func (s *configClient) AddClusterScopedHandler(name, clusterName string, sync ConfigHandlerFunc) {
-	s.Controller().AddClusterScopedHandler(name, clusterName, sync)
+func (s *configClient) AddClusterScopedHandler(ctx context.Context, name, clusterName string, sync ConfigHandlerFunc) {
+	s.Controller().AddClusterScopedHandler(ctx, name, clusterName, sync)
 }
 
-func (s *configClient) AddClusterScopedLifecycle(name, clusterName string, lifecycle ConfigLifecycle) {
+func (s *configClient) AddClusterScopedLifecycle(ctx context.Context, name, clusterName string, lifecycle ConfigLifecycle) {
 	sync := NewConfigLifecycleAdapter(name+"_"+clusterName, true, s, lifecycle)
-	s.AddClusterScopedHandler(name, clusterName, sync)
+	s.Controller().AddClusterScopedHandler(ctx, name, clusterName, sync)
 }

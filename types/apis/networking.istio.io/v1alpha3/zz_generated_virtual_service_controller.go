@@ -35,7 +35,7 @@ type VirtualServiceList struct {
 	Items           []VirtualService
 }
 
-type VirtualServiceHandlerFunc func(key string, obj *VirtualService) error
+type VirtualServiceHandlerFunc func(key string, obj *VirtualService) (runtime.Object, error)
 
 type VirtualServiceLister interface {
 	List(namespace string, selector labels.Selector) (ret []*VirtualService, err error)
@@ -46,8 +46,8 @@ type VirtualServiceController interface {
 	Generic() controller.GenericController
 	Informer() cache.SharedIndexInformer
 	Lister() VirtualServiceLister
-	AddHandler(name string, handler VirtualServiceHandlerFunc)
-	AddClusterScopedHandler(name, clusterName string, handler VirtualServiceHandlerFunc)
+	AddHandler(ctx context.Context, name string, handler VirtualServiceHandlerFunc)
+	AddClusterScopedHandler(ctx context.Context, name, clusterName string, handler VirtualServiceHandlerFunc)
 	Enqueue(namespace, name string)
 	Sync(ctx context.Context) error
 	Start(ctx context.Context, threadiness int) error
@@ -65,10 +65,10 @@ type VirtualServiceInterface interface {
 	Watch(opts metav1.ListOptions) (watch.Interface, error)
 	DeleteCollection(deleteOpts *metav1.DeleteOptions, listOpts metav1.ListOptions) error
 	Controller() VirtualServiceController
-	AddHandler(name string, sync VirtualServiceHandlerFunc)
-	AddLifecycle(name string, lifecycle VirtualServiceLifecycle)
-	AddClusterScopedHandler(name, clusterName string, sync VirtualServiceHandlerFunc)
-	AddClusterScopedLifecycle(name, clusterName string, lifecycle VirtualServiceLifecycle)
+	AddHandler(ctx context.Context, name string, sync VirtualServiceHandlerFunc)
+	AddLifecycle(ctx context.Context, name string, lifecycle VirtualServiceLifecycle)
+	AddClusterScopedHandler(ctx context.Context, name, clusterName string, sync VirtualServiceHandlerFunc)
+	AddClusterScopedLifecycle(ctx context.Context, name, clusterName string, lifecycle VirtualServiceLifecycle)
 }
 
 type virtualServiceLister struct {
@@ -116,34 +116,27 @@ func (c *virtualServiceController) Lister() VirtualServiceLister {
 	}
 }
 
-func (c *virtualServiceController) AddHandler(name string, handler VirtualServiceHandlerFunc) {
-	c.GenericController.AddHandler(name, func(key string) error {
-		obj, exists, err := c.Informer().GetStore().GetByKey(key)
-		if err != nil {
-			return err
-		}
-		if !exists {
+func (c *virtualServiceController) AddHandler(ctx context.Context, name string, handler VirtualServiceHandlerFunc) {
+	c.GenericController.AddHandler(ctx, name, func(key string, obj interface{}) (interface{}, error) {
+		if obj == nil {
 			return handler(key, nil)
+		} else if v, ok := obj.(*VirtualService); ok {
+			return handler(key, v)
+		} else {
+			return nil, nil
 		}
-		return handler(key, obj.(*VirtualService))
 	})
 }
 
-func (c *virtualServiceController) AddClusterScopedHandler(name, cluster string, handler VirtualServiceHandlerFunc) {
-	c.GenericController.AddHandler(name, func(key string) error {
-		obj, exists, err := c.Informer().GetStore().GetByKey(key)
-		if err != nil {
-			return err
-		}
-		if !exists {
+func (c *virtualServiceController) AddClusterScopedHandler(ctx context.Context, name, cluster string, handler VirtualServiceHandlerFunc) {
+	c.GenericController.AddHandler(ctx, name, func(key string, obj interface{}) (interface{}, error) {
+		if obj == nil {
 			return handler(key, nil)
+		} else if v, ok := obj.(*VirtualService); ok && controller.ObjectInCluster(cluster, obj) {
+			return handler(key, v)
+		} else {
+			return nil, nil
 		}
-
-		if !controller.ObjectInCluster(cluster, obj) {
-			return nil
-		}
-
-		return handler(key, obj.(*VirtualService))
 	})
 }
 
@@ -238,20 +231,20 @@ func (s *virtualServiceClient) DeleteCollection(deleteOpts *metav1.DeleteOptions
 	return s.objectClient.DeleteCollection(deleteOpts, listOpts)
 }
 
-func (s *virtualServiceClient) AddHandler(name string, sync VirtualServiceHandlerFunc) {
-	s.Controller().AddHandler(name, sync)
+func (s *virtualServiceClient) AddHandler(ctx context.Context, name string, sync VirtualServiceHandlerFunc) {
+	s.Controller().AddHandler(ctx, name, sync)
 }
 
-func (s *virtualServiceClient) AddLifecycle(name string, lifecycle VirtualServiceLifecycle) {
+func (s *virtualServiceClient) AddLifecycle(ctx context.Context, name string, lifecycle VirtualServiceLifecycle) {
 	sync := NewVirtualServiceLifecycleAdapter(name, false, s, lifecycle)
-	s.AddHandler(name, sync)
+	s.Controller().AddHandler(ctx, name, sync)
 }
 
-func (s *virtualServiceClient) AddClusterScopedHandler(name, clusterName string, sync VirtualServiceHandlerFunc) {
-	s.Controller().AddClusterScopedHandler(name, clusterName, sync)
+func (s *virtualServiceClient) AddClusterScopedHandler(ctx context.Context, name, clusterName string, sync VirtualServiceHandlerFunc) {
+	s.Controller().AddClusterScopedHandler(ctx, name, clusterName, sync)
 }
 
-func (s *virtualServiceClient) AddClusterScopedLifecycle(name, clusterName string, lifecycle VirtualServiceLifecycle) {
+func (s *virtualServiceClient) AddClusterScopedLifecycle(ctx context.Context, name, clusterName string, lifecycle VirtualServiceLifecycle) {
 	sync := NewVirtualServiceLifecycleAdapter(name+"_"+clusterName, true, s, lifecycle)
-	s.AddClusterScopedHandler(name, clusterName, sync)
+	s.Controller().AddClusterScopedHandler(ctx, name, clusterName, sync)
 }

@@ -35,7 +35,7 @@ type GatewayList struct {
 	Items           []Gateway
 }
 
-type GatewayHandlerFunc func(key string, obj *Gateway) error
+type GatewayHandlerFunc func(key string, obj *Gateway) (runtime.Object, error)
 
 type GatewayLister interface {
 	List(namespace string, selector labels.Selector) (ret []*Gateway, err error)
@@ -46,8 +46,8 @@ type GatewayController interface {
 	Generic() controller.GenericController
 	Informer() cache.SharedIndexInformer
 	Lister() GatewayLister
-	AddHandler(name string, handler GatewayHandlerFunc)
-	AddClusterScopedHandler(name, clusterName string, handler GatewayHandlerFunc)
+	AddHandler(ctx context.Context, name string, handler GatewayHandlerFunc)
+	AddClusterScopedHandler(ctx context.Context, name, clusterName string, handler GatewayHandlerFunc)
 	Enqueue(namespace, name string)
 	Sync(ctx context.Context) error
 	Start(ctx context.Context, threadiness int) error
@@ -65,10 +65,10 @@ type GatewayInterface interface {
 	Watch(opts metav1.ListOptions) (watch.Interface, error)
 	DeleteCollection(deleteOpts *metav1.DeleteOptions, listOpts metav1.ListOptions) error
 	Controller() GatewayController
-	AddHandler(name string, sync GatewayHandlerFunc)
-	AddLifecycle(name string, lifecycle GatewayLifecycle)
-	AddClusterScopedHandler(name, clusterName string, sync GatewayHandlerFunc)
-	AddClusterScopedLifecycle(name, clusterName string, lifecycle GatewayLifecycle)
+	AddHandler(ctx context.Context, name string, sync GatewayHandlerFunc)
+	AddLifecycle(ctx context.Context, name string, lifecycle GatewayLifecycle)
+	AddClusterScopedHandler(ctx context.Context, name, clusterName string, sync GatewayHandlerFunc)
+	AddClusterScopedLifecycle(ctx context.Context, name, clusterName string, lifecycle GatewayLifecycle)
 }
 
 type gatewayLister struct {
@@ -116,34 +116,27 @@ func (c *gatewayController) Lister() GatewayLister {
 	}
 }
 
-func (c *gatewayController) AddHandler(name string, handler GatewayHandlerFunc) {
-	c.GenericController.AddHandler(name, func(key string) error {
-		obj, exists, err := c.Informer().GetStore().GetByKey(key)
-		if err != nil {
-			return err
-		}
-		if !exists {
+func (c *gatewayController) AddHandler(ctx context.Context, name string, handler GatewayHandlerFunc) {
+	c.GenericController.AddHandler(ctx, name, func(key string, obj interface{}) (interface{}, error) {
+		if obj == nil {
 			return handler(key, nil)
+		} else if v, ok := obj.(*Gateway); ok {
+			return handler(key, v)
+		} else {
+			return nil, nil
 		}
-		return handler(key, obj.(*Gateway))
 	})
 }
 
-func (c *gatewayController) AddClusterScopedHandler(name, cluster string, handler GatewayHandlerFunc) {
-	c.GenericController.AddHandler(name, func(key string) error {
-		obj, exists, err := c.Informer().GetStore().GetByKey(key)
-		if err != nil {
-			return err
-		}
-		if !exists {
+func (c *gatewayController) AddClusterScopedHandler(ctx context.Context, name, cluster string, handler GatewayHandlerFunc) {
+	c.GenericController.AddHandler(ctx, name, func(key string, obj interface{}) (interface{}, error) {
+		if obj == nil {
 			return handler(key, nil)
+		} else if v, ok := obj.(*Gateway); ok && controller.ObjectInCluster(cluster, obj) {
+			return handler(key, v)
+		} else {
+			return nil, nil
 		}
-
-		if !controller.ObjectInCluster(cluster, obj) {
-			return nil
-		}
-
-		return handler(key, obj.(*Gateway))
 	})
 }
 
@@ -238,20 +231,20 @@ func (s *gatewayClient) DeleteCollection(deleteOpts *metav1.DeleteOptions, listO
 	return s.objectClient.DeleteCollection(deleteOpts, listOpts)
 }
 
-func (s *gatewayClient) AddHandler(name string, sync GatewayHandlerFunc) {
-	s.Controller().AddHandler(name, sync)
+func (s *gatewayClient) AddHandler(ctx context.Context, name string, sync GatewayHandlerFunc) {
+	s.Controller().AddHandler(ctx, name, sync)
 }
 
-func (s *gatewayClient) AddLifecycle(name string, lifecycle GatewayLifecycle) {
+func (s *gatewayClient) AddLifecycle(ctx context.Context, name string, lifecycle GatewayLifecycle) {
 	sync := NewGatewayLifecycleAdapter(name, false, s, lifecycle)
-	s.AddHandler(name, sync)
+	s.Controller().AddHandler(ctx, name, sync)
 }
 
-func (s *gatewayClient) AddClusterScopedHandler(name, clusterName string, sync GatewayHandlerFunc) {
-	s.Controller().AddClusterScopedHandler(name, clusterName, sync)
+func (s *gatewayClient) AddClusterScopedHandler(ctx context.Context, name, clusterName string, sync GatewayHandlerFunc) {
+	s.Controller().AddClusterScopedHandler(ctx, name, clusterName, sync)
 }
 
-func (s *gatewayClient) AddClusterScopedLifecycle(name, clusterName string, lifecycle GatewayLifecycle) {
+func (s *gatewayClient) AddClusterScopedLifecycle(ctx context.Context, name, clusterName string, lifecycle GatewayLifecycle) {
 	sync := NewGatewayLifecycleAdapter(name+"_"+clusterName, true, s, lifecycle)
-	s.AddClusterScopedHandler(name, clusterName, sync)
+	s.Controller().AddClusterScopedHandler(ctx, name, clusterName, sync)
 }

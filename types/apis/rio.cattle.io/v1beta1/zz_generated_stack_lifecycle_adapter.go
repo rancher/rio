@@ -6,9 +6,9 @@ import (
 )
 
 type StackLifecycle interface {
-	Create(obj *Stack) (*Stack, error)
-	Remove(obj *Stack) (*Stack, error)
-	Updated(obj *Stack) (*Stack, error)
+	Create(obj *Stack) (runtime.Object, error)
+	Remove(obj *Stack) (runtime.Object, error)
+	Updated(obj *Stack) (runtime.Object, error)
 }
 
 type stackLifecycleAdapter struct {
@@ -42,10 +42,11 @@ func (w *stackLifecycleAdapter) Updated(obj runtime.Object) (runtime.Object, err
 func NewStackLifecycleAdapter(name string, clusterScoped bool, client StackInterface, l StackLifecycle) StackHandlerFunc {
 	adapter := &stackLifecycleAdapter{lifecycle: l}
 	syncFn := lifecycle.NewObjectLifecycleAdapter(name, clusterScoped, adapter, client.ObjectClient())
-	return func(key string, obj *Stack) error {
-		if obj == nil {
-			return syncFn(key, nil)
+	return func(key string, obj *Stack) (runtime.Object, error) {
+		newObj, err := syncFn(key, obj)
+		if o, ok := newObj.(runtime.Object); ok {
+			return o, err
 		}
-		return syncFn(key, obj)
+		return nil, err
 	}
 }

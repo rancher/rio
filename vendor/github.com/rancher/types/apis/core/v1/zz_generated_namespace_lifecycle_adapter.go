@@ -7,9 +7,9 @@ import (
 )
 
 type NamespaceLifecycle interface {
-	Create(obj *v1.Namespace) (*v1.Namespace, error)
-	Remove(obj *v1.Namespace) (*v1.Namespace, error)
-	Updated(obj *v1.Namespace) (*v1.Namespace, error)
+	Create(obj *v1.Namespace) (runtime.Object, error)
+	Remove(obj *v1.Namespace) (runtime.Object, error)
+	Updated(obj *v1.Namespace) (runtime.Object, error)
 }
 
 type namespaceLifecycleAdapter struct {
@@ -43,10 +43,11 @@ func (w *namespaceLifecycleAdapter) Updated(obj runtime.Object) (runtime.Object,
 func NewNamespaceLifecycleAdapter(name string, clusterScoped bool, client NamespaceInterface, l NamespaceLifecycle) NamespaceHandlerFunc {
 	adapter := &namespaceLifecycleAdapter{lifecycle: l}
 	syncFn := lifecycle.NewObjectLifecycleAdapter(name, clusterScoped, adapter, client.ObjectClient())
-	return func(key string, obj *v1.Namespace) error {
-		if obj == nil {
-			return syncFn(key, nil)
+	return func(key string, obj *v1.Namespace) (runtime.Object, error) {
+		newObj, err := syncFn(key, obj)
+		if o, ok := newObj.(runtime.Object); ok {
+			return o, err
 		}
-		return syncFn(key, obj)
+		return nil, err
 	}
 }

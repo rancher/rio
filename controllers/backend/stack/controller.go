@@ -17,7 +17,7 @@ const (
 	stackByNS = "stackByNS"
 )
 
-func Register(ctx context.Context, rContext *types.Context) {
+func Register(ctx context.Context, rContext *types.Context) error {
 	s := &stackDeployController{
 		stacks:             rContext.Rio.Stacks(""),
 		stackController:    rContext.Rio.Stacks("").Controller(),
@@ -27,8 +27,8 @@ func Register(ctx context.Context, rContext *types.Context) {
 		routeSetController: rContext.Rio.RouteSets("").Controller(),
 	}
 
-	rContext.Rio.Stacks("").AddLifecycle("stack-deploy-controller", s)
-	changeset.Watch("stack-deploy",
+	rContext.Rio.Stacks("").AddLifecycle(ctx, "stack-deploy-controller", s)
+	changeset.Watch(ctx, "stack-deploy",
 		s.resolve,
 		s.stackController.Enqueue,
 		s.serviceController,
@@ -40,6 +40,8 @@ func Register(ctx context.Context, rContext *types.Context) {
 	s.stackController.Informer().AddIndexers(cache.Indexers{
 		stackByNS: index,
 	})
+
+	return nil
 }
 
 type stackDeployController struct {
@@ -84,16 +86,16 @@ func (s *stackDeployController) resolve(ns, name string, obj runtime.Object) ([]
 	}, nil
 }
 
-func (s *stackDeployController) Create(obj *v1beta1.Stack) (*v1beta1.Stack, error) {
+func (s *stackDeployController) Create(obj *v1beta1.Stack) (runtime.Object, error) {
 	return nil, nil
 }
 
-func (s *stackDeployController) Remove(obj *v1beta1.Stack) (*v1beta1.Stack, error) {
+func (s *stackDeployController) Remove(obj *v1beta1.Stack) (runtime.Object, error) {
 	err := stack.Remove(namespace.StackToNamespace(obj), obj)
 	return obj, err
 }
 
-func (s *stackDeployController) Updated(obj *v1beta1.Stack) (*v1beta1.Stack, error) {
+func (s *stackDeployController) Updated(obj *v1beta1.Stack) (runtime.Object, error) {
 	// Wait until defined
 	if !v1beta1.StackConditionDefined.IsTrue(obj) {
 		return obj, nil

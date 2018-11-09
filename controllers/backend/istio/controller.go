@@ -25,21 +25,23 @@ var trigger = []changeset.Key{
 	},
 }
 
-func Register(ctx context.Context, rContext *types.Context) {
+func Register(ctx context.Context, rContext *types.Context) error {
 	s := &istioDeployController{
 		virtualServiceLister: rContext.Networking.VirtualServices("").Controller().Lister(),
 		serviceLister:        rContext.Core.Services("").Controller().Lister(),
 		namespaceLister:      rContext.Core.Namespaces("").Controller().Lister(),
 	}
 
-	rContext.Networking.VirtualServices("").AddHandler("istio-deploy", s.sync)
-	changeset.Watch("istio-deploy",
+	rContext.Networking.VirtualServices("").AddHandler(ctx, "istio-deploy", s.sync)
+	changeset.Watch(ctx, "istio-deploy",
 		resolve,
 		rContext.Networking.VirtualServices("").Controller().Enqueue,
 		rContext.Networking.VirtualServices("").Controller(),
 		rContext.Core.Services("").Controller(),
 		rContext.Core.Namespaces("").Controller())
 	rContext.Networking.VirtualServices("").Controller().Enqueue("", all)
+
+	return nil
 }
 
 func resolve(namespace, name string, obj runtime.Object) ([]changeset.Key, error) {
@@ -65,25 +67,25 @@ type istioDeployController struct {
 	namespaceLister      v12.NamespaceLister
 }
 
-func (i *istioDeployController) sync(key string, obj *v1alpha3.VirtualService) error {
+func (i *istioDeployController) sync(key string, obj *v1alpha3.VirtualService) (runtime.Object, error) {
 	if key != all {
-		return nil
+		return nil, nil
 	}
 
 	lbService, err := i.serviceLister.Get(settings.IstioExternalLBNamespace, settings.IstioExternalLB)
 	if err != nil && !errors.IsNotFound(err) {
-		return err
+		return nil, err
 	}
 
 	lbNamespace, err := i.namespaceLister.Get("", settings.IstioExternalLBNamespace)
 	if err != nil && !errors.IsNotFound(err) {
-		return err
+		return nil, err
 	}
 
 	vss, err := i.virtualServiceLister.List("", labels.Everything())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return istio.Deploy(lbNamespace, lbService, vss)
+	return nil, istio.Deploy(lbNamespace, lbService, vss)
 }

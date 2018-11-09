@@ -1,4 +1,4 @@
-// +build !k3s
+// +build !k8s
 
 package server
 
@@ -9,5 +9,5 @@ import (
 )
 
 func (s *Server) Run(app *cli.Context) error {
-	return fmt.Errorf("server support is not compiled in, add \"-tags k3s\" to \"go build\"")
+	return fmt.Errorf("server support is not compiled in, add \"-tags k8s\" to \"go build\"")
 }

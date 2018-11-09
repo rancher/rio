@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"reflect"
 	"sort"
 	"sync"
 	"time"
@@ -43,7 +44,7 @@ type Controller struct {
 	previousIPs     []string
 }
 
-func Register(ctx context.Context, rContext *types.Context) {
+func Register(ctx context.Context, rContext *types.Context) error {
 	rdnsClient := approuter.NewClient(rContext.Core.Secrets(""),
 		rContext.Core.Secrets("").Controller().Lister(),
 		settings.RioSystemNamespace)
@@ -57,7 +58,7 @@ func Register(ctx context.Context, rContext *types.Context) {
 		stackController: rContext.Rio.Stacks("").Controller(),
 	}
 
-	changeset.Watch("domain-controller",
+	changeset.Watch(ctx, "domain-controller",
 		func(namespace, name string, obj runtime.Object) ([]changeset.Key, error) {
 			switch t := obj.(type) {
 			case *v1.Endpoints:
@@ -75,7 +76,9 @@ func Register(ctx context.Context, rContext *types.Context) {
 		rContext.Core.Services(settings.IstioExternalLBNamespace).Controller().Enqueue,
 		rContext.Core.Endpoints(settings.IstioExternalLBNamespace).Controller())
 
-	rContext.Core.Services(settings.IstioExternalLBNamespace).Controller().AddHandler("domain-controller", g.sync)
+	rContext.Core.Services(settings.IstioExternalLBNamespace).Controller().AddHandler(ctx, "domain-controller", g.sync)
+
+	return nil
 }
 
 func isLB(obj runtime.Object) bool {
@@ -83,13 +86,13 @@ func isLB(obj runtime.Object) bool {
 	if err != nil {
 		return false
 	}
-	if o == nil {
+	if o == nil || reflect.ValueOf(obj).IsNil() {
 		return false
 	}
 	return o.GetName() == settings.IstioExternalLB && o.GetNamespace() == settings.IstioExternalLBNamespace
 }
 
-func (g *Controller) sync(key string, svc *v1.Service) error {
+func (g *Controller) sync(key string, svc *v1.Service) (runtime.Object, error) {
 	// We do init here because we need caches synced before we can initialize
 	g.init.Do(func() {
 		err := g.start()
@@ -99,7 +102,7 @@ func (g *Controller) sync(key string, svc *v1.Service) error {
 	})
 
 	if !isLB(svc) {
-		return nil
+		return nil, nil
 	}
 
 	var ips []string
@@ -115,9 +118,9 @@ func (g *Controller) sync(key string, svc *v1.Service) error {
 		ep, err := g.endpointsLister.Get(svc.Namespace, svc.Name)
 		if err != nil {
 			if errors.IsNotFound(err) {
-				return nil
+				return nil, nil
 			} else {
-				return err
+				return nil, err
 			}
 		}
 
@@ -129,7 +132,7 @@ func (g *Controller) sync(key string, svc *v1.Service) error {
 
 				node, err := g.nodeLister.Get("", *addr.NodeName)
 				if err != nil {
-					return err
+					return nil, err
 				}
 
 				nodeIP := getNodeIP(node)
@@ -140,7 +143,7 @@ func (g *Controller) sync(key string, svc *v1.Service) error {
 		}
 	}
 
-	return g.updateDomain(ips)
+	return nil, g.updateDomain(ips)
 }
 
 func (g *Controller) start() error {

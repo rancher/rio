@@ -10,9 +10,9 @@ Rancher is an open source project that provides a container management platform 
 
 ## Latest Release
 
-* Latest - v2.1.0 - `rancher/rancher:latest` - Read the full release [notes](https://github.com/rancher/rancher/releases/tag/v2.1.0).
+* Latest - v2.1.1 - `rancher/rancher:latest` - Read the full release [notes](https://github.com/rancher/rancher/releases/tag/v2.1.1).
 
-* Stable - v2.0.8 - `rancher/rancher:stable` - Read the full release [notes](https://github.com/rancher/rancher/releases/tag/v2.0.8).
+* Stable - v2.1.1 - `rancher/rancher:stable` - Read the full release [notes](https://github.com/rancher/rancher/releases/tag/v2.1.1).
 
 To get automated notifications of our latest release, you can watch the announcements category in our [forums](http://forums.rancher.com/c/announcements), or subscribe to the RSS feed `https://forums.rancher.com/c/announcements.rss`.
 
@@ -25,8 +25,8 @@ Open your browser to https://localhost
 ## Installation
 Rancher can be deployed in either a single node or multi-node setup.  Please refer to the following for guides on how to get Rancher up and running.
 
-* [Single Node Install](https://rancher.com/docs/rancher/v2.x/en/installation/single-node-install/)
-* [Multi Node/HA Install](https://rancher.com/docs/rancher/v2.x/en/installation/ha-server-install/)
+* [Single Node Install](https://rancher.com/docs/rancher/v2.x/en/installation/single-node/)
+* [High Availability (HA) Install](https://rancher.com/docs/rancher/v2.x/en/installation/ha/)
 
 > **No internet access?**  Refer to our [Air Gap Installation](https://rancher.com/docs/rancher/v2.x/en/installation/air-gap-installation/) for instructions on how to use your own private registry to install Rancher.
 
@@ -35,7 +35,7 @@ Rancher can be deployed in either a single node or multi-node setup.  Please ref
 * Operating Systems
   * Ubuntu 16.04 (64-bit)
   * Red Hat Enterprise Linux 7.5 (64-bit)
-  * RancherOS 1.3 (64-bit)
+  * RancherOS 1.4 (64-bit)
 * Hardware
   * 4 GB of Memory
 * Software
