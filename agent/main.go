@@ -12,7 +12,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -33,7 +35,9 @@ import (
 )
 
 var (
-	ports = map[string]bool{
+	base                     = "/proc/sys"
+	sysctlBridgeCallIPTables = "net/bridge/bridge-nf-call-iptables"
+	ports                    = map[string]bool{
 		"10250": true,
 		"10010": true,
 	}
@@ -72,6 +76,10 @@ func run() error {
 			continue
 		}
 		break
+	}
+
+	if err := setSysctl(); err != nil {
+		logrus.Warn(err)
 	}
 
 	if err := runTunnel(agentConfig); err != nil {
@@ -279,4 +287,9 @@ func getConfig(localURL *url.URL) (*AgentConfig, error) {
 		TargetHost:  uParsed.Host,
 		Certificate: tlsCert,
 	}, err
+}
+
+func setSysctl() error {
+	p := path.Join(base, sysctlBridgeCallIPTables)
+	return errors.Wrapf(ioutil.WriteFile(p, []byte(strconv.Itoa(1)), 0640), "failed to write value 1 at %s", p)
 }
