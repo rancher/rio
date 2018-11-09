@@ -11,12 +11,15 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+type contextKeyType struct{}
+
 type Interface interface {
 	RESTClient() rest.Interface
 	controller.Starter
 
 	GatewaysGetter
 	VirtualServicesGetter
+	DestinationRulesGetter
 }
 
 type Client struct {
@@ -24,8 +27,22 @@ type Client struct {
 	restClient rest.Interface
 	starters   []controller.Starter
 
-	gatewayControllers        map[string]GatewayController
-	virtualServiceControllers map[string]VirtualServiceController
+	gatewayControllers         map[string]GatewayController
+	virtualServiceControllers  map[string]VirtualServiceController
+	destinationRuleControllers map[string]DestinationRuleController
+}
+
+func Factory(ctx context.Context, config rest.Config) (context.Context, controller.Starter, error) {
+	c, err := NewForConfig(config)
+	if err != nil {
+		return ctx, nil, err
+	}
+
+	return context.WithValue(ctx, contextKeyType{}, c), c, nil
+}
+
+func From(ctx context.Context) Interface {
+	return ctx.Value(contextKeyType{}).(Interface)
 }
 
 func NewForConfig(config rest.Config) (Interface, error) {
@@ -41,8 +58,9 @@ func NewForConfig(config rest.Config) (Interface, error) {
 	return &Client{
 		restClient: restClient,
 
-		gatewayControllers:        map[string]GatewayController{},
-		virtualServiceControllers: map[string]VirtualServiceController{},
+		gatewayControllers:         map[string]GatewayController{},
+		virtualServiceControllers:  map[string]VirtualServiceController{},
+		destinationRuleControllers: map[string]DestinationRuleController{},
 	}, nil
 }
 
@@ -78,6 +96,19 @@ type VirtualServicesGetter interface {
 func (c *Client) VirtualServices(namespace string) VirtualServiceInterface {
 	objectClient := objectclient.NewObjectClient(namespace, c.restClient, &VirtualServiceResource, VirtualServiceGroupVersionKind, virtualServiceFactory{})
 	return &virtualServiceClient{
+		ns:           namespace,
+		client:       c,
+		objectClient: objectClient,
+	}
+}
+
+type DestinationRulesGetter interface {
+	DestinationRules(namespace string) DestinationRuleInterface
+}
+
+func (c *Client) DestinationRules(namespace string) DestinationRuleInterface {
+	objectClient := objectclient.NewObjectClient(namespace, c.restClient, &DestinationRuleResource, DestinationRuleGroupVersionKind, destinationRuleFactory{})
+	return &destinationRuleClient{
 		ns:           namespace,
 		client:       c,
 		objectClient: objectClient,

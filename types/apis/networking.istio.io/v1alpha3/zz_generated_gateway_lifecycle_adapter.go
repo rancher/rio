@@ -6,9 +6,9 @@ import (
 )
 
 type GatewayLifecycle interface {
-	Create(obj *Gateway) (*Gateway, error)
-	Remove(obj *Gateway) (*Gateway, error)
-	Updated(obj *Gateway) (*Gateway, error)
+	Create(obj *Gateway) (runtime.Object, error)
+	Remove(obj *Gateway) (runtime.Object, error)
+	Updated(obj *Gateway) (runtime.Object, error)
 }
 
 type gatewayLifecycleAdapter struct {
@@ -42,10 +42,11 @@ func (w *gatewayLifecycleAdapter) Updated(obj runtime.Object) (runtime.Object, e
 func NewGatewayLifecycleAdapter(name string, clusterScoped bool, client GatewayInterface, l GatewayLifecycle) GatewayHandlerFunc {
 	adapter := &gatewayLifecycleAdapter{lifecycle: l}
 	syncFn := lifecycle.NewObjectLifecycleAdapter(name, clusterScoped, adapter, client.ObjectClient())
-	return func(key string, obj *Gateway) error {
-		if obj == nil {
-			return syncFn(key, nil)
+	return func(key string, obj *Gateway) (runtime.Object, error) {
+		newObj, err := syncFn(key, obj)
+		if o, ok := newObj.(runtime.Object); ok {
+			return o, err
 		}
-		return syncFn(key, obj)
+		return nil, err
 	}
 }

@@ -6,9 +6,9 @@ import (
 )
 
 type ServiceLifecycle interface {
-	Create(obj *Service) (*Service, error)
-	Remove(obj *Service) (*Service, error)
-	Updated(obj *Service) (*Service, error)
+	Create(obj *Service) (runtime.Object, error)
+	Remove(obj *Service) (runtime.Object, error)
+	Updated(obj *Service) (runtime.Object, error)
 }
 
 type serviceLifecycleAdapter struct {
@@ -42,10 +42,11 @@ func (w *serviceLifecycleAdapter) Updated(obj runtime.Object) (runtime.Object, e
 func NewServiceLifecycleAdapter(name string, clusterScoped bool, client ServiceInterface, l ServiceLifecycle) ServiceHandlerFunc {
 	adapter := &serviceLifecycleAdapter{lifecycle: l}
 	syncFn := lifecycle.NewObjectLifecycleAdapter(name, clusterScoped, adapter, client.ObjectClient())
-	return func(key string, obj *Service) error {
-		if obj == nil {
-			return syncFn(key, nil)
+	return func(key string, obj *Service) (runtime.Object, error) {
+		newObj, err := syncFn(key, obj)
+		if o, ok := newObj.(runtime.Object); ok {
+			return o, err
 		}
-		return syncFn(key, obj)
+		return nil, err
 	}
 }

@@ -6,9 +6,9 @@ import (
 )
 
 type VirtualServiceLifecycle interface {
-	Create(obj *VirtualService) (*VirtualService, error)
-	Remove(obj *VirtualService) (*VirtualService, error)
-	Updated(obj *VirtualService) (*VirtualService, error)
+	Create(obj *VirtualService) (runtime.Object, error)
+	Remove(obj *VirtualService) (runtime.Object, error)
+	Updated(obj *VirtualService) (runtime.Object, error)
 }
 
 type virtualServiceLifecycleAdapter struct {
@@ -42,10 +42,11 @@ func (w *virtualServiceLifecycleAdapter) Updated(obj runtime.Object) (runtime.Ob
 func NewVirtualServiceLifecycleAdapter(name string, clusterScoped bool, client VirtualServiceInterface, l VirtualServiceLifecycle) VirtualServiceHandlerFunc {
 	adapter := &virtualServiceLifecycleAdapter{lifecycle: l}
 	syncFn := lifecycle.NewObjectLifecycleAdapter(name, clusterScoped, adapter, client.ObjectClient())
-	return func(key string, obj *VirtualService) error {
-		if obj == nil {
-			return syncFn(key, nil)
+	return func(key string, obj *VirtualService) (runtime.Object, error) {
+		newObj, err := syncFn(key, obj)
+		if o, ok := newObj.(runtime.Object); ok {
+			return o, err
 		}
-		return syncFn(key, obj)
+		return nil, err
 	}
 }
