@@ -5,18 +5,16 @@ import (
 	"fmt"
 	"sync"
 
+	"k8s.io/apimachinery/pkg/runtime"
+
 	"github.com/rancher/rio/pkg/certs"
-
-	"github.com/sirupsen/logrus"
-
-	"k8s.io/apimachinery/pkg/api/errors"
-
 	"github.com/rancher/rio/pkg/settings"
-
 	"github.com/rancher/rio/types"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
 	"github.com/rancher/types/apis/core/v1"
+	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 )
 
 func Register(ctx context.Context, rContext *types.Context) {
@@ -26,7 +24,7 @@ func Register(ctx context.Context, rContext *types.Context) {
 		secretsLister: rContext.Core.Secrets("").Controller().Lister(),
 		secrets:       rContext.Core.Secrets(""),
 	}
-	rContext.Core.Secrets("").AddHandler("tls-secrets", c.sync)
+	rContext.Core.Secrets("").AddHandler(ctx, "tls-secrets", c.sync)
 }
 
 type secretController struct {
@@ -37,9 +35,9 @@ type secretController struct {
 	lock          sync.Mutex
 }
 
-func (s *secretController) sync(key string, secret *corev1.Secret) error {
+func (s *secretController) sync(key string, secret *corev1.Secret) (runtime.Object, error) {
 	if secret == nil || secret.DeletionTimestamp != nil {
-		return nil
+		return nil, nil
 	}
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -47,7 +45,7 @@ func (s *secretController) sync(key string, secret *corev1.Secret) error {
 		// copy the cert into istio namespace and rename key
 		if exitsingSecret, err := s.secretsLister.Get(settings.IstioExternalLBNamespace, certs.TlsSecretName); err != nil {
 			if !errors.IsNotFound(err) {
-				return err
+				return nil, err
 			} else {
 				newSecret := &corev1.Secret{}
 				newSecret.Name = secret.Name
@@ -58,7 +56,7 @@ func (s *secretController) sync(key string, secret *corev1.Secret) error {
 				}
 				logrus.Infof("copy secrets %s into %s namespace", secret.Name, settings.IstioExternalLBNamespace)
 				if _, err := s.secrets.Create(newSecret); err != nil && !errors.IsAlreadyExists(err) {
-					return err
+					return nil, err
 				}
 			}
 		} else {
@@ -66,9 +64,9 @@ func (s *secretController) sync(key string, secret *corev1.Secret) error {
 				exitsingSecret.Data[fmt.Sprintf("%s-%s", secret.Name, k)] = v
 			}
 			if _, err := s.secrets.Update(exitsingSecret); err != nil {
-				return err
+				return nil, err
 			}
 		}
 	}
-	return nil
+	return nil, nil
 }

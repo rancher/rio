@@ -28,7 +28,7 @@ func Register(ctx context.Context, rContext *types.Context) {
 		routesetLister:   rContext.Rio.RouteSets("").Controller().Lister(),
 		routesets:        rContext.Rio,
 	}
-	rContext.Global.PublicDomains(settings.RioSystemNamespace).AddLifecycle("public-domain-controller", dc)
+	rContext.Global.PublicDomains(settings.RioSystemNamespace).AddLifecycle(ctx, "public-domain-controller", dc)
 }
 
 type domainController struct {
@@ -42,11 +42,11 @@ type domainController struct {
 	routesets        v1beta1.RouteSetsGetter
 }
 
-func (d *domainController) Create(domain *spacev1beta1.PublicDomain) (*spacev1beta1.PublicDomain, error) {
+func (d *domainController) Create(domain *spacev1beta1.PublicDomain) (runtime.Object, error) {
 	return domain, nil
 }
 
-func (d *domainController) Updated(domain *spacev1beta1.PublicDomain) (*spacev1beta1.PublicDomain, error) {
+func (d *domainController) Updated(domain *spacev1beta1.PublicDomain) (runtime.Object, error) {
 	if err := apply.Apply([]runtime.Object{certs.AcmeIssuer()}, nil, "", "acme-cluster-issuer"); err != nil {
 		return domain, err
 	}
@@ -93,7 +93,7 @@ func (d *domainController) Updated(domain *spacev1beta1.PublicDomain) (*spacev1b
 	return domain, nil
 }
 
-func (d *domainController) Remove(domain *spacev1beta1.PublicDomain) (*spacev1beta1.PublicDomain, error) {
+func (d *domainController) Remove(domain *spacev1beta1.PublicDomain) (runtime.Object, error) {
 	ns, err := d.getNamespace(domain)
 	if err != nil {
 		return domain, err

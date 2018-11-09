@@ -27,7 +27,7 @@ var trigger = []changeset.Key{
 	},
 }
 
-func Register(ctx context.Context, rContext *types.Context) error {
+func Register(ctx context.Context, rContext *types.Context) {
 	s := &istioDeployController{
 		virtualServiceLister: rContext.Networking.VirtualServices("").Controller().Lister(),
 		serviceLister:        rContext.Core.Services("").Controller().Lister(),
@@ -43,8 +43,6 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		rContext.Core.Services("").Controller(),
 		rContext.Core.Namespaces("").Controller())
 	rContext.Networking.VirtualServices("").Controller().Enqueue("", all)
-
-	return nil
 }
 
 func resolve(namespace, name string, obj runtime.Object) ([]changeset.Key, error) {
