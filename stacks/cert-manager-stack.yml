@@ -1,0 +1,21 @@
+services:
+  cert-manager:
+    global_permissions:
+    - '* certmanager.k8s.io/*'
+    - '* extensions/ingresses'
+    - '* configmaps'
+    - '* secrets'
+    - '* events'
+    - '* services'
+    - '* pods'
+    image: "daishan1992/cert-manager:latest"
+    imagePullPolicy: Always
+    command:
+    - cert-manager
+    - --leader-election-namespace
+    - rio-system
+    - --cluster-resource-namespace
+    - rio-system
+    - --logtostderr
+    - "true"
+

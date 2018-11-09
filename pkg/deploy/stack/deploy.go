@@ -10,7 +10,7 @@ import (
 )
 
 func Deploy(
-	namespace string,
+	namespace, space string,
 	stack *v1beta1.Stack,
 	configs []*v1beta1.Config,
 	services []*v1beta1.Service,
@@ -19,6 +19,7 @@ func Deploy(
 
 	input := &input.Stack{
 		Namespace: namespace,
+		Space:     space,
 		Stack:     stack,
 		Services:  services,
 		Volumes:   volumes,
@@ -36,6 +37,6 @@ func Deploy(
 	return output.Deploy(namespace, groupID)
 }
 
-func Remove(namespace string, stack *v1beta1.Stack) error {
-	return Deploy(namespace, stack, nil, nil, nil, nil)
+func Remove(namespace, space string, stack *v1beta1.Stack) error {
+	return Deploy(namespace, space, stack, nil, nil, nil, nil)
 }

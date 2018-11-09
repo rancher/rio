@@ -85,3 +85,11 @@ func parsePortBinding(spec string) (client.PortBinding, error) {
 
 	return result, nil
 }
+
+func ParsePort(portDef string) (string, string) {
+	split := strings.SplitN(portDef, "/", 2)
+	if len(split) == 2 {
+		return split[0], split[1]
+	}
+	return split[0], ""
+}

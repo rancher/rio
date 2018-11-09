@@ -1,0 +1,4 @@
+services:
+  acme-solver:
+    image: "daishan1992/acme-solver:latest"
+    imagePullPolicy: Always

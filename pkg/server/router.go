@@ -55,10 +55,10 @@ func nodeCrt(server *server.ServerConfig) http.Handler {
 
 func nodeKey(server *server.ServerConfig) http.Handler {
 	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
-		if req.TLS == nil {
-			resp.WriteHeader(http.StatusNotFound)
-			return
-		}
+		//if req.TLS == nil {
+		//	resp.WriteHeader(http.StatusNotFound)
+		//	return
+		//}
 		http.ServeFile(resp, req, server.NodeKey)
 	})
 }

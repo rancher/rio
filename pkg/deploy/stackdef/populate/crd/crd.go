@@ -47,6 +47,8 @@ func crdsForCRDDefs(namespaced bool, crdDefs []v1beta1.CustomResourceDefinition,
 
 		if namespaced {
 			crd.Spec.Scope = v1beta12.NamespaceScoped
+		} else {
+			crd.Spec.Scope = v1beta12.ClusterScoped
 		}
 
 		// k8s 1.11 will not accept CRD with status field and marshalling CRD will always put a status field

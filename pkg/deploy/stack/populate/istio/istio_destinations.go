@@ -1,6 +1,9 @@
 package istio
 
 import (
+	"fmt"
+	"hash/adler32"
+
 	"github.com/rancher/rio/pkg/deploy/stack/input"
 	"github.com/rancher/rio/pkg/deploy/stack/output"
 	"github.com/rancher/rio/pkg/deploy/stack/populate/service"
@@ -93,6 +96,33 @@ func destinationRuleForService(stack *input.Stack, name string, service *output.
 
 	drObject := newDestinationRule(stack, service.Service)
 	drObject.Spec = &dr
+
+	// destinationRule for tls challenge
+	if service.Service.Annotations[PublicDomainTlsAnnotation] == "true" {
+		drTls := v1alpha3.DestinationRule{
+			Host: fmt.Sprintf("%s.rio-system.svc.cluster.local", fmt.Sprintf("cm-acme-http-solver-%d", adler32.Checksum([]byte(service.Service.Annotations[PublicDomainAnnotation])))),
+			Subsets: []*v1alpha3.Subset{
+				{
+					Name: "latest",
+					Labels: map[string]string{
+						"certmanager.k8s.io/acme-http-domain": fmt.Sprintf("%d", adler32.Checksum([]byte(service.Service.Annotations[PublicDomainAnnotation]))),
+					},
+				},
+			},
+		}
+		drTlsObject := &output.IstioObject{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "networking.istio.io/v1alpha3",
+				Kind:       "DestinationRule",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("cm-acme-http-solver-%d", adler32.Checksum([]byte(service.Service.Annotations[PublicDomainAnnotation]))),
+				Namespace: service.Service.Namespace,
+			},
+		}
+		drTlsObject.Spec = &drTls
+		result = append(result, drTlsObject)
+	}
 	result = append(result, drObject)
 
 	return result

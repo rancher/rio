@@ -3,6 +3,8 @@ package istio
 import (
 	"context"
 
+	"github.com/rancher/rio/types/apis/space.cattle.io/v1beta1"
+
 	"github.com/rancher/norman/pkg/changeset"
 	"github.com/rancher/rio/pkg/deploy/istio"
 	"github.com/rancher/rio/pkg/settings"
@@ -30,6 +32,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		virtualServiceLister: rContext.Networking.VirtualServices("").Controller().Lister(),
 		serviceLister:        rContext.Core.Services("").Controller().Lister(),
 		namespaceLister:      rContext.Core.Namespaces("").Controller().Lister(),
+		publicdomainLister:   rContext.Global.PublicDomains("").Controller().Lister(),
 	}
 
 	rContext.Networking.VirtualServices("").AddHandler(ctx, "istio-deploy", s.sync)
@@ -65,6 +68,7 @@ type istioDeployController struct {
 	virtualServiceLister v1alpha3.VirtualServiceLister
 	serviceLister        v12.ServiceLister
 	namespaceLister      v12.NamespaceLister
+	publicdomainLister   v1beta1.PublicDomainLister
 }
 
 func (i *istioDeployController) sync(key string, obj *v1alpha3.VirtualService) (runtime.Object, error) {
@@ -87,5 +91,10 @@ func (i *istioDeployController) sync(key string, obj *v1alpha3.VirtualService) (
 		return nil, err
 	}
 
-	return nil, istio.Deploy(lbNamespace, lbService, vss)
+	pds, err := i.publicdomainLister.List("", labels.Everything())
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, istio.Deploy(lbNamespace, lbService, vss, pds)
 }
