@@ -35,6 +35,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 
 		&ListenConfig{},
 		&ListenConfigList{},
+		&PublicDomain{},
+		&PublicDomainList{},
 	)
 	return nil
 }
