@@ -14,8 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rancher/rio/controllers/backend"
-
+	"github.com/pkg/errors"
 	"github.com/rancher/norman"
 	"github.com/rancher/norman/pkg/resolvehome"
 	"github.com/rancher/norman/signal"
@@ -23,6 +22,7 @@ import (
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rio/api/setup"
 	"github.com/rancher/rio/controllers/api/domain"
+	"github.com/rancher/rio/controllers/backend"
 	"github.com/rancher/rio/pkg/data"
 	rTypes "github.com/rancher/rio/types"
 	"github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
@@ -117,6 +117,16 @@ func StartServer(ctx context.Context, dataDir string, httpPort, httpsPort int, c
 	config, err := NewConfig(dataDir, inCluster)
 	if err != nil {
 		return nil, err
+	}
+
+	dataDir = config.K3s.DataDir
+
+	if err := os.MkdirAll(dataDir, 0700); err != nil {
+		return nil, errors.Wrapf(err, "can not mkdir %s", dataDir)
+	}
+
+	if err := os.Chdir(dataDir); err != nil {
+		return nil, errors.Wrapf(err, "can not chdir %s", dataDir)
 	}
 
 	ctx, srv, err := config.Build(ctx, &norman.Options{
