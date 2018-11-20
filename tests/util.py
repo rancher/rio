@@ -14,15 +14,16 @@ def run(cmd, status=0):
 
 
 def runToJson(cmd, status=0):
-    print("COMMAND: %s" % cmd)
     result = run(cmd, status)
-    print("JSON RESULT: %s" % result)
 
     return json.loads(result)
 
 
-def rioInspect(resource, field):
-    return run("rio inspect --format '{{.%s}}' %s" % (field, resource))
+def rioInspect(resource, field=None):
+    if field:
+        return run("rio inspect --format '{{.%s}}' %s" % (field, resource))
+    else:
+        return runToJson("rio inspect %s" % resource)
 
 
 def kubectl(namespace, type, resource):
