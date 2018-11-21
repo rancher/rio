@@ -3,15 +3,15 @@ package settings
 import (
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rio/pkg/namespace"
-	"github.com/rancher/rio/version"
 )
 
 const (
 	RioSystemNamespace    = "rio-system"
-	IstioExternalLB       = "rio-lb"
 	IstioGateway          = "rio-gateway"
+	IstioGatewayDeploy    = "istio-gateway"
 	IstioStackName        = "istio"
 	DefaultServiceVersion = "v0"
+	CerManagerIssuerName  = "letsencrypt-issuer"
 )
 
 var (
@@ -24,8 +24,11 @@ var (
 	IstioGatewaySelector     = map[string]string{
 		"gateway": "external",
 	}
-)
 
-func RioFullImage() string {
-	return RioImage.Get() + ":" + version.Version
-}
+	LetsEncryptServerUrl    = settings.NewSetting("letsencrypt-server", "https://acme-staging-v02.api.letsencrypt.org/directory")
+	LetsEncryptAccountEmail = settings.NewSetting("letsencrypt-account-email", "daishan@rancher.com")
+	CertManagerImage        = settings.NewSetting("certmanager-image", "daishan1992/cert-manager:latest")
+
+	DefaultHTTPOpenPort  = settings.NewSetting("default-http-port", "80")
+	DefaultHTTPSOpenPort = settings.NewSetting("default-https-port", "443")
+)

@@ -21,10 +21,7 @@ func populateStack(input *input.IstioDeployment, output *output.Deployment) erro
 		return nil
 	}
 
-	var ports []string
-	for _, port := range output.Ports {
-		ports = append(ports, fmt.Sprintf("%d:%d", port, port))
-	}
+	ports := []string{fmt.Sprintf("%v:%v", settings.DefaultHTTPOpenPort.Get(), settings.DefaultHTTPOpenPort.Get()), fmt.Sprintf("%v:%v", settings.DefaultHTTPSOpenPort.Get(), settings.DefaultHTTPSOpenPort.Get())}
 
 	portStr, err := json.Marshal(&ports)
 	if err != nil {
@@ -49,6 +46,7 @@ func populateStack(input *input.IstioDeployment, output *output.Deployment) erro
 			Template:                  stackContents,
 		},
 	}
+
 	output.Stacks[s.Name] = s
 	return nil
 }

@@ -15,10 +15,11 @@ import (
 type Deployment struct {
 	Enabled         bool
 	UseLoadBalancer bool
-	Ports           []int
+	Ports           []string
 	Stacks          map[string]*v1beta1.Stack
 	Services        map[string]*v1.Service
 	Gateways        map[string]*Gateway
+	VirtualService  map[string]*VirtualService
 }
 
 func NewDeployment() *Deployment {
@@ -51,5 +52,81 @@ type Gateway struct {
 }
 
 func (g *Gateway) DeepCopyObject() runtime.Object {
+	panic("not implemented")
+}
+
+type VirtualService struct {
+	types.Namespaced
+
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec interface{} `json:"spec,omitempty"`
+}
+
+func (v *VirtualService) DeepCopyObject() runtime.Object {
+	panic("not implemented")
+}
+
+type Pod struct {
+	types.Namespaced
+
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec interface{} `json:"spec,omitempty"`
+}
+
+func (p *Pod) DeepCopyObject() runtime.Object {
+	panic("not implemented")
+}
+
+type Service struct {
+	types.Namespaced
+
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec interface{} `json:"spec,omitempty"`
+}
+
+func (s *Service) DeepCopyObject() runtime.Object {
+	panic("not implemented")
+}
+
+type DestinationRule struct {
+	types.Namespaced
+
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec interface{} `json:"spec,omitempty"`
+}
+
+func (d *DestinationRule) DeepCopyObject() runtime.Object {
+	panic("not implemented")
+}
+
+type Certificate struct {
+	types.Namespaced
+
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec interface{} `json:"spec,omitempty"`
+}
+
+func (c *Certificate) DeepCopyObject() runtime.Object {
+	panic("not implemented")
+}
+
+type ClusterIssuer struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec interface{} `json:"spec,omitempty"`
+}
+
+func (c *ClusterIssuer) DeepCopyObject() runtime.Object {
 	panic("not implemented")
 }

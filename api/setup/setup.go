@@ -3,21 +3,20 @@ package setup
 import (
 	"context"
 
-	"github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
-
-	"github.com/rancher/norman/store/crd"
-
 	"github.com/rancher/norman/api/builtin"
 	"github.com/rancher/norman/pkg/subscribe"
+	"github.com/rancher/norman/store/crd"
 	"github.com/rancher/norman/store/proxy"
 	normantypes "github.com/rancher/norman/types"
 	"github.com/rancher/rio/api/config"
 	"github.com/rancher/rio/api/named"
 	"github.com/rancher/rio/api/pretty"
+	"github.com/rancher/rio/api/publicdomain"
 	"github.com/rancher/rio/api/resetstack"
 	"github.com/rancher/rio/api/service"
 	"github.com/rancher/rio/api/space"
 	"github.com/rancher/rio/api/stack"
+	"github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
 	networkSchema "github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3/schema"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1/schema"
 	spaceSchema "github.com/rancher/rio/types/apis/space.cattle.io/v1beta1/schema"
@@ -47,6 +46,7 @@ func Types(ctx context.Context, clientGetter proxy.ClientGetter, schemas *norman
 	setupRoute(ctx, schemas)
 	setupVolume(ctx, schemas)
 	setupStacks(ctx, schemas)
+	setupPublicDomain(ctx, schemas)
 
 	subscribe.Register(&builtin.Version, schemas)
 	subscribe.Register(&schema.Version, schemas)
@@ -122,4 +122,9 @@ func setupSpaces(ctx context.Context, clientGetter proxy.ClientGetter, schemas *
 		"Namespace",
 		"namespaces")
 	s.Store = space.New(s.Store)
+}
+
+func setupPublicDomain(ctx context.Context, schemas *normantypes.Schemas) {
+	s := schemas.Schema(&spaceSchema.Version, spaceClient.PublicDomainType)
+	s.Store = publicdomain.New(named.New(s.Store))
 }

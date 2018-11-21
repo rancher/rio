@@ -3,9 +3,8 @@ package named
 import (
 	"fmt"
 	"math/rand"
-	"time"
-
 	"strings"
+	"time"
 
 	"github.com/docker/docker/pkg/namesgenerator"
 	"github.com/rancher/norman/api/access"
