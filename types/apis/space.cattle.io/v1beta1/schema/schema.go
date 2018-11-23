@@ -20,7 +20,8 @@ var (
 		MustImport(&Version, v1beta1.ListenConfig{}).
 		MustImport(&Version, v1.Node{}).
 		Init(podTypes).
-		Init(spaceTypes)
+		Init(spaceTypes).
+		Init(publicDomainTypes)
 )
 
 func podTypes(schemas *types.Schemas) *types.Schemas {
@@ -67,4 +68,8 @@ func spaceTypes(schemas *types.Schemas) *types.Schemas {
 			DisplayName string
 		}{},
 		)
+}
+
+func publicDomainTypes(schemas *types.Schemas) *types.Schemas {
+	return schemas.MustImport(&Version, v1beta1.PublicDomain{})
 }

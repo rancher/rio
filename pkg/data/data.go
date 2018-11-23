@@ -31,6 +31,11 @@ func systemStacks(inCluster bool) []runtime.Object {
 		EnableKubernetesResources: true,
 	}))
 
+	result = append(result, stack("cert-manager-crd", v1beta1.StackSpec{
+		DisableMesh:               true,
+		EnableKubernetesResources: true,
+	}))
+
 	result = append(result, stack("storageclasses", v1beta1.StackSpec{
 		DisableMesh:               true,
 		EnableKubernetesResources: true,
@@ -38,6 +43,13 @@ func systemStacks(inCluster bool) []runtime.Object {
 
 	result = append(result, stack("local-storage", v1beta1.StackSpec{
 		DisableMesh: true,
+	}))
+
+	result = append(result, stack("cert-manager", v1beta1.StackSpec{
+		DisableMesh: true,
+		Answers: map[string]string{
+			"CERT_MANAGER_IMAGE": settings.CertManagerImage.Get(),
+		},
 	}))
 
 	if !inCluster {

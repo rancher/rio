@@ -51,14 +51,14 @@ services:
         - POD_NAMESPACE=$(self/namespace)
         - PILOT_THROTTLE=500
         - PILOT_CACHE_SQUASH=5
-        image: istio/pilot:1.0.2
+        image: istio/pilot:1.0.3
         secrets: identity:/etc/certs
       istio-proxy:
         expose:
         - 15007/http
         - 15010/grpc
         - 9093/http,http-monitoring
-        image: istio/proxyv2:1.0.2
+        image: istio/proxyv2:1.0.3
         command:
         - proxy
         - --serviceCluster
@@ -74,7 +74,7 @@ services:
         secrets: identity:/etc/certs
 
   istio-citadel:
-    image: "istio/citadel:1.0.2"
+    image: "istio/citadel:1.0.3"
     command:
     - --append-dns-names=true
     - --grpc-port=8060
@@ -106,7 +106,7 @@ services:
     sidekicks:
       istio-proxy:
         ports: ${PORTS}
-        image: "istio/proxyv2:1.0.2"
+        image: "istio/proxyv2:1.0.3"
         command:
         - proxy
         - router
@@ -137,4 +137,6 @@ services:
         - POD_NAMESPACE=$(self/namespace)
         - INSTANCE_IP=$(self/ip)
         - ISTIO_META_POD_NAME=$(self/name)
-        secrets: identity:/etc/certs
+        secrets:
+        - identity:/etc/certs
+        - rio-certs:/etc/istio/ingressgateway-certs

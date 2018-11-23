@@ -18,6 +18,7 @@ var (
 		client.VolumeType,
 		client2.PodType,
 		client2.NodeType,
+		client2.PublicDomainType,
 	}
 )
 

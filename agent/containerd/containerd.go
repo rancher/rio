@@ -55,7 +55,6 @@ func Run(ctx context.Context) {
 			time.Sleep(1 * time.Second)
 			continue
 		}
-		defer conn.Close()
 
 		c := runtimeapi.NewRuntimeServiceClient(conn)
 
@@ -63,9 +62,10 @@ func Run(ctx context.Context) {
 			Version: "0.1.0",
 		})
 		if err == nil {
+			conn.Close()
 			break
 		}
-
+		conn.Close()
 		logrus.Infof("Waiting for containerd startup")
 		time.Sleep(1 * time.Second)
 	}

@@ -18,6 +18,7 @@ type Interface interface {
 	controller.Starter
 
 	ListenConfigsGetter
+	PublicDomainsGetter
 }
 
 type Client struct {
@@ -26,6 +27,7 @@ type Client struct {
 	starters   []controller.Starter
 
 	listenConfigControllers map[string]ListenConfigController
+	publicDomainControllers map[string]PublicDomainController
 }
 
 func Factory(ctx context.Context, config rest.Config) (context.Context, controller.Starter, error) {
@@ -55,6 +57,7 @@ func NewForConfig(config rest.Config) (Interface, error) {
 		restClient: restClient,
 
 		listenConfigControllers: map[string]ListenConfigController{},
+		publicDomainControllers: map[string]PublicDomainController{},
 	}, nil
 }
 
@@ -77,6 +80,19 @@ type ListenConfigsGetter interface {
 func (c *Client) ListenConfigs(namespace string) ListenConfigInterface {
 	objectClient := objectclient.NewObjectClient(namespace, c.restClient, &ListenConfigResource, ListenConfigGroupVersionKind, listenConfigFactory{})
 	return &listenConfigClient{
+		ns:           namespace,
+		client:       c,
+		objectClient: objectClient,
+	}
+}
+
+type PublicDomainsGetter interface {
+	PublicDomains(namespace string) PublicDomainInterface
+}
+
+func (c *Client) PublicDomains(namespace string) PublicDomainInterface {
+	objectClient := objectclient.NewObjectClient(namespace, c.restClient, &PublicDomainResource, PublicDomainGroupVersionKind, publicDomainFactory{})
+	return &publicDomainClient{
 		ns:           namespace,
 		client:       c,
 		objectClient: objectClient,

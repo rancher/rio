@@ -2,12 +2,14 @@ package istio
 
 import (
 	"fmt"
+	"hash/adler32"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	google_protobuf "github.com/gogo/protobuf/types"
+	service2 "github.com/rancher/rio/api/service"
 	"github.com/rancher/rio/pkg/deploy/stack/input"
 	"github.com/rancher/rio/pkg/deploy/stack/output"
 	"github.com/rancher/rio/pkg/deploy/stack/populate/containerlist"
@@ -21,7 +23,8 @@ import (
 )
 
 const (
-	privateGw = "mesh"
+	privateGw              = "mesh"
+	PublicDomainAnnotation = "rio.cattle.io/publicDomain"
 )
 
 func virtualservices(stack *input.Stack) ([]*output.IstioObject, error) {
@@ -44,28 +47,52 @@ func virtualservices(stack *input.Stack) ([]*output.IstioObject, error) {
 	return result, nil
 }
 
-func coalescePort(port, targetPort int64) uint32 {
-	if port <= 0 {
-		return uint32(targetPort)
-	}
-	return uint32(port)
-}
-
-func vsRoutes(publicPorts map[uint32]bool, service *v1beta1.Service, dests []dest) ([]*v1alpha3.HTTPRoute, bool) {
+func vsRoutes(publicPorts map[string]bool, service *v1beta1.Service, dests []dest) ([]*v1alpha3.HTTPRoute, bool) {
 	external := false
 	var result []*v1alpha3.HTTPRoute
+
+	// add https challenge match
+	pb := &v1beta1.PortBinding{
+		Port:       80,
+		TargetPort: 8089,
+		Protocol:   "http",
+	}
+	for _, publicDomain := range strings.Split(service.Annotations[PublicDomainAnnotation], ",") {
+		if publicDomain == "" {
+			continue
+		}
+		ds := []dest{
+			{
+				host:   fmt.Sprintf("%s.rio-system.svc.cluster.local", fmt.Sprintf("cm-acme-http-solver-%d", adler32.Checksum([]byte(publicDomain)))),
+				subset: "latest",
+				weight: 100,
+			},
+		}
+		_, route := newRoute(GetPublicGateway(), true, pb, ds, false)
+		route.Match[0].Uri = &v1alpha3.StringMatch{
+			MatchType: &v1alpha3.StringMatch_Prefix{
+				Prefix: "/.well-known/acme-challenge/",
+			},
+		}
+		route.Match[0].Authority = &v1alpha3.StringMatch{
+			MatchType: &v1alpha3.StringMatch_Prefix{
+				Prefix: publicDomain,
+			},
+		}
+		result = append(result, route)
+	}
 
 	containerlist.ForService(service)
 	for _, con := range containerlist.ForService(service) {
 		for _, exposed := range con.ExposedPorts {
-			_, route := newRoute(getPublicGateway(), false, &exposed.PortBinding, dests)
+			_, route := newRoute(GetPublicGateway(), false, &exposed.PortBinding, dests, true)
 			if route != nil {
 				result = append(result, route)
 			}
 		}
 
 		for _, binding := range con.PortBindings {
-			publicPort, route := newRoute(getPublicGateway(), true, &binding, dests)
+			publicPort, route := newRoute(GetPublicGateway(), true, &binding, dests, true)
 			if route != nil {
 				external = true
 				publicPorts[publicPort] = true
@@ -77,9 +104,9 @@ func vsRoutes(publicPorts map[uint32]bool, service *v1beta1.Service, dests []des
 	return result, external
 }
 
-func newRoute(externalGW string, published bool, portBinding *v1beta1.PortBinding, dests []dest) (uint32, *v1alpha3.HTTPRoute) {
-	if portBinding.Protocol != "http" {
-		return 0, nil
+func newRoute(externalGW string, published bool, portBinding *v1beta1.PortBinding, dests []dest, appendHttps bool) (string, *v1alpha3.HTTPRoute) {
+	if portBinding.Protocol != "http" && portBinding.Protocol != "https" {
+		return "", nil
 	}
 
 	gw := []string{privateGw}
@@ -87,18 +114,23 @@ func newRoute(externalGW string, published bool, portBinding *v1beta1.PortBindin
 		gw = append(gw, externalGW)
 	}
 
-	sourcePort := coalescePort(portBinding.Port, portBinding.TargetPort)
-	if sourcePort <= 0 {
-		return 0, nil
-	}
-
-	route := &v1alpha3.HTTPRoute{
-		Match: []*v1alpha3.HTTPMatchRequest{
-			{
-				Port:     sourcePort,
-				Gateways: gw,
-			},
+	httpPort, _ := strconv.ParseUint(settings.DefaultHTTPOpenPort.Get(), 10, 64)
+	httpsPort, _ := strconv.ParseUint(settings.DefaultHTTPSOpenPort.Get(), 10, 64)
+	matches := []*v1alpha3.HTTPMatchRequest{
+		{
+			Port:     uint32(httpPort),
+			Gateways: gw,
 		},
+	}
+	if appendHttps {
+		matches = append(matches,
+			&v1alpha3.HTTPMatchRequest{
+				Port:     uint32(httpsPort),
+				Gateways: gw,
+			})
+	}
+	route := &v1alpha3.HTTPRoute{
+		Match: matches,
 	}
 
 	for _, dest := range dests {
@@ -116,7 +148,11 @@ func newRoute(externalGW string, published bool, portBinding *v1beta1.PortBindin
 		})
 	}
 
-	return sourcePort, route
+	sourcePort := httpPort
+	if portBinding.Protocol == "https" {
+		sourcePort = httpsPort
+	}
+	return fmt.Sprintf("%v/%s", sourcePort, portBinding.Protocol), route
 }
 
 type dest struct {
@@ -191,7 +227,7 @@ func vsFromService(stack *input.Stack, name string, service *output.ServiceSet) 
 }
 
 func vsFromSpec(stack *input.Stack, name, namespace string, service *v1beta1.Service, dests ...dest) *output.IstioObject {
-	publicPorts := map[uint32]bool{}
+	publicPorts := map[string]bool{}
 
 	routes, external := vsRoutes(publicPorts, service, dests)
 	if len(routes) == 0 {
@@ -200,27 +236,31 @@ func vsFromSpec(stack *input.Stack, name, namespace string, service *v1beta1.Ser
 
 	vs := newVirtualService(stack, service)
 	spec := &v1alpha3.VirtualService{
-		Hosts:    appendStringWithPort(nil, name, publicPorts),
+		Hosts:    []string{name},
 		Gateways: []string{privateGw},
 		Http:     routes,
 	}
 	vs.Spec = spec
 
 	if external && len(publicPorts) > 0 {
-		externalGW := getPublicGateway()
-		externalHost := getExternalDomain(name, namespace)
+		externalGW := GetPublicGateway()
+		externalHost := getExternalDomain(name, namespace, stack.Space)
 		spec.Gateways = append(spec.Gateways, externalGW)
-		spec.Hosts = appendStringWithPort(spec.Hosts, externalHost, publicPorts)
+		spec.Hosts = append(spec.Hosts, externalHost)
 
 		var portList []string
 		for p := range publicPorts {
-			portList = append(portList, strconv.FormatUint(uint64(p), 10))
+			portList = append(portList, p)
 		}
 		sort.Slice(portList, func(i, j int) bool {
 			return portList[i] < portList[j]
 		})
 
 		vs.Annotations["rio.cattle.io/ports"] = strings.Join(portList, ",")
+	}
+
+	if service.Annotations[PublicDomainAnnotation] != "" {
+		spec.Hosts = append(spec.Hosts, strings.Split(service.Annotations[PublicDomainAnnotation], ",")...)
 	}
 
 	return vs
@@ -232,8 +272,8 @@ func vsFromRoutesets(stack *input.Stack, routesets []*v1beta1.RouteSet) []*outpu
 		ns := namespace.StackNamespace(stack.Stack.Namespace, stack.Stack.Name)
 		vs := newVirtualServiceFromRouteSet(stack, routeset.Name, ns)
 		spec := &v1alpha3.VirtualService{
-			Gateways: []string{privateGw, getPublicGateway()},
-			Hosts:    []string{getExternalDomain(routeset.Name, stack.Stack.Name)},
+			Gateways: []string{privateGw, GetPublicGateway()},
+			Hosts:    []string{getExternalDomain(routeset.Name, stack.Stack.Name, stack.Space)},
 		}
 		// populate http routing
 		for _, routeSpec := range routeset.Spec.Routes {
@@ -311,7 +351,7 @@ func vsFromRoutesets(stack *input.Stack, routesets []*v1beta1.RouteSet) []*outpu
 
 			if routeSpec.Mirror != nil {
 				httpRoute.Mirror = &v1alpha3.Destination{
-					Host:   getExternalDomain(routeSpec.Mirror.Service, routeSpec.Mirror.Stack),
+					Host:   getExternalDomain(routeSpec.Mirror.Service, routeSpec.Mirror.Stack, stack.Space),
 					Subset: routeSpec.Mirror.Revision,
 					Port: &v1alpha3.PortSelector{
 						Port: &v1alpha3.PortSelector_Number{
@@ -399,25 +439,12 @@ func getRegexpMatch(match v1beta1.StringMatch) *v1alpha3.StringMatch_Regex {
 	}
 }
 
-func appendStringWithPort(base []string, host string, ports map[uint32]bool) []string {
-	for port := range ports {
-		if port == 80 || port == 443 {
-			base = append(base, host)
-		} else {
-			base = append(base, fmt.Sprintf("%s:%d", host, port))
-		}
-	}
-
-	return base
-}
-
-func getPublicGateway() string {
+func GetPublicGateway() string {
 	return fmt.Sprintf("%s.%s.svc.cluster.local", settings.IstioGateway, settings.RioSystemNamespace)
 }
 
-func getExternalDomain(name, namespace string) string {
-	return fmt.Sprintf("%s.%s.%s", name,
-		strings.SplitN(namespace, "-", 2)[0], settings.ClusterDomain.Get())
+func getExternalDomain(name, namespace, space string) string {
+	return fmt.Sprintf("%s.%s", service2.HashIfNeed(name, strings.SplitN(namespace, "-", 2)[0], space), settings.ClusterDomain.Get())
 }
 
 func newVirtualService(stack *input.Stack, service *v1beta1.Service) *output.IstioObject {

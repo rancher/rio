@@ -11,6 +11,7 @@ import (
 	"github.com/rancher/norman/types/slice"
 	"github.com/rancher/rancher/pkg/controllers/user/approuter"
 	"github.com/rancher/rancher/pkg/ticker"
+	"github.com/rancher/rio/pkg/certs"
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
@@ -27,21 +28,22 @@ const (
 )
 
 var (
-	refreshInterval = 5 * time.Minute
-	addressTypes    = []v1.NodeAddressType{
+	addressTypes = []v1.NodeAddressType{
 		v1.NodeExternalIP,
 		v1.NodeInternalIP,
 	}
 )
 
 type Controller struct {
-	ctx             context.Context
-	init            sync.Once
-	rdnsClient      *approuter.Client
-	endpointsLister v12.EndpointsLister
-	nodeLister      v12.NodeLister
-	stackController v1beta1.StackController
-	previousIPs     []string
+	ctx              context.Context
+	init             sync.Once
+	rdnsClient       *approuter.Client
+	endpointsLister  v12.EndpointsLister
+	nodeLister       v12.NodeLister
+	stackController  v1beta1.StackController
+	secretController v12.SecretInterface
+	secretLister     v12.SecretLister
+	previousIPs      []string
 }
 
 func Register(ctx context.Context, rContext *types.Context) error {
@@ -51,18 +53,20 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	rdnsClient.SetBaseURL(settings.RDNSURL.Get())
 
 	g := &Controller{
-		ctx:             ctx,
-		rdnsClient:      rdnsClient,
-		endpointsLister: rContext.Core.Endpoints(settings.IstioExternalLBNamespace).Controller().Lister(),
-		nodeLister:      rContext.Core.Nodes("").Controller().Lister(),
-		stackController: rContext.Rio.Stacks("").Controller(),
+		ctx:              ctx,
+		rdnsClient:       rdnsClient,
+		endpointsLister:  rContext.Core.Endpoints(settings.IstioExternalLBNamespace).Controller().Lister(),
+		nodeLister:       rContext.Core.Nodes("").Controller().Lister(),
+		stackController:  rContext.Rio.Stacks("").Controller(),
+		secretController: rContext.Core.Secrets(settings.IstioExternalLBNamespace),
+		secretLister:     rContext.Core.Secrets("").Controller().Lister(),
 	}
 
 	changeset.Watch(ctx, "domain-controller",
 		func(namespace, name string, obj runtime.Object) ([]changeset.Key, error) {
 			switch t := obj.(type) {
 			case *v1.Endpoints:
-				if isLB(t) {
+				if isGateway(t) {
 					return []changeset.Key{
 						{
 							Namespace: t.Namespace,
@@ -81,7 +85,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	return nil
 }
 
-func isLB(obj runtime.Object) bool {
+func isGateway(obj runtime.Object) bool {
 	o, err := meta.Accessor(obj)
 	if err != nil {
 		return false
@@ -89,7 +93,7 @@ func isLB(obj runtime.Object) bool {
 	if o == nil || reflect.ValueOf(obj).IsNil() {
 		return false
 	}
-	return o.GetName() == settings.IstioExternalLB && o.GetNamespace() == settings.IstioExternalLBNamespace
+	return o.GetName() == settings.IstioGatewayDeploy && o.GetNamespace() == settings.IstioExternalLBNamespace
 }
 
 func (g *Controller) sync(key string, svc *v1.Service) (runtime.Object, error) {
@@ -101,49 +105,43 @@ func (g *Controller) sync(key string, svc *v1.Service) (runtime.Object, error) {
 		}
 	})
 
-	if !isLB(svc) {
+	if !isGateway(svc) {
 		return nil, nil
 	}
 
 	var ips []string
-	for _, ingress := range svc.Status.LoadBalancer.Ingress {
-		if ingress.Hostname == "localhost" {
-			ips = append(ips, "127.0.0.1")
-		} else if ingress.IP != "" {
-			ips = append(ips, ingress.IP)
+	ep, err := g.endpointsLister.Get(svc.Namespace, svc.Name)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return nil, nil
+		} else {
+			return nil, err
 		}
 	}
 
-	if len(ips) == 0 {
-		ep, err := g.endpointsLister.Get(svc.Namespace, svc.Name)
-		if err != nil {
-			if errors.IsNotFound(err) {
-				return nil, nil
-			} else {
+	for _, subset := range ep.Subsets {
+		for _, addr := range subset.Addresses {
+			if addr.NodeName == nil {
+				continue
+			}
+
+			node, err := g.nodeLister.Get("", *addr.NodeName)
+			if err != nil {
 				return nil, err
 			}
-		}
 
-		for _, subset := range ep.Subsets {
-			for _, addr := range subset.Addresses {
-				if addr.NodeName == nil {
-					continue
-				}
-
-				node, err := g.nodeLister.Get("", *addr.NodeName)
-				if err != nil {
-					return nil, err
-				}
-
-				nodeIP := getNodeIP(node)
-				if nodeIP != "" {
-					ips = append(ips, nodeIP)
-				}
+			nodeIP := getNodeIP(node)
+			if nodeIP != "" {
+				ips = append(ips, nodeIP)
 			}
 		}
 	}
 
-	return nil, g.updateDomain(ips)
+	if err := g.updateDomain(ips); err != nil {
+		return nil, err
+	}
+
+	return nil, certs.ApplyWildcardCertificates()
 }
 
 func (g *Controller) start() error {
@@ -167,8 +165,10 @@ func (g *Controller) start() error {
 }
 
 func (g *Controller) renew() error {
-	_, err := g.rdnsClient.RenewDomain()
-	return err
+	if _, err := g.rdnsClient.RenewDomain(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (g *Controller) setDomain(fqdn string) error {
