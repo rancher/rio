@@ -24,36 +24,33 @@ import (
 
 func Register(ctx context.Context, rContext *types.Context) {
 	dc := &domainController{
-		namespacesLister: rContext.Core.Namespaces("").Controller().Lister(),
-		stackLister:      rContext.Rio.Stacks("").Controller().Lister(),
-		serviceLister:    rContext.Rio.Services("").Controller().Lister(),
-		services:         rContext.Rio,
-		domains:          rContext.Global.PublicDomains(settings.RioSystemNamespace),
-		domainLister:     rContext.Global.PublicDomains(settings.RioSystemNamespace).Controller().Lister(),
-		routesetLister:   rContext.Rio.RouteSets("").Controller().Lister(),
-		routesets:        rContext.Rio,
-		secrets:          rContext.Core.Secrets(settings.RioSystemNamespace),
+		namespacesLister: rContext.Core.Namespace.Cache(),
+		stackLister:      rContext.Rio.Stack.Cache(),
+		serviceLister:    rContext.Rio.Service.Cache(),
+		services:         rContext.Rio.Service,
+		routesetLister:   rContext.Rio.RouteSet.Cache(),
+		routesets:        rContext.Rio.RouteSet,
+		secrets:          rContext.Core.Secret,
 	}
-	rContext.Global.PublicDomains(settings.RioSystemNamespace).AddLifecycle(ctx, "public-domain-controller", dc)
+	rContext.Global.PublicDomain.OnChange(ctx, "public-domain-controller", dc.Updated)
+	rContext.Global.PublicDomain.OnRemove(ctx, "public-domain-controller", dc.Remove)
 }
 
 type domainController struct {
-	namespacesLister corev1.NamespaceLister
-	stackLister      v1beta1.StackLister
-	serviceLister    v1beta1.ServiceLister
-	services         v1beta1.ServicesGetter
-	domains          spacev1beta1.PublicDomainInterface
-	domainLister     spacev1beta1.PublicDomainLister
-	routesetLister   v1beta1.RouteSetLister
-	routesets        v1beta1.RouteSetsGetter
-	secrets          corev1.SecretInterface
-}
-
-func (d *domainController) Create(domain *spacev1beta1.PublicDomain) (runtime.Object, error) {
-	return domain, nil
+	namespacesLister corev1.NamespaceClientCache
+	stackLister      v1beta1.StackClientCache
+	serviceLister    v1beta1.ServiceClientCache
+	services         v1beta1.ServiceClient
+	routesetLister   v1beta1.RouteSetClientCache
+	routesets        v1beta1.RouteSetClient
+	secrets          corev1.SecretClient
 }
 
 func (d *domainController) Updated(domain *spacev1beta1.PublicDomain) (runtime.Object, error) {
+	if domain.Namespace != settings.RioSystemNamespace {
+		return domain, nil
+	}
+
 	if err := apply.Apply([]runtime.Object{certs.AcmeIssuer()}, nil, "", "acme-cluster-issuer"); err != nil {
 		return domain, err
 	}
@@ -74,8 +71,9 @@ func (d *domainController) Updated(domain *spacev1beta1.PublicDomain) (runtime.O
 		if hasKey(service.Annotations[istio.PublicDomainAnnotation], domain.Spec.DomainName) {
 			return domain, nil
 		}
+		service = service.DeepCopy()
 		service.Annotations[istio.PublicDomainAnnotation] = addKey(service.Annotations[istio.PublicDomainAnnotation], domain.Spec.DomainName)
-		_, err = d.services.Services(ns).Update(service)
+		_, err = d.services.Update(service)
 		return domain, err
 	}
 	routeset, err := d.routesetLister.Get(ns, domain.Spec.TargetName)
@@ -88,12 +86,17 @@ func (d *domainController) Updated(domain *spacev1beta1.PublicDomain) (runtime.O
 	if hasKey(routeset.Annotations[istio.PublicDomainAnnotation], domain.Spec.DomainName) {
 		return domain, nil
 	}
+	routeset = routeset.DeepCopy()
 	routeset.Annotations[istio.PublicDomainAnnotation] = addKey(routeset.Annotations[istio.PublicDomainAnnotation], domain.Spec.DomainName)
-	_, err = d.routesets.RouteSets(ns).Update(routeset)
+	_, err = d.routesets.Update(routeset)
 	return domain, err
 }
 
 func (d *domainController) Remove(domain *spacev1beta1.PublicDomain) (runtime.Object, error) {
+	if domain.Namespace != settings.RioSystemNamespace {
+		return domain, nil
+	}
+
 	ns, err := d.getNamespace(domain)
 	if err != nil {
 		return domain, err
@@ -103,11 +106,12 @@ func (d *domainController) Remove(domain *spacev1beta1.PublicDomain) (runtime.Ob
 		return domain, err
 	}
 	if err == nil {
+		service = service.DeepCopy()
 		service.Annotations[istio.PublicDomainAnnotation] = rmKey(service.Annotations[istio.PublicDomainAnnotation], domain.Spec.DomainName)
 		if service.Annotations[istio.PublicDomainAnnotation] == "" {
 			delete(service.Annotations, istio.PublicDomainAnnotation)
 		}
-		_, err = d.services.Services(ns).Update(service)
+		_, err = d.services.Update(service)
 		return domain, err
 	}
 	routeset, err := d.routesetLister.Get(ns, domain.Spec.TargetName)
@@ -117,14 +121,15 @@ func (d *domainController) Remove(domain *spacev1beta1.PublicDomain) (runtime.Ob
 	if errors.IsNotFound(err) {
 		return domain, nil
 	}
+	routeset = routeset.DeepCopy()
 	routeset.Annotations[istio.PublicDomainAnnotation] = rmKey(routeset.Annotations[istio.PublicDomainAnnotation], domain.Spec.DomainName)
 	if routeset.Annotations[istio.PublicDomainAnnotation] == "" {
 		delete(routeset.Annotations, istio.PublicDomainAnnotation)
 	}
-	if _, err := d.routesets.RouteSets(ns).Update(routeset); err != nil {
+	if _, err := d.routesets.Update(routeset); err != nil {
 		return domain, err
 	}
-	if err := d.secrets.Delete(fmt.Sprintf("%s-tls-certs", domain.Name), &metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
+	if err := d.secrets.Delete(settings.RioSystemNamespace, fmt.Sprintf("%s-tls-certs", domain.Name), &metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
 		return domain, err
 	}
 	return domain, nil
@@ -162,7 +167,7 @@ func addKey(values, key string) string {
 }
 
 func rmKey(values, key string) string {
-	r := []string{}
+	var r []string
 	for _, v := range strings.Split(values, ",") {
 		if key != v {
 			r = append(r, v)

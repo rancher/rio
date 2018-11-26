@@ -35,22 +35,22 @@ var (
 
 func Register(ctx context.Context, rContext *types.Context) error {
 	s := &subServiceController{
-		serviceLister: rContext.Rio.Services("").Controller().Lister(),
-		services:      rContext.Rio.Services(""),
+		serviceLister: rContext.Rio.Service.Cache(),
+		services:      rContext.Rio.Service,
 	}
 
-	rContext.Apps.Deployments("").AddHandler(ctx, "sub-service-controller", s.deploymentChanged)
-	rContext.Apps.DaemonSets("").AddHandler(ctx, "sub-service-controller", s.daemonSetChanged)
-	rContext.Apps.StatefulSets("").AddHandler(ctx, "sub-service-controller", s.statefulSetChanged)
+	rContext.Apps.Deployment.OnChange(ctx, "sub-service-controller", s.deploymentChanged)
+	rContext.Apps.DaemonSet.OnChange(ctx, "sub-service-controller", s.daemonSetChanged)
+	rContext.Apps.StatefulSet.OnChange(ctx, "sub-service-controller", s.statefulSetChanged)
 
-	rContext.Rio.Services("").AddHandler(ctx, "service-controller", s.promote)
+	rContext.Rio.Service.OnChange(ctx, "service-controller", s.promote)
 
 	return nil
 }
 
 type subServiceController struct {
-	services      v1beta1.ServiceInterface
-	serviceLister v1beta1.ServiceLister
+	services      v1beta1.ServiceClient
+	serviceLister v1beta1.ServiceClientCache
 }
 
 func (s *subServiceController) getService(ns string, labels map[string]string) *v1beta1.Service {
@@ -88,11 +88,7 @@ func (s *subServiceController) updateStatus(service, newService *v1beta1.Service
 	return nil
 }
 
-func (s *subServiceController) daemonSetChanged(key string, dep *appsv1.DaemonSet) (runtime.Object, error) {
-	if dep == nil {
-		return nil, nil
-	}
-
+func (s *subServiceController) daemonSetChanged(dep *appsv1.DaemonSet) (runtime.Object, error) {
 	service := s.getService(dep.Namespace, dep.Labels)
 	if service == nil {
 		return nil, nil
@@ -104,11 +100,7 @@ func (s *subServiceController) daemonSetChanged(key string, dep *appsv1.DaemonSe
 	return nil, s.updateStatus(service, newService, dep, dep.Generation, dep.Status.ObservedGeneration)
 }
 
-func (s *subServiceController) statefulSetChanged(key string, dep *appsv1.StatefulSet) (runtime.Object, error) {
-	if dep == nil {
-		return nil, nil
-	}
-
+func (s *subServiceController) statefulSetChanged(dep *appsv1.StatefulSet) (runtime.Object, error) {
 	service := s.getService(dep.Namespace, dep.Labels)
 	if service == nil {
 		return nil, nil
@@ -120,11 +112,7 @@ func (s *subServiceController) statefulSetChanged(key string, dep *appsv1.Statef
 	return nil, s.updateStatus(service, newService, dep, dep.Generation, dep.Status.ObservedGeneration)
 }
 
-func (s *subServiceController) deploymentChanged(key string, dep *appsv1.Deployment) (runtime.Object, error) {
-	if dep == nil {
-		return nil, nil
-	}
-
+func (s *subServiceController) deploymentChanged(dep *appsv1.Deployment) (runtime.Object, error) {
 	service := s.getService(dep.Namespace, dep.Labels)
 	if service == nil {
 		return nil, nil
@@ -136,11 +124,7 @@ func (s *subServiceController) deploymentChanged(key string, dep *appsv1.Deploym
 	return nil, s.updateStatus(service, newService, dep, dep.Generation, dep.Status.ObservedGeneration)
 }
 
-func (s *subServiceController) promote(key string, service *v1beta1.Service) (runtime.Object, error) {
-	if service == nil {
-		return nil, nil
-	}
-
+func (s *subServiceController) promote(service *v1beta1.Service) (runtime.Object, error) {
 	if service.Spec.Revision.ParentService == "" || !service.Spec.Revision.Promote {
 		return nil, nil
 	}
@@ -177,7 +161,7 @@ func (s *subServiceController) promote(key string, service *v1beta1.Service) (ru
 			if _, err := s.services.Update(newRev); err != nil {
 				return nil, errors.Wrapf(err, "failed to promote %s/%s/", rev.Namespace, rev.Name)
 			}
-			return nil, s.services.DeleteNamespaced(service.Namespace, service.Name, nil)
+			return nil, s.services.Delete(service.Namespace, service.Name, nil)
 		}
 	}
 

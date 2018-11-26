@@ -17,7 +17,6 @@ import (
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -29,38 +28,34 @@ const (
 
 func Register(ctx context.Context, rContext *types.Context) {
 	c := secretController{
-		services:            rContext.Rio.Services(""),
-		secretsLister:       rContext.Core.Secrets("").Controller().Lister(),
-		secrets:             rContext.Core.Secrets(""),
-		secretRefresher:     rContext.Core.Secrets(settings.RioSystemNamespace),
-		secretsController:   rContext.Core.Secrets(settings.RioSystemNamespace).Controller(),
-		vssController:       rContext.Networking.VirtualServices("").Controller(),
-		publicDomains:       rContext.Global.PublicDomains(settings.RioSystemNamespace),
-		publicDomainsLister: rContext.Global.PublicDomains(settings.RioSystemNamespace).Controller().Lister(),
+		services:            rContext.Rio.Service,
+		secretsLister:       rContext.Core.Secret.Cache(),
+		secrets:             rContext.Core.Secret,
+		vssController:       rContext.Networking.VirtualService,
+		publicDomains:       rContext.Global.PublicDomain,
+		publicDomainsLister: rContext.Global.PublicDomain.Cache(),
 	}
-	rContext.Core.Secrets(settings.RioSystemNamespace).AddHandler(ctx, "tls-secrets", c.sync)
+	rContext.Core.Secret.Interface().AddHandler(ctx, "tls-secrets", c.sync)
 }
 
 type secretController struct {
-	services            v1beta1.ServiceInterface
-	secretsLister       v1.SecretLister
-	secretRefresher     v1.SecretInterface
-	secrets             v1.SecretInterface
-	secretsController   v1.SecretController
-	vssController       v1alpha3.VirtualServiceController
-	publicDomains       spacev1beta1.PublicDomainInterface
-	publicDomainsLister spacev1beta1.PublicDomainLister
+	services            v1beta1.ServiceClient
+	secretsLister       v1.SecretClientCache
+	secrets             v1.SecretClient
+	vssController       v1alpha3.VirtualServiceClient
+	publicDomains       spacev1beta1.PublicDomainClient
+	publicDomainsLister spacev1beta1.PublicDomainClientCache
 }
 
 func (s *secretController) sync(key string, secret *corev1.Secret) (runtime.Object, error) {
 	if key == fmt.Sprintf("%s/%s", settings.RioSystemNamespace, syncAllSecrets) {
 		return nil, s.syncAllSecrets()
 	}
-	if secret == nil || secret.DeletionTimestamp != nil {
+	if secret == nil || secret.DeletionTimestamp != nil || secret.Namespace != settings.RioSystemNamespace {
 		return nil, nil
 	}
 	if secret.Annotations["certmanager.k8s.io/issuer-name"] == settings.CerManagerIssuerName && len(secret.Data["tls.crt"]) > 0 {
-		s.secretsController.Enqueue(settings.RioSystemNamespace, syncAllSecrets)
+		s.secrets.Enqueue(settings.RioSystemNamespace, syncAllSecrets)
 	}
 	return nil, nil
 }
@@ -90,7 +85,7 @@ func (s *secretController) syncAllSecrets() error {
 	for _, secret := range secrets {
 		if secret.Annotations["certmanager.k8s.io/issuer-name"] == settings.CerManagerIssuerName {
 			if len(secret.Data["tls.crt"]) == 0 {
-				secret, err = s.secretRefresher.Get(secret.Name, metav1.GetOptions{})
+				secret, err = s.secretsLister.Get(settings.RioSystemNamespace, secret.Name)
 				if err != nil {
 					return err
 				}

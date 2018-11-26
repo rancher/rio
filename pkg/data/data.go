@@ -89,7 +89,7 @@ func stackData(name string) string {
 }
 
 func addNameSpace(rContext *types.Context) error {
-	_, err := rContext.Core.Namespaces("").Create(&v1.Namespace{
+	_, err := rContext.Core.Namespace.Create(&v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: settings.RioSystemNamespace,
 			Labels: map[string]string{

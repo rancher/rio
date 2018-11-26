@@ -3,17 +3,17 @@ package istio
 import (
 	"context"
 
+	"github.com/rancher/rio/types/apis/space.cattle.io/v1beta1"
+
 	"github.com/rancher/norman/pkg/changeset"
 	"github.com/rancher/rio/pkg/certs"
 	"github.com/rancher/rio/pkg/deploy/istio"
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
-	"github.com/rancher/rio/types/apis/space.cattle.io/v1beta1"
 	v12 "github.com/rancher/types/apis/core/v1"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -30,21 +30,21 @@ var trigger = []changeset.Key{
 
 func Register(ctx context.Context, rContext *types.Context) {
 	s := &istioDeployController{
-		virtualServiceLister: rContext.Networking.VirtualServices("").Controller().Lister(),
-		serviceLister:        rContext.Core.Services("").Controller().Lister(),
-		namespaceLister:      rContext.Core.Namespaces("").Controller().Lister(),
-		publicdomainLister:   rContext.Global.PublicDomains("").Controller().Lister(),
-		secrets:              rContext.Core.Secrets(settings.IstioExternalLBNamespace),
+		virtualServiceLister: rContext.Networking.VirtualService.Cache(),
+		serviceLister:        rContext.Core.Service.Cache(),
+		namespaceLister:      rContext.Core.Namespace.Cache(),
+		publicdomainLister:   rContext.Global.PublicDomain.Cache(),
+		secrets:              rContext.Core.Secret.Cache(),
 	}
 
-	rContext.Networking.VirtualServices("").AddHandler(ctx, "istio-deploy", s.sync)
+	rContext.Networking.VirtualService.Interface().AddHandler(ctx, "istio-deploy", s.sync)
 	changeset.Watch(ctx, "istio-deploy",
 		resolve,
-		rContext.Networking.VirtualServices("").Controller().Enqueue,
-		rContext.Networking.VirtualServices("").Controller(),
-		rContext.Core.Services("").Controller(),
-		rContext.Core.Namespaces("").Controller())
-	rContext.Networking.VirtualServices("").Controller().Enqueue("", all)
+		rContext.Networking.VirtualService,
+		rContext.Networking.VirtualService,
+		rContext.Core.Service,
+		rContext.Core.Namespace)
+	rContext.Networking.VirtualService.Enqueue("", all)
 }
 
 func resolve(namespace, name string, obj runtime.Object) ([]changeset.Key, error) {
@@ -61,11 +61,11 @@ func resolve(namespace, name string, obj runtime.Object) ([]changeset.Key, error
 }
 
 type istioDeployController struct {
-	virtualServiceLister v1alpha3.VirtualServiceLister
-	serviceLister        v12.ServiceLister
-	namespaceLister      v12.NamespaceLister
-	publicdomainLister   v1beta1.PublicDomainLister
-	secrets              v12.SecretInterface
+	virtualServiceLister v1alpha3.VirtualServiceClientCache
+	serviceLister        v12.ServiceClientCache
+	namespaceLister      v12.NamespaceClientCache
+	publicdomainLister   v1beta1.PublicDomainClientCache
+	secrets              v12.SecretClientCache
 }
 
 func (i *istioDeployController) sync(key string, obj *v1alpha3.VirtualService) (runtime.Object, error) {
@@ -88,7 +88,7 @@ func (i *istioDeployController) sync(key string, obj *v1alpha3.VirtualService) (
 		return nil, err
 	}
 
-	secret, err := i.secrets.Get(certs.TlsSecretName, metav1.GetOptions{})
+	secret, err := i.secrets.Get(settings.RioSystemNamespace, certs.TlsSecretName)
 	if err != nil && !errors.IsNotFound(err) {
 		return nil, err
 	}
