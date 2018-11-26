@@ -88,7 +88,7 @@ func (i *istioDeployController) sync(key string, obj *v1alpha3.VirtualService) (
 		return nil, err
 	}
 
-	secret, err := i.secrets.Get(settings.RioSystemNamespace, certs.TlsSecretName)
+	secret, err := i.secrets.Get(settings.IstioExternalLBNamespace, certs.TlsSecretName)
 	if err != nil && !errors.IsNotFound(err) {
 		return nil, err
 	}
