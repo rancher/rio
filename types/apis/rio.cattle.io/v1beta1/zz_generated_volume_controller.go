@@ -37,6 +37,8 @@ type VolumeList struct {
 
 type VolumeHandlerFunc func(key string, obj *Volume) (runtime.Object, error)
 
+type VolumeChangeHandlerFunc func(obj *Volume) (runtime.Object, error)
+
 type VolumeLister interface {
 	List(namespace string, selector labels.Selector) (ret []*Volume, err error)
 	Get(namespace, name string) (*Volume, error)
@@ -247,4 +249,179 @@ func (s *volumeClient) AddClusterScopedHandler(ctx context.Context, name, cluste
 func (s *volumeClient) AddClusterScopedLifecycle(ctx context.Context, name, clusterName string, lifecycle VolumeLifecycle) {
 	sync := NewVolumeLifecycleAdapter(name+"_"+clusterName, true, s, lifecycle)
 	s.Controller().AddClusterScopedHandler(ctx, name, clusterName, sync)
+}
+
+type VolumeIndexer func(obj *Volume) ([]string, error)
+
+type VolumeClientCache interface {
+	Get(namespace, name string) (*Volume, error)
+	List(namespace string, selector labels.Selector) ([]*Volume, error)
+
+	Index(name string, indexer VolumeIndexer)
+	GetIndexed(name, key string) ([]*Volume, error)
+}
+
+type VolumeClient interface {
+	Create(*Volume) (*Volume, error)
+	Get(namespace, name string, opts metav1.GetOptions) (*Volume, error)
+	Update(*Volume) (*Volume, error)
+	Delete(namespace, name string, options *metav1.DeleteOptions) error
+	List(namespace string, opts metav1.ListOptions) (*VolumeList, error)
+	Watch(opts metav1.ListOptions) (watch.Interface, error)
+
+	Cache() VolumeClientCache
+
+	OnCreate(ctx context.Context, name string, sync VolumeChangeHandlerFunc)
+	OnChange(ctx context.Context, name string, sync VolumeChangeHandlerFunc)
+	OnRemove(ctx context.Context, name string, sync VolumeChangeHandlerFunc)
+	Enqueue(namespace, name string)
+
+	Generic() controller.GenericController
+	Interface() VolumeInterface
+}
+
+type volumeClientCache struct {
+	client *volumeClient2
+}
+
+type volumeClient2 struct {
+	iface      VolumeInterface
+	controller VolumeController
+}
+
+func (n *volumeClient2) Interface() VolumeInterface {
+	return n.iface
+}
+
+func (n *volumeClient2) Generic() controller.GenericController {
+	return n.iface.Controller().Generic()
+}
+
+func (n *volumeClient2) Enqueue(namespace, name string) {
+	n.iface.Controller().Enqueue(namespace, name)
+}
+
+func (n *volumeClient2) Create(obj *Volume) (*Volume, error) {
+	return n.iface.Create(obj)
+}
+
+func (n *volumeClient2) Get(namespace, name string, opts metav1.GetOptions) (*Volume, error) {
+	return n.iface.GetNamespaced(namespace, name, opts)
+}
+
+func (n *volumeClient2) Update(obj *Volume) (*Volume, error) {
+	return n.iface.Update(obj)
+}
+
+func (n *volumeClient2) Delete(namespace, name string, options *metav1.DeleteOptions) error {
+	return n.iface.DeleteNamespaced(namespace, name, options)
+}
+
+func (n *volumeClient2) List(namespace string, opts metav1.ListOptions) (*VolumeList, error) {
+	return n.iface.List(opts)
+}
+
+func (n *volumeClient2) Watch(opts metav1.ListOptions) (watch.Interface, error) {
+	return n.iface.Watch(opts)
+}
+
+func (n *volumeClientCache) Get(namespace, name string) (*Volume, error) {
+	return n.client.controller.Lister().Get(namespace, name)
+}
+
+func (n *volumeClientCache) List(namespace string, selector labels.Selector) ([]*Volume, error) {
+	return n.client.controller.Lister().List(namespace, selector)
+}
+
+func (n *volumeClient2) Cache() VolumeClientCache {
+	n.loadController()
+	return &volumeClientCache{
+		client: n,
+	}
+}
+
+func (n *volumeClient2) OnCreate(ctx context.Context, name string, sync VolumeChangeHandlerFunc) {
+	n.loadController()
+	n.iface.AddLifecycle(ctx, name+"-create", &volumeLifecycleDelegate{create: sync})
+}
+
+func (n *volumeClient2) OnChange(ctx context.Context, name string, sync VolumeChangeHandlerFunc) {
+	n.loadController()
+	n.iface.AddLifecycle(ctx, name+"-change", &volumeLifecycleDelegate{update: sync})
+}
+
+func (n *volumeClient2) OnRemove(ctx context.Context, name string, sync VolumeChangeHandlerFunc) {
+	n.loadController()
+	n.iface.AddLifecycle(ctx, name, &volumeLifecycleDelegate{remove: sync})
+}
+
+func (n *volumeClientCache) Index(name string, indexer VolumeIndexer) {
+	err := n.client.controller.Informer().GetIndexer().AddIndexers(map[string]cache.IndexFunc{
+		name: func(obj interface{}) ([]string, error) {
+			if v, ok := obj.(*Volume); ok {
+				return indexer(v)
+			}
+			return nil, nil
+		},
+	})
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (n *volumeClientCache) GetIndexed(name, key string) ([]*Volume, error) {
+	var result []*Volume
+	objs, err := n.client.controller.Informer().GetIndexer().ByIndex(name, key)
+	if err != nil {
+		return nil, err
+	}
+	for _, obj := range objs {
+		if v, ok := obj.(*Volume); ok {
+			result = append(result, v)
+		}
+	}
+
+	return result, nil
+}
+
+func (n *volumeClient2) loadController() {
+	if n.controller == nil {
+		n.controller = n.iface.Controller()
+	}
+}
+
+type volumeLifecycleDelegate struct {
+	create VolumeChangeHandlerFunc
+	update VolumeChangeHandlerFunc
+	remove VolumeChangeHandlerFunc
+}
+
+func (n *volumeLifecycleDelegate) HasCreate() bool {
+	return n.create != nil
+}
+
+func (n *volumeLifecycleDelegate) Create(obj *Volume) (runtime.Object, error) {
+	if n.create == nil {
+		return obj, nil
+	}
+	return n.create(obj)
+}
+
+func (n *volumeLifecycleDelegate) HasFinalize() bool {
+	return n.remove != nil
+}
+
+func (n *volumeLifecycleDelegate) Remove(obj *Volume) (runtime.Object, error) {
+	if n.remove == nil {
+		return obj, nil
+	}
+	return n.remove(obj)
+}
+
+func (n *volumeLifecycleDelegate) Updated(obj *Volume) (runtime.Object, error) {
+	if n.update == nil {
+		return obj, nil
+	}
+	return n.update(obj)
 }

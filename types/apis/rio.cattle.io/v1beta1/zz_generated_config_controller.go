@@ -37,6 +37,8 @@ type ConfigList struct {
 
 type ConfigHandlerFunc func(key string, obj *Config) (runtime.Object, error)
 
+type ConfigChangeHandlerFunc func(obj *Config) (runtime.Object, error)
+
 type ConfigLister interface {
 	List(namespace string, selector labels.Selector) (ret []*Config, err error)
 	Get(namespace, name string) (*Config, error)
@@ -247,4 +249,179 @@ func (s *configClient) AddClusterScopedHandler(ctx context.Context, name, cluste
 func (s *configClient) AddClusterScopedLifecycle(ctx context.Context, name, clusterName string, lifecycle ConfigLifecycle) {
 	sync := NewConfigLifecycleAdapter(name+"_"+clusterName, true, s, lifecycle)
 	s.Controller().AddClusterScopedHandler(ctx, name, clusterName, sync)
+}
+
+type ConfigIndexer func(obj *Config) ([]string, error)
+
+type ConfigClientCache interface {
+	Get(namespace, name string) (*Config, error)
+	List(namespace string, selector labels.Selector) ([]*Config, error)
+
+	Index(name string, indexer ConfigIndexer)
+	GetIndexed(name, key string) ([]*Config, error)
+}
+
+type ConfigClient interface {
+	Create(*Config) (*Config, error)
+	Get(namespace, name string, opts metav1.GetOptions) (*Config, error)
+	Update(*Config) (*Config, error)
+	Delete(namespace, name string, options *metav1.DeleteOptions) error
+	List(namespace string, opts metav1.ListOptions) (*ConfigList, error)
+	Watch(opts metav1.ListOptions) (watch.Interface, error)
+
+	Cache() ConfigClientCache
+
+	OnCreate(ctx context.Context, name string, sync ConfigChangeHandlerFunc)
+	OnChange(ctx context.Context, name string, sync ConfigChangeHandlerFunc)
+	OnRemove(ctx context.Context, name string, sync ConfigChangeHandlerFunc)
+	Enqueue(namespace, name string)
+
+	Generic() controller.GenericController
+	Interface() ConfigInterface
+}
+
+type configClientCache struct {
+	client *configClient2
+}
+
+type configClient2 struct {
+	iface      ConfigInterface
+	controller ConfigController
+}
+
+func (n *configClient2) Interface() ConfigInterface {
+	return n.iface
+}
+
+func (n *configClient2) Generic() controller.GenericController {
+	return n.iface.Controller().Generic()
+}
+
+func (n *configClient2) Enqueue(namespace, name string) {
+	n.iface.Controller().Enqueue(namespace, name)
+}
+
+func (n *configClient2) Create(obj *Config) (*Config, error) {
+	return n.iface.Create(obj)
+}
+
+func (n *configClient2) Get(namespace, name string, opts metav1.GetOptions) (*Config, error) {
+	return n.iface.GetNamespaced(namespace, name, opts)
+}
+
+func (n *configClient2) Update(obj *Config) (*Config, error) {
+	return n.iface.Update(obj)
+}
+
+func (n *configClient2) Delete(namespace, name string, options *metav1.DeleteOptions) error {
+	return n.iface.DeleteNamespaced(namespace, name, options)
+}
+
+func (n *configClient2) List(namespace string, opts metav1.ListOptions) (*ConfigList, error) {
+	return n.iface.List(opts)
+}
+
+func (n *configClient2) Watch(opts metav1.ListOptions) (watch.Interface, error) {
+	return n.iface.Watch(opts)
+}
+
+func (n *configClientCache) Get(namespace, name string) (*Config, error) {
+	return n.client.controller.Lister().Get(namespace, name)
+}
+
+func (n *configClientCache) List(namespace string, selector labels.Selector) ([]*Config, error) {
+	return n.client.controller.Lister().List(namespace, selector)
+}
+
+func (n *configClient2) Cache() ConfigClientCache {
+	n.loadController()
+	return &configClientCache{
+		client: n,
+	}
+}
+
+func (n *configClient2) OnCreate(ctx context.Context, name string, sync ConfigChangeHandlerFunc) {
+	n.loadController()
+	n.iface.AddLifecycle(ctx, name+"-create", &configLifecycleDelegate{create: sync})
+}
+
+func (n *configClient2) OnChange(ctx context.Context, name string, sync ConfigChangeHandlerFunc) {
+	n.loadController()
+	n.iface.AddLifecycle(ctx, name+"-change", &configLifecycleDelegate{update: sync})
+}
+
+func (n *configClient2) OnRemove(ctx context.Context, name string, sync ConfigChangeHandlerFunc) {
+	n.loadController()
+	n.iface.AddLifecycle(ctx, name, &configLifecycleDelegate{remove: sync})
+}
+
+func (n *configClientCache) Index(name string, indexer ConfigIndexer) {
+	err := n.client.controller.Informer().GetIndexer().AddIndexers(map[string]cache.IndexFunc{
+		name: func(obj interface{}) ([]string, error) {
+			if v, ok := obj.(*Config); ok {
+				return indexer(v)
+			}
+			return nil, nil
+		},
+	})
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (n *configClientCache) GetIndexed(name, key string) ([]*Config, error) {
+	var result []*Config
+	objs, err := n.client.controller.Informer().GetIndexer().ByIndex(name, key)
+	if err != nil {
+		return nil, err
+	}
+	for _, obj := range objs {
+		if v, ok := obj.(*Config); ok {
+			result = append(result, v)
+		}
+	}
+
+	return result, nil
+}
+
+func (n *configClient2) loadController() {
+	if n.controller == nil {
+		n.controller = n.iface.Controller()
+	}
+}
+
+type configLifecycleDelegate struct {
+	create ConfigChangeHandlerFunc
+	update ConfigChangeHandlerFunc
+	remove ConfigChangeHandlerFunc
+}
+
+func (n *configLifecycleDelegate) HasCreate() bool {
+	return n.create != nil
+}
+
+func (n *configLifecycleDelegate) Create(obj *Config) (runtime.Object, error) {
+	if n.create == nil {
+		return obj, nil
+	}
+	return n.create(obj)
+}
+
+func (n *configLifecycleDelegate) HasFinalize() bool {
+	return n.remove != nil
+}
+
+func (n *configLifecycleDelegate) Remove(obj *Config) (runtime.Object, error) {
+	if n.remove == nil {
+		return obj, nil
+	}
+	return n.remove(obj)
+}
+
+func (n *configLifecycleDelegate) Updated(obj *Config) (runtime.Object, error) {
+	if n.update == nil {
+		return obj, nil
+	}
+	return n.update(obj)
 }

@@ -15,6 +15,16 @@ type virtualServiceLifecycleAdapter struct {
 	lifecycle VirtualServiceLifecycle
 }
 
+func (w *virtualServiceLifecycleAdapter) HasCreate() bool {
+	o, ok := w.lifecycle.(lifecycle.ObjectLifecycleCondition)
+	return !ok || o.HasCreate()
+}
+
+func (w *virtualServiceLifecycleAdapter) HasFinalize() bool {
+	o, ok := w.lifecycle.(lifecycle.ObjectLifecycleCondition)
+	return !ok || o.HasFinalize()
+}
+
 func (w *virtualServiceLifecycleAdapter) Create(obj runtime.Object) (runtime.Object, error) {
 	o, err := w.lifecycle.Create(obj.(*VirtualService))
 	if o == nil {

@@ -15,6 +15,16 @@ type destinationRuleLifecycleAdapter struct {
 	lifecycle DestinationRuleLifecycle
 }
 
+func (w *destinationRuleLifecycleAdapter) HasCreate() bool {
+	o, ok := w.lifecycle.(lifecycle.ObjectLifecycleCondition)
+	return !ok || o.HasCreate()
+}
+
+func (w *destinationRuleLifecycleAdapter) HasFinalize() bool {
+	o, ok := w.lifecycle.(lifecycle.ObjectLifecycleCondition)
+	return !ok || o.HasFinalize()
+}
+
 func (w *destinationRuleLifecycleAdapter) Create(obj runtime.Object) (runtime.Object, error) {
 	o, err := w.lifecycle.Create(obj.(*DestinationRule))
 	if o == nil {

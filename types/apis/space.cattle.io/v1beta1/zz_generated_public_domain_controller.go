@@ -37,6 +37,8 @@ type PublicDomainList struct {
 
 type PublicDomainHandlerFunc func(key string, obj *PublicDomain) (runtime.Object, error)
 
+type PublicDomainChangeHandlerFunc func(obj *PublicDomain) (runtime.Object, error)
+
 type PublicDomainLister interface {
 	List(namespace string, selector labels.Selector) (ret []*PublicDomain, err error)
 	Get(namespace, name string) (*PublicDomain, error)
@@ -247,4 +249,179 @@ func (s *publicDomainClient) AddClusterScopedHandler(ctx context.Context, name, 
 func (s *publicDomainClient) AddClusterScopedLifecycle(ctx context.Context, name, clusterName string, lifecycle PublicDomainLifecycle) {
 	sync := NewPublicDomainLifecycleAdapter(name+"_"+clusterName, true, s, lifecycle)
 	s.Controller().AddClusterScopedHandler(ctx, name, clusterName, sync)
+}
+
+type PublicDomainIndexer func(obj *PublicDomain) ([]string, error)
+
+type PublicDomainClientCache interface {
+	Get(namespace, name string) (*PublicDomain, error)
+	List(namespace string, selector labels.Selector) ([]*PublicDomain, error)
+
+	Index(name string, indexer PublicDomainIndexer)
+	GetIndexed(name, key string) ([]*PublicDomain, error)
+}
+
+type PublicDomainClient interface {
+	Create(*PublicDomain) (*PublicDomain, error)
+	Get(namespace, name string, opts metav1.GetOptions) (*PublicDomain, error)
+	Update(*PublicDomain) (*PublicDomain, error)
+	Delete(namespace, name string, options *metav1.DeleteOptions) error
+	List(namespace string, opts metav1.ListOptions) (*PublicDomainList, error)
+	Watch(opts metav1.ListOptions) (watch.Interface, error)
+
+	Cache() PublicDomainClientCache
+
+	OnCreate(ctx context.Context, name string, sync PublicDomainChangeHandlerFunc)
+	OnChange(ctx context.Context, name string, sync PublicDomainChangeHandlerFunc)
+	OnRemove(ctx context.Context, name string, sync PublicDomainChangeHandlerFunc)
+	Enqueue(namespace, name string)
+
+	Generic() controller.GenericController
+	Interface() PublicDomainInterface
+}
+
+type publicDomainClientCache struct {
+	client *publicDomainClient2
+}
+
+type publicDomainClient2 struct {
+	iface      PublicDomainInterface
+	controller PublicDomainController
+}
+
+func (n *publicDomainClient2) Interface() PublicDomainInterface {
+	return n.iface
+}
+
+func (n *publicDomainClient2) Generic() controller.GenericController {
+	return n.iface.Controller().Generic()
+}
+
+func (n *publicDomainClient2) Enqueue(namespace, name string) {
+	n.iface.Controller().Enqueue(namespace, name)
+}
+
+func (n *publicDomainClient2) Create(obj *PublicDomain) (*PublicDomain, error) {
+	return n.iface.Create(obj)
+}
+
+func (n *publicDomainClient2) Get(namespace, name string, opts metav1.GetOptions) (*PublicDomain, error) {
+	return n.iface.GetNamespaced(namespace, name, opts)
+}
+
+func (n *publicDomainClient2) Update(obj *PublicDomain) (*PublicDomain, error) {
+	return n.iface.Update(obj)
+}
+
+func (n *publicDomainClient2) Delete(namespace, name string, options *metav1.DeleteOptions) error {
+	return n.iface.DeleteNamespaced(namespace, name, options)
+}
+
+func (n *publicDomainClient2) List(namespace string, opts metav1.ListOptions) (*PublicDomainList, error) {
+	return n.iface.List(opts)
+}
+
+func (n *publicDomainClient2) Watch(opts metav1.ListOptions) (watch.Interface, error) {
+	return n.iface.Watch(opts)
+}
+
+func (n *publicDomainClientCache) Get(namespace, name string) (*PublicDomain, error) {
+	return n.client.controller.Lister().Get(namespace, name)
+}
+
+func (n *publicDomainClientCache) List(namespace string, selector labels.Selector) ([]*PublicDomain, error) {
+	return n.client.controller.Lister().List(namespace, selector)
+}
+
+func (n *publicDomainClient2) Cache() PublicDomainClientCache {
+	n.loadController()
+	return &publicDomainClientCache{
+		client: n,
+	}
+}
+
+func (n *publicDomainClient2) OnCreate(ctx context.Context, name string, sync PublicDomainChangeHandlerFunc) {
+	n.loadController()
+	n.iface.AddLifecycle(ctx, name+"-create", &publicDomainLifecycleDelegate{create: sync})
+}
+
+func (n *publicDomainClient2) OnChange(ctx context.Context, name string, sync PublicDomainChangeHandlerFunc) {
+	n.loadController()
+	n.iface.AddLifecycle(ctx, name+"-change", &publicDomainLifecycleDelegate{update: sync})
+}
+
+func (n *publicDomainClient2) OnRemove(ctx context.Context, name string, sync PublicDomainChangeHandlerFunc) {
+	n.loadController()
+	n.iface.AddLifecycle(ctx, name, &publicDomainLifecycleDelegate{remove: sync})
+}
+
+func (n *publicDomainClientCache) Index(name string, indexer PublicDomainIndexer) {
+	err := n.client.controller.Informer().GetIndexer().AddIndexers(map[string]cache.IndexFunc{
+		name: func(obj interface{}) ([]string, error) {
+			if v, ok := obj.(*PublicDomain); ok {
+				return indexer(v)
+			}
+			return nil, nil
+		},
+	})
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (n *publicDomainClientCache) GetIndexed(name, key string) ([]*PublicDomain, error) {
+	var result []*PublicDomain
+	objs, err := n.client.controller.Informer().GetIndexer().ByIndex(name, key)
+	if err != nil {
+		return nil, err
+	}
+	for _, obj := range objs {
+		if v, ok := obj.(*PublicDomain); ok {
+			result = append(result, v)
+		}
+	}
+
+	return result, nil
+}
+
+func (n *publicDomainClient2) loadController() {
+	if n.controller == nil {
+		n.controller = n.iface.Controller()
+	}
+}
+
+type publicDomainLifecycleDelegate struct {
+	create PublicDomainChangeHandlerFunc
+	update PublicDomainChangeHandlerFunc
+	remove PublicDomainChangeHandlerFunc
+}
+
+func (n *publicDomainLifecycleDelegate) HasCreate() bool {
+	return n.create != nil
+}
+
+func (n *publicDomainLifecycleDelegate) Create(obj *PublicDomain) (runtime.Object, error) {
+	if n.create == nil {
+		return obj, nil
+	}
+	return n.create(obj)
+}
+
+func (n *publicDomainLifecycleDelegate) HasFinalize() bool {
+	return n.remove != nil
+}
+
+func (n *publicDomainLifecycleDelegate) Remove(obj *PublicDomain) (runtime.Object, error) {
+	if n.remove == nil {
+		return obj, nil
+	}
+	return n.remove(obj)
+}
+
+func (n *publicDomainLifecycleDelegate) Updated(obj *PublicDomain) (runtime.Object, error) {
+	if n.update == nil {
+		return obj, nil
+	}
+	return n.update(obj)
 }
