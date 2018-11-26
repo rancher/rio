@@ -12,17 +12,14 @@ import (
 
 func Register(ctx context.Context, rContext *types.Context) {
 	s := &stackController{
-		namespaceLister: rContext.Core.Namespaces("").Controller().Lister(),
+		namespaceLister: rContext.Core.Namespace.Cache(),
 	}
-	rContext.Rio.Stacks("").AddLifecycle(ctx, "stackdef-controller", s)
+	rContext.Rio.Stack.OnRemove(ctx, "stackdef-controller", s.Remove)
+	rContext.Rio.Stack.OnChange(ctx, "stackdef-controller", s.Updated)
 }
 
 type stackController struct {
-	namespaceLister v1.NamespaceLister
-}
-
-func (s *stackController) Create(obj *v1beta1.Stack) (runtime.Object, error) {
-	return obj, nil
+	namespaceLister v1.NamespaceClientCache
 }
 
 func (s *stackController) Remove(obj *v1beta1.Stack) (runtime.Object, error) {

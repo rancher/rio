@@ -19,6 +19,16 @@ type {{.schema.ID}}LifecycleAdapter struct {
 	lifecycle {{.schema.CodeName}}Lifecycle
 }
 
+func (w *{{.schema.ID}}LifecycleAdapter) HasCreate() bool {
+	o, ok := w.lifecycle.(lifecycle.ObjectLifecycleCondition)
+	return !ok || o.HasCreate()
+}
+
+func (w *{{.schema.ID}}LifecycleAdapter) HasFinalize() bool {
+	o, ok := w.lifecycle.(lifecycle.ObjectLifecycleCondition)
+	return !ok || o.HasFinalize()
+}
+
 func (w *{{.schema.ID}}LifecycleAdapter) Create(obj runtime.Object) (runtime.Object, error) {
 	o, err := w.lifecycle.Create(obj.(*{{.prefix}}{{.schema.CodeName}}))
 	if o == nil {

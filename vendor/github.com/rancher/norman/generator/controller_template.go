@@ -43,6 +43,8 @@ type {{.schema.CodeName}}List struct {
 
 type {{.schema.CodeName}}HandlerFunc func(key string, obj *{{.prefix}}{{.schema.CodeName}}) (runtime.Object, error)
 
+type {{.schema.CodeName}}ChangeHandlerFunc func(obj *{{.prefix}}{{.schema.CodeName}}) (runtime.Object, error)
+
 type {{.schema.CodeName}}Lister interface {
 	List(namespace string, selector labels.Selector) (ret []*{{.prefix}}{{.schema.CodeName}}, err error)
 	Get(namespace, name string) (*{{.prefix}}{{.schema.CodeName}}, error)
@@ -254,5 +256,180 @@ func (s *{{.schema.ID}}Client) AddClusterScopedHandler(ctx context.Context, name
 func (s *{{.schema.ID}}Client) AddClusterScopedLifecycle(ctx context.Context, name, clusterName string, lifecycle {{.schema.CodeName}}Lifecycle) {
 	sync := New{{.schema.CodeName}}LifecycleAdapter(name+"_"+clusterName, true, s, lifecycle)
 	s.Controller().AddClusterScopedHandler(ctx, name, clusterName, sync)
+}
+
+type {{.schema.CodeName}}Indexer func(obj *{{.prefix}}{{.schema.CodeName}}) ([]string, error)
+
+type {{.schema.CodeName}}ClientCache interface {
+	Get(namespace, name string) (*{{.prefix}}{{.schema.CodeName}}, error)
+	List(namespace string, selector labels.Selector) ([]*{{.prefix}}{{.schema.CodeName}}, error)
+
+	Index(name string, indexer {{.schema.CodeName}}Indexer)
+	GetIndexed(name, key string) ([]*{{.prefix}}{{.schema.CodeName}}, error)
+}
+
+type {{.schema.CodeName}}Client interface {
+	Create(*{{.prefix}}{{.schema.CodeName}}) (*{{.prefix}}{{.schema.CodeName}}, error)
+	Get(namespace, name string, opts metav1.GetOptions) (*{{.prefix}}{{.schema.CodeName}}, error)
+	Update(*{{.prefix}}{{.schema.CodeName}}) (*{{.prefix}}{{.schema.CodeName}}, error)
+	Delete(namespace, name string, options *metav1.DeleteOptions) error
+	List(namespace string, opts metav1.ListOptions) (*{{.schema.CodeName}}List, error)
+	Watch(opts metav1.ListOptions) (watch.Interface, error)
+
+	Cache() {{.schema.CodeName}}ClientCache
+
+	OnCreate(ctx context.Context, name string, sync {{.schema.CodeName}}ChangeHandlerFunc)
+	OnChange(ctx context.Context, name string, sync {{.schema.CodeName}}ChangeHandlerFunc)
+	OnRemove(ctx context.Context, name string, sync {{.schema.CodeName}}ChangeHandlerFunc)
+    Enqueue(namespace, name string)
+
+	Generic() controller.GenericController
+	Interface() {{.schema.CodeName}}Interface
+}
+
+type {{.schema.ID}}ClientCache struct {
+	client *{{.schema.ID}}Client2
+}
+
+type {{.schema.ID}}Client2 struct {
+	iface      {{.schema.CodeName}}Interface
+	controller {{.schema.CodeName}}Controller
+}
+
+func (n *{{.schema.ID}}Client2) Interface() {{.schema.CodeName}}Interface {
+	return n.iface
+}
+
+func (n *{{.schema.ID}}Client2) Generic() controller.GenericController {
+	return n.iface.Controller().Generic()
+}
+
+func (n *{{.schema.ID}}Client2) Enqueue(namespace, name string) {
+	n.iface.Controller().Enqueue(namespace, name)
+}
+
+func (n *{{.schema.ID}}Client2) Create(obj *{{.prefix}}{{.schema.CodeName}}) (*{{.prefix}}{{.schema.CodeName}}, error) {
+	return n.iface.Create(obj)
+}
+
+func (n *{{.schema.ID}}Client2) Get(namespace, name string, opts metav1.GetOptions) (*{{.prefix}}{{.schema.CodeName}}, error) {
+	return n.iface.GetNamespaced(namespace, name, opts)
+}
+
+func (n *{{.schema.ID}}Client2) Update(obj *{{.prefix}}{{.schema.CodeName}}) (*{{.prefix}}{{.schema.CodeName}}, error) {
+	return n.iface.Update(obj)
+}
+
+func (n *{{.schema.ID}}Client2) Delete(namespace, name string, options *metav1.DeleteOptions) error {
+	return n.iface.DeleteNamespaced(namespace, name, options)
+}
+
+func (n *{{.schema.ID}}Client2) List(namespace string, opts metav1.ListOptions) (*{{.schema.CodeName}}List, error) {
+	return n.iface.List(opts)
+}
+
+func (n *{{.schema.ID}}Client2) Watch(opts metav1.ListOptions) (watch.Interface, error) {
+	return n.iface.Watch(opts)
+}
+
+func (n *{{.schema.ID}}ClientCache) Get(namespace, name string) (*{{.prefix}}{{.schema.CodeName}}, error) {
+	return n.client.controller.Lister().Get(namespace, name)
+}
+
+func (n *{{.schema.ID}}ClientCache) List(namespace string, selector labels.Selector) ([]*{{.prefix}}{{.schema.CodeName}}, error) {
+	return n.client.controller.Lister().List(namespace, selector)
+}
+
+func (n *{{.schema.ID}}Client2) Cache() {{.schema.CodeName}}ClientCache {
+	n.loadController()
+	return &{{.schema.ID}}ClientCache{
+		client: n,
+	}
+}
+
+func (n *{{.schema.ID}}Client2) OnCreate(ctx context.Context, name string, sync {{.schema.CodeName}}ChangeHandlerFunc) {
+	n.loadController()
+	n.iface.AddLifecycle(ctx, name+"-create", &{{.schema.ID}}LifecycleDelegate{create: sync})
+}
+
+func (n *{{.schema.ID}}Client2) OnChange(ctx context.Context, name string, sync {{.schema.CodeName}}ChangeHandlerFunc) {
+	n.loadController()
+	n.iface.AddLifecycle(ctx, name+"-change", &{{.schema.ID}}LifecycleDelegate{update: sync})
+}
+
+func (n *{{.schema.ID}}Client2) OnRemove(ctx context.Context, name string, sync {{.schema.CodeName}}ChangeHandlerFunc) {
+	n.loadController()
+	n.iface.AddLifecycle(ctx, name, &{{.schema.ID}}LifecycleDelegate{remove: sync})
+}
+
+func (n *{{.schema.ID}}ClientCache) Index(name string, indexer {{.schema.CodeName}}Indexer) {
+	err := n.client.controller.Informer().GetIndexer().AddIndexers(map[string]cache.IndexFunc{
+		name: func(obj interface{}) ([]string, error) {
+			if v, ok := obj.(*{{.prefix}}{{.schema.CodeName}}); ok {
+				return indexer(v)
+			}
+			return nil, nil
+		},
+	})
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (n *{{.schema.ID}}ClientCache) GetIndexed(name, key string) ([]*{{.prefix}}{{.schema.CodeName}}, error) {
+	var result []*{{.prefix}}{{.schema.CodeName}}
+	objs, err := n.client.controller.Informer().GetIndexer().ByIndex(name, key)
+	if err != nil {
+		return nil, err
+	}
+	for _, obj := range objs {
+		if v, ok := obj.(*{{.prefix}}{{.schema.CodeName}}); ok {
+			result = append(result, v)
+		}
+	}
+
+	return result, nil
+}
+
+func (n *{{.schema.ID}}Client2) loadController() {
+	if n.controller == nil {
+		n.controller = n.iface.Controller()
+	}
+}
+
+type {{.schema.ID}}LifecycleDelegate struct {
+	create {{.schema.CodeName}}ChangeHandlerFunc
+	update {{.schema.CodeName}}ChangeHandlerFunc
+	remove {{.schema.CodeName}}ChangeHandlerFunc
+}
+
+func (n *{{.schema.ID}}LifecycleDelegate) HasCreate() bool {
+	return n.create != nil
+}
+
+func (n *{{.schema.ID}}LifecycleDelegate) Create(obj *{{.prefix}}{{.schema.CodeName}}) (runtime.Object, error) {
+	if n.create == nil {
+		return obj, nil
+	}
+	return n.create(obj)
+}
+
+func (n *{{.schema.ID}}LifecycleDelegate) HasFinalize() bool {
+	return n.remove != nil
+}
+
+func (n *{{.schema.ID}}LifecycleDelegate) Remove(obj *{{.prefix}}{{.schema.CodeName}}) (runtime.Object, error) {
+	if n.remove == nil {
+		return obj, nil
+	}
+	return n.remove(obj)
+}
+
+func (n *{{.schema.ID}}LifecycleDelegate) Updated(obj *{{.prefix}}{{.schema.CodeName}}) (runtime.Object, error) {
+	if n.update == nil {
+		return obj, nil
+	}
+	return n.update(obj)
 }
 `

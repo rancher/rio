@@ -35,31 +35,29 @@ var (
 )
 
 type Controller struct {
-	ctx              context.Context
-	init             sync.Once
-	rdnsClient       *approuter.Client
-	endpointsLister  v12.EndpointsLister
-	nodeLister       v12.NodeLister
-	stackController  v1beta1.StackController
-	secretController v12.SecretInterface
-	secretLister     v12.SecretLister
-	previousIPs      []string
+	ctx             context.Context
+	init            sync.Once
+	rdnsClient      *approuter.Client
+	endpointsLister v12.EndpointsClientCache
+	nodeLister      v12.NodeClientCache
+	stackLister     v1beta1.StackClientCache
+	stackController changeset.Enqueuer
+	previousIPs     []string
 }
 
 func Register(ctx context.Context, rContext *types.Context) error {
-	rdnsClient := approuter.NewClient(rContext.Core.Secrets(""),
-		rContext.Core.Secrets("").Controller().Lister(),
+	rdnsClient := approuter.NewClient(rContext.Core.Secret.Interface(),
+		rContext.Core.Secret.Interface().Controller().Lister(),
 		settings.RioSystemNamespace)
 	rdnsClient.SetBaseURL(settings.RDNSURL.Get())
 
 	g := &Controller{
-		ctx:              ctx,
-		rdnsClient:       rdnsClient,
-		endpointsLister:  rContext.Core.Endpoints(settings.IstioExternalLBNamespace).Controller().Lister(),
-		nodeLister:       rContext.Core.Nodes("").Controller().Lister(),
-		stackController:  rContext.Rio.Stacks("").Controller(),
-		secretController: rContext.Core.Secrets(settings.IstioExternalLBNamespace),
-		secretLister:     rContext.Core.Secrets("").Controller().Lister(),
+		ctx:             ctx,
+		rdnsClient:      rdnsClient,
+		endpointsLister: rContext.Core.Endpoints.Cache(),
+		nodeLister:      rContext.Core.Node.Cache(),
+		stackLister:     rContext.Rio.Stack.Cache(),
+		stackController: rContext.Rio.Stack,
 	}
 
 	changeset.Watch(ctx, "domain-controller",
@@ -77,10 +75,10 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			}
 			return nil, nil
 		},
-		rContext.Core.Services(settings.IstioExternalLBNamespace).Controller().Enqueue,
-		rContext.Core.Endpoints(settings.IstioExternalLBNamespace).Controller())
+		rContext.Core.Service,
+		rContext.Core.Endpoints)
 
-	rContext.Core.Services(settings.IstioExternalLBNamespace).Controller().AddHandler(ctx, "domain-controller", g.sync)
+	rContext.Core.Service.OnChange(ctx, "domain-controller", g.sync)
 
 	return nil
 }
@@ -96,7 +94,11 @@ func isGateway(obj runtime.Object) bool {
 	return o.GetName() == settings.IstioGatewayDeploy && o.GetNamespace() == settings.IstioExternalLBNamespace
 }
 
-func (g *Controller) sync(key string, svc *v1.Service) (runtime.Object, error) {
+func (g *Controller) sync(svc *v1.Service) (runtime.Object, error) {
+	if svc.Namespace != settings.IstioExternalLBNamespace {
+		return nil, nil
+	}
+
 	// We do init here because we need caches synced before we can initialize
 	g.init.Do(func() {
 		err := g.start()
@@ -178,7 +180,7 @@ func (g *Controller) setDomain(fqdn string) error {
 
 	settings.ClusterDomain.Set(fqdn)
 
-	stacks, err := g.stackController.Lister().List("", labels.Everything())
+	stacks, err := g.stackLister.List("", labels.Everything())
 	if err != nil {
 		return err
 	}

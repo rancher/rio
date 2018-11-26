@@ -37,6 +37,8 @@ type DestinationRuleList struct {
 
 type DestinationRuleHandlerFunc func(key string, obj *DestinationRule) (runtime.Object, error)
 
+type DestinationRuleChangeHandlerFunc func(obj *DestinationRule) (runtime.Object, error)
+
 type DestinationRuleLister interface {
 	List(namespace string, selector labels.Selector) (ret []*DestinationRule, err error)
 	Get(namespace, name string) (*DestinationRule, error)
@@ -247,4 +249,179 @@ func (s *destinationRuleClient) AddClusterScopedHandler(ctx context.Context, nam
 func (s *destinationRuleClient) AddClusterScopedLifecycle(ctx context.Context, name, clusterName string, lifecycle DestinationRuleLifecycle) {
 	sync := NewDestinationRuleLifecycleAdapter(name+"_"+clusterName, true, s, lifecycle)
 	s.Controller().AddClusterScopedHandler(ctx, name, clusterName, sync)
+}
+
+type DestinationRuleIndexer func(obj *DestinationRule) ([]string, error)
+
+type DestinationRuleClientCache interface {
+	Get(namespace, name string) (*DestinationRule, error)
+	List(namespace string, selector labels.Selector) ([]*DestinationRule, error)
+
+	Index(name string, indexer DestinationRuleIndexer)
+	GetIndexed(name, key string) ([]*DestinationRule, error)
+}
+
+type DestinationRuleClient interface {
+	Create(*DestinationRule) (*DestinationRule, error)
+	Get(namespace, name string, opts metav1.GetOptions) (*DestinationRule, error)
+	Update(*DestinationRule) (*DestinationRule, error)
+	Delete(namespace, name string, options *metav1.DeleteOptions) error
+	List(namespace string, opts metav1.ListOptions) (*DestinationRuleList, error)
+	Watch(opts metav1.ListOptions) (watch.Interface, error)
+
+	Cache() DestinationRuleClientCache
+
+	OnCreate(ctx context.Context, name string, sync DestinationRuleChangeHandlerFunc)
+	OnChange(ctx context.Context, name string, sync DestinationRuleChangeHandlerFunc)
+	OnRemove(ctx context.Context, name string, sync DestinationRuleChangeHandlerFunc)
+	Enqueue(namespace, name string)
+
+	Generic() controller.GenericController
+	Interface() DestinationRuleInterface
+}
+
+type destinationRuleClientCache struct {
+	client *destinationRuleClient2
+}
+
+type destinationRuleClient2 struct {
+	iface      DestinationRuleInterface
+	controller DestinationRuleController
+}
+
+func (n *destinationRuleClient2) Interface() DestinationRuleInterface {
+	return n.iface
+}
+
+func (n *destinationRuleClient2) Generic() controller.GenericController {
+	return n.iface.Controller().Generic()
+}
+
+func (n *destinationRuleClient2) Enqueue(namespace, name string) {
+	n.iface.Controller().Enqueue(namespace, name)
+}
+
+func (n *destinationRuleClient2) Create(obj *DestinationRule) (*DestinationRule, error) {
+	return n.iface.Create(obj)
+}
+
+func (n *destinationRuleClient2) Get(namespace, name string, opts metav1.GetOptions) (*DestinationRule, error) {
+	return n.iface.GetNamespaced(namespace, name, opts)
+}
+
+func (n *destinationRuleClient2) Update(obj *DestinationRule) (*DestinationRule, error) {
+	return n.iface.Update(obj)
+}
+
+func (n *destinationRuleClient2) Delete(namespace, name string, options *metav1.DeleteOptions) error {
+	return n.iface.DeleteNamespaced(namespace, name, options)
+}
+
+func (n *destinationRuleClient2) List(namespace string, opts metav1.ListOptions) (*DestinationRuleList, error) {
+	return n.iface.List(opts)
+}
+
+func (n *destinationRuleClient2) Watch(opts metav1.ListOptions) (watch.Interface, error) {
+	return n.iface.Watch(opts)
+}
+
+func (n *destinationRuleClientCache) Get(namespace, name string) (*DestinationRule, error) {
+	return n.client.controller.Lister().Get(namespace, name)
+}
+
+func (n *destinationRuleClientCache) List(namespace string, selector labels.Selector) ([]*DestinationRule, error) {
+	return n.client.controller.Lister().List(namespace, selector)
+}
+
+func (n *destinationRuleClient2) Cache() DestinationRuleClientCache {
+	n.loadController()
+	return &destinationRuleClientCache{
+		client: n,
+	}
+}
+
+func (n *destinationRuleClient2) OnCreate(ctx context.Context, name string, sync DestinationRuleChangeHandlerFunc) {
+	n.loadController()
+	n.iface.AddLifecycle(ctx, name+"-create", &destinationRuleLifecycleDelegate{create: sync})
+}
+
+func (n *destinationRuleClient2) OnChange(ctx context.Context, name string, sync DestinationRuleChangeHandlerFunc) {
+	n.loadController()
+	n.iface.AddLifecycle(ctx, name+"-change", &destinationRuleLifecycleDelegate{update: sync})
+}
+
+func (n *destinationRuleClient2) OnRemove(ctx context.Context, name string, sync DestinationRuleChangeHandlerFunc) {
+	n.loadController()
+	n.iface.AddLifecycle(ctx, name, &destinationRuleLifecycleDelegate{remove: sync})
+}
+
+func (n *destinationRuleClientCache) Index(name string, indexer DestinationRuleIndexer) {
+	err := n.client.controller.Informer().GetIndexer().AddIndexers(map[string]cache.IndexFunc{
+		name: func(obj interface{}) ([]string, error) {
+			if v, ok := obj.(*DestinationRule); ok {
+				return indexer(v)
+			}
+			return nil, nil
+		},
+	})
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (n *destinationRuleClientCache) GetIndexed(name, key string) ([]*DestinationRule, error) {
+	var result []*DestinationRule
+	objs, err := n.client.controller.Informer().GetIndexer().ByIndex(name, key)
+	if err != nil {
+		return nil, err
+	}
+	for _, obj := range objs {
+		if v, ok := obj.(*DestinationRule); ok {
+			result = append(result, v)
+		}
+	}
+
+	return result, nil
+}
+
+func (n *destinationRuleClient2) loadController() {
+	if n.controller == nil {
+		n.controller = n.iface.Controller()
+	}
+}
+
+type destinationRuleLifecycleDelegate struct {
+	create DestinationRuleChangeHandlerFunc
+	update DestinationRuleChangeHandlerFunc
+	remove DestinationRuleChangeHandlerFunc
+}
+
+func (n *destinationRuleLifecycleDelegate) HasCreate() bool {
+	return n.create != nil
+}
+
+func (n *destinationRuleLifecycleDelegate) Create(obj *DestinationRule) (runtime.Object, error) {
+	if n.create == nil {
+		return obj, nil
+	}
+	return n.create(obj)
+}
+
+func (n *destinationRuleLifecycleDelegate) HasFinalize() bool {
+	return n.remove != nil
+}
+
+func (n *destinationRuleLifecycleDelegate) Remove(obj *DestinationRule) (runtime.Object, error) {
+	if n.remove == nil {
+		return obj, nil
+	}
+	return n.remove(obj)
+}
+
+func (n *destinationRuleLifecycleDelegate) Updated(obj *DestinationRule) (runtime.Object, error) {
+	if n.update == nil {
+		return obj, nil
+	}
+	return n.update(obj)
 }

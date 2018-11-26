@@ -17,7 +17,9 @@ type ControllerProvider interface {
 	Generic() controller.GenericController
 }
 
-type Enqueuer func(namespace, name string)
+type Enqueuer interface {
+	Enqueue(namespace, name string)
+}
 
 type Resolver func(namespace, name string, obj runtime.Object) ([]Key, error)
 
@@ -63,7 +65,7 @@ func watch(ctx context.Context, name string, enq Enqueuer, resolve Resolver, gen
 
 		for _, key := range keys {
 			if key.Name != "" {
-				enq(key.Namespace, key.Name)
+				enq.Enqueue(key.Namespace, key.Name)
 			}
 		}
 

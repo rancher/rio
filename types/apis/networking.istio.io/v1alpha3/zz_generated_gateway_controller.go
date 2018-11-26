@@ -37,6 +37,8 @@ type GatewayList struct {
 
 type GatewayHandlerFunc func(key string, obj *Gateway) (runtime.Object, error)
 
+type GatewayChangeHandlerFunc func(obj *Gateway) (runtime.Object, error)
+
 type GatewayLister interface {
 	List(namespace string, selector labels.Selector) (ret []*Gateway, err error)
 	Get(namespace, name string) (*Gateway, error)
@@ -247,4 +249,179 @@ func (s *gatewayClient) AddClusterScopedHandler(ctx context.Context, name, clust
 func (s *gatewayClient) AddClusterScopedLifecycle(ctx context.Context, name, clusterName string, lifecycle GatewayLifecycle) {
 	sync := NewGatewayLifecycleAdapter(name+"_"+clusterName, true, s, lifecycle)
 	s.Controller().AddClusterScopedHandler(ctx, name, clusterName, sync)
+}
+
+type GatewayIndexer func(obj *Gateway) ([]string, error)
+
+type GatewayClientCache interface {
+	Get(namespace, name string) (*Gateway, error)
+	List(namespace string, selector labels.Selector) ([]*Gateway, error)
+
+	Index(name string, indexer GatewayIndexer)
+	GetIndexed(name, key string) ([]*Gateway, error)
+}
+
+type GatewayClient interface {
+	Create(*Gateway) (*Gateway, error)
+	Get(namespace, name string, opts metav1.GetOptions) (*Gateway, error)
+	Update(*Gateway) (*Gateway, error)
+	Delete(namespace, name string, options *metav1.DeleteOptions) error
+	List(namespace string, opts metav1.ListOptions) (*GatewayList, error)
+	Watch(opts metav1.ListOptions) (watch.Interface, error)
+
+	Cache() GatewayClientCache
+
+	OnCreate(ctx context.Context, name string, sync GatewayChangeHandlerFunc)
+	OnChange(ctx context.Context, name string, sync GatewayChangeHandlerFunc)
+	OnRemove(ctx context.Context, name string, sync GatewayChangeHandlerFunc)
+	Enqueue(namespace, name string)
+
+	Generic() controller.GenericController
+	Interface() GatewayInterface
+}
+
+type gatewayClientCache struct {
+	client *gatewayClient2
+}
+
+type gatewayClient2 struct {
+	iface      GatewayInterface
+	controller GatewayController
+}
+
+func (n *gatewayClient2) Interface() GatewayInterface {
+	return n.iface
+}
+
+func (n *gatewayClient2) Generic() controller.GenericController {
+	return n.iface.Controller().Generic()
+}
+
+func (n *gatewayClient2) Enqueue(namespace, name string) {
+	n.iface.Controller().Enqueue(namespace, name)
+}
+
+func (n *gatewayClient2) Create(obj *Gateway) (*Gateway, error) {
+	return n.iface.Create(obj)
+}
+
+func (n *gatewayClient2) Get(namespace, name string, opts metav1.GetOptions) (*Gateway, error) {
+	return n.iface.GetNamespaced(namespace, name, opts)
+}
+
+func (n *gatewayClient2) Update(obj *Gateway) (*Gateway, error) {
+	return n.iface.Update(obj)
+}
+
+func (n *gatewayClient2) Delete(namespace, name string, options *metav1.DeleteOptions) error {
+	return n.iface.DeleteNamespaced(namespace, name, options)
+}
+
+func (n *gatewayClient2) List(namespace string, opts metav1.ListOptions) (*GatewayList, error) {
+	return n.iface.List(opts)
+}
+
+func (n *gatewayClient2) Watch(opts metav1.ListOptions) (watch.Interface, error) {
+	return n.iface.Watch(opts)
+}
+
+func (n *gatewayClientCache) Get(namespace, name string) (*Gateway, error) {
+	return n.client.controller.Lister().Get(namespace, name)
+}
+
+func (n *gatewayClientCache) List(namespace string, selector labels.Selector) ([]*Gateway, error) {
+	return n.client.controller.Lister().List(namespace, selector)
+}
+
+func (n *gatewayClient2) Cache() GatewayClientCache {
+	n.loadController()
+	return &gatewayClientCache{
+		client: n,
+	}
+}
+
+func (n *gatewayClient2) OnCreate(ctx context.Context, name string, sync GatewayChangeHandlerFunc) {
+	n.loadController()
+	n.iface.AddLifecycle(ctx, name+"-create", &gatewayLifecycleDelegate{create: sync})
+}
+
+func (n *gatewayClient2) OnChange(ctx context.Context, name string, sync GatewayChangeHandlerFunc) {
+	n.loadController()
+	n.iface.AddLifecycle(ctx, name+"-change", &gatewayLifecycleDelegate{update: sync})
+}
+
+func (n *gatewayClient2) OnRemove(ctx context.Context, name string, sync GatewayChangeHandlerFunc) {
+	n.loadController()
+	n.iface.AddLifecycle(ctx, name, &gatewayLifecycleDelegate{remove: sync})
+}
+
+func (n *gatewayClientCache) Index(name string, indexer GatewayIndexer) {
+	err := n.client.controller.Informer().GetIndexer().AddIndexers(map[string]cache.IndexFunc{
+		name: func(obj interface{}) ([]string, error) {
+			if v, ok := obj.(*Gateway); ok {
+				return indexer(v)
+			}
+			return nil, nil
+		},
+	})
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (n *gatewayClientCache) GetIndexed(name, key string) ([]*Gateway, error) {
+	var result []*Gateway
+	objs, err := n.client.controller.Informer().GetIndexer().ByIndex(name, key)
+	if err != nil {
+		return nil, err
+	}
+	for _, obj := range objs {
+		if v, ok := obj.(*Gateway); ok {
+			result = append(result, v)
+		}
+	}
+
+	return result, nil
+}
+
+func (n *gatewayClient2) loadController() {
+	if n.controller == nil {
+		n.controller = n.iface.Controller()
+	}
+}
+
+type gatewayLifecycleDelegate struct {
+	create GatewayChangeHandlerFunc
+	update GatewayChangeHandlerFunc
+	remove GatewayChangeHandlerFunc
+}
+
+func (n *gatewayLifecycleDelegate) HasCreate() bool {
+	return n.create != nil
+}
+
+func (n *gatewayLifecycleDelegate) Create(obj *Gateway) (runtime.Object, error) {
+	if n.create == nil {
+		return obj, nil
+	}
+	return n.create(obj)
+}
+
+func (n *gatewayLifecycleDelegate) HasFinalize() bool {
+	return n.remove != nil
+}
+
+func (n *gatewayLifecycleDelegate) Remove(obj *Gateway) (runtime.Object, error) {
+	if n.remove == nil {
+		return obj, nil
+	}
+	return n.remove(obj)
+}
+
+func (n *gatewayLifecycleDelegate) Updated(obj *Gateway) (runtime.Object, error) {
+	if n.update == nil {
+		return obj, nil
+	}
+	return n.update(obj)
 }

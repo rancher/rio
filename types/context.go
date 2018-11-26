@@ -16,13 +16,13 @@ import (
 type contextKey struct{}
 
 type Context struct {
-	Apps        appsv1.Interface
-	Core        v1.Interface
-	Global      spacev1beta1.Interface
+	Apps        *appsv1.Clients
+	Core        *v1.Clients
+	Global      *spacev1beta1.Clients
 	K8s         kubernetes.Interface
 	LocalConfig *rest.Config
-	Networking  v1alpha3.Interface
-	Rio         v1beta1.Interface
+	Networking  *v1alpha3.Clients
+	Rio         *v1beta1.Clients
 }
 
 func Store(ctx context.Context, c *Context) context.Context {
@@ -36,13 +36,13 @@ func From(ctx context.Context) *Context {
 func NewContext(ctx context.Context) *Context {
 	server := norman.GetServer(ctx)
 	return &Context{
-		Apps:        appsv1.From(ctx),
-		Core:        v1.From(ctx),
-		Global:      spacev1beta1.From(ctx),
+		Apps:        appsv1.ClientsFrom(ctx),
+		Core:        v1.ClientsFrom(ctx),
+		Global:      spacev1beta1.ClientsFrom(ctx),
 		K8s:         server.K8sClient,
 		LocalConfig: server.LocalConfig,
-		Networking:  v1alpha3.From(ctx),
-		Rio:         v1beta1.From(ctx),
+		Networking:  v1alpha3.ClientsFrom(ctx),
+		Rio:         v1beta1.ClientsFrom(ctx),
 	}
 }
 

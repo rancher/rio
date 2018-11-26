@@ -109,7 +109,7 @@ type RKESystemImages struct {
 	//CanalFlannel image
 	CanalFlannel string `yaml:"canal_flannel" json:"canalFlannel,omitempty"`
 	// Weave Node image
-	WeaveNode string `yaml:"wave_node" json:"weaveNode,omitempty"`
+	WeaveNode string `yaml:"weave_node" json:"weaveNode,omitempty"`
 	// Weave CNI image
 	WeaveCNI string `yaml:"weave_cni" json:"weaveCni,omitempty"`
 	// Pod infra container image

@@ -16,9 +16,15 @@ import (
 func Register(ctx context.Context, rContext *types.Context) error {
 	istio.Register(ctx, rContext)
 	stackdef.Register(ctx, rContext)
-	stack.Register(ctx, rContext)
-	service.Register(ctx, rContext)
-	volume.Register(ctx, rContext)
+	if err := stack.Register(ctx, rContext); err != nil {
+		return err
+	}
+	if err := service.Register(ctx, rContext); err != nil {
+		return err
+	}
+	if err := volume.Register(ctx, rContext); err != nil {
+		return err
+	}
 	publicdomain.Register(ctx, rContext)
 	secrets.Register(ctx, rContext)
 	return nil

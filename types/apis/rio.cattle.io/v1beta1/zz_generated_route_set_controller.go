@@ -37,6 +37,8 @@ type RouteSetList struct {
 
 type RouteSetHandlerFunc func(key string, obj *RouteSet) (runtime.Object, error)
 
+type RouteSetChangeHandlerFunc func(obj *RouteSet) (runtime.Object, error)
+
 type RouteSetLister interface {
 	List(namespace string, selector labels.Selector) (ret []*RouteSet, err error)
 	Get(namespace, name string) (*RouteSet, error)
@@ -247,4 +249,179 @@ func (s *routeSetClient) AddClusterScopedHandler(ctx context.Context, name, clus
 func (s *routeSetClient) AddClusterScopedLifecycle(ctx context.Context, name, clusterName string, lifecycle RouteSetLifecycle) {
 	sync := NewRouteSetLifecycleAdapter(name+"_"+clusterName, true, s, lifecycle)
 	s.Controller().AddClusterScopedHandler(ctx, name, clusterName, sync)
+}
+
+type RouteSetIndexer func(obj *RouteSet) ([]string, error)
+
+type RouteSetClientCache interface {
+	Get(namespace, name string) (*RouteSet, error)
+	List(namespace string, selector labels.Selector) ([]*RouteSet, error)
+
+	Index(name string, indexer RouteSetIndexer)
+	GetIndexed(name, key string) ([]*RouteSet, error)
+}
+
+type RouteSetClient interface {
+	Create(*RouteSet) (*RouteSet, error)
+	Get(namespace, name string, opts metav1.GetOptions) (*RouteSet, error)
+	Update(*RouteSet) (*RouteSet, error)
+	Delete(namespace, name string, options *metav1.DeleteOptions) error
+	List(namespace string, opts metav1.ListOptions) (*RouteSetList, error)
+	Watch(opts metav1.ListOptions) (watch.Interface, error)
+
+	Cache() RouteSetClientCache
+
+	OnCreate(ctx context.Context, name string, sync RouteSetChangeHandlerFunc)
+	OnChange(ctx context.Context, name string, sync RouteSetChangeHandlerFunc)
+	OnRemove(ctx context.Context, name string, sync RouteSetChangeHandlerFunc)
+	Enqueue(namespace, name string)
+
+	Generic() controller.GenericController
+	Interface() RouteSetInterface
+}
+
+type routeSetClientCache struct {
+	client *routeSetClient2
+}
+
+type routeSetClient2 struct {
+	iface      RouteSetInterface
+	controller RouteSetController
+}
+
+func (n *routeSetClient2) Interface() RouteSetInterface {
+	return n.iface
+}
+
+func (n *routeSetClient2) Generic() controller.GenericController {
+	return n.iface.Controller().Generic()
+}
+
+func (n *routeSetClient2) Enqueue(namespace, name string) {
+	n.iface.Controller().Enqueue(namespace, name)
+}
+
+func (n *routeSetClient2) Create(obj *RouteSet) (*RouteSet, error) {
+	return n.iface.Create(obj)
+}
+
+func (n *routeSetClient2) Get(namespace, name string, opts metav1.GetOptions) (*RouteSet, error) {
+	return n.iface.GetNamespaced(namespace, name, opts)
+}
+
+func (n *routeSetClient2) Update(obj *RouteSet) (*RouteSet, error) {
+	return n.iface.Update(obj)
+}
+
+func (n *routeSetClient2) Delete(namespace, name string, options *metav1.DeleteOptions) error {
+	return n.iface.DeleteNamespaced(namespace, name, options)
+}
+
+func (n *routeSetClient2) List(namespace string, opts metav1.ListOptions) (*RouteSetList, error) {
+	return n.iface.List(opts)
+}
+
+func (n *routeSetClient2) Watch(opts metav1.ListOptions) (watch.Interface, error) {
+	return n.iface.Watch(opts)
+}
+
+func (n *routeSetClientCache) Get(namespace, name string) (*RouteSet, error) {
+	return n.client.controller.Lister().Get(namespace, name)
+}
+
+func (n *routeSetClientCache) List(namespace string, selector labels.Selector) ([]*RouteSet, error) {
+	return n.client.controller.Lister().List(namespace, selector)
+}
+
+func (n *routeSetClient2) Cache() RouteSetClientCache {
+	n.loadController()
+	return &routeSetClientCache{
+		client: n,
+	}
+}
+
+func (n *routeSetClient2) OnCreate(ctx context.Context, name string, sync RouteSetChangeHandlerFunc) {
+	n.loadController()
+	n.iface.AddLifecycle(ctx, name+"-create", &routeSetLifecycleDelegate{create: sync})
+}
+
+func (n *routeSetClient2) OnChange(ctx context.Context, name string, sync RouteSetChangeHandlerFunc) {
+	n.loadController()
+	n.iface.AddLifecycle(ctx, name+"-change", &routeSetLifecycleDelegate{update: sync})
+}
+
+func (n *routeSetClient2) OnRemove(ctx context.Context, name string, sync RouteSetChangeHandlerFunc) {
+	n.loadController()
+	n.iface.AddLifecycle(ctx, name, &routeSetLifecycleDelegate{remove: sync})
+}
+
+func (n *routeSetClientCache) Index(name string, indexer RouteSetIndexer) {
+	err := n.client.controller.Informer().GetIndexer().AddIndexers(map[string]cache.IndexFunc{
+		name: func(obj interface{}) ([]string, error) {
+			if v, ok := obj.(*RouteSet); ok {
+				return indexer(v)
+			}
+			return nil, nil
+		},
+	})
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (n *routeSetClientCache) GetIndexed(name, key string) ([]*RouteSet, error) {
+	var result []*RouteSet
+	objs, err := n.client.controller.Informer().GetIndexer().ByIndex(name, key)
+	if err != nil {
+		return nil, err
+	}
+	for _, obj := range objs {
+		if v, ok := obj.(*RouteSet); ok {
+			result = append(result, v)
+		}
+	}
+
+	return result, nil
+}
+
+func (n *routeSetClient2) loadController() {
+	if n.controller == nil {
+		n.controller = n.iface.Controller()
+	}
+}
+
+type routeSetLifecycleDelegate struct {
+	create RouteSetChangeHandlerFunc
+	update RouteSetChangeHandlerFunc
+	remove RouteSetChangeHandlerFunc
+}
+
+func (n *routeSetLifecycleDelegate) HasCreate() bool {
+	return n.create != nil
+}
+
+func (n *routeSetLifecycleDelegate) Create(obj *RouteSet) (runtime.Object, error) {
+	if n.create == nil {
+		return obj, nil
+	}
+	return n.create(obj)
+}
+
+func (n *routeSetLifecycleDelegate) HasFinalize() bool {
+	return n.remove != nil
+}
+
+func (n *routeSetLifecycleDelegate) Remove(obj *RouteSet) (runtime.Object, error) {
+	if n.remove == nil {
+		return obj, nil
+	}
+	return n.remove(obj)
+}
+
+func (n *routeSetLifecycleDelegate) Updated(obj *RouteSet) (runtime.Object, error) {
+	if n.update == nil {
+		return obj, nil
+	}
+	return n.update(obj)
 }

@@ -37,6 +37,8 @@ type StackList struct {
 
 type StackHandlerFunc func(key string, obj *Stack) (runtime.Object, error)
 
+type StackChangeHandlerFunc func(obj *Stack) (runtime.Object, error)
+
 type StackLister interface {
 	List(namespace string, selector labels.Selector) (ret []*Stack, err error)
 	Get(namespace, name string) (*Stack, error)
@@ -247,4 +249,179 @@ func (s *stackClient) AddClusterScopedHandler(ctx context.Context, name, cluster
 func (s *stackClient) AddClusterScopedLifecycle(ctx context.Context, name, clusterName string, lifecycle StackLifecycle) {
 	sync := NewStackLifecycleAdapter(name+"_"+clusterName, true, s, lifecycle)
 	s.Controller().AddClusterScopedHandler(ctx, name, clusterName, sync)
+}
+
+type StackIndexer func(obj *Stack) ([]string, error)
+
+type StackClientCache interface {
+	Get(namespace, name string) (*Stack, error)
+	List(namespace string, selector labels.Selector) ([]*Stack, error)
+
+	Index(name string, indexer StackIndexer)
+	GetIndexed(name, key string) ([]*Stack, error)
+}
+
+type StackClient interface {
+	Create(*Stack) (*Stack, error)
+	Get(namespace, name string, opts metav1.GetOptions) (*Stack, error)
+	Update(*Stack) (*Stack, error)
+	Delete(namespace, name string, options *metav1.DeleteOptions) error
+	List(namespace string, opts metav1.ListOptions) (*StackList, error)
+	Watch(opts metav1.ListOptions) (watch.Interface, error)
+
+	Cache() StackClientCache
+
+	OnCreate(ctx context.Context, name string, sync StackChangeHandlerFunc)
+	OnChange(ctx context.Context, name string, sync StackChangeHandlerFunc)
+	OnRemove(ctx context.Context, name string, sync StackChangeHandlerFunc)
+	Enqueue(namespace, name string)
+
+	Generic() controller.GenericController
+	Interface() StackInterface
+}
+
+type stackClientCache struct {
+	client *stackClient2
+}
+
+type stackClient2 struct {
+	iface      StackInterface
+	controller StackController
+}
+
+func (n *stackClient2) Interface() StackInterface {
+	return n.iface
+}
+
+func (n *stackClient2) Generic() controller.GenericController {
+	return n.iface.Controller().Generic()
+}
+
+func (n *stackClient2) Enqueue(namespace, name string) {
+	n.iface.Controller().Enqueue(namespace, name)
+}
+
+func (n *stackClient2) Create(obj *Stack) (*Stack, error) {
+	return n.iface.Create(obj)
+}
+
+func (n *stackClient2) Get(namespace, name string, opts metav1.GetOptions) (*Stack, error) {
+	return n.iface.GetNamespaced(namespace, name, opts)
+}
+
+func (n *stackClient2) Update(obj *Stack) (*Stack, error) {
+	return n.iface.Update(obj)
+}
+
+func (n *stackClient2) Delete(namespace, name string, options *metav1.DeleteOptions) error {
+	return n.iface.DeleteNamespaced(namespace, name, options)
+}
+
+func (n *stackClient2) List(namespace string, opts metav1.ListOptions) (*StackList, error) {
+	return n.iface.List(opts)
+}
+
+func (n *stackClient2) Watch(opts metav1.ListOptions) (watch.Interface, error) {
+	return n.iface.Watch(opts)
+}
+
+func (n *stackClientCache) Get(namespace, name string) (*Stack, error) {
+	return n.client.controller.Lister().Get(namespace, name)
+}
+
+func (n *stackClientCache) List(namespace string, selector labels.Selector) ([]*Stack, error) {
+	return n.client.controller.Lister().List(namespace, selector)
+}
+
+func (n *stackClient2) Cache() StackClientCache {
+	n.loadController()
+	return &stackClientCache{
+		client: n,
+	}
+}
+
+func (n *stackClient2) OnCreate(ctx context.Context, name string, sync StackChangeHandlerFunc) {
+	n.loadController()
+	n.iface.AddLifecycle(ctx, name+"-create", &stackLifecycleDelegate{create: sync})
+}
+
+func (n *stackClient2) OnChange(ctx context.Context, name string, sync StackChangeHandlerFunc) {
+	n.loadController()
+	n.iface.AddLifecycle(ctx, name+"-change", &stackLifecycleDelegate{update: sync})
+}
+
+func (n *stackClient2) OnRemove(ctx context.Context, name string, sync StackChangeHandlerFunc) {
+	n.loadController()
+	n.iface.AddLifecycle(ctx, name, &stackLifecycleDelegate{remove: sync})
+}
+
+func (n *stackClientCache) Index(name string, indexer StackIndexer) {
+	err := n.client.controller.Informer().GetIndexer().AddIndexers(map[string]cache.IndexFunc{
+		name: func(obj interface{}) ([]string, error) {
+			if v, ok := obj.(*Stack); ok {
+				return indexer(v)
+			}
+			return nil, nil
+		},
+	})
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (n *stackClientCache) GetIndexed(name, key string) ([]*Stack, error) {
+	var result []*Stack
+	objs, err := n.client.controller.Informer().GetIndexer().ByIndex(name, key)
+	if err != nil {
+		return nil, err
+	}
+	for _, obj := range objs {
+		if v, ok := obj.(*Stack); ok {
+			result = append(result, v)
+		}
+	}
+
+	return result, nil
+}
+
+func (n *stackClient2) loadController() {
+	if n.controller == nil {
+		n.controller = n.iface.Controller()
+	}
+}
+
+type stackLifecycleDelegate struct {
+	create StackChangeHandlerFunc
+	update StackChangeHandlerFunc
+	remove StackChangeHandlerFunc
+}
+
+func (n *stackLifecycleDelegate) HasCreate() bool {
+	return n.create != nil
+}
+
+func (n *stackLifecycleDelegate) Create(obj *Stack) (runtime.Object, error) {
+	if n.create == nil {
+		return obj, nil
+	}
+	return n.create(obj)
+}
+
+func (n *stackLifecycleDelegate) HasFinalize() bool {
+	return n.remove != nil
+}
+
+func (n *stackLifecycleDelegate) Remove(obj *Stack) (runtime.Object, error) {
+	if n.remove == nil {
+		return obj, nil
+	}
+	return n.remove(obj)
+}
+
+func (n *stackLifecycleDelegate) Updated(obj *Stack) (runtime.Object, error) {
+	if n.update == nil {
+		return obj, nil
+	}
+	return n.update(obj)
 }

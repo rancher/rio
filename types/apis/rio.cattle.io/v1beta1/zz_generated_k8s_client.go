@@ -11,7 +11,10 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-type contextKeyType struct{}
+type (
+	contextKeyType        struct{}
+	contextClientsKeyType struct{}
+)
 
 type Interface interface {
 	RESTClient() rest.Interface
@@ -22,6 +25,14 @@ type Interface interface {
 	ConfigsGetter
 	VolumesGetter
 	RouteSetsGetter
+}
+
+type Clients struct {
+	Stack    StackClient
+	Service  ServiceClient
+	Config   ConfigClient
+	Volume   VolumeClient
+	RouteSet RouteSetClient
 }
 
 type Client struct {
@@ -42,11 +53,48 @@ func Factory(ctx context.Context, config rest.Config) (context.Context, controll
 		return ctx, nil, err
 	}
 
-	return context.WithValue(ctx, contextKeyType{}, c), c, nil
+	cs := NewClientsFromInterface(c)
+
+	ctx = context.WithValue(ctx, contextKeyType{}, c)
+	ctx = context.WithValue(ctx, contextClientsKeyType{}, cs)
+	return ctx, c, nil
+}
+
+func ClientsFrom(ctx context.Context) *Clients {
+	return ctx.Value(contextClientsKeyType{}).(*Clients)
 }
 
 func From(ctx context.Context) Interface {
 	return ctx.Value(contextKeyType{}).(Interface)
+}
+
+func NewClients(config rest.Config) (*Clients, error) {
+	iface, err := NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	return NewClientsFromInterface(iface), nil
+}
+
+func NewClientsFromInterface(iface Interface) *Clients {
+	return &Clients{
+
+		Stack: &stackClient2{
+			iface: iface.Stacks(""),
+		},
+		Service: &serviceClient2{
+			iface: iface.Services(""),
+		},
+		Config: &configClient2{
+			iface: iface.Configs(""),
+		},
+		Volume: &volumeClient2{
+			iface: iface.Volumes(""),
+		},
+		RouteSet: &routeSetClient2{
+			iface: iface.RouteSets(""),
+		},
+	}
 }
 
 func NewForConfig(config rest.Config) (Interface, error) {

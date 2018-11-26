@@ -15,6 +15,16 @@ type publicDomainLifecycleAdapter struct {
 	lifecycle PublicDomainLifecycle
 }
 
+func (w *publicDomainLifecycleAdapter) HasCreate() bool {
+	o, ok := w.lifecycle.(lifecycle.ObjectLifecycleCondition)
+	return !ok || o.HasCreate()
+}
+
+func (w *publicDomainLifecycleAdapter) HasFinalize() bool {
+	o, ok := w.lifecycle.(lifecycle.ObjectLifecycleCondition)
+	return !ok || o.HasFinalize()
+}
+
 func (w *publicDomainLifecycleAdapter) Create(obj runtime.Object) (runtime.Object, error) {
 	o, err := w.lifecycle.Create(obj.(*PublicDomain))
 	if o == nil {

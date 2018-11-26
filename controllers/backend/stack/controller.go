@@ -9,10 +9,8 @@ import (
 	"github.com/rancher/rio/pkg/namespace"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
-	"github.com/rancher/types/apis/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/cache"
 )
 
 const (
@@ -21,54 +19,47 @@ const (
 
 func Register(ctx context.Context, rContext *types.Context) error {
 	s := &stackDeployController{
-		stacks:             rContext.Rio.Stacks(""),
-		stackController:    rContext.Rio.Stacks("").Controller(),
-		serviceController:  rContext.Rio.Services("").Controller(),
-		configController:   rContext.Rio.Configs("").Controller(),
-		volumeController:   rContext.Rio.Volumes("").Controller(),
-		routeSetController: rContext.Rio.RouteSets("").Controller(),
-		secretsController:  rContext.Core,
+		stacks:        rContext.Rio.Stack,
+		stackCache:    rContext.Rio.Stack.Cache(),
+		serviceCache:  rContext.Rio.Service.Cache(),
+		configCache:   rContext.Rio.Config.Cache(),
+		volumeCache:   rContext.Rio.Volume.Cache(),
+		routeSetCache: rContext.Rio.RouteSet.Cache(),
 	}
 
-	rContext.Rio.Stacks("").AddLifecycle(ctx, "stack-deploy-controller", s)
+	rContext.Rio.Stack.OnChange(ctx, "stack-deploy-controller", s.Updated)
+	rContext.Rio.Stack.OnRemove(ctx, "stack-deploy-controller", s.Remove)
 	changeset.Watch(ctx, "stack-deploy",
 		s.resolve,
-		s.stackController.Enqueue,
-		s.serviceController,
-		s.configController,
-		s.volumeController,
-		s.routeSetController,
-		s.stackController)
+		rContext.Rio.Stack,
+		rContext.Rio.Service,
+		rContext.Core.ConfigMap,
+		rContext.Rio.Volume,
+		rContext.Rio.RouteSet,
+		rContext.Rio.Stack)
 
-	s.stackController.Informer().AddIndexers(cache.Indexers{
-		stackByNS: index,
-	})
+	rContext.Rio.Stack.Cache().Index(stackByNS, index)
 
 	return nil
 }
 
 type stackDeployController struct {
-	stacks             v1beta1.StackInterface
-	stackController    v1beta1.StackController
-	serviceController  v1beta1.ServiceController
-	secretsController  v1.SecretsGetter
-	configController   v1beta1.ConfigController
-	volumeController   v1beta1.VolumeController
-	routeSetController v1beta1.RouteSetController
+	stacks        v1beta1.StackClient
+	stackCache    v1beta1.StackClientCache
+	serviceCache  v1beta1.ServiceClientCache
+	configCache   v1beta1.ConfigClientCache
+	volumeCache   v1beta1.VolumeClientCache
+	routeSetCache v1beta1.RouteSetClientCache
 }
 
-func index(obj interface{}) ([]string, error) {
-	stack, ok := obj.(*v1beta1.Stack)
-	if !ok || stack == nil {
-		return nil, nil
-	}
+func index(stack *v1beta1.Stack) ([]string, error) {
 	return []string{
 		namespace.StackToNamespace(stack),
 	}, nil
 }
 
 func (s *stackDeployController) resolve(ns, name string, obj runtime.Object) ([]changeset.Key, error) {
-	objs, err := s.stackController.Informer().GetIndexer().ByIndex(stackByNS, ns)
+	objs, err := s.stackCache.GetIndexed(stackByNS, ns)
 	if err != nil {
 		return nil, nil
 	}
@@ -77,21 +68,13 @@ func (s *stackDeployController) resolve(ns, name string, obj runtime.Object) ([]
 		return nil, nil
 	}
 
-	stack, ok := objs[0].(*v1beta1.Stack)
-	if !ok {
-		return nil, nil
-	}
-
+	stack := objs[0]
 	return []changeset.Key{
 		{
 			Namespace: stack.Namespace,
 			Name:      stack.Name,
 		},
 	}, nil
-}
-
-func (s *stackDeployController) Create(obj *v1beta1.Stack) (runtime.Object, error) {
-	return nil, nil
 }
 
 func (s *stackDeployController) Remove(obj *v1beta1.Stack) (runtime.Object, error) {
@@ -114,22 +97,22 @@ func (s *stackDeployController) Updated(obj *v1beta1.Stack) (runtime.Object, err
 func (s *stackDeployController) deploy(obj *v1beta1.Stack) (*v1beta1.Stack, error) {
 	namespace := namespace.StackToNamespace(obj)
 
-	configs, err := s.configController.Lister().List(namespace, labels.Everything())
+	configs, err := s.configCache.List(namespace, labels.Everything())
 	if err != nil {
 		return nil, err
 	}
 
-	volumes, err := s.volumeController.Lister().List(namespace, labels.Everything())
+	volumes, err := s.volumeCache.List(namespace, labels.Everything())
 	if err != nil {
 		return nil, err
 	}
 
-	services, err := s.serviceController.Lister().List(namespace, labels.Everything())
+	services, err := s.serviceCache.List(namespace, labels.Everything())
 	if err != nil {
 		return nil, err
 	}
 
-	routes, err := s.routeSetController.Lister().List(namespace, labels.Everything())
+	routes, err := s.routeSetCache.List(namespace, labels.Everything())
 	if err != nil {
 		return nil, err
 	}
