@@ -3,6 +3,7 @@ package template
 import (
 	"encoding/base64"
 	"fmt"
+	"os"
 	"unicode/utf8"
 
 	"github.com/drone/envsubst"
@@ -41,6 +42,22 @@ func (t *Template) RequiredEnv() ([]string, error) {
 	}
 
 	return result, nil
+}
+
+func (t *Template) PopulateAnswersFromEnv() error {
+	keys, err := t.RequiredEnv()
+	if err != nil {
+		return err
+	}
+
+	for _, key := range keys {
+		value := os.Getenv(key)
+		if value != "" {
+			t.Answers[key] = value
+		}
+	}
+
+	return nil
 }
 
 func (t *Template) RequiredFiles() ([]string, error) {

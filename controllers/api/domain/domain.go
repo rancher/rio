@@ -32,6 +32,8 @@ var (
 		v1.NodeExternalIP,
 		v1.NodeInternalIP,
 	}
+
+	nodeHasGateway = "nodeGatewayIndex"
 )
 
 type Controller struct {
@@ -60,22 +62,12 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		stackController: rContext.Rio.Stack,
 	}
 
+	rContext.Core.Endpoints.Cache().Index(nodeHasGateway, g.indexEPByNode)
+
 	changeset.Watch(ctx, "domain-controller",
-		func(namespace, name string, obj runtime.Object) ([]changeset.Key, error) {
-			switch t := obj.(type) {
-			case *v1.Endpoints:
-				if isGateway(t) {
-					return []changeset.Key{
-						{
-							Namespace: t.Namespace,
-							Name:      t.Name,
-						},
-					}, nil
-				}
-			}
-			return nil, nil
-		},
+		g.resolve,
 		rContext.Core.Service,
+		rContext.Core.Node,
 		rContext.Core.Endpoints)
 
 	rContext.Core.Service.OnChange(ctx, "domain-controller", g.sync)
@@ -92,6 +84,50 @@ func isGateway(obj runtime.Object) bool {
 		return false
 	}
 	return o.GetName() == settings.IstioGatewayDeploy && o.GetNamespace() == settings.IstioExternalLBNamespace
+}
+
+func (g *Controller) indexEPByNode(ep *v1.Endpoints) ([]string, error) {
+	if !isGateway(ep) {
+		return nil, nil
+	}
+
+	var result []string
+
+	for _, subset := range ep.Subsets {
+		for _, addr := range subset.Addresses {
+			if addr.NodeName != nil {
+				result = append(result, *addr.NodeName)
+			}
+		}
+	}
+
+	return result, nil
+}
+
+func (g *Controller) resolve(namespace, name string, obj runtime.Object) ([]changeset.Key, error) {
+	switch t := obj.(type) {
+	case *v1.Endpoints:
+		if isGateway(t) {
+			return []changeset.Key{
+				{
+					Namespace: t.Namespace,
+					Name:      t.Name,
+				},
+			}, nil
+		}
+	case *v1.Node:
+		eps, err := g.endpointsLister.GetIndexed(nodeHasGateway, t.Name)
+		if err != nil || len(eps) == 0 {
+			return nil, err
+		}
+		return []changeset.Key{
+			{
+				Namespace: eps[0].Namespace,
+				Name:      eps[0].Name,
+			},
+		}, nil
+	}
+	return nil, nil
 }
 
 func (g *Controller) sync(svc *v1.Service) (runtime.Object, error) {
