@@ -20,7 +20,11 @@ func AddData(rContext *types.Context, inCluster bool) error {
 		return err
 	}
 
-	return apply.Apply(systemStacks(inCluster), nil, settings.RioSystemNamespace, "rio-system-stacks")
+	if err := apply.Apply(systemStacks(inCluster), nil, settings.RioSystemNamespace, "rio-system-stacks"); err != nil {
+		return err
+	}
+
+	return localStacks()
 }
 
 func systemStacks(inCluster bool) []runtime.Object {

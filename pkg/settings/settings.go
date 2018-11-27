@@ -15,10 +15,11 @@ const (
 )
 
 var (
-	ClusterDomain = settings.NewSetting("cluster-domain", "")
-	IstioEnabled  = settings.NewSetting("istio", "true")
-	RDNSURL       = settings.NewSetting("rdns-url", "https://api.lb.rancher.cloud/v1")
-	RioImage      = settings.NewSetting("rio-image", "rancher/rio")
+	LocalStacksDir = settings.NewSetting("local-projects-dir", "/etc/rancher/rio/projects/")
+	ClusterDomain  = settings.NewSetting("cluster-domain", "")
+	IstioEnabled   = settings.NewSetting("istio", "true")
+	RDNSURL        = settings.NewSetting("rdns-url", "https://api.lb.rancher.cloud/v1")
+	RioImage       = settings.NewSetting("rio-image", "rancher/rio")
 
 	IstioExternalLBNamespace = namespace.StackNamespace(RioSystemNamespace, IstioStackName)
 	IstioGatewaySelector     = map[string]string{

@@ -115,7 +115,7 @@ func Run(ctx *clicontext.CLIContext, content []byte, stackID string, promptRepla
 
 	mergeAnswers(template, answers)
 
-	if err := populateAnswersFromEnv(template); err != nil {
+	if err := template.PopulateAnswersFromEnv(); err != nil {
 		return err
 	}
 
@@ -136,22 +136,6 @@ func mergeAnswers(template *template2.Template, answers map[string]string) {
 	for k, v := range answers {
 		template.Answers[k] = v
 	}
-}
-
-func populateAnswersFromEnv(template *template2.Template) error {
-	keys, err := template.RequiredEnv()
-	if err != nil {
-		return err
-	}
-
-	for _, key := range keys {
-		value := os.Getenv(key)
-		if value != "" {
-			template.Answers[key] = value
-		}
-	}
-
-	return nil
 }
 
 func populateAnswersFromQuestions(template *template2.Template, forcePrompt bool) error {
