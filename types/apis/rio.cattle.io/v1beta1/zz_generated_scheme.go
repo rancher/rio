@@ -35,6 +35,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 
 		&Stack{},
 		&StackList{},
+		&ExternalService{},
+		&ExternalServiceList{},
 		&Service{},
 		&ServiceList{},
 		&Config{},

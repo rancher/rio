@@ -23,12 +23,14 @@ type Interface interface {
 	GatewaysGetter
 	VirtualServicesGetter
 	DestinationRulesGetter
+	ServiceEntriesGetter
 }
 
 type Clients struct {
 	Gateway         GatewayClient
 	VirtualService  VirtualServiceClient
 	DestinationRule DestinationRuleClient
+	ServiceEntry    ServiceEntryClient
 }
 
 type Client struct {
@@ -39,6 +41,7 @@ type Client struct {
 	gatewayControllers         map[string]GatewayController
 	virtualServiceControllers  map[string]VirtualServiceController
 	destinationRuleControllers map[string]DestinationRuleController
+	serviceEntryControllers    map[string]ServiceEntryController
 }
 
 func Factory(ctx context.Context, config rest.Config) (context.Context, controller.Starter, error) {
@@ -82,6 +85,9 @@ func NewClientsFromInterface(iface Interface) *Clients {
 		DestinationRule: &destinationRuleClient2{
 			iface: iface.DestinationRules(""),
 		},
+		ServiceEntry: &serviceEntryClient2{
+			iface: iface.ServiceEntries(""),
+		},
 	}
 }
 
@@ -101,6 +107,7 @@ func NewForConfig(config rest.Config) (Interface, error) {
 		gatewayControllers:         map[string]GatewayController{},
 		virtualServiceControllers:  map[string]VirtualServiceController{},
 		destinationRuleControllers: map[string]DestinationRuleController{},
+		serviceEntryControllers:    map[string]ServiceEntryController{},
 	}, nil
 }
 
@@ -149,6 +156,19 @@ type DestinationRulesGetter interface {
 func (c *Client) DestinationRules(namespace string) DestinationRuleInterface {
 	objectClient := objectclient.NewObjectClient(namespace, c.restClient, &DestinationRuleResource, DestinationRuleGroupVersionKind, destinationRuleFactory{})
 	return &destinationRuleClient{
+		ns:           namespace,
+		client:       c,
+		objectClient: objectClient,
+	}
+}
+
+type ServiceEntriesGetter interface {
+	ServiceEntries(namespace string) ServiceEntryInterface
+}
+
+func (c *Client) ServiceEntries(namespace string) ServiceEntryInterface {
+	objectClient := objectclient.NewObjectClient(namespace, c.restClient, &ServiceEntryResource, ServiceEntryGroupVersionKind, serviceEntryFactory{})
+	return &serviceEntryClient{
 		ns:           namespace,
 		client:       c,
 		objectClient: objectClient,

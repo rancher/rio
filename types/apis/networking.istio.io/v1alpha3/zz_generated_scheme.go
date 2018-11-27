@@ -39,6 +39,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&VirtualServiceList{},
 		&DestinationRule{},
 		&DestinationRuleList{},
+		&ServiceEntry{},
+		&ServiceEntryList{},
 	)
 	return nil
 }

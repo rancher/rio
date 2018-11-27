@@ -21,6 +21,7 @@ type Interface interface {
 	controller.Starter
 
 	StacksGetter
+	ExternalServicesGetter
 	ServicesGetter
 	ConfigsGetter
 	VolumesGetter
@@ -28,11 +29,12 @@ type Interface interface {
 }
 
 type Clients struct {
-	Stack    StackClient
-	Service  ServiceClient
-	Config   ConfigClient
-	Volume   VolumeClient
-	RouteSet RouteSetClient
+	Stack           StackClient
+	ExternalService ExternalServiceClient
+	Service         ServiceClient
+	Config          ConfigClient
+	Volume          VolumeClient
+	RouteSet        RouteSetClient
 }
 
 type Client struct {
@@ -40,11 +42,12 @@ type Client struct {
 	restClient rest.Interface
 	starters   []controller.Starter
 
-	stackControllers    map[string]StackController
-	serviceControllers  map[string]ServiceController
-	configControllers   map[string]ConfigController
-	volumeControllers   map[string]VolumeController
-	routeSetControllers map[string]RouteSetController
+	stackControllers           map[string]StackController
+	externalServiceControllers map[string]ExternalServiceController
+	serviceControllers         map[string]ServiceController
+	configControllers          map[string]ConfigController
+	volumeControllers          map[string]VolumeController
+	routeSetControllers        map[string]RouteSetController
 }
 
 func Factory(ctx context.Context, config rest.Config) (context.Context, controller.Starter, error) {
@@ -82,6 +85,9 @@ func NewClientsFromInterface(iface Interface) *Clients {
 		Stack: &stackClient2{
 			iface: iface.Stacks(""),
 		},
+		ExternalService: &externalServiceClient2{
+			iface: iface.ExternalServices(""),
+		},
 		Service: &serviceClient2{
 			iface: iface.Services(""),
 		},
@@ -110,11 +116,12 @@ func NewForConfig(config rest.Config) (Interface, error) {
 	return &Client{
 		restClient: restClient,
 
-		stackControllers:    map[string]StackController{},
-		serviceControllers:  map[string]ServiceController{},
-		configControllers:   map[string]ConfigController{},
-		volumeControllers:   map[string]VolumeController{},
-		routeSetControllers: map[string]RouteSetController{},
+		stackControllers:           map[string]StackController{},
+		externalServiceControllers: map[string]ExternalServiceController{},
+		serviceControllers:         map[string]ServiceController{},
+		configControllers:          map[string]ConfigController{},
+		volumeControllers:          map[string]VolumeController{},
+		routeSetControllers:        map[string]RouteSetController{},
 	}, nil
 }
 
@@ -137,6 +144,19 @@ type StacksGetter interface {
 func (c *Client) Stacks(namespace string) StackInterface {
 	objectClient := objectclient.NewObjectClient(namespace, c.restClient, &StackResource, StackGroupVersionKind, stackFactory{})
 	return &stackClient{
+		ns:           namespace,
+		client:       c,
+		objectClient: objectClient,
+	}
+}
+
+type ExternalServicesGetter interface {
+	ExternalServices(namespace string) ExternalServiceInterface
+}
+
+func (c *Client) ExternalServices(namespace string) ExternalServiceInterface {
+	objectClient := objectclient.NewObjectClient(namespace, c.restClient, &ExternalServiceResource, ExternalServiceGroupVersionKind, externalServiceFactory{})
+	return &externalServiceClient{
 		ns:           namespace,
 		client:       c,
 		objectClient: objectClient,
