@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/rancher/rio/cli/cmd/externalservice"
+
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/rio/cli/cmd/agent"
 	"github.com/rancher/rio/cli/cmd/attach"
@@ -146,6 +148,7 @@ func main() {
 		cluster.Cluster(app),
 		node.Node(),
 		publicdomain.PublicDomain(app),
+		externalservice.ExternalService(app),
 
 		builder.Command(&ps.Ps{},
 			"List services and containers",

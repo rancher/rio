@@ -60,6 +60,7 @@ func NewConfig(dataDir string, inCluster bool) (*norman.Config, error) {
 				client.RouteSetType,
 				client.VolumeType,
 				client.StackType,
+				client.ExternalServiceType,
 			},
 			&spaceschema.Version: {
 				spaceclient.ListenConfigType,

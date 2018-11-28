@@ -19,6 +19,18 @@ func Populate(stack *input.Stack, output *output.Deployment) error {
 		return fmt.Errorf("waiting for cluster domain")
 	}
 
+	se, err := serviceEntries(stack)
+	if err != nil {
+		return err
+	}
+	se, err = convertIstioObjects(se)
+	if err != nil {
+		return err
+	}
+	for _, s := range se {
+		output.ServiceEntries[s.Name] = s
+	}
+
 	vs, err := virtualservices(stack)
 	if err != nil || len(vs) == 0 {
 		return err

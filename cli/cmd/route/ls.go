@@ -109,7 +109,7 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 		for j, routeSpec := range routeSet.Routes {
 			if len(routeSpec.Matches) == 0 {
 				writer.Write(&Data{
-					ID:        routeSet.ID,
+					ID:        routeSets.Data[i].ID,
 					RouteSet:  routeSets.Data[i],
 					RouteSpec: routeSets.Data[i].Routes[j],
 					Stack:     stackByID[routeSet.StackID],
@@ -120,7 +120,6 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 
 			for k := range routeSpec.Matches {
 				writer.Write(&Data{
-					ID:        routeSet.ID,
 					RouteSet:  routeSets.Data[i],
 					RouteSpec: routeSets.Data[i].Routes[j],
 					Match:     &routeSets.Data[i].Routes[j].Matches[k],
@@ -314,13 +313,14 @@ func FormatURL(cluster *clientcfg.Cluster) func(obj interface{}) (string, error)
 		if !ok {
 			return "", fmt.Errorf("invalid data")
 		}
+		space := strings.SplitN(data.Stack.SpaceID, "-", 2)[1]
 		hostBuf := strings.Builder{}
-		hostBuf.WriteString("http://")
+		hostBuf.WriteString("https://")
 		hostBuf.WriteString(data.RouteSet.Name)
-		if data.Stack.Name != cluster.DefaultStackName {
-			hostBuf.WriteString(".")
-			hostBuf.WriteString(data.Stack.Name)
-		}
+		hostBuf.WriteString("-")
+		hostBuf.WriteString(data.Stack.Name)
+		hostBuf.WriteString("-")
+		hostBuf.WriteString(space)
 		hostBuf.WriteString(".")
 		hostBuf.WriteString(data.Domain)
 		if data.port() > 0 {

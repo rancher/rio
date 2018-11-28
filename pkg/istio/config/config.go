@@ -25,8 +25,8 @@ func InjectParams(meshConfig *v1alpha1.MeshConfig) *inject.Params {
 		EnableCoreDump:      debug,
 		Mesh:                meshConfig,
 		ImagePullPolicy:     string(v1.PullIfNotPresent),
-		IncludeIPRanges:     "*",
-		ExcludeIPRanges:     "",
+		IncludeIPRanges:     "10.43.0.0/16",
+		ExcludeIPRanges:     "10.43.0.0/31",
 		IncludeInboundPorts: "*",
 		ExcludeInboundPorts: "",
 		DebugMode:           debug,
@@ -41,6 +41,7 @@ func DoConfigAndTemplate(config string) (*v1alpha1.MeshConfig, string, error) {
 
 	params := InjectParams(meshConfig)
 	content, err := inject.GenerateTemplateFromParams(params)
+
 	return meshConfig, content, err
 }
 

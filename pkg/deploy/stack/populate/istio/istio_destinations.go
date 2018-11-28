@@ -53,6 +53,7 @@ func destinationRuleForRoutes(stack *input.Stack, route *v1beta1.RouteSet) []*ou
 		drObject.Spec = &dr
 		result = append(result, drObject)
 	}
+
 	return result
 }
 
@@ -101,6 +102,9 @@ func destinationRuleForService(stack *input.Stack, name string, service *output.
 
 	// destinationRule for tls challenge
 	for _, publicDomain := range strings.Split(service.Service.Annotations[PublicDomainAnnotation], ",") {
+		if publicDomain == "" {
+			continue
+		}
 		drTls := v1alpha3.DestinationRule{
 			Host: fmt.Sprintf("%s.rio-system.svc.cluster.local", fmt.Sprintf("cm-acme-http-solver-%d", adler32.Checksum([]byte(publicDomain)))),
 			Subsets: []*v1alpha3.Subset{
