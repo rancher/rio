@@ -21,6 +21,13 @@ type VirtualService struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 }
 
+type ServiceEntry struct {
+	types.Namespaced
+
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+}
+
 type DestinationRule struct {
 	types.Namespaced
 

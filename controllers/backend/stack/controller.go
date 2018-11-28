@@ -4,6 +4,11 @@ import (
 	"context"
 	"strings"
 
+	"github.com/rancher/types/apis/core/v1"
+
+	"github.com/rancher/rio/pkg/istio/config"
+	"github.com/rancher/rio/pkg/settings"
+
 	"github.com/rancher/norman/pkg/changeset"
 	"github.com/rancher/rio/pkg/deploy/stack"
 	"github.com/rancher/rio/pkg/namespace"
@@ -18,13 +23,21 @@ const (
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
+	cf := config.NewConfigFactory(ctx, rContext.Core.ConfigMap.Interface(),
+		settings.IstioExternalLBNamespace,
+		settings.IstionConfigMapName,
+		settings.IstionConfigMapKey)
+	injector := config.NewIstioInjector(cf)
 	s := &stackDeployController{
-		stacks:        rContext.Rio.Stack,
-		stackCache:    rContext.Rio.Stack.Cache(),
-		serviceCache:  rContext.Rio.Service.Cache(),
-		configCache:   rContext.Rio.Config.Cache(),
-		volumeCache:   rContext.Rio.Volume.Cache(),
-		routeSetCache: rContext.Rio.RouteSet.Cache(),
+		stacks:               rContext.Rio.Stack,
+		stackCache:           rContext.Rio.Stack.Cache(),
+		serviceCache:         rContext.Rio.Service.Cache(),
+		configCache:          rContext.Rio.Config.Cache(),
+		volumeCache:          rContext.Rio.Volume.Cache(),
+		routeSetCache:        rContext.Rio.RouteSet.Cache(),
+		secretsCache:         rContext.Core.Secret.Cache(),
+		externalServiceCache: rContext.Rio.ExternalService.Cache(),
+		injector:             injector,
 	}
 
 	rContext.Rio.Stack.OnChange(ctx, "stack-deploy-controller", s.Updated)
@@ -36,7 +49,8 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		rContext.Core.ConfigMap,
 		rContext.Rio.Volume,
 		rContext.Rio.RouteSet,
-		rContext.Rio.Stack)
+		rContext.Rio.Stack,
+		rContext.Rio.ExternalService)
 
 	rContext.Rio.Stack.Cache().Index(stackByNS, index)
 
@@ -44,12 +58,15 @@ func Register(ctx context.Context, rContext *types.Context) error {
 }
 
 type stackDeployController struct {
-	stacks        v1beta1.StackClient
-	stackCache    v1beta1.StackClientCache
-	serviceCache  v1beta1.ServiceClientCache
-	configCache   v1beta1.ConfigClientCache
-	volumeCache   v1beta1.VolumeClientCache
-	routeSetCache v1beta1.RouteSetClientCache
+	stacks               v1beta1.StackClient
+	stackCache           v1beta1.StackClientCache
+	serviceCache         v1beta1.ServiceClientCache
+	configCache          v1beta1.ConfigClientCache
+	volumeCache          v1beta1.VolumeClientCache
+	routeSetCache        v1beta1.RouteSetClientCache
+	secretsCache         v1.SecretClientCache
+	externalServiceCache v1beta1.ExternalServiceClientCache
+	injector             *config.IstioInjector
 }
 
 func index(stack *v1beta1.Stack) ([]string, error) {
@@ -78,7 +95,7 @@ func (s *stackDeployController) resolve(ns, name string, obj runtime.Object) ([]
 }
 
 func (s *stackDeployController) Remove(obj *v1beta1.Stack) (runtime.Object, error) {
-	err := stack.Remove(namespace.StackToNamespace(obj), getSpace(obj), obj)
+	err := stack.Remove(namespace.StackToNamespace(obj), getSpace(obj), obj, s.injector)
 	return obj, err
 }
 
@@ -117,13 +134,20 @@ func (s *stackDeployController) deploy(obj *v1beta1.Stack) (*v1beta1.Stack, erro
 		return nil, err
 	}
 
+	externalServices, err := s.externalServiceCache.List(namespace, labels.Everything())
+	if err != nil {
+		return nil, err
+	}
+
 	err = stack.Deploy(namespace,
 		getSpace(obj),
 		obj,
 		configs,
 		services,
 		volumes,
-		routes)
+		routes,
+		externalServices,
+		s.injector)
 	return obj, err
 }
 

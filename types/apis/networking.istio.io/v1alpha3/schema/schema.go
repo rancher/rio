@@ -16,5 +16,6 @@ var (
 	Schemas = factory.Schemas(&Version).
 		MustImport(&Version, v1alpha3.Gateway{}).
 		MustImport(&Version, v1alpha3.VirtualService{}).
-		MustImport(&Version, v1alpha3.DestinationRule{})
+		MustImport(&Version, v1alpha3.DestinationRule{}).
+		MustImport(&Version, v1alpha3.ServiceEntry{})
 )

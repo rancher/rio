@@ -14,9 +14,11 @@ import (
 
 type ServiceData struct {
 	ID       string
+	Created  string
 	Service  *client.Service
 	Stack    *client.Stack
 	Endpoint string
+	External string
 }
 
 func FormatServiceName(cluster *clientcfg.Cluster) func(data, data2 interface{}) (string, error) {
@@ -105,11 +107,12 @@ func (p *Ps) services(ctx *clicontext.CLIContext, stacks map[string]bool) error 
 	writer := table.NewWriter([][]string{
 		{"NAME", "{{serviceName .Stack.Name .Service}}"},
 		{"IMAGE", "{{.Service | image}}"},
-		{"CREATED", "{{.Service.Created | ago}}"},
+		{"CREATED", "{{.Created | ago}}"},
 		{"SCALE", "{{scale .Service.Scale .Service.ScaleStatus}}"},
 		{"STATE", "Service.State"},
 		{"ENDPOINT", "Endpoint"},
 		{"DETAIL", "{{first .Service.TransitioningMessage .Stack.TransitioningMessage}}"},
+		{"EXTERNAL", "External"},
 	}, ctx)
 	defer writer.Close()
 
@@ -134,10 +137,39 @@ func (p *Ps) services(ctx *clicontext.CLIContext, stacks map[string]bool) error 
 
 		writer.Write(&ServiceData{
 			ID:       service.ID,
+			Created:  services.Data[i].Created,
 			Service:  &services.Data[i],
 			Stack:    stack,
 			Endpoint: endpoint(&service),
 		})
+	}
+	if p.E_External {
+		externalServices, err := wc.ExternalService.List(util.DefaultListOpts())
+		if err != nil {
+			return err
+		}
+
+		for _, e := range externalServices.Data {
+			stack := stackByID[e.StackID]
+			if stack == nil {
+				continue
+			}
+
+			if len(stacks) > 0 && !stacks[e.StackID] {
+				continue
+			}
+			fakeService := &client.Service{}
+			fakeService.Name = e.Name
+			fakeService.State = "active"
+			writer.Write(&ServiceData{
+				ID:       e.ID,
+				Created:  e.Created,
+				Service:  fakeService,
+				Stack:    stack,
+				Endpoint: e.Target,
+				External: "*",
+			})
+		}
 	}
 
 	return writer.Err()

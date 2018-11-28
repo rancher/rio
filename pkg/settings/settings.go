@@ -12,6 +12,8 @@ const (
 	IstioStackName        = "istio"
 	DefaultServiceVersion = "v0"
 	CerManagerIssuerName  = "letsencrypt-issuer"
+	IstionConfigMapName   = "mesh"
+	IstionConfigMapKey    = "content"
 )
 
 var (
@@ -32,4 +34,6 @@ var (
 
 	DefaultHTTPOpenPort  = settings.NewSetting("default-http-port", "80")
 	DefaultHTTPSOpenPort = settings.NewSetting("default-https-port", "443")
+
+	RouteStubtImage = settings.NewSetting("route-redirect-image", "daishan1992/nginx-redirect:latest")
 )

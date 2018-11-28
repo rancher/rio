@@ -23,6 +23,7 @@ var (
 		Init(serviceTypes).
 		Init(volumeTypes).
 		Init(routeTypes).
+		Init(externalServiceTypes).
 		MustImport(&Version, v1beta1.InternalStack{})
 )
 
@@ -88,4 +89,10 @@ func stackTypes(schemas *types.Schemas) *types.Schemas {
 				return f
 			})
 		})
+}
+
+func externalServiceTypes(schemas *types.Schemas) *types.Schemas {
+	return schemas.AddMapperForType(&Version, v1beta1.ExternalService{},
+		mapper.Drop{Field: "namespace"}).
+		MustImport(&Version, v1beta1.ExternalService{})
 }

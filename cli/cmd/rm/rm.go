@@ -13,7 +13,7 @@ type Rm struct {
 }
 
 func (r *Rm) Run(ctx *clicontext.CLIContext) error {
-	types := []string{client.ServiceType, client.StackType, spaceClient.PodType, client.ConfigType, client.VolumeType}
+	types := []string{client.ServiceType, client.StackType, spaceClient.PodType, client.ConfigType, client.VolumeType, client.ExternalServiceType}
 	if len(r.T_Type) > 0 {
 		types = []string{r.T_Type}
 	}

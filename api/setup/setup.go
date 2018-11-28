@@ -3,6 +3,8 @@ package setup
 import (
 	"context"
 
+	"github.com/rancher/rio/api/meshnamed"
+
 	"github.com/rancher/norman/api/builtin"
 	"github.com/rancher/norman/pkg/subscribe"
 	"github.com/rancher/norman/store/crd"
@@ -31,7 +33,8 @@ func Types(ctx context.Context, clientGetter proxy.ClientGetter, schemas *norman
 	_, err := factory.CreateCRDs(ctx, normantypes.DefaultStorageContext,
 		networkSchema.Schemas.Schema(&networkSchema.Version, v1alpha3.GatewayGroupVersionKind.Kind),
 		networkSchema.Schemas.Schema(&networkSchema.Version, v1alpha3.VirtualServiceGroupVersionKind.Kind),
-		networkSchema.Schemas.Schema(&networkSchema.Version, v1alpha3.DestinationRuleGroupVersionKind.Kind))
+		networkSchema.Schemas.Schema(&networkSchema.Version, v1alpha3.DestinationRuleGroupVersionKind.Kind),
+		networkSchema.Schemas.Schema(&networkSchema.Version, v1alpha3.ServiceEntryGroupVersionKind.Kind))
 	if err != nil {
 		return err
 	}
@@ -47,6 +50,7 @@ func Types(ctx context.Context, clientGetter proxy.ClientGetter, schemas *norman
 	setupVolume(ctx, schemas)
 	setupStacks(ctx, schemas)
 	setupPublicDomain(ctx, schemas)
+	setupExternalService(ctx, schemas)
 
 	subscribe.Register(&builtin.Version, schemas)
 	subscribe.Register(&schema.Version, schemas)
@@ -59,7 +63,7 @@ func setupService(ctx context.Context, schemas *normantypes.Schemas) {
 	s := schemas.Schema(&schema.Version, client.ServiceType)
 	s.Formatter = pretty.Format
 	s.InputFormatter = pretty.InputFormatter
-	s.Store = resetstack.New(service.New(named.New(s.Store)))
+	s.Store = resetstack.New(service.New(meshnamed.New(named.New(s.Store))))
 }
 
 func setupConfig(ctx context.Context, schemas *normantypes.Schemas) {
@@ -72,12 +76,17 @@ func setupRoute(ctx context.Context, schemas *normantypes.Schemas) {
 	s := schemas.Schema(&schema.Version, client.RouteSetType)
 	s.Formatter = pretty.Format
 	s.InputFormatter = pretty.InputFormatter
-	s.Store = resetstack.New(named.New(s.Store))
+	s.Store = resetstack.New(meshnamed.New(named.New(s.Store)))
 }
 
 func setupVolume(ctx context.Context, schemas *normantypes.Schemas) {
 	s := schemas.Schema(&schema.Version, client.VolumeType)
 	s.Store = resetstack.New(named.New(s.Store))
+}
+
+func setupExternalService(ctx context.Context, schemas *normantypes.Schemas) {
+	s := schemas.Schema(&schema.Version, client.ExternalServiceType)
+	s.Store = resetstack.New(meshnamed.New(named.New(s.Store)))
 }
 
 func setupStacks(ctx context.Context, schemas *normantypes.Schemas) {

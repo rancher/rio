@@ -28,6 +28,7 @@ type Deployment struct {
 	Services               map[string]*v1.Service
 	StatefulSets           map[string]*appsv1.StatefulSet
 	VirtualServices        map[string]*IstioObject
+	ServiceEntries         map[string]*IstioObject
 }
 
 func NewDeployment() *Deployment {
@@ -46,6 +47,7 @@ func NewDeployment() *Deployment {
 		Services:               map[string]*v1.Service{},
 		StatefulSets:           map[string]*appsv1.StatefulSet{},
 		VirtualServices:        map[string]*IstioObject{},
+		ServiceEntries:         map[string]*IstioObject{},
 	}
 }
 
@@ -68,6 +70,7 @@ func (d *Deployment) Deploy(ns, groupID string) error {
 	ad.Add(ns, v1.GroupName, "Service", d.Services)
 	ad.Add(ns, appsv1.GroupName, "StatefulSet", d.StatefulSets)
 	ad.Add(ns, "networking.istio.io", "VirtualService", d.VirtualServices)
+	ad.Add(ns, "networking.istio.io", "ServiceEntry", d.ServiceEntries)
 
 	return ad.Apply()
 }

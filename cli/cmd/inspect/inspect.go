@@ -16,6 +16,7 @@ var (
 		client.StackType,
 		client.RouteSetType,
 		client.VolumeType,
+		client.ExternalServiceType,
 		client2.PodType,
 		client2.NodeType,
 		client2.PublicDomainType,

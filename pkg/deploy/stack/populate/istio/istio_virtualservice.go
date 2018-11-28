@@ -268,33 +268,27 @@ func vsFromSpec(stack *input.Stack, name, namespace string, service *v1beta1.Ser
 
 func vsFromRoutesets(stack *input.Stack, routesets []*v1beta1.RouteSet) []*output.IstioObject {
 	result := make([]*output.IstioObject, 0)
+	externalServiceMap := map[string]*v1beta1.ExternalService{}
+	for _, e := range stack.ExternalServices {
+		externalServiceMap[e.Name] = e
+	}
 	for _, routeset := range routesets {
 		ns := namespace.StackNamespace(stack.Stack.Namespace, stack.Stack.Name)
-		vs := newVirtualServiceFromRouteSet(stack, routeset.Name, ns)
+		vs := newVirtualServiceGeneric(stack, routeset.Name, ns)
 		spec := &v1alpha3.VirtualService{
 			Gateways: []string{privateGw, GetPublicGateway()},
-			Hosts:    []string{getExternalDomain(routeset.Name, stack.Stack.Name, stack.Space)},
+			Hosts:    []string{routeset.Name, getExternalDomain(routeset.Name, stack.Stack.Name, stack.Space)},
 		}
 		// populate http routing
 		for _, routeSpec := range routeset.Spec.Routes {
 			httpRoute := &v1alpha3.HTTPRoute{}
-
 			// populate destinations
 			for _, dest := range routeSpec.To {
-				if dest.Revision == "" {
-					dest.Revision = "v0"
+				if svc, ok := externalServiceMap[dest.Service]; ok {
+					httpRoute.Route = append(httpRoute.Route, destWeightForExternalService(dest, svc))
+				} else {
+					httpRoute.Route = append(httpRoute.Route, destWeightForService(dest))
 				}
-				httpRoute.Route = append(httpRoute.Route, &v1alpha3.DestinationWeight{
-					Destination: &v1alpha3.Destination{
-						Host:   dest.Service,
-						Subset: dest.Revision,
-						Port: &v1alpha3.PortSelector{
-							Port: &v1alpha3.PortSelector_Number{
-								Number: uint32(dest.Port),
-							},
-						},
-					},
-				})
 			}
 
 			// populate matches
@@ -312,6 +306,18 @@ func vsFromRoutesets(stack *input.Stack, routesets []*v1beta1.RouteSet) []*outpu
 					httpMatch.Headers[name] = populateStringMatch(value)
 				}
 				httpRoute.Match = append(httpRoute.Match, httpMatch)
+			}
+			if len(httpRoute.Match) == 0 {
+				httpRoute.Match = []*v1alpha3.HTTPMatchRequest{
+					{
+						Gateways: []string{privateGw, GetPublicGateway()},
+						Port:     80,
+					},
+					{
+						Gateways: []string{privateGw, GetPublicGateway()},
+						Port:     443,
+					},
+				}
 			}
 
 			if len(routeSpec.AddHeaders) > 0 {
@@ -370,6 +376,7 @@ func vsFromRoutesets(stack *input.Stack, routesets []*v1beta1.RouteSet) []*outpu
 
 			spec.Http = append(spec.Http, httpRoute)
 		}
+
 		// set port to 80 for virtual services that are created from gateway
 		vs.Annotations["rio.cattle.io/ports"] = "80"
 		vs.Spec = spec
@@ -462,7 +469,7 @@ func newVirtualService(stack *input.Stack, service *v1beta1.Service) *output.Ist
 	}
 }
 
-func newVirtualServiceFromRouteSet(stack *input.Stack, name, namespace string) *output.IstioObject {
+func newVirtualServiceGeneric(stack *input.Stack, name, namespace string) *output.IstioObject {
 	return &output.IstioObject{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "networking.istio.io/v1alpha3",
@@ -477,5 +484,49 @@ func newVirtualServiceFromRouteSet(stack *input.Stack, name, namespace string) *
 				"rio.cattle.io/workspace": stack.Stack.Namespace,
 			},
 		},
+	}
+}
+
+func destWeightForExternalService(d v1beta1.WeightedDestination, svc *v1beta1.ExternalService) *v1alpha3.DestinationWeight {
+	if d.Port == 0 {
+		d.Port = 80
+	}
+	if d.Weight == 0 {
+		d.Weight = 100
+	}
+	return &v1alpha3.DestinationWeight{
+		Destination: &v1alpha3.Destination{
+			Host: svc.Spec.Target,
+			Port: &v1alpha3.PortSelector{
+				Port: &v1alpha3.PortSelector_Number{
+					Number: uint32(d.Port),
+				},
+			},
+		},
+		Weight: int32(d.Weight),
+	}
+}
+
+func destWeightForService(d v1beta1.WeightedDestination) *v1alpha3.DestinationWeight {
+	if d.Revision == "" {
+		d.Revision = "v0"
+	}
+	if d.Port == 0 {
+		d.Port = 80
+	}
+	if d.Weight == 0 {
+		d.Weight = 100
+	}
+	return &v1alpha3.DestinationWeight{
+		Destination: &v1alpha3.Destination{
+			Host:   d.Service,
+			Subset: d.Revision,
+			Port: &v1alpha3.PortSelector{
+				Port: &v1alpha3.PortSelector_Number{
+					Number: uint32(d.Port),
+				},
+			},
+		},
+		Weight: int32(d.Weight),
 	}
 }
