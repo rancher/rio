@@ -56,6 +56,16 @@ func systemStacks(inCluster bool) []runtime.Object {
 		},
 	}))
 
+	if settings.EnableMonitoring.Get() == "true" {
+		result = append(result, stack("istio-telemetry", v1beta1.StackSpec{
+			DisableMesh: true,
+			Answers: map[string]string{
+				"LB_NAMESPACE": settings.IstioExternalLBNamespace,
+			},
+			EnableKubernetesResources: true,
+		}))
+	}
+
 	if !inCluster {
 		result = append(result, stack("coredns", v1beta1.StackSpec{
 			DisableMesh: true,

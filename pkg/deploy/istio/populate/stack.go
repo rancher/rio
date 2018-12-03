@@ -39,7 +39,8 @@ func populateStack(input *input.IstioDeployment, output *output.Deployment) erro
 		},
 		Spec: v1beta1.StackSpec{
 			Answers: map[string]string{
-				"PORTS": string(portStr),
+				"PORTS":               string(portStr),
+				"TELEMETRY_NAMESPACE": settings.IstioTelemetryNamespace,
 			},
 			EnableKubernetesResources: true,
 			DisableMesh:               true,

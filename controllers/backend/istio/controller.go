@@ -3,17 +3,17 @@ package istio
 import (
 	"context"
 
-	"github.com/rancher/rio/types/apis/space.cattle.io/v1beta1"
-
 	"github.com/rancher/norman/pkg/changeset"
 	"github.com/rancher/rio/pkg/certs"
 	"github.com/rancher/rio/pkg/deploy/istio"
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
+	"github.com/rancher/rio/types/apis/space.cattle.io/v1beta1"
 	v12 "github.com/rancher/types/apis/core/v1"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -34,7 +34,7 @@ func Register(ctx context.Context, rContext *types.Context) {
 		serviceLister:        rContext.Core.Service.Cache(),
 		namespaceLister:      rContext.Core.Namespace.Cache(),
 		publicdomainLister:   rContext.Global.PublicDomain.Cache(),
-		secrets:              rContext.Core.Secret.Cache(),
+		secrets:              rContext.Core.Secret,
 	}
 
 	rContext.Networking.VirtualService.Interface().AddHandler(ctx, "istio-deploy", s.sync)
@@ -65,7 +65,7 @@ type istioDeployController struct {
 	serviceLister        v12.ServiceClientCache
 	namespaceLister      v12.NamespaceClientCache
 	publicdomainLister   v1beta1.PublicDomainClientCache
-	secrets              v12.SecretClientCache
+	secrets              v12.SecretClient
 }
 
 func (i *istioDeployController) sync(key string, obj *v1alpha3.VirtualService) (runtime.Object, error) {
@@ -88,7 +88,7 @@ func (i *istioDeployController) sync(key string, obj *v1alpha3.VirtualService) (
 		return nil, err
 	}
 
-	secret, err := i.secrets.Get(settings.IstioExternalLBNamespace, certs.TlsSecretName)
+	secret, err := i.secrets.Get(settings.IstioExternalLBNamespace, certs.TlsSecretName, metav1.GetOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		return nil, err
 	}
