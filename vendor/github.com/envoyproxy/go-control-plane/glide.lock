@@ -1,0 +1,101 @@
+hash: ff9dd00a99a25df2e68407860517dfd7fcb60dfcda478db53b3c11ff80aed02e
+updated: 2018-08-14T10:08:46.911484619-07:00
+imports:
+- name: github.com/envoyproxy/data-plane-api
+  version: f01638479cf6dbb246dd6fa3582f169c35460891
+- name: github.com/gogo/googleapis
+  version: 0cd9801be74a10d5ac39d69626eac8255ffcd502
+  subpackages:
+  - google/api
+  - google/rpc
+- name: github.com/gogo/protobuf
+  version: 636bf0302bc95575d69441b25a2603156ffdddf1
+  subpackages:
+  - gogoproto
+  - jsonpb
+  - proto
+  - protoc-gen-gogo/descriptor
+  - protoc-gen-gogofast
+  - sortkeys
+  - types
+- name: github.com/golang/protobuf
+  version: ab9f9a6dab164b7d1246e0e688b0ab7b94d8553e
+  subpackages:
+  - proto
+  - protoc-gen-go/descriptor
+  - ptypes
+  - ptypes/any
+  - ptypes/duration
+  - ptypes/timestamp
+- name: github.com/lyft/protoc-gen-validate
+  version: f9d2b11e44149635b23a002693b76512b01ae515
+  subpackages:
+  - validate
+- name: github.com/sirupsen/logrus
+  version: 3e01752db0189b9157070a0e1668a620f9a85da2
+- name: golang.org/x/crypto
+  version: 5119cf507ed5294cc409c092980c7497ee5d6fd2
+  subpackages:
+  - ssh/terminal
+- name: golang.org/x/net
+  version: 5ccada7d0a7ba9aeb5d3aca8d3501b4c2a509fec
+  subpackages:
+  - context
+  - http2
+  - http2/hpack
+  - idna
+  - internal/timeseries
+  - lex/httplex
+  - trace
+- name: golang.org/x/sys
+  version: acbc56fc7007d2a01796d5bde54f39e3b3e95945
+  subpackages:
+  - unix
+  - windows
+- name: golang.org/x/text
+  version: e19ae1496984b1c655b8044a65c0300a3c878dd3
+  subpackages:
+  - secure/bidirule
+  - transform
+  - unicode/bidi
+  - unicode/norm
+- name: google.golang.org/genproto
+  version: a8101f21cf983e773d0c1133ebc5424792003214
+  subpackages:
+  - googleapis
+  - googleapis/rpc/status
+  - opencensus
+- name: google.golang.org/grpc
+  version: 32fb0ac620c32ba40a4626ddf94d90d12cce3455
+  subpackages:
+  - balancer
+  - balancer/base
+  - balancer/roundrobin
+  - codes
+  - connectivity
+  - credentials
+  - encoding
+  - encoding/proto
+  - grpclog
+  - internal
+  - internal/backoff
+  - internal/channelz
+  - internal/envconfig
+  - internal/grpcrand
+  - internal/transport
+  - keepalive
+  - metadata
+  - naming
+  - peer
+  - resolver
+  - resolver/dns
+  - resolver/passthrough
+  - stats
+  - status
+  - tap
+- name: istio.io/gogo-genproto
+  version: dd2b5b6a8f1400838165245e704a011a30154a44
+  subpackages:
+  - opencensus/proto/trace
+  - prometheus
+testImports: []
