@@ -5,6 +5,7 @@ configs:
       ingressControllerMode: "OFF"
       authPolicy: NONE
       rdsRefreshDelay: 10s
+      mixerReportServer: istio-telemetry.${TELEMETRY_NAMESPACE}.svc.cluster.local:9091
       outboundTrafficPolicy:
         mode: ALLOW_ANY
       defaultConfig:
@@ -51,14 +52,14 @@ services:
         - POD_NAMESPACE=$(self/namespace)
         - PILOT_THROTTLE=500
         - PILOT_CACHE_SQUASH=5
-        image: istio/pilot:1.0.3
+        image: istio/pilot:1.0.4
         secrets: identity:/etc/certs
       istio-proxy:
         expose:
         - 15007/http
         - 15010/grpc
         - 9093/http,http-monitoring
-        image: istio/proxyv2:1.0.3
+        image: istio/proxyv2:1.0.4
         command:
         - proxy
         - --serviceCluster
@@ -74,7 +75,7 @@ services:
         secrets: identity:/etc/certs
 
   istio-citadel:
-    image: "istio/citadel:1.0.3"
+    image: "istio/citadel:1.0.4"
     command:
     - --append-dns-names=true
     - --grpc-port=8060
@@ -106,7 +107,7 @@ services:
     sidekicks:
       istio-proxy:
         ports: ${PORTS}
-        image: "istio/proxyv2:1.0.3"
+        image: "istio/proxyv2:1.0.4"
         command:
         - proxy
         - router
@@ -140,3 +141,10 @@ services:
         secrets:
         - identity:/etc/certs
         - rio-certs:/etc/istio/ingressgateway-certs
+
+
+questions:
+- variable: TELEMETRY_NAMESPACE
+  description: "istio-telemetry namespace"
+
+
