@@ -111,8 +111,8 @@ func (p *Ps) services(ctx *clicontext.CLIContext, stacks map[string]bool) error 
 		{"SCALE", "{{scale .Service.Scale .Service.ScaleStatus}}"},
 		{"STATE", "Service.State"},
 		{"ENDPOINT", "Endpoint"},
-		{"DETAIL", "{{first .Service.TransitioningMessage .Stack.TransitioningMessage}}"},
 		{"EXTERNAL", "External"},
+		{"DETAIL", "{{first .Service.TransitioningMessage .Stack.TransitioningMessage}}"},
 	}, ctx)
 	defer writer.Close()
 
@@ -143,33 +143,61 @@ func (p *Ps) services(ctx *clicontext.CLIContext, stacks map[string]bool) error 
 			Endpoint: endpoint(&service),
 		})
 	}
-	if p.E_External {
-		externalServices, err := wc.ExternalService.List(util.DefaultListOpts())
-		if err != nil {
-			return err
+
+	// external services
+	externalServices, err := wc.ExternalService.List(util.DefaultListOpts())
+	if err != nil {
+		return err
+	}
+
+	for _, e := range externalServices.Data {
+		stack := stackByID[e.StackID]
+		if stack == nil {
+			continue
 		}
 
-		for _, e := range externalServices.Data {
-			stack := stackByID[e.StackID]
-			if stack == nil {
-				continue
-			}
-
-			if len(stacks) > 0 && !stacks[e.StackID] {
-				continue
-			}
-			fakeService := &client.Service{}
-			fakeService.Name = e.Name
-			fakeService.State = "active"
-			writer.Write(&ServiceData{
-				ID:       e.ID,
-				Created:  e.Created,
-				Service:  fakeService,
-				Stack:    stack,
-				Endpoint: e.Target,
-				External: "*",
-			})
+		if len(stacks) > 0 && !stacks[e.StackID] {
+			continue
 		}
+		fakeService := &client.Service{}
+		fakeService.Name = e.Name
+		fakeService.State = "active"
+		writer.Write(&ServiceData{
+			ID:       e.ID,
+			Created:  e.Created,
+			Service:  fakeService,
+			Stack:    stack,
+			Endpoint: e.Target,
+			External: "*",
+		})
+	}
+
+	// routes
+	routes, err := wc.RouteSet.List(util.DefaultListOpts())
+	if err != nil {
+		return err
+	}
+
+	for _, r := range routes.Data {
+		stack := stackByID[r.StackID]
+		if stack == nil {
+			continue
+		}
+
+		if len(stacks) > 0 && !stacks[r.StackID] {
+			continue
+		}
+		fakeService := &client.Service{}
+		fakeService.Name = r.Name
+		fakeService.State = "active"
+		writer.Write(&ServiceData{
+			ID:       r.ID,
+			Created:  r.Created,
+			Service:  fakeService,
+			Stack:    stack,
+			Endpoint: "routed",
+			External: "",
+		})
 	}
 
 	return writer.Err()

@@ -88,6 +88,7 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 	}
 
 	writer := table.NewWriter([][]string{
+		{"NAME", "{{stackScopedName .Stack.Name .RouteSet.Name}}"},
 		{"URL", "{{ . | formatURL }}"},
 		{"OPTS", "{{ . | formatOpts }}"},
 		{"ACTION", "{{ . | formatAction }}"},
@@ -99,6 +100,7 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 	writer.AddFormatFunc("formatOpts", FormatOpts)
 	writer.AddFormatFunc("formatAction", FormatAction)
 	writer.AddFormatFunc("formatTarget", FormatTarget)
+	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cluster))
 
 	stackByID, err := util.StacksByID(wc)
 	if err != nil {

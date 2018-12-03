@@ -19,12 +19,10 @@ cross()
 
 mkdir -p bin
 
-cross &
+cross
 
 echo Building incluster
 CGO_ENABLED=0 go build -ldflags "$LDFLAGS $STATIC" -o bin/rio-incluster
 
 echo Building cli full
 CGO_ENABLED=1 go build -tags "static_build libsqlite3 k8s ctr no_etcd netgo osusergo" -ldflags "$LDFLAGS $STATIC_SQLITE" -o bin/rio-full ./cli/main.go
-
-wait -n

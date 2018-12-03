@@ -37,7 +37,6 @@ var (
 	DefaultHTTPOpenPort  = settings.NewSetting("default-http-port", "80")
 	DefaultHTTPSOpenPort = settings.NewSetting("default-https-port", "443")
 
-	RouteStubtImage = settings.NewSetting("route-redirect-image", "daishan1992/nginx-redirect:latest")
-
 	EnableMonitoring = settings.NewSetting("enable-monitoring", "true")
+	RouteStubImage   = settings.NewSetting("route-stub-image", "ibuildthecloud/demo:v1")
 )
