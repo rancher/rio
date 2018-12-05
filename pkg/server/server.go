@@ -65,6 +65,7 @@ func NewConfig(dataDir string, inCluster bool) (*norman.Config, error) {
 			&spaceschema.Version: {
 				spaceclient.ListenConfigType,
 				spaceclient.PublicDomainType,
+				spaceclient.FeatureType,
 			},
 		},
 

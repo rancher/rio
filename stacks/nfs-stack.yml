@@ -28,3 +28,9 @@ services:
         privileged: true
         initContainer: true
         imagePullPolicy: always
+
+#questions:
+#- variable: NFS_SERVER_HOSTNAME
+#  description: "Hostname of NFS server"
+#- variable: NFS_SERVER_EXPORT_PATH
+#  description: "Export path of NFS server"

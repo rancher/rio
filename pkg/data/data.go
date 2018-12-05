@@ -19,6 +19,9 @@ func AddData(rContext *types.Context, inCluster bool) error {
 	if err := addNameSpace(rContext); err != nil {
 		return err
 	}
+	if err := addFeatures(rContext); err != nil {
+		return err
+	}
 
 	if err := apply.Apply(systemStacks(inCluster), nil, settings.RioSystemNamespace, "rio-system-stacks"); err != nil {
 		return err
@@ -30,44 +33,34 @@ func AddData(rContext *types.Context, inCluster bool) error {
 func systemStacks(inCluster bool) []runtime.Object {
 	var result []runtime.Object
 
-	result = append(result, stack("istio-crd", v1beta1.StackSpec{
+	result = append(result, Stack("istio-crd", v1beta1.StackSpec{
 		DisableMesh:               true,
 		EnableKubernetesResources: true,
 	}))
 
-	result = append(result, stack("cert-manager-crd", v1beta1.StackSpec{
+	result = append(result, Stack("cert-manager-crd", v1beta1.StackSpec{
 		DisableMesh:               true,
 		EnableKubernetesResources: true,
 	}))
 
-	result = append(result, stack("storageclasses", v1beta1.StackSpec{
+	result = append(result, Stack("storageclasses", v1beta1.StackSpec{
 		DisableMesh:               true,
 		EnableKubernetesResources: true,
 	}))
 
-	result = append(result, stack("local-storage", v1beta1.StackSpec{
+	result = append(result, Stack("local-storage", v1beta1.StackSpec{
 		DisableMesh: true,
 	}))
 
-	result = append(result, stack("cert-manager", v1beta1.StackSpec{
+	result = append(result, Stack("cert-manager", v1beta1.StackSpec{
 		DisableMesh: true,
 		Answers: map[string]string{
 			"CERT_MANAGER_IMAGE": settings.CertManagerImage.Get(),
 		},
 	}))
 
-	if settings.EnableMonitoring.Get() == "true" {
-		result = append(result, stack("istio-telemetry", v1beta1.StackSpec{
-			DisableMesh: true,
-			Answers: map[string]string{
-				"LB_NAMESPACE": settings.IstioExternalLBNamespace,
-			},
-			EnableKubernetesResources: true,
-		}))
-	}
-
 	if !inCluster {
-		result = append(result, stack("coredns", v1beta1.StackSpec{
+		result = append(result, Stack("coredns", v1beta1.StackSpec{
 			DisableMesh: true,
 		}))
 	}
@@ -75,7 +68,7 @@ func systemStacks(inCluster bool) []runtime.Object {
 	return result
 }
 
-func stack(name string, spec v1beta1.StackSpec) runtime.Object {
+func Stack(name string, spec v1beta1.StackSpec) runtime.Object {
 	s := &v1beta1.Stack{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "rio.cattle.io/v1beta1",
@@ -89,12 +82,12 @@ func stack(name string, spec v1beta1.StackSpec) runtime.Object {
 	}
 
 	s.Spec = spec
-	s.Spec.Template = stackData(name)
+	s.Spec.Template = StackData(name)
 
 	return s
 }
 
-func stackData(name string) string {
+func StackData(name string) string {
 	bytes, err := stacks.Asset(fmt.Sprintf("stacks/%s-stack.yml", name))
 	if err != nil {
 		panic("failed to load stack data for: " + name + " " + err.Error())
