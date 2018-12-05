@@ -10,6 +10,7 @@ const (
 	IstioGateway          = "rio-gateway"
 	IstioGatewayDeploy    = "istio-gateway"
 	IstioStackName        = "istio"
+	IstioTelemetry        = "istio-telemetry"
 	DefaultServiceVersion = "v0"
 	CerManagerIssuerName  = "letsencrypt-issuer"
 	IstionConfigMapName   = "mesh"
@@ -24,6 +25,7 @@ var (
 	RioImage       = settings.NewSetting("rio-image", "rancher/rio")
 
 	IstioExternalLBNamespace = namespace.StackNamespace(RioSystemNamespace, IstioStackName)
+	IstioTelemetryNamespace  = namespace.StackNamespace(RioSystemNamespace, IstioTelemetry)
 	IstioGatewaySelector     = map[string]string{
 		"gateway": "external",
 	}
@@ -36,4 +38,6 @@ var (
 	DefaultHTTPSOpenPort = settings.NewSetting("default-https-port", "443")
 
 	RouteStubtImage = settings.NewSetting("route-redirect-image", "daishan1992/nginx-redirect:latest")
+
+	EnableMonitoring = settings.NewSetting("enable-monitoring", "true")
 )

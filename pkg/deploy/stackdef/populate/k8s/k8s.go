@@ -56,7 +56,7 @@ func readManifest(namespace, content string, output *output.Deployment) error {
 		}
 
 		for _, obj := range objs {
-			k8sObjs[obj.GetName()] = obj
+			k8sObjs[fmt.Sprintf("%s/%s", obj.GetName(), obj.GetKind())] = obj
 		}
 	}
 
