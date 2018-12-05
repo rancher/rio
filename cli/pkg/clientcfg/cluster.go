@@ -24,10 +24,10 @@ type Cluster struct {
 	Name                 string  `json:"name,omitempty"`
 	DefaultStackName     string  `json:"defaultStackName,omitempty"`
 	DefaultWorkspaceName string  `json:"defaultWorkspaceName,omitempty"`
-	Default              bool    `json:"-"`
+	Default              bool    `json:"default,omitempty"`
 	Config               *Config `json:"-"`
 
-	file        string
+	File        string
 	domain      string
 	workspace   *Workspace
 	clientInfo  *clusterClientInfo

@@ -52,7 +52,7 @@ func (l *Login) Run(ctx *clicontext.CLIContext) (ex error) {
 
 	cluster.ID = name.Hex(cluster.URL, 5)
 	cluster.Name = cluster.ID
-	return ctx.Config.SaveCluster(cluster)
+	return ctx.Config.SaveCluster(cluster, true)
 }
 
 func validate(serverURL, token string) (*clientcfg.Cluster, error) {

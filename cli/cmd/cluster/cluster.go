@@ -12,6 +12,10 @@ func Cluster(app *cli.App) cli.Command {
 		"List clusters",
 		app.Name+" cluster ls",
 		"")
+	rm := builder.Command(&Rm{},
+		"Remove clusters",
+		app.Name+" cluster rm",
+		"")
 	return cli.Command{
 		Name:      "clusters",
 		ShortName: "cluster",
@@ -21,6 +25,7 @@ func Cluster(app *cli.App) cli.Command {
 		Category:  "SUB COMMANDS",
 		Subcommands: []cli.Command{
 			ls,
+			rm,
 		},
 	}
 }

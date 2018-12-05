@@ -155,7 +155,7 @@ func (c *Config) Cluster() (*Cluster, error) {
 }
 
 func (c *Config) Clusters() ([]Cluster, error) {
-	clusters, err := listClusters(c.ClusterDir())
+	clusters, err := ListClusters(c.ClusterDir())
 	if err != nil {
 		return nil, err
 	}
@@ -169,17 +169,21 @@ func (c *Config) Clusters() ([]Cluster, error) {
 		if clusters[i].DefaultWorkspaceName == "" {
 			clusters[i].DefaultWorkspaceName = "default"
 		}
-		clusters[i].Default = clusters[i].Name == defaultName
+		if !clusters[i].Default {
+			clusters[i].Default = clusters[i].Name == defaultName
+		}
 		clusters[i].Config = c
 	}
 
 	return clusters, nil
 }
 
-func (c *Config) SaveCluster(cluster *Cluster) error {
-	_, err := cluster.Workspaces()
-	if err != nil {
-		return errors.Wrapf(err, "can not save cluster")
+func (c *Config) SaveCluster(cluster *Cluster, validate bool) error {
+	if validate {
+		_, err := cluster.Workspaces()
+		if err != nil {
+			return errors.Wrapf(err, "can not save cluster")
+		}
 	}
 
 	name := cluster.ID
@@ -193,11 +197,19 @@ func (c *Config) SaveCluster(cluster *Cluster) error {
 	clusterDir := c.ClusterDir()
 	os.MkdirAll(clusterDir, 0700)
 
-	file := filepath.Join(clusterDir, fmt.Sprintf("%s.json", name))
+	file := cluster.File
+	if file == "" {
+		file = filepath.Join(clusterDir, fmt.Sprintf("%s.json", name))
+	}
 
 	out, err := os.Create(file)
-	if err != nil {
+	if err != nil && !os.IsExist(err) {
 		return errors.Wrapf(err, "can not save cluster")
+	} else if os.IsExist(err) {
+		out, err = os.Open(file)
+		if err != nil {
+			return errors.Wrapf(err, "can not update cluster")
+		}
 	}
 
 	err = json.NewEncoder(out).Encode(cluster)
@@ -236,14 +248,14 @@ func (c *Config) getAndSaveAdminCluster() *Cluster {
 		Config:               c,
 	}
 
-	if err := c.SaveCluster(cluster); err != nil {
+	if err := c.SaveCluster(cluster, true); err != nil {
 		return nil
 	}
 
 	return cluster
 }
 
-func listClusters(dir string) ([]Cluster, error) {
+func ListClusters(dir string) ([]Cluster, error) {
 	files, err := ioutil.ReadDir(dir)
 	if os.IsNotExist(err) {
 		return nil, nil
@@ -271,7 +283,7 @@ func listClusters(dir string) ([]Cluster, error) {
 			continue
 		}
 
-		cluster.file = fName
+		cluster.File = fName
 		cluster.Checksum = hex.EncodeToString(digest[:])
 
 		if cluster.Name == "" {
