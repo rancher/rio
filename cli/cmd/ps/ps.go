@@ -13,7 +13,6 @@ import (
 type Ps struct {
 	C_Containers bool `desc:"print containers, not services"`
 	A_All        bool `desc:"include all container, not just ones related to services"`
-	E_External   bool `desc:"print external services"`
 }
 
 func (p *Ps) Customize(cmd *cli.Command) {

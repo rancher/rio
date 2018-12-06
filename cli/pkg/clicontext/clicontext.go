@@ -5,6 +5,8 @@ import (
 
 	"github.com/rancher/norman/clientbase"
 	"github.com/rancher/rio/cli/pkg/clientcfg"
+	"github.com/rancher/rio/types/client/rio/v1beta1"
+	spaceclient "github.com/rancher/rio/types/client/space/v1beta1"
 	"github.com/urfave/cli"
 )
 
@@ -14,9 +16,17 @@ type CLIContext struct {
 	*clientcfg.Config
 	Ctx context.Context
 	CLI *cli.Context
+	WC  *client.Client
+	SC  *spaceclient.Client
 }
 
 func (c *CLIContext) ClientLookup(typeName string) (clientbase.APIBaseClientInterface, error) {
+	if c.WC != nil && c.SC != nil {
+		if _, ok := c.WC.Types[typeName]; ok {
+			return c.WC, nil
+		}
+		return c.SC, nil
+	}
 	wc, err := c.Config.WorkspaceClient()
 	if err == nil {
 		if _, ok := wc.Types[typeName]; ok {

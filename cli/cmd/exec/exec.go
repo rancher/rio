@@ -2,6 +2,7 @@ package exec
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/rancher/rio/cli/cmd/ps"
 	"github.com/rancher/rio/cli/pkg/clicontext"
@@ -28,6 +29,13 @@ func (e *Exec) Run(ctx *clicontext.CLIContext) error {
 
 	if pd == nil {
 		return fmt.Errorf("failed to find pod for %s, container \"%s\"", args[0], e.C_Container)
+	}
+
+	if e.C_Container == "" {
+		parts := strings.SplitN(args[0], "/", 4)
+		if len(parts) == 4 {
+			e.C_Container = parts[3]
+		}
 	}
 
 	container := findContainer(pd, e.C_Container)

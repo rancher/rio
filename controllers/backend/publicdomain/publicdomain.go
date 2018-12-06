@@ -115,19 +115,18 @@ func (d *domainController) Remove(domain *spacev1beta1.PublicDomain) (runtime.Ob
 		return domain, err
 	}
 	routeset, err := d.routesetLister.Get(ns, domain.Spec.TargetName)
-	if err != nil {
+	if err != nil && !errors.IsNotFound(err) {
 		return domain, err
 	}
-	if errors.IsNotFound(err) {
-		return domain, nil
-	}
-	routeset = routeset.DeepCopy()
-	routeset.Annotations[istio.PublicDomainAnnotation] = rmKey(routeset.Annotations[istio.PublicDomainAnnotation], domain.Spec.DomainName)
-	if routeset.Annotations[istio.PublicDomainAnnotation] == "" {
-		delete(routeset.Annotations, istio.PublicDomainAnnotation)
-	}
-	if _, err := d.routesets.Update(routeset); err != nil {
-		return domain, err
+	if err == nil {
+		routeset = routeset.DeepCopy()
+		routeset.Annotations[istio.PublicDomainAnnotation] = rmKey(routeset.Annotations[istio.PublicDomainAnnotation], domain.Spec.DomainName)
+		if routeset.Annotations[istio.PublicDomainAnnotation] == "" {
+			delete(routeset.Annotations, istio.PublicDomainAnnotation)
+		}
+		if _, err := d.routesets.Update(routeset); err != nil {
+			return domain, err
+		}
 	}
 	if err := d.secrets.Delete(settings.RioSystemNamespace, fmt.Sprintf("%s-tls-certs", domain.Name), &metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
 		return domain, err

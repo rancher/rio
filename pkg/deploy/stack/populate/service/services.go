@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rancher/rio/api/service"
 	"github.com/rancher/rio/pkg/deploy/stack/input"
 	"github.com/rancher/rio/pkg/deploy/stack/output"
 	"github.com/rancher/rio/pkg/deploy/stack/populate/k8sservice"
@@ -39,8 +38,11 @@ func Populate(stack *input.Stack, output *output.Deployment) error {
 		populateServiceFromExternal(externalService, output)
 	}
 
+	routesMap := map[string]struct{}{}
 	for _, route := range stack.RouteSet {
-		populateDeploymentFromRoute(stack.Space, route, output)
+		routesMap[route.Name] = struct{}{}
+	}
+	for _, route := range stack.RouteSet {
 		populateServiceFromRoute(route, output)
 	}
 
@@ -123,10 +125,6 @@ func populateServiceFromRoute(r *v1beta1.RouteSet, output *output.Deployment) {
 		},
 		Spec: v1.ServiceSpec{
 			Type: v1.ServiceTypeClusterIP,
-			Selector: map[string]string{
-				"app":                   r.Name,
-				"rio.cattle.io/version": "v0",
-			},
 			Ports: []v1.ServicePort{
 				{
 					Name:       "http-80-80",
@@ -140,20 +138,15 @@ func populateServiceFromRoute(r *v1beta1.RouteSet, output *output.Deployment) {
 	output.Services[service.Name] = service
 }
 
-func getExternalDomain(name, namespace, space string) string {
-	return fmt.Sprintf("%s.%s", service.HashIfNeed(name, strings.SplitN(namespace, "-", 2)[0], space), settings.ClusterDomain.Get())
-}
-
-func populateDeploymentFromRoute(space string, r *v1beta1.RouteSet, output *output.Deployment) {
+func populateStubDeployment(namespace string, output *output.Deployment) {
 	dep := &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Deployment",
 			APIVersion: "apps/v1beta2",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        r.Name,
-			Namespace:   r.Namespace,
-			Labels:      r.Labels,
+			Name:        "stub",
+			Namespace:   namespace,
 			Annotations: map[string]string{},
 		},
 		Spec: appsv1.DeploymentSpec{
@@ -161,8 +154,7 @@ func populateDeploymentFromRoute(space string, r *v1beta1.RouteSet, output *outp
 			Replicas: &[]int32{1}[0],
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"app":                   r.Name,
-					"rio.cattle.io/version": "v0",
+					"app": "rio-route-stub",
 				},
 			},
 			Template: v1.PodTemplateSpec{
@@ -170,14 +162,11 @@ func populateDeploymentFromRoute(space string, r *v1beta1.RouteSet, output *outp
 					Containers: []v1.Container{
 						{
 							Name:            "route-redirect",
-							Image:           settings.RouteStubtImage.Get(),
+							Image:           settings.RouteStubImage.Get(),
 							ImagePullPolicy: v1.PullAlways,
-							Stdin:           true,
-							TTY:             true,
-							Env: []v1.EnvVar{
+							Ports: []v1.ContainerPort{
 								{
-									Name:  "SERVER_REDIRECT",
-									Value: getExternalDomain(r.Name, r.Namespace, space),
+									ContainerPort: 80,
 								},
 							},
 						},
@@ -185,8 +174,7 @@ func populateDeploymentFromRoute(space string, r *v1beta1.RouteSet, output *outp
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app":                   r.Name,
-						"rio.cattle.io/version": "v0",
+						"app": "rio-route-stub",
 					},
 				},
 			},
@@ -196,4 +184,5 @@ func populateDeploymentFromRoute(space string, r *v1beta1.RouteSet, output *outp
 		},
 	}
 	output.Deployments[dep.Name] = dep
+
 }

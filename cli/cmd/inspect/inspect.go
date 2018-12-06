@@ -39,6 +39,16 @@ func (i *Inspect) Customize(cmd *cli.Command) {
 }
 
 func (i *Inspect) Run(ctx *clicontext.CLIContext) error {
+	workspaceClient, err := ctx.WorkspaceClient()
+	if err != nil {
+		return err
+	}
+	spaceClient, err := ctx.ClusterClient()
+	if err != nil {
+		return err
+	}
+	ctx.WC = workspaceClient
+	ctx.SC = spaceClient
 	for _, arg := range ctx.CLI.Args() {
 		r, err := find(ctx, arg, i.T_Type, InspectTypes)
 		if err != nil {
