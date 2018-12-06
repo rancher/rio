@@ -3,6 +3,7 @@ package backend
 import (
 	"context"
 
+	"github.com/rancher/rio/controllers/backend/features"
 	"github.com/rancher/rio/controllers/backend/istio"
 	"github.com/rancher/rio/controllers/backend/publicdomain"
 	"github.com/rancher/rio/controllers/backend/secrets"
@@ -27,5 +28,6 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	}
 	publicdomain.Register(ctx, rContext)
 	secrets.Register(ctx, rContext)
+	features.Register(ctx, rContext)
 	return nil
 }

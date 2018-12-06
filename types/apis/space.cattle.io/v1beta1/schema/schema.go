@@ -21,7 +21,8 @@ var (
 		MustImport(&Version, v1.Node{}).
 		Init(podTypes).
 		Init(spaceTypes).
-		Init(publicDomainTypes)
+		Init(publicDomainTypes).
+		Init(featureTypes)
 )
 
 func podTypes(schemas *types.Schemas) *types.Schemas {
@@ -72,4 +73,8 @@ func spaceTypes(schemas *types.Schemas) *types.Schemas {
 
 func publicDomainTypes(schemas *types.Schemas) *types.Schemas {
 	return schemas.MustImport(&Version, v1beta1.PublicDomain{})
+}
+
+func featureTypes(schemas *types.Schemas) *types.Schemas {
+	return schemas.MustImport(&Version, v1beta1.Feature{})
 }

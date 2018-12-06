@@ -18,6 +18,7 @@ import (
 	"github.com/rancher/rio/cli/cmd/exec"
 	"github.com/rancher/rio/cli/cmd/export"
 	"github.com/rancher/rio/cli/cmd/externalservice"
+	"github.com/rancher/rio/cli/cmd/feature"
 	"github.com/rancher/rio/cli/cmd/inspect"
 	"github.com/rancher/rio/cli/cmd/kubectl"
 	"github.com/rancher/rio/cli/cmd/login"
@@ -150,6 +151,7 @@ func main() {
 		publicdomain.PublicDomain(app),
 		externalservice.ExternalService(app),
 		setcontext.SetContext(),
+		feature.Feature(app),
 
 		builder.Command(&ps.Ps{},
 			"List services and containers",

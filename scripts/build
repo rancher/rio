@@ -22,6 +22,7 @@ mkdir -p bin
 cross
 
 echo Building incluster
+GOOS=linux GOARCH=amd64
 CGO_ENABLED=0 go build -ldflags "$LDFLAGS $STATIC" -o bin/rio-incluster
 
 echo Building cli full
