@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/rancher/norman/generator"
 	networkingSchema "github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3/schema"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1/schema"
-	spaceSchema "github.com/rancher/rio/types/apis/space.cattle.io/v1beta1/schema"
+	spaceSchema "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1/schema"
+	"github.com/rancher/rio/types/apis/rio.cattle.io/v1/schema"
 	"github.com/sirupsen/logrus"
 )
 
