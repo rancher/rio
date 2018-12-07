@@ -4,11 +4,11 @@ import (
 	"fmt"
 
 	"github.com/rancher/rio/pkg/apply"
+	"github.com/rancher/rio/pkg/project"
 	"github.com/rancher/rio/pkg/settings"
-	"github.com/rancher/rio/pkg/space"
 	"github.com/rancher/rio/stacks"
 	"github.com/rancher/rio/types"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,26 +33,26 @@ func AddData(rContext *types.Context, inCluster bool) error {
 func systemStacks(inCluster bool) []runtime.Object {
 	var result []runtime.Object
 
-	result = append(result, Stack("istio-crd", v1beta1.StackSpec{
+	result = append(result, Stack("istio-crd", riov1.StackSpec{
 		DisableMesh:               true,
 		EnableKubernetesResources: true,
 	}))
 
-	result = append(result, Stack("cert-manager-crd", v1beta1.StackSpec{
+	result = append(result, Stack("cert-manager-crd", riov1.StackSpec{
 		DisableMesh:               true,
 		EnableKubernetesResources: true,
 	}))
 
-	result = append(result, Stack("storageclasses", v1beta1.StackSpec{
+	result = append(result, Stack("storageclasses", riov1.StackSpec{
 		DisableMesh:               true,
 		EnableKubernetesResources: true,
 	}))
 
-	result = append(result, Stack("local-storage", v1beta1.StackSpec{
+	result = append(result, Stack("local-storage", riov1.StackSpec{
 		DisableMesh: true,
 	}))
 
-	result = append(result, Stack("cert-manager", v1beta1.StackSpec{
+	result = append(result, Stack("cert-manager", riov1.StackSpec{
 		DisableMesh: true,
 		Answers: map[string]string{
 			"CERT_MANAGER_IMAGE": settings.CertManagerImage.Get(),
@@ -60,7 +60,7 @@ func systemStacks(inCluster bool) []runtime.Object {
 	}))
 
 	if !inCluster {
-		result = append(result, Stack("coredns", v1beta1.StackSpec{
+		result = append(result, Stack("coredns", riov1.StackSpec{
 			DisableMesh: true,
 		}))
 	}
@@ -68,10 +68,10 @@ func systemStacks(inCluster bool) []runtime.Object {
 	return result
 }
 
-func Stack(name string, spec v1beta1.StackSpec) runtime.Object {
-	s := &v1beta1.Stack{
+func Stack(name string, spec riov1.StackSpec) runtime.Object {
+	s := &riov1.Stack{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "rio.cattle.io/v1beta1",
+			APIVersion: "rio.cattle.io/v1",
 			Kind:       "Stack",
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -100,7 +100,7 @@ func addNameSpace(rContext *types.Context) error {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: settings.RioSystemNamespace,
 			Labels: map[string]string{
-				space.SpaceLabel: "true",
+				project.ProjectLabel: "true",
 			},
 		},
 	})

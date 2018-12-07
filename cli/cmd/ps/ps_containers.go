@@ -11,8 +11,8 @@ import (
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/table"
 	"github.com/rancher/rio/pkg/settings"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
-	spaceclient "github.com/rancher/rio/types/client/space/v1beta1"
+	projectclient "github.com/rancher/rio/types/client/project/v1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 type PodData struct {
@@ -20,15 +20,15 @@ type PodData struct {
 	Name       string
 	Managed    bool
 	Service    *lookup.StackScoped
-	Pod        *spaceclient.Pod
-	Containers []spaceclient.Container
+	Pod        *projectclient.Pod
+	Containers []projectclient.Container
 }
 
 type ContainerData struct {
 	ID        string
-	Pod       *spaceclient.Pod
+	Pod       *projectclient.Pod
 	PodData   *PodData
-	Container *spaceclient.Container
+	Container *projectclient.Container
 }
 
 func ListFirstPod(ctx *clicontext.CLIContext, all bool, podOrServices ...string) (*PodData, error) {
@@ -42,7 +42,7 @@ func ListFirstPod(ctx *clicontext.CLIContext, all bool, podOrServices ...string)
 func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]PodData, error) {
 	var result []PodData
 
-	w, err := ctx.Workspace()
+	w, err := ctx.Project()
 	if err != nil {
 		return nil, err
 	}
@@ -60,12 +60,12 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 	var services []*types.NamedResource
 
 	for _, name := range podOrServices {
-		r, err := lookup.Lookup(ctx, name, spaceclient.PodType, client.ServiceType)
+		r, err := lookup.Lookup(ctx, name, projectclient.PodType, client.ServiceType)
 		if err != nil {
 			return nil, err
 		}
 		switch r.Type {
-		case spaceclient.PodType:
+		case projectclient.PodType:
 			pods = append(pods, r)
 		case client.ServiceType:
 			services = append(services, r)
@@ -115,15 +115,15 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 	return result, nil
 }
 
-func toPodData(w *clientcfg.Workspace, all bool, pod *spaceclient.Pod) (PodData, bool) {
+func toPodData(w *clientcfg.Project, all bool, pod *projectclient.Pod) (PodData, bool) {
 	stackScoped := lookup.StackScopedFromLabels(w, pod.Labels)
-	workspaceID := pod.Labels["rio.cattle.io/workspace"]
+	projectID := pod.Labels["rio.cattle.io/project"]
 
 	podData := PodData{
 		ID:      pod.ID,
 		Pod:     pod,
 		Service: &stackScoped,
-		Managed: workspaceID != "",
+		Managed: projectID != "",
 	}
 
 	lookupName := stackScoped.LookupName() + "-"
@@ -133,7 +133,7 @@ func toPodData(w *clientcfg.Workspace, all bool, pod *spaceclient.Pod) (PodData,
 		podData.Name = pod.Name
 	}
 
-	if !all && (podData.Name == "" || !podData.Managed || workspaceID != w.ID) {
+	if !all && (podData.Name == "" || !podData.Managed || projectID != w.ID) {
 		return podData, false
 	}
 
@@ -184,7 +184,7 @@ func (p *Ps) containers(ctx *clicontext.CLIContext) error {
 
 func containerName(obj, obj2 interface{}) (string, error) {
 	podData, _ := obj.(*PodData)
-	container, _ := obj2.(*spaceclient.Container)
+	container, _ := obj2.(*projectclient.Container)
 
 	if !podData.Managed {
 		return fmt.Sprintf("%s/%s", strings.Split(podData.ID, ":")[1], container.Name), nil

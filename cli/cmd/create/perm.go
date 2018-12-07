@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/rancher/norman/pkg/kv"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 var (
@@ -14,7 +14,7 @@ var (
 )
 
 func init() {
-	for _, perm := range v1beta1.WriteVerbs {
+	for _, perm := range v1.WriteVerbs {
 		verbs[perm] = true
 	}
 }
@@ -50,9 +50,9 @@ func assignAPIGroupResource(result *client.Permission, input string) {
 
 func assignVerbs(result *client.Permission, input string) {
 	if input == "read" {
-		result.Verbs = v1beta1.ReadVerbs
+		result.Verbs = v1.ReadVerbs
 	} else if input == "write" {
-		result.Verbs = v1beta1.WriteVerbs
+		result.Verbs = v1.WriteVerbs
 	} else {
 		for _, perm := range strings.Split(input, ",") {
 			result.Verbs = append(result.Verbs, strings.TrimSpace(perm))
@@ -73,7 +73,7 @@ func parsePerm(perm string) (client.Permission, error) {
 	parts := strings.Fields(perm)
 
 	if len(parts) == 1 {
-		result.Verbs = v1beta1.ReadVerbs
+		result.Verbs = v1.ReadVerbs
 		assignAPIGroupResource(&result, parts[0])
 	} else {
 		assignVerbs(&result, parts[0])

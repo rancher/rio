@@ -1,7 +1,7 @@
 package util
 
 import (
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 func StacksByID(wc *client.Client) (map[string]*client.Stack, error) {

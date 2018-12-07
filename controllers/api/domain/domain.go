@@ -14,7 +14,7 @@ import (
 	"github.com/rancher/rio/pkg/certs"
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	v12 "github.com/rancher/types/apis/core/v1"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -42,7 +42,7 @@ type Controller struct {
 	rdnsClient      *approuter.Client
 	endpointsLister v12.EndpointsClientCache
 	nodeLister      v12.NodeClientCache
-	stackLister     v1beta1.StackClientCache
+	stackLister     riov1.StackClientCache
 	stackController changeset.Enqueuer
 	previousIPs     []string
 }

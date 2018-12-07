@@ -6,13 +6,13 @@ import (
 
 	"github.com/rancher/rio/pkg/deploy/stack/input"
 	"github.com/rancher/rio/pkg/deploy/stack/output"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func ToPVC(namespace string, labels map[string]string, volume v1beta1.Volume) (*v1.PersistentVolumeClaim, error) {
+func ToPVC(namespace string, labels map[string]string, volume riov1.Volume) (*v1.PersistentVolumeClaim, error) {
 	cfg := newVolume(volume.Name, namespace, labels)
 	if volume.Spec.Driver != "" && volume.Spec.Driver != "default" {
 		cfg.Spec.StorageClassName = &volume.Spec.Driver
@@ -58,9 +58,9 @@ func Populate(stack *input.Stack, output *output.Deployment) error {
 		}
 
 		labels := map[string]string{
-			"rio.cattle.io/stack":     stack.Stack.Name,
-			"rio.cattle.io/workspace": stack.Stack.Namespace,
-			"rio.cattle.io/volume":    volume.Name,
+			"rio.cattle.io/stack":   stack.Stack.Name,
+			"rio.cattle.io/project": stack.Stack.Namespace,
+			"rio.cattle.io/volume":  volume.Name,
 		}
 
 		cfg, err := ToPVC(stack.Namespace, labels, *volume)

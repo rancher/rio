@@ -20,10 +20,10 @@ import (
 	"github.com/rancher/rio/api/stack"
 	"github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
 	networkSchema "github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3/schema"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1/schema"
-	spaceSchema "github.com/rancher/rio/types/apis/space.cattle.io/v1beta1/schema"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
-	spaceClient "github.com/rancher/rio/types/client/space/v1beta1"
+	projectSchema "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1/schema"
+	"github.com/rancher/rio/types/apis/rio.cattle.io/v1/schema"
+	projectclient "github.com/rancher/rio/types/client/project/v1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 func Types(ctx context.Context, clientGetter proxy.ClientGetter, schemas *normantypes.Schemas) error {
@@ -54,7 +54,7 @@ func Types(ctx context.Context, clientGetter proxy.ClientGetter, schemas *norman
 
 	subscribe.Register(&builtin.Version, schemas)
 	subscribe.Register(&schema.Version, schemas)
-	subscribe.Register(&spaceSchema.Version, schemas)
+	subscribe.Register(&projectSchema.Version, schemas)
 
 	return nil
 }
@@ -97,7 +97,7 @@ func setupStacks(ctx context.Context, schemas *normantypes.Schemas) {
 }
 
 func setupNodes(ctx context.Context, clientGetter proxy.ClientGetter, schemas *normantypes.Schemas) {
-	s := schemas.Schema(&spaceSchema.Version, spaceClient.NodeType)
+	s := schemas.Schema(&projectSchema.Version, projectclient.NodeType)
 	s.Store = proxy.NewProxyStore(ctx,
 		clientGetter,
 		normantypes.DefaultStorageContext,
@@ -109,7 +109,7 @@ func setupNodes(ctx context.Context, clientGetter proxy.ClientGetter, schemas *n
 }
 
 func setupPods(ctx context.Context, clientGetter proxy.ClientGetter, schemas *normantypes.Schemas) {
-	s := schemas.Schema(&spaceSchema.Version, spaceClient.PodType)
+	s := schemas.Schema(&projectSchema.Version, projectclient.PodType)
 	s.Store = proxy.NewProxyStore(ctx,
 		clientGetter,
 		normantypes.DefaultStorageContext,
@@ -121,7 +121,7 @@ func setupPods(ctx context.Context, clientGetter proxy.ClientGetter, schemas *no
 }
 
 func setupSpaces(ctx context.Context, clientGetter proxy.ClientGetter, schemas *normantypes.Schemas) {
-	s := schemas.Schema(&spaceSchema.Version, spaceClient.SpaceType)
+	s := schemas.Schema(&projectSchema.Version, projectclient.ProjectType)
 	s.Store = proxy.NewProxyStore(ctx,
 		clientGetter,
 		normantypes.DefaultStorageContext,
@@ -134,6 +134,6 @@ func setupSpaces(ctx context.Context, clientGetter proxy.ClientGetter, schemas *
 }
 
 func setupPublicDomain(ctx context.Context, schemas *normantypes.Schemas) {
-	s := schemas.Schema(&spaceSchema.Version, spaceClient.PublicDomainType)
+	s := schemas.Schema(&projectSchema.Version, projectclient.PublicDomainType)
 	s.Store = publicdomain.New(named.New(s.Store))
 }

@@ -24,7 +24,7 @@ func (e *Events) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	wc, err := ctx.WorkspaceClient()
+	wc, err := ctx.ProjectClient()
 	if err != nil {
 		return err
 	}

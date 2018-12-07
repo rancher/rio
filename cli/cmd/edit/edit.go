@@ -16,7 +16,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/up"
 	"github.com/rancher/rio/cli/pkg/waiter"
 	"github.com/rancher/rio/cli/pkg/yamldownload"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 	"github.com/sirupsen/logrus"
 	"k8s.io/kubernetes/pkg/kubectl/cmd/util/editor"
 )
@@ -152,7 +152,7 @@ func (edit *Edit) update(ctx *clicontext.CLIContext, format string, obj *types.R
 		return err
 	}
 
-	wc, err := ctx.WorkspaceClient()
+	wc, err := ctx.ProjectClient()
 	if err != nil {
 		return err
 	}

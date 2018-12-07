@@ -10,7 +10,7 @@ import (
 )
 
 type StackScoped struct {
-	Workspace    *clientcfg.Workspace
+	Project      *clientcfg.Project
 	StackName    string
 	ResourceName string
 	ResourceID   string
@@ -18,16 +18,16 @@ type StackScoped struct {
 	Other        string
 }
 
-func StackScopedFromLabels(workspace *clientcfg.Workspace, labels map[string]string) StackScoped {
+func StackScopedFromLabels(project *clientcfg.Project, labels map[string]string) StackScoped {
 	service := labels["rio.cattle.io/service"]
 	serviceName := labels["rio.cattle.io/service-name"]
 	stack := labels["rio.cattle.io/stack"]
 	rev := labels["rio.cattle.io/version"]
 
-	ns := namespace.StackNamespace(workspace.ID, stack)
+	ns := namespace.StackNamespace(project.ID, stack)
 
 	return StackScoped{
-		Workspace:    workspace,
+		Project:      project,
 		Version:      rev,
 		StackName:    stack,
 		ResourceID:   fmt.Sprintf("%s:%s", ns, serviceName),
@@ -35,22 +35,22 @@ func StackScopedFromLabels(workspace *clientcfg.Workspace, labels map[string]str
 	}
 }
 
-func ParseStackScoped(workspace *clientcfg.Workspace, serviceName string) StackScoped {
+func ParseStackScoped(project *clientcfg.Project, serviceName string) StackScoped {
 	var result StackScoped
 	result.StackName, result.ResourceName = kv.Split(serviceName, "/")
 	if result.ResourceName == "" {
 		result.ResourceName = result.StackName
-		result.StackName = workspace.Cluster.DefaultStackName
+		result.StackName = project.Cluster.DefaultStackName
 	}
 	result.ResourceName, result.Other = kv.Split(result.ResourceName, "/")
 	result.ResourceName, result.Version = kv.Split(result.ResourceName, ":")
-	result.Workspace = workspace
+	result.Project = project
 
 	name := fmt.Sprintf("%s-%s", result.ResourceName, result.Version)
 	if result.Version == "" || result.Version == settings.DefaultServiceVersion {
 		name = result.ResourceName
 	}
-	result.ResourceID = fmt.Sprintf("%s:%s", namespace.StackNamespace(workspace.ID, result.StackName), name)
+	result.ResourceID = fmt.Sprintf("%s:%s", namespace.StackNamespace(project.ID, result.StackName), name)
 	return result
 }
 
@@ -65,7 +65,7 @@ func (p StackScoped) String() string {
 	result := ""
 
 	if p.StackName != "" {
-		if p.Other != "" || p.StackName != p.Workspace.Cluster.DefaultStackName {
+		if p.Other != "" || p.StackName != p.Project.Cluster.DefaultStackName {
 			result = p.StackName + "/"
 		}
 	}

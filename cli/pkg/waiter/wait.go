@@ -11,7 +11,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/monitor"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
@@ -86,7 +86,7 @@ func waitFor(ctx *clicontext.CLIContext, enable bool, objs ...*types.Resource) e
 }
 
 func NewWaiter(ctx *clicontext.CLIContext) (*Waiter, error) {
-	wc, err := ctx.WorkspaceClient()
+	wc, err := ctx.ProjectClient()
 	if err != nil {
 		return nil, err
 	}

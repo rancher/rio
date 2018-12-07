@@ -10,8 +10,8 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/rancher/norman/clientbase"
 	"github.com/rancher/rio/pkg/clientaccess"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
-	spaceclient "github.com/rancher/rio/types/client/space/v1beta1"
+	projectclient "github.com/rancher/rio/types/client/project/v1"
+	"github.com/rancher/rio/types/client/rio/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -31,17 +31,17 @@ type clusterClientInfo struct {
 	wsDialer   *websocket.Dialer
 }
 
-func (c *clusterClientInfo) spaceClient() (*spaceclient.Client, error) {
-	return spaceclient.NewClient(&clientbase.ClientOpts{
-		URL:        c.url("/v1beta1-rio/schemas"),
+func (c *clusterClientInfo) clusterClient() (*projectclient.Client, error) {
+	return projectclient.NewClient(&clientbase.ClientOpts{
+		URL:        c.url("/v1-rio/schemas"),
 		HTTPClient: c.httpClient,
 		WSDialer:   c.wsDialer,
 	})
 }
 
-func (c *clusterClientInfo) workspaceClient(space string) (*client.Client, error) {
+func (c *clusterClientInfo) projectClient(project string) (*client.Client, error) {
 	return client.NewClient(&clientbase.ClientOpts{
-		URL:        c.url("/v1beta1-rio/spaces/" + space + "/schemas"),
+		URL:        c.url("/v1-rio/projects/" + project + "/schemas"),
 		HTTPClient: c.httpClient,
 		WSDialer:   c.wsDialer,
 	})

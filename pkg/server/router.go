@@ -18,8 +18,8 @@ func router(serverConfig *server.ServerConfig, api, tunnel http.Handler) http.Ha
 	authed := mux.NewRouter()
 	authed.Use(authMiddleware(serverConfig))
 	authed.NotFoundHandler = k3s
-	authed.Path("/v1beta1/connect").Handler(tunnel)
-	authed.PathPrefix("/v1beta1").Handler(api)
+	authed.Path("/v1/connect").Handler(tunnel)
+	authed.PathPrefix("/v1").Handler(api)
 	authed.Path("/node.crt").Handler(nodeCrt(serverConfig))
 	authed.Path("/node.key").Handler(nodeKey(serverConfig))
 

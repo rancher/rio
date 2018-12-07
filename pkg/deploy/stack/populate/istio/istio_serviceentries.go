@@ -70,8 +70,8 @@ func newServiceEntries(stack *input.Stack, name, namespace string) *output.Istio
 			Namespace:   namespace,
 			Annotations: map[string]string{},
 			Labels: map[string]string{
-				"rio.cattle.io/stack":     stack.Stack.Name,
-				"rio.cattle.io/workspace": stack.Stack.Namespace,
+				"rio.cattle.io/stack":   stack.Stack.Name,
+				"rio.cattle.io/project": stack.Stack.Namespace,
 			},
 		},
 	}

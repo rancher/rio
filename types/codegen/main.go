@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/rancher/norman/generator"
 	networkingSchema "github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3/schema"
-	spaceSchema "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1/schema"
+	projectSchema "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1/schema"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1/schema"
 	"github.com/sirupsen/logrus"
 )
@@ -22,7 +22,7 @@ func main() {
 	if err := generator.DefaultGenerate(networkingSchema.Schemas, basePackage, false, nil); err != nil {
 		logrus.Fatal(err)
 	}
-	if err := generator.DefaultGenerate(spaceSchema.Schemas, basePackage, true, nil); err != nil {
+	if err := generator.DefaultGenerate(projectSchema.Schemas, basePackage, true, nil); err != nil {
 		logrus.Fatal(err)
 	}
 }

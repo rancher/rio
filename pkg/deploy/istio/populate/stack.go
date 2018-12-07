@@ -7,7 +7,7 @@ import (
 	"github.com/rancher/rio/pkg/deploy/istio/output"
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/stacks"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
 )
@@ -28,16 +28,16 @@ func populateStack(input *input.IstioDeployment, output *output.Deployment) erro
 		return err
 	}
 
-	s := &v1beta1.Stack{
+	s := &riov1.Stack{
 		TypeMeta: v1.TypeMeta{
 			Kind:       "Stack",
-			APIVersion: "rio.cattle.io/v1beta1",
+			APIVersion: "rio.cattle.io/v1",
 		},
 		ObjectMeta: v1.ObjectMeta{
 			Name:      settings.IstioStackName,
 			Namespace: settings.RioSystemNamespace,
 		},
-		Spec: v1beta1.StackSpec{
+		Spec: riov1.StackSpec{
 			Answers: map[string]string{
 				"PORTS":               string(portStr),
 				"TELEMETRY_NAMESPACE": settings.IstioTelemetryNamespace,

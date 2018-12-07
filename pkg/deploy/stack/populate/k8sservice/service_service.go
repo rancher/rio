@@ -5,13 +5,13 @@ import (
 	"github.com/rancher/rio/pkg/deploy/stack/output"
 	"github.com/rancher/rio/pkg/deploy/stack/populate/servicelabels"
 	"github.com/rancher/rio/pkg/deploy/stack/populate/serviceports"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func serviceSelector(stack *input.Stack, service *v1beta1.Service, output *output.Deployment) {
+func serviceSelector(stack *input.Stack, service *riov1.Service, output *output.Deployment) {
 	labels := servicelabels.ServiceLabels(stack, service)
 	selectorLabels := servicelabels.SelectorLabels(stack, service)
 	svc := newServiceSelector(service.Name, stack.Namespace, labels, selectorLabels)

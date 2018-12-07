@@ -10,7 +10,7 @@ import (
 	"github.com/rancher/norman/types"
 	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/rio/pkg/settings"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 func New(store types.Store) types.Store {
@@ -37,9 +37,9 @@ func addEndpoint(apiContext *types.APIContext, schema *types.Schema, data map[st
 		return data, nil
 	}
 
-	spaceID, _ := data["spaceId"].(string)
+	projectId, _ := data["projectId"].(string)
 	space := ""
-	parts := strings.SplitN(spaceID, "-", 2)
+	parts := strings.SplitN(projectId, "-", 2)
 	if len(parts) == 2 {
 		space = parts[1]
 	}

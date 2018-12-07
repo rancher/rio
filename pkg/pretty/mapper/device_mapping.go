@@ -2,14 +2,14 @@ package mapper
 
 import (
 	"github.com/rancher/rio/cli/cmd/create"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 )
 
 func NewDeviceMapping(field string) ObjectsToSlice {
 	return ObjectsToSlice{
 		Field: field,
 		NewObject: func() MaybeStringer {
-			return &v1beta1.DeviceMapping{}
+			return &v1.DeviceMapping{}
 		},
 		ToObject: func(obj interface{}) (interface{}, error) {
 			str, ok := obj.(string)

@@ -5,26 +5,26 @@ import (
 
 	"github.com/rancher/rio/pkg/apply"
 	"github.com/rancher/rio/pkg/istio/config"
+	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 
 	"github.com/rancher/rio/pkg/deploy/stack/input"
 	"github.com/rancher/rio/pkg/deploy/stack/output"
 	"github.com/rancher/rio/pkg/deploy/stack/populate"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
 )
 
 func Deploy(
-	namespace, space string,
-	stack *v1beta1.Stack,
-	configs []*v1beta1.Config,
-	services []*v1beta1.Service,
-	volumes []*v1beta1.Volume,
-	routeSet []*v1beta1.RouteSet,
-	externalServices []*v1beta1.ExternalService,
+	namespace, project string,
+	stack *v1.Stack,
+	configs []*v1.Config,
+	services []*v1.Service,
+	volumes []*v1.Volume,
+	routeSet []*v1.RouteSet,
+	externalServices []*v1.ExternalService,
 	injector *config.IstioInjector) error {
 
 	input := &input.Stack{
 		Namespace:        namespace,
-		Space:            space,
+		Project:          project,
 		Stack:            stack,
 		Services:         services,
 		Volumes:          volumes,
@@ -46,6 +46,6 @@ func Deploy(
 	return output.Deploy(namespace, groupID)
 }
 
-func Remove(namespace, space string, stack *v1beta1.Stack, injector *config.IstioInjector) error {
+func Remove(namespace, space string, stack *v1.Stack, injector *config.IstioInjector) error {
 	return Deploy(namespace, space, stack, nil, nil, nil, nil, nil, injector)
 }

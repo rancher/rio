@@ -146,7 +146,7 @@ func runTunnel(config *AgentConfig) error {
 		return err
 	}
 
-	wsURL := fmt.Sprintf("wss://%s/v1beta1/connect", config.TargetHost)
+	wsURL := fmt.Sprintf("wss://%s/v1/connect", config.TargetHost)
 	headers := map[string][]string{
 		"X-Rio-NodeName": {config.Config.NodeName},
 	}

@@ -5,7 +5,7 @@ import (
 	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/norman/types/mapper"
 	"github.com/rancher/rio/cli/cmd/route"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 )
 
 type Destination struct {
@@ -36,9 +36,9 @@ func destionationMapToString(m map[string]interface{}) string {
 		weight = 0
 	}
 
-	wd := v1beta1.WeightedDestination{
+	wd := v1.WeightedDestination{
 		Weight: weight,
-		Destination: v1beta1.Destination{
+		Destination: v1.Destination{
 			Port:     port,
 			Revision: revision,
 			Service:  service,

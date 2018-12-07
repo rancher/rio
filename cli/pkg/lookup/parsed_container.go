@@ -14,10 +14,10 @@ type ParsedContainer struct {
 	Service       StackScoped
 }
 
-func ParseContainer(workspace *clientcfg.Workspace, name string) (ParsedContainer, bool) {
+func ParseContainer(project *clientcfg.Project, name string) (ParsedContainer, bool) {
 	result := ParsedContainer{}
 
-	stackScoped := ParseStackScoped(workspace, name)
+	stackScoped := ParseStackScoped(project, name)
 	if stackScoped.Other == "" {
 		return result, false
 	}

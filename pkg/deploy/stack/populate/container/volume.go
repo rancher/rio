@@ -4,11 +4,11 @@ import (
 	"strings"
 
 	"github.com/rancher/rio/pkg/deploy/stack/populate/podvolume"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"k8s.io/api/core/v1"
 )
 
-func addVolumes(c *v1.Container, volume v1beta1.Mount) {
+func addVolumes(c *v1.Container, volume riov1.Mount) {
 	name := podvolume.NameOfVolume(volume)
 	if name == "" {
 		return

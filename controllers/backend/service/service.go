@@ -13,7 +13,7 @@ import (
 	service2 "github.com/rancher/rio/pkg/deploy/stack/populate/service"
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"github.com/sirupsen/logrus"
 	"istio.io/api/networking/v1alpha3"
 	"istio.io/istio/pilot/pkg/model"
@@ -49,11 +49,11 @@ func Register(ctx context.Context, rContext *types.Context) error {
 }
 
 type subServiceController struct {
-	services      v1beta1.ServiceClient
-	serviceLister v1beta1.ServiceClientCache
+	services      riov1.ServiceClient
+	serviceLister riov1.ServiceClientCache
 }
 
-func (s *subServiceController) getService(ns string, labels map[string]string) *v1beta1.Service {
+func (s *subServiceController) getService(ns string, labels map[string]string) *riov1.Service {
 	name := labels["rio.cattle.io/service-name"]
 
 	svc, err := s.serviceLister.Get(ns, name)
@@ -63,7 +63,7 @@ func (s *subServiceController) getService(ns string, labels map[string]string) *
 	return svc
 }
 
-func (s *subServiceController) updateStatus(service, newService *v1beta1.Service, dep runtime.Object, generation, observedGeneration int64) error {
+func (s *subServiceController) updateStatus(service, newService *riov1.Service, dep runtime.Object, generation, observedGeneration int64) error {
 	isUpgrading := false
 
 	if upgrading[progressing.GetReason(dep)] || generation != observedGeneration {
@@ -124,7 +124,7 @@ func (s *subServiceController) deploymentChanged(dep *appsv1.Deployment) (runtim
 	return nil, s.updateStatus(service, newService, dep, dep.Generation, dep.Status.ObservedGeneration)
 }
 
-func (s *subServiceController) promote(service *v1beta1.Service) (runtime.Object, error) {
+func (s *subServiceController) promote(service *riov1.Service) (runtime.Object, error) {
 	if service.Spec.Revision.ParentService == "" || !service.Spec.Revision.Promote {
 		return nil, nil
 	}

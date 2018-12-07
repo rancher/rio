@@ -7,7 +7,7 @@ import (
 
 	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/types/client/space/v1beta1"
+	"github.com/rancher/rio/types/client/project/v1"
 )
 
 type Rm struct {

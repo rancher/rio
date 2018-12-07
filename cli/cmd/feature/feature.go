@@ -4,13 +4,13 @@ import (
 	"fmt"
 
 	"github.com/rancher/norman/types"
-	"github.com/rancher/rio/cli/cmd/workspace"
+	"github.com/rancher/rio/cli/cmd/project"
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
 	"github.com/rancher/rio/cli/pkg/up/questions"
 	"github.com/rancher/rio/pkg/settings"
-	"github.com/rancher/rio/types/client/space/v1beta1"
+	"github.com/rancher/rio/types/client/project/v1"
 	"github.com/rancher/types/apis/management.cattle.io/v3"
 	"github.com/urfave/cli"
 )
@@ -49,7 +49,7 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 	}, ctx)
 	defer writer.Close()
 
-	writer.AddFormatFunc("boolToStar", workspace.BoolToStar)
+	writer.AddFormatFunc("boolToStar", project.BoolToStar)
 	cluster, err := ctx.Cluster()
 	if err != nil {
 		return err
@@ -76,7 +76,7 @@ func (d *Disable) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("feature name is required")
 	}
 
-	ctx.WorkspaceName = settings.RioSystemNamespace
+	ctx.ProjectName = settings.RioSystemNamespace
 	return flipEnableFlag(ctx, ctx.CLI.Args()[0], false)
 }
 
@@ -86,7 +86,7 @@ func (e *Enable) Run(ctx *clicontext.CLIContext) error {
 	if len(ctx.CLI.Args()) != 1 {
 		return fmt.Errorf("feature name is required")
 	}
-	ctx.WorkspaceName = settings.RioSystemNamespace
+	ctx.ProjectName = settings.RioSystemNamespace
 	return flipEnableFlag(ctx, ctx.CLI.Args()[0], true)
 }
 

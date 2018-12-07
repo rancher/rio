@@ -7,7 +7,7 @@ import (
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 	"github.com/urfave/cli"
 )
 
@@ -26,7 +26,7 @@ func (l *Ls) Customize(cmd *cli.Command) {
 }
 
 func (l *Ls) Run(ctx *clicontext.CLIContext) error {
-	wc, err := ctx.WorkspaceClient()
+	wc, err := ctx.ProjectClient()
 	if err != nil {
 		return err
 	}

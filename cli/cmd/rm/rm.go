@@ -4,8 +4,8 @@ import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/waiter"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
-	spaceClient "github.com/rancher/rio/types/client/space/v1beta1"
+	projectClient "github.com/rancher/rio/types/client/project/v1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 type Rm struct {
@@ -13,7 +13,7 @@ type Rm struct {
 }
 
 func (r *Rm) Run(ctx *clicontext.CLIContext) error {
-	types := []string{client.ServiceType, client.StackType, spaceClient.PodType, client.ConfigType, client.RouteSetType, client.VolumeType, client.ExternalServiceType}
+	types := []string{client.ServiceType, client.StackType, projectClient.PodType, client.ConfigType, client.RouteSetType, client.VolumeType, client.ExternalServiceType}
 	if len(r.T_Type) > 0 {
 		types = []string{r.T_Type}
 	}

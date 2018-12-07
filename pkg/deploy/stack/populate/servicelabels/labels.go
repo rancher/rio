@@ -4,10 +4,10 @@ import (
 	"strings"
 
 	"github.com/rancher/rio/pkg/deploy/stack/input"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 )
 
-func SelectorLabels(stack *input.Stack, service *v1beta1.Service) map[string]string {
+func SelectorLabels(stack *input.Stack, service *riov1.Service) map[string]string {
 	m := ServiceLabels(stack, service)
 	return map[string]string{
 		"app":     m["app"],
@@ -15,7 +15,7 @@ func SelectorLabels(stack *input.Stack, service *v1beta1.Service) map[string]str
 	}
 }
 
-func ServiceLabels(stack *input.Stack, service *v1beta1.Service) map[string]string {
+func ServiceLabels(stack *input.Stack, service *riov1.Service) map[string]string {
 	m := RioOnlyServiceLabels(stack, service)
 	m = SafeMerge(m, service.Spec.Labels)
 	m["app"] = m["rio.cattle.io/service"]
@@ -23,14 +23,14 @@ func ServiceLabels(stack *input.Stack, service *v1beta1.Service) map[string]stri
 	return m
 }
 
-func RioOnlyServiceLabels(stack *input.Stack, service *v1beta1.Service) map[string]string {
+func RioOnlyServiceLabels(stack *input.Stack, service *riov1.Service) map[string]string {
 	labels := map[string]string{
 		"rio.cattle.io/service": service.Spec.Revision.ServiceName,
 		"rio.cattle.io/version": service.Spec.Revision.Version,
 	}
 	if stack != nil {
 		labels["rio.cattle.io/stack"] = stack.Stack.Name
-		labels["rio.cattle.io/workspace"] = stack.Stack.Namespace
+		labels["rio.cattle.io/project"] = stack.Stack.Namespace
 	}
 	if service.Spec.Revision.ParentService == "" {
 		labels["rio.cattle.io/service-name"] = service.Spec.Revision.ServiceName

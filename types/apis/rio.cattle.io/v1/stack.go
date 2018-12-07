@@ -38,7 +38,7 @@ type StackStatus struct {
 
 type StackScoped struct {
 	StackName   string `json:"stackName,omitempty" norman:"type=reference[stack],required,noupdate"`
-	ProjectName string `json:"projectName,omitempty" norman:"type=reference[/v1-rio/schemas/projectName],noupdate"`
+	ProjectName string `json:"projectName,omitempty" norman:"type=reference[/v1-rio/schemas/project],noupdate"`
 }
 
 type InternalStack struct {

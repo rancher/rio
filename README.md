@@ -136,12 +136,12 @@ ends up typically representing one application.  All the names of services are u
 unique.  This means a stack creates a scope for service discovery.  Under the hood a stack will use a Kubernetes
 namespace.
 
-### Workspace
+### Project
 
-A workspace is a collection of stacks, and other resources such as secrets. The `rio` command line runs commands within
-a single workspace.  Using `rio --workspace WORKSPACE` you can point to a different workspace.  Stack names are unique
-within a workspace only.  As the permissions model of Rio matures the workspace will be the primary unit that is used
-for collaboration.  Users are invited to and given access to workspaces.
+A project is a collection of stacks, and other resources such as secrets. The `rio` command line runs commands within
+a single project.  Using `rio --project PROJECT` you can point to a different project.  Stack names are unique
+within a project only.  As the permissions model of Rio matures the project will be the primary unit that is used
+for collaboration.  Users are invited to and given access to projects.
 
 ### Service Mesh
 

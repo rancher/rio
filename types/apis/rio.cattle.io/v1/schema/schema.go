@@ -12,7 +12,7 @@ var (
 	Version = types.APIVersion{
 		Version:          "v1",
 		Group:            "rio.cattle.io",
-		Path:             "/v1-rio/project",
+		Path:             "/v1-rio/projects",
 		SubContext:       true,
 		SubContextSchema: "/v1-rio/schemas/project",
 	}

@@ -76,7 +76,7 @@ func readFiles(relativePath string, files []string, template *template2.Template
 }
 
 func Run(ctx *clicontext.CLIContext, content []byte, stackID string, promptReplaceFile, prompt bool, answers map[string]string, file string) error {
-	wc, err := ctx.WorkspaceClient()
+	wc, err := ctx.ProjectClient()
 	if err != nil {
 		return err
 	}

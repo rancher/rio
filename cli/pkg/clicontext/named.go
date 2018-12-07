@@ -6,9 +6,8 @@ import (
 
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/pkg/namespace"
-
-	"github.com/rancher/rio/types/client/rio/v1beta1"
-	spaceclient "github.com/rancher/rio/types/client/space/v1beta1"
+	projectclient "github.com/rancher/rio/types/client/project/v1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 func (c *CLIContext) LookupFilters(name, typeName string) (map[string]interface{}, bool, error) {
@@ -22,7 +21,7 @@ func (c *CLIContext) LookupFilters(name, typeName string) (map[string]interface{
 		return filters, true, nil
 	case client.RouteSetType:
 		return c.routeSetByName(filters, name)
-	case spaceclient.PodType:
+	case projectclient.PodType:
 		return c.podByName(filters, name)
 	default:
 		return c.defaultByName(filters, name)
@@ -30,7 +29,7 @@ func (c *CLIContext) LookupFilters(name, typeName string) (map[string]interface{
 }
 
 func (c *CLIContext) defaultByName(filters map[string]interface{}, name string) (map[string]interface{}, bool, error) {
-	w, err := c.Workspace()
+	w, err := c.Project()
 	if err != nil {
 		return nil, false, err
 	}
@@ -64,7 +63,7 @@ func (c *CLIContext) routeSetByName(filters map[string]interface{}, name string)
 }
 
 func (c *CLIContext) podByName(filters map[string]interface{}, name string) (map[string]interface{}, bool, error) {
-	w, err := c.Workspace()
+	w, err := c.Project()
 	if err != nil {
 		return nil, false, err
 	}
@@ -80,7 +79,7 @@ func (c *CLIContext) podByName(filters map[string]interface{}, name string) (map
 }
 
 func (c *CLIContext) stackScopedByName(filters map[string]interface{}, stackName, resourceName string) (map[string]interface{}, bool, error) {
-	w, err := c.Workspace()
+	w, err := c.Project()
 	if err != nil {
 		return nil, false, err
 	}

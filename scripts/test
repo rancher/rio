@@ -32,9 +32,9 @@ export PATH=$(pwd)/bin:$PATH
 rio login -s https://localhost:7443 -t /var/lib/rancher/rio/server/client-token
 
 echo Waiting for istio/istio-gateway
-rio --workspace=rio-system wait istio/istio-gateway
-rio --workspace=rio-system ps
-rio --workspace=rio-system ps -c
+rio --project=rio-system wait istio/istio-gateway
+rio --project=rio-system ps
+rio --project=rio-system ps -c
 
 chmod +x ./tests/init-nfs.bash
 ./tests/init-nfs.bash

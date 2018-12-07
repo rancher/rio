@@ -6,7 +6,7 @@ import (
 	"github.com/rancher/norman/types"
 	"github.com/rancher/norman/types/mapper"
 	pm "github.com/rancher/rio/pkg/pretty/mapper"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 func route(schemas *types.Schemas) *types.Schemas {
@@ -45,7 +45,7 @@ func route(schemas *types.Schemas) *types.Schemas {
 			pm.SingleSlice{Field: "to"},
 		).
 		AddMapperForType(&Version, client.RouteSet{},
-			mapper.Drop{Field: "spaceId"},
+			mapper.Drop{Field: "projectId"},
 			mapper.Drop{Field: "stackId"},
 		)
 }

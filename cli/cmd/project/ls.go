@@ -1,4 +1,4 @@
-package workspace
+package project
 
 import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
@@ -8,12 +8,12 @@ import (
 )
 
 type Data struct {
-	ID        string
-	Workspace *clientcfg.Workspace
+	ID      string
+	Project *clientcfg.Project
 }
 
 type Ls struct {
-	A_All bool `desc:"List workspaces from all clusters"`
+	A_All bool `desc:"List projects from all clusters"`
 }
 
 func (l *Ls) Customize(cmd *cli.Command) {
@@ -39,9 +39,9 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 		}
 
 		writer = table.NewWriter([][]string{
-			{"NAME", "Workspace.Name"},
-			{"CLUSTER", "Workspace.Cluster.URL"},
-			{"DEFAULT", "{{and .Workspace.Default .Workspace.Cluster.Default | boolToStar}}"},
+			{"NAME", "Project.Name"},
+			{"CLUSTER", "Project.Cluster.URL"},
+			{"DEFAULT", "{{and .Project.Default .Project.Cluster.Default | boolToStar}}"},
 		}, ctx)
 	} else {
 		cluster, err := ctx.Cluster()
@@ -53,8 +53,8 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 		}
 
 		writer = table.NewWriter([][]string{
-			{"NAME", "Workspace.Name"},
-			{"DEFAULT", "{{.Workspace.Default | boolToStar}}"},
+			{"NAME", "Project.Name"},
+			{"DEFAULT", "{{.Project.Default | boolToStar}}"},
 		}, ctx)
 	}
 
@@ -62,14 +62,14 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 	defer writer.Close()
 
 	for _, cluster := range clusters {
-		workspaces, err := cluster.Workspaces()
+		projects, err := cluster.Projects()
 		if err != nil {
 			return err
 		}
-		for i, workspace := range workspaces {
+		for i, project := range projects {
 			writer.Write(&Data{
-				ID:        workspace.ID,
-				Workspace: &workspaces[i],
+				ID:      project.ID,
+				Project: &projects[i],
 			})
 		}
 	}

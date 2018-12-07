@@ -20,7 +20,7 @@ var (
 		MustImport(&Version, projectv1.ListenConfig{}).
 		MustImport(&Version, v1.Node{}).
 		Init(podTypes).
-		Init(spaceTypes).
+		Init(projectTypes).
 		Init(publicDomainTypes).
 		Init(featureTypes)
 )
@@ -45,7 +45,7 @@ func podTypes(schemas *types.Schemas) *types.Schemas {
 		}{})
 }
 
-func spaceTypes(schemas *types.Schemas) *types.Schemas {
+func projectTypes(schemas *types.Schemas) *types.Schemas {
 	return schemas.
 		TypeName("project", v1.Namespace{}).
 		AddMapperForType(&Version, v1.NamespaceSpec{},

@@ -6,7 +6,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/table"
 	"github.com/rancher/rio/cli/pkg/waiter"
-	spaceclient "github.com/rancher/rio/types/client/space/v1beta1"
+	spaceclient "github.com/rancher/rio/types/client/project/v1"
 	"github.com/urfave/cli"
 )
 
@@ -82,7 +82,7 @@ func nodeRm(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	c, err := ctx.WorkspaceClient()
+	c, err := ctx.ProjectClient()
 	if err != nil {
 		return err
 	}

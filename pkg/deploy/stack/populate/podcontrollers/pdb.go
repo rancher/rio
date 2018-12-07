@@ -5,13 +5,13 @@ import (
 
 	"github.com/rancher/rio/pkg/deploy/stack/input"
 	"github.com/rancher/rio/pkg/deploy/stack/output"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	v1beta12 "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func pdb(stack *input.Stack, service *v1beta1.Service, cp *controllerParams, output *output.Deployment) {
+func pdb(stack *input.Stack, service *riov1.Service, cp *controllerParams, output *output.Deployment) {
 	if !(cp.Scale.Scale > 0 && cp.Scale.BatchSize > 0 && cp.Scale.BatchSize < int(cp.Scale.Scale)) {
 		return
 	}

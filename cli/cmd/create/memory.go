@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/docker/go-units"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 func populateMemory(c *Create, service *client.Service) error {

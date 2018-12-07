@@ -3,12 +3,12 @@ package podcontrollers
 import (
 	"github.com/rancher/rio/pkg/deploy/stack/input"
 	"github.com/rancher/rio/pkg/deploy/stack/output"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	appsv1 "k8s.io/api/apps/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func isDeployment(service v1beta1.ServiceUnversionedSpec, usedTemplates map[string]*v1beta1.Volume) bool {
+func isDeployment(service riov1.ServiceUnversionedSpec, usedTemplates map[string]*riov1.Volume) bool {
 	if service.UpdateStrategy == "on-delete" || service.DeploymentStrategy == "ordered" {
 		return false
 	}
@@ -20,7 +20,7 @@ func isDeployment(service v1beta1.ServiceUnversionedSpec, usedTemplates map[stri
 	return true
 }
 
-func deployment(stack *input.Stack, service *v1beta1.Service, cp *controllerParams, output *output.Deployment) {
+func deployment(stack *input.Stack, service *riov1.Service, cp *controllerParams, output *output.Deployment) {
 	dep := &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Deployment",

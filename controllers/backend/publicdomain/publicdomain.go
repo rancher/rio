@@ -12,8 +12,8 @@ import (
 	"github.com/rancher/rio/pkg/namespace"
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
-	spacev1beta1 "github.com/rancher/rio/types/apis/space.cattle.io/v1beta1"
+	projectv1 "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	corev1 "github.com/rancher/types/apis/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,15 +38,15 @@ func Register(ctx context.Context, rContext *types.Context) {
 
 type domainController struct {
 	namespacesLister corev1.NamespaceClientCache
-	stackLister      v1beta1.StackClientCache
-	serviceLister    v1beta1.ServiceClientCache
-	services         v1beta1.ServiceClient
-	routesetLister   v1beta1.RouteSetClientCache
-	routesets        v1beta1.RouteSetClient
+	stackLister      riov1.StackClientCache
+	serviceLister    riov1.ServiceClientCache
+	services         riov1.ServiceClient
+	routesetLister   riov1.RouteSetClientCache
+	routesets        riov1.RouteSetClient
 	secrets          corev1.SecretClient
 }
 
-func (d *domainController) Updated(domain *spacev1beta1.PublicDomain) (runtime.Object, error) {
+func (d *domainController) Updated(domain *projectv1.PublicDomain) (runtime.Object, error) {
 	if domain.Namespace != settings.RioSystemNamespace {
 		return domain, nil
 	}
@@ -92,7 +92,7 @@ func (d *domainController) Updated(domain *spacev1beta1.PublicDomain) (runtime.O
 	return domain, err
 }
 
-func (d *domainController) Remove(domain *spacev1beta1.PublicDomain) (runtime.Object, error) {
+func (d *domainController) Remove(domain *projectv1.PublicDomain) (runtime.Object, error) {
 	if domain.Namespace != settings.RioSystemNamespace {
 		return domain, nil
 	}
@@ -134,8 +134,8 @@ func (d *domainController) Remove(domain *spacev1beta1.PublicDomain) (runtime.Ob
 	return domain, nil
 }
 
-func (d *domainController) getNamespace(domain *spacev1beta1.PublicDomain) (string, error) {
-	r, err := labels.NewRequirement("field.cattle.io/displayName", selection.Equals, []string{domain.Spec.TargetWorkspaceName})
+func (d *domainController) getNamespace(domain *projectv1.PublicDomain) (string, error) {
+	r, err := labels.NewRequirement("field.cattle.io/displayName", selection.Equals, []string{domain.Spec.TargetProjectName})
 	if err != nil {
 		return "", err
 	}

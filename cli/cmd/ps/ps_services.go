@@ -9,7 +9,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/clientcfg"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 type ServiceData struct {
@@ -89,7 +89,7 @@ func FormatScale(data, data2 interface{}) (string, error) {
 }
 
 func (p *Ps) services(ctx *clicontext.CLIContext, stacks map[string]bool) error {
-	wc, err := ctx.WorkspaceClient()
+	wc, err := ctx.ProjectClient()
 	if err != nil {
 		return err
 	}

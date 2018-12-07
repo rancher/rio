@@ -4,15 +4,15 @@ import (
 	"github.com/rancher/norman/types"
 	"github.com/rancher/norman/types/mapper"
 	pm "github.com/rancher/rio/pkg/pretty/mapper"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 	"github.com/rancher/types/apis/management.cattle.io/v3"
 )
 
 var (
 	Version = types.APIVersion{
-		Version: "v1beta1",
+		Version: "v1",
 		Group:   "export.cattle.io",
-		Path:    "/v1beta1-export",
+		Path:    "/v1-export",
 	}
 
 	Schemas = newSchemas().

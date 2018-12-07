@@ -7,7 +7,7 @@ import (
 	"github.com/rancher/rio/pkg/apply"
 	"github.com/rancher/rio/pkg/deploy/istio/output"
 	"github.com/rancher/rio/pkg/settings"
-	spacev1beta1 "github.com/rancher/rio/types/apis/space.cattle.io/v1beta1"
+	projectv1 "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -29,7 +29,7 @@ func ApplyWildcardCertificates() error {
 	return apply.Apply([]runtime.Object{CertificateDNS(RioWildcardCerts, domain)}, nil, settings.RioSystemNamespace, "certificate-wildcard-dns")
 }
 
-func CertificateHttp(domain *spacev1beta1.PublicDomain) runtime.Object {
+func CertificateHttp(domain *projectv1.PublicDomain) runtime.Object {
 	cert := &output.Certificate{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "certmanager.k8s.io/v1alpha1",

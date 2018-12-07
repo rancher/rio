@@ -8,15 +8,15 @@ import (
 	"github.com/rancher/norman/types/convert/schemaconvert"
 	"github.com/rancher/rio/pkg/namespace"
 	"github.com/rancher/rio/pkg/pretty"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1/schema"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/types/apis/rio.cattle.io/v1/schema"
+	"github.com/rancher/rio/types/client/rio/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func FromClientStack(stack *client.Stack) (*Template, error) {
 	stackSchema := schema.Schemas.Schema(&schema.Version, client.StackType)
-	internalStack := &v1beta1.Stack{}
+	internalStack := &v1.Stack{}
 	err := schemaconvert.ToInternal(stack, stackSchema, internalStack)
 	if err != nil {
 		return nil, err
@@ -25,7 +25,7 @@ func FromClientStack(stack *client.Stack) (*Template, error) {
 	return FromStack(internalStack)
 }
 
-func FromStack(stack *v1beta1.Stack) (*Template, error) {
+func FromStack(stack *v1.Stack) (*Template, error) {
 	result := &Template{
 		Namespace:       namespace.StackToNamespace(stack),
 		Content:         []byte(stack.Spec.Template),
@@ -48,13 +48,13 @@ func FromStack(stack *v1beta1.Stack) (*Template, error) {
 	return result, nil
 }
 
-func (t *Template) ToStack(namespace, name string) *v1beta1.Stack {
-	s := &v1beta1.Stack{
+func (t *Template) ToStack(namespace, name string) *v1.Stack {
+	s := &v1.Stack{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Stack",
-			APIVersion: "rio.cattle.io/v1beta1",
+			APIVersion: "rio.cattle.io/v1",
 		},
-		Spec: v1beta1.StackSpec{
+		Spec: v1.StackSpec{
 			Template:  string(t.Content),
 			Answers:   t.Answers,
 			Questions: t.Questions,
@@ -71,7 +71,7 @@ func (t *Template) ToStack(namespace, name string) *v1beta1.Stack {
 	return s
 }
 
-func (t *Template) ToInternalStack() (*v1beta1.InternalStack, error) {
+func (t *Template) ToInternalStack() (*v1.InternalStack, error) {
 	data, err := t.parseYAML()
 	if err != nil {
 		return nil, err

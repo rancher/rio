@@ -12,7 +12,7 @@ import (
 	"github.com/rancher/rio/pkg/deploy/stack/populate/k8sservice"
 	"github.com/rancher/rio/pkg/deploy/stack/populate/podcontrollers"
 	"github.com/rancher/rio/pkg/settings"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	appsv1 "k8s.io/api/apps/v1beta2"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -49,7 +49,7 @@ func Populate(stack *input.Stack, output *output.Deployment) error {
 	return nil
 }
 
-func populateServiceFromExternal(e *v1beta1.ExternalService, output *output.Deployment) error {
+func populateServiceFromExternal(e *riov1.ExternalService, output *output.Deployment) error {
 	target := e.Spec.Target
 	if !strings.HasPrefix(target, "https://") && !strings.HasPrefix(target, "http://") {
 		target = "http://" + target
@@ -109,7 +109,7 @@ func replaceWithXIP(ip string) string {
 	return fmt.Sprintf("%s.xip.io", ip)
 }
 
-func populateServiceFromRoute(r *v1beta1.RouteSet, output *output.Deployment) {
+func populateServiceFromRoute(r *riov1.RouteSet, output *output.Deployment) {
 	service := &v1.Service{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Service",

@@ -6,8 +6,8 @@ import (
 	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/norman/types/definition"
 	"github.com/rancher/rio/pkg/pretty"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1/schema"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/apis/rio.cattle.io/v1/schema"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 func buildStack(request *types.APIContext, resource *types.RawResource, data map[string]interface{}) {

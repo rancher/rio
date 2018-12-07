@@ -11,8 +11,8 @@ import (
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
-	spacev1beta1 "github.com/rancher/rio/types/apis/space.cattle.io/v1beta1"
+	projectv1 "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"github.com/rancher/types/apis/core/v1"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -39,12 +39,12 @@ func Register(ctx context.Context, rContext *types.Context) {
 }
 
 type secretController struct {
-	services            v1beta1.ServiceClient
+	services            riov1.ServiceClient
 	secretsLister       v1.SecretClientCache
 	secrets             v1.SecretClient
 	vssController       v1alpha3.VirtualServiceClient
-	publicDomains       spacev1beta1.PublicDomainClient
-	publicDomainsLister spacev1beta1.PublicDomainClientCache
+	publicDomains       projectv1.PublicDomainClient
+	publicDomainsLister projectv1.PublicDomainClientCache
 }
 
 func (s *secretController) sync(key string, secret *corev1.Secret) (runtime.Object, error) {

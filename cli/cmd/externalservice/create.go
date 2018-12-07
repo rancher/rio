@@ -5,7 +5,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/stack"
 	"github.com/rancher/rio/cli/pkg/waiter"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 type Create struct {
@@ -19,11 +19,11 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 		Target: ctx.CLI.Args().Tail()[0],
 	}
 	var err error
-	externalService.SpaceID, externalService.StackID, externalService.Name, err = stack.ResolveSpaceStackForName(ctx, ctx.CLI.Args().Get(0))
+	externalService.ProjectID, externalService.StackID, externalService.Name, err = stack.ResolveSpaceStackForName(ctx, ctx.CLI.Args().Get(0))
 	if err != nil {
 		return err
 	}
-	wc, err := ctx.WorkspaceClient()
+	wc, err := ctx.ProjectClient()
 	if err != nil {
 		return err
 	}

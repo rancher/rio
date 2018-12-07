@@ -8,7 +8,7 @@ import (
 	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/waiter"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 func ResolveSpaceStackForName(c *clicontext.CLIContext, in string) (string, string, string, error) {
@@ -25,7 +25,7 @@ func ResolveSpaceStackForName(c *clicontext.CLIContext, in string) (string, stri
 		return "", "", "", err
 	}
 
-	w, err := c.Workspace()
+	w, err := c.Project()
 	if err != nil {
 		return "", "", "", err
 	}
@@ -51,8 +51,8 @@ func ResolveSpaceStackForName(c *clicontext.CLIContext, in string) (string, stri
 	var s *client.Stack
 	if len(stacks.Data) == 0 {
 		s, err = wc.Stack.Create(&client.Stack{
-			Name:    stackName,
-			SpaceID: w.ID,
+			Name:      stackName,
+			ProjectID: w.ID,
 		})
 		if err != nil {
 			return "", "", "", errors.Wrapf(err, "failed to create stack %s", stackName)
@@ -65,5 +65,5 @@ func ResolveSpaceStackForName(c *clicontext.CLIContext, in string) (string, stri
 		return "", "", "", err
 	}
 
-	return s.SpaceID, s.ID, name, nil
+	return s.ProjectID, s.ID, name, nil
 }

@@ -10,8 +10,8 @@ import (
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/types/client/rio/v1"
 	"github.com/urfave/cli"
 )
 
@@ -49,7 +49,7 @@ func stringMatchToString(m *client.StringMatch) string {
 	if m == nil {
 		return ""
 	}
-	return v1beta1.StringMatch{
+	return v1.StringMatch{
 		Exact:  m.Exact,
 		Regexp: m.Regexp,
 		Prefix: m.Prefix,
@@ -75,7 +75,7 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	wc, err := ctx.WorkspaceClient()
+	wc, err := ctx.ProjectClient()
 	if err != nil {
 		return err
 	}
@@ -313,7 +313,7 @@ func FormatURL() func(obj interface{}) (string, error) {
 		if !ok {
 			return "", fmt.Errorf("invalid data")
 		}
-		space := strings.SplitN(data.Stack.SpaceID, "-", 2)[1]
+		space := strings.SplitN(data.Stack.ProjectID, "-", 2)[1]
 		hostBuf := strings.Builder{}
 		hostBuf.WriteString("https://")
 		hostBuf.WriteString(data.RouteSet.Name)

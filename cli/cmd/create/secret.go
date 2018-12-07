@@ -2,7 +2,7 @@ package create
 
 import (
 	"github.com/rancher/norman/pkg/kv"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 func ParseSecrets(secrets []string) ([]client.SecretMapping, error) {

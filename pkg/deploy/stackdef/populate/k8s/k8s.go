@@ -9,13 +9,13 @@ import (
 	"strings"
 
 	"github.com/rancher/rio/pkg/deploy/stackdef/output"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	yamlDecoder "k8s.io/apimachinery/pkg/util/yaml"
 )
 
-func Populate(stack *v1beta1.InternalStack, output *output.Deployment) error {
+func Populate(stack *v1.InternalStack, output *output.Deployment) error {
 	if stack.Kubernetes.Manifest != "" {
 		err := readManifest("", stack.Kubernetes.Manifest, output)
 		if err != nil {

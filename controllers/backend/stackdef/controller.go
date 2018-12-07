@@ -5,7 +5,7 @@ import (
 
 	"github.com/rancher/rio/pkg/deploy/stackdef"
 	"github.com/rancher/rio/types"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"github.com/rancher/types/apis/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -22,18 +22,18 @@ type stackController struct {
 	namespaceLister v1.NamespaceClientCache
 }
 
-func (s *stackController) Remove(obj *v1beta1.Stack) (runtime.Object, error) {
+func (s *stackController) Remove(obj *riov1.Stack) (runtime.Object, error) {
 	return obj, stackdef.Remove(obj)
 }
 
-func (s *stackController) Updated(stack *v1beta1.Stack) (runtime.Object, error) {
+func (s *stackController) Updated(stack *riov1.Stack) (runtime.Object, error) {
 	ns, err := s.namespaceLister.Get("", stack.Namespace)
 	if err != nil {
 		return nil, err
 	}
-	_, err = v1beta1.StackConditionDefined.Do(stack, func() (runtime.Object, error) {
+	_, err = riov1.StackConditionDefined.Do(stack, func() (runtime.Object, error) {
 		return stack, stackdef.Deploy(ns, stack)
 	})
-	v1beta1.PendingCondition.True(stack)
+	riov1.PendingCondition.True(stack)
 	return stack, err
 }

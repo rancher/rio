@@ -8,7 +8,7 @@ import (
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 type Update struct {
@@ -41,7 +41,7 @@ func (c *Update) Run(ctx *clicontext.CLIContext) error {
 }
 
 func RunUpdate(ctx *clicontext.CLIContext, id string, content []byte, labels map[string]string) error {
-	wc, err := ctx.WorkspaceClient()
+	wc, err := ctx.ProjectClient()
 	if err != nil {
 		return err
 	}
