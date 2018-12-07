@@ -417,6 +417,8 @@ func populateStringMatch(match v1beta1.StringMatch) *v1alpha3.StringMatch {
 		m.MatchType = getPrefixMatch(match)
 	} else if match.Regexp != "" {
 		m.MatchType = getRegexpMatch(match)
+	} else {
+		return nil
 	}
 	return m
 }

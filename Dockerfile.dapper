@@ -19,6 +19,7 @@ ENV DAPPER_SOURCE /go/src/github.com/rancher/rio/
 ENV DAPPER_OUTPUT ./bin ./dist
 ENV DAPPER_DOCKER_SOCKET true
 ENV HOME ${DAPPER_SOURCE}
+ENV CROSS true
 WORKDIR ${DAPPER_SOURCE}
 
 ENTRYPOINT ["./scripts/entry"]
