@@ -19,7 +19,9 @@ cross()
 
 mkdir -p bin
 
-cross
+if [ -n "$CROSS" ]; then
+    cross
+fi
 
 echo Building incluster
 GOOS=linux GOARCH=amd64
