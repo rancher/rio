@@ -39,7 +39,7 @@ func download(ctx *clicontext.CLIContext, contentType, option, self string) (io.
 		return nil, err
 	}
 
-	wc, err := ctx.WorkspaceClient()
+	wc, err := ctx.ProjectClient()
 	if err != nil {
 		return nil, err
 	}

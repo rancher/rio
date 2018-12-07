@@ -6,7 +6,7 @@ import (
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 type Cat struct {
@@ -19,7 +19,7 @@ func (c *Cat) Run(ctx *clicontext.CLIContext) error {
 			return err
 		}
 
-		client, err := ctx.WorkspaceClient()
+		client, err := ctx.ProjectClient()
 		if err != nil {
 			return err
 		}

@@ -7,14 +7,14 @@ import (
 	"github.com/rancher/norman/name"
 	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/rio/pkg/deploy/stackdef/output"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"github.com/sirupsen/logrus"
 	v1beta12 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-func Populate(stack *v1beta1.InternalStack, output *output.Deployment) error {
+func Populate(stack *riov1.InternalStack, output *output.Deployment) error {
 	if err := crdsForCRDDefs(true, stack.Kubernetes.NamespacedCustomResourceDefinitions, output); err != nil {
 		return err
 	}
@@ -22,7 +22,7 @@ func Populate(stack *v1beta1.InternalStack, output *output.Deployment) error {
 	return crdsForCRDDefs(false, stack.Kubernetes.CustomResourceDefinitions, output)
 }
 
-func crdsForCRDDefs(namespaced bool, crdDefs []v1beta1.CustomResourceDefinition, output *output.Deployment) error {
+func crdsForCRDDefs(namespaced bool, crdDefs []riov1.CustomResourceDefinition, output *output.Deployment) error {
 	for _, crdDef := range crdDefs {
 		plural := name.GuessPluralName(strings.ToLower(crdDef.Kind))
 		crdName := strings.ToLower(fmt.Sprintf("%s.%s", plural, crdDef.Group))

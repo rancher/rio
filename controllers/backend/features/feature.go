@@ -6,12 +6,12 @@ import (
 	"github.com/rancher/rio/controllers/backend/features/monitoring"
 	"github.com/rancher/rio/controllers/backend/features/nfs"
 	"github.com/rancher/rio/types"
-	spacev1beta1 "github.com/rancher/rio/types/apis/space.cattle.io/v1beta1"
+	projectv1 "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type featureController struct {
-	features spacev1beta1.FeatureController
+	features projectv1.FeatureController
 }
 
 func Register(ctx context.Context, rContext *types.Context) {
@@ -21,7 +21,7 @@ func Register(ctx context.Context, rContext *types.Context) {
 	rContext.Global.Feature.Interface().AddHandler(ctx, "feature", f.sync)
 }
 
-func (f featureController) sync(key string, feature *spacev1beta1.Feature) (runtime.Object, error) {
+func (f featureController) sync(key string, feature *projectv1.Feature) (runtime.Object, error) {
 	if key == "" || feature == nil {
 		return feature, nil
 	}

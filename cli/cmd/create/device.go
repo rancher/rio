@@ -18,7 +18,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 func ParseDevices(devices []string) ([]client.DeviceMapping, error) {

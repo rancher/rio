@@ -3,7 +3,7 @@ package create
 import (
 	"time"
 
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 func populateHealthCheck(c *Create, service *client.Service) error {

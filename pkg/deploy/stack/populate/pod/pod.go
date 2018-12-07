@@ -13,13 +13,13 @@ import (
 	"github.com/rancher/rio/pkg/deploy/stack/populate/podvolume"
 	"github.com/rancher/rio/pkg/deploy/stack/populate/rbac"
 	"github.com/rancher/rio/pkg/deploy/stack/populate/servicelabels"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func Populate(stack *input.Stack, service *v1beta1.Service, output *output.Deployment) v1.PodTemplateSpec {
+func Populate(stack *input.Stack, service *riov1.Service, output *output.Deployment) v1.PodTemplateSpec {
 	podSpec := podSpec(stack, service, output)
 
 	pts := v1.PodTemplateSpec{
@@ -30,7 +30,7 @@ func Populate(stack *input.Stack, service *v1beta1.Service, output *output.Deplo
 		Spec: podSpec,
 	}
 
-	configsByName := map[string]*v1beta1.Config{}
+	configsByName := map[string]*riov1.Config{}
 	for _, c := range stack.Configs {
 		configsByName[c.Name] = c
 	}
@@ -48,7 +48,7 @@ func Populate(stack *input.Stack, service *v1beta1.Service, output *output.Deplo
 	return pts
 }
 
-func podSpec(stack *input.Stack, service *v1beta1.Service, output *output.Deployment) v1.PodSpec {
+func podSpec(stack *input.Stack, service *riov1.Service, output *output.Deployment) v1.PodSpec {
 	var (
 		f    = false
 		spec = &service.Spec.ServiceUnversionedSpec
@@ -74,7 +74,7 @@ func podSpec(stack *input.Stack, service *v1beta1.Service, output *output.Deploy
 	return podSpec
 }
 
-func roles(stack *input.Stack, service *v1beta1.Service, podSpec *v1.PodSpec, output *output.Deployment) {
+func roles(stack *input.Stack, service *riov1.Service, podSpec *v1.PodSpec, output *output.Deployment) {
 	rbac.Populate(stack, service, output)
 
 	serviceAccountName := rbac.ServiceAccountName(service)
@@ -84,14 +84,14 @@ func roles(stack *input.Stack, service *v1beta1.Service, podSpec *v1.PodSpec, ou
 	}
 }
 
-func stopPeriod(podSpec *v1.PodSpec, service *v1beta1.ServiceUnversionedSpec) {
+func stopPeriod(podSpec *v1.PodSpec, service *riov1.ServiceUnversionedSpec) {
 	if service.StopGracePeriodSeconds != nil {
 		v := int64(*service.StopGracePeriodSeconds)
 		podSpec.TerminationGracePeriodSeconds = &v
 	}
 }
 
-func restartPolicy(podSpec *v1.PodSpec, service *v1beta1.ServiceUnversionedSpec) {
+func restartPolicy(podSpec *v1.PodSpec, service *riov1.ServiceUnversionedSpec) {
 	switch service.RestartPolicy {
 	case "never":
 		podSpec.RestartPolicy = v1.RestartPolicyNever
@@ -102,7 +102,7 @@ func restartPolicy(podSpec *v1.PodSpec, service *v1beta1.ServiceUnversionedSpec)
 	}
 }
 
-func containers(podSpec *v1.PodSpec, service *v1beta1.Service) {
+func containers(podSpec *v1.PodSpec, service *riov1.Service) {
 	if service.Spec.Image != "" {
 		podSpec.Containers = append(podSpec.Containers, container.Container(service.Name, service.Spec.ContainerConfig))
 	}
@@ -118,7 +118,7 @@ func containers(podSpec *v1.PodSpec, service *v1beta1.Service) {
 	}
 }
 
-func scheduling(podSpec *v1.PodSpec, service *v1beta1.ServiceUnversionedSpec, labels map[string]string) {
+func scheduling(podSpec *v1.PodSpec, service *riov1.ServiceUnversionedSpec, labels map[string]string) {
 	nodeAffinity, err := service.Scheduling.ToNodeAffinity()
 	if err == nil {
 		podSpec.Affinity = &v1.Affinity{
@@ -151,7 +151,7 @@ func scheduling(podSpec *v1.PodSpec, service *v1beta1.ServiceUnversionedSpec, la
 	}
 }
 
-func dns(podSpec *v1.PodSpec, service *v1beta1.ServiceUnversionedSpec) {
+func dns(podSpec *v1.PodSpec, service *riov1.ServiceUnversionedSpec) {
 	dnsConfig := &v1.PodDNSConfig{
 		Nameservers: service.DNS,
 		Searches:    service.DNSSearch,

@@ -6,7 +6,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/waiter"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 type Promote struct {
@@ -25,7 +25,7 @@ func (p *Promote) Run(ctx *clicontext.CLIContext) error {
 			return err
 		}
 
-		wc, err := ctx.WorkspaceClient()
+		wc, err := ctx.ProjectClient()
 		if err != nil {
 			return err
 		}

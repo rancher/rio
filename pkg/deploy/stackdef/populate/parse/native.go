@@ -7,10 +7,10 @@ import (
 	"github.com/rancher/rio/pkg/deploy/stackdef/populate/k8s"
 	"github.com/rancher/rio/pkg/namespace"
 	"github.com/rancher/rio/pkg/template"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 )
 
-func Populate(stack *v1beta1.Stack, output *output.Deployment) error {
+func Populate(stack *riov1.Stack, output *output.Deployment) error {
 	internalStack, err := parseStack(stack)
 	if err != nil {
 		return err
@@ -36,7 +36,7 @@ func Populate(stack *v1beta1.Stack, output *output.Deployment) error {
 	return nil
 }
 
-func parseStack(stack *v1beta1.Stack) (*v1beta1.InternalStack, error) {
+func parseStack(stack *riov1.Stack) (*riov1.InternalStack, error) {
 	t, err := template.FromStack(stack)
 	if err != nil {
 		return nil, err
@@ -49,56 +49,56 @@ func parseStack(stack *v1beta1.Stack) (*v1beta1.InternalStack, error) {
 	return t.ToInternalStack()
 }
 
-func configs(ns string, stack *v1beta1.Stack, internalStack *v1beta1.InternalStack, output *output.Deployment) {
+func configs(ns string, stack *riov1.Stack, internalStack *riov1.InternalStack, output *output.Deployment) {
 	for name, config := range internalStack.Configs {
 		newResource := config.DeepCopy()
 		newResource.Kind = "Config"
-		newResource.APIVersion = v1beta1.SchemeGroupVersion.String()
+		newResource.APIVersion = riov1.SchemeGroupVersion.String()
 		newResource.Name = name
 		newResource.Namespace = ns
-		newResource.Spec.SpaceName = stack.Namespace
+		newResource.Spec.ProjectName = stack.Namespace
 		newResource.Spec.StackName = ref.FromStrings(stack.Namespace, stack.Name)
 
 		output.Configs[newResource.Name] = newResource
 	}
 }
 
-func volumes(ns string, stack *v1beta1.Stack, internalStack *v1beta1.InternalStack, output *output.Deployment) {
+func volumes(ns string, stack *riov1.Stack, internalStack *riov1.InternalStack, output *output.Deployment) {
 	for name, volume := range internalStack.Volumes {
 		newResource := volume.DeepCopy()
 		newResource.Kind = "Volume"
-		newResource.APIVersion = v1beta1.SchemeGroupVersion.String()
+		newResource.APIVersion = riov1.SchemeGroupVersion.String()
 		newResource.Name = name
 		newResource.Namespace = ns
-		newResource.Spec.SpaceName = stack.Namespace
+		newResource.Spec.ProjectName = stack.Namespace
 		newResource.Spec.StackName = ref.FromStrings(stack.Namespace, stack.Name)
 
 		output.Volumes[newResource.Name] = newResource
 	}
 }
 
-func services(ns string, stack *v1beta1.Stack, internalStack *v1beta1.InternalStack, output *output.Deployment) {
+func services(ns string, stack *riov1.Stack, internalStack *riov1.InternalStack, output *output.Deployment) {
 	for name, service := range internalStack.Services {
 		newResource := service.DeepCopy()
 		newResource.Kind = "Service"
-		newResource.APIVersion = v1beta1.SchemeGroupVersion.String()
+		newResource.APIVersion = riov1.SchemeGroupVersion.String()
 		newResource.Name = name
 		newResource.Namespace = ns
-		newResource.Spec.SpaceName = stack.Namespace
+		newResource.Spec.ProjectName = stack.Namespace
 		newResource.Spec.StackName = ref.FromStrings(stack.Namespace, stack.Name)
 
 		output.Services[newResource.Name] = newResource
 	}
 }
 
-func routes(ns string, stack *v1beta1.Stack, internalStack *v1beta1.InternalStack, output *output.Deployment) {
+func routes(ns string, stack *riov1.Stack, internalStack *riov1.InternalStack, output *output.Deployment) {
 	for name, routes := range internalStack.Routes {
 		newResource := routes.DeepCopy()
 		newResource.Kind = "RouteSet"
-		newResource.APIVersion = v1beta1.SchemeGroupVersion.String()
+		newResource.APIVersion = riov1.SchemeGroupVersion.String()
 		newResource.Name = name
 		newResource.Namespace = ns
-		newResource.Spec.SpaceName = stack.Namespace
+		newResource.Spec.ProjectName = stack.Namespace
 		newResource.Spec.StackName = ref.FromStrings(stack.Namespace, stack.Name)
 
 		output.Routes[newResource.Name] = newResource

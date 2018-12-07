@@ -10,7 +10,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/waiter"
 	"github.com/rancher/rio/pkg/settings"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 type Stage struct {
@@ -20,13 +20,13 @@ type Stage struct {
 	Image  string `desc:"Runtime image (Docker image/OCI image)"`
 }
 
-func determineRevision(workspace *clientcfg.Workspace, name string, service *types.Resource) (string, error) {
+func determineRevision(project *clientcfg.Project, name string, service *types.Resource) (string, error) {
 	revision := "next"
 	if name == service.ID {
 		return revision, nil
 	}
 
-	parsedService := lookup.ParseStackScoped(workspace, name)
+	parsedService := lookup.ParseStackScoped(project, name)
 	if parsedService.Version == settings.DefaultServiceVersion {
 		return "", fmt.Errorf("\"%s\" is not a valid revision to stage", settings.DefaultServiceVersion)
 	}
@@ -37,10 +37,10 @@ func determineRevision(workspace *clientcfg.Workspace, name string, service *typ
 	return revision, nil
 }
 
-func stripRevision(workspace *clientcfg.Workspace, name string) lookup.StackScoped {
-	stackScope := lookup.ParseStackScoped(workspace, name)
+func stripRevision(project *clientcfg.Project, name string) lookup.StackScoped {
+	stackScope := lookup.ParseStackScoped(project, name)
 	stackScope.Version = ""
-	return lookup.ParseStackScoped(workspace, stackScope.String())
+	return lookup.ParseStackScoped(project, stackScope.String())
 }
 
 func (r *Stage) Run(ctx *clicontext.CLIContext) error {
@@ -48,12 +48,12 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("must specify the service to update")
 	}
 
-	workspace, err := ctx.Workspace()
+	project, err := ctx.Project()
 	if err != nil {
 		return err
 	}
 
-	wc, err := ctx.WorkspaceClient()
+	wc, err := ctx.ProjectClient()
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	stackScope := stripRevision(workspace, ctx.CLI.Args()[0])
+	stackScope := stripRevision(project, ctx.CLI.Args()[0])
 
 	resource, err := lookup.Lookup(ctx, stackScope.ResourceID, client.ServiceType)
 	if err != nil {
@@ -72,7 +72,7 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 			return err
 		}
 
-		stackScope = stripRevision(workspace, lookup.StackScopedFromLabels(workspace, byID.Labels).String())
+		stackScope = stripRevision(project, lookup.StackScopedFromLabels(project, byID.Labels).String())
 		resource = &types.NamedResource{
 			Resource: byID.Resource,
 			Name:     byID.Name,
@@ -84,7 +84,7 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	revision, err := determineRevision(workspace, ctx.CLI.Args()[0], &resource.Resource)
+	revision, err := determineRevision(project, ctx.CLI.Args()[0], &resource.Resource)
 	if err != nil {
 		return err
 	}
@@ -106,7 +106,7 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 	serviceDef.Version = revision
 	serviceDef.Weight = int64(r.Weight)
 	serviceDef.Scale = int64(r.Scale)
-	serviceDef.SpaceID = baseService.SpaceID
+	serviceDef.ProjectID = baseService.ProjectID
 	serviceDef.StackID = baseService.StackID
 	serviceDef.PortBindings = baseService.PortBindings
 	if serviceDef.Scale == 0 {

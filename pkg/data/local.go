@@ -8,8 +8,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/rancher/rio/pkg/apply"
+	"github.com/rancher/rio/pkg/project"
 	"github.com/rancher/rio/pkg/settings"
-	"github.com/rancher/rio/pkg/space"
 	"github.com/rancher/rio/pkg/template"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -63,7 +63,7 @@ func readDir(data *apply.Data, base string) error {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: dir.Name(),
 					Labels: map[string]string{
-						space.SpaceLabel:              "true",
+						project.ProjectLabel:          "true",
 						"field.cattle.io/displayName": dir.Name(),
 					},
 				},
@@ -72,7 +72,7 @@ func readDir(data *apply.Data, base string) error {
 
 		for name, template := range templates {
 			stack := template.ToStack(dir.Name(), name)
-			data.Add(stack.Namespace, "rio.cattle.io/v1beta1", "Stack", map[string]runtime.Object{
+			data.Add(stack.Namespace, "rio.cattle.io/v1", "Stack", map[string]runtime.Object{
 				stack.Name: stack,
 			})
 		}

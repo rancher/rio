@@ -6,7 +6,7 @@ import (
 	"github.com/rancher/norman/types"
 	"github.com/rancher/norman/types/mapper"
 	pm "github.com/rancher/rio/pkg/pretty/mapper"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 func containerMappers() []types.Mapper {
@@ -74,7 +74,7 @@ func serviceMappers() []types.Mapper {
 		pm.DefaultMissing{Field: "scale", Default: 1},
 		mapper.Move{From: "scheduling/node/nodeId", To: "node"},
 		pm.SchedulingMapper{Field: "scheduling"},
-		mapper.Drop{Field: "spaceId", IgnoreDefinition: true},
+		mapper.Drop{Field: "projectId", IgnoreDefinition: true},
 		mapper.Drop{Field: "stackId", IgnoreDefinition: true},
 		pm.Duration{Field: "stopGracePeriod", Unit: time.Second},
 	)

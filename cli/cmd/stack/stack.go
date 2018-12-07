@@ -10,7 +10,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/table"
 	"github.com/rancher/rio/cli/pkg/waiter"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 	"github.com/urfave/cli"
 )
 
@@ -71,7 +71,7 @@ type Data struct {
 }
 
 func stackLs(ctx *clicontext.CLIContext) error {
-	wc, err := ctx.WorkspaceClient()
+	wc, err := ctx.ProjectClient()
 	if err != nil {
 		return err
 	}
@@ -107,7 +107,7 @@ func stackCreate(ctx *clicontext.CLIContext) error {
 		names = ctx.CLI.Args()
 	}
 
-	wc, err := ctx.WorkspaceClient()
+	wc, err := ctx.ProjectClient()
 	if err != nil {
 		return err
 	}
@@ -142,7 +142,7 @@ func stackCreate(ctx *clicontext.CLIContext) error {
 func stackRm(ctx *clicontext.CLIContext) error {
 	names := ctx.CLI.Args()
 
-	wc, err := ctx.WorkspaceClient()
+	wc, err := ctx.ProjectClient()
 	if err != nil {
 		return err
 	}
@@ -182,7 +182,7 @@ func stackUpdate(ctx *clicontext.CLIContext) error {
 
 	names := ctx.CLI.Args()
 
-	wc, err := ctx.WorkspaceClient()
+	wc, err := ctx.ProjectClient()
 	if err != nil {
 		return err
 	}

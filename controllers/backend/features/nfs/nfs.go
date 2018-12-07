@@ -4,15 +4,15 @@ import (
 	"github.com/rancher/rio/pkg/apply"
 	"github.com/rancher/rio/pkg/data"
 	"github.com/rancher/rio/pkg/settings"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
-	spacev1beta1 "github.com/rancher/rio/types/apis/space.cattle.io/v1beta1"
+	projectv1 "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
+	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func Reconcile(feature *spacev1beta1.Feature) error {
+func Reconcile(feature *projectv1.Feature) error {
 	var result []runtime.Object
 	if feature.Spec.Enable {
-		result = append(result, data.Stack("nfs", v1beta1.StackSpec{
+		result = append(result, data.Stack("nfs", v1.StackSpec{
 			DisableMesh: true,
 			Answers:     feature.Spec.Answers,
 		}))

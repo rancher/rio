@@ -3,7 +3,7 @@ package pretty
 import (
 	"github.com/rancher/norman/types"
 	pm "github.com/rancher/rio/pkg/pretty/mapper"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 func kubernetes(schemas *types.Schemas) *types.Schemas {

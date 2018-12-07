@@ -8,14 +8,14 @@ import (
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 	"github.com/urfave/cli"
 )
 
 type Data struct {
 	ID     string
 	Stack  *client.Stack
-	Config client.Config
+	Config *client.Config
 }
 
 type Ls struct {
@@ -27,7 +27,7 @@ func (l *Ls) Customize(cmd *cli.Command) {
 }
 
 func (l *Ls) Run(ctx *clicontext.CLIContext) error {
-	wc, err := ctx.WorkspaceClient()
+	wc, err := ctx.ProjectClient()
 	if err != nil {
 		return err
 	}
@@ -61,11 +61,11 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 		return configs.Data[i].ID < configs.Data[j].ID
 	})
 
-	for i, service := range configs.Data {
+	for i, config := range configs.Data {
 		writer.Write(&Data{
-			ID:     service.ID,
-			Config: configs.Data[i],
-			Stack:  stackByID[service.StackID],
+			ID:     config.ID,
+			Config: &configs.Data[i],
+			Stack:  stackByID[config.StackID],
 		})
 	}
 

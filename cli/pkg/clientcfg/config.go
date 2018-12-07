@@ -11,28 +11,29 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/rancher/rio/types/client/rio/v1"
+
 	"github.com/pkg/errors"
 	"github.com/rancher/norman/clientbase"
 	"github.com/rancher/norman/pkg/resolvehome"
 	"github.com/rancher/rio/cli/pkg/up/questions"
 	"github.com/rancher/rio/pkg/clientaccess"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
-	spaceclient "github.com/rancher/rio/types/client/space/v1beta1"
+	projectclient "github.com/rancher/rio/types/client/project/v1"
 	"github.com/sirupsen/logrus"
 )
 
 var ErrNoConfig = errors.New("no config found")
 
 type Config struct {
-	Home          string
-	ClusterName   string
-	WorkspaceName string
-	Debug         bool
-	Wait          bool
-	WaitTimeout   int
-	WaitState     string
-	ServerURL     string
-	Token         string
+	Home        string
+	ClusterName string
+	ProjectName string
+	Debug       bool
+	Wait        bool
+	WaitTimeout int
+	WaitState   string
+	ServerURL   string
+	Token       string
 
 	cluster *Cluster
 }
@@ -66,23 +67,23 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-func (c *Config) Workspace() (*Workspace, error) {
+func (c *Config) Project() (*Project, error) {
 	cluster, err := c.Cluster()
 	if err != nil {
 		return nil, err
 	}
-	return cluster.Workspace()
+	return cluster.Project()
 }
 
-func (c *Config) WorkspaceClient() (*client.Client, error) {
-	w, err := c.Workspace()
+func (c *Config) ProjectClient() (*client.Client, error) {
+	w, err := c.Project()
 	if err != nil {
 		return nil, err
 	}
 	return w.Client()
 }
 
-func (c *Config) ClusterClient() (*spaceclient.Client, error) {
+func (c *Config) ClusterClient() (*projectclient.Client, error) {
 	cluster, err := c.Cluster()
 	if err != nil {
 		return nil, err
@@ -166,8 +167,8 @@ func (c *Config) Clusters() ([]Cluster, error) {
 	}
 
 	for i := range clusters {
-		if clusters[i].DefaultWorkspaceName == "" {
-			clusters[i].DefaultWorkspaceName = "default"
+		if clusters[i].DefaultProjectName == "" {
+			clusters[i].DefaultProjectName = "default"
 		}
 		if !clusters[i].Default {
 			clusters[i].Default = clusters[i].Name == defaultName
@@ -180,7 +181,7 @@ func (c *Config) Clusters() ([]Cluster, error) {
 
 func (c *Config) SaveCluster(cluster *Cluster, validate bool) error {
 	if validate {
-		_, err := cluster.Workspaces()
+		_, err := cluster.Projects()
 		if err != nil {
 			return errors.Wrapf(err, "can not save cluster")
 		}
@@ -239,13 +240,13 @@ func (c *Config) getAndSaveAdminCluster() *Cluster {
 
 	info.Token = strings.TrimSpace(string(token))
 	cluster := &Cluster{
-		Info:                 *info,
-		DefaultStackName:     "default",
-		DefaultWorkspaceName: "default",
-		ID:                   "local",
-		Name:                 "local",
-		Checksum:             "local",
-		Config:               c,
+		Info:               *info,
+		DefaultStackName:   "default",
+		DefaultProjectName: "default",
+		ID:                 "local",
+		Name:               "local",
+		Checksum:           "local",
+		Config:             c,
 	}
 
 	if err := c.SaveCluster(cluster, true); err != nil {

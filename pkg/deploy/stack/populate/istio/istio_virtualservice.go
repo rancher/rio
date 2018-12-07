@@ -17,7 +17,7 @@ import (
 	"github.com/rancher/rio/pkg/deploy/stack/populate/servicelabels"
 	"github.com/rancher/rio/pkg/namespace"
 	"github.com/rancher/rio/pkg/settings"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"istio.io/api/networking/v1alpha3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -47,12 +47,12 @@ func virtualservices(stack *input.Stack) ([]*output.IstioObject, error) {
 	return result, nil
 }
 
-func vsRoutes(publicPorts map[string]bool, service *v1beta1.Service, dests []dest) ([]*v1alpha3.HTTPRoute, bool) {
+func vsRoutes(publicPorts map[string]bool, service *v1.Service, dests []dest) ([]*v1alpha3.HTTPRoute, bool) {
 	external := false
 	var result []*v1alpha3.HTTPRoute
 
 	// add https challenge match
-	pb := &v1beta1.PortBinding{
+	pb := &v1.PortBinding{
 		Port:       80,
 		TargetPort: 8089,
 		Protocol:   "http",
@@ -104,7 +104,7 @@ func vsRoutes(publicPorts map[string]bool, service *v1beta1.Service, dests []des
 	return result, external
 }
 
-func newRoute(externalGW string, published bool, portBinding *v1beta1.PortBinding, dests []dest, appendHttps bool) (string, *v1alpha3.HTTPRoute) {
+func newRoute(externalGW string, published bool, portBinding *v1.PortBinding, dests []dest, appendHttps bool) (string, *v1alpha3.HTTPRoute) {
 	if portBinding.Protocol != "http" && portBinding.Protocol != "https" {
 		return "", nil
 	}
@@ -226,7 +226,7 @@ func vsFromService(stack *input.Stack, name string, service *output.ServiceSet) 
 	return result
 }
 
-func vsFromSpec(stack *input.Stack, name, namespace string, service *v1beta1.Service, dests ...dest) *output.IstioObject {
+func vsFromSpec(stack *input.Stack, name, namespace string, service *v1.Service, dests ...dest) *output.IstioObject {
 	publicPorts := map[string]bool{}
 
 	routes, external := vsRoutes(publicPorts, service, dests)
@@ -244,7 +244,7 @@ func vsFromSpec(stack *input.Stack, name, namespace string, service *v1beta1.Ser
 
 	if external && len(publicPorts) > 0 {
 		externalGW := GetPublicGateway()
-		externalHost := getExternalDomain(name, namespace, stack.Space)
+		externalHost := getExternalDomain(name, namespace, stack.Project)
 		spec.Gateways = append(spec.Gateways, externalGW)
 		spec.Hosts = append(spec.Hosts, externalHost)
 
@@ -266,9 +266,9 @@ func vsFromSpec(stack *input.Stack, name, namespace string, service *v1beta1.Ser
 	return vs
 }
 
-func vsFromRoutesets(stack *input.Stack, routesets []*v1beta1.RouteSet) []*output.IstioObject {
+func vsFromRoutesets(stack *input.Stack, routesets []*v1.RouteSet) []*output.IstioObject {
 	result := make([]*output.IstioObject, 0)
-	externalServiceMap := map[string]*v1beta1.ExternalService{}
+	externalServiceMap := map[string]*v1.ExternalService{}
 	for _, e := range stack.ExternalServices {
 		externalServiceMap[e.Name] = e
 	}
@@ -277,7 +277,7 @@ func vsFromRoutesets(stack *input.Stack, routesets []*v1beta1.RouteSet) []*outpu
 		vs := newVirtualServiceGeneric(stack, routeset.Name, ns)
 		spec := &v1alpha3.VirtualService{
 			Gateways: []string{privateGw, GetPublicGateway()},
-			Hosts:    []string{routeset.Name, getExternalDomain(routeset.Name, stack.Stack.Name, stack.Space)},
+			Hosts:    []string{routeset.Name, getExternalDomain(routeset.Name, stack.Stack.Name, stack.Project)},
 		}
 		// populate http routing
 		for _, routeSpec := range routeset.Spec.Routes {
@@ -357,7 +357,7 @@ func vsFromRoutesets(stack *input.Stack, routesets []*v1beta1.RouteSet) []*outpu
 
 			if routeSpec.Mirror != nil {
 				httpRoute.Mirror = &v1alpha3.Destination{
-					Host:   getExternalDomain(routeSpec.Mirror.Service, routeSpec.Mirror.Stack, stack.Space),
+					Host:   getExternalDomain(routeSpec.Mirror.Service, routeSpec.Mirror.Stack, stack.Project),
 					Subset: routeSpec.Mirror.Revision,
 					Port: &v1alpha3.PortSelector{
 						Port: &v1alpha3.PortSelector_Number{
@@ -389,7 +389,7 @@ func vsFromRoutesets(stack *input.Stack, routesets []*v1beta1.RouteSet) []*outpu
 	return result
 }
 
-func populateHttpAbort(fault *v1beta1.Fault) *v1alpha3.HTTPFaultInjection_Abort {
+func populateHttpAbort(fault *v1.Fault) *v1alpha3.HTTPFaultInjection_Abort {
 	abort := &v1alpha3.HTTPFaultInjection_Abort{
 		Percent: int32(fault.Percentage),
 	}
@@ -409,7 +409,7 @@ func populateHttpAbort(fault *v1beta1.Fault) *v1alpha3.HTTPFaultInjection_Abort 
 	return abort
 }
 
-func populateStringMatch(match v1beta1.StringMatch) *v1alpha3.StringMatch {
+func populateStringMatch(match v1.StringMatch) *v1alpha3.StringMatch {
 	m := &v1alpha3.StringMatch{}
 	if match.Exact != "" {
 		m.MatchType = getExactMatch(match)
@@ -434,19 +434,19 @@ func convertEnvFromSliceToMap(envs []string) map[string]string {
 	return m
 }
 
-func getExactMatch(match v1beta1.StringMatch) *v1alpha3.StringMatch_Exact {
+func getExactMatch(match v1.StringMatch) *v1alpha3.StringMatch_Exact {
 	return &v1alpha3.StringMatch_Exact{
 		Exact: match.Exact,
 	}
 }
 
-func getPrefixMatch(match v1beta1.StringMatch) *v1alpha3.StringMatch_Prefix {
+func getPrefixMatch(match v1.StringMatch) *v1alpha3.StringMatch_Prefix {
 	return &v1alpha3.StringMatch_Prefix{
 		Prefix: match.Prefix,
 	}
 }
 
-func getRegexpMatch(match v1beta1.StringMatch) *v1alpha3.StringMatch_Regex {
+func getRegexpMatch(match v1.StringMatch) *v1alpha3.StringMatch_Regex {
 	return &v1alpha3.StringMatch_Regex{
 		Regex: match.Regexp,
 	}
@@ -456,11 +456,11 @@ func GetPublicGateway() string {
 	return fmt.Sprintf("%s.%s.svc.cluster.local", settings.IstioGateway, settings.RioSystemNamespace)
 }
 
-func getExternalDomain(name, namespace, space string) string {
-	return fmt.Sprintf("%s.%s", service2.HashIfNeed(name, strings.SplitN(namespace, "-", 2)[0], space), settings.ClusterDomain.Get())
+func getExternalDomain(name, namespace, project string) string {
+	return fmt.Sprintf("%s.%s", service2.HashIfNeed(name, strings.SplitN(namespace, "-", 2)[0], project), settings.ClusterDomain.Get())
 }
 
-func newVirtualService(stack *input.Stack, service *v1beta1.Service) *output.IstioObject {
+func newVirtualService(stack *input.Stack, service *v1.Service) *output.IstioObject {
 	return &output.IstioObject{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "networking.istio.io/v1alpha3",
@@ -486,14 +486,14 @@ func newVirtualServiceGeneric(stack *input.Stack, name, namespace string) *outpu
 			Namespace:   namespace,
 			Annotations: map[string]string{},
 			Labels: map[string]string{
-				"rio.cattle.io/stack":     stack.Stack.Name,
-				"rio.cattle.io/workspace": stack.Stack.Namespace,
+				"rio.cattle.io/stack":   stack.Stack.Name,
+				"rio.cattle.io/project": stack.Stack.Namespace,
 			},
 		},
 	}
 }
 
-func destWeightForExternalService(d v1beta1.WeightedDestination, svc *v1beta1.ExternalService) *v1alpha3.DestinationWeight {
+func destWeightForExternalService(d v1.WeightedDestination, svc *v1.ExternalService) *v1alpha3.DestinationWeight {
 	if d.Port == 0 {
 		d.Port = 80
 	}
@@ -513,7 +513,7 @@ func destWeightForExternalService(d v1beta1.WeightedDestination, svc *v1beta1.Ex
 	}
 }
 
-func destWeightForService(d v1beta1.WeightedDestination) *v1alpha3.DestinationWeight {
+func destWeightForService(d v1.WeightedDestination) *v1alpha3.DestinationWeight {
 	if d.Revision == "" {
 		d.Revision = "v0"
 	}

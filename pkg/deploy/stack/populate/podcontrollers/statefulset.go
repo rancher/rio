@@ -4,14 +4,14 @@ import (
 	"github.com/rancher/rio/pkg/deploy/stack/input"
 	"github.com/rancher/rio/pkg/deploy/stack/output"
 	"github.com/rancher/rio/pkg/deploy/stack/populate/volume"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	appsv1 "k8s.io/api/apps/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const useTemplatesLabel = "rio.cattle.io/use-templates"
 
-func statefulSet(stack *input.Stack, service *v1beta1.Service, cp *controllerParams, usedTemplates map[string]*v1beta1.Volume, output *output.Deployment) error {
+func statefulSet(stack *input.Stack, service *riov1.Service, cp *controllerParams, usedTemplates map[string]*riov1.Volume, output *output.Deployment) error {
 	statefulSet := &appsv1.StatefulSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "StatefulSet",
@@ -55,7 +55,7 @@ func statefulSet(stack *input.Stack, service *v1beta1.Service, cp *controllerPar
 	for _, volumeTemplate := range usedTemplates {
 		labels := map[string]string{
 			"rio.cattle.io/stack":           stack.Stack.Name,
-			"rio.cattle.io/workspace":       stack.Stack.Namespace,
+			"rio.cattle.io/project":         stack.Stack.Namespace,
 			"rio.cattle.io/volume-template": volumeTemplate.Name,
 		}
 

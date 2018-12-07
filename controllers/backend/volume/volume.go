@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/rancher/rio/types"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -25,12 +25,12 @@ func Register(ctx context.Context, rContext *types.Context) error {
 }
 
 type volumeController struct {
-	volumeLister v1beta1.VolumeClientCache
-	volumes      v1beta1.VolumeClient
+	volumeLister riov1.VolumeClientCache
+	volumes      riov1.VolumeClient
 }
 
 func (v *volumeController) sync(pvc *v1.PersistentVolumeClaim) (runtime.Object, error) {
-	_, ok := pvc.Labels["rio.cattle.io/workspace"]
+	_, ok := pvc.Labels["rio.cattle.io/project"]
 	if !ok {
 		return nil, nil
 	}
@@ -72,7 +72,7 @@ func (v *volumeController) syncTemplate(pvc *v1.PersistentVolumeClaim) (runtime.
 		return nil, err
 	}
 
-	volume := &v1beta1.Volume{}
+	volume := &riov1.Volume{}
 	volume.Spec = volTemplate.Spec
 	volume.Name = pvc.Name
 	volume.Namespace = pvc.Namespace

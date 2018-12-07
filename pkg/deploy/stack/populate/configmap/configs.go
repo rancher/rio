@@ -15,9 +15,9 @@ func Populate(stack *input.Stack, output *output.Deployment) error {
 
 	for _, config := range stack.Configs {
 		cfg := newConfig(config.Name, stack.Namespace, map[string]string{
-			"rio.cattle.io/config":    config.Name,
-			"rio.cattle.io/workspace": stack.Stack.Namespace,
-			"rio.cattle.io/stack":     stack.Stack.Name,
+			"rio.cattle.io/config":  config.Name,
+			"rio.cattle.io/project": stack.Stack.Namespace,
+			"rio.cattle.io/stack":   stack.Stack.Name,
 		})
 		if config.Spec.Encoded {
 			bytes, err := base64.StdEncoding.DecodeString(config.Spec.Content)

@@ -2,18 +2,18 @@ package data
 
 import (
 	"github.com/rancher/rio/types"
-	"github.com/rancher/rio/types/apis/space.cattle.io/v1beta1"
+	projectv1 "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
 	"github.com/rancher/types/apis/management.cattle.io/v3"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var DefaultFeatureList = []*v1beta1.Feature{
+var DefaultFeatureList = []*projectv1.Feature{
 	{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "nfs",
 		},
-		Spec: v1beta1.FeatureSpec{
+		Spec: projectv1.FeatureSpec{
 			Description: "Enable nfs volume feature",
 			Enable:      false,
 			Questions: []v3.Question{
@@ -32,7 +32,7 @@ var DefaultFeatureList = []*v1beta1.Feature{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "monitoring",
 		},
-		Spec: v1beta1.FeatureSpec{
+		Spec: projectv1.FeatureSpec{
 			Description: "Enable monitoring feature",
 			Enable:      false,
 		},

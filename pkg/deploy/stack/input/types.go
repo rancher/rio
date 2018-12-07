@@ -1,16 +1,14 @@
 package input
 
-import (
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
-)
+import "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 
 type Stack struct {
 	Namespace        string
-	Space            string
-	Stack            *v1beta1.Stack
-	Configs          []*v1beta1.Config
-	Services         []*v1beta1.Service
-	Volumes          []*v1beta1.Volume
-	RouteSet         []*v1beta1.RouteSet
-	ExternalServices []*v1beta1.ExternalService
+	Project          string
+	Stack            *v1.Stack
+	Configs          []*v1.Config
+	Services         []*v1.Service
+	Volumes          []*v1.Volume
+	RouteSet         []*v1.RouteSet
+	ExternalServices []*v1.ExternalService
 }

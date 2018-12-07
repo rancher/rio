@@ -12,31 +12,31 @@ import (
 	"github.com/rancher/rio/cli/pkg/up/questions"
 	"github.com/rancher/rio/pkg/clientaccess"
 	"github.com/rancher/rio/pkg/settings"
-	spaceclient "github.com/rancher/rio/types/client/space/v1beta1"
+	projectclient "github.com/rancher/rio/types/client/project/v1"
 	"github.com/sirupsen/logrus"
 )
 
 type Cluster struct {
 	clientaccess.Info
 
-	ID                   string  `json:"id,omitempty"`
-	Checksum             string  `json:"-"`
-	Name                 string  `json:"name,omitempty"`
-	DefaultStackName     string  `json:"defaultStackName,omitempty"`
-	DefaultWorkspaceName string  `json:"defaultWorkspaceName,omitempty"`
-	Default              bool    `json:"default,omitempty"`
-	Config               *Config `json:"-"`
+	ID                 string  `json:"id,omitempty"`
+	Checksum           string  `json:"-"`
+	Name               string  `json:"name,omitempty"`
+	DefaultStackName   string  `json:"defaultStackName,omitempty"`
+	DefaultProjectName string  `json:"defaultProjectName,omitempty"`
+	Default            bool    `json:"default,omitempty"`
+	Config             *Config `json:"-"`
 
-	File        string
-	domain      string
-	workspace   *Workspace
-	clientInfo  *clusterClientInfo
-	spaceClient *spaceclient.Client
+	File          string
+	domain        string
+	project       *Project
+	clientInfo    *clusterClientInfo
+	projectClient *projectclient.Client
 }
 
-func (c *Cluster) Client() (*spaceclient.Client, error) {
-	if c.spaceClient != nil {
-		return c.spaceClient, nil
+func (c *Cluster) Client() (*projectclient.Client, error) {
+	if c.projectClient != nil {
+		return c.projectClient, nil
 	}
 
 	info, err := c.getClientInfo()
@@ -44,13 +44,13 @@ func (c *Cluster) Client() (*spaceclient.Client, error) {
 		return nil, err
 	}
 
-	sc, err := info.spaceClient()
+	sc, err := info.clusterClient()
 	if err != nil {
 		return nil, err
 	}
 
-	c.spaceClient = sc
-	return c.spaceClient, nil
+	c.projectClient = sc
+	return c.projectClient, nil
 }
 
 func (c *Cluster) getClientInfo() (*clusterClientInfo, error) {
@@ -67,45 +67,45 @@ func (c *Cluster) getClientInfo() (*clusterClientInfo, error) {
 	return cci, nil
 }
 
-func (c *Cluster) Workspace() (*Workspace, error) {
-	if c.Config.WorkspaceName != "" {
-		workspaces, err := c.workspaces(true)
+func (c *Cluster) Project() (*Project, error) {
+	if c.Config.ProjectName != "" {
+		projects, err := c.projects(true)
 		if err != nil {
 			return nil, err
 		}
 
-		for _, w := range workspaces {
-			if w.ID == c.Config.WorkspaceName || w.Name == c.Config.WorkspaceName {
+		for _, w := range projects {
+			if w.ID == c.Config.ProjectName || w.Name == c.Config.ProjectName {
 				return &w, nil
 			}
 		}
 
-		return nil, fmt.Errorf("failed to find workspace %s", c.Config.WorkspaceName)
+		return nil, fmt.Errorf("failed to find project %s", c.Config.ProjectName)
 	}
 
-	workspaces, err := c.Workspaces()
+	projects, err := c.Projects()
 	if err != nil {
 		return nil, err
 	}
 
-	for _, w := range workspaces {
-		if w.ID == c.DefaultWorkspaceName || w.Name == c.DefaultWorkspaceName {
+	for _, w := range projects {
+		if w.ID == c.DefaultProjectName || w.Name == c.DefaultProjectName {
 			return &w, nil
 		}
 	}
 
-	if len(workspaces) == 0 {
-		return c.CreateWorkspace(c.DefaultWorkspaceName)
+	if len(projects) == 0 {
+		return c.CreateProject(c.DefaultProjectName)
 	}
 
-	if len(workspaces) == 1 {
-		return &workspaces[0], nil
+	if len(projects) == 1 {
+		return &projects[0], nil
 	}
 
-	msg := "Choose a workspace (run 'rio set-context' to set default):\n"
+	msg := "Choose a project (run 'rio set-context' to set default):\n"
 	var options []string
 
-	for i, w := range workspaces {
+	for i, w := range projects {
 		msg := fmt.Sprintf("[%d] %s\n", i+1, w.Name)
 		options = append(options, msg)
 	}
@@ -115,51 +115,51 @@ func (c *Cluster) Workspace() (*Workspace, error) {
 		return nil, err
 	}
 
-	c.workspace = &workspaces[choice]
-	return c.workspace, nil
+	c.project = &projects[choice]
+	return c.project, nil
 }
 
-func (c *Cluster) CreateWorkspace(name string) (*Workspace, error) {
+func (c *Cluster) CreateProject(name string) (*Project, error) {
 	sc, err := c.Client()
 	if err != nil {
 		return nil, err
 	}
 
-	space, err := sc.Space.Create(&spaceclient.Space{
+	space, err := sc.Project.Create(&projectclient.Project{
 		Name: name,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return c.workspaceFromSpace(*space), nil
+	return c.projectFromSpace(*space), nil
 }
 
-func (c *Cluster) Workspaces() ([]Workspace, error) {
-	return c.workspaces(false)
+func (c *Cluster) Projects() ([]Project, error) {
+	return c.projects(false)
 }
 
-func (c *Cluster) workspaces(all bool) ([]Workspace, error) {
+func (c *Cluster) projects(all bool) ([]Project, error) {
 	sc, err := c.Client()
 	if err != nil {
 		return nil, err
 	}
 
-	workspaces, err := sc.Space.List(util.DefaultListOpts())
+	projects, err := sc.Project.List(util.DefaultListOpts())
 	if err != nil {
 		return nil, err
 	}
 
-	var result []Workspace
-	for _, w := range workspaces.Data {
-		if !all && w.ID == settings.RioSystemNamespace {
+	var result []Project
+	for _, p := range projects.Data {
+		if !all && p.ID == settings.RioSystemNamespace {
 			continue
 		}
-		workspace := c.workspaceFromSpace(w)
-		if w.Name == c.DefaultWorkspaceName {
-			workspace.Default = true
+		project := c.projectFromSpace(p)
+		if p.Name == c.DefaultProjectName {
+			project.Default = true
 		}
-		result = append(result, *workspace)
+		result = append(result, *project)
 	}
 
 	sort.Slice(result, func(i, j int) bool {
@@ -169,9 +169,9 @@ func (c *Cluster) workspaces(all bool) ([]Workspace, error) {
 	return result, nil
 }
 
-func (c *Cluster) workspaceFromSpace(space spaceclient.Space) *Workspace {
-	return &Workspace{
-		Space:   space,
+func (c *Cluster) projectFromSpace(project projectclient.Project) *Project {
+	return &Project{
+		Project: project,
 		Cluster: c,
 	}
 }

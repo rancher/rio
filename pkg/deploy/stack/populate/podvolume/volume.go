@@ -6,17 +6,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rancher/rio/pkg/deploy/stack/populate/containerlist"
-
 	"github.com/rancher/rio/pkg/deploy/stack/input"
+	"github.com/rancher/rio/pkg/deploy/stack/populate/containerlist"
 	"github.com/rancher/rio/pkg/deploy/stack/populate/sidekick"
-
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-func NameOfVolume(volume v1beta1.Mount) string {
+func NameOfVolume(volume riov1.Mount) string {
 	switch volume.Kind {
 	case "bind":
 		return "host-" + strings.Replace(volume.Source, "/", "-", -1)
@@ -30,16 +28,16 @@ func NameOfVolume(volume v1beta1.Mount) string {
 	return ""
 }
 
-func NameOfConfig(config v1beta1.ConfigMapping) string {
+func NameOfConfig(config riov1.ConfigMapping) string {
 	return "config-" + config.Source
 }
 
-func NameOfSecret(secret v1beta1.SecretMapping) string {
+func NameOfSecret(secret riov1.SecretMapping) string {
 	return "secret-" + secret.Source
 }
 
-func UsedTemplates(stack *input.Stack, service *v1beta1.Service) map[string]*v1beta1.Volume {
-	result := map[string]*v1beta1.Volume{}
+func UsedTemplates(stack *input.Stack, service *riov1.Service) map[string]*riov1.Volume {
+	result := map[string]*riov1.Volume{}
 	volumeDefs := volumesDefsByName(stack.Volumes)
 
 	for _, m := range service.Spec.Volumes {
@@ -59,7 +57,7 @@ func UsedTemplates(stack *input.Stack, service *v1beta1.Service) map[string]*v1b
 	return result
 }
 
-func template(volumeDefs map[string]*v1beta1.Volume, mount v1beta1.Mount) *v1beta1.Volume {
+func template(volumeDefs map[string]*riov1.Volume, mount riov1.Mount) *riov1.Volume {
 	if mount.Kind != "volume" {
 		return nil
 	}
@@ -72,7 +70,7 @@ func template(volumeDefs map[string]*v1beta1.Volume, mount v1beta1.Mount) *v1bet
 	return nil
 }
 
-func Populate(stack *input.Stack, service *v1beta1.Service, spec *v1.PodSpec) {
+func Populate(stack *input.Stack, service *riov1.Service, spec *v1.PodSpec) {
 	volumes := map[string]v1.Volume{}
 	volumeDefs := volumesDefsByName(stack.Volumes)
 
@@ -95,7 +93,7 @@ func Populate(stack *input.Stack, service *v1beta1.Service, spec *v1.PodSpec) {
 	}
 }
 
-func addVolumeFromConfig(config v1beta1.ConfigMapping, volumes map[string]v1.Volume) {
+func addVolumeFromConfig(config riov1.ConfigMapping, volumes map[string]v1.Volume) {
 	name := NameOfConfig(config)
 	var mode *int32
 	if config.Mode != "" {
@@ -119,7 +117,7 @@ func addVolumeFromConfig(config v1beta1.ConfigMapping, volumes map[string]v1.Vol
 	}
 }
 
-func addVolumeFromSecret(service *v1beta1.Service, secret v1beta1.SecretMapping, volumes map[string]v1.Volume) {
+func addVolumeFromSecret(service *riov1.Service, secret riov1.SecretMapping, volumes map[string]v1.Volume) {
 	t := true
 	name := NameOfSecret(secret)
 	var mode *int32
@@ -148,7 +146,7 @@ func addVolumeFromSecret(service *v1beta1.Service, secret v1beta1.SecretMapping,
 	}
 }
 
-func addVolumeFromMount(volume v1beta1.Mount, volumes map[string]v1.Volume, volumeDefs map[string]*v1beta1.Volume) {
+func addVolumeFromMount(volume riov1.Mount, volumes map[string]v1.Volume, volumeDefs map[string]*riov1.Volume) {
 	name := NameOfVolume(volume)
 	switch volume.Kind {
 	case "bind":
@@ -158,8 +156,8 @@ func addVolumeFromMount(volume v1beta1.Mount, volumes map[string]v1.Volume, volu
 	}
 }
 
-func volumesDefsByName(volumeDefs []*v1beta1.Volume) map[string]*v1beta1.Volume {
-	result := map[string]*v1beta1.Volume{}
+func volumesDefsByName(volumeDefs []*riov1.Volume) map[string]*riov1.Volume {
+	result := map[string]*riov1.Volume{}
 	for _, vd := range volumeDefs {
 		result[vd.Name] = vd
 	}
@@ -167,7 +165,7 @@ func volumesDefsByName(volumeDefs []*v1beta1.Volume) map[string]*v1beta1.Volume 
 
 }
 
-func addVolume(name string, volume v1beta1.Mount, volumes map[string]v1.Volume, volumeDefs map[string]*v1beta1.Volume) {
+func addVolume(name string, volume riov1.Mount, volumes map[string]v1.Volume, volumeDefs map[string]*riov1.Volume) {
 	if volume.Source == "" {
 		addAnonVolume(name, volume, volumes)
 		return
@@ -186,7 +184,7 @@ func addVolume(name string, volume v1beta1.Mount, volumes map[string]v1.Volume, 
 	addPersistentVolume(name, volumes)
 }
 
-func addAnonVolume(name string, volume v1beta1.Mount, volumes map[string]v1.Volume) {
+func addAnonVolume(name string, volume riov1.Mount, volumes map[string]v1.Volume) {
 	addEmptyDir(name, volume, volumes)
 }
 
@@ -201,7 +199,7 @@ func addPersistentVolume(name string, volumes map[string]v1.Volume) {
 	}
 }
 
-func addHostBindMount(name string, volumes map[string]v1.Volume, volume v1beta1.Mount) {
+func addHostBindMount(name string, volumes map[string]v1.Volume, volume riov1.Mount) {
 	volumes[name] = v1.Volume{
 		VolumeSource: v1.VolumeSource{
 			HostPath: &v1.HostPathVolumeSource{
@@ -212,7 +210,7 @@ func addHostBindMount(name string, volumes map[string]v1.Volume, volume v1beta1.
 	}
 }
 
-func addEmptyDir(name string, volume v1beta1.Mount, volumes map[string]v1.Volume) {
+func addEmptyDir(name string, volume riov1.Mount, volumes map[string]v1.Volume) {
 	var size *resource.Quantity
 
 	if volume.VolumeOptions != nil && volume.VolumeOptions.SizeInGB > 0 {

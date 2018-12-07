@@ -15,7 +15,7 @@ import (
 	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/cli/cmd/create"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 var (
@@ -58,7 +58,7 @@ func (a *Add) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	wc, err := ctx.WorkspaceClient()
+	wc, err := ctx.ProjectClient()
 	if err != nil {
 		return err
 	}
@@ -102,12 +102,12 @@ func (a *Add) validateServiceStack(cluster *clientcfg.Cluster, args []string) er
 func (a *Add) getRouteSet(ctx *clicontext.CLIContext, args []string) (*client.RouteSet, error) {
 	_, service, stackName, _, _ := parseMatch(args[0])
 
-	spaceID, stackID, name, err := stack.ResolveSpaceStackForName(ctx, stackName+"/"+service)
+	projectId, stackID, name, err := stack.ResolveSpaceStackForName(ctx, stackName+"/"+service)
 	if err != nil {
 		return nil, err
 	}
 
-	routeSet, err := lookupRoute(ctx, spaceID, stackID, name)
+	routeSet, err := lookupRoute(ctx, projectId, stackID, name)
 	if err != nil {
 		return nil, err
 	}
@@ -117,9 +117,9 @@ func (a *Add) getRouteSet(ctx *clicontext.CLIContext, args []string) (*client.Ro
 	}
 
 	return &client.RouteSet{
-		Name:    name,
-		SpaceID: spaceID,
-		StackID: stackID,
+		Name:      name,
+		ProjectID: projectId,
+		StackID:   stackID,
 	}, nil
 }
 
@@ -407,16 +407,16 @@ func parseAction(action string) (string, error) {
 	return action, nil
 }
 
-func lookupRoute(ctx *clicontext.CLIContext, spaceID, stackID, name string) (*client.RouteSet, error) {
-	wc, err := ctx.WorkspaceClient()
+func lookupRoute(ctx *clicontext.CLIContext, projectId, stackID, name string) (*client.RouteSet, error) {
+	wc, err := ctx.ProjectClient()
 	if err != nil {
 
 	}
 	resp, err := wc.RouteSet.List(&types.ListOpts{
 		Filters: map[string]interface{}{
-			client.RouteSetFieldName:    name,
-			client.RouteSetFieldSpaceID: spaceID,
-			client.RouteSetFieldStackID: stackID,
+			client.RouteSetFieldName:      name,
+			client.RouteSetFieldProjectID: projectId,
+			client.RouteSetFieldStackID:   stackID,
 		},
 	})
 	if err != nil {

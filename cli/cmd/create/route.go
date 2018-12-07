@@ -3,7 +3,7 @@ package create
 import (
 	"strings"
 
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 func ParseStringMatch(str string) *client.StringMatch {

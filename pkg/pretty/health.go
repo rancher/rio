@@ -6,7 +6,7 @@ import (
 	"github.com/rancher/norman/types"
 	"github.com/rancher/norman/types/mapper"
 	pm "github.com/rancher/rio/pkg/pretty/mapper"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 func health(schemas *types.Schemas) *types.Schemas {

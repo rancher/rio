@@ -4,27 +4,27 @@ import (
 	"github.com/rancher/rio/pkg/deploy/stack/input"
 	"github.com/rancher/rio/pkg/deploy/stack/output"
 	"github.com/rancher/rio/pkg/deploy/stack/populate/servicelabels"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func Populate(stack *input.Stack, service *v1beta1.Service, output *output.Deployment) error {
+func Populate(stack *input.Stack, service *riov1.Service, output *output.Deployment) error {
 	labels := servicelabels.RioOnlyServiceLabels(stack, service)
 	addGlobalRoles(service.Name, stack.Namespace, labels, service.Spec.GlobalPermissions, output)
 	addRoles(service.Name, stack.Namespace, labels, &service.Spec.ServiceUnversionedSpec, output)
 	return nil
 }
 
-func ServiceAccountName(service *v1beta1.Service) string {
+func ServiceAccountName(service *riov1.Service) string {
 	if len(service.Spec.Permissions) == 0 && len(service.Spec.GlobalPermissions) == 0 {
 		return ""
 	}
 	return service.Name
 }
 
-func addGlobalRoles(name, namespace string, labels map[string]string, globalPermissions []v1beta1.Permission, output *output.Deployment) {
+func addGlobalRoles(name, namespace string, labels map[string]string, globalPermissions []riov1.Permission, output *output.Deployment) {
 	if len(globalPermissions) == 0 {
 		return
 	}
@@ -68,7 +68,7 @@ func addGlobalRoles(name, namespace string, labels map[string]string, globalPerm
 	}
 }
 
-func addRoles(name, namespace string, labels map[string]string, service *v1beta1.ServiceUnversionedSpec, output *output.Deployment) {
+func addRoles(name, namespace string, labels map[string]string, service *riov1.ServiceUnversionedSpec, output *output.Deployment) {
 	if len(service.Permissions) == 0 && len(service.GlobalPermissions) == 0 {
 		return
 	}

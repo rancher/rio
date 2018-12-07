@@ -9,7 +9,7 @@ import (
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
-	"github.com/rancher/rio/types/apis/space.cattle.io/v1beta1"
+	projectv1 "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
 	v12 "github.com/rancher/types/apis/core/v1"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -64,7 +64,7 @@ type istioDeployController struct {
 	virtualServiceLister v1alpha3.VirtualServiceClientCache
 	serviceLister        v12.ServiceClientCache
 	namespaceLister      v12.NamespaceClientCache
-	publicdomainLister   v1beta1.PublicDomainClientCache
+	publicdomainLister   projectv1.PublicDomainClientCache
 	secrets              v12.SecretClient
 }
 

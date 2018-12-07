@@ -10,7 +10,7 @@ import (
 
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 type Create struct {
@@ -29,14 +29,14 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 	name := ctx.CLI.Args()[0]
 	file := ctx.CLI.Args()[1]
 
-	wc, err := ctx.WorkspaceClient()
+	wc, err := ctx.ProjectClient()
 	if err != nil {
 		return err
 	}
 
 	config := &client.Config{}
 
-	config.SpaceID, config.StackID, config.Name, err = stack.ResolveSpaceStackForName(ctx, name)
+	config.ProjectID, config.StackID, config.Name, err = stack.ResolveSpaceStackForName(ctx, name)
 	if err != nil {
 		return err
 	}

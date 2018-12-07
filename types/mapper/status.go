@@ -20,7 +20,7 @@ func (s Status) FromInternal(data map[string]interface{}) {
 }
 
 func scaleIsZero(data map[string]interface{}) bool {
-	if data["type"] != "/v1beta1-rio/spaces/schemas/service" {
+	if data["type"] != "/v1-rio/projects/schemas/service" {
 		return false
 	}
 

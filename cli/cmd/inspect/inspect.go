@@ -4,8 +4,8 @@ import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
-	client2 "github.com/rancher/rio/types/client/space/v1beta1"
+	client2 "github.com/rancher/rio/types/client/project/v1"
+	"github.com/rancher/rio/types/client/rio/v1"
 	"github.com/urfave/cli"
 )
 
@@ -39,7 +39,7 @@ func (i *Inspect) Customize(cmd *cli.Command) {
 }
 
 func (i *Inspect) Run(ctx *clicontext.CLIContext) error {
-	workspaceClient, err := ctx.WorkspaceClient()
+	projectClient, err := ctx.ProjectClient()
 	if err != nil {
 		return err
 	}
@@ -47,8 +47,8 @@ func (i *Inspect) Run(ctx *clicontext.CLIContext) error {
 	if err != nil {
 		return err
 	}
-	ctx.WC = workspaceClient
-	ctx.SC = spaceClient
+	ctx.WC = projectClient
+	ctx.PC = spaceClient
 	for _, arg := range ctx.CLI.Args() {
 		r, err := find(ctx, arg, i.T_Type, InspectTypes)
 		if err != nil {

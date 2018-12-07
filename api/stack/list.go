@@ -3,7 +3,7 @@ package stack
 import (
 	"github.com/rancher/norman/api/access"
 	"github.com/rancher/norman/types"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 func ListHandler(apiContext *types.APIContext, next types.RequestHandler) error {

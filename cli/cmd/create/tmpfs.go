@@ -6,7 +6,7 @@ import (
 
 	"github.com/docker/go-units"
 	"github.com/rancher/norman/pkg/kv"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 func ParseTmpfs(specs []string) ([]client.Tmpfs, error) {

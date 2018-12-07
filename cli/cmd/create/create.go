@@ -9,7 +9,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/kvfile"
 	"github.com/rancher/rio/cli/pkg/waiter"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 type Create struct {
@@ -102,12 +102,12 @@ func (c *Create) RunCallback(ctx *clicontext.CLIContext, cb func(service *client
 		return nil, err
 	}
 
-	service.SpaceID, service.StackID, service.Name, err = stack.ResolveSpaceStackForName(ctx, service.Name)
+	service.ProjectID, service.StackID, service.Name, err = stack.ResolveSpaceStackForName(ctx, service.Name)
 	if err != nil {
 		return nil, err
 	}
 
-	wc, err := ctx.WorkspaceClient()
+	wc, err := ctx.ProjectClient()
 	if err != nil {
 		return nil, err
 	}

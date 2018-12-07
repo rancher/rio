@@ -1,7 +1,7 @@
 package podcontrollers
 
 import (
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -12,7 +12,7 @@ type scaleParams struct {
 	BatchSize      int
 }
 
-func parseScaleParams(service *v1beta1.ServiceUnversionedSpec) scaleParams {
+func parseScaleParams(service *riov1.ServiceUnversionedSpec) scaleParams {
 	scale := int32(service.Scale)
 	batchSize := service.BatchSize
 

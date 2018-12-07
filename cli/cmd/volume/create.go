@@ -7,7 +7,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/stack"
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 type Create struct {
@@ -22,7 +22,7 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("two arguments are required, name and size in gigabytes")
 	}
 
-	wc, err := ctx.WorkspaceClient()
+	wc, err := ctx.ProjectClient()
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,7 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 		AccessMode: c.AccessMode,
 	}
 
-	volume.SpaceID, volume.StackID, volume.Name, err = stack.ResolveSpaceStackForName(ctx, name)
+	volume.ProjectID, volume.StackID, volume.Name, err = stack.ResolveSpaceStackForName(ctx, name)
 	if err != nil {
 		return err
 	}

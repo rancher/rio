@@ -6,13 +6,13 @@ import (
 
 	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/cli/pkg/lookup"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
-	spaceclient "github.com/rancher/rio/types/client/space/v1beta1"
+	projectclient "github.com/rancher/rio/types/client/project/v1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 func (c *CLIContext) ByID(id, typeName string) (*types.NamedResource, error) {
 	switch typeName {
-	case spaceclient.PodType:
+	case projectclient.PodType:
 		return c.podByID(id, typeName)
 	case client.ServiceType:
 		fallthrough
@@ -40,7 +40,7 @@ func (c *CLIContext) stackScopedByID(id, schemaType string) (*types.NamedResourc
 		return result, err
 	}
 
-	w, err := c.Workspace()
+	w, err := c.Project()
 	if err != nil {
 		return nil, err
 	}

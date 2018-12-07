@@ -4,16 +4,14 @@ import (
 	"context"
 	"strings"
 
-	"github.com/rancher/types/apis/core/v1"
-
-	"github.com/rancher/rio/pkg/istio/config"
-	"github.com/rancher/rio/pkg/settings"
-
 	"github.com/rancher/norman/pkg/changeset"
 	"github.com/rancher/rio/pkg/deploy/stack"
+	"github.com/rancher/rio/pkg/istio/config"
 	"github.com/rancher/rio/pkg/namespace"
+	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	"github.com/rancher/types/apis/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -58,18 +56,18 @@ func Register(ctx context.Context, rContext *types.Context) error {
 }
 
 type stackDeployController struct {
-	stacks               v1beta1.StackClient
-	stackCache           v1beta1.StackClientCache
-	serviceCache         v1beta1.ServiceClientCache
-	configCache          v1beta1.ConfigClientCache
-	volumeCache          v1beta1.VolumeClientCache
-	routeSetCache        v1beta1.RouteSetClientCache
+	stacks               riov1.StackClient
+	stackCache           riov1.StackClientCache
+	serviceCache         riov1.ServiceClientCache
+	configCache          riov1.ConfigClientCache
+	volumeCache          riov1.VolumeClientCache
+	routeSetCache        riov1.RouteSetClientCache
 	secretsCache         v1.SecretClientCache
-	externalServiceCache v1beta1.ExternalServiceClientCache
+	externalServiceCache riov1.ExternalServiceClientCache
 	injector             *config.IstioInjector
 }
 
-func index(stack *v1beta1.Stack) ([]string, error) {
+func index(stack *riov1.Stack) ([]string, error) {
 	return []string{
 		namespace.StackToNamespace(stack),
 	}, nil
@@ -94,24 +92,24 @@ func (s *stackDeployController) resolve(ns, name string, obj runtime.Object) ([]
 	}, nil
 }
 
-func (s *stackDeployController) Remove(obj *v1beta1.Stack) (runtime.Object, error) {
-	err := stack.Remove(namespace.StackToNamespace(obj), getSpace(obj), obj, s.injector)
+func (s *stackDeployController) Remove(obj *riov1.Stack) (runtime.Object, error) {
+	err := stack.Remove(namespace.StackToNamespace(obj), getProject(obj), obj, s.injector)
 	return obj, err
 }
 
-func (s *stackDeployController) Updated(obj *v1beta1.Stack) (runtime.Object, error) {
+func (s *stackDeployController) Updated(obj *riov1.Stack) (runtime.Object, error) {
 	// Wait until defined
-	if !v1beta1.StackConditionDefined.IsTrue(obj) {
+	if !riov1.StackConditionDefined.IsTrue(obj) {
 		return obj, nil
 	}
 
-	_, err := v1beta1.StackConditionDeployed.Do(obj, func() (runtime.Object, error) {
+	_, err := riov1.StackConditionDeployed.Do(obj, func() (runtime.Object, error) {
 		return s.deploy(obj)
 	})
 	return obj, err
 }
 
-func (s *stackDeployController) deploy(obj *v1beta1.Stack) (*v1beta1.Stack, error) {
+func (s *stackDeployController) deploy(obj *riov1.Stack) (*riov1.Stack, error) {
 	namespace := namespace.StackToNamespace(obj)
 
 	configs, err := s.configCache.List(namespace, labels.Everything())
@@ -140,7 +138,7 @@ func (s *stackDeployController) deploy(obj *v1beta1.Stack) (*v1beta1.Stack, erro
 	}
 
 	err = stack.Deploy(namespace,
-		getSpace(obj),
+		getProject(obj),
 		obj,
 		configs,
 		services,
@@ -151,7 +149,7 @@ func (s *stackDeployController) deploy(obj *v1beta1.Stack) (*v1beta1.Stack, erro
 	return obj, err
 }
 
-func getSpace(stack *v1beta1.Stack) string {
+func getProject(stack *riov1.Stack) string {
 	parts := strings.SplitN(stack.Namespace, "-", 2)
 	if len(parts) >= 2 {
 		return parts[1]

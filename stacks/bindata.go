@@ -231,7 +231,7 @@ func stacksNfsStackYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/nfs-stack.yml", size: 1086, mode: os.FileMode(420), modTime: time.Unix(1544043526, 0)}
+	info := bindataFileInfo{name: "stacks/nfs-stack.yml", size: 1086, mode: os.FileMode(420), modTime: time.Unix(1544114110, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

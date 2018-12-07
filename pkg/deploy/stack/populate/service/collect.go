@@ -5,12 +5,12 @@ import (
 	"github.com/rancher/norman/types/convert/merge"
 	"github.com/rancher/rio/pkg/deploy/stack/output"
 	"github.com/rancher/rio/pkg/settings"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1/schema"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/types/apis/rio.cattle.io/v1/schema"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
-func combineAndNormalize(name string, base map[string]interface{}, rev *v1beta1.Service) (*v1beta1.Service, error) {
+func combineAndNormalize(name string, base map[string]interface{}, rev *riov1.Service) (*riov1.Service, error) {
 	data, err := convert.EncodeToMap(rev)
 	if err != nil {
 		return nil, err
@@ -28,7 +28,7 @@ func combineAndNormalize(name string, base map[string]interface{}, rev *v1beta1.
 	return newRev, nil
 }
 
-func servicesByParent(services []*v1beta1.Service) output.Services {
+func servicesByParent(services []*riov1.Service) output.Services {
 	result := output.Services{}
 
 	for _, service := range services {
@@ -36,7 +36,7 @@ func servicesByParent(services []*v1beta1.Service) output.Services {
 			s, ok := result[service.Name]
 			if !ok {
 				s = &output.ServiceSet{
-					Revisions: []*v1beta1.Service{},
+					Revisions: []*riov1.Service{},
 				}
 				result[service.Name] = s
 			}
@@ -45,7 +45,7 @@ func servicesByParent(services []*v1beta1.Service) output.Services {
 			s, ok := result[service.Spec.Revision.ParentService]
 			if !ok {
 				s = &output.ServiceSet{
-					Revisions: []*v1beta1.Service{},
+					Revisions: []*riov1.Service{},
 				}
 				result[service.Spec.Revision.ParentService] = s
 			}
@@ -56,7 +56,7 @@ func servicesByParent(services []*v1beta1.Service) output.Services {
 	return result
 }
 
-func normalizeParent(name string, service *v1beta1.Service) *v1beta1.Service {
+func normalizeParent(name string, service *riov1.Service) *riov1.Service {
 	service = service.DeepCopy()
 	if service.Spec.Revision.Version == "" {
 		service.Spec.Revision.Version = settings.DefaultServiceVersion
@@ -71,13 +71,13 @@ func normalizeParent(name string, service *v1beta1.Service) *v1beta1.Service {
 	return service
 }
 
-func mergeRevisions(name string, serviceSet *output.ServiceSet) ([]*v1beta1.Service, error) {
+func mergeRevisions(name string, serviceSet *output.ServiceSet) ([]*riov1.Service, error) {
 	base, err := convert.EncodeToMap(serviceSet.Service)
 	if err != nil {
 		return nil, err
 	}
 
-	var newRevisions []*v1beta1.Service
+	var newRevisions []*riov1.Service
 	for _, rev := range serviceSet.Revisions {
 		rev, err := combineAndNormalize(name, base, rev)
 		if err != nil {
@@ -89,7 +89,7 @@ func mergeRevisions(name string, serviceSet *output.ServiceSet) ([]*v1beta1.Serv
 	return newRevisions, nil
 }
 
-func CollectionServices(services []*v1beta1.Service) (output.Services, error) {
+func CollectionServices(services []*riov1.Service) (output.Services, error) {
 	var err error
 	byParent := servicesByParent(services)
 	result := output.Services{}

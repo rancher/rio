@@ -26,12 +26,12 @@ import (
 	"github.com/rancher/rio/pkg/data"
 	rTypes "github.com/rancher/rio/types"
 	"github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1/schema"
-	spacev1beta1 "github.com/rancher/rio/types/apis/space.cattle.io/v1beta1"
-	spaceschema "github.com/rancher/rio/types/apis/space.cattle.io/v1beta1/schema"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
-	spaceclient "github.com/rancher/rio/types/client/space/v1beta1"
+	projectv1 "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
+	projectschema "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1/schema"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	rioschema "github.com/rancher/rio/types/apis/rio.cattle.io/v1/schema"
+	projectclient "github.com/rancher/rio/types/client/project/v1"
+	"github.com/rancher/rio/types/client/rio/v1"
 	"github.com/rancher/types/apis/apps/v1beta2"
 	"github.com/rancher/types/apis/core/v1"
 	"github.com/rancher/types/apis/management.cattle.io/v3"
@@ -49,12 +49,12 @@ func NewConfig(dataDir string, inCluster bool) (*norman.Config, error) {
 	return &norman.Config{
 		Name: "rio",
 		Schemas: []*types.Schemas{
-			schema.Schemas,
-			spaceschema.Schemas,
+			rioschema.Schemas,
+			projectschema.Schemas,
 		},
 
 		CRDs: map[*types.APIVersion][]string{
-			&schema.Version: {
+			&rioschema.Version: {
 				client.ServiceType,
 				client.ConfigType,
 				client.RouteSetType,
@@ -62,16 +62,16 @@ func NewConfig(dataDir string, inCluster bool) (*norman.Config, error) {
 				client.StackType,
 				client.ExternalServiceType,
 			},
-			&spaceschema.Version: {
-				spaceclient.ListenConfigType,
-				spaceclient.PublicDomainType,
-				spaceclient.FeatureType,
+			&projectschema.Version: {
+				projectclient.ListenConfigType,
+				projectclient.PublicDomainType,
+				projectclient.FeatureType,
 			},
 		},
 
 		Clients: []norman.ClientFactory{
-			v1beta1.Factory,
-			spacev1beta1.Factory,
+			riov1.Factory,
+			projectv1.Factory,
 			v1alpha3.Factory,
 			v1.Factory,
 			v3.Factory,

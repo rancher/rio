@@ -6,7 +6,7 @@ import (
 
 	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/rio/cli/pkg/volumespec"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 func ParseMounts(spec []string) ([]client.Mount, error) {

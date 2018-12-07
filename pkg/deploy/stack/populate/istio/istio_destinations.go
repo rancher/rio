@@ -10,7 +10,7 @@ import (
 	"github.com/rancher/rio/pkg/deploy/stack/populate/service"
 	"github.com/rancher/rio/pkg/deploy/stack/populate/servicelabels"
 	"github.com/rancher/rio/pkg/namespace"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"istio.io/api/networking/v1alpha3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -33,7 +33,7 @@ func destinationRules(stack *input.Stack) ([]*output.IstioObject, error) {
 	return result, nil
 }
 
-func destinationRuleForRoutes(stack *input.Stack, route *v1beta1.RouteSet) []*output.IstioObject {
+func destinationRuleForRoutes(stack *input.Stack, route *v1.RouteSet) []*output.IstioObject {
 	result := make([]*output.IstioObject, 0)
 	destSet := populateDestinationFromRouteset(route)
 	ns := namespace.StackNamespace(stack.Stack.Namespace, stack.Stack.Name)
@@ -63,7 +63,7 @@ type destinationSet struct {
 	revision map[string]struct{}
 }
 
-func populateDestinationFromRouteset(routes *v1beta1.RouteSet) map[string]destinationSet {
+func populateDestinationFromRouteset(routes *v1.RouteSet) map[string]destinationSet {
 	result := make(map[string]destinationSet, 0)
 	for _, spec := range routes.Spec.Routes {
 		for _, dest := range spec.To {
@@ -148,7 +148,7 @@ func destinationRuleForRevisionService(stack *input.Stack, name string, service 
 
 }
 
-func newSubSet(service *v1beta1.Service) *v1alpha3.Subset {
+func newSubSet(service *v1.Service) *v1alpha3.Subset {
 	return &v1alpha3.Subset{
 		Name: service.Spec.Revision.Version,
 		Labels: map[string]string{
@@ -157,7 +157,7 @@ func newSubSet(service *v1beta1.Service) *v1alpha3.Subset {
 	}
 }
 
-func newDestinationRule(stack *input.Stack, service *v1beta1.Service) *output.IstioObject {
+func newDestinationRule(stack *input.Stack, service *v1.Service) *output.IstioObject {
 	labels := servicelabels.RioOnlyServiceLabels(stack, service)
 	return &output.IstioObject{
 		TypeMeta: metav1.TypeMeta{
@@ -182,8 +182,8 @@ func newDestinationRuleFromName(stack *input.Stack, name, namespace string) *out
 			Name:      name,
 			Namespace: namespace,
 			Labels: map[string]string{
-				"rio.cattle.io/stack":     stack.Stack.Name,
-				"rio.cattle.io/workspace": stack.Stack.Namespace,
+				"rio.cattle.io/stack":   stack.Stack.Name,
+				"rio.cattle.io/project": stack.Stack.Namespace,
 			},
 		},
 	}

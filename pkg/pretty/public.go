@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/rancher/norman/types/convert"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1/schema"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/types/apis/rio.cattle.io/v1/schema"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 var (
@@ -52,7 +52,7 @@ func internalizeStack(data map[string]interface{}) (map[string]interface{}, erro
 	return data, err
 }
 
-func ToInternalStack(data map[string]interface{}) (*v1beta1.InternalStack, error) {
+func ToInternalStack(data map[string]interface{}) (*v1.InternalStack, error) {
 	data, err := NormalizeData(StackType, data)
 	if err != nil {
 		return nil, err
@@ -63,7 +63,7 @@ func ToInternalStack(data map[string]interface{}) (*v1beta1.InternalStack, error
 		return nil, err
 	}
 
-	stack := &v1beta1.InternalStack{}
+	stack := &v1.InternalStack{}
 	err = convert.ToObj(data, stack)
 	return stack, err
 }

@@ -3,7 +3,7 @@ package output
 import (
 	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/pkg/apply"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	appsv1 "k8s.io/api/apps/v1beta2"
 	"k8s.io/api/core/v1"
 	v1beta12 "k8s.io/api/policy/v1beta1"
@@ -71,7 +71,6 @@ func (d *Deployment) Deploy(ns, groupID string) error {
 	ad.Add(ns, appsv1.GroupName, "StatefulSet", d.StatefulSets)
 	ad.Add(ns, "networking.istio.io", "VirtualService", d.VirtualServices)
 	ad.Add(ns, "networking.istio.io", "ServiceEntry", d.ServiceEntries)
-
 	return ad.Apply()
 }
 
@@ -90,8 +89,8 @@ func (i *IstioObject) DeepCopyObject() runtime.Object {
 
 type Services map[string]*ServiceSet
 
-func (s Services) List() []*v1beta1.Service {
-	var result []*v1beta1.Service
+func (s Services) List() []*riov1.Service {
+	var result []*riov1.Service
 	for _, v := range s {
 		if v.Service == nil {
 			continue
@@ -107,6 +106,6 @@ func (s Services) List() []*v1beta1.Service {
 }
 
 type ServiceSet struct {
-	Service   *v1beta1.Service
-	Revisions []*v1beta1.Service
+	Service   *riov1.Service
+	Revisions []*riov1.Service
 }

@@ -3,11 +3,11 @@ package container
 import (
 	"strings"
 
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 )
 
-func allContainerPorts(con *v1beta1.ContainerConfig) []v1beta1.ExposedPort {
-	var eps []v1beta1.ExposedPort
+func allContainerPorts(con *v1.ContainerConfig) []v1.ExposedPort {
+	var eps []v1.ExposedPort
 	for _, ep := range con.ExposedPorts {
 		ep.Port = 0
 		ep.IP = ""
@@ -19,7 +19,7 @@ func allContainerPorts(con *v1beta1.ContainerConfig) []v1beta1.ExposedPort {
 			portBindings.Port = 0
 			portBindings.IP = ""
 		}
-		eps = append(eps, v1beta1.ExposedPort{
+		eps = append(eps, v1.ExposedPort{
 			PortBinding: portBindings,
 		})
 	}

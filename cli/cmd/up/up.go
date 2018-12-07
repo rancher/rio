@@ -15,7 +15,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/up"
 	"github.com/rancher/rio/cli/pkg/waiter"
 	"github.com/rancher/rio/pkg/yaml"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 	"github.com/sirupsen/logrus"
 )
 

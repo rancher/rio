@@ -21,10 +21,10 @@ func (s *StackScoped) FromInternal(data map[string]interface{}) {
 func (s *StackScoped) ToInternal(data map[string]interface{}) error {
 	_, nsOk := values.GetValue(data, "metadata", "namespace")
 	stackName, stackOk := values.GetValue(data, "spec", "stackId")
-	spaceName, spaceOk := values.GetValue(data, "spec", "spaceId")
+	projectName, projectOk := values.GetValue(data, "spec", "projectId")
 
-	if !nsOk && stackOk && spaceOk {
-		values.PutValue(data, namespace.StackNamespace(convert.ToString(spaceName), convert.ToString(stackName)),
+	if !nsOk && stackOk && projectOk {
+		values.PutValue(data, namespace.StackNamespace(convert.ToString(projectName), convert.ToString(stackName)),
 			"metadata", "namespace")
 	}
 	return nil

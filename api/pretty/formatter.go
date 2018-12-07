@@ -4,7 +4,7 @@ import (
 	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/pkg/pretty"
 	"github.com/rancher/rio/pkg/yaml"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 func InputFormatter(request *types.APIContext, schema *types.Schema, data map[string]interface{}, create bool) error {

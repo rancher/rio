@@ -2,8 +2,8 @@ package resetstack
 
 import (
 	"github.com/rancher/norman/types"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1/schema"
-	"github.com/rancher/rio/types/client/rio/v1beta1"
+	"github.com/rancher/rio/types/apis/rio.cattle.io/v1/schema"
+	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 func New(s types.Store) types.Store {

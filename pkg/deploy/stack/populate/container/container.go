@@ -9,7 +9,7 @@ import (
 	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/rio/pkg/deploy/stack/populate/podvolume"
 	"github.com/rancher/rio/pkg/name"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1beta1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -38,7 +38,7 @@ var (
 	}
 )
 
-func Container(name string, container v1beta1.ContainerConfig) v1.Container {
+func Container(name string, container riov1.ContainerConfig) v1.Container {
 	c := v1.Container{
 		Name:            name,
 		Image:           container.Image,
@@ -97,7 +97,7 @@ func Container(name string, container v1beta1.ContainerConfig) v1.Container {
 	return c
 }
 
-func addPorts(c *v1.Container, container v1beta1.ContainerConfig) {
+func addPorts(c *v1.Container, container riov1.ContainerConfig) {
 	added := map[string]bool{}
 	for _, ep := range allContainerPorts(&container) {
 		cp := v1.ContainerPort{
@@ -127,7 +127,7 @@ func addPorts(c *v1.Container, container v1beta1.ContainerConfig) {
 	}
 }
 
-func addConfigs(c *v1.Container, container v1beta1.ContainerConfig) {
+func addConfigs(c *v1.Container, container riov1.ContainerConfig) {
 	for _, config := range container.Configs {
 		name := podvolume.NameOfConfig(config)
 		c.VolumeMounts = append(c.VolumeMounts, v1.VolumeMount{
@@ -138,7 +138,7 @@ func addConfigs(c *v1.Container, container v1beta1.ContainerConfig) {
 	}
 }
 
-func populateEnv(c *v1.Container, container v1beta1.ContainerConfig) {
+func populateEnv(c *v1.Container, container riov1.ContainerConfig) {
 	for _, env := range container.Environment {
 		name, value := kv.Split(env, "=")
 		c.Env = append(c.Env, toEnvVar(c.Name, name, value))
@@ -234,7 +234,7 @@ func toEnvVar(containerName, name, value string) v1.EnvVar {
 	return basic
 }
 
-func populateResources(c *v1.Container, container v1beta1.ContainerConfig) {
+func populateResources(c *v1.Container, container riov1.ContainerConfig) {
 	if container.MemoryLimitBytes > 0 {
 		c.Resources.Limits[v1.ResourceMemory] = *resource.NewQuantity(container.MemoryLimitBytes, resource.DecimalSI)
 	}
@@ -252,7 +252,7 @@ func populateResources(c *v1.Container, container v1beta1.ContainerConfig) {
 	}
 }
 
-func toProbes(container v1beta1.ContainerConfig) (*v1.Probe, *v1.Probe) {
+func toProbes(container riov1.ContainerConfig) (*v1.Probe, *v1.Probe) {
 	health := toProbe(container.Healthcheck)
 	ready := health
 	if container.Readycheck != nil {
@@ -262,7 +262,7 @@ func toProbes(container v1beta1.ContainerConfig) (*v1.Probe, *v1.Probe) {
 	return health, ready
 }
 
-func toProbe(healthcheck *v1beta1.HealthConfig) *v1.Probe {
+func toProbe(healthcheck *riov1.HealthConfig) *v1.Probe {
 	if healthcheck == nil {
 		return nil
 	}
@@ -355,7 +355,7 @@ func toCaps(args []string) []v1.Capability {
 	return caps
 }
 
-func addSecrets(c *v1.Container, container v1beta1.ContainerConfig) {
+func addSecrets(c *v1.Container, container riov1.ContainerConfig) {
 	for _, secret := range container.Secrets {
 		name := podvolume.NameOfSecret(secret)
 
