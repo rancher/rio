@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rancher/rio/cli/pkg/clientcfg"
-
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
@@ -96,7 +94,7 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 	}, ctx)
 	defer writer.Close()
 
-	writer.AddFormatFunc("formatURL", FormatURL(cluster))
+	writer.AddFormatFunc("formatURL", FormatURL())
 	writer.AddFormatFunc("formatOpts", FormatOpts)
 	writer.AddFormatFunc("formatAction", FormatAction)
 	writer.AddFormatFunc("formatTarget", FormatTarget)
@@ -309,7 +307,7 @@ func writeStringMatchMap(buf *strings.Builder, prefix string, matches map[string
 	}
 }
 
-func FormatURL(cluster *clientcfg.Cluster) func(obj interface{}) (string, error) {
+func FormatURL() func(obj interface{}) (string, error) {
 	return func(obj interface{}) (string, error) {
 		data, ok := obj.(*Data)
 		if !ok {
