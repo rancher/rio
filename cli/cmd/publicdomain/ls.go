@@ -5,10 +5,13 @@ import (
 	"strings"
 
 	"github.com/rancher/norman/types"
+	"github.com/rancher/rio/api/service"
+	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/clientcfg"
 	"github.com/rancher/rio/cli/pkg/table"
 	"github.com/rancher/rio/pkg/namespace"
+	riov1client "github.com/rancher/rio/types/client/rio/v1beta1"
 	"github.com/rancher/rio/types/client/space/v1beta1"
 	"github.com/urfave/cli"
 )
@@ -21,7 +24,15 @@ func (l *Ls) Customize(cmd *cli.Command) {
 }
 
 func (l *Ls) Run(ctx *clicontext.CLIContext) error {
+	wc, err := ctx.WorkspaceClient()
+	if err != nil {
+		return err
+	}
 	cluster, err := ctx.Cluster()
+	if err != nil {
+		return err
+	}
+	domain, err := cluster.Domain()
 	if err != nil {
 		return err
 	}
@@ -30,6 +41,10 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 	publicDomains, err := spaceClient.PublicDomain.List(&types.ListOpts{})
+	if err != nil {
+		return err
+	}
+	stackByID, err := util.StacksByID(wc)
 	if err != nil {
 		return err
 	}
@@ -50,6 +65,9 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 	w := wrapper{
 		clusterClient: cluster,
 		spaces:        spaceNames,
+		ctx:           ctx,
+		domain:        domain,
+		stackByID:     stackByID,
 	}
 	writer.AddFormatFunc("formatTarget", w.FormatTarget)
 	for _, publicDomain := range publicDomains.Data {
@@ -60,8 +78,11 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 }
 
 type wrapper struct {
+	ctx           *clicontext.CLIContext
 	clusterClient *clientcfg.Cluster
 	spaces        map[string]string
+	domain        string
+	stackByID     map[string]*riov1client.Stack
 }
 
 func (w wrapper) FormatTarget(obj interface{}) (string, error) {
@@ -82,14 +103,16 @@ func (w wrapper) FormatTarget(obj interface{}) (string, error) {
 		if name == v.TargetWorkspaceName {
 			ns := namespace.StackNamespace(id, v.TargetStackName)
 			svc, err := workspaceClient.Service.ByID(fmt.Sprintf("%s:%s", ns, v.TargetName))
-			if err != nil {
-				return "", nil
+			if err == nil && len(svc.Endpoints) > 0 {
+				target := strings.Replace(svc.Endpoints[0].URL, "http://", "https://", 1)
+				return target, nil
 			}
-			if len(svc.Endpoints) == 0 {
-				return "", nil
+			route, err := workspaceClient.RouteSet.ByID(fmt.Sprintf("%s:%s", ns, v.TargetName))
+			if err == nil {
+				stack := w.stackByID[route.StackID]
+				space := strings.SplitN(stack.SpaceID, "-", 2)[1]
+				return fmt.Sprintf("https://%s.%s", service.HashIfNeed(route.Name, strings.SplitN(ns, "-", 2)[0], space), w.domain), nil
 			}
-			target := strings.Replace(svc.Endpoints[0].URL, "http://", "https://", 1)
-			return target, nil
 		}
 	}
 	return "", nil

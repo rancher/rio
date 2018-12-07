@@ -374,6 +374,10 @@ func vsFromRoutesets(stack *input.Stack, routesets []*v1beta1.RouteSet) []*outpu
 				}
 			}
 
+			if routeset.Annotations[PublicDomainAnnotation] != "" {
+				spec.Hosts = append(spec.Hosts, strings.Split(routeset.Annotations[PublicDomainAnnotation], ",")...)
+			}
+
 			spec.Http = append(spec.Http, httpRoute)
 		}
 
