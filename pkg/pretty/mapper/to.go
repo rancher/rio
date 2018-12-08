@@ -49,7 +49,9 @@ func (d To) ToInternal(data map[string]interface{}) error {
 			if err != nil {
 				return err
 			}
-			newSlc = append(newSlc, d)
+			if len(d) > 0 {
+				newSlc = append(newSlc, d[0])
+			}
 		} else {
 			newSlc = append(newSlc, obj)
 		}
