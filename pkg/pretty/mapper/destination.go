@@ -26,9 +26,10 @@ func destionationMapToString(m map[string]interface{}) string {
 	service, _ := m["service"].(string)
 	stack, _ := m["stack"].(string)
 	revision, _ := m["revision"].(string)
-	port, err := convert.ToNumber(m["port"])
-	if err != nil {
-		port = 0
+	var port *int64
+	p, err := convert.ToNumber(m["port"])
+	if err == nil {
+		port = &p
 	}
 
 	weight, err := convert.ToNumber(m["weight"])

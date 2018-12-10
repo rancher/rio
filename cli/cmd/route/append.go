@@ -27,6 +27,10 @@ var (
 	}
 )
 
+type Append struct {
+	Add
+}
+
 type Add struct {
 	Cookie          map[string]string `desc:"Match HTTP cookie (format key=value, value optional)"`
 	Header          map[string]string `desc:"Match HTTP header (format key=value, value optional)"`
@@ -43,7 +47,17 @@ type Add struct {
 	From            string            `desc:"Match traffic from specific service"`
 }
 
-func (a *Add) Run(ctx *clicontext.CLIContext) error {
+type RouteAction interface {
+	validateServiceStack(cluster *clientcfg.Cluster, args []string) error
+	buildRouteSpec(ctx *clicontext.CLIContext, args []string) (*client.RouteSpec, error)
+	getRouteSet(ctx *clicontext.CLIContext, args []string) (*client.RouteSet, error)
+}
+
+func (a *Append) Run(ctx *clicontext.CLIContext) error {
+	return insertRoute(ctx, false, a)
+}
+
+func insertRoute(ctx *clicontext.CLIContext, insert bool, a RouteAction) error {
 	args := ctx.CLI.Args()
 	if len(args) < 3 {
 		return fmt.Errorf("at least 3 arguements are required: HOST[/PATH] to|redirect|mirror TARGET")
@@ -73,7 +87,11 @@ func (a *Add) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	routeSet.Routes = append(routeSet.Routes, *routeSpec)
+	if insert {
+		routeSet.Routes = append([]client.RouteSpec{*routeSpec}, routeSet.Routes...)
+	} else {
+		routeSet.Routes = append(routeSet.Routes, *routeSpec)
+	}
 
 	if routeSet.ID == "" {
 		routeSet, err = wc.RouteSet.Create(routeSet)
@@ -183,7 +201,7 @@ func (a *Add) addTimeout(routeSpec *client.RouteSpec) error {
 		return err
 	}
 
-	routeSpec.TimeoutMillis = n
+	routeSpec.TimeoutMillis = &n
 	return nil
 }
 
@@ -318,7 +336,7 @@ func (a *Add) addMatch(ctx *clicontext.CLIContext, matchString string, routeSpec
 		if err != nil {
 			return fmt.Errorf("invalid port number in host/path [%s]: %s", matchString, port)
 		}
-		match.Port = n
+		match.Port = &n
 	}
 
 	if len(a.Header) > 0 {
@@ -391,7 +409,7 @@ func ParseDestinations(targets []string) ([]client.WeightedDestination, error) {
 			if err != nil {
 				return nil, fmt.Errorf("invalid port format [%s]", port)
 			}
-			wd.Port = n
+			wd.Port = &n
 		}
 
 		result = append(result, wd)

@@ -28,7 +28,7 @@ func (d *Data) port() int64 {
 	if d.Match == nil {
 		return 0
 	}
-	return d.Match.Port
+	return *d.Match.Port
 }
 
 func (d *Data) path() string {
@@ -106,6 +106,10 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 	}
 
 	for i, routeSet := range routeSets.Data {
+		stack := stackByID[routeSet.StackID]
+		if stack == nil {
+			continue
+		}
 		for j, routeSpec := range routeSet.Routes {
 			if len(routeSpec.Matches) == 0 {
 				writer.Write(&Data{
@@ -177,12 +181,12 @@ func FormatOpts(obj interface{}) (string, error) {
 		}
 	}
 
-	if data.RouteSpec.TimeoutMillis > 0 {
+	if data.RouteSpec.TimeoutMillis != nil {
 		if buf.Len() > 0 {
 			buf.WriteString(",")
 		}
 		buf.WriteString("timeout=")
-		d := time.Duration(data.RouteSpec.TimeoutMillis) * time.Millisecond
+		d := time.Duration(*data.RouteSpec.TimeoutMillis) * time.Millisecond
 		buf.WriteString(d.String())
 	}
 
@@ -204,7 +208,7 @@ func FormatTarget(obj interface{}) (string, error) {
 		}
 	} else if target == "redirect" && data.RouteSpec.Redirect != nil {
 		writeHostPath(buf, data.RouteSpec.Redirect.Host, data.RouteSpec.Redirect.Path)
-	} else if target == "mirror" && data.RouteSpec.Mirror != nil {
+	} else if target == "mirror" && data.RouteSpec.Mirror != nil && data.RouteSpec.Mirror.Port != nil {
 		writeDest(buf, data.Stack.Name, data.RouteSpec.Mirror.Stack, data.RouteSpec.Mirror.Service,
 			data.RouteSpec.Mirror.Revision,
 			data.RouteSpec.Mirror.Port, 0)
@@ -227,7 +231,7 @@ func writeHostPath(buf *strings.Builder, host, path string) {
 	}
 }
 
-func writeDest(buf *strings.Builder, sourceStackName, stack, service, revision string, port, weight int64) {
+func writeDest(buf *strings.Builder, sourceStackName, stack, service, revision string, port *int64, weight int64) {
 	if buf.Len() > 0 {
 		buf.WriteString(",")
 	}
@@ -242,9 +246,9 @@ func writeDest(buf *strings.Builder, sourceStackName, stack, service, revision s
 		buf.WriteString(revision)
 	}
 
-	if port > 0 {
+	if port != nil && *port > 0 {
 		buf.WriteString(",port=")
-		buf.WriteString(strconv.FormatInt(port, 10))
+		buf.WriteString(strconv.FormatInt(*port, 10))
 	}
 
 	if weight > 0 {
