@@ -21,6 +21,6 @@ type RouteSpec struct {
 	Redirect      *Redirect             `json:"redirect,omitempty" yaml:"redirect,omitempty"`
 	Retry         *Retry                `json:"retry,omitempty" yaml:"retry,omitempty"`
 	Rewrite       *Rewrite              `json:"rewrite,omitempty" yaml:"rewrite,omitempty"`
-	TimeoutMillis int64                 `json:"timeoutMillis,omitempty" yaml:"timeoutMillis,omitempty"`
+	TimeoutMillis *int64                `json:"timeoutMillis,omitempty" yaml:"timeoutMillis,omitempty"`
 	To            []WeightedDestination `json:"to,omitempty" yaml:"to,omitempty"`
 }

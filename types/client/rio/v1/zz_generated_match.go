@@ -17,6 +17,6 @@ type Match struct {
 	Headers map[string]StringMatch `json:"headers,omitempty" yaml:"headers,omitempty"`
 	Method  *StringMatch           `json:"method,omitempty" yaml:"method,omitempty"`
 	Path    *StringMatch           `json:"path,omitempty" yaml:"path,omitempty"`
-	Port    int64                  `json:"port,omitempty" yaml:"port,omitempty"`
+	Port    *int64                 `json:"port,omitempty" yaml:"port,omitempty"`
 	Scheme  *StringMatch           `json:"scheme,omitempty" yaml:"scheme,omitempty"`
 }
