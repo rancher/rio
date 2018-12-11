@@ -19,6 +19,7 @@ var (
 		client.ExternalServiceType,
 		client2.PodType,
 		client2.NodeType,
+		client2.FeatureType,
 		client2.PublicDomainType,
 	}
 )

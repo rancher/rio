@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/rancher/norman/pkg/changeset"
-	"github.com/rancher/rio/pkg/certs"
+	"github.com/rancher/rio/controllers/backend/features/letsencrypt"
 	"github.com/rancher/rio/pkg/deploy/istio"
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
@@ -88,7 +88,7 @@ func (i *istioDeployController) sync(key string, obj *v1alpha3.VirtualService) (
 		return nil, err
 	}
 
-	secret, err := i.secrets.Get(settings.IstioExternalLBNamespace, certs.TlsSecretName, metav1.GetOptions{})
+	secret, err := i.secrets.Get(settings.IstioExternalLBNamespace, letsencrypt.TlsSecretName, metav1.GetOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		return nil, err
 	}

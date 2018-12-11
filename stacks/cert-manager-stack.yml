@@ -19,6 +19,16 @@ services:
     - --logtostderr
     - "true"
 
+kubernetes:
+  namespaced_custom_resource_definitions:
+  # cert manager
+  - Issuer.certmanager.k8s.io/v1alpha1
+  - Challenge.certmanager.k8s.io/v1alpha1
+  - Order.certmanager.k8s.io/v1alpha1
+  - Certificate.certmanager.k8s.io/v1alpha1
+  custom_resource_definitions:
+  - ClusterIssuer.certmanager.k8s.io/v1alpha1
+
 questions:
 - variable: CERT_MANAGER_IMAGE
   description: "cert manager image to use"

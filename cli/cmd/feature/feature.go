@@ -128,6 +128,9 @@ func toQuestions(qs []client.Question) []v3.Question {
 		r = append(r, v3.Question{
 			Variable:    q.Variable,
 			Description: q.Description,
+			Label:       q.Label,
+			Options:     q.Options,
+			Default:     q.Default,
 		})
 	}
 	return r

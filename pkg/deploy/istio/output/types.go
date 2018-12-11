@@ -106,27 +106,3 @@ type DestinationRule struct {
 func (d *DestinationRule) DeepCopyObject() runtime.Object {
 	panic("not implemented")
 }
-
-type Certificate struct {
-	types.Namespaced
-
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec interface{} `json:"spec,omitempty"`
-}
-
-func (c *Certificate) DeepCopyObject() runtime.Object {
-	panic("not implemented")
-}
-
-type ClusterIssuer struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec interface{} `json:"spec,omitempty"`
-}
-
-func (c *ClusterIssuer) DeepCopyObject() runtime.Object {
-	panic("not implemented")
-}

@@ -12,7 +12,15 @@ const (
 	IstioStackName        = "istio"
 	IstioTelemetry        = "istio-telemetry"
 	DefaultServiceVersion = "v0"
-	CerManagerIssuerName  = "letsencrypt-issuer"
+	StagingType           = "staging"
+	ProductionType        = "production"
+	SelfSignedType        = "selfsigned"
+	StagingIssuerName     = "letsencrypt-staging-issuer"
+	ProductionIssuerName  = "letsencrypt-production-issuer"
+	SelfSignedIssuerName  = "selfsigned-issuer"
+	RioWildcardType       = "RIO_WILDCARD_CERT_TYPE"
+	PublicDomainType      = "RIO_PUBLICDOMAIN_CERT_TYPE"
+	CertManagerImageType  = "CERT_MANAGER_IMAGE"
 	IstionConfigMapName   = "mesh"
 	IstionConfigMapKey    = "content"
 )
@@ -30,9 +38,10 @@ var (
 		"gateway": "external",
 	}
 
-	LetsEncryptServerUrl    = settings.NewSetting("letsencrypt-server", "https://acme-staging-v02.api.letsencrypt.org/directory")
-	LetsEncryptAccountEmail = settings.NewSetting("letsencrypt-account-email", "daishan@rancher.com")
-	CertManagerImage        = settings.NewSetting("certmanager-image", "daishan1992/cert-manager:latest")
+	LetsEncryptStagingServerUrl    = settings.NewSetting("letsencrypt-staging-server", "https://acme-staging-v02.api.letsencrypt.org/directory")
+	LetsEncryptProductionServerUrl = settings.NewSetting("letsencrypt-production-server", "https://acme-v02.api.letsencrypt.org/directory")
+	LetsEncryptAccountEmail        = settings.NewSetting("letsencrypt-account-email", "daishan@rancher.com")
+	CertManagerImage               = settings.NewSetting("certmanager-image", "daishan1992/cert-manager:latest")
 
 	DefaultHTTPOpenPort  = settings.NewSetting("default-http-port", "80")
 	DefaultHTTPSOpenPort = settings.NewSetting("default-https-port", "443")
