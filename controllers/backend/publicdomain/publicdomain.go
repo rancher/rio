@@ -6,8 +6,6 @@ import (
 	"strings"
 
 	errors2 "github.com/pkg/errors"
-	"github.com/rancher/rio/pkg/apply"
-	"github.com/rancher/rio/pkg/certs"
 	"github.com/rancher/rio/pkg/deploy/stack/populate/istio"
 	"github.com/rancher/rio/pkg/namespace"
 	"github.com/rancher/rio/pkg/settings"
@@ -24,43 +22,38 @@ import (
 
 func Register(ctx context.Context, rContext *types.Context) {
 	dc := &domainController{
-		namespacesLister: rContext.Core.Namespace.Cache(),
-		stackLister:      rContext.Rio.Stack.Cache(),
-		serviceLister:    rContext.Rio.Service.Cache(),
-		services:         rContext.Rio.Service,
-		routesetLister:   rContext.Rio.RouteSet.Cache(),
-		routesets:        rContext.Rio.RouteSet,
-		secrets:          rContext.Core.Secret,
+		namespacesLister:  rContext.Core.Namespace.Cache(),
+		stackLister:       rContext.Rio.Stack.Cache(),
+		serviceLister:     rContext.Rio.Service.Cache(),
+		services:          rContext.Rio.Service,
+		routesetLister:    rContext.Rio.RouteSet.Cache(),
+		routesets:         rContext.Rio.RouteSet,
+		secrets:           rContext.Core.Secret,
+		featureController: rContext.Global.Feature,
 	}
 	rContext.Global.PublicDomain.OnChange(ctx, "public-domain-controller", dc.Updated)
 	rContext.Global.PublicDomain.OnRemove(ctx, "public-domain-controller", dc.Remove)
 }
 
 type domainController struct {
-	namespacesLister corev1.NamespaceClientCache
-	stackLister      riov1.StackClientCache
-	serviceLister    riov1.ServiceClientCache
-	services         riov1.ServiceClient
-	routesetLister   riov1.RouteSetClientCache
-	routesets        riov1.RouteSetClient
-	secrets          corev1.SecretClient
+	namespacesLister  corev1.NamespaceClientCache
+	stackLister       riov1.StackClientCache
+	serviceLister     riov1.ServiceClientCache
+	services          riov1.ServiceClient
+	routesetLister    riov1.RouteSetClientCache
+	routesets         riov1.RouteSetClient
+	secrets           corev1.SecretClient
+	featureController projectv1.FeatureClient
 }
 
 func (d *domainController) Updated(domain *projectv1.PublicDomain) (runtime.Object, error) {
 	if domain.Namespace != settings.RioSystemNamespace {
 		return domain, nil
 	}
+	d.featureController.Enqueue("", "letsencrypt")
 
-	if err := apply.Apply([]runtime.Object{certs.AcmeIssuer()}, nil, "", "acme-cluster-issuer"); err != nil {
-		return domain, err
-	}
 	ns, err := d.getNamespace(domain)
 	if err != nil {
-		return domain, err
-	}
-	// certificate
-	cert := certs.CertificateHttp(domain)
-	if err := apply.Apply([]runtime.Object{cert}, nil, settings.RioSystemNamespace, domain.Spec.DomainName); err != nil {
 		return domain, err
 	}
 	service, err := d.serviceLister.Get(ns, domain.Spec.TargetName)

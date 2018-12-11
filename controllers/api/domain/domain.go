@@ -11,7 +11,6 @@ import (
 	"github.com/rancher/norman/types/slice"
 	"github.com/rancher/rancher/pkg/controllers/user/approuter"
 	"github.com/rancher/rancher/pkg/ticker"
-	"github.com/rancher/rio/pkg/certs"
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
@@ -37,14 +36,15 @@ var (
 )
 
 type Controller struct {
-	ctx             context.Context
-	init            sync.Once
-	rdnsClient      *approuter.Client
-	endpointsLister v12.EndpointsClientCache
-	nodeLister      v12.NodeClientCache
-	stackLister     riov1.StackClientCache
-	stackController changeset.Enqueuer
-	previousIPs     []string
+	ctx               context.Context
+	init              sync.Once
+	rdnsClient        *approuter.Client
+	endpointsLister   v12.EndpointsClientCache
+	nodeLister        v12.NodeClientCache
+	stackLister       riov1.StackClientCache
+	stackController   changeset.Enqueuer
+	featureController changeset.Enqueuer
+	previousIPs       []string
 }
 
 func Register(ctx context.Context, rContext *types.Context) error {
@@ -54,12 +54,13 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	rdnsClient.SetBaseURL(settings.RDNSURL.Get())
 
 	g := &Controller{
-		ctx:             ctx,
-		rdnsClient:      rdnsClient,
-		endpointsLister: rContext.Core.Endpoints.Cache(),
-		nodeLister:      rContext.Core.Node.Cache(),
-		stackLister:     rContext.Rio.Stack.Cache(),
-		stackController: rContext.Rio.Stack,
+		ctx:               ctx,
+		rdnsClient:        rdnsClient,
+		endpointsLister:   rContext.Core.Endpoints.Cache(),
+		nodeLister:        rContext.Core.Node.Cache(),
+		stackLister:       rContext.Rio.Stack.Cache(),
+		stackController:   rContext.Rio.Stack,
+		featureController: rContext.Global.Feature,
 	}
 
 	rContext.Core.Endpoints.Cache().Index(nodeHasGateway, g.indexEPByNode)
@@ -179,7 +180,8 @@ func (g *Controller) sync(svc *v1.Service) (runtime.Object, error) {
 		return nil, err
 	}
 
-	return nil, certs.ApplyWildcardCertificates()
+	g.featureController.Enqueue("", "letsencrypt")
+	return nil, nil
 }
 
 func (g *Controller) start() error {

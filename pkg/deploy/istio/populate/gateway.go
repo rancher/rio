@@ -5,7 +5,8 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/rancher/rio/pkg/certs"
+	"github.com/rancher/rio/controllers/backend/features/letsencrypt"
+
 	"github.com/rancher/rio/pkg/deploy/istio/input"
 	istioOutput "github.com/rancher/rio/pkg/deploy/istio/output"
 	"github.com/rancher/rio/pkg/settings"
@@ -36,8 +37,8 @@ func populateGateway(input *input.IstioDeployment, output *istioOutput.Deploymen
 	// https port
 	sslDir := GetSSLDir()
 	httpsPort, _ := strconv.ParseInt(settings.DefaultHTTPSOpenPort.Get(), 10, 0)
-	key := fmt.Sprintf("%s-%s", certs.TlsSecretName, "tls.crt")
-	value := fmt.Sprintf("%s-%s", certs.TlsSecretName, "tls.key")
+	key := fmt.Sprintf("%s-%s", letsencrypt.TlsSecretName, "tls.crt")
+	value := fmt.Sprintf("%s-%s", letsencrypt.TlsSecretName, "tls.key")
 	if input.Secret != nil && len(input.Secret.Data[key]) > 0 && input.Secret.Annotations["certificate-status"] == "ready" {
 		gws.Servers = append(gws.Servers, &v1alpha3.Server{
 			Port: &v1alpha3.Port{

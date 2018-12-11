@@ -16,6 +16,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/up"
 	"github.com/rancher/rio/cli/pkg/waiter"
 	"github.com/rancher/rio/cli/pkg/yamldownload"
+	projectclient "github.com/rancher/rio/types/client/project/v1"
 	"github.com/rancher/rio/types/client/rio/v1"
 	"github.com/sirupsen/logrus"
 	"k8s.io/kubernetes/pkg/kubectl/cmd/util/editor"
@@ -31,6 +32,8 @@ var (
 		client.ServiceType,
 		client.ConfigType,
 		client.RouteSetType,
+		client.ExternalServiceType,
+		projectclient.FeatureType,
 	}
 )
 

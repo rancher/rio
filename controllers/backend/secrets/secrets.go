@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rancher/rio/pkg/certs"
+	"github.com/rancher/rio/controllers/backend/features/letsencrypt"
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
@@ -24,6 +24,7 @@ import (
 const (
 	syncAllSecrets     = "_secret_all"
 	readyAnnotationKey = "certificate-status"
+	issuerAnnotation   = "certmanager.k8s.io/issuer-name"
 )
 
 func Register(ctx context.Context, rContext *types.Context) {
@@ -54,7 +55,7 @@ func (s *secretController) sync(key string, secret *corev1.Secret) (runtime.Obje
 	if secret == nil || secret.DeletionTimestamp != nil || secret.Namespace != settings.RioSystemNamespace {
 		return nil, nil
 	}
-	if secret.Annotations["certmanager.k8s.io/issuer-name"] == settings.CerManagerIssuerName && len(secret.Data["tls.crt"]) > 0 {
+	if secret.Annotations[issuerAnnotation] != "" && len(secret.Data["tls.crt"]) > 0 {
 		s.secrets.Enqueue(settings.RioSystemNamespace, syncAllSecrets)
 	}
 	return nil, nil
@@ -65,10 +66,10 @@ func (s *secretController) syncAllSecrets() error {
 	if err != nil {
 		return err
 	}
-	lbSecret, err := s.secretsLister.Get(settings.IstioExternalLBNamespace, certs.TlsSecretName)
+	lbSecret, err := s.secretsLister.Get(settings.IstioExternalLBNamespace, letsencrypt.TlsSecretName)
 	if errors.IsNotFound(err) {
 		newSecret := &corev1.Secret{}
-		newSecret.Name = certs.TlsSecretName
+		newSecret.Name = letsencrypt.TlsSecretName
 		newSecret.Namespace = settings.IstioExternalLBNamespace
 		newSecret.Data = make(map[string][]byte)
 		created, err := s.secrets.Create(newSecret)
@@ -83,7 +84,7 @@ func (s *secretController) syncAllSecrets() error {
 	data := make(map[string][]byte, 0)
 	readyDomains := make(map[string]struct{}, 0)
 	for _, secret := range secrets {
-		if secret.Annotations["certmanager.k8s.io/issuer-name"] == settings.CerManagerIssuerName {
+		if secret.Annotations[issuerAnnotation] != "" {
 			if len(secret.Data["tls.crt"]) == 0 {
 				secret, err = s.secretsLister.Get(settings.RioSystemNamespace, secret.Name)
 				if err != nil {
@@ -110,6 +111,7 @@ func (s *secretController) syncAllSecrets() error {
 	if err != nil {
 		return err
 	}
+
 	time.Sleep(time.Minute)
 	for pd := range readyDomains {
 		p, err := s.publicDomainsLister.Get(settings.RioSystemNamespace, pd)
