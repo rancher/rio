@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
@@ -99,6 +100,11 @@ func (p *Ps) services(ctx *clicontext.CLIContext, stacks map[string]bool) error 
 		return err
 	}
 
+	domain, err := cluster.Domain()
+	if err != nil {
+		return err
+	}
+
 	services, err := wc.Service.List(util.DefaultListOpts())
 	if err != nil {
 		return err
@@ -190,12 +196,13 @@ func (p *Ps) services(ctx *clicontext.CLIContext, stacks map[string]bool) error 
 		fakeService := &client.Service{}
 		fakeService.Name = r.Name
 		fakeService.State = "active"
+		endpoint := fmt.Sprintf("https://%s-%s-%s.%s", r.Name, stack.Name, strings.SplitN(stack.ProjectID, "-", 2)[1], domain)
 		writer.Write(&ServiceData{
 			ID:       r.ID,
 			Created:  r.Created,
 			Service:  fakeService,
 			Stack:    stack,
-			Endpoint: "routed",
+			Endpoint: endpoint,
 			External: "",
 		})
 	}

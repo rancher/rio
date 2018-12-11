@@ -36,7 +36,7 @@ type RouteSpec struct {
 type RouteTraffic struct {
 	Fault         *Fault       `json:"fault,omitempty"`
 	Mirror        *Destination `json:"mirror,omitempty"`
-	TimeoutMillis int          `json:"timeoutMillis,omitempty"`
+	TimeoutMillis *int         `json:"timeoutMillis,omitempty"`
 	Retry         *Retry       `json:"retry,omitempty"`
 }
 
@@ -54,7 +54,7 @@ type Destination struct {
 	Service  string `json:"service,omitempty"`
 	Stack    string `json:"stack,omitempty"`
 	Revision string `json:"revision,omitempty"`
-	Port     int64  `json:"port,omitempty"`
+	Port     *int64 `json:"port,omitempty"`
 }
 
 type ServiceSource struct {
@@ -83,9 +83,9 @@ func (d Destination) String() string {
 		result.WriteString(d.Revision)
 	}
 
-	if d.Port > 0 {
+	if d.Port != nil && *d.Port > 0 {
 		result.WriteString(",port=")
-		result.WriteString(strconv.FormatInt(d.Port, 10))
+		result.WriteString(strconv.FormatInt(*d.Port, 10))
 	}
 
 	return result.String()
@@ -114,13 +114,13 @@ type Abort struct {
 }
 
 type Match struct {
-	Path    StringMatch            `json:"path,omitempty"`
-	Scheme  StringMatch            `json:"scheme,omitempty"`
-	Method  StringMatch            `json:"method,omitempty"`
+	Path    *StringMatch           `json:"path,omitempty"`
+	Scheme  *StringMatch           `json:"scheme,omitempty"`
+	Method  *StringMatch           `json:"method,omitempty"`
 	Headers map[string]StringMatch `json:"headers,omitempty"`
 	Cookies map[string]StringMatch `json:"cookies,omitempty"`
-	Port    int                    `json:"port,omitempty"`
-	From    ServiceSource          `json:"from,omitempty"`
+	Port    *int                   `json:"port,omitempty"`
+	From    *ServiceSource         `json:"from,omitempty"`
 }
 
 func (m Match) MaybeString() interface{} {
@@ -155,9 +155,9 @@ func (m Match) MaybeString() interface{} {
 
 	matchData.WriteString(authority)
 
-	if m.Port != 0 {
+	if m.Port != nil && *m.Port != 0 {
 		matchData.WriteString(":")
-		matchData.WriteString(strconv.Itoa(m.Port))
+		matchData.WriteString(strconv.Itoa(*m.Port))
 	}
 
 	if len(path) > 0 && path[0] != '/' {

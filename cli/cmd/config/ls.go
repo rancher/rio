@@ -62,6 +62,10 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 	})
 
 	for i, config := range configs.Data {
+		stack := stackByID[config.StackID]
+		if stack == nil {
+			continue
+		}
 		writer.Write(&Data{
 			ID:     config.ID,
 			Config: &configs.Data[i],

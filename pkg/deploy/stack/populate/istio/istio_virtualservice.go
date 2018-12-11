@@ -297,13 +297,15 @@ func vsFromRoutesets(stack *input.Stack, routesets []*v1.RouteSet) []*output.Ist
 				httpMatch.Uri = populateStringMatch(match.Path)
 				httpMatch.Scheme = populateStringMatch(match.Scheme)
 				httpMatch.Method = populateStringMatch(match.Method)
-				httpMatch.Port = uint32(match.Port)
+				if match.Port != nil {
+					httpMatch.Port = uint32(*match.Port)
+				}
 				httpMatch.Headers = make(map[string]*v1alpha3.StringMatch, 0)
 				for name, cookie := range match.Cookies {
-					httpMatch.Headers[name] = populateStringMatch(cookie)
+					httpMatch.Headers[name] = populateStringMatch(&cookie)
 				}
 				for name, value := range match.Headers {
-					httpMatch.Headers[name] = populateStringMatch(value)
+					httpMatch.Headers[name] = populateStringMatch(&value)
 				}
 				httpRoute.Match = append(httpRoute.Match, httpMatch)
 			}
@@ -351,19 +353,21 @@ func vsFromRoutesets(stack *input.Stack, routesets []*v1.RouteSet) []*output.Ist
 				}
 			}
 
-			if routeSpec.TimeoutMillis != 0 {
-				httpRoute.Timeout = google_protobuf.DurationProto(time.Millisecond * time.Duration(routeSpec.TimeoutMillis))
+			if routeSpec.TimeoutMillis != nil {
+				httpRoute.Timeout = google_protobuf.DurationProto(time.Millisecond * time.Duration(*routeSpec.TimeoutMillis))
 			}
 
 			if routeSpec.Mirror != nil {
 				httpRoute.Mirror = &v1alpha3.Destination{
 					Host:   getExternalDomain(routeSpec.Mirror.Service, routeSpec.Mirror.Stack, stack.Project),
 					Subset: routeSpec.Mirror.Revision,
-					Port: &v1alpha3.PortSelector{
+				}
+				if routeSpec.Mirror.Port != nil {
+					httpRoute.Mirror.Port = &v1alpha3.PortSelector{
 						Port: &v1alpha3.PortSelector_Number{
-							Number: uint32(routeSpec.Mirror.Port),
+							Number: uint32(*routeSpec.Mirror.Port),
 						},
-					},
+					}
 				}
 			}
 
@@ -409,7 +413,10 @@ func populateHttpAbort(fault *v1.Fault) *v1alpha3.HTTPFaultInjection_Abort {
 	return abort
 }
 
-func populateStringMatch(match v1.StringMatch) *v1alpha3.StringMatch {
+func populateStringMatch(match *v1.StringMatch) *v1alpha3.StringMatch {
+	if match == nil {
+		return nil
+	}
 	m := &v1alpha3.StringMatch{}
 	if match.Exact != "" {
 		m.MatchType = getExactMatch(match)
@@ -434,19 +441,19 @@ func convertEnvFromSliceToMap(envs []string) map[string]string {
 	return m
 }
 
-func getExactMatch(match v1.StringMatch) *v1alpha3.StringMatch_Exact {
+func getExactMatch(match *v1.StringMatch) *v1alpha3.StringMatch_Exact {
 	return &v1alpha3.StringMatch_Exact{
 		Exact: match.Exact,
 	}
 }
 
-func getPrefixMatch(match v1.StringMatch) *v1alpha3.StringMatch_Prefix {
+func getPrefixMatch(match *v1.StringMatch) *v1alpha3.StringMatch_Prefix {
 	return &v1alpha3.StringMatch_Prefix{
 		Prefix: match.Prefix,
 	}
 }
 
-func getRegexpMatch(match v1.StringMatch) *v1alpha3.StringMatch_Regex {
+func getRegexpMatch(match *v1.StringMatch) *v1alpha3.StringMatch_Regex {
 	return &v1alpha3.StringMatch_Regex{
 		Regex: match.Regexp,
 	}
@@ -494,8 +501,8 @@ func newVirtualServiceGeneric(stack *input.Stack, name, namespace string) *outpu
 }
 
 func destWeightForExternalService(d v1.WeightedDestination, svc *v1.ExternalService) *v1alpha3.DestinationWeight {
-	if d.Port == 0 {
-		d.Port = 80
+	if d.Port == nil {
+		d.Port = &[]int64{80}[0]
 	}
 	if d.Weight == 0 {
 		d.Weight = 100
@@ -505,7 +512,7 @@ func destWeightForExternalService(d v1.WeightedDestination, svc *v1.ExternalServ
 			Host: svc.Spec.Target,
 			Port: &v1alpha3.PortSelector{
 				Port: &v1alpha3.PortSelector_Number{
-					Number: uint32(d.Port),
+					Number: uint32(*d.Port),
 				},
 			},
 		},
@@ -517,8 +524,8 @@ func destWeightForService(d v1.WeightedDestination) *v1alpha3.DestinationWeight 
 	if d.Revision == "" {
 		d.Revision = "v0"
 	}
-	if d.Port == 0 {
-		d.Port = 80
+	if d.Port == nil {
+		d.Port = &[]int64{80}[0]
 	}
 	if d.Weight == 0 {
 		d.Weight = 100
@@ -529,7 +536,7 @@ func destWeightForService(d v1.WeightedDestination) *v1alpha3.DestinationWeight 
 			Subset: d.Revision,
 			Port: &v1alpha3.PortSelector{
 				Port: &v1alpha3.PortSelector_Number{
-					Number: uint32(d.Port),
+					Number: uint32(*d.Port),
 				},
 			},
 		},
