@@ -12,6 +12,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/rancher/rio/pkg/settings"
+
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/natefinch/lumberjack"
 	"github.com/rancher/norman/signal"
@@ -60,6 +62,9 @@ func (s *Server) Run(app *cli.Context) error {
 		}()
 	}
 
+	settings.DefaultHTTPOpenPort.Set(s.IngressHttpPort)
+	settings.DefaultHTTPSOpenPort.Set(s.IngressHttpsPort)
+
 	setupLogging(app)
 
 	if !s.DisableAgent && os.Getuid() != 0 {
@@ -68,7 +73,7 @@ func (s *Server) Run(app *cli.Context) error {
 
 	logrus.Info("Starting Rio ", app.App.Version)
 	ctx := signal.SigTermCancelContext(context.Background())
-	sc, err := server.StartServer(ctx, s.D_DataDir, s.L_HttpListenPort, s.P_HttpsListenPort, !s.DisableControllers, false)
+	sc, err := server.StartServer(ctx, s.D_DataDir, s.L_HttpListenPort, s.P_HttpsListenPort, s.AdvertiseServerIP, !s.DisableControllers, false)
 	if err != nil {
 		return err
 	}

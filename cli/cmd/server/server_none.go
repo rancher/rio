@@ -1,4 +1,4 @@
-// +build !k8s
+// +build !k8s,!darwin,!windows
 
 package server
 

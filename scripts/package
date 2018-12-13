@@ -3,6 +3,6 @@ set -e
 
 cd $(dirname $0)
 
-./package-image
 ./package-cli
+./package-image
 ./package-tar

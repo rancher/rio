@@ -114,7 +114,7 @@ func resolveDataDir(dataDir string) (string, error) {
 	return resolvehome.Resolve(dataDir)
 }
 
-func StartServer(ctx context.Context, dataDir string, httpPort, httpsPort int, controllers, inCluster bool) (*server.ServerConfig, error) {
+func StartServer(ctx context.Context, dataDir string, httpPort, httpsPort int, advertiseIP string, controllers, inCluster bool) (*server.ServerConfig, error) {
 	ctx = signal.SigTermCancelContext(ctx)
 
 	config, err := NewConfig(dataDir, inCluster)
@@ -179,11 +179,11 @@ func StartServer(ctx context.Context, dataDir string, httpPort, httpsPort int, c
 	ioutil.WriteFile(filepath.Join(dataDir, "port"), []byte(strconv.Itoa(httpsPort)), 0600)
 
 	if len(clientFile) > 0 {
-		printToken(httpsPort, "To use CLI:", clientFile, "login")
+		printToken(httpsPort, advertiseIP, "To use CLI:", clientFile, "login")
 	}
 
 	if len(nodeFile) > 0 {
-		printToken(httpsPort, "To join node to cluster:", nodeFile, "agent")
+		printToken(httpsPort, advertiseIP, "To join node to cluster:", nodeFile, "agent")
 	}
 
 	if err := waitForGood(ctx, httpsPort); err != nil {
@@ -234,7 +234,7 @@ func waitForGood(ctx context.Context, httpsPort int) error {
 	}
 }
 
-func printToken(httpsPort int, prefix, file, cmd string) error {
+func printToken(httpsPort int, advertiseIP, prefix, file, cmd string) error {
 	content, err := ioutil.ReadFile(file)
 	if err != nil {
 		logrus.Error(err)
@@ -242,13 +242,17 @@ func printToken(httpsPort int, prefix, file, cmd string) error {
 	}
 
 	token := strings.TrimSpace(string(content))
-	ip, err := net2.ChooseHostInterface()
-	if err != nil {
-		logrus.Error(err)
-		return err
+	ip := advertiseIP
+	if ip == "" {
+		hostIP, err := net2.ChooseHostInterface()
+		if err != nil {
+			logrus.Error(err)
+			return err
+		}
+		ip = hostIP.String()
 	}
 
-	logrus.Infof("%s rio %s -s https://%s:%d -t %s", prefix, cmd, ip.String(), httpsPort, token)
+	logrus.Infof("%s rio %s -s https://%s:%d -t %s", prefix, cmd, ip, httpsPort, token)
 	return nil
 }
 

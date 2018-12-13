@@ -117,7 +117,7 @@ func ParseAndValidateToken(server, token string) (*Info, error) {
 		return nil, err
 	}
 
-	cacerts, err := getCACerts(*url)
+	cacerts, err := GetCACerts(*url)
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +276,7 @@ func getNodeCertKey(u url.URL, username, password string, cacerts []byte) ([]byt
 	return nodeCert, nodeKey, nil
 }
 
-func getCACerts(u url.URL) ([]byte, error) {
+func GetCACerts(u url.URL) ([]byte, error) {
 	u.Path = "/cacerts"
 	url := u.String()
 

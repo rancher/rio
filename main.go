@@ -39,7 +39,7 @@ func run() error {
 	}
 	inCluster := os.Getenv("RIO_IN_CLUSTER") == "true"
 	ctx := signal.SigTermCancelContext(context.Background())
-	_, err := server.StartServer(ctx, "./data-dir", 5080, 5443, true, inCluster)
+	_, err := server.StartServer(ctx, "./data-dir", 5080, 5443, "127.0.0.1", true, inCluster)
 	<-ctx.Done()
 	return err
 }

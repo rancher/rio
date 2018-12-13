@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"os"
 	"reflect"
 	"sort"
 	"sync"
@@ -246,6 +247,9 @@ func (g *Controller) updateDomain(ips []string) error {
 	if len(ips) == 1 && ips[0] == "127.0.0.1" {
 		fqdn = local
 	} else {
+		if os.Getenv("ADVERTISE_RDNS_CLUSTER_IP") != "" {
+			ips = []string{os.Getenv("ADVERTISE_RDNS_CLUSTER_IP")}
+		}
 		_, fqdn, err = g.rdnsClient.ApplyDomain(ips)
 		if err != nil {
 			return err

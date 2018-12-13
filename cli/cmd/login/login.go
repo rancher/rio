@@ -45,7 +45,7 @@ func (l *Login) Run(ctx *clicontext.CLIContext) (ex error) {
 		l.T_Token = strings.TrimSpace(string(bytes))
 	}
 
-	cluster, err := validate(l.S_Server, l.T_Token)
+	cluster, err := Validate(l.S_Server, l.T_Token)
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func (l *Login) Run(ctx *clicontext.CLIContext) (ex error) {
 	return ctx.Config.SaveCluster(cluster, true)
 }
 
-func validate(serverURL, token string) (*clientcfg.Cluster, error) {
+func Validate(serverURL, token string) (*clientcfg.Cluster, error) {
 	info, err := clientaccess.ParseAndValidateToken(serverURL, token)
 	if err != nil {
 		return nil, err
