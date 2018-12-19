@@ -93,7 +93,7 @@ func main() {
 			Destination: &cfg.Debug,
 		},
 		cli.BoolFlag{
-			Name:        "wait",
+			Name:        "wait,w",
 			Usage:       "Wait for resource to reach resting state",
 			Destination: &cfg.Wait,
 		},
