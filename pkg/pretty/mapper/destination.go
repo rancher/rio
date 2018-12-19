@@ -26,10 +26,11 @@ func destionationMapToString(m map[string]interface{}) string {
 	service, _ := m["service"].(string)
 	stack, _ := m["stack"].(string)
 	revision, _ := m["revision"].(string)
-	var port *int64
+	var port *uint32
 	p, err := convert.ToNumber(m["port"])
 	if err == nil {
-		port = &p
+		n := uint32(p)
+		port = &n
 	}
 
 	weight, err := convert.ToNumber(m["weight"])
@@ -38,7 +39,7 @@ func destionationMapToString(m map[string]interface{}) string {
 	}
 
 	wd := v1.WeightedDestination{
-		Weight: weight,
+		Weight: int(weight),
 		Destination: v1.Destination{
 			Port:     port,
 			Revision: revision,

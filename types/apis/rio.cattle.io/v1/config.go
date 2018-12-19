@@ -3,6 +3,8 @@ package v1
 import (
 	"fmt"
 
+	"github.com/rancher/norman/condition"
+
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
@@ -17,7 +19,12 @@ type Config struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec ConfigSpec `json:"spec,omitempty"`
+	Spec   ConfigSpec   `json:"spec,omitempty"`
+	Status ConfigStatus `json:"status,omitempty"`
+}
+
+type ConfigStatus struct {
+	Conditions []condition.GenericCondition `json:"conditions,omitempty"`
 }
 
 type ConfigSpec struct {

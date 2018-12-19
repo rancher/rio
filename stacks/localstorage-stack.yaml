@@ -1,0 +1,47 @@
+kubernetes:
+  manifest: |-
+    apiVersion: storage.k8s.io/v1
+    kind: StorageClass
+    metadata:
+      name: local
+      annotations:
+        storageclass.kubernetes.io/is-default-class: "true"
+    provisioner: rancher.io/local-path
+    volumeBindingMode: WaitForFirstConsumer
+    reclaimPolicy: Delete
+
+configs:
+  config:
+    content: |-
+      {
+        "nodePathMap": [
+          {
+            "node": "DEFAULT_PATH_FOR_NON_LISTED_NODES",
+            "paths": [
+              "/var/lib/rancher/rio/volumes"
+            ]
+          }
+        ]
+      }
+    labels:
+      cattle.io/creator: norman
+services:
+  local-path-provisioner:
+    command:
+    - local-path-provisioner
+    - --debug
+    - start
+    - --config
+    - /etc/config/config.json
+    configs: config:/etc/config/config.json
+    environment:
+    - POD_NAMESPACE=$(self/namespace)
+    global_permissions:
+    - nodes
+    - persistentvolumeclaims
+    - '* endpoints'
+    - '* persistentvolumes'
+    - '* pods'
+    - create,patch events
+    - storage.k8s.io/storageclasses
+    image: rancher/local-path-provisioner:v0.0.2

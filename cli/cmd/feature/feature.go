@@ -41,11 +41,16 @@ func Feature(app *cli.App) cli.Command {
 
 type Ls struct{}
 
+type Data struct {
+	ID      string
+	Feature client.Feature
+}
+
 func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 	writer := table.NewWriter([][]string{
-		{"Name", "{{.Name}}"},
-		{"Enabled", "{{.Enable | boolToStar}}"},
-		{"Description", "{{.Description}}"},
+		{"NAME", "Feature.Name"},
+		{"ENABLED", "{{.Feature.Enabled | boolToStar}}"},
+		{"DESCRIPTION", "Feature.Description"},
 	}, ctx)
 	defer writer.Close()
 
@@ -64,7 +69,10 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 	}
 
 	for _, feature := range featuresCollection.Data {
-		writer.Write(feature)
+		writer.Write(Data{
+			ID:      feature.ID,
+			Feature: feature,
+		})
 	}
 	return writer.Err()
 }
@@ -103,7 +111,7 @@ func flipEnableFlag(ctx *clicontext.CLIContext, featureName string, enable bool)
 	if err != nil {
 		return err
 	}
-	feature.Enable = enable
+	feature.Enabled = enable
 	if enable {
 		qs, err := questions.NewQuestions(toQuestions(feature.Questions), feature.Answers, true)
 		if err != nil {
@@ -123,7 +131,7 @@ func flipEnableFlag(ctx *clicontext.CLIContext, featureName string, enable bool)
 }
 
 func toQuestions(qs []client.Question) []v3.Question {
-	r := []v3.Question{}
+	var r []v3.Question
 	for _, q := range qs {
 		r = append(r, v3.Question{
 			Variable:    q.Variable,

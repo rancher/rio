@@ -47,14 +47,14 @@ type Retry struct {
 
 type WeightedDestination struct {
 	Destination
-	Weight int64 `json:"weight,omitempty"`
+	Weight int `json:"weight,omitempty"`
 }
 
 type Destination struct {
-	Service  string `json:"service,omitempty"`
-	Stack    string `json:"stack,omitempty"`
-	Revision string `json:"revision,omitempty"`
-	Port     *int64 `json:"port,omitempty"`
+	Service  string  `json:"service,omitempty"`
+	Stack    string  `json:"stack,omitempty"`
+	Revision string  `json:"revision,omitempty"`
+	Port     *uint32 `json:"port,omitempty"`
 }
 
 type ServiceSource struct {
@@ -85,7 +85,7 @@ func (d Destination) String() string {
 
 	if d.Port != nil && *d.Port > 0 {
 		result.WriteString(",port=")
-		result.WriteString(strconv.FormatInt(*d.Port, 10))
+		result.WriteString(strconv.FormatInt(int64(*d.Port), 10))
 	}
 
 	return result.String()
@@ -98,7 +98,7 @@ func (w WeightedDestination) String() string {
 		return str
 	}
 
-	return str + ",weight=" + strconv.FormatInt(w.Weight, 10)
+	return str + ",weight=" + strconv.FormatInt(int64(w.Weight), 10)
 }
 
 type Fault struct {

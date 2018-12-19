@@ -42,9 +42,10 @@ type StackScoped struct {
 }
 
 type InternalStack struct {
-	Services   map[string]Service  `json:"services,omitempty"`
-	Configs    map[string]Config   `json:"configs,omitempty"`
-	Volumes    map[string]Volume   `json:"volumes,omitempty"`
-	Routes     map[string]RouteSet `json:"routes,omitempty"`
-	Kubernetes Kubernetes          `json:"kubernetes,omitempty"`
+	Services         map[string]Service         `json:"services,omitempty"`
+	Configs          map[string]Config          `json:"configs,omitempty"`
+	Volumes          map[string]Volume          `json:"volumes,omitempty"`
+	Routes           map[string]RouteSet        `json:"routes,omitempty"`
+	ExternalServices map[string]ExternalService `json:"externalservices,omitempty"`
+	Kubernetes       Kubernetes                 `json:"kubernetes,omitempty"`
 }
