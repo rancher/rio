@@ -39,6 +39,11 @@ rio --project=rio-system ps -c
 chmod +x ./tests/init-nfs.bash
 ./tests/init-nfs.bash
 export RUN_NFS_TEST=true
+
+cd ./tests
+tox -- -n $(nproc)
+cd ..
+
 bats -r ./tests || {
     tail -n 100 /var/lib/rancher/rio/agent/agent.log
     exit 1

@@ -14,4 +14,7 @@
 /image/main.squashfs
 /package/rio
 __pycache__
+/tests/.pytest_cache/
+/tests/.tox/
 /tests/.vscode
+
