@@ -15,6 +15,7 @@ const (
 	PipelineExecutionConditionProvisioned condition.Cond = "Provisioned"
 	PipelineExecutionConditionInitialized condition.Cond = "Initialized"
 	PipelineExecutionConditionBuilt       condition.Cond = "Built"
+	PipelineExecutionConditionNotified    condition.Cond = "Notified"
 )
 
 type SourceCodeProvider struct {
@@ -22,7 +23,7 @@ type SourceCodeProvider struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	ProjectName string `json:"projectName" norman:"type=reference[project]"`
-	Type        string `json:"type" norman:"options=github|gitlab"`
+	Type        string `json:"type" norman:"options=github|gitlab|bitbucketcloud|bitbucketserver"`
 }
 
 type OauthProvider struct {
@@ -41,6 +42,14 @@ type GitlabProvider struct {
 	OauthProvider `json:",inline"`
 }
 
+type BitbucketCloudProvider struct {
+	OauthProvider `json:",inline"`
+}
+
+type BitbucketServerProvider struct {
+	OauthProvider `json:",inline"`
+}
+
 type SourceCodeProviderConfig struct {
 	types.Namespaced
 
@@ -48,7 +57,7 @@ type SourceCodeProviderConfig struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	ProjectName string `json:"projectName" norman:"required,type=reference[project]"`
-	Type        string `json:"type" norman:"noupdate,options=github|gitlab"`
+	Type        string `json:"type" norman:"noupdate,options=github|gitlab|bitbucketcloud|bitbucketserver"`
 	Enabled     bool   `json:"enabled,omitempty"`
 }
 
@@ -74,6 +83,29 @@ type GitlabPipelineConfig struct {
 	ClientID     string `json:"clientId,omitempty" norman:"noupdate"`
 	ClientSecret string `json:"clientSecret,omitempty" norman:"noupdate,type=password"`
 	RedirectURL  string `json:"redirectUrl,omitempty" norman:"noupdate"`
+}
+
+type BitbucketCloudPipelineConfig struct {
+	metav1.TypeMeta          `json:",inline"`
+	metav1.ObjectMeta        `json:"metadata,omitempty"`
+	SourceCodeProviderConfig `json:",inline" mapstructure:",squash"`
+
+	ClientID     string `json:"clientId,omitempty" norman:"noupdate"`
+	ClientSecret string `json:"clientSecret,omitempty" norman:"noupdate,type=password"`
+	RedirectURL  string `json:"redirectUrl,omitempty" norman:"noupdate"`
+}
+
+type BitbucketServerPipelineConfig struct {
+	metav1.TypeMeta          `json:",inline"`
+	metav1.ObjectMeta        `json:"metadata,omitempty"`
+	SourceCodeProviderConfig `json:",inline" mapstructure:",squash"`
+
+	Hostname    string `json:"hostname,omitempty"`
+	TLS         bool   `json:"tls,omitempty"`
+	ConsumerKey string `json:"consumerKey,omitempty"`
+	PublicKey   string `json:"publicKey,omitempty"`
+	PrivateKey  string `json:"privateKey,omitempty" norman:"type=password"`
+	RedirectURL string `json:"redirectUrl,omitempty"`
 }
 
 type Pipeline struct {
@@ -155,8 +187,20 @@ type PipelineSpec struct {
 type PipelineConfig struct {
 	Stages []Stage `json:"stages,omitempty" yaml:"stages,omitempty"`
 
-	Timeout int         `json:"timeout,omitempty" yaml:"timeout,omitempty"`
-	Branch  *Constraint `json:"branch,omitempty" yaml:"branch,omitempty"`
+	Timeout      int                   `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	Branch       *Constraint           `json:"branch,omitempty" yaml:"branch,omitempty"`
+	Notification *PipelineNotification `json:"notification,omitempty" yaml:"notification,omitempty"`
+}
+
+type PipelineNotification struct {
+	Recipients []Recipient   `json:"recipients,omitempty" yaml:"recipients,omitempty"`
+	Message    string        `json:"message,omitempty" yaml:"message,omitempty"`
+	Condition  stringorslice `json:"condition,omitempty" yaml:"condition,omitempty"`
+}
+
+type Recipient struct {
+	Recipient string `json:"recipient,omitempty"`
+	Notifier  string `json:"notifier,omitempty"`
 }
 
 type PipelineCondition struct {
@@ -270,14 +314,17 @@ type StepStatus struct {
 
 type SourceCodeCredentialSpec struct {
 	ProjectName    string `json:"projectName" norman:"type=reference[project]"`
-	SourceCodeType string `json:"sourceCodeType,omitempty" norman:"required,options=github|gitlab"`
+	SourceCodeType string `json:"sourceCodeType,omitempty" norman:"required,options=github|gitlab|bitbucketcloud|bitbucketserver"`
 	UserName       string `json:"userName" norman:"required,type=reference[user]"`
 	DisplayName    string `json:"displayName,omitempty" norman:"required"`
 	AvatarURL      string `json:"avatarUrl,omitempty"`
 	HTMLURL        string `json:"htmlUrl,omitempty"`
 	LoginName      string `json:"loginName,omitempty"`
 	GitLoginName   string `json:"gitLoginName,omitempty"`
+	GitCloneToken  string `json:"gitCloneToken,omitempty" norman:"writeOnly,noupdate"`
 	AccessToken    string `json:"accessToken,omitempty" norman:"writeOnly,noupdate"`
+	RefreshToken   string `json:"refreshToken,omitempty" norman:"writeOnly,noupdate"`
+	Expiry         string `json:"expiry,omitempty"`
 }
 
 type SourceCodeCredentialStatus struct {
@@ -286,7 +333,7 @@ type SourceCodeCredentialStatus struct {
 
 type SourceCodeRepositorySpec struct {
 	ProjectName              string   `json:"projectName" norman:"type=reference[project]"`
-	SourceCodeType           string   `json:"sourceCodeType,omitempty" norman:"required,options=github|gitlab"`
+	SourceCodeType           string   `json:"sourceCodeType,omitempty" norman:"required,options=github|gitlab|bitbucketcloud|bitbucketserver"`
 	UserName                 string   `json:"userName" norman:"required,type=reference[user]"`
 	SourceCodeCredentialName string   `json:"sourceCodeCredentialName,omitempty" norman:"required,type=reference[sourceCodeCredential]"`
 	URL                      string   `json:"url,omitempty"`
@@ -310,7 +357,7 @@ type RunPipelineInput struct {
 
 type AuthAppInput struct {
 	InheritGlobal  bool   `json:"inheritGlobal,omitempty"`
-	SourceCodeType string `json:"sourceCodeType,omitempty" norman:"type=string,required,options=github|gitlab"`
+	SourceCodeType string `json:"sourceCodeType,omitempty" norman:"type=string,required,options=github|gitlab|bitbucketcloud|bitbucketserver"`
 	RedirectURL    string `json:"redirectUrl,omitempty" norman:"type=string"`
 	TLS            bool   `json:"tls,omitempty"`
 	Host           string `json:"host,omitempty"`
@@ -320,7 +367,7 @@ type AuthAppInput struct {
 }
 
 type AuthUserInput struct {
-	SourceCodeType string `json:"sourceCodeType,omitempty" norman:"type=string,required,options=github|gitlab"`
+	SourceCodeType string `json:"sourceCodeType,omitempty" norman:"type=string,required,options=github|gitlab|bitbucketcloud|bitbucketserver"`
 	RedirectURL    string `json:"redirectUrl,omitempty" norman:"type=string"`
 	Code           string `json:"code,omitempty" norman:"type=string,required"`
 }
@@ -340,23 +387,44 @@ type PipelineSystemImages struct {
 	KubeApply     string `json:"kubeApply,omitempty"`
 }
 
-type GithubPipelineConfigApplyInput struct {
-	InheritAuth  bool                 `json:"inheritAuth,omitempty"`
-	GithubConfig GithubPipelineConfig `json:"githubConfig,omitempty"`
-	Code         string               `json:"code,omitempty"`
+type OauthApplyInput struct {
+	Hostname     string `json:"hostname,omitempty"`
+	TLS          bool   `json:"tls,omitempty"`
+	RedirectURL  string `json:"redirectUrl,omitempty"`
+	ClientID     string `json:"clientId,omitempty"`
+	ClientSecret string `json:"clientSecret,omitempty"`
+	Code         string `json:"code,omitempty"`
 }
 
-type GithubLoginInput struct {
-	Code string `json:"code,omitempty" norman:"type=string,required"`
+type GithubApplyInput struct {
+	OauthApplyInput
+	InheritAuth bool `json:"inheritAuth,omitempty"`
 }
 
-type GitlabPipelineConfigApplyInput struct {
-	GitlabConfig GitlabPipelineConfig `json:"gitlabConfig,omitempty"`
-	Code         string               `json:"code,omitempty"`
+type GitlabApplyInput struct {
+	OauthApplyInput
 }
 
-type GitlabLoginInput struct {
-	Code string `json:"code,omitempty" norman:"type=string,required"`
+type BitbucketCloudApplyInput struct {
+	OauthApplyInput
+}
+
+type BitbucketServerApplyInput struct {
+	OAuthToken    string `json:"oauthToken,omitempty"`
+	OAuthVerifier string `json:"oauthVerifier,omitempty"`
+	Hostname      string `json:"hostname,omitempty"`
+	TLS           bool   `json:"tls,omitempty"`
+	RedirectURL   string `json:"redirectUrl,omitempty"`
+}
+
+type BitbucketServerRequestLoginInput struct {
+	Hostname    string `json:"hostname,omitempty"`
+	TLS         bool   `json:"tls,omitempty"`
+	RedirectURL string `json:"redirectUrl,omitempty"`
+}
+
+type BitbucketServerRequestLoginOutput struct {
+	LoginURL string `json:"loginUrl"`
 }
 
 type EnvFrom struct {

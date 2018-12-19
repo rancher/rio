@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
 )
@@ -34,6 +35,13 @@ var (
 		Kind:         {{.schema.CodeName}}GroupVersionKind.Kind,
 	}
 )
+
+func New{{.schema.CodeName}}(namespace, name string, obj {{.prefix}}{{.schema.CodeName}}) *{{.prefix}}{{.schema.CodeName}} {
+	obj.APIVersion, obj.Kind = {{.schema.CodeName}}GroupVersionKind.ToAPIVersionAndKind()
+	obj.Name = name
+	obj.Namespace = namespace
+	return &obj
+}
 
 type {{.schema.CodeName}}List struct {
 	metav1.TypeMeta   %BACK%json:",inline"%BACK%
@@ -231,8 +239,8 @@ func (s *{{.schema.ID}}Client) Watch(opts metav1.ListOptions) (watch.Interface, 
 }
 
 // Patch applies the patch and returns the patched deployment.
-func (s *{{.schema.ID}}Client) Patch(o *{{.prefix}}{{.schema.CodeName}}, data []byte, subresources ...string) (*{{.prefix}}{{.schema.CodeName}}, error) {
-	obj, err := s.objectClient.Patch(o.Name, o, data, subresources...)
+func (s *{{.schema.ID}}Client) Patch(o *{{.prefix}}{{.schema.CodeName}}, patchType types.PatchType, data []byte, subresources ...string) (*{{.prefix}}{{.schema.CodeName}}, error) {
+	obj, err := s.objectClient.Patch(o.Name, o, patchType, data, subresources...)
 	return obj.(*{{.prefix}}{{.schema.CodeName}}), err
 }
 
@@ -284,6 +292,7 @@ type {{.schema.CodeName}}Client interface {
     Enqueue(namespace, name string)
 
 	Generic() controller.GenericController
+    ObjectClient() *objectclient.ObjectClient
 	Interface() {{.schema.CodeName}}Interface
 }
 
@@ -302,6 +311,10 @@ func (n *{{.schema.ID}}Client2) Interface() {{.schema.CodeName}}Interface {
 
 func (n *{{.schema.ID}}Client2) Generic() controller.GenericController {
 	return n.iface.Controller().Generic()
+}
+
+func (n *{{.schema.ID}}Client2) ObjectClient() *objectclient.ObjectClient {
+	return n.Interface().ObjectClient()
 }
 
 func (n *{{.schema.ID}}Client2) Enqueue(namespace, name string) {
