@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
 )
@@ -28,6 +29,13 @@ var (
 		Kind: PublicDomainGroupVersionKind.Kind,
 	}
 )
+
+func NewPublicDomain(namespace, name string, obj PublicDomain) *PublicDomain {
+	obj.APIVersion, obj.Kind = PublicDomainGroupVersionKind.ToAPIVersionAndKind()
+	obj.Name = name
+	obj.Namespace = namespace
+	return &obj
+}
 
 type PublicDomainList struct {
 	metav1.TypeMeta `json:",inline"`
@@ -224,8 +232,8 @@ func (s *publicDomainClient) Watch(opts metav1.ListOptions) (watch.Interface, er
 }
 
 // Patch applies the patch and returns the patched deployment.
-func (s *publicDomainClient) Patch(o *PublicDomain, data []byte, subresources ...string) (*PublicDomain, error) {
-	obj, err := s.objectClient.Patch(o.Name, o, data, subresources...)
+func (s *publicDomainClient) Patch(o *PublicDomain, patchType types.PatchType, data []byte, subresources ...string) (*PublicDomain, error) {
+	obj, err := s.objectClient.Patch(o.Name, o, patchType, data, subresources...)
 	return obj.(*PublicDomain), err
 }
 
@@ -277,6 +285,7 @@ type PublicDomainClient interface {
 	Enqueue(namespace, name string)
 
 	Generic() controller.GenericController
+	ObjectClient() *objectclient.ObjectClient
 	Interface() PublicDomainInterface
 }
 
@@ -295,6 +304,10 @@ func (n *publicDomainClient2) Interface() PublicDomainInterface {
 
 func (n *publicDomainClient2) Generic() controller.GenericController {
 	return n.iface.Controller().Generic()
+}
+
+func (n *publicDomainClient2) ObjectClient() *objectclient.ObjectClient {
+	return n.Interface().ObjectClient()
 }
 
 func (n *publicDomainClient2) Enqueue(namespace, name string) {

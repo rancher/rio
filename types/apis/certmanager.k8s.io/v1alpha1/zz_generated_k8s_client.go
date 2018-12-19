@@ -1,4 +1,4 @@
-package v1
+package v1alpha1
 
 import (
 	"context"
@@ -20,17 +20,15 @@ type Interface interface {
 	RESTClient() rest.Interface
 	controller.Starter
 
-	ListenConfigsGetter
-	PublicDomainsGetter
-	FeaturesGetter
+	ClusterIssuersGetter
+	CertificatesGetter
 }
 
 type Clients struct {
 	Interface Interface
 
-	ListenConfig ListenConfigClient
-	PublicDomain PublicDomainClient
-	Feature      FeatureClient
+	ClusterIssuer ClusterIssuerClient
+	Certificate   CertificateClient
 }
 
 type Client struct {
@@ -38,9 +36,8 @@ type Client struct {
 	restClient rest.Interface
 	starters   []controller.Starter
 
-	listenConfigControllers map[string]ListenConfigController
-	publicDomainControllers map[string]PublicDomainController
-	featureControllers      map[string]FeatureController
+	clusterIssuerControllers map[string]ClusterIssuerController
+	certificateControllers   map[string]CertificateController
 }
 
 func Factory(ctx context.Context, config rest.Config) (context.Context, controller.Starter, error) {
@@ -76,14 +73,11 @@ func NewClientsFromInterface(iface Interface) *Clients {
 	return &Clients{
 		Interface: iface,
 
-		ListenConfig: &listenConfigClient2{
-			iface: iface.ListenConfigs(""),
+		ClusterIssuer: &clusterIssuerClient2{
+			iface: iface.ClusterIssuers(""),
 		},
-		PublicDomain: &publicDomainClient2{
-			iface: iface.PublicDomains(""),
-		},
-		Feature: &featureClient2{
-			iface: iface.Features(""),
+		Certificate: &certificateClient2{
+			iface: iface.Certificates(""),
 		},
 	}
 }
@@ -101,9 +95,8 @@ func NewForConfig(config rest.Config) (Interface, error) {
 	return &Client{
 		restClient: restClient,
 
-		listenConfigControllers: map[string]ListenConfigController{},
-		publicDomainControllers: map[string]PublicDomainController{},
-		featureControllers:      map[string]FeatureController{},
+		clusterIssuerControllers: map[string]ClusterIssuerController{},
+		certificateControllers:   map[string]CertificateController{},
 	}, nil
 }
 
@@ -119,39 +112,26 @@ func (c *Client) Start(ctx context.Context, threadiness int) error {
 	return controller.Start(ctx, threadiness, c.starters...)
 }
 
-type ListenConfigsGetter interface {
-	ListenConfigs(namespace string) ListenConfigInterface
+type ClusterIssuersGetter interface {
+	ClusterIssuers(namespace string) ClusterIssuerInterface
 }
 
-func (c *Client) ListenConfigs(namespace string) ListenConfigInterface {
-	objectClient := objectclient.NewObjectClient(namespace, c.restClient, &ListenConfigResource, ListenConfigGroupVersionKind, listenConfigFactory{})
-	return &listenConfigClient{
+func (c *Client) ClusterIssuers(namespace string) ClusterIssuerInterface {
+	objectClient := objectclient.NewObjectClient(namespace, c.restClient, &ClusterIssuerResource, ClusterIssuerGroupVersionKind, clusterIssuerFactory{})
+	return &clusterIssuerClient{
 		ns:           namespace,
 		client:       c,
 		objectClient: objectClient,
 	}
 }
 
-type PublicDomainsGetter interface {
-	PublicDomains(namespace string) PublicDomainInterface
+type CertificatesGetter interface {
+	Certificates(namespace string) CertificateInterface
 }
 
-func (c *Client) PublicDomains(namespace string) PublicDomainInterface {
-	objectClient := objectclient.NewObjectClient(namespace, c.restClient, &PublicDomainResource, PublicDomainGroupVersionKind, publicDomainFactory{})
-	return &publicDomainClient{
-		ns:           namespace,
-		client:       c,
-		objectClient: objectClient,
-	}
-}
-
-type FeaturesGetter interface {
-	Features(namespace string) FeatureInterface
-}
-
-func (c *Client) Features(namespace string) FeatureInterface {
-	objectClient := objectclient.NewObjectClient(namespace, c.restClient, &FeatureResource, FeatureGroupVersionKind, featureFactory{})
-	return &featureClient{
+func (c *Client) Certificates(namespace string) CertificateInterface {
+	objectClient := objectclient.NewObjectClient(namespace, c.restClient, &CertificateResource, CertificateGroupVersionKind, certificateFactory{})
+	return &certificateClient{
 		ns:           namespace,
 		client:       c,
 		objectClient: objectClient,

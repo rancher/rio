@@ -5,29 +5,37 @@ import (
 )
 
 const (
-	FeatureType             = "feature"
-	FeatureFieldAnswers     = "answers"
-	FeatureFieldCreated     = "created"
-	FeatureFieldDescription = "description"
-	FeatureFieldEnable      = "enable"
-	FeatureFieldLabels      = "labels"
-	FeatureFieldName        = "name"
-	FeatureFieldQuestions   = "questions"
-	FeatureFieldRemoved     = "removed"
-	FeatureFieldUUID        = "uuid"
+	FeatureType                      = "feature"
+	FeatureFieldAnswers              = "answers"
+	FeatureFieldCreated              = "created"
+	FeatureFieldDescription          = "description"
+	FeatureFieldEnabled              = "enable"
+	FeatureFieldLabels               = "labels"
+	FeatureFieldName                 = "name"
+	FeatureFieldNamespace            = "namespace"
+	FeatureFieldQuestions            = "questions"
+	FeatureFieldRemoved              = "removed"
+	FeatureFieldState                = "state"
+	FeatureFieldTransitioning        = "transitioning"
+	FeatureFieldTransitioningMessage = "transitioningMessage"
+	FeatureFieldUUID                 = "uuid"
 )
 
 type Feature struct {
 	types.Resource
-	Answers     map[string]string `json:"answers,omitempty" yaml:"answers,omitempty"`
-	Created     string            `json:"created,omitempty" yaml:"created,omitempty"`
-	Description string            `json:"description,omitempty" yaml:"description,omitempty"`
-	Enable      bool              `json:"enable,omitempty" yaml:"enable,omitempty"`
-	Labels      map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
-	Name        string            `json:"name,omitempty" yaml:"name,omitempty"`
-	Questions   []Question        `json:"questions,omitempty" yaml:"questions,omitempty"`
-	Removed     string            `json:"removed,omitempty" yaml:"removed,omitempty"`
-	UUID        string            `json:"uuid,omitempty" yaml:"uuid,omitempty"`
+	Answers              map[string]string `json:"answers,omitempty" yaml:"answers,omitempty"`
+	Created              string            `json:"created,omitempty" yaml:"created,omitempty"`
+	Description          string            `json:"description,omitempty" yaml:"description,omitempty"`
+	Enabled              bool              `json:"enable,omitempty" yaml:"enable,omitempty"`
+	Labels               map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
+	Name                 string            `json:"name,omitempty" yaml:"name,omitempty"`
+	Namespace            string            `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	Questions            []Question        `json:"questions,omitempty" yaml:"questions,omitempty"`
+	Removed              string            `json:"removed,omitempty" yaml:"removed,omitempty"`
+	State                string            `json:"state,omitempty" yaml:"state,omitempty"`
+	Transitioning        string            `json:"transitioning,omitempty" yaml:"transitioning,omitempty"`
+	TransitioningMessage string            `json:"transitioningMessage,omitempty" yaml:"transitioningMessage,omitempty"`
+	UUID                 string            `json:"uuid,omitempty" yaml:"uuid,omitempty"`
 }
 
 type FeatureCollection struct {

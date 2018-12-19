@@ -20,17 +20,13 @@ type Interface interface {
 	RESTClient() rest.Interface
 	controller.Starter
 
-	ListenConfigsGetter
-	PublicDomainsGetter
-	FeaturesGetter
+	StorageClassesGetter
 }
 
 type Clients struct {
 	Interface Interface
 
-	ListenConfig ListenConfigClient
-	PublicDomain PublicDomainClient
-	Feature      FeatureClient
+	StorageClass StorageClassClient
 }
 
 type Client struct {
@@ -38,9 +34,7 @@ type Client struct {
 	restClient rest.Interface
 	starters   []controller.Starter
 
-	listenConfigControllers map[string]ListenConfigController
-	publicDomainControllers map[string]PublicDomainController
-	featureControllers      map[string]FeatureController
+	storageClassControllers map[string]StorageClassController
 }
 
 func Factory(ctx context.Context, config rest.Config) (context.Context, controller.Starter, error) {
@@ -76,14 +70,8 @@ func NewClientsFromInterface(iface Interface) *Clients {
 	return &Clients{
 		Interface: iface,
 
-		ListenConfig: &listenConfigClient2{
-			iface: iface.ListenConfigs(""),
-		},
-		PublicDomain: &publicDomainClient2{
-			iface: iface.PublicDomains(""),
-		},
-		Feature: &featureClient2{
-			iface: iface.Features(""),
+		StorageClass: &storageClassClient2{
+			iface: iface.StorageClasses(""),
 		},
 	}
 }
@@ -101,9 +89,7 @@ func NewForConfig(config rest.Config) (Interface, error) {
 	return &Client{
 		restClient: restClient,
 
-		listenConfigControllers: map[string]ListenConfigController{},
-		publicDomainControllers: map[string]PublicDomainController{},
-		featureControllers:      map[string]FeatureController{},
+		storageClassControllers: map[string]StorageClassController{},
 	}, nil
 }
 
@@ -119,39 +105,13 @@ func (c *Client) Start(ctx context.Context, threadiness int) error {
 	return controller.Start(ctx, threadiness, c.starters...)
 }
 
-type ListenConfigsGetter interface {
-	ListenConfigs(namespace string) ListenConfigInterface
+type StorageClassesGetter interface {
+	StorageClasses(namespace string) StorageClassInterface
 }
 
-func (c *Client) ListenConfigs(namespace string) ListenConfigInterface {
-	objectClient := objectclient.NewObjectClient(namespace, c.restClient, &ListenConfigResource, ListenConfigGroupVersionKind, listenConfigFactory{})
-	return &listenConfigClient{
-		ns:           namespace,
-		client:       c,
-		objectClient: objectClient,
-	}
-}
-
-type PublicDomainsGetter interface {
-	PublicDomains(namespace string) PublicDomainInterface
-}
-
-func (c *Client) PublicDomains(namespace string) PublicDomainInterface {
-	objectClient := objectclient.NewObjectClient(namespace, c.restClient, &PublicDomainResource, PublicDomainGroupVersionKind, publicDomainFactory{})
-	return &publicDomainClient{
-		ns:           namespace,
-		client:       c,
-		objectClient: objectClient,
-	}
-}
-
-type FeaturesGetter interface {
-	Features(namespace string) FeatureInterface
-}
-
-func (c *Client) Features(namespace string) FeatureInterface {
-	objectClient := objectclient.NewObjectClient(namespace, c.restClient, &FeatureResource, FeatureGroupVersionKind, featureFactory{})
-	return &featureClient{
+func (c *Client) StorageClasses(namespace string) StorageClassInterface {
+	objectClient := objectclient.NewObjectClient(namespace, c.restClient, &StorageClassResource, StorageClassGroupVersionKind, storageClassFactory{})
+	return &storageClassClient{
 		ns:           namespace,
 		client:       c,
 		objectClient: objectClient,

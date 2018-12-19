@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
 )
@@ -28,6 +29,13 @@ var (
 		Kind: VolumeGroupVersionKind.Kind,
 	}
 )
+
+func NewVolume(namespace, name string, obj Volume) *Volume {
+	obj.APIVersion, obj.Kind = VolumeGroupVersionKind.ToAPIVersionAndKind()
+	obj.Name = name
+	obj.Namespace = namespace
+	return &obj
+}
 
 type VolumeList struct {
 	metav1.TypeMeta `json:",inline"`
@@ -224,8 +232,8 @@ func (s *volumeClient) Watch(opts metav1.ListOptions) (watch.Interface, error) {
 }
 
 // Patch applies the patch and returns the patched deployment.
-func (s *volumeClient) Patch(o *Volume, data []byte, subresources ...string) (*Volume, error) {
-	obj, err := s.objectClient.Patch(o.Name, o, data, subresources...)
+func (s *volumeClient) Patch(o *Volume, patchType types.PatchType, data []byte, subresources ...string) (*Volume, error) {
+	obj, err := s.objectClient.Patch(o.Name, o, patchType, data, subresources...)
 	return obj.(*Volume), err
 }
 
@@ -277,6 +285,7 @@ type VolumeClient interface {
 	Enqueue(namespace, name string)
 
 	Generic() controller.GenericController
+	ObjectClient() *objectclient.ObjectClient
 	Interface() VolumeInterface
 }
 
@@ -295,6 +304,10 @@ func (n *volumeClient2) Interface() VolumeInterface {
 
 func (n *volumeClient2) Generic() controller.GenericController {
 	return n.iface.Controller().Generic()
+}
+
+func (n *volumeClient2) ObjectClient() *objectclient.ObjectClient {
+	return n.Interface().ObjectClient()
 }
 
 func (n *volumeClient2) Enqueue(namespace, name string) {

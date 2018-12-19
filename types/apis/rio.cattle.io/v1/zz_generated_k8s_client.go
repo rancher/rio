@@ -29,6 +29,8 @@ type Interface interface {
 }
 
 type Clients struct {
+	Interface Interface
+
 	Stack           StackClient
 	ExternalService ExternalServiceClient
 	Service         ServiceClient
@@ -81,6 +83,7 @@ func NewClients(config rest.Config) (*Clients, error) {
 
 func NewClientsFromInterface(iface Interface) *Clients {
 	return &Clients{
+		Interface: iface,
 
 		Stack: &stackClient2{
 			iface: iface.Stacks(""),
