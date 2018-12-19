@@ -27,6 +27,8 @@ type Interface interface {
 }
 
 type Clients struct {
+	Interface Interface
+
 	Gateway         GatewayClient
 	VirtualService  VirtualServiceClient
 	DestinationRule DestinationRuleClient
@@ -75,6 +77,7 @@ func NewClients(config rest.Config) (*Clients, error) {
 
 func NewClientsFromInterface(iface Interface) *Clients {
 	return &Clients{
+		Interface: iface,
 
 		Gateway: &gatewayClient2{
 			iface: iface.Gateways(""),

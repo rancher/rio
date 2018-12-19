@@ -5,27 +5,33 @@ import (
 )
 
 const (
-	ExternalServiceType           = "externalService"
-	ExternalServiceFieldCreated   = "created"
-	ExternalServiceFieldLabels    = "labels"
-	ExternalServiceFieldName      = "name"
-	ExternalServiceFieldProjectID = "projectId"
-	ExternalServiceFieldRemoved   = "removed"
-	ExternalServiceFieldStackID   = "stackId"
-	ExternalServiceFieldTarget    = "target"
-	ExternalServiceFieldUUID      = "uuid"
+	ExternalServiceType                      = "externalService"
+	ExternalServiceFieldCreated              = "created"
+	ExternalServiceFieldLabels               = "labels"
+	ExternalServiceFieldName                 = "name"
+	ExternalServiceFieldProjectID            = "projectId"
+	ExternalServiceFieldRemoved              = "removed"
+	ExternalServiceFieldStackID              = "stackId"
+	ExternalServiceFieldState                = "state"
+	ExternalServiceFieldTarget               = "target"
+	ExternalServiceFieldTransitioning        = "transitioning"
+	ExternalServiceFieldTransitioningMessage = "transitioningMessage"
+	ExternalServiceFieldUUID                 = "uuid"
 )
 
 type ExternalService struct {
 	types.Resource
-	Created   string            `json:"created,omitempty" yaml:"created,omitempty"`
-	Labels    map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
-	Name      string            `json:"name,omitempty" yaml:"name,omitempty"`
-	ProjectID string            `json:"projectId,omitempty" yaml:"projectId,omitempty"`
-	Removed   string            `json:"removed,omitempty" yaml:"removed,omitempty"`
-	StackID   string            `json:"stackId,omitempty" yaml:"stackId,omitempty"`
-	Target    string            `json:"target,omitempty" yaml:"target,omitempty"`
-	UUID      string            `json:"uuid,omitempty" yaml:"uuid,omitempty"`
+	Created              string            `json:"created,omitempty" yaml:"created,omitempty"`
+	Labels               map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
+	Name                 string            `json:"name,omitempty" yaml:"name,omitempty"`
+	ProjectID            string            `json:"projectId,omitempty" yaml:"projectId,omitempty"`
+	Removed              string            `json:"removed,omitempty" yaml:"removed,omitempty"`
+	StackID              string            `json:"stackId,omitempty" yaml:"stackId,omitempty"`
+	State                string            `json:"state,omitempty" yaml:"state,omitempty"`
+	Target               string            `json:"target,omitempty" yaml:"target,omitempty"`
+	Transitioning        string            `json:"transitioning,omitempty" yaml:"transitioning,omitempty"`
+	TransitioningMessage string            `json:"transitioningMessage,omitempty" yaml:"transitioningMessage,omitempty"`
+	UUID                 string            `json:"uuid,omitempty" yaml:"uuid,omitempty"`
 }
 
 type ExternalServiceCollection struct {

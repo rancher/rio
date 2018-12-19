@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
 )
@@ -28,6 +29,13 @@ var (
 		Kind: StackGroupVersionKind.Kind,
 	}
 )
+
+func NewStack(namespace, name string, obj Stack) *Stack {
+	obj.APIVersion, obj.Kind = StackGroupVersionKind.ToAPIVersionAndKind()
+	obj.Name = name
+	obj.Namespace = namespace
+	return &obj
+}
 
 type StackList struct {
 	metav1.TypeMeta `json:",inline"`
@@ -224,8 +232,8 @@ func (s *stackClient) Watch(opts metav1.ListOptions) (watch.Interface, error) {
 }
 
 // Patch applies the patch and returns the patched deployment.
-func (s *stackClient) Patch(o *Stack, data []byte, subresources ...string) (*Stack, error) {
-	obj, err := s.objectClient.Patch(o.Name, o, data, subresources...)
+func (s *stackClient) Patch(o *Stack, patchType types.PatchType, data []byte, subresources ...string) (*Stack, error) {
+	obj, err := s.objectClient.Patch(o.Name, o, patchType, data, subresources...)
 	return obj.(*Stack), err
 }
 
@@ -277,6 +285,7 @@ type StackClient interface {
 	Enqueue(namespace, name string)
 
 	Generic() controller.GenericController
+	ObjectClient() *objectclient.ObjectClient
 	Interface() StackInterface
 }
 
@@ -295,6 +304,10 @@ func (n *stackClient2) Interface() StackInterface {
 
 func (n *stackClient2) Generic() controller.GenericController {
 	return n.iface.Controller().Generic()
+}
+
+func (n *stackClient2) ObjectClient() *objectclient.ObjectClient {
+	return n.Interface().ObjectClient()
 }
 
 func (n *stackClient2) Enqueue(namespace, name string) {

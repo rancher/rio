@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
 )
@@ -28,6 +29,13 @@ var (
 		Kind: RouteSetGroupVersionKind.Kind,
 	}
 )
+
+func NewRouteSet(namespace, name string, obj RouteSet) *RouteSet {
+	obj.APIVersion, obj.Kind = RouteSetGroupVersionKind.ToAPIVersionAndKind()
+	obj.Name = name
+	obj.Namespace = namespace
+	return &obj
+}
 
 type RouteSetList struct {
 	metav1.TypeMeta `json:",inline"`
@@ -224,8 +232,8 @@ func (s *routeSetClient) Watch(opts metav1.ListOptions) (watch.Interface, error)
 }
 
 // Patch applies the patch and returns the patched deployment.
-func (s *routeSetClient) Patch(o *RouteSet, data []byte, subresources ...string) (*RouteSet, error) {
-	obj, err := s.objectClient.Patch(o.Name, o, data, subresources...)
+func (s *routeSetClient) Patch(o *RouteSet, patchType types.PatchType, data []byte, subresources ...string) (*RouteSet, error) {
+	obj, err := s.objectClient.Patch(o.Name, o, patchType, data, subresources...)
 	return obj.(*RouteSet), err
 }
 
@@ -277,6 +285,7 @@ type RouteSetClient interface {
 	Enqueue(namespace, name string)
 
 	Generic() controller.GenericController
+	ObjectClient() *objectclient.ObjectClient
 	Interface() RouteSetInterface
 }
 
@@ -295,6 +304,10 @@ func (n *routeSetClient2) Interface() RouteSetInterface {
 
 func (n *routeSetClient2) Generic() controller.GenericController {
 	return n.iface.Controller().Generic()
+}
+
+func (n *routeSetClient2) ObjectClient() *objectclient.ObjectClient {
+	return n.Interface().ObjectClient()
 }
 
 func (n *routeSetClient2) Enqueue(namespace, name string) {
