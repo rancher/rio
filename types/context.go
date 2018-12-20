@@ -3,9 +3,8 @@ package types
 import (
 	"context"
 
-	"github.com/rancher/norman/controller"
-
 	"github.com/rancher/norman"
+	"github.com/rancher/norman/controller"
 	"github.com/rancher/rio/types/apis/apiextensions.k8s.io/v1beta1"
 	cmv1alpha1 "github.com/rancher/rio/types/apis/certmanager.k8s.io/v1alpha1"
 	"github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"

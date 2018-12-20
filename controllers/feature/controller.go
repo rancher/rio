@@ -18,6 +18,8 @@ const (
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
+	rContext.Global.Feature.Generic().SetThreadinessOverride(1)
+
 	f := &featureHandler{
 		ctx:            ctx,
 		featuresClient: rContext.Global.Feature,
@@ -79,6 +81,12 @@ func (f *featureHandler) onChange(obj *v1.Feature) (runtime.Object, error) {
 		return obj, nil
 	}
 
+	if obj.Spec.Enabled {
+		if err := f.checkDeps(obj); err != nil {
+			return obj, err
+		}
+	}
+
 	feature := features.GetFeature(obj.Name)
 	if feature == nil {
 		return obj, nil
@@ -95,8 +103,33 @@ func (f *featureHandler) onChange(obj *v1.Feature) (runtime.Object, error) {
 	return obj, feature.Changed(obj)
 }
 
+func (f *featureHandler) checkDeps(obj *v1.Feature) error {
+	for _, depName := range obj.Spec.Requires {
+		dep, err := f.featuresCache.Get(obj.Namespace, depName)
+		if err != nil {
+			return err
+		}
+
+		if !dep.Spec.Enabled {
+			dep = dep.DeepCopy()
+			dep.Spec.Enabled = true
+			dep, err = f.featuresClient.Update(dep)
+			if err != nil {
+				return err
+			}
+		}
+
+		if _, err := f.onChange(dep); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (f *featureHandler) start(obj *v1.Feature, feature features.Feature) error {
 	if f.isEnabled(obj.Name) {
+		v1.FeatureConditionEnabled.True(obj)
 		return nil
 	}
 
