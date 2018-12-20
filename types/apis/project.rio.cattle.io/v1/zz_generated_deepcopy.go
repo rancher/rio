@@ -85,6 +85,11 @@ func (in *FeatureSpec) DeepCopyInto(out *FeatureSpec) {
 			(*out)[key] = val
 		}
 	}
+	if in.Requires != nil {
+		in, out := &in.Requires, &out.Requires
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

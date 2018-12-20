@@ -6,6 +6,7 @@ const (
 	FeatureSpecFieldDescription = "description"
 	FeatureSpecFieldEnabled     = "enable"
 	FeatureSpecFieldQuestions   = "questions"
+	FeatureSpecFieldRequires    = "features"
 )
 
 type FeatureSpec struct {
@@ -13,4 +14,5 @@ type FeatureSpec struct {
 	Description string            `json:"description,omitempty" yaml:"description,omitempty"`
 	Enabled     bool              `json:"enable,omitempty" yaml:"enable,omitempty"`
 	Questions   []Question        `json:"questions,omitempty" yaml:"questions,omitempty"`
+	Requires    []string          `json:"features,omitempty" yaml:"features,omitempty"`
 }

@@ -15,6 +15,7 @@ const (
 	FeatureFieldNamespace            = "namespace"
 	FeatureFieldQuestions            = "questions"
 	FeatureFieldRemoved              = "removed"
+	FeatureFieldRequires             = "features"
 	FeatureFieldState                = "state"
 	FeatureFieldTransitioning        = "transitioning"
 	FeatureFieldTransitioningMessage = "transitioningMessage"
@@ -32,6 +33,7 @@ type Feature struct {
 	Namespace            string            `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 	Questions            []Question        `json:"questions,omitempty" yaml:"questions,omitempty"`
 	Removed              string            `json:"removed,omitempty" yaml:"removed,omitempty"`
+	Requires             []string          `json:"features,omitempty" yaml:"features,omitempty"`
 	State                string            `json:"state,omitempty" yaml:"state,omitempty"`
 	Transitioning        string            `json:"transitioning,omitempty" yaml:"transitioning,omitempty"`
 	TransitioningMessage string            `json:"transitioningMessage,omitempty" yaml:"transitioningMessage,omitempty"`
