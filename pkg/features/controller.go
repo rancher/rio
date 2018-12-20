@@ -3,6 +3,8 @@ package features
 import (
 	"context"
 
+	"github.com/rancher/norman/types/slice"
+
 	"github.com/rancher/norman/controller"
 	ntypes "github.com/rancher/norman/types"
 	"github.com/rancher/rio/pkg/systemstack"
@@ -36,6 +38,12 @@ func (f *FeatureController) Register() error {
 		}
 
 		f.FeatureSpec.Questions = append(f.FeatureSpec.Questions, qs...)
+	}
+
+	if len(f.SystemStacks) > 0 {
+		if !slice.ContainsString(f.FeatureSpec.Requires, "stack") {
+			f.FeatureSpec.Requires = append(f.FeatureSpec.Requires, "stack")
+		}
 	}
 
 	Register(f)

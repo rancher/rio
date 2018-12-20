@@ -26,6 +26,7 @@ type FeatureSpec struct {
 	Enabled     bool              `json:"enable,omitempty"`
 	Questions   []v3.Question     `json:"questions,omitempty"`
 	Answers     map[string]string `json:"answers,omitempty"`
+	Requires    []string          `json:"features,omitempty"`
 }
 
 type FeatureStatus struct {
