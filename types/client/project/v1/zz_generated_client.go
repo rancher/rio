@@ -9,6 +9,7 @@ type Client struct {
 
 	ListenConfig ListenConfigOperations
 	Node         NodeOperations
+	Setting      SettingOperations
 	Pod          PodOperations
 	Project      ProjectOperations
 	PublicDomain PublicDomainOperations
@@ -27,6 +28,7 @@ func NewClient(opts *clientbase.ClientOpts) (*Client, error) {
 
 	client.ListenConfig = newListenConfigClient(client)
 	client.Node = newNodeClient(client)
+	client.Setting = newSettingClient(client)
 	client.Pod = newPodClient(client)
 	client.Project = newProjectClient(client)
 	client.PublicDomain = newPublicDomainClient(client)
