@@ -3,6 +3,8 @@ package stackobject
 import (
 	"context"
 
+	"github.com/rancher/rio/features/routing/pkg/istio/config"
+
 	"github.com/rancher/norman/controller"
 	"github.com/rancher/norman/lifecycle"
 	"github.com/rancher/norman/objectclient"
@@ -28,14 +30,16 @@ type Controller struct {
 	name           string
 	stacksCache    riov1.StackClientCache
 	namespaceCache v1.NamespaceClientCache
+	injector       []config.IstioInjector
 }
 
-func NewGeneratingController(ctx context.Context, rContext *types.Context, name string, client ClientAccessor) *Controller {
+func NewGeneratingController(ctx context.Context, rContext *types.Context, name string, client ClientAccessor, injector ...config.IstioInjector) *Controller {
 	sc := &Controller{
 		name:           name,
 		Processor:      objectset.NewProcessor(name),
 		stacksCache:    rContext.Rio.Stack.Cache(),
 		namespaceCache: rContext.Core.Namespace.Cache(),
+		injector:       injector,
 	}
 
 	lcName := name + "-object-controller"
@@ -69,7 +73,13 @@ func (o *Controller) Updated(obj runtime.Object) (runtime.Object, error) {
 		os.AddErr(err)
 	}
 
-	err = o.Processor.NewDesiredSet(obj, os).Apply()
+	desireset := o.Processor.NewDesiredSet(obj, os)
+	if !stack.Spec.DisableMesh {
+		for _, i := range o.injector {
+			desireset.AddInjector(i.Inject)
+		}
+	}
+	err = desireset.Apply()
 	if err != nil {
 		riov1.StackConditionDeployed.False(obj)
 		riov1.StackConditionDeployed.ReasonAndMessageFromError(obj, err)

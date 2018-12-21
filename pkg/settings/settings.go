@@ -20,6 +20,8 @@ const (
 	RioWildcardType       = "RIO_WILDCARD_CERT_TYPE"
 	PublicDomainType      = "RIO_PUBLICDOMAIN_CERT_TYPE"
 	CertManagerImageType  = "CERT_MANAGER_IMAGE"
+	IstionConfigMapName   = "mesh"
+	IstionConfigMapKey    = "content"
 )
 
 var (

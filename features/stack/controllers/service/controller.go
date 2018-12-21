@@ -4,7 +4,9 @@ import (
 	"context"
 
 	"github.com/rancher/norman/pkg/objectset"
+	"github.com/rancher/rio/features/routing/pkg/istio/config"
 	"github.com/rancher/rio/features/stack/controllers/service/populate"
+	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
@@ -13,7 +15,13 @@ import (
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
-	c := stackobject.NewGeneratingController(ctx, rContext, "stack-service", rContext.Rio.Service)
+	cf := config.NewConfigFactory(ctx, rContext.Core.ConfigMap.Interface(),
+		settings.IstioExternalLBNamespace,
+		settings.IstionConfigMapName,
+		settings.IstionConfigMapKey)
+	injector := config.NewIstioInjector(cf)
+
+	c := stackobject.NewGeneratingController(ctx, rContext, "stack-service", rContext.Rio.Service, *injector)
 	c.Processor.Client(
 		rContext.RBAC.Role,
 		rContext.RBAC.RoleBinding,
