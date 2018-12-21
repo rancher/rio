@@ -2,7 +2,6 @@ package features
 
 import (
 	"context"
-	"sort"
 
 	"github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
 )
@@ -17,7 +16,6 @@ type Feature interface {
 	Stop() error
 	Spec() v1.FeatureSpec
 	Name() string
-	Priority() int
 }
 
 func Register(feature Feature) {
@@ -33,9 +31,6 @@ func GetFeatures() []Feature {
 	for _, f := range features {
 		result = append(result, f)
 	}
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].Priority() > result[j].Priority()
-	})
 
 	return result
 }
