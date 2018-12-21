@@ -21,6 +21,7 @@ type Interface interface {
 	controller.Starter
 
 	ListenConfigsGetter
+	SettingsGetter
 	PublicDomainsGetter
 	FeaturesGetter
 }
@@ -29,6 +30,7 @@ type Clients struct {
 	Interface Interface
 
 	ListenConfig ListenConfigClient
+	Setting      SettingClient
 	PublicDomain PublicDomainClient
 	Feature      FeatureClient
 }
@@ -39,6 +41,7 @@ type Client struct {
 	starters   []controller.Starter
 
 	listenConfigControllers map[string]ListenConfigController
+	settingControllers      map[string]SettingController
 	publicDomainControllers map[string]PublicDomainController
 	featureControllers      map[string]FeatureController
 }
@@ -79,6 +82,9 @@ func NewClientsFromInterface(iface Interface) *Clients {
 		ListenConfig: &listenConfigClient2{
 			iface: iface.ListenConfigs(""),
 		},
+		Setting: &settingClient2{
+			iface: iface.Settings(""),
+		},
 		PublicDomain: &publicDomainClient2{
 			iface: iface.PublicDomains(""),
 		},
@@ -102,6 +108,7 @@ func NewForConfig(config rest.Config) (Interface, error) {
 		restClient: restClient,
 
 		listenConfigControllers: map[string]ListenConfigController{},
+		settingControllers:      map[string]SettingController{},
 		publicDomainControllers: map[string]PublicDomainController{},
 		featureControllers:      map[string]FeatureController{},
 	}, nil
@@ -126,6 +133,19 @@ type ListenConfigsGetter interface {
 func (c *Client) ListenConfigs(namespace string) ListenConfigInterface {
 	objectClient := objectclient.NewObjectClient(namespace, c.restClient, &ListenConfigResource, ListenConfigGroupVersionKind, listenConfigFactory{})
 	return &listenConfigClient{
+		ns:           namespace,
+		client:       c,
+		objectClient: objectClient,
+	}
+}
+
+type SettingsGetter interface {
+	Settings(namespace string) SettingInterface
+}
+
+func (c *Client) Settings(namespace string) SettingInterface {
+	objectClient := objectclient.NewObjectClient(namespace, c.restClient, &SettingResource, SettingGroupVersionKind, settingFactory{})
+	return &settingClient{
 		ns:           namespace,
 		client:       c,
 		objectClient: objectClient,
