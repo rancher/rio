@@ -14,7 +14,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	feature := &features.FeatureController{
 		FeatureName: "nfs",
 		FeatureSpec: v1.FeatureSpec{
-			Description: "Enable nfs volume feature",
+			Description: "NFS volume driver",
 		},
 		SystemStacks: []*systemstack.SystemStack{
 			systemstack.NewSystemStack(rContext.Rio.Stack, "nfs", riov1.StackSpec{

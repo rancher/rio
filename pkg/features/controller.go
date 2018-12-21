@@ -15,15 +15,16 @@ import (
 type ControllerRegister func(ctx context.Context, rContext *types.Context) error
 
 type FeatureController struct {
-	FeatureName  string
-	FeatureSpec  v1.FeatureSpec
-	Controllers  []ControllerRegister
-	OnStop       func() error
-	OnChange     func(*v1.Feature) error
-	OnStart      func(*v1.Feature) error
-	SystemStacks []*systemstack.SystemStack
-	FixedAnswers map[string]string
-	registered   bool
+	FeatureName    string
+	FeatureSpec    v1.FeatureSpec
+	Controllers    []ControllerRegister
+	OnStop         func() error
+	OnChange       func(*v1.Feature) error
+	OnStart        func(*v1.Feature) error
+	SystemStacks   []*systemstack.SystemStack
+	FixedAnswers   map[string]string
+	PriorityWeight int
+	registered     bool
 }
 
 func (f *FeatureController) Register() error {
@@ -119,4 +120,8 @@ func (f *FeatureController) Start(ctx context.Context, feature *v1.Feature) erro
 	}
 
 	return nil
+}
+
+func (f *FeatureController) Priority() int {
+	return f.PriorityWeight
 }

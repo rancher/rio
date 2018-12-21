@@ -33,6 +33,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			stack.Register,
 			volume.Register,
 		},
+		PriorityWeight: 100,
 	}
 
 	return feature.Register()

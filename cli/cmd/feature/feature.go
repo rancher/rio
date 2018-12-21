@@ -5,8 +5,10 @@ import (
 
 	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/cli/cmd/project"
+	"github.com/rancher/rio/cli/cmd/up"
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/table"
 	"github.com/rancher/rio/cli/pkg/up/questions"
 	"github.com/rancher/rio/pkg/settings"
@@ -85,20 +87,30 @@ func (d *Disable) Run(ctx *clicontext.CLIContext) error {
 	}
 
 	ctx.ProjectName = settings.RioSystemNamespace
-	return flipEnableFlag(ctx, ctx.CLI.Args()[0], false)
+	return flipEnableFlag(ctx, ctx.CLI.Args()[0], nil, false)
 }
 
-type Enable struct{}
+type Enable struct {
+	A_Answers string `desc:"Answer file in with key/value pairs in yaml or json"`
+}
 
 func (e *Enable) Run(ctx *clicontext.CLIContext) error {
 	if len(ctx.CLI.Args()) != 1 {
 		return fmt.Errorf("feature name is required")
 	}
 	ctx.ProjectName = settings.RioSystemNamespace
-	return flipEnableFlag(ctx, ctx.CLI.Args()[0], true)
+	resource, err := lookup.Lookup(ctx, ctx.CLI.Args()[0], client.FeatureType)
+	if err != nil {
+		return err
+	}
+	answers, err := up.ReadAnswers(e.A_Answers)
+	if err != nil {
+		return fmt.Errorf("failed to parse answer file [%s]: %v", e.A_Answers, err)
+	}
+	return flipEnableFlag(ctx, resource.ID, answers, true)
 }
 
-func flipEnableFlag(ctx *clicontext.CLIContext, featureName string, enable bool) error {
+func flipEnableFlag(ctx *clicontext.CLIContext, featureID string, answers map[string]string, enable bool) error {
 	cluster, err := ctx.Cluster()
 	if err != nil {
 		return err
@@ -107,21 +119,31 @@ func flipEnableFlag(ctx *clicontext.CLIContext, featureName string, enable bool)
 	if err != nil {
 		return err
 	}
-	feature, err := spaceClient.Feature.ByID(featureName)
+	feature, err := spaceClient.Feature.ByID(featureID)
 	if err != nil {
 		return err
 	}
 	feature.Enabled = enable
+
 	if enable {
-		qs, err := questions.NewQuestions(toQuestions(feature.Questions), feature.Answers, true)
-		if err != nil {
-			return err
+		if len(answers) == 0 {
+			qs, err := questions.NewQuestions(toQuestions(feature.Questions), feature.Answers, true)
+			if err != nil {
+				return err
+			}
+			answers, err := qs.Ask()
+			if err != nil {
+				return err
+			}
+			feature.Answers = answers
+		} else {
+			if feature.Answers == nil {
+				feature.Answers = map[string]string{}
+			}
+			for k, v := range answers {
+				feature.Answers[k] = v
+			}
 		}
-		answers, err := qs.Ask()
-		if err != nil {
-			return err
-		}
-		feature.Answers = answers
 	}
 	_, err = spaceClient.Feature.Replace(feature)
 	if err != nil {

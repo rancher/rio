@@ -15,7 +15,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	feature := &features.FeatureController{
 		FeatureName: "monitoring",
 		FeatureSpec: v1.FeatureSpec{
-			Description: "Enable monitoring feature",
+			Description: "Monitoring and Telemetry",
 		},
 		SystemStacks: []*systemstack.SystemStack{
 			systemstack.NewSystemStack(rContext.Rio.Stack, "istio-telemetry", riov1.StackSpec{

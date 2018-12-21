@@ -180,7 +180,7 @@ func (g *Controller) sync(svc *v1.Service) (runtime.Object, error) {
 		return nil, err
 	}
 
-	g.featureController.Enqueue("", "letsencrypt")
+	g.featureController.Enqueue(settings.RioSystemNamespace, "letsencrypt")
 	return nil, nil
 }
 

@@ -18,10 +18,6 @@ func Istio(publicdomains []*projectv1.PublicDomain, secret *v1.Secret) *objectse
 		output.AddInput(pd)
 	}
 
-	if err := populateStack(output); err != nil {
-		output.AddErr(err)
-	}
-
 	populateGateway(secret, publicdomains, output)
 
 	return output

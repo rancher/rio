@@ -5,6 +5,7 @@ import (
 
 	"github.com/rancher/norman/pkg/objectset"
 	"github.com/rancher/rio/features/routing/controllers/routeset/populate"
+	"github.com/rancher/rio/features/routing/controllers/util"
 	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
@@ -30,6 +31,14 @@ type routeSetHandler struct {
 }
 
 func (r *routeSetHandler) populate(obj runtime.Object, stack *v1.Stack, os *objectset.ObjectSet) error {
+	if stack != nil && stack.Spec.DisableMesh {
+		return nil
+	}
+
+	if err := util.WaitForClusterDomain(); err != nil {
+		return err
+	}
+
 	routeSet := obj.(*v1.RouteSet)
 	externalServiceMap := map[string]*v1.ExternalService{}
 

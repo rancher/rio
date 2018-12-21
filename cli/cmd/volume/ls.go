@@ -65,10 +65,14 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 	})
 
 	for i, service := range volumes.Data {
+		stack := stackByID[service.StackID]
+		if stack == nil {
+			continue
+		}
 		writer.Write(&Data{
 			ID:     service.ID,
 			Volume: volumes.Data[i],
-			Stack:  stackByID[service.StackID],
+			Stack:  stack,
 		})
 	}
 
