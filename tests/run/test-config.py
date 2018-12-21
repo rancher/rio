@@ -73,7 +73,7 @@ def kube_chk(stack, service_name):
 
 def test_content(stack):
     config_name1 = config_setup(stack, "1foo=1bar", "1foo2=1bar2")
-    config_name2 = config_setup(stack, "2foo=2bar", "2foo1=2bar2")
+    config_setup(stack, "2foo=2bar", "2foo1=2bar2")
 
     expect = [config_name1]
     expect.sort()
