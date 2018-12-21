@@ -13,6 +13,12 @@ import (
 	"github.com/rancher/rio/types/client/rio/v1"
 )
 
+var SupportedProtocol = map[string]struct{}{
+	"http":  {},
+	"http2": {},
+	"grpc":  {},
+}
+
 func New(store types.Store) types.Store {
 	return &transform.Store{
 		Store:       store,
@@ -47,7 +53,7 @@ func addEndpoint(apiContext *types.APIContext, schema *types.Schema, data map[st
 	expose := false
 	for _, ports := range convert.ToMapSlice(data[client.ServiceFieldPortBindings]) {
 		proto, _ := ports[client.PortBindingFieldProtocol].(string)
-		if proto != "http" {
+		if _, ok := SupportedProtocol[proto]; !ok {
 			continue
 		}
 		expose = true

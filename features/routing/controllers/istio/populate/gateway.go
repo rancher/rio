@@ -25,14 +25,32 @@ func populateGateway(secret *v1.Secret, publicDomains []*riov1.PublicDomain, out
 
 	// http port
 	port, _ := strconv.ParseInt(settings.DefaultHTTPOpenPort.Get(), 10, 0)
-	gws.Servers = append(gws.Servers, v1alpha3.Server{
-		Port: v1alpha3.Port{
-			Protocol: "HTTP",
-			Number:   int(port),
-			Name:     fmt.Sprintf("%v-%v", "http", port),
+	gws.Servers = append(gws.Servers,
+		v1alpha3.Server{
+			Port: v1alpha3.Port{
+				Protocol: "HTTP",
+				Number:   int(port),
+				Name:     fmt.Sprintf("%v-%v", "http", port),
+			},
+			Hosts: []string{"*"},
 		},
-		Hosts: []string{"*"},
-	})
+		v1alpha3.Server{
+			Port: v1alpha3.Port{
+				Protocol: "HTTP2",
+				Number:   int(port),
+				Name:     fmt.Sprintf("%v-%v", "http2", port),
+			},
+			Hosts: []string{"*"},
+		},
+		v1alpha3.Server{
+			Port: v1alpha3.Port{
+				Protocol: "GRPC",
+				Number:   int(port),
+				Name:     fmt.Sprintf("%v-%v", "grpc", port),
+			},
+			Hosts: []string{"*"},
+		},
+	)
 
 	// https port
 	httpsPort, _ := strconv.ParseInt(settings.DefaultHTTPSOpenPort.Get(), 10, 0)

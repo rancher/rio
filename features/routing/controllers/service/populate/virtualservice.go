@@ -10,6 +10,7 @@ import (
 	"github.com/knative/pkg/apis/istio/common/v1alpha1"
 	"github.com/knative/pkg/apis/istio/v1alpha3"
 	"github.com/rancher/norman/pkg/objectset"
+	"github.com/rancher/rio/api/service"
 	"github.com/rancher/rio/features/routing/pkg/domains"
 	"github.com/rancher/rio/features/stack/controllers/service/populate/containerlist"
 	"github.com/rancher/rio/features/stack/controllers/service/populate/servicelabels"
@@ -98,7 +99,7 @@ func vsRoutes(publicPorts map[string]bool, service *v1.Service, dests []dest) ([
 func newRoute(externalGW string, published bool, portBinding *v1.PortBinding, dests []dest, appendHttps bool) (string, v1alpha3.HTTPRoute) {
 	route := v1alpha3.HTTPRoute{}
 
-	if portBinding.Protocol != "http" && portBinding.Protocol != "https" {
+	if _, ok := service.SupportedProtocol[portBinding.Protocol]; !ok {
 		return "", route
 	}
 
