@@ -14,7 +14,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	feature := &features.FeatureController{
 		FeatureName: "localstorage",
 		FeatureSpec: v1.FeatureSpec{
-			Description: "Enable local storage feature",
+			Description: "Local storage driver",
 		},
 		SystemStacks: []*systemstack.SystemStack{
 			systemstack.NewSystemStack(rContext.Rio.Stack, "localstorage", riov1.StackSpec{

@@ -229,7 +229,6 @@ func vsFromSpec(stack *v1.Stack, name, namespace string, service *v1.Service, de
 		Gateways: []string{privateGw},
 		Http:     routes,
 	}
-	vs.Spec = spec
 
 	if external && len(publicPorts) > 0 {
 		externalGW := domains.GetPublicGateway()
@@ -251,6 +250,7 @@ func vsFromSpec(stack *v1.Stack, name, namespace string, service *v1.Service, de
 	if service.Annotations[PublicDomainAnnotation] != "" {
 		spec.Hosts = append(spec.Hosts, strings.Split(service.Annotations[PublicDomainAnnotation], ",")...)
 	}
+	vs.Spec = spec
 
 	return vs
 }

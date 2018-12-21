@@ -69,6 +69,7 @@ func NewConfig(dataDir string, inCluster bool) (*norman.Config, error) {
 				projectclient.ListenConfigType,
 				projectclient.PublicDomainType,
 				projectclient.FeatureType,
+				projectclient.SettingType,
 			},
 		},
 

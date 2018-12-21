@@ -5,6 +5,7 @@ import (
 
 	"github.com/rancher/norman/pkg/objectset"
 	"github.com/rancher/rio/features/routing/controllers/service/populate"
+	"github.com/rancher/rio/features/routing/controllers/util"
 	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
@@ -35,6 +36,14 @@ type serviceHandler struct {
 }
 
 func (s *serviceHandler) populate(obj runtime.Object, stack *riov1.Stack, os *objectset.ObjectSet) error {
+	if stack != nil && stack.Spec.DisableMesh {
+		return nil
+	}
+
+	if err := util.WaitForClusterDomain(); err != nil {
+		return err
+	}
+
 	service := obj.(*riov1.Service)
 	services, err := s.serviceCache.List(service.Namespace, labels.Everything())
 	if err != nil {

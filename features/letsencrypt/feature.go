@@ -20,7 +20,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	feature := &features.FeatureController{
 		FeatureName: "letsencrypt",
 		FeatureSpec: v1.FeatureSpec{
-			Description: "Enable let's encrypt feature",
+			Description: "Let's Encrypt",
 			Enabled:     true,
 			Questions: []v3.Question{
 				{

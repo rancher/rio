@@ -14,7 +14,7 @@ var (
 	stackContents = string(stacks.MustAsset("stacks/istio-stack.yaml"))
 )
 
-func populateStack(output *objectset.ObjectSet) error {
+func PopulateStack(output *objectset.ObjectSet) error {
 	ports := []string{
 		fmt.Sprintf("%v:%v", settings.DefaultHTTPOpenPort.Get(), settings.DefaultHTTPOpenPort.Get()),
 		fmt.Sprintf("%v:%v", settings.DefaultHTTPSOpenPort.Get(), settings.DefaultHTTPSOpenPort.Get()),

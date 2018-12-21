@@ -30,9 +30,10 @@ var trigger = []changeset.Key{
 
 func Register(ctx context.Context, rContext *types.Context) error {
 	s := &istioDeployController{
-		template: objectset.NewProcessor("istio-gateway").
-			Client(rContext.Rio.Stack,
-				rContext.Networking.Gateway),
+		gatewayTemplate: objectset.NewProcessor("istio-stack").
+			Client(rContext.Networking.Gateway),
+		stackTemplate: objectset.NewProcessor("istio-gateway").
+			Client(rContext.Rio.Stack),
 		publicdomainLister: rContext.Global.PublicDomain.Cache(),
 		secretsLister:      rContext.Core.Secret.Cache(),
 	}
@@ -62,7 +63,8 @@ func resolve(namespace, name string, obj runtime.Object) ([]changeset.Key, error
 }
 
 type istioDeployController struct {
-	template           objectset.Processor
+	gatewayTemplate    objectset.Processor
+	stackTemplate      objectset.Processor
 	publicdomainLister projectv1.PublicDomainClientCache
 	secretsLister      corev1.SecretClientCache
 }
@@ -70,6 +72,14 @@ type istioDeployController struct {
 func (i *istioDeployController) sync(key string, obj *v1alpha3.VirtualService) (runtime.Object, error) {
 	if key != all {
 		return nil, nil
+	}
+
+	output := objectset.NewObjectSet()
+	if err := populate.PopulateStack(output); err != nil {
+		output.AddErr(err)
+	}
+	if err := i.stackTemplate.NewDesiredSet(nil, output).Apply(); err != nil {
+		return nil, err
 	}
 
 	pds, err := i.publicdomainLister.List("", labels.Everything())
@@ -83,5 +93,5 @@ func (i *istioDeployController) sync(key string, obj *v1alpha3.VirtualService) (
 	}
 
 	os := populate.Istio(pds, secret)
-	return nil, i.template.NewDesiredSet(nil, os).Apply()
+	return nil, i.gatewayTemplate.NewDesiredSet(nil, os).Apply()
 }

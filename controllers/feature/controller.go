@@ -3,6 +3,7 @@ package feature
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/rancher/norman/pkg/objectset"
 	"github.com/rancher/rio/pkg/features"
@@ -105,11 +106,7 @@ func (f *featureHandler) onChange(obj *v1.Feature) (runtime.Object, error) {
 
 func (f *featureHandler) checkDeps(obj *v1.Feature) error {
 	for _, depName := range obj.Spec.Requires {
-		dep, err := f.featuresCache.Get(obj.Namespace, depName)
-		if err != nil {
-			return err
-		}
-
+		dep, err := f.getDepFeature(depName, obj.Namespace)
 		if !dep.Spec.Enabled {
 			dep = dep.DeepCopy()
 			dep.Spec.Enabled = true
@@ -174,4 +171,19 @@ func (f *featureHandler) isEnabled(name string) bool {
 	defer f.Unlock()
 	_, ok := f.featureState[name]
 	return ok
+}
+
+func (f *featureHandler) getDepFeature(depName, namespace string) (*v1.Feature, error) {
+	start := time.Millisecond * 250
+	var feature *v1.Feature
+	var err error
+	for i := 0; i < 5; i++ {
+		feature, err = f.featuresCache.Get(namespace, depName)
+		if err == nil {
+			break
+		}
+		time.Sleep(start)
+		start *= 2
+	}
+	return feature, err
 }

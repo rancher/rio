@@ -81,7 +81,7 @@ func (u *Up) doUp(ctx *clicontext.CLIContext, file, stack string) error {
 		return err
 	}
 
-	answers, err := readAnswers(u.A_Answers)
+	answers, err := ReadAnswers(u.A_Answers)
 	if err != nil {
 		return fmt.Errorf("failed to parse answer file [%s]: %v", u.A_Answers, err)
 	}
@@ -97,7 +97,7 @@ func (u *Up) doUp(ctx *clicontext.CLIContext, file, stack string) error {
 	})
 }
 
-func readAnswers(answersFile string) (map[string]string, error) {
+func ReadAnswers(answersFile string) (map[string]string, error) {
 	content, err := util.ReadFile(answersFile)
 	if os.IsNotExist(err) {
 		return nil, nil
