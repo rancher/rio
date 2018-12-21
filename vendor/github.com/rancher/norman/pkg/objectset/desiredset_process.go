@@ -59,7 +59,7 @@ func (o *DesiredSet) process(inputID, debugID string, set labels.Selector, gvk s
 			o.err(errors.Wrapf(err, "failed to create %s %s for %s", k, gvk, debugID))
 			continue
 		}
-		logrus.Infof("DesiredSet - Created %s %s for %s", gvk, k, debugID)
+		logrus.Debugf("DesiredSet - Created %s %s for %s", gvk, k, debugID)
 	}
 
 	for _, k := range toUpdate {
@@ -78,7 +78,7 @@ func (o *DesiredSet) process(inputID, debugID string, set labels.Selector, gvk s
 			o.err(errors.Wrapf(err, "failed to delete %s %s for %s", k, gvk, debugID))
 			continue
 		}
-		logrus.Infof("DesiredSet - Delete %s %s for %s", gvk, k, debugID)
+		logrus.Debugf("DesiredSet - Delete %s %s for %s", gvk, k, debugID)
 	}
 }
 
