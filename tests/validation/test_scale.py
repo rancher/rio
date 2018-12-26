@@ -30,7 +30,7 @@ def kube_return_scale(stack, service, scale):
 
 def test_kube_scale(stack, service):
     replicas = kube_return_scale(stack, service, 3)
-    time.sleep(5)
+    time.sleep(10)
     assert replicas == 3
 
 

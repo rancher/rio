@@ -50,8 +50,8 @@ def test_domain_name(stack):
     riodname = riotest()
     assert riodname == "test.foo.bar2"
 
-    k8sdname = kubetest(stack, sname)
-    assert k8sdname == "test.foo.bar2"
+#    k8sdname = kubetest(stack, sname)
+#    assert k8sdname == "test.foo.bar2"
 
     cmd = (f'rio domain rm test.foo.bar2 ')
     util.run(cmd)
