@@ -1,5 +1,6 @@
 import subprocess
 import json
+import time
 
 # runAndExpect("rio asldfkhsldkfj", 3)
 # output = runAndExpect("rio ps")
@@ -14,8 +15,9 @@ def run(cmd, status=0):
 
 
 def runToJson(cmd, status=0):
+    print(cmd)
     result = run(cmd, status)
-
+    print(result)
     return json.loads(result)
 
 
@@ -29,3 +31,15 @@ def rioInspect(resource, field=None):
 def kubectl(namespace, type, resource):
     cmd = "rio kubectl get -n %s -o=json %s/%s" % (namespace, type, resource)
     return runToJson(cmd)
+
+
+def wait_for_state(name, exp_state):
+    results = rioInspect(name)
+
+    for i in range(1, 20):
+        current_state = results['state']
+
+        if current_state == exp_state:
+            break
+
+        time.sleep(1)

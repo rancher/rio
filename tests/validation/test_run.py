@@ -4,10 +4,11 @@ import util
 
 
 def riotest(stack, service):
-    rio_com = "rio inspect --format '{{.state}}' %s/%s" % (stack, service)
-    results = util.run(rio_com)
+    fullName = (f"{stack}/{service}")
 
-    return results
+    inspect = util.rioInspect(fullName)
+
+    return inspect['state']
 
 
 def kubetest(stack, service):

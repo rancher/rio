@@ -35,23 +35,19 @@ def rio_chk(stack, sname):
     return inspect['labels']
 
 
-def kube_chk(stack, sname):
+def kube_chk(stack, sname, *lbl):
     print(sname)
     fullName = (f"{stack}/{sname}")
 
     id = util.rioInspect(fullName, "id")
     namespace = id.split(":")[0]
     obj = util.kubectl(namespace, "deployment", sname)
-    container = obj['spec']['template']['metadata']
 
-    out = []
-    for item in container['env']:
-        out.append(item['name'])
-        out.append(item['value'])
+    results = ""
+    for c in lbl:
+        results += obj['spec']['template']['metadata']['labels'][f"{lbl}"]
 
-    print(out)
-
-    return out
+    return results
 
 
 def test_content(stack):
@@ -60,9 +56,9 @@ def test_content(stack):
     gotrio = rio_chk(stack, service_name)
     assert gotrio == {'foo': 'bar'}
 
-#    print(service_name)
-#    gotk8s = kube_chk(stack, service_name)
-#    assert gotk8s == ['foo', 'bar']
+    print(service_name)
+    gotk8s = kube_chk(stack, service_name, "foo")
+    assert gotk8s == 'bar'
 
 
 def test_content2(stack):
@@ -72,6 +68,5 @@ def test_content2(stack):
     gotrio = rio_chk(stack, service_name)
     assert gotrio == {'foo': 'bar', 'foo2': 'bar2'}
 
-#    print(service_name)
-#    gotk8s = kube_chk(stack, service_name)
-#    assert gotk8s == ['foo', 'bar', 'foo2', 'bar2']
+    gotk8s = kube_chk(stack, service_name, "foo2")
+    assert gotk8s == ['foo', 'bar', 'foo2', 'bar2']

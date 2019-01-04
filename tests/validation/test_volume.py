@@ -2,15 +2,18 @@
 
 from random import randint
 import util
+import os
 
 
-def riovolume(size):
+def riovolume(stack, size):
     vname = "tvol" + str(randint(1000, 5000))
-    cmd = (f'rio volume create {vname} {size}')
+    fullName = (f"{stack}/{vname}")
+
+    cmd = (f'rio volume create {fullName} {size}')
 
     util.run(cmd)
 
-    return vname
+    return fullName
 
 
 def riotest(vname):
@@ -30,12 +33,10 @@ def kubetest(vname):
     return volsize
 
 
-def test_vol_size():
-    volname = riovolume(10)
+def test_vol_size(stack):
+    volname = riovolume(stack, 1)
+    print(os.environ['RUN_NFS_TEST'])
 
-    assert riotest(volname) == 10
+    assert riotest(volname) == 1
 
-#    assert kubetest(volname) == '10Gi'
-
-    cmd = (f'rio rm {volname}')
-    util.run(cmd)
+#    assert kubetest(volname) == '1Gi'
