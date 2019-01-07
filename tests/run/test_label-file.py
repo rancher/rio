@@ -54,7 +54,7 @@ def test_content(stack):
     gotrio = rio_chk(stack, service_name)
     assert gotrio == {'foo': 'bar'}
 
-    gotk8s = kube_chk(stack, service_name, "foo")
+#    gotk8s = kube_chk(stack, service_name, "foo")
 #    assert gotk8s == 'bar'
 
 
@@ -64,5 +64,5 @@ def test_content2(stack):
     gotrio = rio_chk(stack, service_name)
     assert gotrio == {'foo': 'bar', 'foo2': 'bar2'}
 
-    gotk8s = kube_chk(stack, service_name, "foo2")
+#    gotk8s = kube_chk(stack, service_name, "foo2")
 #    assert gotk8s == ['foo', 'bar', 'foo2', 'bar2']
