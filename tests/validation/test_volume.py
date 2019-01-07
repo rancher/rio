@@ -35,7 +35,6 @@ def kubetest(vname):
 
 def test_vol_size(stack):
     volname = riovolume(stack, 1)
-    print(os.environ['RUN_NFS_TEST'])
 
     assert riotest(volname) == 1
 

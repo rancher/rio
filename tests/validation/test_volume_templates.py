@@ -36,7 +36,7 @@ def rio_bind_workload(stack, vname, wrklname):
 
 def test_vol_template(stack):
 
-    riovolume(stack, './tests/nfs-stack/volume-template-stack.yaml')
+    riovolume(stack, './nfs-stack/volume-template-stack.yaml')
     time.sleep(10)
     cmd = (f"rio inspect {stack}/data --format json | jq '.template'")
     template_results = util.run(cmd)
