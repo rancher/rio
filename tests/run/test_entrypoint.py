@@ -48,11 +48,11 @@ def test_content(stack):
     assert gotk8s == ['sh']
 
 
-def test_content2(stack):
-    service_name = run_entrypoint(stack, "sh", "i")
+# def test_content2(stack):
+#    service_name = run_entrypoint(stack, "echo", "hello")
 
-    got = rio_chk(stack, service_name)
-    assert got == ['sh', 'i']
+#    got = rio_chk(stack, service_name)
+#    assert got == ['echo', 'hello']
 
-    gotk8s = kube_chk(stack, service_name)
-    assert gotk8s == ['sh', 'i']
+#    gotk8s = kube_chk(stack, service_name)
+#    assert gotk8s == ['echo', '$HOME']
