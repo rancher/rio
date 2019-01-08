@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/rancher/rio/pkg/namespace"
+
 	"github.com/knative/pkg/apis/istio/common/v1alpha1"
 	"github.com/knative/pkg/apis/istio/v1alpha3"
 	"github.com/rancher/norman/pkg/objectset"
@@ -25,6 +27,9 @@ import (
 const (
 	privateGw              = "mesh"
 	PublicDomainAnnotation = "rio.cattle.io/publicDomain"
+	RioNameHeader          = "X-Rio-ServiceName"
+	RioNamespaceHeader     = "X-Rio-Namespace"
+	RioPortHeader          = "X-Rio-ServicePort"
 )
 
 func virtualServices(stack *v1.Stack, services []*v1.Service, service *v1.Service, os *objectset.ObjectSet) error {
@@ -43,7 +48,7 @@ func virtualServices(stack *v1.Stack, services []*v1.Service, service *v1.Servic
 	return nil
 }
 
-func vsRoutes(publicPorts map[string]bool, service *v1.Service, dests []dest) ([]v1alpha3.HTTPRoute, bool) {
+func vsRoutes(publicPorts map[string]bool, service *v1.Service, dests []Dest) ([]v1alpha3.HTTPRoute, bool) {
 	external := false
 	var result []v1alpha3.HTTPRoute
 
@@ -57,14 +62,14 @@ func vsRoutes(publicPorts map[string]bool, service *v1.Service, dests []dest) ([
 		if publicDomain == "" {
 			continue
 		}
-		ds := []dest{
+		ds := []Dest{
 			{
-				host:   fmt.Sprintf("%s.rio-system.svc.cluster.local", fmt.Sprintf("cm-acme-http-solver-%d", adler32.Checksum([]byte(publicDomain)))),
-				subset: "latest",
-				weight: 100,
+				Host:   fmt.Sprintf("%s.rio-system.svc.cluster.local", fmt.Sprintf("cm-acme-http-solver-%d", adler32.Checksum([]byte(publicDomain)))),
+				Subset: "latest",
+				Weight: 100,
 			},
 		}
-		_, route := newRoute(domains.GetPublicGateway(), true, pb, ds, false)
+		_, route := newRoute(domains.GetPublicGateway(), true, pb, ds, false, false, nil)
 		route.Match[0].Uri = &v1alpha1.StringMatch{
 			Prefix: "/.well-known/acme-challenge/",
 		}
@@ -75,16 +80,17 @@ func vsRoutes(publicPorts map[string]bool, service *v1.Service, dests []dest) ([
 	}
 
 	containerlist.ForService(service)
+	enableAutoScale := service.Spec.AutoscaleConfig.EnableAutoScale
 	for _, con := range containerlist.ForService(service) {
 		for _, exposed := range con.ExposedPorts {
-			publicPort, route := newRoute(domains.GetPublicGateway(), false, &exposed.PortBinding, dests, true)
+			publicPort, route := newRoute(domains.GetPublicGateway(), false, &exposed.PortBinding, dests, true, enableAutoScale, service)
 			if publicPort != "" {
 				result = append(result, route)
 			}
 		}
 
 		for _, binding := range con.PortBindings {
-			publicPort, route := newRoute(domains.GetPublicGateway(), true, &binding, dests, true)
+			publicPort, route := newRoute(domains.GetPublicGateway(), true, &binding, dests, true, enableAutoScale, service)
 			if publicPort != "" {
 				external = true
 				publicPorts[publicPort] = true
@@ -96,7 +102,7 @@ func vsRoutes(publicPorts map[string]bool, service *v1.Service, dests []dest) ([
 	return result, external
 }
 
-func newRoute(externalGW string, published bool, portBinding *v1.PortBinding, dests []dest, appendHttps bool) (string, v1alpha3.HTTPRoute) {
+func newRoute(externalGW string, published bool, portBinding *v1.PortBinding, dests []Dest, appendHttps bool, autoscale bool, svc *v1.Service) (string, v1alpha3.HTTPRoute) {
 	route := v1alpha3.HTTPRoute{}
 
 	if _, ok := service.SupportedProtocol[portBinding.Protocol]; !ok {
@@ -125,17 +131,41 @@ func newRoute(externalGW string, published bool, portBinding *v1.PortBinding, de
 	}
 	route.Match = matches
 
+	if autoscale {
+		if route.AppendHeaders == nil {
+			route.AppendHeaders = map[string]string{}
+		}
+		route.AppendHeaders[RioNameHeader] = svc.Name
+		route.AppendHeaders[RioNamespaceHeader] = svc.Namespace
+		route.AppendHeaders[RioPortHeader] = strconv.Itoa(int(portBinding.TargetPort))
+		route.Retries = &v1alpha3.HTTPRetry{
+			PerTryTimeout: "1m",
+			Attempts:      3,
+		}
+	}
+
 	for _, dest := range dests {
-		route.Route = append(route.Route, v1alpha3.DestinationWeight{
-			Destination: v1alpha3.Destination{
-				Host:   dest.host,
-				Subset: dest.subset,
-				Port: v1alpha3.PortSelector{
-					Number: uint32(portBinding.TargetPort),
+		if autoscale && svc.Spec.Scale == 0 {
+			route.Route = append(route.Route, v1alpha3.DestinationWeight{
+				Destination: v1alpha3.Destination{
+					Host: fmt.Sprintf("gateway.%s.svc.cluster.local", namespace.StackNamespace(settings.RioSystemNamespace, settings.AutoScaleStack)),
+					Port: v1alpha3.PortSelector{
+						Number: 80,
+					},
 				},
-			},
-			Weight: dest.weight,
-		})
+			})
+		} else {
+			route.Route = append(route.Route, v1alpha3.DestinationWeight{
+				Destination: v1alpha3.Destination{
+					Host:   dest.Host,
+					Subset: dest.Subset,
+					Port: v1alpha3.PortSelector{
+						Number: uint32(portBinding.TargetPort),
+					},
+				},
+				Weight: dest.Weight,
+			})
+		}
 	}
 
 	sourcePort := httpPort
@@ -145,17 +175,17 @@ func newRoute(externalGW string, published bool, portBinding *v1.PortBinding, de
 	return fmt.Sprintf("%v/%s", sourcePort, portBinding.Protocol), route
 }
 
-type dest struct {
-	host, subset string
-	weight       int
+type Dest struct {
+	Host, Subset string
+	Weight       int
 }
 
-func destsForService(name string, service *serviceset.ServiceSet) []dest {
+func DestsForService(name string, service *serviceset.ServiceSet) []Dest {
 	latestWeight := 100
-	result := []dest{
+	result := []Dest{
 		{
-			host:   name,
-			subset: service.Service.Spec.Revision.Version,
+			Host:   name,
+			Subset: service.Service.Spec.Revision.Version,
 		},
 	}
 
@@ -173,15 +203,15 @@ func destsForService(name string, service *serviceset.ServiceSet) []dest {
 		weight = min(weight, latestWeight)
 		latestWeight -= weight
 
-		result = append(result, dest{
-			host:   rev.Name,
-			weight: weight,
-			subset: rev.Spec.Revision.Version,
+		result = append(result, Dest{
+			Host:   rev.Name,
+			Weight: weight,
+			Subset: rev.Spec.Revision.Version,
 		})
 	}
 
-	result[0].weight = latestWeight
-	if result[0].weight == 0 && len(result) > 1 {
+	result[0].Weight = latestWeight
+	if result[0].Weight == 0 && len(result) > 1 {
 		return result[1:]
 	}
 	return result
@@ -197,16 +227,16 @@ func min(left, right int) int {
 func vsFromService(stack *v1.Stack, name string, service *serviceset.ServiceSet) []runtime.Object {
 	var result []runtime.Object
 
-	serviceVS := vsFromSpec(stack, name, service.Service.Namespace, service.Service, destsForService(name, service)...)
+	serviceVS := VsFromSpec(stack, name, service.Service.Namespace, service.Service, DestsForService(name, service)...)
 	if serviceVS != nil {
 		result = append(result, serviceVS)
 	}
 
 	for _, rev := range service.Revisions {
-		revVs := vsFromSpec(stack, rev.Name, service.Service.Namespace, rev, dest{
-			host:   rev.Name,
-			subset: rev.Spec.Revision.Version,
-			weight: 100,
+		revVs := VsFromSpec(stack, rev.Name, service.Service.Namespace, rev, Dest{
+			Host:   rev.Name,
+			Subset: rev.Spec.Revision.Version,
+			Weight: 100,
 		})
 		if revVs != nil {
 			result = append(result, revVs)
@@ -216,7 +246,7 @@ func vsFromService(stack *v1.Stack, name string, service *serviceset.ServiceSet)
 	return result
 }
 
-func vsFromSpec(stack *v1.Stack, name, namespace string, service *v1.Service, dests ...dest) *v1alpha3client.VirtualService {
+func VsFromSpec(stack *v1.Stack, name, namespace string, service *v1.Service, dests ...Dest) *v1alpha3client.VirtualService {
 	publicPorts := map[string]bool{}
 
 	routes, external := vsRoutes(publicPorts, service, dests)
@@ -229,6 +259,9 @@ func vsFromSpec(stack *v1.Stack, name, namespace string, service *v1.Service, de
 		Hosts:    []string{name},
 		Gateways: []string{privateGw},
 		Http:     routes,
+	}
+	if service.Spec.AutoscaleConfig.EnableAutoScale {
+		vs.Annotations["rio-autoscale.cattle.io/enable"] = "true"
 	}
 
 	if external && len(publicPorts) > 0 {

@@ -22,6 +22,7 @@ def rio_bind_workload(stack, vname, wrklname):
     fullVolName = (f"{stack}/{vname}")
     fullWklName = (f"{stack}/{wrklname}")
 
+    util.wait_for_state(fullVolName, "active")
     util.run(f"rio exec {fullVolName} touch /persistentvolumes/helloworld")
     util.run(f"rio run -n {fullWklName} -v data-{vname}-0:/data nginx")
     util.run(f"rio wait {fullWklName}")

@@ -3,12 +3,11 @@ package stackobject
 import (
 	"context"
 
-	"github.com/rancher/rio/features/routing/pkg/istio/config"
-
 	"github.com/rancher/norman/controller"
 	"github.com/rancher/norman/lifecycle"
 	"github.com/rancher/norman/objectclient"
 	"github.com/rancher/norman/pkg/objectset"
+	"github.com/rancher/rio/features/routing/pkg/istio/config"
 	"github.com/rancher/rio/pkg/stacknamespace"
 	"github.com/rancher/rio/types"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"

@@ -29,6 +29,7 @@ import (
 	policyv1beta1 "github.com/rancher/rio/types/apis/policy/v1beta1"
 	projectv1 "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
 	projectschema "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1/schema"
+	autoscalev1 "github.com/rancher/rio/types/apis/rio-autoscale.cattle.io/v1"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	rioschema "github.com/rancher/rio/types/apis/rio.cattle.io/v1/schema"
 	storagev1 "github.com/rancher/rio/types/apis/storage.k8s.io/v1"
@@ -74,6 +75,7 @@ func NewConfig(dataDir string, inCluster bool) (*norman.Config, error) {
 		},
 
 		Clients: []norman.ClientFactory{
+			autoscalev1.Factory,
 			cmv1alpha1.Factory,
 			policyv1beta1.Factory,
 			projectv1.Factory,

@@ -29,6 +29,7 @@ type StackSpec struct {
 	Answers                   map[string]string `json:"answers,omitempty"`
 	Questions                 []v3.Question     `json:"questions,omitempty"`
 	DisableMesh               bool              `json:"disableMesh,omitempty"`
+	EnableAutoscale           bool              `json:"enableAutoscale,omitempty"`
 	EnableKubernetesResources bool              `json:"enableKubernetesResources,omitempty"`
 }
 

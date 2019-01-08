@@ -3,14 +3,13 @@ package setup
 import (
 	"context"
 
-	"github.com/rancher/rio/api/meshnamed"
-
 	"github.com/rancher/norman/api/builtin"
 	"github.com/rancher/norman/pkg/subscribe"
 	"github.com/rancher/norman/store/crd"
 	"github.com/rancher/norman/store/proxy"
 	normantypes "github.com/rancher/norman/types"
 	"github.com/rancher/rio/api/config"
+	"github.com/rancher/rio/api/meshnamed"
 	"github.com/rancher/rio/api/named"
 	"github.com/rancher/rio/api/pretty"
 	"github.com/rancher/rio/api/publicdomain"
@@ -21,6 +20,8 @@ import (
 	"github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
 	networkSchema "github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3/schema"
 	projectSchema "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1/schema"
+	autoscalev1 "github.com/rancher/rio/types/apis/rio-autoscale.cattle.io/v1"
+	autoscaleSchema "github.com/rancher/rio/types/apis/rio-autoscale.cattle.io/v1/schema"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1/schema"
 	projectclient "github.com/rancher/rio/types/client/project/v1"
 	"github.com/rancher/rio/types/client/rio/v1"
@@ -34,7 +35,8 @@ func Types(ctx context.Context, clientGetter proxy.ClientGetter, schemas *norman
 		networkSchema.Schemas.Schema(&networkSchema.Version, v1alpha3.GatewayGroupVersionKind.Kind),
 		networkSchema.Schemas.Schema(&networkSchema.Version, v1alpha3.VirtualServiceGroupVersionKind.Kind),
 		networkSchema.Schemas.Schema(&networkSchema.Version, v1alpha3.DestinationRuleGroupVersionKind.Kind),
-		networkSchema.Schemas.Schema(&networkSchema.Version, v1alpha3.ServiceEntryGroupVersionKind.Kind))
+		networkSchema.Schemas.Schema(&networkSchema.Version, v1alpha3.ServiceEntryGroupVersionKind.Kind),
+		autoscaleSchema.Schemas.Schema(&autoscaleSchema.APIVersion, autoscalev1.ServiceScaleRecommendationGroupVersionKind.Kind))
 	if err != nil {
 		return err
 	}

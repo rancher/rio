@@ -1,4 +1,4 @@
-package monitoring
+package prometheus
 
 import (
 	"context"
@@ -13,23 +13,20 @@ import (
 
 func Register(ctx context.Context, rContext *types.Context) error {
 	feature := &features.FeatureController{
-		FeatureName: "monitoring",
+		FeatureName: "prometheus",
 		FeatureSpec: v1.FeatureSpec{
-			Description: "Monitoring and Telemetry",
+			Description: "Enable prometheus",
 			Answers: map[string]string{
 				"LB_NAMESPACE": settings.IstioExternalLBNamespace,
-			},
-		},
+			}},
 		SystemStacks: []*systemstack.SystemStack{
-			systemstack.NewSystemStack(rContext.Rio.Stack, "istio-telemetry", riov1.StackSpec{
-				DisableMesh: true,
+			systemstack.NewSystemStack(rContext.Rio.Stack, "prometheus", riov1.StackSpec{
 				Answers: map[string]string{
 					"LB_NAMESPACE": settings.IstioExternalLBNamespace,
 				},
-				EnableKubernetesResources: true,
+				DisableMesh: true,
 			}),
 		},
 	}
-
 	return feature.Register()
 }

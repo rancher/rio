@@ -29,9 +29,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		services:      rContext.Rio.Service,
 	}
 
-	rContext.Apps.Deployment.OnChange(ctx, "sub-service-controller", s.deploymentChanged)
-	rContext.Apps.DaemonSet.OnChange(ctx, "sub-service-controller", s.daemonSetChanged)
-	rContext.Apps.StatefulSet.OnChange(ctx, "sub-service-controller", s.statefulSetChanged)
+	rContext.Apps.Deployment.OnChange(ctx, "sub-service-deploy-controller", s.deploymentChanged)
+	rContext.Apps.DaemonSet.OnChange(ctx, "sub-service-daemonset-controller", s.daemonSetChanged)
+	rContext.Apps.StatefulSet.OnChange(ctx, "sub-service-sts-controller", s.statefulSetChanged)
 
 	rContext.Rio.Service.OnChange(ctx, "service-promote-controller", s.promote)
 
@@ -68,6 +68,9 @@ func (s *subServiceController) updateStatus(service, newService *riov1.Service, 
 		newService.Status.Conditions = nil
 	} else if hasAvailableSS(newService.Status.StatefulSetStatus) {
 		newService.Status.Conditions = nil
+		if newService.Status.StatefulSetStatus == nil || len(newService.Status.StatefulSetStatus.Conditions) == 0 {
+			riov1.PendingCondition.True(newService)
+		}
 	}
 
 	if !reflect.DeepEqual(service.Status, newService.Status) {
@@ -193,6 +196,9 @@ func hasAvailableSS(status *appsv1.StatefulSetStatus) bool {
 				return true
 			}
 		}
+	}
+	if status.Replicas == status.ReadyReplicas {
+		return true
 	}
 	return false
 }
