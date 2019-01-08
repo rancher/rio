@@ -1,5 +1,4 @@
 # Setup
-import pytest
 from os import unlink
 from random import randint
 import util

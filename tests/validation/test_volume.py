@@ -2,7 +2,6 @@
 
 from random import randint
 import util
-import os
 
 
 def riovolume(stack, size):

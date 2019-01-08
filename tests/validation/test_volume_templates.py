@@ -21,7 +21,6 @@ def rio_check_bound(stack, vname):
 
 def rio_bind_workload(stack, vname, wrklname):
     fullVolName = (f"{stack}/{vname}")
-    name = "tsrv" + str(randint(1000, 5000))
     fullWklName = (f"{stack}/{wrklname}")
 
     util.run(f"rio exec {fullVolName} touch /persistentvolumes/helloworld")
@@ -37,6 +36,9 @@ def rio_bind_workload(stack, vname, wrklname):
 def test_vol_template(stack):
 
     riovolume(stack, './nfs-stack/volume-template-stack.yaml')
+    # to run locally you have to change url to
+    # ./test/nfs-stack/volume-template-stack.yaml
+
     time.sleep(10)
     cmd = (f"rio inspect {stack}/data --format json | jq '.template'")
     template_results = util.run(cmd)

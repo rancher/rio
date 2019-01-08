@@ -2,7 +2,6 @@
 
 from random import randint
 import util
-import time
 import os
 
 
@@ -43,7 +42,6 @@ def rio_bind_workload(stack, vname):
 
 def riotest(stack, vname):
     fullVolName = (f"{stack}/{vname}")
-    state = 'bound'
 
     inspect = util.rioInspect(fullVolName)
 
@@ -52,7 +50,6 @@ def riotest(stack, vname):
 
 def kubetest(stack, vname):
     fullVolName = (f"{stack}/{vname}")
-    state = 'bound'
 
     id = util.rioInspect(fullVolName, "id")
     namespace = id.split(":")[0]
