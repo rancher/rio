@@ -1,0 +1,49 @@
+configs:
+  autoscale-config:
+    content: |-
+      enable-scale-to-zero: true
+      max-scale-up-rate: 10
+      container-concurrency-target-percentage: 1.0
+      container-concurrency-target-default: 1
+      stable-window: 60s
+      panic-window: 6s
+      tick-interval: 2s
+      scale-to-zero-threshold: 4m
+      scale-to-zero-grace-period: 2m
+
+services:
+  autoscaler:
+    global_permissions:
+    - '* configmaps'
+    - '* events'
+    - '* services'
+    - '* networking.istio.io/virtualservices'
+    - get,watch,list,update rio-autoscale.cattle.io/servicescalerecommendations
+    - get,list,update,watch,delete rio.cattle.io/services
+    - get,watch,list pods
+    - get,list,watch endpoints
+    image: daishan1992/rio-autoscaler:dev
+    imagePullPolicy: always
+    command:
+    - rio-autoscaler
+    - autoscaler
+  gateway:
+    global_permissions:
+    - '* configmaps'
+    - '* events'
+    - get,list,update,watch,delete rio.cattle.io/services
+    - get,list,watch,update endpoints
+    image: daishan1992/rio-autoscaler:dev
+    imagePullPolicy: always
+    expose:
+    - 80/http
+    command:
+    - rio-autoscaler
+    - gateway
+    - --listen
+    - '80'
+
+
+kubernetes:
+  namespaced_custom_resource_definitions:
+  - ServiceScaleRecommendation.rio-autoscale.cattle.io/v1
