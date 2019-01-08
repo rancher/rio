@@ -11,6 +11,7 @@ const (
 	StackFieldCreated                   = "created"
 	StackFieldDescription               = "description"
 	StackFieldDisableMesh               = "disableMesh"
+	StackFieldEnableAutoscale           = "enableAutoscale"
 	StackFieldEnableKubernetesResources = "enableKubernetesResources"
 	StackFieldLabels                    = "labels"
 	StackFieldName                      = "name"
@@ -31,6 +32,7 @@ type Stack struct {
 	Created                   string            `json:"created,omitempty" yaml:"created,omitempty"`
 	Description               string            `json:"description,omitempty" yaml:"description,omitempty"`
 	DisableMesh               bool              `json:"disableMesh,omitempty" yaml:"disableMesh,omitempty"`
+	EnableAutoscale           bool              `json:"enableAutoscale,omitempty" yaml:"enableAutoscale,omitempty"`
 	EnableKubernetesResources bool              `json:"enableKubernetesResources,omitempty" yaml:"enableKubernetesResources,omitempty"`
 	Labels                    map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
 	Name                      string            `json:"name,omitempty" yaml:"name,omitempty"`

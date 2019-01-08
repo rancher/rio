@@ -5,6 +5,7 @@ import (
 	"github.com/rancher/norman/generator"
 	networkingSchema "github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3/schema"
 	projectSchema "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1/schema"
+	autoscaleSchema "github.com/rancher/rio/types/apis/rio-autoscale.cattle.io/v1/schema"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1/schema"
 	"github.com/sirupsen/logrus"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
@@ -27,6 +28,9 @@ func main() {
 		logrus.Fatal(err)
 	}
 	if err := generator.DefaultGenerate(projectSchema.Schemas, basePackage, true, nil); err != nil {
+		logrus.Fatal(err)
+	}
+	if err := generator.DefaultGenerate(autoscaleSchema.Schemas, basePackage, false, nil); err != nil {
 		logrus.Fatal(err)
 	}
 	if err := generator.ControllersForForeignTypes(basePackage, extv1beta1.SchemeGroupVersion,

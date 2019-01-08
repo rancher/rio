@@ -10,6 +10,7 @@ import (
 	"github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
 	policyv1beta1 "github.com/rancher/rio/types/apis/policy/v1beta1"
 	projectv1 "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
+	autoscalev1 "github.com/rancher/rio/types/apis/rio-autoscale.cattle.io/v1"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	storagev1 "github.com/rancher/rio/types/apis/storage.k8s.io/v1"
 	appsv1 "github.com/rancher/types/apis/apps/v1beta2"
@@ -24,6 +25,7 @@ type contextKey struct{}
 type Context struct {
 	InCluster   bool
 	Apps        *appsv1.Clients
+	AutoScale   *autoscalev1.Clients
 	CertManager *cmv1alpha1.Clients
 	Core        *v1.Clients
 	Ext         *v1beta1.Clients
@@ -60,6 +62,7 @@ func NewContext(ctx context.Context) *Context {
 	server := norman.GetServer(ctx)
 	return &Context{
 		Apps:        appsv1.ClientsFrom(ctx),
+		AutoScale:   autoscalev1.ClientsFrom(ctx),
 		CertManager: cmv1alpha1.ClientsFrom(ctx),
 		Core:        v1.ClientsFrom(ctx),
 		Ext:         v1beta1.ClientsFrom(ctx),
