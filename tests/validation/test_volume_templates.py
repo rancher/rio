@@ -1,4 +1,3 @@
-from random import randint
 import time
 import util
 
@@ -37,7 +36,7 @@ def test_vol_template(stack):
 
     riovolume(stack, './nfs-stack/volume-template-stack.yaml')
     # to run locally you have to change url to
-    # ./test/nfs-stack/volume-template-stack.yaml
+    # ./tests/nfs-stack/volume-template-stack.yaml
 
     time.sleep(10)
     cmd = (f"rio inspect {stack}/data --format json | jq '.template'")
