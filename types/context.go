@@ -41,6 +41,7 @@ type Context struct {
 
 func (c *Context) Starters() []controller.Starter {
 	return []controller.Starter{
+		c.AutoScale.Interface,
 		c.Apps.Interface,
 		c.CertManager.Interface,
 		c.Core.Interface,

@@ -1,6 +1,7 @@
 package v1
 
 import (
+	riocattleiov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -89,6 +90,13 @@ func (in *ServiceScaleRecommendationStatus) DeepCopyInto(out *ServiceScaleRecomm
 		in, out := &in.DesiredScale, &out.DesiredScale
 		*out = new(int32)
 		**out = **in
+	}
+	if in.Conditions != nil {
+		in, out := &in.Conditions, &out.Conditions
+		*out = make([]riocattleiov1.Condition, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
 	}
 	return
 }

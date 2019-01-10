@@ -21,9 +21,6 @@ func main() {
 	if err := generator.DefaultGenerate(schema.Schemas, basePackage, true, nil); err != nil {
 		logrus.Fatal(err)
 	}
-	if err := generator.DefaultGenerate(schema.Schemas, basePackage, true, nil); err != nil {
-		logrus.Fatal(err)
-	}
 	if err := generator.DefaultGenerate(networkingSchema.Schemas, basePackage, false, nil); err != nil {
 		logrus.Fatal(err)
 	}
