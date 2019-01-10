@@ -2,7 +2,7 @@ configs:
   prometheus-config:
     content:  |-
       global:
-        scrape_interval: 15s
+        scrape_interval: 5s
       scrape_configs:
 
       # Scrape config for envoy stats
