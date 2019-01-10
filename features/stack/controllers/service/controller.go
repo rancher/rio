@@ -32,7 +32,8 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		rContext.Apps.StatefulSet,
 		rContext.Policy.PodDisruptionBudget,
 		rContext.Core.ServiceAccount,
-		rContext.Core.Service)
+		rContext.Core.Service,
+		rContext.AutoScale.ServiceScaleRecommendation)
 
 	sh := &serviceHandler{
 		serviceClient: rContext.Rio.Service,

@@ -1,10 +1,9 @@
-package monitoring
+package autoscaling
 
 import (
 	"context"
 
 	"github.com/rancher/rio/pkg/features"
-	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/pkg/systemstack"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
@@ -13,23 +12,16 @@ import (
 
 func Register(ctx context.Context, rContext *types.Context) error {
 	feature := &features.FeatureController{
-		FeatureName: "monitoring",
+		FeatureName: "autoscaling",
 		FeatureSpec: v1.FeatureSpec{
-			Description: "Monitoring and Telemetry",
-			Answers: map[string]string{
-				"LB_NAMESPACE": settings.IstioExternalLBNamespace,
-			},
+			Description: "auto-scaling services(request driven)",
+			Enabled:     false,
 		},
 		SystemStacks: []*systemstack.SystemStack{
-			systemstack.NewSystemStack(rContext.Rio.Stack, "istio-telemetry", riov1.StackSpec{
-				DisableMesh: true,
-				Answers: map[string]string{
-					"LB_NAMESPACE": settings.IstioExternalLBNamespace,
-				},
+			systemstack.NewSystemStack(rContext.Rio.Stack, "rio-autoscaler", riov1.StackSpec{
 				EnableKubernetesResources: true,
 			}),
 		},
 	}
-
 	return feature.Register()
 }

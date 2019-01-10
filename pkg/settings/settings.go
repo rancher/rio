@@ -10,6 +10,7 @@ const (
 	IstioGatewayDeploy    = "istio-gateway"
 	IstioStackName        = "istio"
 	IstioTelemetry        = "istio-telemetry"
+	AutoScaleStack        = "rio-autoscaler"
 	DefaultServiceVersion = "v0"
 	StagingType           = "staging"
 	ProductionType        = "production"

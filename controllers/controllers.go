@@ -6,6 +6,7 @@ import (
 	"github.com/rancher/rio/controllers/data"
 	"github.com/rancher/rio/controllers/feature"
 	"github.com/rancher/rio/controllers/setting"
+	"github.com/rancher/rio/features/autoscaling"
 	"github.com/rancher/rio/features/letsencrypt"
 	"github.com/rancher/rio/features/localstorage"
 	"github.com/rancher/rio/features/monitoring"
@@ -37,6 +38,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		return err
 	}
 	if err := localstorage.Register(ctx, rContext); err != nil {
+		return err
+	}
+	if err := autoscaling.Register(ctx, rContext); err != nil {
 		return err
 	}
 
