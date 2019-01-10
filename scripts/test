@@ -41,7 +41,7 @@ chmod +x ./tests/init-nfs.bash
 export RUN_NFS_TEST=true
 
 cd ./tests
-tox -- -n 1
+tox -- -n $(nproc)
 cd ..
 
 bats -r ./tests || {
