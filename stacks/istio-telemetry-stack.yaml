@@ -61,7 +61,7 @@ services:
     sidekicks:
       istio-proxy:
         expose:
-        - 15090/tcp,http-envoy-prom
+        # - 15090/tcp,http-envoy-prom
         - 15004/tcp
         - 9091/tcp,grpc
         image: istio/proxyv2:1.0.4
