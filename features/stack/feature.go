@@ -32,8 +32,8 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			routeset.Register,
 			service.Register,
 			servicestatus.Register,
-			stack.Register,
 			stackns.Register,
+			stack.Register,
 			volume.Register,
 		},
 	}
