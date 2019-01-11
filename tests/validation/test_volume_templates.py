@@ -1,5 +1,5 @@
-import time
 import util
+import os
 
 
 def riovolume(stack, path):
@@ -34,12 +34,13 @@ def rio_bind_workload(stack, vname, wrklname):
 
 
 def test_vol_template(stack):
+    if os.environ['RUN_NFS_TEST'] != "true":
+        print('WARNING! nfs_not_enabled all test will fail')
 
     riovolume(stack, './nfs-stack/volume-template-stack.yaml')
     # to run locally you have to change url to
     # ./tests/nfs-stack/volume-template-stack.yaml
 
-    time.sleep(10)
     cmd = (f"rio inspect {stack}/data --format json | jq '.template'")
     template_results = util.run(cmd)
 

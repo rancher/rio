@@ -1,10 +1,10 @@
-package stack
+package stackns
 
 import (
 	"context"
 
 	"github.com/rancher/norman/pkg/objectset"
-	"github.com/rancher/rio/features/stack/controllers/stack/populate"
+	"github.com/rancher/rio/features/stack/controllers/stackns/populate"
 	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
@@ -13,14 +13,8 @@ import (
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
-	sc := stackobject.NewGeneratingController(ctx, rContext, "stack-stack", rContext.Rio.Stack)
-	sc.Processor.Client(rContext.Rio.Service,
-		rContext.Rio.Config,
-		rContext.Rio.Volume,
-		rContext.Rio.RouteSet,
-		rContext.Rio.ExternalService,
-		rContext.Storage.StorageClass,
-		rContext.Ext.CustomResourceDefinition)
+	sc := stackobject.NewGeneratingController(ctx, rContext, "stack-stackns", rContext.Rio.Stack)
+	sc.Processor.Client(rContext.Core.Namespace)
 
 	s := &stackController{
 		namespaceLister: rContext.Core.Namespace.Cache(),

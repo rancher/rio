@@ -3,6 +3,8 @@ package stack
 import (
 	"context"
 
+	"github.com/rancher/rio/features/stack/controllers/stackns"
+
 	"github.com/rancher/rio/features/stack/controllers/config"
 	"github.com/rancher/rio/features/stack/controllers/externalservice"
 	"github.com/rancher/rio/features/stack/controllers/pvc"
@@ -31,6 +33,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			service.Register,
 			servicestatus.Register,
 			stack.Register,
+			stackns.Register,
 			volume.Register,
 		},
 	}

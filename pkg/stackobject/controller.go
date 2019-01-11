@@ -3,6 +3,7 @@ package stackobject
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	"github.com/rancher/norman/controller"
 	"github.com/rancher/norman/lifecycle"
 	"github.com/rancher/norman/objectclient"
@@ -15,6 +16,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 )
+
+var ErrSkipObjectSet = errors.New("skip objectset")
 
 type ClientAccessor interface {
 	Generic() controller.GenericController
@@ -69,6 +72,9 @@ func (o *Controller) Updated(obj runtime.Object) (runtime.Object, error) {
 
 	os := objectset.NewObjectSet()
 	if err := o.Populator(obj, stack, os); err != nil {
+		if err == ErrSkipObjectSet {
+			return obj, nil
+		}
 		os.AddErr(err)
 	}
 

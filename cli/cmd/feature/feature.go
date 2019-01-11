@@ -86,8 +86,13 @@ func (d *Disable) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("feature name is required")
 	}
 
+	resource, err := lookup.Lookup(ctx, ctx.CLI.Args()[0], client.FeatureType)
+	if err != nil {
+		return err
+	}
+
 	ctx.ProjectName = settings.RioSystemNamespace
-	return flipEnableFlag(ctx, ctx.CLI.Args()[0], nil, false)
+	return flipEnableFlag(ctx, resource.ID, nil, false)
 }
 
 type Enable struct {

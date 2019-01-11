@@ -15,6 +15,7 @@ import (
 	"github.com/rancher/rio/types"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	v12 "github.com/rancher/types/apis/core/v1"
+	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -185,6 +186,15 @@ func (g *Controller) sync(svc *v1.Service) (runtime.Object, error) {
 }
 
 func (g *Controller) start() error {
+	go func() {
+		g.renew()
+		for range ticker.Context(g.ctx, 6*time.Hour) {
+			if err := g.renew(); err != nil {
+				logrus.Errorf("failed to renew domain: %v", err)
+			}
+		}
+	}()
+
 	domain, err := g.rdnsClient.GetDomain()
 	if err == nil {
 		if domain != nil && domain.Fqdn != "" {
@@ -193,13 +203,6 @@ func (g *Controller) start() error {
 	} else {
 		return g.setDomain(local)
 	}
-
-	go func() {
-		g.renew()
-		for range ticker.Context(g.ctx, 6*time.Hour) {
-			g.renew()
-		}
-	}()
 
 	return nil
 }
