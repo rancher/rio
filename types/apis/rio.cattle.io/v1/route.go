@@ -15,12 +15,17 @@ type RouteSet struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec RouteSetSpec `json:"spec,omitempty"`
+	Spec   RouteSetSpec   `json:"spec,omitempty"`
+	Status RouteSetStatus `json:"status,omitempty"`
 }
 
 type RouteSetSpec struct {
 	Routes []RouteSpec `json:"routes,omitempty"`
 	StackScoped
+}
+
+type RouteSetStatus struct {
+	Conditions []Condition `json:"conditions,omitempty"`
 }
 
 type RouteSpec struct {
