@@ -21,7 +21,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		rContext.Rio.ExternalService,
 		rContext.Storage.StorageClass,
 		rContext.Ext.CustomResourceDefinition).
-		AllowDiscovery(rContext.K8s.Discovery())
+		AllowDiscovery(rContext.K8s.Discovery(), *rContext.LocalConfig)
 
 	s := &stackController{
 		namespaceLister: rContext.Core.Namespace.Cache(),

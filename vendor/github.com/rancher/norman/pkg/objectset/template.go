@@ -18,6 +18,7 @@ type Processor struct {
 	setID         string
 	codeVersion   string
 	discovery     discovery.DiscoveryInterface
+	restConfig    rest.Config
 	allowSlowPath string
 	slowClient    rest.HTTPClient
 	clients       map[schema.GroupVersionKind]Client
@@ -35,8 +36,9 @@ func (t *Processor) CodeVersion(version string) *Processor {
 	return t
 }
 
-func (t *Processor) AllowDiscovery(discovery discovery.DiscoveryInterface) *Processor {
+func (t *Processor) AllowDiscovery(discovery discovery.DiscoveryInterface, restConfig rest.Config) *Processor {
 	t.discovery = discovery
+	t.restConfig = restConfig
 	return t
 }
 
@@ -61,6 +63,7 @@ func (t Processor) NewDesiredSet(owner runtime.Object, objs *ObjectSet) *Desired
 	}
 	return &DesiredSet{
 		discovery:   t.discovery,
+		restConfig:  t.restConfig,
 		remove:      remove,
 		objs:        objs,
 		setID:       t.setID,
