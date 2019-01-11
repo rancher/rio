@@ -38,6 +38,7 @@ var (
 
 	IstioExternalLBNamespace = namespace.StackNamespace(RioSystemNamespace, IstioStackName)
 	IstioTelemetryNamespace  = namespace.StackNamespace(RioSystemNamespace, IstioTelemetry)
+	PrometheusNamespace      = namespace.StackNamespace(RioSystemNamespace, Prometheus)
 	IstioGatewaySelector     = map[string]string{
 		"gateway": "external",
 	}

@@ -11,7 +11,7 @@ configs:
         - role: endpoints
           namespaces:
             names:
-            - ${NAMESPACE}
+            - ${TELEMETRY_NAMESPACE}
         relabel_configs:
         - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
           action: keep
@@ -87,7 +87,7 @@ configs:
         - role: endpoints
           namespaces:
             names:
-            - ${NAMESPACE}
+            - ${TELEMETRY_NAMESPACE}
         relabel_configs:
         - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
           action: keep
@@ -303,3 +303,5 @@ services:
 questions:
 - variable: LB_NAMESPACE
   description: "istio-system namespace"
+- variable: TELEMETRY_NAMESPACE
+  description: "istio-telemetry namespace"
