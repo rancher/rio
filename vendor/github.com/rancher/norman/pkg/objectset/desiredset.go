@@ -8,6 +8,7 @@ import (
 )
 
 type DesiredSet struct {
+	remove      bool
 	setID       string
 	objs        *ObjectSet
 	codeVersion string

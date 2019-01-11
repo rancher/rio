@@ -44,10 +44,13 @@ func (t Processor) Remove(owner runtime.Object) error {
 }
 
 func (t Processor) NewDesiredSet(owner runtime.Object, objs *ObjectSet) *DesiredSet {
+	remove := false
 	if objs == nil {
+		remove = true
 		objs = &ObjectSet{}
 	}
 	return &DesiredSet{
+		remove:      remove,
 		objs:        objs,
 		setID:       t.setID,
 		codeVersion: t.codeVersion,

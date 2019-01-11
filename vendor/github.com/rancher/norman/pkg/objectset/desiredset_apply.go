@@ -5,8 +5,10 @@ import (
 	"encoding/hex"
 	"fmt"
 	"sort"
+	"sync"
 
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/client-go/util/flowcontrol"
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -25,13 +27,34 @@ const (
 )
 
 var (
-	hashOrder = []string{
+	ErrObjectSetDelay = errors.New("delaying object set apply")
+	hashOrder         = []string{
 		LabelID,
 		LabelGVK,
 		LabelName,
 		LabelNamespace,
 	}
+	rls     = map[string]flowcontrol.RateLimiter{}
+	rlsLock sync.Mutex
 )
+
+func (o *DesiredSet) getRateLimit(inputID string) flowcontrol.RateLimiter {
+	var rl flowcontrol.RateLimiter
+
+	rlsLock.Lock()
+	defer rlsLock.Unlock()
+	if o.remove {
+		delete(rls, inputID)
+	} else {
+		rl = rls[inputID]
+		if rl == nil {
+			rl = flowcontrol.NewTokenBucketRateLimiter(1.0/60.0, 10)
+			rls[inputID] = rl
+		}
+	}
+
+	return rl
+}
 
 func (o *DesiredSet) Apply() error {
 	if err := o.Err(); err != nil {
@@ -41,6 +64,11 @@ func (o *DesiredSet) Apply() error {
 	labelSet, annotationSet, err := o.getLabelsAndAnnotations()
 	if err != nil {
 		return o.err(err)
+	}
+
+	rl := o.getRateLimit(labelSet[LabelHash])
+	if rl != nil && !rl.TryAccept() {
+		return ErrObjectSetDelay
 	}
 
 	inputID := o.inputID(labelSet[LabelHash])
