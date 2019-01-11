@@ -17,14 +17,16 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		FeatureSpec: v1.FeatureSpec{
 			Description: "Monitoring and Telemetry",
 			Answers: map[string]string{
-				"LB_NAMESPACE": settings.IstioExternalLBNamespace,
+				"LB_NAMESPACE":         settings.IstioExternalLBNamespace,
+				"PROMETHEUS_NAMESPACE": settings.PrometheusNamespace,
 			},
 		},
 		SystemStacks: []*systemstack.SystemStack{
 			systemstack.NewSystemStack(rContext.Rio.Stack, "istio-telemetry", riov1.StackSpec{
 				DisableMesh: true,
 				Answers: map[string]string{
-					"LB_NAMESPACE": settings.IstioExternalLBNamespace,
+					"LB_NAMESPACE":         settings.IstioExternalLBNamespace,
+					"PROMETHEUS_NAMESPACE": settings.PrometheusNamespace,
 				},
 				EnableKubernetesResources: true,
 			}),

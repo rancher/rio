@@ -17,12 +17,14 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		FeatureSpec: v1.FeatureSpec{
 			Description: "Enable prometheus",
 			Answers: map[string]string{
-				"LB_NAMESPACE": settings.IstioExternalLBNamespace,
+				"LB_NAMESPACE":        settings.IstioExternalLBNamespace,
+				"TELEMETRY_NAMESPACE": settings.IstioTelemetryNamespace,
 			}},
 		SystemStacks: []*systemstack.SystemStack{
 			systemstack.NewSystemStack(rContext.Rio.Stack, "prometheus", riov1.StackSpec{
 				Answers: map[string]string{
-					"LB_NAMESPACE": settings.IstioExternalLBNamespace,
+					"LB_NAMESPACE":        settings.IstioExternalLBNamespace,
+					"TELEMETRY_NAMESPACE": settings.IstioTelemetryNamespace,
 				},
 				DisableMesh: true,
 			}),
