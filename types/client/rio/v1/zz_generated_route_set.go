@@ -5,27 +5,33 @@ import (
 )
 
 const (
-	RouteSetType           = "routeSet"
-	RouteSetFieldCreated   = "created"
-	RouteSetFieldLabels    = "labels"
-	RouteSetFieldName      = "name"
-	RouteSetFieldProjectID = "projectId"
-	RouteSetFieldRemoved   = "removed"
-	RouteSetFieldRoutes    = "routes"
-	RouteSetFieldStackID   = "stackId"
-	RouteSetFieldUUID      = "uuid"
+	RouteSetType                      = "routeSet"
+	RouteSetFieldCreated              = "created"
+	RouteSetFieldLabels               = "labels"
+	RouteSetFieldName                 = "name"
+	RouteSetFieldProjectID            = "projectId"
+	RouteSetFieldRemoved              = "removed"
+	RouteSetFieldRoutes               = "routes"
+	RouteSetFieldStackID              = "stackId"
+	RouteSetFieldState                = "state"
+	RouteSetFieldTransitioning        = "transitioning"
+	RouteSetFieldTransitioningMessage = "transitioningMessage"
+	RouteSetFieldUUID                 = "uuid"
 )
 
 type RouteSet struct {
 	types.Resource
-	Created   string            `json:"created,omitempty" yaml:"created,omitempty"`
-	Labels    map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
-	Name      string            `json:"name,omitempty" yaml:"name,omitempty"`
-	ProjectID string            `json:"projectId,omitempty" yaml:"projectId,omitempty"`
-	Removed   string            `json:"removed,omitempty" yaml:"removed,omitempty"`
-	Routes    []RouteSpec       `json:"routes,omitempty" yaml:"routes,omitempty"`
-	StackID   string            `json:"stackId,omitempty" yaml:"stackId,omitempty"`
-	UUID      string            `json:"uuid,omitempty" yaml:"uuid,omitempty"`
+	Created              string            `json:"created,omitempty" yaml:"created,omitempty"`
+	Labels               map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
+	Name                 string            `json:"name,omitempty" yaml:"name,omitempty"`
+	ProjectID            string            `json:"projectId,omitempty" yaml:"projectId,omitempty"`
+	Removed              string            `json:"removed,omitempty" yaml:"removed,omitempty"`
+	Routes               []RouteSpec       `json:"routes,omitempty" yaml:"routes,omitempty"`
+	StackID              string            `json:"stackId,omitempty" yaml:"stackId,omitempty"`
+	State                string            `json:"state,omitempty" yaml:"state,omitempty"`
+	Transitioning        string            `json:"transitioning,omitempty" yaml:"transitioning,omitempty"`
+	TransitioningMessage string            `json:"transitioningMessage,omitempty" yaml:"transitioningMessage,omitempty"`
+	UUID                 string            `json:"uuid,omitempty" yaml:"uuid,omitempty"`
 }
 
 type RouteSetCollection struct {
