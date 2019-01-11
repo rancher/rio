@@ -60,6 +60,10 @@ func (o *Controller) Finalize(obj runtime.Object) (runtime.Object, error) {
 }
 
 func (o *Controller) Updated(obj runtime.Object) (runtime.Object, error) {
+	if o.Populator == nil {
+		return obj, nil
+	}
+
 	meta, err := meta.Accessor(obj)
 	if err != nil {
 		return obj, err

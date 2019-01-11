@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/rancher/norman/objectclient/dynamic"
+	"github.com/rancher/norman/restwatch"
+
 	"github.com/pkg/errors"
 	"github.com/rancher/norman/controller"
 	"github.com/rancher/norman/objectclient"
@@ -48,7 +51,20 @@ func (o *DesiredSet) getControllerAndObjectClient(debugID string, gvk schema.Gro
 			continue
 		}
 
-		objectClient := objectclient.NewObjectClient("", o.discovery.RESTClient(), &resource, gvk, &objectclient.UnstructuredObjectFactory{})
+		restConfig := o.restConfig
+		if restConfig.NegotiatedSerializer == nil {
+			restConfig.NegotiatedSerializer = dynamic.NegotiatedSerializer
+		}
+
+		restClient, err := restwatch.UnversionedRESTClientFor(&restConfig)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		objectClient := objectclient.NewObjectClient("", restClient, &resource, gvk, &objectclient.UnstructuredObjectFactory{})
+		if o.discoveredClients == nil {
+			o.discoveredClients = map[schema.GroupVersionKind]*objectclient.ObjectClient{}
+		}
 		o.discoveredClients[gvk] = objectClient
 		return nil, objectClient, nil
 	}
@@ -60,12 +76,6 @@ func (o *DesiredSet) process(inputID, debugID string, set labels.Selector, gvk s
 	controller, objectClient, err := o.getControllerAndObjectClient(debugID, gvk)
 	if err != nil {
 		o.err(err)
-		return
-	}
-
-	client, ok := o.clients[gvk]
-	if !ok {
-		o.err(fmt.Errorf("failed to find client for %s for %s", gvk, debugID))
 		return
 	}
 
@@ -84,10 +94,10 @@ func (o *DesiredSet) process(inputID, debugID string, set labels.Selector, gvk s
 			continue
 		}
 
-		_, err = client.ObjectClient().Create(obj)
+		_, err = objectClient.Create(obj)
 		if errors2.IsAlreadyExists(err) {
 			// Taking over an object that wasn't previously managed by us
-			existingObj, err := client.ObjectClient().GetNamespaced(k.namespace, k.name, v1.GetOptions{})
+			existingObj, err := objectClient.GetNamespaced(k.namespace, k.name, v1.GetOptions{})
 			if err == nil {
 				toUpdate = append(toUpdate, k)
 				existing[k] = existingObj
@@ -102,7 +112,7 @@ func (o *DesiredSet) process(inputID, debugID string, set labels.Selector, gvk s
 	}
 
 	for _, k := range toUpdate {
-		err := o.compareObjects(client.ObjectClient(), debugID, inputID, existing[k], objs[k], len(toCreate) > 0 || len(toDelete) > 0)
+		err := o.compareObjects(objectClient, debugID, inputID, existing[k], objs[k], len(toCreate) > 0 || len(toDelete) > 0)
 		if err != nil {
 			o.err(errors.Wrapf(err, "failed to update %s %s for %s", k, gvk, debugID))
 			continue
@@ -110,7 +120,7 @@ func (o *DesiredSet) process(inputID, debugID string, set labels.Selector, gvk s
 	}
 
 	for _, k := range toDelete {
-		err := client.ObjectClient().DeleteNamespaced(k.namespace, k.name, &v1.DeleteOptions{
+		err := objectClient.DeleteNamespaced(k.namespace, k.name, &v1.DeleteOptions{
 			PropagationPolicy: &deletePolicy,
 		})
 		if err != nil {

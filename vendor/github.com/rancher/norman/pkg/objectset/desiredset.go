@@ -7,11 +7,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/rest"
 )
 
 type DesiredSet struct {
 	discoveredClients map[schema.GroupVersionKind]*objectclient.ObjectClient
 	discovery         discovery.DiscoveryInterface
+	restConfig        rest.Config
 	remove            bool
 	setID             string
 	objs              *ObjectSet
