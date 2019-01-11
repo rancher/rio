@@ -51,6 +51,7 @@ func (d *domainController) Updated(domain *projectv1.PublicDomain) (runtime.Obje
 	if domain.Namespace != settings.RioSystemNamespace {
 		return domain, nil
 	}
+	fmt.Println("!!!!!! enqueue")
 	d.featureController.Enqueue("", "letsencrypt")
 
 	ns, err := d.getNamespace(domain)

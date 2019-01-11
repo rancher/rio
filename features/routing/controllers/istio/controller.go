@@ -63,8 +63,8 @@ func resolve(namespace, name string, obj runtime.Object) ([]changeset.Key, error
 }
 
 type istioDeployController struct {
-	gatewayTemplate    objectset.Processor
-	stackTemplate      objectset.Processor
+	gatewayTemplate    *objectset.Processor
+	stackTemplate      *objectset.Processor
 	publicdomainLister projectv1.PublicDomainClientCache
 	secretsLister      corev1.SecretClientCache
 }

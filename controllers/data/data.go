@@ -27,7 +27,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 
 type dataHandler struct {
 	inCluster bool
-	processor objectset.Processor
+	processor *objectset.Processor
 }
 
 func (d *dataHandler) onChange(obj *v1.Namespace) (runtime.Object, error) {

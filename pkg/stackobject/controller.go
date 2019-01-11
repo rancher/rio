@@ -27,7 +27,7 @@ type ClientAccessor interface {
 type Populator func(obj runtime.Object, stack *riov1.Stack, os *objectset.ObjectSet) error
 
 type Controller struct {
-	Processor      objectset.Processor
+	Processor      *objectset.Processor
 	Populator      Populator
 	name           string
 	stacksCache    riov1.StackClientCache
@@ -90,6 +90,8 @@ func (o *Controller) Updated(obj runtime.Object) (runtime.Object, error) {
 		riov1.StackConditionDeployed.ReasonAndMessageFromError(obj, err)
 	} else if riov1.StackConditionDeployed.GetLastUpdated(obj) != "" {
 		riov1.StackConditionDeployed.True(obj)
+		riov1.StackConditionDeployed.Message(obj, "")
+		riov1.StackConditionDeployed.Reason(obj, "")
 	}
 	return obj, err
 }

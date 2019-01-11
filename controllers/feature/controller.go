@@ -42,7 +42,7 @@ type featureHandler struct {
 	sync.Mutex
 
 	ctx            context.Context
-	processor      objectset.Processor
+	processor      *objectset.Processor
 	featuresClient v1.FeatureClient
 	featuresCache  v1.FeatureClientCache
 	featureState   map[string]func()
