@@ -101,7 +101,11 @@ func (c *Config) Build(ctx context.Context, opts *Options) (context.Context, *Se
 		}
 	}
 
-	return ctx, server, controller.SyncThenStart(ctx, c.Threadiness, starters...)
+	if !opts.DisableControllers {
+		err = controller.SyncThenStart(ctx, c.Threadiness, starters...)
+	}
+
+	return ctx, server, err
 }
 
 func (c *Config) apiServer(ctx context.Context, r *Runtime) error {

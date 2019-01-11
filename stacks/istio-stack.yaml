@@ -1,0 +1,150 @@
+configs:
+  mesh:
+    content: |-
+      disablePolicyChecks: true
+      ingressControllerMode: "OFF"
+      authPolicy: NONE
+      rdsRefreshDelay: 10s
+      mixerReportServer: istio-telemetry.${TELEMETRY_NAMESPACE}.svc.cluster.local:9091
+      outboundTrafficPolicy:
+        mode: ALLOW_ANY
+      defaultConfig:
+        discoveryRefreshDelay: 10s
+        connectTimeout: 30s
+        configPath: "/etc/istio/proxy"
+        binaryPath: "/usr/local/bin/envoy"
+        serviceCluster: istio-proxy
+        drainDuration: 45s
+        parentShutdownDuration: 1m0s
+        interceptionMode: REDIRECT
+        proxyAdminPort: 15000
+        controlPlaneAuthPolicy: NONE
+        discoveryAddress: istio-pilot.${NAMESPACE}:15007
+
+services:
+  istio-pilot:
+    labels:
+      istio: pilot
+    global_permissions:
+    - '* config.istio.io/*'
+    - '* networking.istio.io/*'
+    - '* authentication.istio.io/*'
+    - '* apiextensions.k8s.io/customresourcedefinitions'
+    - '* extensions/thirdpartyresources'
+    - '* extensions/thirdpartyresources.extensions'
+    - '* extensions/ingresses'
+    - '* extensions/ingresses/status'
+    - rbac.istio.io/*
+    - create,get,list,watch,update configmaps
+    - endpoints
+    - pods
+    - services
+    - namespaces
+    - nodes
+    - secrets
+    sidekicks:
+      discovery:
+        command: discovery --log_output_level=debug --resync=2h
+        configs:
+        - mesh:/etc/istio/config/mesh
+        environment:
+        - POD_NAME=$(self/name)
+        - POD_NAMESPACE=$(self/namespace)
+        - PILOT_THROTTLE=500
+        - PILOT_CACHE_SQUASH=5
+        image: istio/pilot:1.0.5
+        secrets: identity:/etc/certs
+      istio-proxy:
+        expose:
+        - 15007/http
+        - 15010/grpc
+        - 9093/http,http-monitoring
+        image: istio/proxyv2:1.0.5
+        command:
+        - proxy
+        - --serviceCluster
+        - istio-pilot
+        - --templateFile
+        - /etc/istio/proxy/envoy_pilot.yaml.tmpl
+        - --controlPlaneAuthPolicy
+        - NONE
+        environment:
+        - POD_NAME=$(self/name)
+        - POD_NAMESPACE=$(self/namespace)
+        - INSTANCE_IP=$(self/ip)
+        secrets: identity:/etc/certs
+
+  istio-citadel:
+    image: istio/citadel:1.0.5
+    command:
+    - --append-dns-names=true
+    - --grpc-port=8060
+    - --grpc-hostname=citadel
+    - --self-signed-ca=true
+    - --citadel-storage-namespace=rio-system
+    global_permissions:
+    - write secrets
+    - serviceaccounts
+    - services
+    permissions:
+    - get,delete deployments
+    - get,delete serviceaccounts
+    - get,delete services
+    - get,delete deployments
+    - get,list,update,delete extensions/deployments
+    - get,list,update,delete extensions/replicasets
+    secrets: identity:/etc/certs
+
+  istio-gateway:
+    labels:
+      "gateway": "external"
+    global_permissions:
+    - "get,watch,list,update extensions/thirdpartyresources"
+    - "get,watch,list,update */virtualservices"
+    - "get,watch,list,update */destinationrules"
+    - "get,watch,list,update */gateways"
+    update_order: stop-first
+    sidekicks:
+      istio-proxy:
+        ports: ${PORTS}
+        image: "istio/proxyv2:1.0.5"
+        command:
+        - proxy
+        - router
+        - -v
+        - "2"
+        - --discoveryRefreshDelay
+        - '1s' #discoveryRefreshDelay
+        - --drainDuration
+        - '45s' #drainDuration
+        - --parentShutdownDuration
+        - '1m0s' #parentShutdownDuration
+        - --connectTimeout
+        - '10s' #connectTimeout
+        - --serviceCluster
+        - istio-proxy
+        - --zipkinAddress
+        - ""
+        - --statsdUdpAddress
+        - ""
+        - --proxyAdminPort
+        - "15000"
+        - --controlPlaneAuthPolicy
+        - NONE
+        - --discoveryAddress
+        - istio-pilot:15007
+        env:
+        - POD_NAME=$(self/name)
+        - POD_NAMESPACE=$(self/namespace)
+        - INSTANCE_IP=$(self/ip)
+        - ISTIO_META_POD_NAME=$(self/name)
+        secrets:
+        - identity:/etc/certs
+        - rio-certs:/etc/istio/ingressgateway-certs
+
+
+questions:
+- variable: TELEMETRY_NAMESPACE
+  description: "istio-telemetry namespace"
+
+

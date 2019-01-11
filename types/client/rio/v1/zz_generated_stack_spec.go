@@ -6,6 +6,7 @@ const (
 	StackSpecFieldAnswers                   = "answers"
 	StackSpecFieldDescription               = "description"
 	StackSpecFieldDisableMesh               = "disableMesh"
+	StackSpecFieldEnableAutoscale           = "enableAutoscale"
 	StackSpecFieldEnableKubernetesResources = "enableKubernetesResources"
 	StackSpecFieldQuestions                 = "questions"
 	StackSpecFieldTemplate                  = "template"
@@ -16,6 +17,7 @@ type StackSpec struct {
 	Answers                   map[string]string `json:"answers,omitempty" yaml:"answers,omitempty"`
 	Description               string            `json:"description,omitempty" yaml:"description,omitempty"`
 	DisableMesh               bool              `json:"disableMesh,omitempty" yaml:"disableMesh,omitempty"`
+	EnableAutoscale           bool              `json:"enableAutoscale,omitempty" yaml:"enableAutoscale,omitempty"`
 	EnableKubernetesResources bool              `json:"enableKubernetesResources,omitempty" yaml:"enableKubernetesResources,omitempty"`
 	Questions                 []Question        `json:"questions,omitempty" yaml:"questions,omitempty"`
 	Template                  string            `json:"template,omitempty" yaml:"template,omitempty"`

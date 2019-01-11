@@ -19,6 +19,7 @@ var (
 	Schemas = factory.Schemas(&Version).
 		MustImport(&Version, projectv1.ListenConfig{}).
 		MustImport(&Version, v1.Node{}).
+		MustImport(&Version, projectv1.Setting{}).
 		Init(podTypes).
 		Init(projectTypes).
 		Init(publicDomainTypes).

@@ -5,31 +5,37 @@ import (
 )
 
 const (
-	ConfigType             = "config"
-	ConfigFieldContent     = "content"
-	ConfigFieldCreated     = "created"
-	ConfigFieldDescription = "description"
-	ConfigFieldEncoded     = "encoded"
-	ConfigFieldLabels      = "labels"
-	ConfigFieldName        = "name"
-	ConfigFieldProjectID   = "projectId"
-	ConfigFieldRemoved     = "removed"
-	ConfigFieldStackID     = "stackId"
-	ConfigFieldUUID        = "uuid"
+	ConfigType                      = "config"
+	ConfigFieldContent              = "content"
+	ConfigFieldCreated              = "created"
+	ConfigFieldDescription          = "description"
+	ConfigFieldEncoded              = "encoded"
+	ConfigFieldLabels               = "labels"
+	ConfigFieldName                 = "name"
+	ConfigFieldProjectID            = "projectId"
+	ConfigFieldRemoved              = "removed"
+	ConfigFieldStackID              = "stackId"
+	ConfigFieldState                = "state"
+	ConfigFieldTransitioning        = "transitioning"
+	ConfigFieldTransitioningMessage = "transitioningMessage"
+	ConfigFieldUUID                 = "uuid"
 )
 
 type Config struct {
 	types.Resource
-	Content     string            `json:"content,omitempty" yaml:"content,omitempty"`
-	Created     string            `json:"created,omitempty" yaml:"created,omitempty"`
-	Description string            `json:"description,omitempty" yaml:"description,omitempty"`
-	Encoded     bool              `json:"encoded,omitempty" yaml:"encoded,omitempty"`
-	Labels      map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
-	Name        string            `json:"name,omitempty" yaml:"name,omitempty"`
-	ProjectID   string            `json:"projectId,omitempty" yaml:"projectId,omitempty"`
-	Removed     string            `json:"removed,omitempty" yaml:"removed,omitempty"`
-	StackID     string            `json:"stackId,omitempty" yaml:"stackId,omitempty"`
-	UUID        string            `json:"uuid,omitempty" yaml:"uuid,omitempty"`
+	Content              string            `json:"content,omitempty" yaml:"content,omitempty"`
+	Created              string            `json:"created,omitempty" yaml:"created,omitempty"`
+	Description          string            `json:"description,omitempty" yaml:"description,omitempty"`
+	Encoded              bool              `json:"encoded,omitempty" yaml:"encoded,omitempty"`
+	Labels               map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
+	Name                 string            `json:"name,omitempty" yaml:"name,omitempty"`
+	ProjectID            string            `json:"projectId,omitempty" yaml:"projectId,omitempty"`
+	Removed              string            `json:"removed,omitempty" yaml:"removed,omitempty"`
+	StackID              string            `json:"stackId,omitempty" yaml:"stackId,omitempty"`
+	State                string            `json:"state,omitempty" yaml:"state,omitempty"`
+	Transitioning        string            `json:"transitioning,omitempty" yaml:"transitioning,omitempty"`
+	TransitioningMessage string            `json:"transitioningMessage,omitempty" yaml:"transitioningMessage,omitempty"`
+	UUID                 string            `json:"uuid,omitempty" yaml:"uuid,omitempty"`
 }
 
 type ConfigCollection struct {

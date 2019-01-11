@@ -67,7 +67,7 @@ func setStatefulSetScaleStatuses(data map[string]interface{}) {
 	}
 
 	ready, _ := convert.ToNumber(deploymentStatus["readyReplicas"])
-	available, _ := convert.ToNumber(deploymentStatus["replicas"])
+	available, _ := convert.ToNumber(deploymentStatus["currentReplicas"])
 	updated, _ := convert.ToNumber(deploymentStatus["updatedReplicas"])
 
 	scaleStatus := map[string]interface{}{

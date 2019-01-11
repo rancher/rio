@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
 )
@@ -28,6 +29,13 @@ var (
 		Kind: GatewayGroupVersionKind.Kind,
 	}
 )
+
+func NewGateway(namespace, name string, obj Gateway) *Gateway {
+	obj.APIVersion, obj.Kind = GatewayGroupVersionKind.ToAPIVersionAndKind()
+	obj.Name = name
+	obj.Namespace = namespace
+	return &obj
+}
 
 type GatewayList struct {
 	metav1.TypeMeta `json:",inline"`
@@ -224,8 +232,8 @@ func (s *gatewayClient) Watch(opts metav1.ListOptions) (watch.Interface, error) 
 }
 
 // Patch applies the patch and returns the patched deployment.
-func (s *gatewayClient) Patch(o *Gateway, data []byte, subresources ...string) (*Gateway, error) {
-	obj, err := s.objectClient.Patch(o.Name, o, data, subresources...)
+func (s *gatewayClient) Patch(o *Gateway, patchType types.PatchType, data []byte, subresources ...string) (*Gateway, error) {
+	obj, err := s.objectClient.Patch(o.Name, o, patchType, data, subresources...)
 	return obj.(*Gateway), err
 }
 
@@ -277,6 +285,7 @@ type GatewayClient interface {
 	Enqueue(namespace, name string)
 
 	Generic() controller.GenericController
+	ObjectClient() *objectclient.ObjectClient
 	Interface() GatewayInterface
 }
 
@@ -295,6 +304,10 @@ func (n *gatewayClient2) Interface() GatewayInterface {
 
 func (n *gatewayClient2) Generic() controller.GenericController {
 	return n.iface.Controller().Generic()
+}
+
+func (n *gatewayClient2) ObjectClient() *objectclient.ObjectClient {
+	return n.Interface().ObjectClient()
 }
 
 func (n *gatewayClient2) Enqueue(namespace, name string) {

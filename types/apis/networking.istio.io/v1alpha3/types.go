@@ -1,7 +1,9 @@
 package v1alpha3
 
 import (
+	"github.com/knative/pkg/apis/istio/v1alpha3"
 	"github.com/rancher/norman/types"
+	istiov1alpha3 "istio.io/api/networking/v1alpha3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -11,7 +13,7 @@ type Gateway struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec GatewaySpec `json:"spec"`
+	Spec v1alpha3.GatewaySpec `json:"spec"`
 }
 
 type VirtualService struct {
@@ -19,6 +21,8 @@ type VirtualService struct {
 
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec v1alpha3.VirtualServiceSpec `json:"spec"`
 }
 
 type ServiceEntry struct {
@@ -26,6 +30,8 @@ type ServiceEntry struct {
 
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec ServiceEntrySpec `json:"spec"`
 }
 
 type DestinationRule struct {
@@ -33,26 +39,25 @@ type DestinationRule struct {
 
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec v1alpha3.DestinationRuleSpec `json:"spec"`
 }
 
-type GatewaySpec struct {
-	Servers  []*Server         `json:"servers,omitempty"`
-	Selector map[string]string `json:"selector,omitempty"`
+// Copied from istio
+
+type ServiceEntrySpec struct {
+	Hosts      []string                              `json:"hosts,omitempty"`
+	Addresses  []string                              `json:"addresses,omitempty"`
+	Ports      []Port                                `json:"ports,omitempty"`
+	Location   istiov1alpha3.ServiceEntry_Location   `json:"location,omitempty"`
+	Resolution istiov1alpha3.ServiceEntry_Resolution `json:"resolution,omitempty"`
+	Endpoints  []ServiceEntry_Endpoint               `json:"endpoints,omitempty"`
 }
 
-type Server struct {
-	Port  *Port       `json:"port,omitempty"`
-	Hosts []string    `json:"hosts,omitempty"`
-	TLS   *TLSOptions `json:"tls,omitempty"`
-}
-
-type TLSOptions struct {
-	HTTPSRedirect     bool   `json:"httpsRedirect,omitempty"`
-	Mode              string `json:"mode,omitempty"`
-	ServerCertificate string `json:"serverCertificate,omitempty"`
-	PrivateKey        string `json:"privateKey,omitempty"`
-	CaCertificates    string `json:"caCertificates,omitempty"`
-	SubjectAltNames   string `json:"subjectAltNames,omitempty"`
+type ServiceEntry_Endpoint struct {
+	Address string            `json:"address,omitempty"`
+	Ports   map[string]uint32 `json:"ports,omitempty"`
+	Labels  map[string]string `json:"labels,omitempty"`
 }
 
 type Port struct {

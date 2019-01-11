@@ -21,20 +21,24 @@ import (
 	"github.com/rancher/norman/types"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rio/api/setup"
-	"github.com/rancher/rio/controllers/api/domain"
-	"github.com/rancher/rio/controllers/backend"
-	"github.com/rancher/rio/pkg/data"
+	"github.com/rancher/rio/controllers"
 	rTypes "github.com/rancher/rio/types"
+	"github.com/rancher/rio/types/apis/apiextensions.k8s.io/v1beta1"
+	cmv1alpha1 "github.com/rancher/rio/types/apis/certmanager.k8s.io/v1alpha1"
 	"github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
+	policyv1beta1 "github.com/rancher/rio/types/apis/policy/v1beta1"
 	projectv1 "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
 	projectschema "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1/schema"
+	autoscalev1 "github.com/rancher/rio/types/apis/rio-autoscale.cattle.io/v1"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	rioschema "github.com/rancher/rio/types/apis/rio.cattle.io/v1/schema"
+	storagev1 "github.com/rancher/rio/types/apis/storage.k8s.io/v1"
 	projectclient "github.com/rancher/rio/types/client/project/v1"
 	"github.com/rancher/rio/types/client/rio/v1"
 	"github.com/rancher/types/apis/apps/v1beta2"
 	"github.com/rancher/types/apis/core/v1"
 	"github.com/rancher/types/apis/management.cattle.io/v3"
+	rbacv1 "github.com/rancher/types/apis/rbac.authorization.k8s.io/v1"
 	"github.com/sirupsen/logrus"
 	net2 "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/kubernetes/pkg/wrapper/server"
@@ -66,20 +70,23 @@ func NewConfig(dataDir string, inCluster bool) (*norman.Config, error) {
 				projectclient.ListenConfigType,
 				projectclient.PublicDomainType,
 				projectclient.FeatureType,
+				projectclient.SettingType,
 			},
 		},
 
 		Clients: []norman.ClientFactory{
-			riov1.Factory,
+			autoscalev1.Factory,
+			cmv1alpha1.Factory,
+			policyv1beta1.Factory,
 			projectv1.Factory,
+			rbacv1.Factory,
+			riov1.Factory,
+			storagev1.Factory,
 			v1alpha3.Factory,
+			v1beta1.Factory,
+			v1beta2.Factory,
 			v1.Factory,
 			v3.Factory,
-			v1beta2.Factory,
-		},
-
-		PerServerControllers: []norman.ControllerRegister{
-			rTypes.Register(domain.Register),
 		},
 
 		CustomizeSchemas: setup.Types,
@@ -87,11 +94,12 @@ func NewConfig(dataDir string, inCluster bool) (*norman.Config, error) {
 		GlobalSetup: rTypes.BuildContext,
 
 		MasterSetup: func(ctx context.Context) (context.Context, error) {
-			return ctx, data.AddData(rTypes.From(ctx), inCluster)
+			rTypes.From(ctx).InCluster = inCluster
+			return ctx, nil
 		},
 
 		MasterControllers: []norman.ControllerRegister{
-			rTypes.Register(backend.Register),
+			rTypes.Register(controllers.Register),
 		},
 
 		K3s: norman.K3sConfig{

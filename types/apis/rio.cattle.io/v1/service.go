@@ -39,12 +39,20 @@ type ServiceUnversionedSpec struct {
 	UpdateOrder        string            `json:"updateOrder,omitempty" norman:"type=enum,options=start-first|stop-first"`
 	UpdateStrategy     string            `json:"updateStrategy,omitempty" norman:"type=enum,options=rolling|on-delete,default=rolling"`
 	DeploymentStrategy string            `json:"deploymentStrategy,omitempty" norman:"type=enum,options=parallel|ordered,default=parallel"`
+	AutoscaleConfig
 
 	PodConfig
 	PrivilegedConfig
 	Sidekicks map[string]SidekickConfig `json:"sidekicks,omitempty"`
 
 	ContainerConfig
+}
+
+type AutoscaleConfig struct {
+	EnableAutoScale      bool `json:"enableAutoScale,omitempty"`
+	ContainerConcurrency int  `json:"containerConcurrency,omitempty"`
+	MinScale             int  `json:"minScale,omitempty"`
+	MaxScale             int  `json:"maxScale,omitempty"`
 }
 
 type ServiceSpec struct {
@@ -217,7 +225,7 @@ type HealthConfig struct {
 	IntervalSeconds     int `json:"intervalSeconds,omitempty" norman:"default=10"`   // support friendly numbers, alias periodSeconds, period
 	TimeoutSeconds      int `json:"timeoutSeconds,omitempty" norman:"default=5"`     // support friendly numbers
 	InitialDelaySeconds int `json:"initialDelaySeconds,omitempty"`                   //alias start_period
-	HealthyThreshold    int `json:"healthyThreshold,omitempty" norman:"default=2"`   //alias retries, successThreshold
+	HealthyThreshold    int `json:"healthyThreshold,omitempty" norman:"default=1"`   //alias retries, successThreshold
 	UnhealthyThreshold  int `json:"unhealthyThreshold,omitempty" norman:"default=3"` //alias failureThreshold, set to retries if unset
 }
 

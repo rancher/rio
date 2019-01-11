@@ -26,6 +26,7 @@ type Interface interface {
 }
 
 type Clients struct {
+	Interface Interface
 	{{range .schemas}}
 	{{.CodeName}} {{.CodeName}}Client{{end}}
 }
@@ -69,6 +70,7 @@ func NewClients(config rest.Config) (*Clients, error) {
 
 func NewClientsFromInterface(iface Interface) *Clients {
 	return &Clients{
+		Interface: iface,
 	{{range .schemas}}
 		{{.CodeName}}: &{{.ID}}Client2{
 			iface: iface.{{.CodeNamePlural}}(""),

@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
 )
@@ -23,10 +24,18 @@ var (
 	FeatureResource = metav1.APIResource{
 		Name:         "features",
 		SingularName: "feature",
-		Namespaced:   false,
-		Kind:         FeatureGroupVersionKind.Kind,
+		Namespaced:   true,
+
+		Kind: FeatureGroupVersionKind.Kind,
 	}
 )
+
+func NewFeature(namespace, name string, obj Feature) *Feature {
+	obj.APIVersion, obj.Kind = FeatureGroupVersionKind.ToAPIVersionAndKind()
+	obj.Name = name
+	obj.Namespace = namespace
+	return &obj
+}
 
 type FeatureList struct {
 	metav1.TypeMeta `json:",inline"`
@@ -223,8 +232,8 @@ func (s *featureClient) Watch(opts metav1.ListOptions) (watch.Interface, error) 
 }
 
 // Patch applies the patch and returns the patched deployment.
-func (s *featureClient) Patch(o *Feature, data []byte, subresources ...string) (*Feature, error) {
-	obj, err := s.objectClient.Patch(o.Name, o, data, subresources...)
+func (s *featureClient) Patch(o *Feature, patchType types.PatchType, data []byte, subresources ...string) (*Feature, error) {
+	obj, err := s.objectClient.Patch(o.Name, o, patchType, data, subresources...)
 	return obj.(*Feature), err
 }
 
@@ -276,6 +285,7 @@ type FeatureClient interface {
 	Enqueue(namespace, name string)
 
 	Generic() controller.GenericController
+	ObjectClient() *objectclient.ObjectClient
 	Interface() FeatureInterface
 }
 
@@ -294,6 +304,10 @@ func (n *featureClient2) Interface() FeatureInterface {
 
 func (n *featureClient2) Generic() controller.GenericController {
 	return n.iface.Controller().Generic()
+}
+
+func (n *featureClient2) ObjectClient() *objectclient.ObjectClient {
+	return n.Interface().ObjectClient()
 }
 
 func (n *featureClient2) Enqueue(namespace, name string) {
