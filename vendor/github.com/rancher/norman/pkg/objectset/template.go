@@ -31,6 +31,10 @@ func NewProcessor(setID string) *Processor {
 	}
 }
 
+func (t *Processor) SetID() string {
+	return t.setID
+}
+
 func (t *Processor) CodeVersion(version string) *Processor {
 	t.codeVersion = version
 	return t

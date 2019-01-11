@@ -2,6 +2,10 @@ package stackobject
 
 import (
 	"context"
+	"strings"
+
+	"github.com/rancher/norman/condition"
+	"github.com/rancher/norman/types/convert"
 
 	"github.com/pkg/errors"
 	"github.com/rancher/norman/controller"
@@ -88,14 +92,27 @@ func (o *Controller) Updated(obj runtime.Object) (runtime.Object, error) {
 			desireset.AddInjector(i.Inject)
 		}
 	}
-	err = desireset.Apply()
-	if err != nil {
-		riov1.StackConditionDeployed.False(obj)
-		riov1.StackConditionDeployed.ReasonAndMessageFromError(obj, err)
+
+	cond := o.getCondition()
+
+	if err = desireset.Apply(); err != nil {
+		cond.False(obj)
+		cond.ReasonAndMessageFromError(obj, err)
 	} else if riov1.StackConditionDeployed.GetLastUpdated(obj) != "" {
-		riov1.StackConditionDeployed.True(obj)
-		riov1.StackConditionDeployed.Message(obj, "")
-		riov1.StackConditionDeployed.Reason(obj, "")
+		cond.True(obj)
+		cond.Message(obj, "")
+		cond.Reason(obj, "")
 	}
+
 	return obj, err
+}
+
+func (o *Controller) getCondition() condition.Cond {
+	setID := o.Processor.SetID()
+	buffer := strings.Builder{}
+	buffer.WriteString(string(riov1.StackConditionDeployed))
+	for _, part := range strings.Split(setID, "-") {
+		buffer.WriteString(convert.Capitalize(part))
+	}
+	return condition.Cond(buffer.String())
 }
