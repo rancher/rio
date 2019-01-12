@@ -2,6 +2,10 @@ package stackobject
 
 import (
 	"context"
+	"strings"
+
+	"github.com/rancher/norman/condition"
+	"github.com/rancher/norman/types/convert"
 
 	"github.com/pkg/errors"
 	"github.com/rancher/norman/controller"
@@ -27,7 +31,7 @@ type ClientAccessor interface {
 type Populator func(obj runtime.Object, stack *riov1.Stack, os *objectset.ObjectSet) error
 
 type Controller struct {
-	Processor      objectset.Processor
+	Processor      *objectset.Processor
 	Populator      Populator
 	name           string
 	stacksCache    riov1.StackClientCache
@@ -60,6 +64,10 @@ func (o *Controller) Finalize(obj runtime.Object) (runtime.Object, error) {
 }
 
 func (o *Controller) Updated(obj runtime.Object) (runtime.Object, error) {
+	if o.Populator == nil {
+		return obj, nil
+	}
+
 	meta, err := meta.Accessor(obj)
 	if err != nil {
 		return obj, err
@@ -84,12 +92,27 @@ func (o *Controller) Updated(obj runtime.Object) (runtime.Object, error) {
 			desireset.AddInjector(i.Inject)
 		}
 	}
-	err = desireset.Apply()
-	if err != nil {
-		riov1.StackConditionDeployed.False(obj)
-		riov1.StackConditionDeployed.ReasonAndMessageFromError(obj, err)
-	} else if riov1.StackConditionDeployed.GetLastUpdated(obj) != "" {
-		riov1.StackConditionDeployed.True(obj)
+
+	cond := o.getCondition()
+
+	if err = desireset.Apply(); err != nil {
+		cond.False(obj)
+		cond.ReasonAndMessageFromError(obj, err)
+	} else if cond.GetLastUpdated(obj) != "" {
+		cond.True(obj)
+		cond.Message(obj, "")
+		cond.Reason(obj, "")
 	}
+
 	return obj, err
+}
+
+func (o *Controller) getCondition() condition.Cond {
+	setID := o.Processor.SetID()
+	buffer := strings.Builder{}
+	buffer.WriteString(string(riov1.StackConditionDeployed))
+	for _, part := range strings.Split(setID, "-") {
+		buffer.WriteString(convert.Capitalize(part))
+	}
+	return condition.Cond(buffer.String())
 }

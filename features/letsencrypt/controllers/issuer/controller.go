@@ -31,7 +31,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 }
 
 type featureHandler struct {
-	processor objectset.Processor
+	processor *objectset.Processor
 }
 
 func (f *featureHandler) onChange(feature *v1.Feature) (runtime.Object, error) {

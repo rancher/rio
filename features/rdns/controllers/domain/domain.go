@@ -181,7 +181,6 @@ func (g *Controller) sync(svc *v1.Service) (runtime.Object, error) {
 		return nil, err
 	}
 
-	g.featureController.Enqueue(settings.RioSystemNamespace, "letsencrypt")
 	return nil, nil
 }
 
@@ -230,6 +229,7 @@ func (g *Controller) setDomain(fqdn string) error {
 		g.stackController.Enqueue(stack.Namespace, stack.Name)
 	}
 
+	g.featureController.Enqueue(settings.RioSystemNamespace, "letsencrypt")
 	return nil
 }
 
