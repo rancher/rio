@@ -1,20 +1,27 @@
 package objectset
 
 import (
+	"github.com/rancher/norman/objectclient"
 	"github.com/rancher/norman/pkg/objectset/injectors"
 	"github.com/rancher/norman/types"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/rest"
 )
 
 type DesiredSet struct {
-	setID       string
-	objs        *ObjectSet
-	codeVersion string
-	clients     map[schema.GroupVersionKind]Client
-	owner       runtime.Object
-	injectors   []injectors.ConfigInjector
-	errs        []error
+	discoveredClients map[schema.GroupVersionKind]*objectclient.ObjectClient
+	discovery         discovery.DiscoveryInterface
+	restConfig        rest.Config
+	remove            bool
+	setID             string
+	objs              *ObjectSet
+	codeVersion       string
+	clients           map[schema.GroupVersionKind]Client
+	owner             runtime.Object
+	injectors         []injectors.ConfigInjector
+	errs              []error
 }
 
 func (o *DesiredSet) AddInjector(inj injectors.ConfigInjector) {
