@@ -63,8 +63,9 @@ def kubetest(stack, vname):
 
 def test_nfs_vol_bound(stack):
     volname = riovolume(stack, 1)
-    if os.environ['RUN_NFS_TEST'] != "true":
-        print('WARNING! nfs_not_enabled all test will fail')
+    if os.getenv('RUN_NFS_TEST') != "true":
+        print('WARNING! nfs_not_enabled skipping test')
+        return
 
     assert rio_bound(stack, volname) == 'bound'
     assert riotest(stack, volname) == 1
@@ -73,8 +74,9 @@ def test_nfs_vol_bound(stack):
 
 def test_nfs_bind_workload(stack):
     volname = riovolume(stack, 1)
-    if os.environ['RUN_NFS_TEST'] != "true":
-        print('WARNING! nfs_not_enabled all test will fail')
+    if os.getenv('RUN_NFS_TEST') != "true":
+        print('WARNING! nfs_not_enabled skipping test')
+        return
 
     rio_bound(stack, volname)
     results = rio_bind_workload(stack, volname)

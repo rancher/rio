@@ -38,10 +38,14 @@ rio --project=rio-system ps -c
 
 chmod +x ./tests/init-nfs.bash
 ./tests/init-nfs.bash
-export RUN_NFS_TEST=true
+# export RUN_NFS_TEST=true
 
 cd ./tests
-tox -- -n $(nproc)
+PROC=$(nproc)
+if [ "$PROC" > 8 ]; then
+    PROC=8
+fi
+tox -- -n $PROC
 cd ..
 
 bats -r ./tests || {

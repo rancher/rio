@@ -34,8 +34,9 @@ def rio_bind_workload(stack, vname, wrklname):
 
 
 def test_vol_template(stack):
-    if os.environ['RUN_NFS_TEST'] != "true":
-        print('WARNING! nfs_not_enabled all test will fail')
+    if os.getenv('RUN_NFS_TEST') != "true":
+        print('WARNING! nfs_not_enabled skipping test')
+        return
 
     riovolume(stack, './nfs-stack/volume-template-stack.yaml')
     # to run locally you have to change url to
