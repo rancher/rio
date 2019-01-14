@@ -6,7 +6,7 @@ import (
 	projectv1 "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
 	"github.com/rancher/rio/types/factory"
 	typemapper "github.com/rancher/types/mapper"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 var (

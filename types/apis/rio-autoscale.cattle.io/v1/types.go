@@ -3,7 +3,7 @@ package v1
 import (
 	"github.com/rancher/norman/condition"
 	"github.com/rancher/norman/types"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

@@ -11,7 +11,7 @@ configs:
         - role: endpoints
           namespaces:
             names:
-            - ${NAMESPACE}
+            - ${TELEMETRY_NAMESPACE}
         relabel_configs:
         - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
           action: keep
@@ -87,7 +87,7 @@ configs:
         - role: endpoints
           namespaces:
             names:
-            - ${NAMESPACE}
+            - ${TELEMETRY_NAMESPACE}
         relabel_configs:
         - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
           action: keep
@@ -135,6 +135,8 @@ configs:
         - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
           action: keep
           regex: kubernetes;https
+        - target_label: __address__
+          replacement: kubernetes.default.svc:443
       # scrape config for nodes (kubelet)
       - job_name: 'kubernetes-nodes'
         scheme: https
@@ -151,7 +153,7 @@ configs:
         - source_labels: [__meta_kubernetes_node_name]
           regex: (.+)
           target_label: __metrics_path__
-          replacement: /api/v1/nodes/${1}/proxy/metrics
+          replacement: /api/v1/nodes/$${1}/proxy/metrics
       # Scrape config for Kubelet cAdvisor.
       #
       # This is required for Kubernetes 1.7.3 and later, where cAdvisor metrics
@@ -181,7 +183,7 @@ configs:
         - source_labels: [__meta_kubernetes_node_name]
           regex: (.+)
           target_label: __metrics_path__
-          replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+          replacement: /api/v1/nodes/$${1}/proxy/metrics/cadvisor
       # scrape config for service endpoints.
       - job_name: 'kubernetes-service-endpoints'
         kubernetes_sd_configs:
@@ -287,7 +289,7 @@ services:
     - services
     - endpoints
     - pods
-    - nodes/proxy
+    - /nodes/proxy
     - configmaps
     - get url=/metrics
     image: prom/prometheus:v2.3.1
@@ -299,7 +301,3 @@ services:
     command:
     - --storage.tsdb.retention=6h
     - --config.file=/etc/prometheus/prometheus.yml
-
-questions:
-- variable: LB_NAMESPACE
-  description: "istio-system namespace"

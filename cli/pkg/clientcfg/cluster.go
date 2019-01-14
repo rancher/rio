@@ -27,7 +27,7 @@ type Cluster struct {
 	Default            bool    `json:"default,omitempty"`
 	Config             *Config `json:"-"`
 
-	File          string
+	File          string `json:"-"`
 	domain        string
 	project       *Project
 	clientInfo    *clusterClientInfo

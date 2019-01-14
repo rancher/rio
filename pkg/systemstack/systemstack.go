@@ -10,7 +10,7 @@ import (
 )
 
 type SystemStack struct {
-	processor objectset.Processor
+	processor *objectset.Processor
 	spec      v1.StackSpec
 	name      string
 }

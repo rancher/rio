@@ -17,4 +17,5 @@ __pycache__
 /tests/.pytest_cache/
 /tests/.tox/
 /tests/.vscode
+/tests/.idea
 /tests/MANIFEST

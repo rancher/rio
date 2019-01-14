@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/docker/go-units"
+	units "github.com/docker/go-units"
 )
 
 type Mount struct {

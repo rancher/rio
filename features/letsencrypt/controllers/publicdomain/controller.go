@@ -34,7 +34,7 @@ func Register(ctx context.Context, rContexts *types.Context) error {
 }
 
 type publicDomainHandler struct {
-	processor          objectset.Processor
+	processor          *objectset.Processor
 	publicDomains      v1.PublicDomainClient
 	publicDomainCache  v1.PublicDomainClientCache
 	featureClientCache v1.FeatureClientCache

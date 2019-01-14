@@ -2,7 +2,7 @@ package schema
 
 import (
 	"github.com/rancher/norman/types"
-	"github.com/rancher/rio/types/apis/rio-autoscale.cattle.io/v1"
+	v1 "github.com/rancher/rio/types/apis/rio-autoscale.cattle.io/v1"
 	"github.com/rancher/rio/types/factory"
 )
 
