@@ -301,9 +301,3 @@ services:
     command:
     - --storage.tsdb.retention=6h
     - --config.file=/etc/prometheus/prometheus.yml
-
-questions:
-- variable: LB_NAMESPACE
-  description: "istio-system namespace"
-- variable: TELEMETRY_NAMESPACE
-  description: "istio-telemetry namespace"

@@ -3,6 +3,8 @@ package controllers
 import (
 	"context"
 
+	"github.com/rancher/rio/features/kiali"
+
 	"github.com/rancher/rio/features/prometheus"
 
 	"github.com/rancher/rio/controllers/data"
@@ -46,6 +48,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		return err
 	}
 	if err := prometheus.Register(ctx, rContext); err != nil {
+		return err
+	}
+	if err := kiali.Register(ctx, rContext); err != nil {
 		return err
 	}
 

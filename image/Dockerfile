@@ -121,7 +121,7 @@ RUN mkdir -p $GOPATH/src/github.com/containernetworking && \
     cd $GOPATH/src/github.com/containernetworking && \
     git clone https://github.com/ibuildthecloud/plugins.git && \
     cd plugins && \
-    git checkout 299b021fdcb5533d5babc40006d2965a8563066a
+    git checkout 9810b7d5137b171c4e07ce59bb18be9feccec557
 RUN go build -buildmode=pie -ldflags -s -o /usr/bin/cni github.com/containernetworking/plugins
 
 ### RUNC ###

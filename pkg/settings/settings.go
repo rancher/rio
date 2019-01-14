@@ -11,6 +11,7 @@ const (
 	IstioStackName        = "istio"
 	IstioTelemetry        = "istio-telemetry"
 	Prometheus            = "prometheus"
+	Grafana               = "grafana"
 	AutoScaleStack        = "rio-autoscaler"
 	DefaultServiceVersion = "v0"
 	StagingType           = "staging"
@@ -39,6 +40,7 @@ var (
 	IstioExternalLBNamespace = namespace.StackNamespace(RioSystemNamespace, IstioStackName)
 	IstioTelemetryNamespace  = namespace.StackNamespace(RioSystemNamespace, IstioTelemetry)
 	PrometheusNamespace      = namespace.StackNamespace(RioSystemNamespace, Prometheus)
+	GrafanaNamespace         = namespace.StackNamespace(RioSystemNamespace, Grafana)
 	IstioGatewaySelector     = map[string]string{
 		"gateway": "external",
 	}
