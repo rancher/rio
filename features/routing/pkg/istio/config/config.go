@@ -11,7 +11,7 @@ import (
 )
 
 func InjectParams(meshConfig *v1alpha1.MeshConfig) *inject.Params {
-	debug := true
+	debug := false
 	os.Setenv("ISTIO_PROXY_IMAGE", "proxyv2")
 	hub := "docker.io/istio"
 	tag := "1.0.5"
