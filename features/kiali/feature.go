@@ -24,11 +24,14 @@ func Register(ctx context.Context, rContext *types.Context) error {
 				"USERNAME": "admin",
 				"PASSWORD": "admin",
 			},
+			Requires: []string{
+				"prometheus",
+				"grafana",
+				"mixer",
+			},
 		},
 		SystemStacks: []*systemstack.SystemStack{
-			systemstack.NewSystemStack(rContext.Rio.Stack, "kiali", riov1.StackSpec{
-				DisableMesh: true,
-			}),
+			systemstack.NewSystemStack(rContext.Rio.Stack, "kiali", riov1.StackSpec{}),
 		},
 		FixedAnswers: map[string]string{
 			"PROMETHEUS_URL": fmt.Sprintf("http://prometheus.%s.svc.cluster.local:9090", settings.PrometheusNamespace),

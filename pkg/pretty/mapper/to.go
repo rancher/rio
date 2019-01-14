@@ -50,7 +50,11 @@ func (d To) ToInternal(data map[string]interface{}) error {
 				return err
 			}
 			if len(d) > 0 {
-				newSlc = append(newSlc, d[0])
+				o, err := convert.EncodeToMap(d[0])
+				if err != nil {
+					return err
+				}
+				newSlc = append(newSlc, o)
 			}
 		} else {
 			newSlc = append(newSlc, obj)

@@ -9,16 +9,20 @@ import (
 	"github.com/rancher/norman/controller"
 	"github.com/rancher/norman/lifecycle"
 	"github.com/rancher/norman/objectclient"
+	"github.com/rancher/norman/pkg/changeset"
 	"github.com/rancher/norman/pkg/objectset"
 	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/rio/features/routing/pkg/istio/config"
+	"github.com/rancher/rio/pkg/namespace"
 	"github.com/rancher/rio/pkg/stacknamespace"
 	"github.com/rancher/rio/types"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
-	"github.com/rancher/types/apis/core/v1"
+	v1 "github.com/rancher/types/apis/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/cache"
 )
 
 var ErrSkipObjectSet = errors.New("skip objectset")
@@ -35,6 +39,7 @@ type Controller struct {
 	Populator      Populator
 	name           string
 	stacksCache    riov1.StackClientCache
+	indexer        cache.Indexer
 	namespaceCache v1.NamespaceClientCache
 	injector       []config.IstioInjector
 }
@@ -46,13 +51,40 @@ func NewGeneratingController(ctx context.Context, rContext *types.Context, name 
 		stacksCache:    rContext.Rio.Stack.Cache(),
 		namespaceCache: rContext.Core.Namespace.Cache(),
 		injector:       injector,
+		indexer:        client.Generic().Informer().GetIndexer(),
 	}
+	changeset.Watch(ctx, "stackchange-"+name, sc.resolve, client.Generic(), rContext.Rio.Stack)
 
 	lcName := name + "-object-controller"
 	lc := lifecycle.NewObjectLifecycleAdapter(lcName, false, sc, client.ObjectClient())
 	client.Generic().AddHandler(ctx, name, lc)
 
 	return sc
+}
+
+func (o *Controller) resolve(ns, name string, obj runtime.Object) ([]changeset.Key, error) {
+	switch obj.(type) {
+	case *riov1.Stack:
+		var ret []interface{}
+		if err := cache.ListAllByNamespace(o.indexer, namespace.StackToNamespace(obj.(*riov1.Stack)), labels.Everything(), func(obj interface{}) {
+			ret = append(ret, obj)
+		}); err != nil {
+			return nil, err
+		}
+		var key []changeset.Key
+		for _, o := range ret {
+			meta, err := meta.Accessor(o)
+			if err != nil {
+				return nil, err
+			}
+			key = append(key, changeset.Key{
+				Name:      meta.GetName(),
+				Namespace: meta.GetNamespace(),
+			})
+		}
+		return key, nil
+	}
+	return nil, nil
 }
 
 func (o *Controller) Create(obj runtime.Object) (runtime.Object, error) {
