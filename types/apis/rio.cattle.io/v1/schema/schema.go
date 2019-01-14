@@ -3,7 +3,7 @@ package schema
 import (
 	"github.com/rancher/norman/types"
 	"github.com/rancher/norman/types/mapper"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/types/factory"
 	rm "github.com/rancher/rio/types/mapper"
 )
