@@ -4,19 +4,19 @@ import (
 	"context"
 	"strings"
 
-	"github.com/rancher/norman/condition"
-	"github.com/rancher/norman/types/convert"
-
 	"github.com/pkg/errors"
+	"github.com/rancher/norman/condition"
 	"github.com/rancher/norman/controller"
 	"github.com/rancher/norman/lifecycle"
 	"github.com/rancher/norman/objectclient"
 	"github.com/rancher/norman/pkg/objectset"
+	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/rio/features/routing/pkg/istio/config"
 	"github.com/rancher/rio/pkg/stacknamespace"
 	"github.com/rancher/rio/types"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"github.com/rancher/types/apis/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -74,6 +74,9 @@ func (o *Controller) Updated(obj runtime.Object) (runtime.Object, error) {
 	}
 
 	stack, err := stacknamespace.GetStack(meta, o.stacksCache, o.namespaceCache)
+	if apierrors.IsNotFound(err) {
+		return obj, nil
+	}
 	if err != nil {
 		return obj, err
 	}
