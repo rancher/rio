@@ -70,8 +70,6 @@ def kubeclusterroletest(stack, sname):
 
     return None
 
-    return replicas
-
 
 def test_name1(stack):
     serviceName = rio_permission_setup(stack, "'update cluster'")

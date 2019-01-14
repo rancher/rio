@@ -33,8 +33,7 @@ def kubetest(stack, sname):
 
 def test_name1(stack):
     serviceName = "testname"
-    rio_name_setup(stack, serviceName)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
-
+    rio_name_setup(stack, serviceName)
     assert riotest(stack, serviceName) == serviceName
 
     assert kubetest(stack, serviceName) == serviceName
