@@ -30,7 +30,7 @@ services:
     - GRAFANA_PORT=3000
     - GF_AUTH_BASIC_ENABLED=false
     - GF_AUTH_ANONYMOUS_ENABLED=true
-    - GF_AUTH_ANONYMOUS_ORG_ROLE=admin
+    - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
     - GF_PATHS_DATA=/data/grafana
     image: daishan1992/grafana:latest
     imagePullPolicy: always
@@ -80,12 +80,6 @@ services:
         secrets: identity:/etc/certs
         volumes:
         - uds-socket:/sock
-
-questions:
-- variable: LB_NAMESPACE
-  description: "istio-system namespace"
-- variable: PROMETHEUS_NAMESPACE
-  description: "prometheus namespace"
 
 kubernetes:
   namespaced_custom_resource_definitions:

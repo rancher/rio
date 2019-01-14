@@ -16,6 +16,10 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		FeatureName: "monitoring",
 		FeatureSpec: v1.FeatureSpec{
 			Description: "Monitoring and Telemetry",
+			Answers: map[string]string{
+				"GRAFANA_USERNAME": "admin",
+				"GRAFANA_PASSWORD": "admin",
+			},
 		},
 		SystemStacks: []*systemstack.SystemStack{
 			systemstack.NewSystemStack(rContext.Rio.Stack, "istio-telemetry", riov1.StackSpec{
