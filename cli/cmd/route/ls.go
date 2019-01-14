@@ -25,7 +25,7 @@ type Data struct {
 }
 
 func (d *Data) port() int64 {
-	if d.Match == nil {
+	if d.Match == nil || d.Match.Port == nil {
 		return 0
 	}
 	return *d.Match.Port

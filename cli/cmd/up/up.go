@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -126,7 +127,7 @@ func getStackName(file, stack string) (string, error) {
 	if strings.HasSuffix(file, "-stack.yml") || strings.HasSuffix(file, "-stack.yaml") {
 		file = strings.TrimSuffix(file, "-stack.yml")
 		file = strings.TrimSuffix(file, "-stack.yaml")
-		return file, nil
+		return filepath.Base(file), nil
 	}
 
 	return "", fmt.Errorf("failed to determine stack name, please pass stack name as arguement")
