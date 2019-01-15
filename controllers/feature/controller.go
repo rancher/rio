@@ -9,7 +9,7 @@ import (
 	"github.com/rancher/rio/pkg/features"
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
-	"github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -161,7 +161,7 @@ func (f *featureHandler) stop(obj *v1.Feature, feature features.Feature) (runtim
 		if ok {
 			c()
 		}
-
+		delete(f.featureState, feature.Name())
 		return obj, nil
 	})
 }

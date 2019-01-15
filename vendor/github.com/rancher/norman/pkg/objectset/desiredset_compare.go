@@ -184,12 +184,6 @@ func (o *DesiredSet) compareObjects(client objectclient.GenericClient, debugID, 
 		return err
 	}
 
-	oldInputID := oldMetadata.GetAnnotations()[LabelInputID]
-
-	if !force && (o.owner != nil || len(o.objs.inputs) > 0) && oldInputID == inputID {
-		return nil
-	}
-
 	gvk := client.GroupVersionKind()
 	if ran, err := applyPatch(client, debugID, inputID, oldObject, newObject); err != nil {
 		return err

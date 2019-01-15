@@ -1,4 +1,4 @@
-package prometheus
+package grafana
 
 import (
 	"context"
@@ -13,16 +13,19 @@ import (
 
 func Register(ctx context.Context, rContext *types.Context) error {
 	feature := &features.FeatureController{
-		FeatureName: "prometheus",
+		FeatureName: "grafana",
 		FeatureSpec: v1.FeatureSpec{
-			Description: "Enable prometheus",
+			Description: "Grafana Dashboard",
+			Requires: []string{
+				"prometheus",
+				"mixer",
+			},
 		},
 		SystemStacks: []*systemstack.SystemStack{
-			systemstack.NewSystemStack(rContext.Rio.Stack, "prometheus", riov1.StackSpec{}),
+			systemstack.NewSystemStack(rContext.Rio.Stack, "grafana", riov1.StackSpec{}),
 		},
 		FixedAnswers: map[string]string{
-			"LB_NAMESPACE":        settings.IstioExternalLBNamespace,
-			"TELEMETRY_NAMESPACE": settings.IstioTelemetryNamespace,
+			"PROMETHEUS_NAMESPACE": settings.PrometheusNamespace,
 		},
 	}
 	return feature.Register()

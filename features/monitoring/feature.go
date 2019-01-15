@@ -13,12 +13,15 @@ import (
 
 func Register(ctx context.Context, rContext *types.Context) error {
 	feature := &features.FeatureController{
-		FeatureName: "monitoring",
+		FeatureName: "mixer",
 		FeatureSpec: v1.FeatureSpec{
-			Description: "Monitoring and Telemetry",
+			Description: "Istio Mixer telemetry",
 			Answers: map[string]string{
 				"GRAFANA_USERNAME": "admin",
 				"GRAFANA_PASSWORD": "admin",
+			},
+			Requires: []string{
+				"prometheus",
 			},
 		},
 		SystemStacks: []*systemstack.SystemStack{

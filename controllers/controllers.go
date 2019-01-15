@@ -3,18 +3,17 @@ package controllers
 import (
 	"context"
 
-	"github.com/rancher/rio/features/kiali"
-
-	"github.com/rancher/rio/features/prometheus"
-
 	"github.com/rancher/rio/controllers/data"
 	"github.com/rancher/rio/controllers/feature"
 	"github.com/rancher/rio/controllers/setting"
 	"github.com/rancher/rio/features/autoscaling"
+	"github.com/rancher/rio/features/grafana"
+	"github.com/rancher/rio/features/kiali"
 	"github.com/rancher/rio/features/letsencrypt"
 	"github.com/rancher/rio/features/localstorage"
 	"github.com/rancher/rio/features/monitoring"
 	"github.com/rancher/rio/features/nfs"
+	"github.com/rancher/rio/features/prometheus"
 	"github.com/rancher/rio/features/rdns"
 	"github.com/rancher/rio/features/routing"
 	"github.com/rancher/rio/features/stack"
@@ -51,6 +50,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		return err
 	}
 	if err := kiali.Register(ctx, rContext); err != nil {
+		return err
+	}
+	if err := grafana.Register(ctx, rContext); err != nil {
 		return err
 	}
 
