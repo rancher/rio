@@ -3,14 +3,10 @@ import os
 import random
 
 
-random.seed(os.urandom(8))
-
-
 @pytest.fixture(scope="module")
 def stack():
-    name = "tstk" + str(random.randint(1000, 5000))
-    os.system("rio stack create %s" % name)
-    os.system("rio wait %s" % name)
+    name = "tstk" + str(random.randint(1000000, 9999999))
+    os.system("rio --wait --wait-timeout=60 stack create %s" % name)
 
     yield name
 
