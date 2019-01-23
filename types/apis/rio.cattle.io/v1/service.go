@@ -39,7 +39,7 @@ type ServiceUnversionedSpec struct {
 	UpdateOrder        string            `json:"updateOrder,omitempty" norman:"type=enum,options=start-first|stop-first"`
 	UpdateStrategy     string            `json:"updateStrategy,omitempty" norman:"type=enum,options=rolling|on-delete,default=rolling"`
 	DeploymentStrategy string            `json:"deploymentStrategy,omitempty" norman:"type=enum,options=parallel|ordered,default=parallel"`
-	AutoscaleConfig
+	AutoScale          *AutoscaleConfig  `json:"autoScale,omitempty"`
 
 	PodConfig
 	PrivilegedConfig
@@ -49,10 +49,9 @@ type ServiceUnversionedSpec struct {
 }
 
 type AutoscaleConfig struct {
-	EnableAutoScale      bool `json:"enableAutoScale,omitempty"`
-	ContainerConcurrency int  `json:"containerConcurrency,omitempty"`
-	MinScale             int  `json:"minScale,omitempty"`
-	MaxScale             int  `json:"maxScale,omitempty"`
+	Concurrency int `json:"concurrency,omitempty" norman:"default=10"`
+	MinScale    int `json:"minScale,omitempty" norman:"default=1"`
+	MaxScale    int `json:"maxScale,omitempty" norman:"default=30"`
 }
 
 type ServiceSpec struct {
