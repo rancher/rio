@@ -13,11 +13,22 @@ import (
 
 func Register(ctx context.Context, rContext *types.Context) error {
 	c := stackobject.NewGeneratingController(ctx, rContext, "stack-external-service", rContext.Rio.ExternalService)
-	c.Processor.Client(rContext.Core.Service)
+	c.Processor.Client(rContext.Core.Service,
+		rContext.Core.Endpoints,
+		rContext.Networking.VirtualService)
 
-	c.Populator = func(obj runtime.Object, stack *riov1.Stack, os *objectset.ObjectSet) error {
-		return populate.ServiceForExternalService(obj.(*riov1.ExternalService), os)
+	p := populator{
+		serviceCache: rContext.Rio.Service.Cache(),
 	}
 
+	c.Populator = p.populate
 	return nil
+}
+
+type populator struct {
+	serviceCache riov1.ServiceClientCache
+}
+
+func (p populator) populate(obj runtime.Object, stack *riov1.Stack, os *objectset.ObjectSet) error {
+	return populate.ServiceForExternalService(obj.(*riov1.ExternalService), stack, os)
 }

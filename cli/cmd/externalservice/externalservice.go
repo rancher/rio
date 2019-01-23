@@ -1,13 +1,15 @@
 package externalservice
 
 import (
+	"strings"
+
 	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/cli/cmd/rm"
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/types/client/rio/v1"
+	client "github.com/rancher/rio/types/client/rio/v1"
 	"github.com/urfave/cli"
 )
 
@@ -30,7 +32,7 @@ func ExternalService(app *cli.App) cli.Command {
 			},
 			builder.Command(&Create{},
 				"Create external services",
-				app.Name+" create [OPTIONS] [EXTERNAL_SERVICE...]",
+				app.Name+" create [OPTIONS] [EXTERNAL_SERVICE] [(IP)(FQDN)(SERVICE/STACK)]",
 				""),
 			{
 				Name:      "delete",
@@ -78,9 +80,17 @@ func externalServiceLs(ctx *clicontext.CLIContext) error {
 	}
 
 	for _, item := range collection.Data {
+		endpoint := ""
+		if item.FQDN != "" {
+			endpoint = item.FQDN
+		} else if item.Service != "" {
+			endpoint = item.Service
+		} else if len(item.IPAddresses) > 0 {
+			endpoint = strings.Join(item.IPAddresses, ",")
+		}
 		writer.Write(&Data{
 			Name:    item.Name,
-			Target:  item.Target,
+			Target:  endpoint,
 			Created: item.Created,
 			Stack:   stackByID[item.StackID],
 			Service: &item,

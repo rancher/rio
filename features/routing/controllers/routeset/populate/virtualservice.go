@@ -1,15 +1,20 @@
 package populate
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/knative/pkg/apis/istio/common/v1alpha1"
 	"github.com/knative/pkg/apis/istio/v1alpha3"
+	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/norman/pkg/objectset"
+	"github.com/rancher/rio/features/routing/controllers/externalservice/populate"
 	"github.com/rancher/rio/features/routing/pkg/domains"
+	"github.com/rancher/rio/pkg/namespace"
 	v1alpha3client "github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	v1alpha3type "istio.io/api/networking/v1alpha3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -18,8 +23,8 @@ const (
 	PublicDomainAnnotation = "rio.cattle.io/publicDomain"
 )
 
-func VirtualServices(stack *v1.Stack, routeSet *v1.RouteSet, externalServiceMap map[string]*v1.ExternalService, os *objectset.ObjectSet) error {
-	vs := vsFromRoutesets(stack, routeSet, externalServiceMap)
+func VirtualServices(stack *v1.Stack, routeSet *v1.RouteSet, externalServiceMap map[string]*v1.ExternalService, routesetMap map[string]*v1.RouteSet, os *objectset.ObjectSet) error {
+	vs := vsFromRoutesets(stack, routeSet, externalServiceMap, routesetMap, os)
 	if vs != nil {
 		os.Add(vs)
 	}
@@ -27,7 +32,7 @@ func VirtualServices(stack *v1.Stack, routeSet *v1.RouteSet, externalServiceMap 
 	return nil
 }
 
-func vsFromRoutesets(stack *v1.Stack, routeSet *v1.RouteSet, externalServiceMap map[string]*v1.ExternalService) *v1alpha3client.VirtualService {
+func vsFromRoutesets(stack *v1.Stack, routeSet *v1.RouteSet, externalServiceMap map[string]*v1.ExternalService, routesetMap map[string]*v1.RouteSet, os *objectset.ObjectSet) *v1alpha3client.VirtualService {
 	spec := v1alpha3.VirtualServiceSpec{
 		Gateways: []string{
 			privateGw,
@@ -43,10 +48,16 @@ func vsFromRoutesets(stack *v1.Stack, routeSet *v1.RouteSet, externalServiceMap 
 		httpRoute := v1alpha3.HTTPRoute{}
 		// populate destinations
 		for _, dest := range routeSpec.To {
-			if svc, ok := externalServiceMap[dest.Service]; ok {
-				httpRoute.Route = append(httpRoute.Route, destWeightForExternalService(dest, svc))
+			if esvc, ok := externalServiceMap[dest.Service]; ok {
+				httpRoute.Route = append(httpRoute.Route, destWeightForExternalService(dest, esvc, stack))
+			} else if _, ok := routesetMap[dest.Service]; ok {
+				httpRoute.Route = append(httpRoute.Route, destWeightForRouteset(dest))
+				routeSpec.Rewrite = &v1.Rewrite{
+					Host: fmt.Sprintf("%s.%s.svc.cluster.local", dest.Destination.Service, namespace.StackNamespace(stack.Namespace, stack.Name)),
+				}
+				localhostServiceEntry(os, routeSet.Namespace)
 			} else {
-				httpRoute.Route = append(httpRoute.Route, destWeightForService(dest))
+				httpRoute.Route = append(httpRoute.Route, destWeightForService(dest, stack))
 			}
 		}
 
@@ -209,25 +220,7 @@ func newVirtualServiceGeneric(stack *v1.Stack, name, namespace string) *v1alpha3
 	})
 }
 
-func destWeightForExternalService(d v1.WeightedDestination, svc *v1.ExternalService) v1alpha3.DestinationWeight {
-	if d.Port == nil {
-		d.Port = &[]uint32{80}[0]
-	}
-	if d.Weight == 0 {
-		d.Weight = 100
-	}
-	return v1alpha3.DestinationWeight{
-		Destination: v1alpha3.Destination{
-			Host: svc.Spec.Target,
-			Port: v1alpha3.PortSelector{
-				Number: *d.Port,
-			},
-		},
-		Weight: d.Weight,
-	}
-}
-
-func destWeightForService(d v1.WeightedDestination) v1alpha3.DestinationWeight {
+func destWeightForService(d v1.WeightedDestination, stack *v1.Stack) v1alpha3.DestinationWeight {
 	if d.Revision == "" {
 		d.Revision = "v0"
 	}
@@ -236,6 +229,35 @@ func destWeightForService(d v1.WeightedDestination) v1alpha3.DestinationWeight {
 	}
 	if d.Weight == 0 {
 		d.Weight = 100
+	}
+	if d.Stack == "" {
+		d.Stack = stack.Name
+	}
+	return v1alpha3.DestinationWeight{
+		Destination: v1alpha3.Destination{
+			Host:   fmt.Sprintf("%s.%s.svc.cluster.local", d.Service, namespace.StackNamespace(stack.Namespace, d.Stack)),
+			Subset: d.Revision,
+			Port: v1alpha3.PortSelector{
+				Number: *d.Port,
+			},
+		},
+		Weight: d.Weight,
+	}
+}
+
+func destWeightForExternalService(d v1.WeightedDestination, esvc *v1.ExternalService, stack *v1.Stack) v1alpha3.DestinationWeight {
+	if d.Port == nil {
+		d.Port = &[]uint32{80}[0]
+	}
+	if esvc.Spec.FQDN != "" {
+		// ignore error as it should be validated somewhere else
+		u, _ := populate.ParseTargetUrl(esvc.Spec.FQDN)
+		d.Service = u.Host
+	} else if esvc.Spec.Service != "" {
+		stackName, serviceName := kv.Split(esvc.Spec.Service, "/")
+		d.Service = fmt.Sprintf("%s.%s.svc.cluster.local", serviceName, namespace.StackNamespace(stack.Namespace, stackName))
+	} else if len(esvc.Spec.IPAddresses) > 0 {
+		d.Service = fmt.Sprintf("%s.%s.svc.cluster.local", esvc.Name, namespace.StackNamespace(stack.Namespace, stack.Name))
 	}
 	return v1alpha3.DestinationWeight{
 		Destination: v1alpha3.Destination{
@@ -247,4 +269,40 @@ func destWeightForService(d v1.WeightedDestination) v1alpha3.DestinationWeight {
 		},
 		Weight: d.Weight,
 	}
+}
+
+func destWeightForRouteset(d v1.WeightedDestination) v1alpha3.DestinationWeight {
+	if d.Port == nil {
+		d.Port = &[]uint32{80}[0]
+	}
+	if d.Weight == 0 {
+		d.Weight = 100
+	}
+	return v1alpha3.DestinationWeight{
+		Destination: v1alpha3.Destination{
+			Host: "localhost.localhost",
+			Port: v1alpha3.PortSelector{
+				Number: *d.Port,
+			},
+		},
+		Weight: d.Weight,
+	}
+}
+
+func localhostServiceEntry(os *objectset.ObjectSet, namespace string) {
+	se := v1alpha3client.NewServiceEntry(namespace, "localhost", v1alpha3client.ServiceEntry{
+		Spec: v1alpha3client.ServiceEntrySpec{
+			Hosts:      []string{"localhost.localhost"},
+			Location:   v1alpha3type.ServiceEntry_MESH_EXTERNAL,
+			Resolution: v1alpha3type.ServiceEntry_DNS,
+			Ports: []v1alpha3client.Port{
+				{
+					Protocol: strings.ToUpper("http"),
+					Number:   80,
+					Name:     "http-80",
+				},
+			},
+		},
+	})
+	os.Add(se)
 }

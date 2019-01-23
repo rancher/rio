@@ -20,8 +20,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		rContext.Networking.VirtualService)
 
 	sh := &serviceHandler{
-		serviceClient: rContext.Rio.Service,
-		serviceCache:  rContext.Rio.Service.Cache(),
+		serviceClient:        rContext.Rio.Service,
+		serviceCache:         rContext.Rio.Service.Cache(),
+		externalServiceCache: rContext.Rio.ExternalService.Cache(),
 	}
 
 	// as a side effect of the stack service controller, all changes to revisions will enqueue the parent service
@@ -31,8 +32,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 }
 
 type serviceHandler struct {
-	serviceClient riov1.ServiceClient
-	serviceCache  riov1.ServiceClientCache
+	serviceClient        riov1.ServiceClient
+	serviceCache         riov1.ServiceClientCache
+	externalServiceCache riov1.ExternalServiceClientCache
 }
 
 func (s *serviceHandler) populate(obj runtime.Object, stack *riov1.Stack, os *objectset.ObjectSet) error {
@@ -49,6 +51,5 @@ func (s *serviceHandler) populate(obj runtime.Object, stack *riov1.Stack, os *ob
 	if err != nil {
 		return err
 	}
-
 	return populate.DestinationRulesAndVirtualServices(stack, services, service, os)
 }

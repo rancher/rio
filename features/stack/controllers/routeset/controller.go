@@ -13,7 +13,7 @@ import (
 
 func Register(ctx context.Context, rContext *types.Context) error {
 	c := stackobject.NewGeneratingController(ctx, rContext, "stack-route-set", rContext.Rio.RouteSet)
-	c.Processor.Client(rContext.Core.Service)
+	c.Processor.Client(rContext.Core.Service, rContext.Core.Endpoints)
 
 	c.Populator = func(obj runtime.Object, stack *riov1.Stack, os *objectset.ObjectSet) error {
 		return populate.ServiceForRouteSet(obj.(*riov1.RouteSet), os)

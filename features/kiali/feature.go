@@ -2,9 +2,6 @@ package kiali
 
 import (
 	"context"
-	"fmt"
-
-	"github.com/rancher/rio/pkg/settings"
 
 	v1 "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
@@ -34,8 +31,8 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			systemstack.NewSystemStack(rContext.Rio.Stack, "kiali", riov1.StackSpec{}),
 		},
 		FixedAnswers: map[string]string{
-			"PROMETHEUS_URL": fmt.Sprintf("http://prometheus.%s.svc.cluster.local:9090", settings.PrometheusNamespace),
-			"GRAFANA_URL":    fmt.Sprintf("http://grafana.%s.svc.cluster.local:3000", settings.GrafanaNamespace),
+			"PROMETHEUS_URL": "http://prometheus",
+			"GRAFANA_URL":    "http://grafana",
 		},
 	}
 	return feature.Register()

@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rancher/rio/pkg/namespace"
-
 	"github.com/knative/pkg/apis/istio/common/v1alpha1"
 	"github.com/knative/pkg/apis/istio/v1alpha3"
 	"github.com/rancher/norman/pkg/objectset"
@@ -16,10 +14,11 @@ import (
 	"github.com/rancher/rio/features/routing/pkg/domains"
 	"github.com/rancher/rio/features/stack/controllers/service/populate/containerlist"
 	"github.com/rancher/rio/features/stack/controllers/service/populate/servicelabels"
+	"github.com/rancher/rio/pkg/namespace"
 	"github.com/rancher/rio/pkg/serviceset"
 	"github.com/rancher/rio/pkg/settings"
 	v1alpha3client "github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -184,7 +183,7 @@ func DestsForService(name string, service *serviceset.ServiceSet) []Dest {
 	latestWeight := 100
 	result := []Dest{
 		{
-			Host:   name,
+			Host:   fmt.Sprintf("%s.%s.svc.cluster.local", name, service.Service.Namespace),
 			Subset: service.Service.Spec.Revision.Version,
 		},
 	}
@@ -204,7 +203,7 @@ func DestsForService(name string, service *serviceset.ServiceSet) []Dest {
 		latestWeight -= weight
 
 		result = append(result, Dest{
-			Host:   rev.Name,
+			Host:   fmt.Sprintf("%s.%s.svc.cluster.local", rev.Name, service.Service.Namespace),
 			Weight: weight,
 			Subset: rev.Spec.Revision.Version,
 		})
