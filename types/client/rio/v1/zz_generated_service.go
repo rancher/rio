@@ -6,13 +6,13 @@ import (
 
 const (
 	ServiceType                        = "service"
+	ServiceFieldAutoScale              = "autoScale"
 	ServiceFieldBatchSize              = "batchSize"
 	ServiceFieldCPUs                   = "nanoCpus"
 	ServiceFieldCapAdd                 = "capAdd"
 	ServiceFieldCapDrop                = "capDrop"
 	ServiceFieldCommand                = "command"
 	ServiceFieldConfigs                = "configs"
-	ServiceFieldContainerConcurrency   = "containerConcurrency"
 	ServiceFieldCreated                = "created"
 	ServiceFieldDNS                    = "dns"
 	ServiceFieldDNSOptions             = "dnsOptions"
@@ -21,7 +21,6 @@ const (
 	ServiceFieldDefaultVolumeDriver    = "defaultVolumeDriver"
 	ServiceFieldDeploymentStrategy     = "deploymentStrategy"
 	ServiceFieldDevices                = "devices"
-	ServiceFieldEnableAutoScale        = "enableAutoScale"
 	ServiceFieldEndpoints              = "endpoints"
 	ServiceFieldEntrypoint             = "entrypoint"
 	ServiceFieldEnvironment            = "environment"
@@ -37,11 +36,9 @@ const (
 	ServiceFieldInit                   = "init"
 	ServiceFieldIpcMode                = "ipc"
 	ServiceFieldLabels                 = "labels"
-	ServiceFieldMaxScale               = "maxScale"
 	ServiceFieldMemoryLimitBytes       = "memoryLimitBytes"
 	ServiceFieldMemoryReservationBytes = "memoryReservationBytes"
 	ServiceFieldMetadata               = "metadata"
-	ServiceFieldMinScale               = "minScale"
 	ServiceFieldName                   = "name"
 	ServiceFieldNetworkMode            = "net"
 	ServiceFieldOpenStdin              = "stdinOpen"
@@ -82,13 +79,13 @@ const (
 
 type Service struct {
 	types.Resource
+	AutoScale              *AutoscaleConfig          `json:"autoScale,omitempty" yaml:"autoScale,omitempty"`
 	BatchSize              int64                     `json:"batchSize,omitempty" yaml:"batchSize,omitempty"`
 	CPUs                   string                    `json:"nanoCpus,omitempty" yaml:"nanoCpus,omitempty"`
 	CapAdd                 []string                  `json:"capAdd,omitempty" yaml:"capAdd,omitempty"`
 	CapDrop                []string                  `json:"capDrop,omitempty" yaml:"capDrop,omitempty"`
 	Command                []string                  `json:"command,omitempty" yaml:"command,omitempty"`
 	Configs                []ConfigMapping           `json:"configs,omitempty" yaml:"configs,omitempty"`
-	ContainerConcurrency   int64                     `json:"containerConcurrency,omitempty" yaml:"containerConcurrency,omitempty"`
 	Created                string                    `json:"created,omitempty" yaml:"created,omitempty"`
 	DNS                    []string                  `json:"dns,omitempty" yaml:"dns,omitempty"`
 	DNSOptions             []string                  `json:"dnsOptions,omitempty" yaml:"dnsOptions,omitempty"`
@@ -97,7 +94,6 @@ type Service struct {
 	DefaultVolumeDriver    string                    `json:"defaultVolumeDriver,omitempty" yaml:"defaultVolumeDriver,omitempty"`
 	DeploymentStrategy     string                    `json:"deploymentStrategy,omitempty" yaml:"deploymentStrategy,omitempty"`
 	Devices                []DeviceMapping           `json:"devices,omitempty" yaml:"devices,omitempty"`
-	EnableAutoScale        bool                      `json:"enableAutoScale,omitempty" yaml:"enableAutoScale,omitempty"`
 	Endpoints              []Endpoint                `json:"endpoints,omitempty" yaml:"endpoints,omitempty"`
 	Entrypoint             []string                  `json:"entrypoint,omitempty" yaml:"entrypoint,omitempty"`
 	Environment            []string                  `json:"environment,omitempty" yaml:"environment,omitempty"`
@@ -113,11 +109,9 @@ type Service struct {
 	Init                   bool                      `json:"init,omitempty" yaml:"init,omitempty"`
 	IpcMode                string                    `json:"ipc,omitempty" yaml:"ipc,omitempty"`
 	Labels                 map[string]string         `json:"labels,omitempty" yaml:"labels,omitempty"`
-	MaxScale               int64                     `json:"maxScale,omitempty" yaml:"maxScale,omitempty"`
 	MemoryLimitBytes       int64                     `json:"memoryLimitBytes,omitempty" yaml:"memoryLimitBytes,omitempty"`
 	MemoryReservationBytes int64                     `json:"memoryReservationBytes,omitempty" yaml:"memoryReservationBytes,omitempty"`
 	Metadata               map[string]interface{}    `json:"metadata,omitempty" yaml:"metadata,omitempty"`
-	MinScale               int64                     `json:"minScale,omitempty" yaml:"minScale,omitempty"`
 	Name                   string                    `json:"name,omitempty" yaml:"name,omitempty"`
 	NetworkMode            string                    `json:"net,omitempty" yaml:"net,omitempty"`
 	OpenStdin              bool                      `json:"stdinOpen,omitempty" yaml:"stdinOpen,omitempty"`
