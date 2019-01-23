@@ -15,6 +15,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		FeatureSpec: projectv1.FeatureSpec{
 			Description: "Assign cluster a hostname from public Rancher DNS service",
 			Enabled:     true,
+			Requires:    []string{"letsencrypt"},
 		},
 		Controllers: []features.ControllerRegister{
 			domain.Register,

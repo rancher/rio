@@ -6,7 +6,7 @@ import (
 	"github.com/rancher/rio/features/stack/controllers/service/populate/servicelabels"
 	"github.com/rancher/rio/pkg/serviceset"
 	v1alpha3client "github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

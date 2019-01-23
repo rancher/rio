@@ -4,7 +4,7 @@ import (
 	"github.com/rancher/norman/pkg/objectset"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	v1client "github.com/rancher/types/apis/core/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -30,7 +30,6 @@ func ServiceForRouteSet(r *riov1.RouteSet, os *objectset.ObjectSet) error {
 				},
 			},
 		})
-
 	os.Add(service)
 	return nil
 }

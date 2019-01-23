@@ -16,7 +16,9 @@ import (
 
 func Register(ctx context.Context, rContext *types.Context) error {
 	c := stackobject.NewGeneratingController(ctx, rContext, "routing-routeset", rContext.Rio.RouteSet)
-	c.Processor.Client(rContext.Networking.VirtualService)
+	c.Processor.Client(rContext.Networking.VirtualService,
+		rContext.Networking.DestinationRule,
+		rContext.Networking.ServiceEntry)
 
 	r := &routeSetHandler{
 		externalServiceCache: rContext.Rio.ExternalService.Cache(),
@@ -26,7 +28,6 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	changeset.Watch(ctx, "externalservice-routeset", r.resolve, rContext.Rio.RouteSet, rContext.Rio.ExternalService)
 
 	c.Populator = r.populate
-
 	return nil
 }
 
@@ -65,15 +66,27 @@ func (r *routeSetHandler) populate(obj runtime.Object, stack *v1.Stack, os *obje
 
 	routeSet := obj.(*v1.RouteSet)
 	externalServiceMap := map[string]*v1.ExternalService{}
+	routesetMap := map[string]*v1.RouteSet{}
 
 	ess, err := r.externalServiceCache.List(routeSet.Namespace, labels.Everything())
 	if err != nil {
 		return err
 	}
-
 	for _, es := range ess {
 		externalServiceMap[es.Name] = es
 	}
 
-	return populate.VirtualServices(stack, obj.(*v1.RouteSet), externalServiceMap, os)
+	routesets, err := r.routesetCache.List(routeSet.Namespace, labels.Everything())
+	if err != nil {
+		return err
+	}
+	for _, rs := range routesets {
+		routesetMap[rs.Name] = rs
+	}
+
+	if err := populate.VirtualServices(stack, obj.(*v1.RouteSet), externalServiceMap, routesetMap, os); err != nil {
+		return err
+	}
+
+	return populate.DestinationRules(stack, obj.(*v1.RouteSet), os)
 }
