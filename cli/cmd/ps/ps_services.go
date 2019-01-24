@@ -10,7 +10,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/clientcfg"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/types/client/rio/v1"
+	client "github.com/rancher/rio/types/client/rio/v1"
 )
 
 type ServiceData struct {
@@ -168,12 +168,20 @@ func (p *Ps) services(ctx *clicontext.CLIContext, stacks map[string]bool) error 
 		fakeService := &client.Service{}
 		fakeService.Name = e.Name
 		fakeService.State = "active"
+		endpoint := ""
+		if len(e.IPAddresses) > 0 {
+			endpoint = strings.Join(e.IPAddresses, ",")
+		} else if e.FQDN != "" {
+			endpoint = e.FQDN
+		} else if e.Service != "" {
+			endpoint = e.Service
+		}
 		writer.Write(&ServiceData{
 			ID:       e.ID,
 			Created:  e.Created,
 			Service:  fakeService,
 			Stack:    stack,
-			Endpoint: e.Target,
+			Endpoint: endpoint,
 			External: "*",
 		})
 	}

@@ -16,7 +16,7 @@ import (
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	v12 "github.com/rancher/types/apis/core/v1"
 	"github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/labels"
@@ -218,7 +218,9 @@ func (g *Controller) setDomain(fqdn string) error {
 		return nil
 	}
 
-	settings.ClusterDomain.Set(fqdn)
+	if err := settings.ClusterDomain.Set(fqdn); err != nil {
+		return err
+	}
 
 	stacks, err := g.stackLister.List("", labels.Everything())
 	if err != nil {
@@ -229,6 +231,7 @@ func (g *Controller) setDomain(fqdn string) error {
 		g.stackController.Enqueue(stack.Namespace, stack.Name)
 	}
 
+	time.Sleep(time.Second)
 	g.featureController.Enqueue(settings.RioSystemNamespace, "letsencrypt")
 	return nil
 }

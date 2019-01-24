@@ -9,7 +9,7 @@ import (
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/rio/types/apis/certmanager.k8s.io/v1alpha1"
-	"github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 

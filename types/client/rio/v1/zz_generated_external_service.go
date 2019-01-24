@@ -7,13 +7,15 @@ import (
 const (
 	ExternalServiceType                      = "externalService"
 	ExternalServiceFieldCreated              = "created"
+	ExternalServiceFieldFQDN                 = "fqdn"
+	ExternalServiceFieldIPAddresses          = "ipAddresses"
 	ExternalServiceFieldLabels               = "labels"
 	ExternalServiceFieldName                 = "name"
 	ExternalServiceFieldProjectID            = "projectId"
 	ExternalServiceFieldRemoved              = "removed"
+	ExternalServiceFieldService              = "service"
 	ExternalServiceFieldStackID              = "stackId"
 	ExternalServiceFieldState                = "state"
-	ExternalServiceFieldTarget               = "target"
 	ExternalServiceFieldTransitioning        = "transitioning"
 	ExternalServiceFieldTransitioningMessage = "transitioningMessage"
 	ExternalServiceFieldUUID                 = "uuid"
@@ -22,13 +24,15 @@ const (
 type ExternalService struct {
 	types.Resource
 	Created              string            `json:"created,omitempty" yaml:"created,omitempty"`
+	FQDN                 string            `json:"fqdn,omitempty" yaml:"fqdn,omitempty"`
+	IPAddresses          []string          `json:"ipAddresses,omitempty" yaml:"ipAddresses,omitempty"`
 	Labels               map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
 	Name                 string            `json:"name,omitempty" yaml:"name,omitempty"`
 	ProjectID            string            `json:"projectId,omitempty" yaml:"projectId,omitempty"`
 	Removed              string            `json:"removed,omitempty" yaml:"removed,omitempty"`
+	Service              string            `json:"service,omitempty" yaml:"service,omitempty"`
 	StackID              string            `json:"stackId,omitempty" yaml:"stackId,omitempty"`
 	State                string            `json:"state,omitempty" yaml:"state,omitempty"`
-	Target               string            `json:"target,omitempty" yaml:"target,omitempty"`
 	Transitioning        string            `json:"transitioning,omitempty" yaml:"transitioning,omitempty"`
 	TransitioningMessage string            `json:"transitioningMessage,omitempty" yaml:"transitioningMessage,omitempty"`
 	UUID                 string            `json:"uuid,omitempty" yaml:"uuid,omitempty"`

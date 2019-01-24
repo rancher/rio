@@ -34,6 +34,12 @@ services:
     expose:
     - 20001/http
 
+externalservices:
+  prometheus:
+    service: prometheus/prometheus
+  grafana:
+    service: grafana/grafana
+
 questions:
   - variable: USERNAME
     description: "username to login dashboard"

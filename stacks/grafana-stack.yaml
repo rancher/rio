@@ -22,7 +22,11 @@ configs:
         name: Prometheus
         orgId: 1
         type: prometheus
-        url: http://prometheus.${PROMETHEUS_NAMESPACE}.svc.cluster.local:9090
+        url: http://prometheus
+
+externalservices:
+  prometheus:
+    service: prometheus/prometheus
 
 services:
   grafana:
