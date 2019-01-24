@@ -3,14 +3,15 @@ package create
 import (
 	"time"
 
-	"github.com/rancher/rio/types/client/rio/v1"
+	client "github.com/rancher/rio/types/client/rio/v1"
 )
 
 func populateHealthCheck(c *Create, service *client.Service) error {
 	var err error
 
 	hc := &client.HealthConfig{
-		HealthyThreshold: int64(c.HealthRetries),
+		HealthyThreshold:   int64(c.HealthRetries),
+		UnhealthyThreshold: int64(c.UnhealthyRetries),
 	}
 
 	hc.InitialDelaySeconds, err = ParseDurationUnit(c.HealthStartPeriod, "--health-start-period", time.Second)
@@ -47,7 +48,8 @@ func populateReadyCheck(c *Create, service *client.Service) error {
 	var err error
 
 	hc := &client.HealthConfig{
-		HealthyThreshold: int64(c.ReadyRetries),
+		HealthyThreshold:   int64(c.ReadyRetries),
+		UnhealthyThreshold: int64(c.UnreadyRetries),
 	}
 
 	hc.InitialDelaySeconds, err = ParseDurationUnit(c.ReadyStartPeriod, "--ready-start-period", time.Second)

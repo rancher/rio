@@ -1,6 +1,8 @@
 package serviceset
 
 import (
+	"fmt"
+
 	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/norman/types/convert/merge"
 	"github.com/rancher/rio/pkg/settings"
@@ -27,7 +29,7 @@ func combineAndNormalize(name string, base map[string]interface{}, rev *riov1.Se
 	return newRev, nil
 }
 
-func servicesByParent(services []*riov1.Service) Services {
+func servicesByParent(services []*riov1.Service) (Services, error) {
 	result := Services{}
 
 	for _, service := range services {
@@ -38,6 +40,9 @@ func servicesByParent(services []*riov1.Service) Services {
 					Revisions: []*riov1.Service{},
 				}
 				result[service.Name] = s
+			}
+			if s.Service != nil {
+				return result, fmt.Errorf("two root services exist for %s", service.Name)
 			}
 			s.Service = service
 		} else {
@@ -52,7 +57,7 @@ func servicesByParent(services []*riov1.Service) Services {
 		}
 	}
 
-	return result
+	return result, nil
 }
 
 func normalizeParent(name string, service *riov1.Service) *riov1.Service {
@@ -90,8 +95,11 @@ func mergeRevisions(name string, serviceSet *ServiceSet) ([]*riov1.Service, erro
 
 func CollectionServices(services []*riov1.Service) (Services, error) {
 	var err error
-	byParent := servicesByParent(services)
 	result := Services{}
+	byParent, err := servicesByParent(services)
+	if err != nil {
+		return result, err
+	}
 
 	for _, service := range byParent {
 		if service.Service == nil {
