@@ -1,6 +1,7 @@
 import subprocess
 import json
 import time
+import random
 
 # runAndExpect("rio asldfkhsldkfj", 3)
 # output = runAndExpect("rio ps")
@@ -19,6 +20,18 @@ def runToJson(cmd, status=0):
     result = run(cmd, status)
     print(result)
     return json.loads(result)
+
+
+def rioRun(stack, *args):
+    name = "tsrv" + str(random.randint(1000, 5000))
+    fullName = "%s/%s" % (stack, name)
+
+    cmd = f'rio --wait --wait-timeout=60 run -n {fullName} ' + ' '.join(args)
+
+    print(cmd)
+    run(cmd)
+
+    return name
 
 
 def rioInspect(resource, field=None):

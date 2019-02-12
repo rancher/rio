@@ -3,13 +3,7 @@ import util
 
 
 def run_scale(stack, value):
-
-    name = "tsrv" + str(randint(1000, 5000))
-    fullName = (f"{stack}/{name}")
-    cmd = (f'rio run -n {fullName} --scale {value} nginx')
-
-    util.run(cmd)
-    util.run(f"rio wait {fullName}")
+    name = util.rioRun(stack, '--scale', value, 'nginx')
 
     return name
 
