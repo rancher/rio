@@ -41,7 +41,6 @@ def kube_chk_mountName(stack, service):
 
     obj = util.kubectl(namespace, "deployment", service)
     cnt = obj['spec']['template']['spec']['containers'][0]
-    results = cnt['volumeMounts'][0]['mountPath']
 
     out = []
     for item in cnt['volumeMounts']:
@@ -59,7 +58,6 @@ def kube_chk_mountPath(stack, service):
 
     obj = util.kubectl(namespace, "deployment", service)
     cnt = obj['spec']['template']['spec']['containers'][0]
-    results = cnt['volumeMounts'][0]['mountPath']
 
     out = []
     for item in cnt['volumeMounts']:
