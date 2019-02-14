@@ -1,0 +1,17 @@
+services:
+  webhook:
+    global_permissions:
+    - "* webhookinator.rio.cattle.io/gitwebhookreceivers"
+    - "* webhookinator.rio.cattle.io/gitwebhookexecutions"
+    - '* configmaps'
+    - '* events'
+    - secrets
+    image: daishan1992/webhookinator:dev
+    imagePullPolicy: always
+    ports:
+    - 8888/tcp
+
+kubernetes:
+  namespaced_custom_resource_definitions:
+  - GitWebHookReceiver.webhookinator.rio.cattle.io/v1
+  - GitWebHookExecution.webhookinator.rio.cattle.io/v1
