@@ -10,13 +10,14 @@ import (
 	"github.com/rancher/norman/types"
 	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/rio/pkg/settings"
-	"github.com/rancher/rio/types/client/rio/v1"
+	client "github.com/rancher/rio/types/client/rio/v1"
 )
 
 var SupportedProtocol = map[string]struct{}{
 	"http":  {},
 	"http2": {},
 	"grpc":  {},
+	"tcp":   {},
 }
 
 func New(store types.Store) types.Store {
