@@ -15,6 +15,7 @@ const (
 	SidekickConfigFieldGroup                  = "group"
 	SidekickConfigFieldHealthcheck            = "healthcheck"
 	SidekickConfigFieldImage                  = "image"
+	SidekickConfigFieldImageBuild             = "build"
 	SidekickConfigFieldImagePullPolicy        = "imagePullPolicy"
 	SidekickConfigFieldInit                   = "init"
 	SidekickConfigFieldInitContainer          = "initContainer"
@@ -48,6 +49,7 @@ type SidekickConfig struct {
 	Group                  string          `json:"group,omitempty" yaml:"group,omitempty"`
 	Healthcheck            *HealthConfig   `json:"healthcheck,omitempty" yaml:"healthcheck,omitempty"`
 	Image                  string          `json:"image,omitempty" yaml:"image,omitempty"`
+	ImageBuild             *ImageBuild     `json:"build,omitempty" yaml:"build,omitempty"`
 	ImagePullPolicy        string          `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
 	Init                   bool            `json:"init,omitempty" yaml:"init,omitempty"`
 	InitContainer          bool            `json:"initContainer,omitempty" yaml:"initContainer,omitempty"`

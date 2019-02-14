@@ -187,6 +187,7 @@ type ContainerConfig struct {
 	Healthcheck            *HealthConfig `json:"healthcheck,omitempty"`
 	Readycheck             *HealthConfig `json:"readycheck,omitempty"`
 	Image                  string        `json:"image,omitempty"`
+	ImageBuild             *ImageBuild   `json:"build,omitempty"`
 	ImagePullPolicy        string        `json:"imagePullPolicy,omitempty" norman:"type=enum,options=always|never|not-present,default=not-present"`
 	Init                   bool          `json:"init,omitempty"`
 	MemoryLimitBytes       int64         `json:"memoryLimitBytes,omitempty"`
@@ -204,6 +205,17 @@ type ContainerConfig struct {
 	Devices []DeviceMapping `json:"devices,omitempty"` // support []string and map[string]string
 	Configs []ConfigMapping `json:"configs,omitempty"`
 	Secrets []SecretMapping `json:"secrets,omitempty"`
+}
+
+type ImageBuild struct {
+	Url                string `json:"url,omitempty"`
+	Tag                string `json:"tag,omitempty"`
+	Commit             string `json:"commit,omitempty"`
+	Branch             string `json:"branch,omitempty"`
+	TagOnly            bool   `json:"tagOnly,omitempty"`
+	DockerFile         string `json:"dockerFile,omitempty"`
+	Template           string `json:"template,omitempty"`
+	WebhookAccessToken string `json:"webhookAccessToken,omitempty"`
 }
 
 type SidekickConfig struct {
