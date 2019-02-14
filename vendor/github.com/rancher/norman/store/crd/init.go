@@ -193,6 +193,12 @@ func (f *Factory) createCRD(apiClient clientset.Interface, schema *types.Schema,
 		crd.Spec.Scope = apiext.ClusterScoped
 	}
 
+	if schema.StatusSubResource == types.StatusSubResourceType {
+		crd.Spec.Subresources = &apiext.CustomResourceSubresources{
+			Status: &apiext.CustomResourceSubresourceStatus{},
+		}
+	}
+
 	logrus.Infof("Creating CRD %s", name)
 	crd, err := apiClient.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)
 	if errors.IsAlreadyExists(err) {

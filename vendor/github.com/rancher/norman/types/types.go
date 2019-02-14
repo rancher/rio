@@ -93,6 +93,12 @@ var NamespaceScope TypeScope = "namespace"
 
 type TypeScope string
 
+type StatusSubResourced struct{}
+
+var StatusSubResourceType SubResourceType = "status"
+
+type SubResourceType string
+
 type Schema struct {
 	ID                string            `json:"id,omitempty"`
 	Embed             bool              `json:"embed,omitempty"`
@@ -113,6 +119,7 @@ type Schema struct {
 	CollectionActions map[string]Action `json:"collectionActions,omitempty"`
 	CollectionFilters map[string]Filter `json:"collectionFilters,omitempty"`
 	Scope             TypeScope         `json:"-"`
+	StatusSubResource SubResourceType 	`json:"-"`
 
 	InternalSchema      *Schema             `json:"-"`
 	Mapper              Mapper              `json:"-"`
