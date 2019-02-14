@@ -37,7 +37,7 @@ rio --project=rio-system ps
 rio --project=rio-system ps -c
 
 chmod +x ./tests/init-nfs.bash
-./tests/init-nfs.bash
+# ./tests/init-nfs.bash
 # export RUN_NFS_TEST=true
 
 cd ./tests
