@@ -21,8 +21,10 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			systemstack.NewSystemStack(rContext.Rio.Stack, "prometheus", riov1.StackSpec{}),
 		},
 		FixedAnswers: map[string]string{
-			"LB_NAMESPACE":        settings.IstioExternalLBNamespace,
-			"TELEMETRY_NAMESPACE": settings.IstioTelemetryNamespace,
+			"TELEMETRY_NAME":      settings.IstioTelemetryNamespace,
+			"TELEMETRY_NAMESPACE": settings.CloudNamespace,
+			"PILOT_NAME":          settings.IstioPilotNamespace,
+			"PROMETHEUS_NAME":     settings.PrometheusNamespace,
 		},
 	}
 	return feature.Register()

@@ -6,13 +6,24 @@ import (
 
 	"github.com/rancher/norman/pkg/objectset"
 	"github.com/rancher/rio/features/routing/controllers/externalservice/populate"
+	"github.com/rancher/rio/pkg/namespace"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	v1client "github.com/rancher/types/apis/core/v1"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func ServiceForExternalService(es *riov1.ExternalService, stack *riov1.Stack, os *objectset.ObjectSet) error {
-	svc := v1client.NewService(es.Namespace, es.Name, v1.Service{})
+	ns, name := namespace.NameRefWithNamespace(es.Name, stack)
+	svc := v1client.NewService(ns, name, v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: map[string]string{
+				"rio.cattle.io/service": es.Name,
+				"rio.cattle.io/stack":   stack.Name,
+				"rio.cattle.io/project": stack.Namespace,
+			},
+		},
+	})
 	if es.Spec.FQDN != "" {
 		u, err := populate.ParseTargetUrl(es.Spec.FQDN)
 		if err != nil {

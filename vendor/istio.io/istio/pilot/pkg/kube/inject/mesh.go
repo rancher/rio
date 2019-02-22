@@ -152,6 +152,10 @@ containers:
     valueFrom:
       fieldRef:
         fieldPath: metadata.name
+  - name: RIO_STACK
+    value: [[ annotation .ObjectMeta "rio.cattle.io/stack" "" ]]
+  - name: RIO_PROJECT
+    value: [[ annotation .ObjectMeta "rio.cattle.io/project" "" ]]
   - name: ISTIO_META_INTERCEPTION_MODE
     value: [[ annotation .ObjectMeta $interceptionModeKey .ProxyConfig.InterceptionMode ]]
   {{ if eq .ImagePullPolicy "" -}}

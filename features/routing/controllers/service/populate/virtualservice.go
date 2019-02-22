@@ -147,7 +147,7 @@ func newRoute(externalGW string, published bool, portBinding *v1.PortBinding, de
 		if autoscale && svc.Spec.Scale == 0 {
 			route.Route = append(route.Route, v1alpha3.DestinationWeight{
 				Destination: v1alpha3.Destination{
-					Host: fmt.Sprintf("gateway.%s.svc.cluster.local", namespace.StackNamespace(settings.RioSystemNamespace, settings.AutoScaleStack)),
+					Host: fmt.Sprintf("%s.%s.svc.cluster.local", namespace.HashIfNeed("gateway", settings.AutoScaleStack, settings.RioSystemNamespace), settings.CloudNamespace),
 					Port: v1alpha3.PortSelector{
 						Number: 80,
 					},
@@ -179,11 +179,12 @@ type Dest struct {
 	Weight       int
 }
 
-func DestsForService(name string, service *serviceset.ServiceSet) []Dest {
+func DestsForService(name, stackName, projectName string, service *serviceset.ServiceSet) []Dest {
 	latestWeight := 100
+	svcName := fmt.Sprintf("%s-%s", name, namespace.StackNamespaceOnlyHash(projectName, stackName))
 	result := []Dest{
 		{
-			Host:   fmt.Sprintf("%s.%s.svc.cluster.local", name, service.Service.Namespace),
+			Host:   fmt.Sprintf("%s.%s.svc.cluster.local", svcName, settings.CloudNamespace),
 			Subset: service.Service.Spec.Revision.Version,
 		},
 	}
@@ -226,7 +227,7 @@ func min(left, right int) int {
 func vsFromService(stack *v1.Stack, name string, service *serviceset.ServiceSet) []runtime.Object {
 	var result []runtime.Object
 
-	serviceVS := VsFromSpec(stack, name, service.Service.Namespace, service.Service, DestsForService(name, service)...)
+	serviceVS := VsFromSpec(stack, name, service.Service.Namespace, service.Service, DestsForService(name, stack.Name, stack.Namespace, service)...)
 	if serviceVS != nil {
 		result = append(result, serviceVS)
 	}
@@ -255,7 +256,7 @@ func VsFromSpec(stack *v1.Stack, name, namespace string, service *v1.Service, de
 
 	vs := newVirtualService(stack, service)
 	spec := v1alpha3.VirtualServiceSpec{
-		Hosts:    []string{name},
+		Hosts:    []string{},
 		Gateways: []string{privateGw},
 		Http:     routes,
 	}

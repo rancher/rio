@@ -7,12 +7,13 @@ import (
 	"github.com/rancher/norman/pkg/objectset"
 	"github.com/rancher/rio/features/letsencrypt/controllers/issuer"
 	"github.com/rancher/rio/features/routing/controllers/istio/populate"
+	"github.com/rancher/rio/pkg/namespace"
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
 	projectv1 "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
 	corev1 "github.com/rancher/types/apis/core/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -87,7 +88,7 @@ func (i *istioDeployController) sync(key string, obj *v1alpha3.VirtualService) (
 		return nil, err
 	}
 
-	secret, err := i.secretsLister.Get(settings.IstioExternalLBNamespace, issuer.TLSSecretName)
+	secret, err := i.secretsLister.Get(namespace.CloudNamespace, issuer.TLSSecretName)
 	if err != nil && !errors.IsNotFound(err) {
 		return nil, err
 	}

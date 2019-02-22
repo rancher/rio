@@ -30,6 +30,7 @@ func PopulateStack(output *objectset.ObjectSet) error {
 			Answers: map[string]string{
 				"PORTS":               string(portStr),
 				"TELEMETRY_NAMESPACE": settings.IstioTelemetryNamespace,
+				"PILOT_ADDRESS":       fmt.Sprintf("%s.rio-cloud", settings.IstioPilotNamespace),
 			},
 			EnableKubernetesResources: true,
 			DisableMesh:               true,

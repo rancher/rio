@@ -32,7 +32,7 @@ func ExternalService(app *cli.App) cli.Command {
 			},
 			builder.Command(&Create{},
 				"Create external services",
-				app.Name+" create [OPTIONS] [EXTERNAL_SERVICE] [(IP)(FQDN)(SERVICE/STACK)]",
+				app.Name+" create [OPTIONS] [EXTERNAL_SERVICE] [(IP)(FQDN)(STACK/SERVICE)]",
 				""),
 			{
 				Name:      "delete",

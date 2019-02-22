@@ -12,7 +12,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/table"
 	"github.com/rancher/rio/pkg/settings"
 	projectclient "github.com/rancher/rio/types/client/project/v1"
-	"github.com/rancher/rio/types/client/rio/v1"
+	client "github.com/rancher/rio/types/client/rio/v1"
 )
 
 type PodData struct {

@@ -10,8 +10,9 @@ import (
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
-	"github.com/rancher/rio/types/client/rio/v1"
+	"github.com/rancher/rio/pkg/namespace"
+	v1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	client "github.com/rancher/rio/types/client/rio/v1"
 	"github.com/urfave/cli"
 )
 
@@ -317,14 +318,10 @@ func FormatURL() func(obj interface{}) (string, error) {
 		if !ok {
 			return "", fmt.Errorf("invalid data")
 		}
-		space := strings.SplitN(data.Stack.ProjectID, "-", 2)[1]
 		hostBuf := strings.Builder{}
 		hostBuf.WriteString("https://")
-		hostBuf.WriteString(data.RouteSet.Name)
-		hostBuf.WriteString("-")
-		hostBuf.WriteString(data.Stack.Name)
-		hostBuf.WriteString("-")
-		hostBuf.WriteString(space)
+		name := namespace.HashIfNeed(data.RouteSet.Name, data.Stack.Name, data.Stack.ProjectID)
+		hostBuf.WriteString(name)
 		hostBuf.WriteString(".")
 		hostBuf.WriteString(data.Domain)
 		if data.port() > 0 {

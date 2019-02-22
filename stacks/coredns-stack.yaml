@@ -4,6 +4,7 @@ configs:
       .:53 {
           errors
           health
+          rio
           kubernetes cluster.local in-addr.arpa ip6.arpa {
               pods insecure
               upstream
@@ -33,7 +34,8 @@ services:
     - list,watch pods
     - list,watch namespaces
     healthcheck: http://localhost:8080/health
-    image: k8s.gcr.io/coredns:1.3.1
+    image: daishan1992/coredns:dev
+    imagePullPolicy: always
     memory: 70m
     read_only: true
     scale: 1

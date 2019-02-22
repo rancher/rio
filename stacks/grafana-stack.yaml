@@ -22,11 +22,7 @@ configs:
         name: Prometheus
         orgId: 1
         type: prometheus
-        url: http://prometheus
-
-externalservices:
-  prometheus:
-    service: prometheus/prometheus
+        url: http://prometheus.prometheus:9090
 
 services:
   grafana:

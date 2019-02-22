@@ -11,7 +11,7 @@ import (
 	"github.com/rancher/rio/pkg/name"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -36,6 +36,8 @@ var (
 		"requests/memory":            "requests.memory",
 		"requests/ephemeral-storage": "requests.ephemeral-storage",
 	}
+	rioProject = "RIO_PROJECT"
+	rioStack   = "RIO_STACK"
 )
 
 func Container(name string, container riov1.ContainerConfig) v1.Container {

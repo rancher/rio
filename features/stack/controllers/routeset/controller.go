@@ -16,7 +16,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	c.Processor.Client(rContext.Core.Service, rContext.Core.Endpoints)
 
 	c.Populator = func(obj runtime.Object, stack *riov1.Stack, os *objectset.ObjectSet) error {
-		return populate.ServiceForRouteSet(obj.(*riov1.RouteSet), os)
+		return populate.ServiceForRouteSet(obj.(*riov1.RouteSet), stack, os)
 	}
 
 	return nil

@@ -63,7 +63,7 @@ def kube_chk(stack, service_name):
     out = []
     for item in obj['spec']['template']['spec']['volumes']:
         if 'configMap' in item:
-            out.append(item['configMap']['name'])
+            out.append(str(item['configMap']['name']).split("-")[0])
 
     out.sort()
     print(out)

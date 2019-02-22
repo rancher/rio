@@ -10,6 +10,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/clientcfg"
 	"github.com/rancher/rio/cli/pkg/table"
+	"github.com/rancher/rio/pkg/namespace"
 	client "github.com/rancher/rio/types/client/rio/v1"
 )
 
@@ -204,7 +205,7 @@ func (p *Ps) services(ctx *clicontext.CLIContext, stacks map[string]bool) error 
 		fakeService := &client.Service{}
 		fakeService.Name = r.Name
 		fakeService.State = "active"
-		endpoint := fmt.Sprintf("https://%s-%s-%s.%s", r.Name, stack.Name, strings.SplitN(stack.ProjectID, "-", 2)[1], domain)
+		endpoint := fmt.Sprintf("https://%s.%s", namespace.HashIfNeed(r.Name, stack.Name, stack.ProjectID), domain)
 		writer.Write(&ServiceData{
 			ID:       r.ID,
 			Created:  r.Created,

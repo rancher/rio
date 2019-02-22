@@ -3,7 +3,8 @@ package servicelabels
 import (
 	"strings"
 
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/namespace"
+	v1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 )
 
 func SelectorLabels(stack *v1.Stack, service *v1.Service) map[string]string {
@@ -17,7 +18,7 @@ func SelectorLabels(stack *v1.Stack, service *v1.Service) map[string]string {
 func ServiceLabels(stack *v1.Stack, service *v1.Service) map[string]string {
 	m := RioOnlyServiceLabels(stack, service)
 	m = SafeMerge(m, service.Spec.Labels)
-	m["app"] = m["rio.cattle.io/service"]
+	m["app"] = namespace.HashIfNeed(m["rio.cattle.io/service"], stack.Name, stack.Namespace)
 	m["version"] = m["rio.cattle.io/version"]
 	return m
 }

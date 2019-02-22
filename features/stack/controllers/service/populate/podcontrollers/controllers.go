@@ -6,7 +6,7 @@ import (
 	"github.com/rancher/rio/features/stack/controllers/service/populate/podvolume"
 	"github.com/rancher/rio/features/stack/controllers/service/populate/servicelabels"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 func Populate(stack *riov1.Stack, configsByName map[string]*riov1.Config, volumesByName map[string]*riov1.Volume, service *riov1.Service, os *objectset.ObjectSet) error {
@@ -39,6 +39,10 @@ func newControllerParams(stack *riov1.Stack, service *riov1.Service, podTemplate
 	for k, v := range selectorLabels {
 		podTemplateSpec.Labels[k] = v
 	}
+	podTemplateSpec.Annotations = servicelabels.SafeMerge(podTemplateSpec.Annotations, map[string]string{
+		"rio.cattle.io/stack":   stack.Name,
+		"rio.cattle.io/project": stack.Namespace,
+	})
 
 	return &controllerParams{
 		Scale:           scaleParams,
