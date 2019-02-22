@@ -6,18 +6,25 @@ import (
 	"strconv"
 	"strings"
 
+	mapper3 "github.com/rancher/types/mapper"
+
+	"github.com/rancher/rio/cli/pkg/mapper"
+	mapper2 "github.com/rancher/rio/types/mapper"
+
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/clientcfg"
 	"github.com/rancher/rio/cli/pkg/table"
-	client "github.com/rancher/rio/types/client/rio/v1"
+	"github.com/rancher/rio/pkg/namespace"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type ServiceData struct {
 	ID       string
 	Created  string
-	Service  *client.Service
-	Stack    *client.Stack
+	Service  *riov1.Service
+	Stack    *riov1.Stack
 	Endpoint string
 	External string
 }
@@ -29,31 +36,31 @@ func FormatServiceName(cluster *clientcfg.Cluster) func(data, data2 interface{})
 			return "", nil
 		}
 
-		service, ok := data2.(*client.Service)
+		service, ok := data2.(*riov1.Service)
 		if !ok {
 			return "", nil
 		}
 
-		if service.ParentService == "" || service.Version == "" {
+		if service.Spec.Revision.ParentService == "" || service.Spec.Revision.Version == "" {
 			return table.FormatStackScopedName(cluster)(stackName, service.Name)
 		}
 
-		return table.FormatStackScopedName(cluster)(stackName, service.ParentService+":"+service.Version)
+		return table.FormatStackScopedName(cluster)(stackName, service.Spec.Revision.ParentService+":"+service.Spec.Revision.Version)
 	}
 }
 
 func FormatImage(data interface{}) (string, error) {
-	s, ok := data.(*client.Service)
+	s, ok := data.(*riov1.Service)
 	if !ok {
 		return fmt.Sprint(data), nil
 	}
-	if s.Image == "" || len(s.Sidekicks) > 0 {
-		return s.Sidekicks[firstSortedKey(s.Sidekicks)].Image, nil
+	if s.Spec.Image == "" || len(s.Spec.Sidekicks) > 0 {
+		return s.Spec.Sidekicks[firstSortedKey(s.Spec.Sidekicks)].Image, nil
 	}
-	return s.Image, nil
+	return s.Spec.Image, nil
 }
 
-func firstSortedKey(m map[string]client.SidekickConfig) string {
+func firstSortedKey(m map[string]riov1.SidekickConfig) string {
 	var keys []string
 	for k := range m {
 		keys = append(keys, k)
@@ -66,13 +73,13 @@ func firstSortedKey(m map[string]client.SidekickConfig) string {
 }
 
 func FormatScale(data, data2 interface{}) (string, error) {
-	scale, ok := data.(int64)
+	scale, ok := data.(int)
 	if !ok {
 		return fmt.Sprint(data), nil
 	}
-	scaleStr := strconv.FormatInt(scale, 10)
+	scaleStr := strconv.Itoa(scale)
 
-	scaleStatus, ok := data2.(*client.ScaleStatus)
+	scaleStatus, ok := data2.(*riov1.ScaleStatus)
 	if !ok || scaleStatus == nil {
 		return scaleStr, nil
 	}
@@ -90,7 +97,12 @@ func FormatScale(data, data2 interface{}) (string, error) {
 }
 
 func (p *Ps) services(ctx *clicontext.CLIContext, stacks map[string]bool) error {
-	wc, err := ctx.ProjectClient()
+	client, err := ctx.KubeClient()
+	if err != nil {
+		return err
+	}
+
+	project, err := ctx.Project()
 	if err != nil {
 		return err
 	}
@@ -105,80 +117,97 @@ func (p *Ps) services(ctx *clicontext.CLIContext, stacks map[string]bool) error 
 		return err
 	}
 
-	services, err := wc.Service.List(util.DefaultListOpts())
+	services, err := client.Rio.Services("").List(metav1.ListOptions{})
 	if err != nil {
 		return err
+	}
+
+	var filteredService []riov1.Service
+	for _, s := range services.Items {
+		if s.Spec.ProjectName == project.Project.Name {
+			filteredService = append(filteredService, s)
+		}
 	}
 
 	writer := table.NewWriter([][]string{
 		{"NAME", "{{serviceName .Stack.Name .Service}}"},
 		{"IMAGE", "{{.Service | image}}"},
-		{"CREATED", "{{.Created | ago}}"},
-		{"SCALE", "{{scale .Service.Scale .Service.ScaleStatus}}"},
-		{"STATE", "Service.State"},
+		{"CREATED", "{{.Service.CreationTimestamp | ago}}"},
+		{"STATE", "{{.Service | toJson | stateMapper}}"},
+		{"SCALE", "{{scale .Service.Spec.Scale .Service.Status.ScaleStatus}}"},
 		{"ENDPOINT", "Endpoint"},
 		{"EXTERNAL", "External"},
-		{"DETAIL", "{{first .Service.TransitioningMessage .Stack.TransitioningMessage}}"},
+		{"DETAIL", "{{first (.Service | toJson | transitioning) (.Stack | toJson | transitioning)}}"},
 	}, ctx)
 	defer writer.Close()
 
+	wrapper := mapper.Wrapper{}
+	wrapper.AddMapper(&mapper2.DeploymentStatus{}, mapper2.Status{}, mapper3.Status{})
+	writer.AddFormatFunc("stateMapper", wrapper.FormatState)
+	writer.AddFormatFunc("transitioning", wrapper.FormatTransitionMessage)
 	writer.AddFormatFunc("serviceName", FormatServiceName(cluster))
 	writer.AddFormatFunc("image", FormatImage)
 	writer.AddFormatFunc("scale", FormatScale)
 
-	stackByID, err := util.StacksByID(wc)
+	stackByID, err := util.StacksByID(client, project.Project.Name)
 	if err != nil {
 		return err
 	}
 
-	for i, service := range services.Data {
-		stack := stackByID[service.StackID]
+	for i, service := range filteredService {
+		stack := stackByID[service.Spec.StackName]
 		if stack == nil {
 			continue
 		}
 
-		if len(stacks) > 0 && !stacks[service.StackID] {
+		if len(stacks) > 0 && !stacks[service.Spec.StackName] {
 			continue
 		}
 
 		writer.Write(&ServiceData{
-			ID:       service.ID,
-			Created:  services.Data[i].Created,
-			Service:  &services.Data[i],
+			ID:       service.Name,
+			Created:  filteredService[i].CreationTimestamp.String(),
+			Service:  &filteredService[i],
 			Stack:    stack,
 			Endpoint: endpoint(&service),
 		})
 	}
 
 	// external services
-	externalServices, err := wc.ExternalService.List(util.DefaultListOpts())
+	externalServices, err := client.Rio.ExternalServices("").List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
 
-	for _, e := range externalServices.Data {
-		stack := stackByID[e.StackID]
+	var filteredExternalServices []riov1.ExternalService
+	for _, es := range externalServices.Items {
+		if es.Spec.ProjectName == project.Project.Name {
+			filteredExternalServices = append(filteredExternalServices, es)
+		}
+	}
+
+	for _, e := range filteredExternalServices {
+		stack := stackByID[e.Spec.StackName]
 		if stack == nil {
 			continue
 		}
 
-		if len(stacks) > 0 && !stacks[e.StackID] {
+		if len(stacks) > 0 && !stacks[e.Spec.StackName] {
 			continue
 		}
-		fakeService := &client.Service{}
+		fakeService := &riov1.Service{}
 		fakeService.Name = e.Name
-		fakeService.State = "active"
 		endpoint := ""
-		if len(e.IPAddresses) > 0 {
-			endpoint = strings.Join(e.IPAddresses, ",")
-		} else if e.FQDN != "" {
-			endpoint = e.FQDN
-		} else if e.Service != "" {
-			endpoint = e.Service
+		if len(e.Spec.IPAddresses) > 0 {
+			endpoint = strings.Join(e.Spec.IPAddresses, ",")
+		} else if e.Spec.FQDN != "" {
+			endpoint = e.Spec.FQDN
+		} else if e.Spec.Service != "" {
+			endpoint = e.Spec.Service
 		}
 		writer.Write(&ServiceData{
-			ID:       e.ID,
-			Created:  e.Created,
+			ID:       e.Name,
+			Created:  e.CreationTimestamp.String(),
 			Service:  fakeService,
 			Stack:    stack,
 			Endpoint: endpoint,
@@ -187,27 +216,33 @@ func (p *Ps) services(ctx *clicontext.CLIContext, stacks map[string]bool) error 
 	}
 
 	// routes
-	routes, err := wc.RouteSet.List(util.DefaultListOpts())
+	routes, err := client.Rio.RouteSets("").List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
 
-	for _, r := range routes.Data {
-		stack := stackByID[r.StackID]
+	var filteredRoutes []riov1.RouteSet
+	for _, r := range routes.Items {
+		if r.Spec.ProjectName == project.Project.Name {
+			filteredRoutes = append(filteredRoutes, r)
+		}
+	}
+
+	for _, r := range filteredRoutes {
+		stack := stackByID[r.Spec.StackName]
 		if stack == nil {
 			continue
 		}
 
-		if len(stacks) > 0 && !stacks[r.StackID] {
+		if len(stacks) > 0 && !stacks[r.Spec.StackName] {
 			continue
 		}
-		fakeService := &client.Service{}
+		fakeService := &riov1.Service{}
 		fakeService.Name = r.Name
-		fakeService.State = "active"
-		endpoint := fmt.Sprintf("https://%s-%s-%s.%s", r.Name, stack.Name, strings.SplitN(stack.ProjectID, "-", 2)[1], domain)
+		endpoint := fmt.Sprintf("https://%s.%s", namespace.HashIfNeed(r.Name, stack.Name, project.Project.Name), domain)
 		writer.Write(&ServiceData{
-			ID:       r.ID,
-			Created:  r.Created,
+			ID:       r.Name,
+			Created:  r.CreationTimestamp.String(),
 			Service:  fakeService,
 			Stack:    stack,
 			Endpoint: endpoint,
@@ -218,10 +253,9 @@ func (p *Ps) services(ctx *clicontext.CLIContext, stacks map[string]bool) error 
 	return writer.Err()
 }
 
-func endpoint(service *client.Service) string {
-	if len(service.Endpoints) > 0 {
-		return service.Endpoints[0].URL
+func endpoint(service *riov1.Service) string {
+	if len(service.Status.Endpoints) > 0 {
+		return service.Status.Endpoints[0].URL
 	}
-
 	return ""
 }

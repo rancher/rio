@@ -4,31 +4,33 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rancher/norman/types"
-	"github.com/rancher/rio/cli/cmd/util"
+	"github.com/rancher/rio/cli/pkg/mapper"
+
+	"github.com/rancher/norman/pkg/kv"
+
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/clientcfg"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/table"
+	"github.com/rancher/rio/cli/pkg/types"
 	"github.com/rancher/rio/pkg/settings"
-	projectclient "github.com/rancher/rio/types/client/project/v1"
-	"github.com/rancher/rio/types/client/rio/v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type PodData struct {
-	ID         string
 	Name       string
 	Managed    bool
 	Service    *lookup.StackScoped
-	Pod        *projectclient.Pod
-	Containers []projectclient.Container
+	Pod        *v1.Pod
+	Containers []v1.Container
 }
 
 type ContainerData struct {
 	ID        string
-	Pod       *projectclient.Pod
+	Pod       *v1.Pod
 	PodData   *PodData
-	Container *projectclient.Container
+	Container *v1.Container
 }
 
 func ListFirstPod(ctx *clicontext.CLIContext, all bool, podOrServices ...string) (*PodData, error) {
@@ -47,38 +49,47 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 		return nil, err
 	}
 
-	c, err := ctx.ClusterClient()
+	cluster, err := ctx.Cluster()
 	if err != nil {
 		return nil, err
 	}
 
-	if w.ID != settings.RioSystemNamespace {
+	client, err := cluster.KubeClient()
+	if err != nil {
+		return nil, err
+	}
+
+	if w.Project.Name != settings.RioSystemNamespace {
 		all = false
 	}
 
-	var pods []*types.NamedResource
-	var services []*types.NamedResource
+	var pods []types.Resource
+	var services []types.Resource
 
 	for _, name := range podOrServices {
-		r, err := lookup.Lookup(ctx, name, projectclient.PodType, client.ServiceType)
+		r, err := lookup.Lookup(ctx, name, types.PodType, types.ServiceType)
 		if err != nil {
 			return nil, err
 		}
 		switch r.Type {
-		case projectclient.PodType:
+		case types.PodType:
 			pods = append(pods, r)
-		case client.ServiceType:
+		case types.ServiceType:
 			services = append(services, r)
 		}
 	}
 
 	for _, pod := range pods {
-		pod, err := c.Pod.ByID(pod.ID)
+		if len(strings.Split(pod.Name, "/")) != 2 {
+			continue
+		}
+		podname, containername := kv.Split(pod.Name, "/")
+		pod, err := client.Core.Pods(pod.Namespace).Get(podname, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
 
-		podData, ok := toPodData(w, all, pod)
+		podData, ok := toPodData(w, all, pod, containername)
 		if ok {
 			result = append(result, podData)
 		}
@@ -88,13 +99,13 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 		return result, nil
 	}
 
-	podList, err := c.Pod.List(util.DefaultListOpts())
+	podList, err := client.Core.Pods("").List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	for i := range podList.Data {
-		podData, ok := toPodData(w, all, &podList.Data[i])
+	for i := range podList.Items {
+		podData, ok := toPodData(w, all, &podList.Items[i], "")
 		if !ok {
 			continue
 		}
@@ -105,7 +116,7 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 		}
 
 		for _, service := range services {
-			if service.ID == podData.Service.ResourceID {
+			if service.Name == podData.Service.ResourceID && service.Namespace == podData.Service.StackName {
 				result = append(result, podData)
 				break
 			}
@@ -115,12 +126,11 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 	return result, nil
 }
 
-func toPodData(w *clientcfg.Project, all bool, pod *projectclient.Pod) (PodData, bool) {
+func toPodData(w *clientcfg.Project, all bool, pod *v1.Pod, containerName string) (PodData, bool) {
 	stackScoped := lookup.StackScopedFromLabels(w, pod.Labels)
 	projectID := pod.Labels["rio.cattle.io/project"]
 
 	podData := PodData{
-		ID:      pod.ID,
 		Pod:     pod,
 		Service: &stackScoped,
 		Managed: projectID != "",
@@ -133,18 +143,15 @@ func toPodData(w *clientcfg.Project, all bool, pod *projectclient.Pod) (PodData,
 		podData.Name = pod.Name
 	}
 
-	if !all && (podData.Name == "" || !podData.Managed || projectID != w.ID) {
+	if !all && (podData.Name == "" || !podData.Managed || projectID != w.Project.Name) {
 		return podData, false
 	}
 
-	containers := append(pod.Containers, pod.InitContainers...)
+	containers := append(pod.Spec.Containers, pod.Spec.InitContainers...)
 	for _, container := range containers {
-		if podData.Pod.Transitioning == "error" && container.TransitioningMessage == "" {
-			container.State = podData.Pod.State
-			container.TransitioningMessage = podData.Pod.TransitioningMessage
+		if containerName == "" || container.Name == containerName {
+			podData.Containers = append(podData.Containers, container)
 		}
-
-		podData.Containers = append(podData.Containers, container)
 	}
 
 	return podData, true
@@ -159,20 +166,23 @@ func (p *Ps) containers(ctx *clicontext.CLIContext) error {
 	writer := table.NewWriter([][]string{
 		{"NAME", "{{containerName .PodData .Container}}"},
 		{"IMAGE", "Container.Image"},
-		{"CREATED", "{{.PodData.Pod.Created | ago}}"},
-		{"NODE", "PodData.Pod.NodeName"},
-		{"IP", "PodData.Pod.PodIP"},
-		{"STATE", "Container.State"},
-		{"DETAIL", "Container.TransitioningMessage"},
+		{"CREATED", "{{.PodData.Pod.CreationTimestamp | ago}}"},
+		{"NODE", "PodData.Pod.Spec.NodeName"},
+		{"IP", "PodData.Pod.Status.PodIP"},
+		{"STATE", "Container | toJson | state"},
+		{"DETAIL", "Container | toJson | transistioning"},
 	}, ctx)
 	defer writer.Close()
 
+	m := mapper.GenericStatusMapper
 	writer.AddFormatFunc("containerName", containerName)
+	writer.AddFormatFunc("state", m.FormatState)
+	writer.AddFormatFunc("transistioning", m.FormatTransitionMessage)
 
 	for _, pd := range pds {
 		for _, container := range pd.Containers {
 			writer.Write(ContainerData{
-				ID:        pd.ID,
+				ID:        pd.Name,
 				PodData:   &pd,
 				Container: &container,
 			})
@@ -184,10 +194,10 @@ func (p *Ps) containers(ctx *clicontext.CLIContext) error {
 
 func containerName(obj, obj2 interface{}) (string, error) {
 	podData, _ := obj.(*PodData)
-	container, _ := obj2.(*projectclient.Container)
+	container, _ := obj2.(*v1.Container)
 
 	if !podData.Managed {
-		return fmt.Sprintf("%s/%s", strings.Split(podData.ID, ":")[1], container.Name), nil
+		return fmt.Sprintf("%s/%s", strings.Split(podData.Name, ":")[1], container.Name), nil
 	}
 
 	pc := lookup.ParsedContainer{

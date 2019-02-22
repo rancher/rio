@@ -6,23 +6,22 @@ import (
 	"strings"
 
 	"github.com/rancher/norman/pkg/kv"
-	"github.com/rancher/norman/types/values"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
-	"github.com/rancher/rio/cli/pkg/waiter"
-	"github.com/rancher/rio/types/client/rio/v1"
+	"github.com/rancher/rio/cli/pkg/types"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Weight struct {
 }
 
 func (w *Weight) Run(ctx *clicontext.CLIContext) error {
-	wc, err := ctx.ProjectClient()
+	project, err := ctx.Project()
 	if err != nil {
 		return err
 	}
 
-	waiter, err := waiter.NewWaiter(ctx)
+	client, err := ctx.KubeClient()
 	if err != nil {
 		return err
 	}
@@ -39,22 +38,21 @@ func (w *Weight) Run(ctx *clicontext.CLIContext) error {
 			return fmt.Errorf("failed to parse %s: %v", arg, err)
 		}
 
-		service, err := lookup.Lookup(ctx, name, client.ServiceType)
+		resource, err := lookup.Lookup(ctx, name, types.ServiceType)
 		if err != nil {
 			return err
 		}
 
-		data := map[string]interface{}{}
-		values.PutValue(data, int64(scale),
-			client.ServiceFieldWeight)
-
-		_, err = wc.Service.Update(&client.Service{Resource: service.Resource}, data)
+		service, err := client.Rio.Services(project.Project.Name).Get(resource.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
+		service.Spec.Revision.Weight = scale
 
-		waiter.Add(&service.Resource)
+		if _, err := client.Rio.Services(project.Project.Name).Update(service); err != nil {
+			return err
+		}
 	}
 
-	return waiter.Wait(ctx.Ctx)
+	return nil
 }

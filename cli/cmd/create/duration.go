@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func ParseDurationUnit(s, name string, unit time.Duration) (int64, error) {
+func ParseDurationUnit(s, name string, unit time.Duration) (int, error) {
 	if s == "" {
 		return 0, nil
 	}
@@ -14,5 +14,5 @@ func ParseDurationUnit(s, name string, unit time.Duration) (int64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("failed to parse %s: %v", name, err)
 	}
-	return int64(dur / unit), nil
+	return int(dur / unit), nil
 }

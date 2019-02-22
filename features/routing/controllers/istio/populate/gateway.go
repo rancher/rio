@@ -11,7 +11,7 @@ import (
 	"github.com/rancher/rio/pkg/settings"
 	v1alpha3client "github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
 	riov1 "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -92,7 +92,7 @@ func populateGateway(secret *v1.Secret, publicDomains []*riov1.PublicDomain, out
 		}
 	}
 
-	gateway := v1alpha3client.NewGateway(settings.RioSystemNamespace, settings.IstioGateway, v1alpha3client.Gateway{
+	gateway := v1alpha3client.NewGateway(settings.RioSystemNamespace, settings.RioGateway, v1alpha3client.Gateway{
 		Spec: gws,
 	})
 

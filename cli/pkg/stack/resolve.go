@@ -3,12 +3,13 @@ package stack
 import (
 	"strings"
 
+	errors2 "k8s.io/apimachinery/pkg/api/errors"
+
 	"github.com/pkg/errors"
 	"github.com/rancher/norman/pkg/kv"
-	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/waiter"
-	"github.com/rancher/rio/types/client/rio/v1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func ResolveSpaceStackForName(c *clicontext.CLIContext, in string) (string, string, string, error) {
@@ -25,12 +26,12 @@ func ResolveSpaceStackForName(c *clicontext.CLIContext, in string) (string, stri
 		return "", "", "", err
 	}
 
-	w, err := c.Project()
+	client, err := cluster.KubeClient()
 	if err != nil {
 		return "", "", "", err
 	}
 
-	wc, err := w.Client()
+	p, err := c.Project()
 	if err != nil {
 		return "", "", "", err
 	}
@@ -39,31 +40,25 @@ func ResolveSpaceStackForName(c *clicontext.CLIContext, in string) (string, stri
 		stackName = cluster.DefaultStackName
 	}
 
-	stacks, err := wc.Stack.List(&types.ListOpts{
-		Filters: map[string]interface{}{
-			"name": stackName,
-		},
-	})
-	if err != nil {
+	stack, err := client.Rio.Stacks(p.Project.Name).Get(stackName, metav1.GetOptions{})
+	if err != nil && !errors2.IsNotFound(err) {
 		return "", "", "", errors.Wrapf(err, "failed to determine stack")
 	}
 
-	var s *client.Stack
-	if len(stacks.Data) == 0 {
-		s, err = wc.Stack.Create(&client.Stack{
-			Name:      stackName,
-			ProjectID: w.ID,
+	var s *riov1.Stack
+	if errors2.IsNotFound(err) {
+		s, err = client.Rio.Stacks(stackName).Create(&riov1.Stack{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      stackName,
+				Namespace: p.Project.Name,
+			},
 		})
 		if err != nil {
 			return "", "", "", errors.Wrapf(err, "failed to create stack %s", stackName)
 		}
 	} else {
-		s = &stacks.Data[0]
+		s = stack
 	}
 
-	if err := waiter.EnsureActive(c, &s.Resource); err != nil {
-		return "", "", "", err
-	}
-
-	return s.ProjectID, s.ID, name, nil
+	return s.Namespace, s.Name, name, nil
 }

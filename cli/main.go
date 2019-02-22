@@ -2,19 +2,16 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/docker/docker/pkg/reexec"
-	"github.com/rancher/rio/cli/cmd/agent"
 	"github.com/rancher/rio/cli/cmd/attach"
 	"github.com/rancher/rio/cli/cmd/cluster"
 	"github.com/rancher/rio/cli/cmd/config"
 	"github.com/rancher/rio/cli/cmd/create"
-	"github.com/rancher/rio/cli/cmd/ctr"
-	"github.com/rancher/rio/cli/cmd/edit"
-	"github.com/rancher/rio/cli/cmd/events"
 	"github.com/rancher/rio/cli/cmd/exec"
 	"github.com/rancher/rio/cli/cmd/export"
 	"github.com/rancher/rio/cli/cmd/externalservice"
@@ -32,7 +29,6 @@ import (
 	"github.com/rancher/rio/cli/cmd/route"
 	"github.com/rancher/rio/cli/cmd/run"
 	"github.com/rancher/rio/cli/cmd/scale"
-	"github.com/rancher/rio/cli/cmd/server"
 	"github.com/rancher/rio/cli/cmd/setcontext"
 	"github.com/rancher/rio/cli/cmd/stack"
 	"github.com/rancher/rio/cli/cmd/stage"
@@ -42,7 +38,6 @@ import (
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/clientcfg"
-	"github.com/rancher/rio/cli/pkg/waiter"
 	_ "github.com/rancher/rio/pkg/kubectl"
 	"github.com/rancher/rio/version"
 	"github.com/sirupsen/logrus"
@@ -77,6 +72,10 @@ func main() {
 		return
 	}
 
+	flag.Set("stderrthreshold", "3")
+	flag.Set("alsologtostderr", "false")
+	flag.Set("logtostderr", "false")
+
 	args := os.Args
 
 	app := cli.NewApp()
@@ -107,18 +106,6 @@ func main() {
 			Name:        "wait-state",
 			Usage:       "State to wait for (active, healthy, etc)",
 			Destination: &cfg.WaitState,
-		},
-		cli.StringFlag{
-			Name:        "server",
-			Usage:       "Specify the Rio API endpoint URL",
-			EnvVar:      "RIO_URL",
-			Destination: &cfg.ServerURL,
-		},
-		cli.StringFlag{
-			Name:        "token",
-			Usage:       "Specify Rio API token",
-			EnvVar:      "RIO_TOKEN",
-			Destination: &cfg.Token,
 		},
 		cli.StringFlag{
 			Name:        "cluster,c",
@@ -179,10 +166,10 @@ func main() {
 			appName+" inspect [ID_OR_NAME...]",
 			""),
 
-		builder.Command(&edit.Edit{},
-			"Edit a service or stack",
-			appName+" edit ID_OR_NAME",
-			""),
+		//builder.Command(&edit.Edit{},
+		//	"Edit a service or stack",
+		//	appName+" edit ID_OR_NAME",
+		//	""),
 		builder.Command(&up.Up{},
 			"Bring up a stack",
 			appName+" up [OPTIONS] [[STACK_NAME] FILE|-]",
@@ -207,15 +194,6 @@ func main() {
 			appName+" logs [OPTIONS] [CONTAINER_OR_SERVICE...]",
 			""),
 
-		builder.Command(&server.Server{},
-			"Run management server",
-			appName+" server [OPTIONS]",
-			""),
-		builder.Command(&agent.Agent{},
-			"Run node agent",
-			appName+" agent [OPTIONS]",
-			""),
-
 		builder.Command(&stage.Stage{},
 			"Stage a new revision of a service",
 			appName+" stage [OPTIONS] SERVICE_ID_NAME",
@@ -230,20 +208,12 @@ func main() {
 			""),
 		route.Route(app),
 
-		builder.Command(&events.Events{},
-			"Stream change events",
-			appName+" events",
-			""),
-
-		waiter.WaitCommand(),
-
 		builder.Command(&login.Login{},
 			"Login into Rio",
 			appName+" login",
 			""),
 
 		kubectl.NewKubectlCommand(),
-		ctr.NewCtrCommand(),
 	}
 	app.Before = func(ctx *cli.Context) error {
 		if err := cfg.Validate(); err != nil {

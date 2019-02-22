@@ -3,14 +3,15 @@ package externalservice
 import (
 	"strings"
 
-	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/cli/cmd/rm"
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
-	client "github.com/rancher/rio/types/client/rio/v1"
+	clitypes "github.com/rancher/rio/cli/pkg/types"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"github.com/urfave/cli"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func ExternalService(app *cli.App) cli.Command {
@@ -32,7 +33,7 @@ func ExternalService(app *cli.App) cli.Command {
 			},
 			builder.Command(&Create{},
 				"Create external services",
-				app.Name+" create [OPTIONS] [EXTERNAL_SERVICE] [(IP)(FQDN)(SERVICE/STACK)]",
+				app.Name+" create [OPTIONS] [EXTERNAL_SERVICE] [(IP)(FQDN)(STACK/SERVICE)]",
 				""),
 			{
 				Name:      "delete",
@@ -49,23 +50,36 @@ type Data struct {
 	Name    string
 	Target  string
 	Created string
-	Service *client.ExternalService
-	Stack   *client.Stack
+	Service *riov1.ExternalService
+	Stack   *riov1.Stack
 }
 
 func externalServiceLs(ctx *clicontext.CLIContext) error {
-	wc, err := ctx.ProjectClient()
+	client, err := ctx.KubeClient()
 	if err != nil {
 		return err
 	}
+
+	project, err := ctx.Project()
+	if err != nil {
+		return err
+	}
+
 	cluster, err := ctx.Cluster()
 	if err != nil {
 		return err
 	}
-	collection, err := wc.ExternalService.List(&types.ListOpts{})
+	collection, err := client.Rio.ExternalServices("").List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
+	var ess []riov1.ExternalService
+	for _, es := range collection.Items {
+		if es.Spec.ProjectName == project.Project.Name {
+			ess = append(ess, es)
+		}
+	}
+
 	writer := table.NewWriter([][]string{
 		{"NAME", "{{stackScopedName .Stack.Name .Service.Name}}"},
 		{"CREATED", "{{.Created | ago}}"},
@@ -74,25 +88,25 @@ func externalServiceLs(ctx *clicontext.CLIContext) error {
 	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cluster))
 	defer writer.Close()
 
-	stackByID, err := util.StacksByID(wc)
+	stackByID, err := util.StacksByID(client, project.Project.Name)
 	if err != nil {
 		return err
 	}
 
-	for _, item := range collection.Data {
+	for _, item := range ess {
 		endpoint := ""
-		if item.FQDN != "" {
-			endpoint = item.FQDN
-		} else if item.Service != "" {
-			endpoint = item.Service
-		} else if len(item.IPAddresses) > 0 {
-			endpoint = strings.Join(item.IPAddresses, ",")
+		if item.Spec.FQDN != "" {
+			endpoint = item.Spec.FQDN
+		} else if item.Spec.Service != "" {
+			endpoint = item.Spec.Service
+		} else if len(item.Spec.IPAddresses) > 0 {
+			endpoint = strings.Join(item.Spec.IPAddresses, ",")
 		}
 		writer.Write(&Data{
 			Name:    item.Name,
 			Target:  endpoint,
-			Created: item.Created,
-			Stack:   stackByID[item.StackID],
+			Created: item.CreationTimestamp.String(),
+			Stack:   stackByID[item.Spec.StackName],
 			Service: &item,
 		})
 	}
@@ -101,5 +115,5 @@ func externalServiceLs(ctx *clicontext.CLIContext) error {
 }
 
 func externalServiceRm(ctx *clicontext.CLIContext) error {
-	return rm.Remove(ctx, client.ExternalServiceType)
+	return rm.Remove(ctx, clitypes.ExternalServiceType)
 }

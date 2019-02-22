@@ -28,7 +28,7 @@ func pdb(stack *riov1.Stack, service *riov1.Service, cp *controllerParams, os *o
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", service.Name, pdbQuantity.IntVal),
-			Namespace: service.Namespace,
+			Namespace: stack.Name,
 		},
 		Spec: v1beta12.PodDisruptionBudgetSpec{
 			Selector: &metav1.LabelSelector{

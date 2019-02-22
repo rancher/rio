@@ -14,6 +14,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/up/questions"
 	template2 "github.com/rancher/rio/pkg/template"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func readFileInPath(relativePath, file string) ([]byte, error) {
@@ -75,13 +76,18 @@ func readFiles(relativePath string, files []string, template *template2.Template
 	return nil
 }
 
-func Run(ctx *clicontext.CLIContext, content []byte, stackID string, promptReplaceFile, prompt bool, answers map[string]string, file string) error {
-	wc, err := ctx.ProjectClient()
+func Run(ctx *clicontext.CLIContext, content []byte, stackName string, promptReplaceFile, prompt bool, answers map[string]string, file string) error {
+	project, err := ctx.Project()
 	if err != nil {
 		return err
 	}
 
-	stack, err := wc.Stack.ByID(stackID)
+	client, err := ctx.KubeClient()
+	if err != nil {
+		return err
+	}
+
+	stack, err := client.Rio.Stacks(project.Project.Name).Get(stackName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -128,8 +134,11 @@ func Run(ctx *clicontext.CLIContext, content []byte, stackID string, promptRepla
 		return err
 	}
 
-	_, err = wc.Stack.Update(stack, newStack)
-	return err
+	if _, err := client.Rio.Stacks(project.Project.Name).Update(newStack); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func mergeAnswers(template *template2.Template, answers map[string]string) {

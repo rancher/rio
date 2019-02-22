@@ -27,7 +27,7 @@ func deployment(stack *riov1.Stack, service *riov1.Service, cp *controllerParams
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        service.Name,
-			Namespace:   service.Namespace,
+			Namespace:   stack.Name,
 			Labels:      cp.Labels,
 			Annotations: map[string]string{},
 		},

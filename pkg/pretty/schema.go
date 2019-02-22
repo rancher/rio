@@ -4,7 +4,7 @@ import (
 	"github.com/rancher/norman/types"
 	"github.com/rancher/norman/types/mapper"
 	pm "github.com/rancher/rio/pkg/pretty/mapper"
-	"github.com/rancher/rio/types/client/rio/v1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"github.com/rancher/types/apis/management.cattle.io/v3"
 )
 
@@ -53,11 +53,11 @@ type TemplateMeta struct {
 }
 
 type Stack struct {
-	Meta       TemplateMeta               `json:"meta,omitempty"`
-	Services   map[string]client.Service  `json:"services,omitempty"`
-	Configs    map[string]client.Config   `json:"configs,omitempty"`
-	Volumes    map[string]client.Volume   `json:"volumes,omitempty"`
-	Routes     map[string]client.RouteSet `json:"routes,omitempty"`
-	Questions  []v3.Question              `json:"questions,omitempty"`
-	Kubernetes client.Kubernetes          `json:"kubernetes,omitempty"`
+	Meta       TemplateMeta                  `json:"meta,omitempty"`
+	Services   map[string]riov1.ServiceSpec  `json:"services,omitempty"`
+	Configs    map[string]riov1.ConfigSpec   `json:"configs,omitempty"`
+	Volumes    map[string]riov1.VolumeSpec   `json:"volumes,omitempty"`
+	Routes     map[string]riov1.RouteSetSpec `json:"routes,omitempty"`
+	Questions  []v3.Question                 `json:"questions,omitempty"`
+	Kubernetes riov1.Kubernetes              `json:"kubernetes,omitempty"`
 }

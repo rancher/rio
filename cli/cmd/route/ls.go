@@ -10,21 +10,23 @@ import (
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
-	"github.com/rancher/rio/types/client/rio/v1"
+	"github.com/rancher/rio/pkg/namespace"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"github.com/urfave/cli"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Data struct {
 	ID        string
-	Stack     *client.Stack
-	RouteSet  client.RouteSet
-	RouteSpec client.RouteSpec
-	Match     *client.Match
+	Stack     *riov1.Stack
+	RouteSet  riov1.RouteSet
+	RouteSpec riov1.RouteSpec
+	Match     *riov1.Match
 	Domain    string
 }
 
-func (d *Data) port() int64 {
+func (d *Data) port() int {
 	if d.Match == nil || d.Match.Port == nil {
 		return 0
 	}
@@ -45,7 +47,7 @@ func (d *Data) path() string {
 	return str
 }
 
-func stringMatchToString(m *client.StringMatch) string {
+func stringMatchToString(m *riov1.StringMatch) string {
 	if m == nil {
 		return ""
 	}
@@ -65,6 +67,11 @@ func (l *Ls) Customize(cmd *cli.Command) {
 }
 
 func (l *Ls) Run(ctx *clicontext.CLIContext) error {
+	project, err := ctx.Project()
+	if err != nil {
+		return err
+	}
+
 	cluster, err := ctx.Cluster()
 	if err != nil {
 		return err
@@ -75,12 +82,12 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	wc, err := ctx.ProjectClient()
+	client, err := ctx.KubeClient()
 	if err != nil {
 		return err
 	}
 
-	routeSets, err := wc.RouteSet.List(util.DefaultListOpts())
+	routeSets, err := client.Rio.RouteSets("").List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -100,23 +107,23 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 	writer.AddFormatFunc("formatTarget", FormatTarget)
 	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cluster))
 
-	stackByID, err := util.StacksByID(wc)
+	stackByID, err := util.StacksByID(client, project.Project.Name)
 	if err != nil {
 		return err
 	}
 
-	for i, routeSet := range routeSets.Data {
-		stack := stackByID[routeSet.StackID]
+	for _, routeSet := range routeSets.Items {
+		stack := stackByID[routeSet.Spec.StackName]
 		if stack == nil {
 			continue
 		}
-		for j, routeSpec := range routeSet.Routes {
+		for j, routeSpec := range routeSet.Spec.Routes {
 			if len(routeSpec.Matches) == 0 {
 				writer.Write(&Data{
-					ID:        routeSets.Data[i].ID,
-					RouteSet:  routeSets.Data[i],
-					RouteSpec: routeSets.Data[i].Routes[j],
-					Stack:     stackByID[routeSet.StackID],
+					ID:        routeSet.Name,
+					RouteSet:  routeSet,
+					RouteSpec: routeSet.Spec.Routes[j],
+					Stack:     stackByID[routeSet.Spec.StackName],
 					Domain:    domain,
 				})
 				continue
@@ -124,10 +131,10 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 
 			for k := range routeSpec.Matches {
 				writer.Write(&Data{
-					RouteSet:  routeSets.Data[i],
-					RouteSpec: routeSets.Data[i].Routes[j],
-					Match:     &routeSets.Data[i].Routes[j].Matches[k],
-					Stack:     stackByID[routeSet.StackID],
+					RouteSet:  routeSet,
+					RouteSpec: routeSet.Spec.Routes[j],
+					Match:     &routeSet.Spec.Routes[j].Matches[k],
+					Stack:     stackByID[routeSet.Spec.StackName],
 					Domain:    domain,
 				})
 			}
@@ -204,14 +211,14 @@ func FormatTarget(obj interface{}) (string, error) {
 
 	if target == "to" {
 		for _, to := range data.RouteSpec.To {
-			writeDest(buf, data.Stack.Name, to.Stack, to.Service, to.Revision, to.Port, to.Weight)
+			writeDest(buf, data.Stack.Name, to.Stack, to.Service, to.Revision, int(*to.Port), to.Weight)
 		}
 	} else if target == "redirect" && data.RouteSpec.Redirect != nil {
 		writeHostPath(buf, data.RouteSpec.Redirect.Host, data.RouteSpec.Redirect.Path)
 	} else if target == "mirror" && data.RouteSpec.Mirror != nil && data.RouteSpec.Mirror.Port != nil {
 		writeDest(buf, data.Stack.Name, data.RouteSpec.Mirror.Stack, data.RouteSpec.Mirror.Service,
 			data.RouteSpec.Mirror.Revision,
-			data.RouteSpec.Mirror.Port, 0)
+			int(*data.RouteSpec.Mirror.Port), 0)
 	} else if target == "rewrite" {
 		writeHostPath(buf, data.RouteSpec.Redirect.Host, data.RouteSpec.Redirect.Path)
 	}
@@ -231,7 +238,7 @@ func writeHostPath(buf *strings.Builder, host, path string) {
 	}
 }
 
-func writeDest(buf *strings.Builder, sourceStackName, stack, service, revision string, port *int64, weight int64) {
+func writeDest(buf *strings.Builder, sourceStackName, stack, service, revision string, port int, weight int) {
 	if buf.Len() > 0 {
 		buf.WriteString(",")
 	}
@@ -246,19 +253,19 @@ func writeDest(buf *strings.Builder, sourceStackName, stack, service, revision s
 		buf.WriteString(revision)
 	}
 
-	if port != nil && *port > 0 {
+	if port > 0 {
 		buf.WriteString(",port=")
-		buf.WriteString(strconv.FormatInt(*port, 10))
+		buf.WriteString(strconv.Itoa(port))
 	}
 
 	if weight > 0 {
 		buf.WriteString(" ")
-		buf.WriteString(strconv.FormatInt(weight, 10))
+		buf.WriteString(strconv.Itoa(weight))
 		buf.WriteString("%")
 	}
 }
 
-func addFrom(buf *strings.Builder, from *client.ServiceSource) {
+func addFrom(buf *strings.Builder, from *riov1.ServiceSource) {
 	if from == nil {
 		return
 	}
@@ -282,7 +289,7 @@ func addFrom(buf *strings.Builder, from *client.ServiceSource) {
 	}
 }
 
-func writeStringMatch(buf *strings.Builder, prefix string, sm *client.StringMatch) {
+func writeStringMatch(buf *strings.Builder, prefix string, sm *riov1.StringMatch) {
 	if sm == nil {
 		return
 	}
@@ -298,7 +305,7 @@ func writeStringMatch(buf *strings.Builder, prefix string, sm *client.StringMatc
 	}
 }
 
-func writeStringMatchMap(buf *strings.Builder, prefix string, matches map[string]client.StringMatch) {
+func writeStringMatchMap(buf *strings.Builder, prefix string, matches map[string]riov1.StringMatch) {
 	var keys []string
 	for k := range matches {
 		keys = append(keys, k)
@@ -317,19 +324,15 @@ func FormatURL() func(obj interface{}) (string, error) {
 		if !ok {
 			return "", fmt.Errorf("invalid data")
 		}
-		space := strings.SplitN(data.Stack.ProjectID, "-", 2)[1]
 		hostBuf := strings.Builder{}
 		hostBuf.WriteString("https://")
-		hostBuf.WriteString(data.RouteSet.Name)
-		hostBuf.WriteString("-")
-		hostBuf.WriteString(data.Stack.Name)
-		hostBuf.WriteString("-")
-		hostBuf.WriteString(space)
+		name := namespace.HashIfNeed(data.RouteSet.Name, data.Stack.Name, data.Stack.Namespace)
+		hostBuf.WriteString(name)
 		hostBuf.WriteString(".")
 		hostBuf.WriteString(data.Domain)
 		if data.port() > 0 {
 			hostBuf.WriteString(":")
-			hostBuf.WriteString(strconv.FormatInt(data.port(), 10))
+			hostBuf.WriteString(strconv.Itoa(data.port()))
 		}
 		hostBuf.WriteString(data.path())
 		return hostBuf.String(), nil

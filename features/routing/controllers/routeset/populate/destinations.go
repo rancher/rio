@@ -5,7 +5,6 @@ import (
 
 	"github.com/knative/pkg/apis/istio/v1alpha3"
 	"github.com/rancher/norman/pkg/objectset"
-	"github.com/rancher/rio/pkg/namespace"
 	v1alpha3client "github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
 	v1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,7 +23,7 @@ func destinationRuleForRoutes(stack *v1.Stack, route *v1.RouteSet) []runtime.Obj
 
 	for _, dest := range destSet {
 		dr := v1alpha3.DestinationRuleSpec{
-			Host: fmt.Sprintf("%s.%s.svc.cluster.local", dest.service, namespace.StackNamespace(stack.Namespace, stack.Name)),
+			Host: fmt.Sprintf("%s.%s.svc.cluster.local", dest.service, dest.stack),
 		}
 
 		for revision := range dest.revision {

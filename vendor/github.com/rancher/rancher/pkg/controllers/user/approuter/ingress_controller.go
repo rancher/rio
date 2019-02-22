@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/ticker"
-	"github.com/rancher/types/apis/core/v1"
+	v1 "github.com/rancher/types/apis/core/v1"
 	"github.com/rancher/types/apis/extensions/v1beta1"
 	"github.com/sirupsen/logrus"
 	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
@@ -84,7 +84,7 @@ func (c *Controller) sync(key string, obj *extensionsv1beta1.Ingress) (runtime.O
 
 	c.dnsClient.SetBaseURL(serverURL)
 
-	created, fqdn, err := c.dnsClient.ApplyDomain(ips)
+	created, fqdn, err := c.dnsClient.ApplyDomain(ips, nil)
 	if err != nil {
 		logrus.WithError(err).Errorf("update fqdn [%s] to server [%s] error", fqdn, serverURL)
 		return nil, err

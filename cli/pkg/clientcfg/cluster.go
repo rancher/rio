@@ -8,12 +8,19 @@ import (
 	"sort"
 
 	"github.com/docker/docker/pkg/reexec"
-	"github.com/rancher/rio/cli/cmd/util"
+	"github.com/rancher/norman/objectclient/dynamic"
+	"github.com/rancher/norman/restwatch"
 	"github.com/rancher/rio/cli/pkg/up/questions"
 	"github.com/rancher/rio/pkg/clientaccess"
+	"github.com/rancher/rio/pkg/project"
 	"github.com/rancher/rio/pkg/settings"
-	projectclient "github.com/rancher/rio/types/client/project/v1"
+	projectv1 "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	corev1 "github.com/rancher/types/apis/core/v1"
 	"github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/rest"
 )
 
 type Cluster struct {
@@ -27,44 +34,9 @@ type Cluster struct {
 	Default            bool    `json:"default,omitempty"`
 	Config             *Config `json:"-"`
 
-	File          string `json:"-"`
-	domain        string
-	project       *Project
-	clientInfo    *clusterClientInfo
-	projectClient *projectclient.Client
-}
-
-func (c *Cluster) Client() (*projectclient.Client, error) {
-	if c.projectClient != nil {
-		return c.projectClient, nil
-	}
-
-	info, err := c.getClientInfo()
-	if err != nil {
-		return nil, err
-	}
-
-	sc, err := info.clusterClient()
-	if err != nil {
-		return nil, err
-	}
-
-	c.projectClient = sc
-	return c.projectClient, nil
-}
-
-func (c *Cluster) getClientInfo() (*clusterClientInfo, error) {
-	if c.clientInfo != nil {
-		return c.clientInfo, nil
-	}
-
-	cci, err := newClusterClientInfo(&c.Info)
-	if err != nil {
-		return nil, err
-	}
-
-	c.clientInfo = cci
-	return cci, nil
+	File    string `json:"-"`
+	domain  string
+	project *Project
 }
 
 func (c *Cluster) Project() (*Project, error) {
@@ -75,7 +47,7 @@ func (c *Cluster) Project() (*Project, error) {
 		}
 
 		for _, w := range projects {
-			if w.ID == c.Config.ProjectName || w.Name == c.Config.ProjectName {
+			if w.Project.Name == c.Config.ProjectName {
 				return &w, nil
 			}
 		}
@@ -89,7 +61,7 @@ func (c *Cluster) Project() (*Project, error) {
 	}
 
 	for _, w := range projects {
-		if w.ID == c.DefaultProjectName || w.Name == c.DefaultProjectName {
+		if w.Project.Name == c.DefaultProjectName {
 			return &w, nil
 		}
 	}
@@ -106,7 +78,7 @@ func (c *Cluster) Project() (*Project, error) {
 	var options []string
 
 	for i, w := range projects {
-		msg := fmt.Sprintf("[%d] %s\n", i+1, w.Name)
+		msg := fmt.Sprintf("[%d] %s\n", i+1, w.Project.Name)
 		options = append(options, msg)
 	}
 
@@ -120,19 +92,65 @@ func (c *Cluster) Project() (*Project, error) {
 }
 
 func (c *Cluster) CreateProject(name string) (*Project, error) {
-	sc, err := c.Client()
+	client, err := c.KubeClient()
 	if err != nil {
 		return nil, err
 	}
-
-	space, err := sc.Project.Create(&projectclient.Project{
-		Name: name,
+	projectNs := corev1.NewNamespace("", name, v1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: map[string]string{
+				project.ProjectLabel: "true",
+			},
+		},
 	})
+	ns, err := client.Core.Namespaces("").Create(projectNs)
+	if err != nil {
+		return nil, err
+	}
+	return &Project{
+		Project: ns,
+		Cluster: c,
+	}, nil
+}
+
+type KubeClient struct {
+	Core    corev1.Interface
+	Rio     riov1.Interface
+	Project projectv1.Interface
+}
+
+func (c *Cluster) RestClient() (rest.Interface, error) {
+	config := c.Info.RestConfig()
+	if config.NegotiatedSerializer == nil {
+		config.NegotiatedSerializer = dynamic.NegotiatedSerializer
+	}
+
+	return restwatch.UnversionedRESTClientFor(config)
+}
+
+func (c *Cluster) KubeClient() (*KubeClient, error) {
+	config := c.Info.RestConfig()
+
+	coreClient, err := corev1.NewForConfig(*config)
 	if err != nil {
 		return nil, err
 	}
 
-	return c.projectFromSpace(*space), nil
+	rioClient, err := riov1.NewForConfig(*config)
+	if err != nil {
+		return nil, err
+	}
+
+	projectClient, err := projectv1.NewForConfig(*config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &KubeClient{
+		Core:    coreClient,
+		Rio:     rioClient,
+		Project: projectClient,
+	}, nil
 }
 
 func (c *Cluster) Projects() ([]Project, error) {
@@ -140,19 +158,20 @@ func (c *Cluster) Projects() ([]Project, error) {
 }
 
 func (c *Cluster) projects(all bool) ([]Project, error) {
-	sc, err := c.Client()
+	client, err := c.KubeClient()
 	if err != nil {
 		return nil, err
 	}
-
-	projects, err := sc.Project.List(util.DefaultListOpts())
+	projects, err := client.Core.Namespaces("").List(metav1.ListOptions{
+		LabelSelector: "rio.cattle.io/project=true",
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	var result []Project
-	for _, p := range projects.Data {
-		if !all && p.ID == settings.RioSystemNamespace {
+	for _, p := range projects.Items {
+		if !all && p.Name == settings.RioSystemNamespace {
 			continue
 		}
 		project := c.projectFromSpace(p)
@@ -163,47 +182,25 @@ func (c *Cluster) projects(all bool) ([]Project, error) {
 	}
 
 	sort.Slice(result, func(i, j int) bool {
-		return result[i].Name < result[j].Name
+		return result[i].Project.Name < result[j].Project.Name
 	})
 
 	return result, nil
 }
 
-func (c *Cluster) projectFromSpace(project projectclient.Project) *Project {
+func (c *Cluster) projectFromSpace(project v1.Namespace) *Project {
 	return &Project{
-		Project: project,
+		Project: &project,
 		Cluster: c,
 	}
-}
-
-func (c *Cluster) Domain() (string, error) {
-	if c.domain != "" {
-		return c.domain, nil
-	}
-
-	ci, err := c.getClientInfo()
-	if err != nil {
-		return "", err
-	}
-
-	domain, err := ci.Domain()
-	if err != nil {
-		return "", err
-	}
-
-	c.domain = domain
-	return c.domain, nil
 }
 
 func (c *Cluster) KubectlCmd(namespace, command string, args ...string) (*exec.Cmd, error) {
 	var err error
 
-	kc := os.Getenv(fmt.Sprintf("KUBECONFIG_%s_DEV", c.Name))
-	if kc == "" {
-		kc, err = c.kubeConfig()
-		if err != nil {
-			return nil, err
-		}
+	kc, err := c.kubeConfig()
+	if err != nil {
+		return nil, err
 	}
 
 	execArgs := []string{"kubectl", fmt.Sprintf("--kubeconfig=%s", kc)}
@@ -238,7 +235,6 @@ func (c *Cluster) Kubectl(namespace, command string, args ...string) error {
 func (c *Cluster) kubeConfig() (string, error) {
 	kcc := c.Config.KubeconfigCache()
 	kc := filepath.Join(kcc, c.Checksum)
-
 	if _, err := os.Stat(kc); err == nil {
 		return kc, nil
 	}

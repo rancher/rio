@@ -7,14 +7,14 @@ import (
 	"istio.io/api/mesh/v1alpha1"
 	"istio.io/istio/pilot/pkg/kube/inject"
 	"istio.io/istio/pilot/pkg/model"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 func InjectParams(meshConfig *v1alpha1.MeshConfig) *inject.Params {
 	debug := false
 	os.Setenv("ISTIO_PROXY_IMAGE", "proxyv2")
 	hub := "docker.io/istio"
-	tag := "1.0.5"
+	tag := "1.0.6"
 
 	return &inject.Params{
 		InitImage:           inject.InitImageName(hub, tag, false),
@@ -24,7 +24,7 @@ func InjectParams(meshConfig *v1alpha1.MeshConfig) *inject.Params {
 		Version:             "",
 		EnableCoreDump:      debug,
 		Mesh:                meshConfig,
-		ImagePullPolicy:     string(v1.PullIfNotPresent),
+		ImagePullPolicy:     string(v1.PullAlways),
 		IncludeIPRanges:     "10.43.0.0/16",
 		ExcludeIPRanges:     "10.43.0.0/31",
 		IncludeInboundPorts: "*",

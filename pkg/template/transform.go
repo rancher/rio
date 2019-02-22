@@ -3,19 +3,21 @@ package template
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/rancher/types/apis/management.cattle.io/v3"
 
+	"github.com/rancher/rio/cli/pkg/types"
 	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/norman/types/convert/schemaconvert"
 	"github.com/rancher/rio/pkg/namespace"
 	"github.com/rancher/rio/pkg/pretty"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1/schema"
-	"github.com/rancher/rio/types/client/rio/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func FromClientStack(stack *client.Stack) (*Template, error) {
-	stackSchema := schema.Schemas.Schema(&schema.Version, client.StackType)
+func FromClientStack(stack *riov1.Stack) (*Template, error) {
+	stackSchema := schema.Schemas.Schema(&schema.Version, types.StackType)
 	internalStack := &v1.Stack{}
 	err := schemaconvert.ToInternal(stack, stackSchema, internalStack)
 	if err != nil {
@@ -80,24 +82,26 @@ func (t *Template) ToInternalStack() (*v1.InternalStack, error) {
 	return pretty.ToInternalStack(data)
 }
 
-func (t *Template) ToClientStack() (*client.Stack, error) {
-	result := &client.Stack{
-		Answers:         t.Answers,
-		Template:        string(t.Content),
-		AdditionalFiles: map[string]string{},
+func (t *Template) ToClientStack() (*riov1.Stack, error) {
+	result := &riov1.Stack{
+		Spec: riov1.StackSpec{
+			Answers:         t.Answers,
+			Template:        string(t.Content),
+			AdditionalFiles: map[string]string{},
+		},
 	}
 
 	for name, content := range t.AdditionalFiles {
 		encoded := base64.StdEncoding.EncodeToString(content)
-		result.AdditionalFiles[name] = encoded
+		result.Spec.AdditionalFiles[name] = encoded
 	}
 
 	for _, q := range t.Questions {
-		newQ := client.Question{}
+		newQ := v3.Question{}
 		if err := convert.ToObj(q, &newQ); err != nil {
 			return nil, err
 		}
-		result.Questions = append(result.Questions, newQ)
+		result.Spec.Questions = append(result.Spec.Questions, newQ)
 	}
 
 	return result, nil

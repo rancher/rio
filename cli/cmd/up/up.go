@@ -8,15 +8,12 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/rancher/norman/types"
 	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	stackpkg "github.com/rancher/rio/cli/pkg/stack"
 	"github.com/rancher/rio/cli/pkg/up"
-	"github.com/rancher/rio/cli/pkg/waiter"
 	"github.com/rancher/rio/pkg/yaml"
-	"github.com/rancher/rio/types/client/rio/v1"
 	"github.com/sirupsen/logrus"
 )
 
@@ -92,10 +89,7 @@ func (u *Up) doUp(ctx *clicontext.CLIContext, file, stack string) error {
 		return err
 	}
 
-	return waiter.WaitFor(ctx, &types.Resource{
-		Type: client.StackType,
-		ID:   stackID,
-	})
+	return nil
 }
 
 func ReadAnswers(answersFile string) (map[string]string, error) {

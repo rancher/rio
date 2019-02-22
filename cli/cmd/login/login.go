@@ -1,20 +1,17 @@
 package login
 
 import (
-	"io/ioutil"
-	"strings"
-
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/clientcfg"
-	"github.com/rancher/rio/cli/pkg/up/questions"
-	"github.com/rancher/rio/pkg/clientaccess"
 	"github.com/rancher/rio/pkg/name"
 	"github.com/sirupsen/logrus"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 type Login struct {
-	S_Server string `desc:"Server to log into"`
-	T_Token  string `desc:"Authentication token"`
+	Kubeconfig string `desc:"KubeConfig file for k8s server"`
+	Controller bool   `desc:"Running controllers"`
+	NoDns      bool   `desc:"Don't run dns server"`
 }
 
 func (l *Login) Run(ctx *clicontext.CLIContext) (ex error) {
@@ -24,50 +21,24 @@ func (l *Login) Run(ctx *clicontext.CLIContext) (ex error) {
 		}
 	}()
 
-	var err error
+	cluster := &clientcfg.Cluster{}
 
-	if l.S_Server == "" {
-		l.S_Server, err = questions.Prompt("Rio server URL: ", "")
-		if err != nil {
-			return err
-		}
-	}
-
-	if l.T_Token == "" {
-		l.T_Token, err = questions.Prompt("Authentication token: ", "")
-		if err != nil {
-			return err
-		}
-	}
-
-	bytes, err := ioutil.ReadFile(l.T_Token)
-	if err == nil && len(bytes) > 0 {
-		l.T_Token = strings.TrimSpace(string(bytes))
-	}
-
-	cluster, err := validate(l.S_Server, l.T_Token)
+	restConfig, err := clientcmd.BuildConfigFromFlags("", l.Kubeconfig)
 	if err != nil {
 		return err
 	}
 
-	cluster.ID = name.Hex(cluster.URL, 5)
-	cluster.Name = cluster.ID
-	return ctx.Config.SaveCluster(cluster, true)
-}
-
-func validate(serverURL, token string) (*clientcfg.Cluster, error) {
-	info, err := clientaccess.ParseAndValidateToken(serverURL, token)
-	if err != nil {
-		return nil, err
+	cluster.ID = name.Hex(restConfig.Host, 5)
+	if err := ctx.Config.SaveCluster(cluster, restConfig); err != nil {
+		return err
 	}
 
-	cluster := &clientcfg.Cluster{
-		Info: *info,
+	if l.Controller {
+		context, err := runController(ctx.Ctx, l.Kubeconfig, l.NoDns)
+		if err != nil {
+			return err
+		}
+		<-context.Done()
 	}
-
-	if _, err := cluster.Client(); err != nil {
-		return nil, err
-	}
-
-	return cluster, nil
+	return nil
 }

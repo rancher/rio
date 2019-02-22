@@ -8,7 +8,7 @@ import (
 	"github.com/rancher/rio/features/stack/controllers/service/populate/servicelabels"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	v1client "github.com/rancher/types/apis/core/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -16,7 +16,7 @@ import (
 func nodePorts(stack *riov1.Stack, service *riov1.Service, os *objectset.ObjectSet) {
 	labels := servicelabels.SelectorLabels(stack, service)
 
-	nodePortService := v1client.NewService(service.Namespace, service.Name+"-ports", v1.Service{
+	nodePortService := v1client.NewService(stack.Name, service.Name+"-ports", v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: labels,
 		},

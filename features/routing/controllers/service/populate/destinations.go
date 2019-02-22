@@ -1,6 +1,8 @@
 package populate
 
 import (
+	"fmt"
+
 	"github.com/knative/pkg/apis/istio/v1alpha3"
 	"github.com/rancher/norman/pkg/objectset"
 	"github.com/rancher/rio/features/stack/controllers/service/populate/servicelabels"
@@ -40,7 +42,7 @@ func destinationRules(stack *v1.Stack, services []*v1.Service, service *v1.Servi
 
 func destinationRuleForService(stack *v1.Stack, name string, service *serviceset.ServiceSet) *v1alpha3client.DestinationRule {
 	drSpec := v1alpha3.DestinationRuleSpec{
-		Host: name,
+		Host: fmt.Sprintf("%s.%s.svc.cluster.local", name, stack.Name),
 	}
 
 	drSpec.Subsets = append(drSpec.Subsets, newSubSet(service.Service))

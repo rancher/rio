@@ -7,14 +7,15 @@ import (
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/types/client/rio/v1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"github.com/urfave/cli"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Data struct {
 	ID     string
-	Stack  *client.Stack
-	Volume client.Volume
+	Stack  *riov1.Stack
+	Volume riov1.Volume
 }
 
 type Ls struct {
@@ -26,7 +27,12 @@ func (l *Ls) Customize(cmd *cli.Command) {
 }
 
 func (l *Ls) Run(ctx *clicontext.CLIContext) error {
-	wc, err := ctx.ProjectClient()
+	project, err := ctx.Project()
+	if err != nil {
+		return err
+	}
+
+	client, err := ctx.KubeClient()
 	if err != nil {
 		return err
 	}
@@ -36,42 +42,47 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	volumes, err := wc.Volume.List(util.DefaultListOpts())
+	volumes, err := client.Rio.Volumes("").List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
 
+	var filteredVolumes []riov1.Volume
+	for _, v := range volumes.Items {
+		if v.Spec.ProjectName == project.Project.Name {
+			filteredVolumes = append(filteredVolumes, v)
+		}
+	}
+
 	writer := table.NewWriter([][]string{
 		{"NAME", "{{stackScopedName .Stack.Name .Volume.Name}}"},
-		{"DRIVER", "{{.Volume.Driver | driver}}"},
-		{"TEMPLATE", "Volume.Template"},
-		{"SIZE GB", "Volume.SizeInGB"},
-		{"STATE", "Volume.State"},
-		{"CREATED", "{{.Volume.Created | ago}}"},
-		{"DETAIL", "{{first .Volume.TransitioningMessage .Stack.TransitioningMessage}}"},
+		{"DRIVER", "{{.Volume.Spec.Driver | driver}}"},
+		{"TEMPLATE", "Volume.Spec.Template"},
+		{"SIZE GB", "Volume.Spec.SizeInGB"},
+		{"CREATED", "{{.Volume.CreationTimestamp | ago}}"},
 	}, ctx)
 	defer writer.Close()
 
 	writer.AddFormatFunc("driver", FormatDriver)
 	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cluster))
 
-	stackByID, err := util.StacksByID(wc)
+	stackByID, err := util.StacksByID(client, project.Project.Name)
 	if err != nil {
 		return err
 	}
 
-	sort.Slice(volumes.Data, func(i, j int) bool {
-		return volumes.Data[i].ID < volumes.Data[j].ID
+	sort.Slice(filteredVolumes, func(i, j int) bool {
+		return filteredVolumes[i].Name < filteredVolumes[j].Name
 	})
 
-	for i, service := range volumes.Data {
-		stack := stackByID[service.StackID]
+	for i, volume := range filteredVolumes {
+		stack := stackByID[volume.Spec.StackName]
 		if stack == nil {
 			continue
 		}
 		writer.Write(&Data{
-			ID:     service.ID,
-			Volume: volumes.Data[i],
+			ID:     volume.Name,
+			Volume: volumes.Items[i],
 			Stack:  stack,
 		})
 	}

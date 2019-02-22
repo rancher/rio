@@ -5,26 +5,27 @@ import (
 )
 
 const (
-	RioSystemNamespace    = "rio-system"
-	IstioGateway          = "rio-gateway"
-	IstioGatewayDeploy    = "istio-gateway"
+	AutoScaleStack        = "rio-autoscaler"
+	BuildStackName        = "build"
+	CertManagerImageType  = "CERT_MANAGER_IMAGE"
+	DefaultServiceVersion = "v0"
+	Grafana               = "grafana"
+	IstioGatway           = "istio-gateway"
 	IstioStackName        = "istio"
 	IstioTelemetry        = "istio-telemetry"
-	Prometheus            = "prometheus"
-	Grafana               = "grafana"
-	AutoScaleStack        = "rio-autoscaler"
-	DefaultServiceVersion = "v0"
-	StagingType           = "staging"
+	IstionConfigMapKey    = "content"
+	MeshConfigMapName     = "mesh"
 	ProductionType        = "production"
+	ProductionIssuerName  = "letsencrypt-production-issuer"
+	PublicDomainType      = "RIO_PUBLICDOMAIN_CERT_TYPE"
+	Prometheus            = "prometheus"
+	RioSystemNamespace    = "rio-system"
+	RioGateway            = "rio-gateway"
+	RioWildcardType       = "RIO_WILDCARD_CERT_TYPE"
+	StagingType           = "staging"
 	SelfSignedType        = "selfsigned"
 	StagingIssuerName     = "letsencrypt-staging-issuer"
-	ProductionIssuerName  = "letsencrypt-production-issuer"
 	SelfSignedIssuerName  = "selfsigned-issuer"
-	RioWildcardType       = "RIO_WILDCARD_CERT_TYPE"
-	PublicDomainType      = "RIO_PUBLICDOMAIN_CERT_TYPE"
-	CertManagerImageType  = "CERT_MANAGER_IMAGE"
-	IstionConfigMapName   = "mesh"
-	IstionConfigMapKey    = "content"
 )
 
 var (
@@ -37,9 +38,12 @@ var (
 	RDNSURL        = NewSetting("rdns-url", "https://api.lb.rancher.cloud/v1")
 	RioImage       = NewSetting("rio-image", "rancher/rio")
 
+	IstioGatewayDeploy       = namespace.HashIfNeed("istio-gateway", IstioStackName, RioSystemNamespace)
+	IstioPilotNamespace      = namespace.HashIfNeed("istio-pilot", IstioStackName, RioSystemNamespace)
+	IstionConfigMapName      = namespace.HashIfNeed("mesh", IstioStackName, RioSystemNamespace)
 	IstioExternalLBNamespace = namespace.StackNamespace(RioSystemNamespace, IstioStackName)
-	IstioTelemetryNamespace  = namespace.StackNamespace(RioSystemNamespace, IstioTelemetry)
-	PrometheusNamespace      = namespace.StackNamespace(RioSystemNamespace, Prometheus)
+	IstioTelemetryNamespace  = namespace.HashIfNeed(IstioTelemetry, IstioTelemetry, RioSystemNamespace)
+	PrometheusNamespace      = namespace.HashIfNeed(Prometheus, Prometheus, RioSystemNamespace)
 	GrafanaNamespace         = namespace.StackNamespace(RioSystemNamespace, Grafana)
 	IstioGatewaySelector     = map[string]string{
 		"gateway": "external",

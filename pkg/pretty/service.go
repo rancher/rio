@@ -6,7 +6,7 @@ import (
 	"github.com/rancher/norman/types"
 	"github.com/rancher/norman/types/mapper"
 	pm "github.com/rancher/rio/pkg/pretty/mapper"
-	"github.com/rancher/rio/types/client/rio/v1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 )
 
 func containerMappers() []types.Mapper {
@@ -72,16 +72,14 @@ func serviceMappers() []types.Mapper {
 			"on-failure": {"OnFailure"}},
 		},
 		pm.DefaultMissing{Field: "scale", Default: 1},
-		mapper.Move{From: "scheduling/node/nodeId", To: "node"},
+		mapper.Move{From: "scheduling/node/nodeName", To: "node"},
 		pm.SchedulingMapper{Field: "scheduling"},
-		mapper.Drop{Field: "projectId", IgnoreDefinition: true},
-		mapper.Drop{Field: "stackId", IgnoreDefinition: true},
 		pm.Duration{Field: "stopGracePeriod", Unit: time.Second},
 	)
 }
 
 func services(schemas *types.Schemas) *types.Schemas {
 	return schemas.
-		AddMapperForType(&Version, client.SidekickConfig{}, containerMappers()...).
-		AddMapperForType(&Version, client.Service{}, serviceMappers()...)
+		AddMapperForType(&Version, riov1.SidekickConfig{}, containerMappers()...).
+		AddMapperForType(&Version, riov1.ServiceSpec{}, serviceMappers()...)
 }

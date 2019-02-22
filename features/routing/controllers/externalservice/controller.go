@@ -6,7 +6,6 @@ import (
 	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/norman/pkg/objectset"
 	"github.com/rancher/rio/features/routing/controllers/externalservice/populate"
-	"github.com/rancher/rio/pkg/namespace"
 	"github.com/rancher/rio/pkg/serviceset"
 	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
@@ -36,7 +35,7 @@ func (p populator) populate(obj runtime.Object, stack *riov1.Stack, os *objectse
 	}
 	if obj.(*riov1.ExternalService).Spec.Service != "" {
 		targetStackName, targetServiceName := kv.Split(obj.(*riov1.ExternalService).Spec.Service, "/")
-		svc, err := p.serviceCache.Get(namespace.StackNamespace(stack.Namespace, targetStackName), targetServiceName)
+		svc, err := p.serviceCache.Get(targetStackName, targetServiceName)
 		if err != nil {
 			return err
 		}

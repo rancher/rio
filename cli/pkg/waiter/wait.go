@@ -11,7 +11,6 @@ import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/monitor"
-	"github.com/rancher/rio/types/client/rio/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )

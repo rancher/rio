@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"k8s.io/apimachinery/pkg/selection"
+
 	"github.com/rancher/norman/pkg/changeset"
 	"github.com/rancher/norman/types/slice"
 	"github.com/rancher/rancher/pkg/controllers/user/approuter"
@@ -24,7 +26,11 @@ import (
 )
 
 const (
-	local = "localhost.localdomain"
+	local            = "localhost.localdomain"
+	serviceNameLabel = "rio.cattle.io/service"
+	stackNameLabel   = "rio.cattle.io/stack"
+	registry         = "registry"
+	build            = "build"
 )
 
 var (
@@ -40,6 +46,7 @@ type Controller struct {
 	ctx               context.Context
 	init              sync.Once
 	rdnsClient        *approuter.Client
+	servicesLister    v12.ServiceClientCache
 	endpointsLister   v12.EndpointsClientCache
 	nodeLister        v12.NodeClientCache
 	stackLister       riov1.StackClientCache
@@ -57,6 +64,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	g := &Controller{
 		ctx:               ctx,
 		rdnsClient:        rdnsClient,
+		servicesLister:    rContext.Core.Service.Cache(),
 		endpointsLister:   rContext.Core.Endpoints.Cache(),
 		nodeLister:        rContext.Core.Node.Cache(),
 		stackLister:       rContext.Rio.Stack.Cache(),
@@ -85,7 +93,11 @@ func isGateway(obj runtime.Object) bool {
 	if o == nil || reflect.ValueOf(obj).IsNil() {
 		return false
 	}
-	return o.GetName() == settings.IstioGatewayDeploy && o.GetNamespace() == settings.IstioExternalLBNamespace
+	return o.GetName() == settings.IstioGatway && o.GetNamespace() == settings.IstioStackName
+}
+
+func isRegistry(svc *v1.Service) bool {
+	return svc.Labels[serviceNameLabel] == registry && svc.Labels[stackNameLabel] == build
 }
 
 func (g *Controller) indexEPByNode(ep *v1.Endpoints) ([]string, error) {
@@ -133,10 +145,6 @@ func (g *Controller) resolve(namespace, name string, obj runtime.Object) ([]chan
 }
 
 func (g *Controller) sync(svc *v1.Service) (runtime.Object, error) {
-	if svc.Namespace != settings.IstioExternalLBNamespace {
-		return nil, nil
-	}
-
 	// We do init here because we need caches synced before we can initialize
 	g.init.Do(func() {
 		err := g.start()
@@ -145,7 +153,7 @@ func (g *Controller) sync(svc *v1.Service) (runtime.Object, error) {
 		}
 	})
 
-	if !isGateway(svc) {
+	if !isGateway(svc) && !isRegistry(svc) {
 		return nil, nil
 	}
 
@@ -177,7 +185,24 @@ func (g *Controller) sync(svc *v1.Service) (runtime.Object, error) {
 		}
 	}
 
-	if err := g.updateDomain(ips); err != nil {
+	r1, err := labels.NewRequirement(serviceNameLabel, selection.In, []string{registry})
+	if err != nil {
+		return nil, err
+	}
+	r2, err := labels.NewRequirement(stackNameLabel, selection.In, []string{build})
+	if err != nil {
+		return nil, err
+	}
+	registryServices, err := g.servicesLister.List(settings.BuildStackName, labels.NewSelector().Add(*r1, *r2))
+	if err != nil {
+		return nil, err
+	}
+	subDomains := map[string][]string{}
+	for _, svc := range registryServices {
+		subDomains[svc.Name] = []string{svc.Spec.ClusterIP}
+	}
+
+	if err := g.updateDomain(ips, subDomains); err != nil {
 		return nil, err
 	}
 
@@ -236,7 +261,7 @@ func (g *Controller) setDomain(fqdn string) error {
 	return nil
 }
 
-func (g *Controller) updateDomain(ips []string) error {
+func (g *Controller) updateDomain(ips []string, subDomains map[string][]string) error {
 	var (
 		fqdn string
 		err  error
@@ -254,7 +279,7 @@ func (g *Controller) updateDomain(ips []string) error {
 	if len(ips) == 1 && ips[0] == "127.0.0.1" {
 		fqdn = local
 	} else {
-		_, fqdn, err = g.rdnsClient.ApplyDomain(ips)
+		_, fqdn, err = g.rdnsClient.ApplyDomain(ips, subDomains)
 		if err != nil {
 			return err
 		}

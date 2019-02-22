@@ -6,11 +6,11 @@ import (
 
 	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/rio/cli/pkg/volumespec"
-	"github.com/rancher/rio/types/client/rio/v1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 )
 
-func ParseMounts(spec []string) ([]client.Mount, error) {
-	var mounts []client.Mount
+func ParseMounts(spec []string) ([]riov1.Mount, error) {
+	var mounts []riov1.Mount
 	for _, volume := range spec {
 		serviceMount, err := volumespec.ParseVolume(volume)
 		if err != nil {
@@ -29,13 +29,13 @@ func ParseMounts(spec []string) ([]client.Mount, error) {
 	return mounts, nil
 }
 
-func parseAdditionalOptions(mount client.Mount, spec string) (client.Mount, error) {
+func parseAdditionalOptions(mount riov1.Mount, spec string) (riov1.Mount, error) {
 	if mount.Target == "" {
 		return mount, fmt.Errorf("invalid volume spec, no target path found: %s", spec)
 	}
 
 	if !strings.Contains(mount.Source, "/") && !strings.Contains(mount.Source, "\\") && mount.VolumeOptions == nil {
-		mount.VolumeOptions = &client.VolumeOptions{}
+		mount.VolumeOptions = &riov1.VolumeOptions{}
 	}
 
 	if len(strings.SplitN(spec, ":", 3)) < 3 {
@@ -62,8 +62,8 @@ func parseAdditionalOptions(mount client.Mount, spec string) (client.Mount, erro
 	return mount, nil
 }
 
-func createMount(serviceMount volumespec.ServiceVolumeConfig) client.Mount {
-	mount := client.Mount{
+func createMount(serviceMount volumespec.ServiceVolumeConfig) riov1.Mount {
+	mount := riov1.Mount{
 		Kind:     serviceMount.Type,
 		ReadOnly: serviceMount.ReadOnly,
 		Source:   serviceMount.Source,
@@ -71,13 +71,13 @@ func createMount(serviceMount volumespec.ServiceVolumeConfig) client.Mount {
 	}
 
 	if serviceMount.Bind != nil {
-		mount.BindOptions = &client.BindOptions{
-			Propagation: serviceMount.Bind.Propagation,
+		mount.BindOptions = &riov1.BindOptions{
+			Propagation: riov1.Propagation(serviceMount.Bind.Propagation),
 		}
 	}
 
 	if serviceMount.Volume != nil {
-		mount.VolumeOptions = &client.VolumeOptions{
+		mount.VolumeOptions = &riov1.VolumeOptions{
 			NoCopy: serviceMount.Volume.NoCopy,
 		}
 	}

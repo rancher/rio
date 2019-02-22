@@ -6,12 +6,12 @@ import (
 	"github.com/rancher/norman/types"
 	"github.com/rancher/norman/types/mapper"
 	pm "github.com/rancher/rio/pkg/pretty/mapper"
-	"github.com/rancher/rio/types/client/rio/v1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 )
 
 func health(schemas *types.Schemas) *types.Schemas {
 	return schemas.
-		AddMapperForType(&Version, client.HealthConfig{},
+		AddMapperForType(&Version, riov1.HealthConfig{},
 			pm.Shlex{Field: "test"},
 			mapper.Move{From: "intervalSeconds", To: "interval"},
 			pm.Duration{Field: "interval", Unit: time.Second},

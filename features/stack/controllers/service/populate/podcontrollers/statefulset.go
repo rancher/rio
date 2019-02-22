@@ -18,7 +18,7 @@ func statefulSet(stack *riov1.Stack, service *riov1.Service, cp *controllerParam
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        service.Name,
-			Namespace:   service.Namespace,
+			Namespace:   stack.Name,
 			Labels:      cp.Labels,
 			Annotations: map[string]string{},
 		},
@@ -58,7 +58,7 @@ func statefulSet(stack *riov1.Stack, service *riov1.Service, cp *controllerParam
 			"rio.cattle.io/volume-template": volumeTemplate.Name,
 		}
 
-		pvc, err := populate2.ToPVC(service.Namespace, labels, *volumeTemplate)
+		pvc, err := populate2.ToPVC(labels, *volumeTemplate, stack)
 		if err != nil {
 			return err
 		}

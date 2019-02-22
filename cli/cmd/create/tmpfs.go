@@ -4,19 +4,19 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/docker/go-units"
+	units "github.com/docker/go-units"
 	"github.com/rancher/norman/pkg/kv"
-	"github.com/rancher/rio/types/client/rio/v1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 )
 
-func ParseTmpfs(specs []string) ([]client.Tmpfs, error) {
+func ParseTmpfs(specs []string) ([]riov1.Tmpfs, error) {
 	var (
-		result []client.Tmpfs
+		result []riov1.Tmpfs
 		err    error
 	)
 
 	for _, spec := range specs {
-		var tmpfs client.Tmpfs
+		var tmpfs riov1.Tmpfs
 
 		name, opts := kv.Split(spec, ":")
 		for _, opt := range strings.Split(opts, ",") {

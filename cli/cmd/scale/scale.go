@@ -8,32 +8,26 @@ import (
 	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
-	"github.com/rancher/rio/cli/pkg/waiter"
-	client "github.com/rancher/rio/types/client/rio/v1"
+	clitypes "github.com/rancher/rio/cli/pkg/types"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Scale struct {
 }
 
 func (s *Scale) Run(ctx *clicontext.CLIContext) error {
-	waiter, err := waiter.NewWaiter(ctx)
-	if err != nil {
-		return err
-	}
-
-	wc, err := ctx.ProjectClient()
+	client, err := ctx.KubeClient()
 	if err != nil {
 		return err
 	}
 
 	for _, arg := range ctx.CLI.Args() {
 		name, scaleStr := kv.Split(arg, "=")
-		update := map[string]interface{}{}
-		resource, err := lookup.Lookup(ctx, name, client.ServiceType)
+		resource, err := lookup.Lookup(ctx, name, clitypes.ServiceType)
 		if err != nil {
 			return err
 		}
-		service, err := wc.Service.ByID(resource.ID)
+		service, err := client.Rio.Services(resource.Namespace).Get(resource.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -42,29 +36,24 @@ func (s *Scale) Run(ctx *clicontext.CLIContext) error {
 			minScale, _ := strconv.Atoi(min)
 			maxScale, _ := strconv.Atoi(max)
 			concurrency := 10
-			if service.AutoScale != nil {
-				concurrency = int(service.AutoScale.Concurrency)
+			if service.Spec.AutoScale != nil {
+				concurrency = int(service.Spec.AutoScale.Concurrency)
 			}
-			update["autoScale"] = map[string]interface{}{
-				"minScale":    minScale,
-				"maxScale":    maxScale,
-				"concurrency": concurrency,
-			}
+			service.Spec.AutoScale.MinScale = minScale
+			service.Spec.AutoScale.MaxScale = maxScale
+			service.Spec.AutoScale.Concurrency = concurrency
 		} else {
 			scale, err := strconv.Atoi(scaleStr)
 			if err != nil {
 				return fmt.Errorf("failed to parse %s: %v", arg, err)
 			}
-			update["scale"] = scale
+			service.Spec.Scale = scale
 		}
 
-		err = wc.Update(client.ServiceType, &resource.Resource, update, nil)
-		if err != nil {
-			return fmt.Errorf("failed to update scale on %s: %v", name, err)
+		if _, err := client.Rio.Services(resource.Namespace).Update(service); err != nil {
+			return err
 		}
-
-		waiter.Add(&resource.Resource)
 	}
 
-	return waiter.Wait(ctx.Ctx)
+	return nil
 }

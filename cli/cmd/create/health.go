@@ -3,15 +3,15 @@ package create
 import (
 	"time"
 
-	client "github.com/rancher/rio/types/client/rio/v1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 )
 
-func populateHealthCheck(c *Create, service *client.Service) error {
+func populateHealthCheck(c *Create, service *riov1.Service) error {
 	var err error
 
-	hc := &client.HealthConfig{
-		HealthyThreshold:   int64(c.HealthRetries),
-		UnhealthyThreshold: int64(c.UnhealthyRetries),
+	hc := &riov1.HealthConfig{
+		HealthyThreshold:   c.HealthRetries,
+		UnhealthyThreshold: c.UnhealthyRetries,
 	}
 
 	hc.InitialDelaySeconds, err = ParseDurationUnit(c.HealthStartPeriod, "--health-start-period", time.Second)
@@ -38,18 +38,18 @@ func populateHealthCheck(c *Create, service *client.Service) error {
 	}
 
 	if len(c.HealthCmd) > 0 || len(c.HealthURL) > 0 {
-		service.Healthcheck = hc
+		service.Spec.Healthcheck = hc
 	}
 
 	return populateReadyCheck(c, service)
 }
 
-func populateReadyCheck(c *Create, service *client.Service) error {
+func populateReadyCheck(c *Create, service *riov1.Service) error {
 	var err error
 
-	hc := &client.HealthConfig{
-		HealthyThreshold:   int64(c.ReadyRetries),
-		UnhealthyThreshold: int64(c.UnreadyRetries),
+	hc := &riov1.HealthConfig{
+		HealthyThreshold:   c.ReadyRetries,
+		UnhealthyThreshold: c.UnreadyRetries,
 	}
 
 	hc.InitialDelaySeconds, err = ParseDurationUnit(c.ReadyStartPeriod, "--ready-start-period", time.Second)
@@ -73,7 +73,7 @@ func populateReadyCheck(c *Create, service *client.Service) error {
 	hc.TimeoutSeconds, err = ParseDurationUnit(c.ReadyTimeout, "--ready-timeout", time.Second)
 
 	if len(c.ReadyCmd) > 0 || len(c.ReadyURL) > 0 {
-		service.Readycheck = hc
+		service.Spec.Readycheck = hc
 	}
 
 	return err

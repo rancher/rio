@@ -10,11 +10,9 @@ import (
 	"github.com/knative/pkg/apis/istio/common/v1alpha1"
 	"github.com/knative/pkg/apis/istio/v1alpha3"
 	"github.com/rancher/norman/pkg/objectset"
-	"github.com/rancher/rio/api/service"
 	"github.com/rancher/rio/features/routing/pkg/domains"
 	"github.com/rancher/rio/features/stack/controllers/service/populate/containerlist"
 	"github.com/rancher/rio/features/stack/controllers/service/populate/servicelabels"
-	"github.com/rancher/rio/pkg/namespace"
 	"github.com/rancher/rio/pkg/serviceset"
 	"github.com/rancher/rio/pkg/settings"
 	v1alpha3client "github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
@@ -104,7 +102,7 @@ func vsRoutes(publicPorts map[string]bool, service *v1.Service, dests []Dest) ([
 func newRoute(externalGW string, published bool, portBinding *v1.PortBinding, dests []Dest, appendHttps bool, autoscale bool, svc *v1.Service) (string, v1alpha3.HTTPRoute) {
 	route := v1alpha3.HTTPRoute{}
 
-	if _, ok := service.SupportedProtocol[portBinding.Protocol]; !ok {
+	if !isProtocolSupported(portBinding.Protocol) {
 		return "", route
 	}
 
@@ -147,7 +145,7 @@ func newRoute(externalGW string, published bool, portBinding *v1.PortBinding, de
 		if autoscale && svc.Spec.Scale == 0 {
 			route.Route = append(route.Route, v1alpha3.DestinationWeight{
 				Destination: v1alpha3.Destination{
-					Host: fmt.Sprintf("gateway.%s.svc.cluster.local", namespace.StackNamespace(settings.RioSystemNamespace, settings.AutoScaleStack)),
+					Host: fmt.Sprintf("%s.%s.svc.cluster.local", "gateway", settings.AutoScaleStack),
 					Port: v1alpha3.PortSelector{
 						Number: 80,
 					},
@@ -179,11 +177,11 @@ type Dest struct {
 	Weight       int
 }
 
-func DestsForService(name string, service *serviceset.ServiceSet) []Dest {
+func DestsForService(name, stackName string, service *serviceset.ServiceSet) []Dest {
 	latestWeight := 100
 	result := []Dest{
 		{
-			Host:   fmt.Sprintf("%s.%s.svc.cluster.local", name, service.Service.Namespace),
+			Host:   fmt.Sprintf("%s.%s.svc.cluster.local", name, stackName),
 			Subset: service.Service.Spec.Revision.Version,
 		},
 	}
@@ -226,7 +224,7 @@ func min(left, right int) int {
 func vsFromService(stack *v1.Stack, name string, service *serviceset.ServiceSet) []runtime.Object {
 	var result []runtime.Object
 
-	serviceVS := VsFromSpec(stack, name, service.Service.Namespace, service.Service, DestsForService(name, service)...)
+	serviceVS := VsFromSpec(stack, name, service.Service.Namespace, service.Service, DestsForService(name, stack.Name, service)...)
 	if serviceVS != nil {
 		result = append(result, serviceVS)
 	}
@@ -255,7 +253,7 @@ func VsFromSpec(stack *v1.Stack, name, namespace string, service *v1.Service, de
 
 	vs := newVirtualService(stack, service)
 	spec := v1alpha3.VirtualServiceSpec{
-		Hosts:    []string{name},
+		Hosts:    []string{},
 		Gateways: []string{privateGw},
 		Http:     routes,
 	}
@@ -292,4 +290,11 @@ func newVirtualService(stack *v1.Stack, service *v1.Service) *v1alpha3client.Vir
 			Labels:      servicelabels.RioOnlyServiceLabels(stack, service),
 		},
 	})
+}
+
+func isProtocolSupported(protocol string) bool {
+	if protocol == "http" || protocol == "http2" || protocol == "grpc" || protocol == "tcp" {
+		return true
+	}
+	return false
 }

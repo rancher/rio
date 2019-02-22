@@ -11,15 +11,19 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/rancher/rio/types/client/rio/v1"
-
 	"github.com/pkg/errors"
 	"github.com/rancher/norman/clientbase"
 	"github.com/rancher/norman/pkg/resolvehome"
 	"github.com/rancher/rio/cli/pkg/up/questions"
 	"github.com/rancher/rio/pkg/clientaccess"
-	projectclient "github.com/rancher/rio/types/client/project/v1"
+	"github.com/rancher/rio/pkg/settings"
 	"github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/rest"
+)
+
+const (
+	defaultProjectName = "rio"
 )
 
 var ErrNoConfig = errors.New("no config found")
@@ -67,28 +71,20 @@ func (c *Config) Validate() error {
 	return nil
 }
 
+func (c *Config) KubeClient() (*KubeClient, error) {
+	cluster, err := c.Cluster()
+	if err != nil {
+		return nil, err
+	}
+	return cluster.KubeClient()
+}
+
 func (c *Config) Project() (*Project, error) {
 	cluster, err := c.Cluster()
 	if err != nil {
 		return nil, err
 	}
 	return cluster.Project()
-}
-
-func (c *Config) ProjectClient() (*client.Client, error) {
-	w, err := c.Project()
-	if err != nil {
-		return nil, err
-	}
-	return w.Client()
-}
-
-func (c *Config) ClusterClient() (*projectclient.Client, error) {
-	cluster, err := c.Cluster()
-	if err != nil {
-		return nil, err
-	}
-	return cluster.Client()
 }
 
 func (c *Config) Cluster() (*Cluster, error) {
@@ -123,10 +119,6 @@ func (c *Config) Cluster() (*Cluster, error) {
 	}
 
 	if len(clusters) == 0 {
-		adminCluster := c.getAndSaveAdminCluster()
-		if adminCluster != nil {
-			return adminCluster, nil
-		}
 		return nil, ErrNoConfig
 	}
 
@@ -168,7 +160,7 @@ func (c *Config) Clusters() ([]Cluster, error) {
 
 	for i := range clusters {
 		if clusters[i].DefaultProjectName == "" {
-			clusters[i].DefaultProjectName = "default"
+			clusters[i].DefaultProjectName = defaultProjectName
 		}
 		if !clusters[i].Default {
 			clusters[i].Default = clusters[i].Name == defaultName
@@ -179,24 +171,23 @@ func (c *Config) Clusters() ([]Cluster, error) {
 	return clusters, nil
 }
 
-func (c *Config) SaveCluster(cluster *Cluster, validate bool) error {
-	if validate {
-		_, err := cluster.Projects()
-		if err != nil {
-			return errors.Wrapf(err, "can not save cluster")
+func (c *Config) SaveCluster(cluster *Cluster, config *rest.Config) error {
+	name := cluster.ID
+
+	if config != nil {
+		cluster.Info = clientaccess.Info{
+			URL:      config.Host,
+			CACerts:  config.CAData,
+			Username: config.Username,
+			Password: config.Password,
+			Token:    config.BearerToken,
 		}
 	}
 
-	name := cluster.ID
-	if name == "" {
-		name = cluster.Name
-	}
-	if name == "" {
-		return fmt.Errorf("can not save cluster with no name or ID")
-	}
-
 	clusterDir := c.ClusterDir()
-	os.MkdirAll(clusterDir, 0700)
+	if err := os.MkdirAll(clusterDir, 0700); err != nil {
+		return err
+	}
 
 	file := cluster.File
 	if file == "" {
@@ -219,41 +210,6 @@ func (c *Config) SaveCluster(cluster *Cluster, validate bool) error {
 	}
 
 	return nil
-}
-
-func (c *Config) getAndSaveAdminCluster() *Cluster {
-	bytes, err := ioutil.ReadFile("/var/lib/rancher/rio/server/port")
-	if err != nil {
-		return nil
-	}
-	token, err := ioutil.ReadFile("/var/lib/rancher/rio/server/client-token")
-	if err != nil {
-		return nil
-	}
-
-	url := fmt.Sprintf("https://localhost:%s", bytes)
-
-	info, err := clientaccess.ParseAndValidateToken(url, strings.TrimSpace(string(token)))
-	if err != nil {
-		return nil
-	}
-
-	info.Token = strings.TrimSpace(string(token))
-	cluster := &Cluster{
-		Info:               *info,
-		DefaultStackName:   "default",
-		DefaultProjectName: "default",
-		ID:                 "local",
-		Name:               "local",
-		Checksum:           "local",
-		Config:             c,
-	}
-
-	if err := c.SaveCluster(cluster, true); err != nil {
-		return nil
-	}
-
-	return cluster
 }
 
 func ListClusters(dir string) ([]Cluster, error) {
@@ -303,4 +259,21 @@ func ListClusters(dir string) ([]Cluster, error) {
 	})
 
 	return result, nil
+}
+
+func (c *Cluster) Domain() (string, error) {
+	client, err := c.KubeClient()
+	if err != nil {
+		return "", err
+	}
+
+	if settings.ClusterDomain.Get() == "" {
+		return "", nil
+	}
+	domain, err := client.Project.Settings("").Get(settings.ClusterDomain.Get(), metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	return domain.Value, nil
 }

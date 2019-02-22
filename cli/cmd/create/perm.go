@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/rancher/norman/pkg/kv"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
-	"github.com/rancher/rio/types/client/rio/v1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 )
 
 var (
@@ -19,8 +19,8 @@ func init() {
 	}
 }
 
-func ParsePermissions(perms []string) ([]client.Permission, error) {
-	var result []client.Permission
+func ParsePermissions(perms []string) ([]riov1.Permission, error) {
+	var result []riov1.Permission
 	for _, perm := range perms {
 		p, err := parsePerm(perm)
 		if err != nil {
@@ -32,7 +32,7 @@ func ParsePermissions(perms []string) ([]client.Permission, error) {
 	return result, nil
 }
 
-func assignAPIGroupResource(result *client.Permission, input string) {
+func assignAPIGroupResource(result *riov1.Permission, input string) {
 	if strings.HasPrefix(input, "url=") {
 		result.URL = strings.TrimPrefix(input, "url=")
 		return
@@ -48,7 +48,7 @@ func assignAPIGroupResource(result *client.Permission, input string) {
 	}
 }
 
-func assignVerbs(result *client.Permission, input string) {
+func assignVerbs(result *riov1.Permission, input string) {
 	if input == "read" {
 		result.Verbs = v1.ReadVerbs
 	} else if input == "write" {
@@ -60,8 +60,8 @@ func assignVerbs(result *client.Permission, input string) {
 	}
 }
 
-func parsePerm(perm string) (client.Permission, error) {
-	var result client.Permission
+func parsePerm(perm string) (riov1.Permission, error) {
+	var result riov1.Permission
 
 	if strings.HasPrefix(perm, "role=") {
 		result.Role = strings.TrimPrefix(perm, "role=")

@@ -3,21 +3,21 @@ package create
 import (
 	"strings"
 
-	"github.com/rancher/rio/types/client/rio/v1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 )
 
-func ParseStringMatch(str string) *client.StringMatch {
+func ParseStringMatch(str string) *riov1.StringMatch {
 	if strings.HasSuffix(str, "*") {
-		return &client.StringMatch{
+		return &riov1.StringMatch{
 			Prefix: str[:len(str)-1],
 		}
 	} else if IsRegexp(str) {
-		return &client.StringMatch{
+		return &riov1.StringMatch{
 			Regexp: strings.TrimSuffix(strings.SplitN(str, "(", 2)[1], ")"),
 		}
 	}
 
-	return &client.StringMatch{
+	return &riov1.StringMatch{
 		Exact: str,
 	}
 }

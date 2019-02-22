@@ -7,12 +7,12 @@ import (
 	"github.com/rancher/norman/pkg/objectset"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	v12 "github.com/rancher/types/apis/core/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-func ToPVC(namespace string, labels map[string]string, volume riov1.Volume) (*v1.PersistentVolumeClaim, error) {
-	cfg := v12.NewPersistentVolumeClaim(namespace, volume.Name, v1.PersistentVolumeClaim{})
+func ToPVC(labels map[string]string, volume riov1.Volume, stack *riov1.Stack) (*v1.PersistentVolumeClaim, error) {
+	cfg := v12.NewPersistentVolumeClaim(stack.Name, volume.Name, v1.PersistentVolumeClaim{})
 	cfg.Labels = map[string]string{}
 	for k, v := range labels {
 		cfg.Labels[k] = v
@@ -71,7 +71,7 @@ func addVolume(stack *riov1.Stack, volume *riov1.Volume, output *objectset.Objec
 		"rio.cattle.io/volume":  volume.Name,
 	}
 
-	cfg, err := ToPVC(volume.Namespace, labels, *volume)
+	cfg, err := ToPVC(labels, *volume, stack)
 	if err != nil {
 		return err
 	}

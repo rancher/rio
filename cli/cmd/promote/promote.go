@@ -5,8 +5,8 @@ import (
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
-	"github.com/rancher/rio/cli/pkg/waiter"
-	"github.com/rancher/rio/types/client/rio/v1"
+	"github.com/rancher/rio/cli/pkg/types"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Promote struct {
@@ -14,45 +14,37 @@ type Promote struct {
 }
 
 func (p *Promote) Run(ctx *clicontext.CLIContext) error {
-	w, err := waiter.NewWaiter(ctx)
+	client, err := ctx.KubeClient()
 	if err != nil {
 		return err
 	}
 
 	for _, arg := range ctx.CLI.Args() {
-		resource, err := lookup.Lookup(ctx, arg, client.ServiceType)
+		resource, err := lookup.Lookup(ctx, arg, types.ServiceType)
 		if err != nil {
 			return err
 		}
 
-		wc, err := ctx.ProjectClient()
+		service, err := client.Rio.Services(resource.Namespace).Get(resource.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 
-		service, err := wc.Service.ByID(resource.ID)
-		if err != nil {
-			return err
-		}
-
-		if service.ParentService == "" {
+		if service.Spec.Revision.ParentService == "" {
 			return fmt.Errorf("can not promote the base version")
 		}
 
-		updates := &client.Service{
-			Promote: true,
-		}
+		service.Spec.Revision.Promote = true
+
 		if p.Scale > 0 {
-			updates.Scale = int64(p.Scale)
+			service.Spec.Scale = p.Scale
 		}
 
-		service, err = wc.Service.Update(&client.Service{Resource: resource.Resource}, updates)
+		service, err = client.Rio.Services(resource.Namespace).Update(service)
 		if err != nil {
 			return err
 		}
-
-		w.Add(&service.Resource)
 	}
 
-	return w.Wait(ctx.Ctx)
+	return nil
 }

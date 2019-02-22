@@ -8,7 +8,8 @@ import (
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
-	"github.com/rancher/rio/types/client/rio/v1"
+	"github.com/rancher/rio/cli/pkg/types"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Update struct {
@@ -23,7 +24,7 @@ func (c *Update) Run(ctx *clicontext.CLIContext) error {
 	name := ctx.CLI.Args()[0]
 	file := ctx.CLI.Args()[1]
 
-	resource, err := lookup.Lookup(ctx, name, client.ConfigType)
+	resource, err := lookup.Lookup(ctx, name, types.ConfigType)
 	if err != nil {
 		return err
 	}
@@ -33,20 +34,20 @@ func (c *Update) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	err = RunUpdate(ctx, resource.ID, content, c.L_Label)
+	err = RunUpdate(ctx, resource.Name, resource.Namespace, content, c.L_Label)
 	if err == nil {
-		fmt.Println(resource.ID)
+		fmt.Println(resource.Name)
 	}
 	return err
 }
 
-func RunUpdate(ctx *clicontext.CLIContext, id string, content []byte, labels map[string]string) error {
-	wc, err := ctx.ProjectClient()
+func RunUpdate(ctx *clicontext.CLIContext, name, namespace string, content []byte, labels map[string]string) error {
+	client, err := ctx.KubeClient()
 	if err != nil {
 		return err
 	}
 
-	config, err := wc.Config.ByID(id)
+	config, err := client.Rio.Configs(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -55,13 +56,13 @@ func RunUpdate(ctx *clicontext.CLIContext, id string, content []byte, labels map
 		config.Labels = labels
 	}
 	if utf8.Valid(content) {
-		config.Content = string(content)
-		config.Encoded = false
+		config.Spec.Content = string(content)
+		config.Spec.Encoded = false
 	} else {
-		config.Content = base64.StdEncoding.EncodeToString(content)
-		config.Encoded = true
+		config.Spec.Content = base64.StdEncoding.EncodeToString(content)
+		config.Spec.Encoded = true
 	}
 
-	_, err = wc.Config.Update(config, config)
+	_, err = client.Rio.Configs(namespace).Update(config)
 	return err
 }

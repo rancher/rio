@@ -6,8 +6,8 @@ import (
 
 	"github.com/rancher/rio/cli/cmd/ps"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/types/client/project/v1"
 	"github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 )
 
 type Exec struct {
@@ -62,7 +62,7 @@ func (e *Exec) Run(ctx *clicontext.CLIContext) error {
 	return cluster.Kubectl(podNS, "exec", execArgs...)
 }
 
-func findContainer(pd *ps.PodData, name string) *client.Container {
+func findContainer(pd *ps.PodData, name string) *v1.Container {
 	for _, c := range pd.Containers {
 		if c.Name == name {
 			return &c

@@ -4,16 +4,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rancher/norman/types"
-	"github.com/rancher/rio/api/service"
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/clientcfg"
 	"github.com/rancher/rio/cli/pkg/table"
 	"github.com/rancher/rio/pkg/namespace"
-	projectv1client "github.com/rancher/rio/types/client/project/v1"
-	riov1client "github.com/rancher/rio/types/client/rio/v1"
+	projectv1 "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"github.com/urfave/cli"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Ls struct {
@@ -24,10 +23,6 @@ func (l *Ls) Customize(cmd *cli.Command) {
 }
 
 func (l *Ls) Run(ctx *clicontext.CLIContext) error {
-	wc, err := ctx.ProjectClient()
-	if err != nil {
-		return err
-	}
 	cluster, err := ctx.Cluster()
 	if err != nil {
 		return err
@@ -36,15 +31,15 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 	if err != nil {
 		return err
 	}
-	spaceClient, err := cluster.Client()
+	client, err := cluster.KubeClient()
 	if err != nil {
 		return err
 	}
-	publicDomains, err := spaceClient.PublicDomain.List(&types.ListOpts{})
+	publicDomains, err := client.Project.PublicDomains("").List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
-	stackByID, err := util.StacksByID(wc)
+	stackByID, err := util.StacksByID(client, "")
 	if err != nil {
 		return err
 	}
@@ -54,24 +49,26 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 	}, ctx)
 	defer writer.Close()
 
-	spaces, err := spaceClient.Project.List(&types.ListOpts{})
+	projects, err := client.Core.Namespaces("").List(metav1.ListOptions{
+		LabelSelector: "rio.cattle.io/project=true",
+	})
 	if err != nil {
 		return nil
 	}
-	projectNames := make(map[string]string, 0)
-	for _, s := range spaces.Data {
-		projectNames[s.Name] = s.ID
+	projectNames := make(map[string]struct{}, 0)
+	for _, s := range projects.Items {
+		projectNames[s.Name] = struct{}{}
 	}
 	w := wrapper{
 		clusterClient: cluster,
-		spaces:        projectNames,
+		projects:      projectNames,
 		ctx:           ctx,
 		domain:        domain,
 		stackByID:     stackByID,
 	}
 	writer.AddFormatFunc("formatTarget", w.FormatTarget)
-	for _, publicDomain := range publicDomains.Data {
-		publicDomain.DomainName = "https://" + publicDomain.DomainName
+	for _, publicDomain := range publicDomains.Items {
+		publicDomain.Spec.DomainName = "https://" + publicDomain.Spec.DomainName
 		writer.Write(&publicDomain)
 	}
 	return writer.Err()
@@ -80,38 +77,38 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 type wrapper struct {
 	ctx           *clicontext.CLIContext
 	clusterClient *clientcfg.Cluster
-	spaces        map[string]string
+	projects      map[string]struct{}
 	domain        string
-	stackByID     map[string]*riov1client.Stack
+	stackByID     map[string]*riov1.Stack
 }
 
 func (w wrapper) FormatTarget(obj interface{}) (string, error) {
-	v, ok := obj.(*projectv1client.PublicDomain)
+	v, ok := obj.(*projectv1.PublicDomain)
 	if !ok {
 		return "", nil
 	}
-	w.clusterClient.DefaultProjectName = v.TargetProjectName
-	project, err := w.clusterClient.Project()
+
+	if v.Spec.TargetStackName == "" {
+		v.Spec.TargetProjectName = w.clusterClient.DefaultProjectName
+	}
+
+	client, err := w.ctx.KubeClient()
 	if err != nil {
 		return "", nil
 	}
-	projectClient, err := project.Client()
-	if err != nil {
-		return "", nil
-	}
-	for name, id := range w.spaces {
-		if name == v.TargetProjectName {
-			ns := namespace.StackNamespace(id, v.TargetStackName)
-			svc, err := projectClient.Service.ByID(fmt.Sprintf("%s:%s", ns, v.TargetName))
-			if err == nil && len(svc.Endpoints) > 0 {
-				target := strings.Replace(svc.Endpoints[0].URL, "http://", "https://", 1)
+
+	for name := range w.projects {
+		if name == v.Spec.TargetProjectName {
+			ns := namespace.StackNamespace(name, v.Spec.TargetStackName)
+			svc, err := client.Rio.Services(v.Spec.TargetStackName).Get(v.Spec.TargetName, metav1.GetOptions{})
+			if err == nil && len(svc.Status.Endpoints) > 0 {
+				target := strings.Replace(svc.Status.Endpoints[0].URL, "http://", "https://", 1)
 				return target, nil
 			}
-			route, err := projectClient.RouteSet.ByID(fmt.Sprintf("%s:%s", ns, v.TargetName))
+			route, err := client.Rio.RouteSets(v.Spec.TargetStackName).Get(v.Spec.TargetName, metav1.GetOptions{})
 			if err == nil {
-				stack := w.stackByID[route.StackID]
-				space := strings.SplitN(stack.ProjectID, "-", 2)[1]
-				return fmt.Sprintf("https://%s.%s", service.HashIfNeed(route.Name, strings.SplitN(ns, "-", 2)[0], space), w.domain), nil
+				stack := w.stackByID[route.Spec.StackName]
+				return fmt.Sprintf("https://%s.%s", namespace.HashIfNeed(route.Name, strings.SplitN(ns, "-", 2)[0], stack.Namespace), w.domain), nil
 			}
 		}
 	}

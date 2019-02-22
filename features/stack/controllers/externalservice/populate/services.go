@@ -9,10 +9,19 @@ import (
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	v1client "github.com/rancher/types/apis/core/v1"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func ServiceForExternalService(es *riov1.ExternalService, stack *riov1.Stack, os *objectset.ObjectSet) error {
-	svc := v1client.NewService(es.Namespace, es.Name, v1.Service{})
+	svc := v1client.NewService(stack.Name, es.Name, v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: map[string]string{
+				"rio.cattle.io/service": es.Name,
+				"rio.cattle.io/stack":   stack.Name,
+				"rio.cattle.io/project": stack.Namespace,
+			},
+		},
+	})
 	if es.Spec.FQDN != "" {
 		u, err := populate.ParseTargetUrl(es.Spec.FQDN)
 		if err != nil {

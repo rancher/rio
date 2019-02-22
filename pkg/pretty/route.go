@@ -6,18 +6,18 @@ import (
 	"github.com/rancher/norman/types"
 	"github.com/rancher/norman/types/mapper"
 	pm "github.com/rancher/rio/pkg/pretty/mapper"
-	"github.com/rancher/rio/types/client/rio/v1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 )
 
 func route(schemas *types.Schemas) *types.Schemas {
 	return schemas.
-		AddMapperForType(&Version, client.Fault{},
+		AddMapperForType(&Version, riov1.Fault{},
 			pm.Duration{Field: "delayMillis", Unit: time.Millisecond},
 			mapper.Move{From: "delayMillis", To: "delay"},
 			pm.AliasField{Field: "delay", Names: []string{"delayMillis"}},
 			pm.AliasField{Field: "percentage", Names: []string{"percent"}},
 		).
-		AddMapperForType(&Version, client.Match{},
+		AddMapperForType(&Version, riov1.Match{},
 			pm.Destination{Field: "from"},
 			pm.StringMatchMap{Field: "cookies"},
 			pm.StringMatchMap{Field: "headers"},
@@ -25,12 +25,12 @@ func route(schemas *types.Schemas) *types.Schemas {
 			pm.StringMatch{Field: "scheme"},
 			pm.StringMatch{Field: "path"},
 		).
-		AddMapperForType(&Version, client.Retry{},
+		AddMapperForType(&Version, riov1.Retry{},
 			pm.Duration{Field: "timeoutMillis", Unit: time.Millisecond},
 			mapper.Move{From: "timeoutMillis", To: "timeout"},
 			pm.AliasField{Field: "timeout", Names: []string{"timeoutMillis"}},
 		).
-		AddMapperForType(&Version, client.RouteSpec{},
+		AddMapperForType(&Version, riov1.RouteSpec{},
 			pm.MapToSlice{Field: "addHeaders", Sep: "="},
 			pm.NewMatch("matches"),
 			pm.SingleSlice{Field: "matches"},
@@ -43,9 +43,5 @@ func route(schemas *types.Schemas) *types.Schemas {
 			pm.AliasField{Field: "timeout", Names: []string{"timeoutMillis"}},
 			pm.To{Field: "to"},
 			pm.SingleSlice{Field: "to"},
-		).
-		AddMapperForType(&Version, client.RouteSet{},
-			mapper.Drop{Field: "projectId"},
-			mapper.Drop{Field: "stackId"},
 		)
 }

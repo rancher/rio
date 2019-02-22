@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/types/client/project/v1"
+	projectv1 "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
 )
 
 type Add struct {
@@ -23,18 +23,22 @@ func (a *Add) Run(ctx *clicontext.CLIContext) error {
 	if err != nil {
 		return err
 	}
-	spaceClient, err := cluster.Client()
+
+	client, err := ctx.KubeClient()
 	if err != nil {
 		return err
 	}
+
 	space, stack, targetName := resolveSpaceStackName(target, cluster.DefaultProjectName, cluster.DefaultStackName)
-	domain := &client.PublicDomain{
-		DomainName:        domainName,
-		TargetProjectName: space,
-		TargetStackName:   stack,
-		TargetName:        targetName,
+	domain := &projectv1.PublicDomain{
+		Spec: projectv1.PublicDomainSpec{
+			DomainName:        domainName,
+			TargetProjectName: space,
+			TargetStackName:   stack,
+			TargetName:        targetName,
+		},
 	}
-	domain, err = spaceClient.PublicDomain.Create(domain)
+	domain, err = client.Project.PublicDomains("").Create(domain)
 	if err != nil {
 		return err
 	}

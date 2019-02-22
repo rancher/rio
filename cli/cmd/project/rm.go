@@ -2,7 +2,8 @@ package project
 
 import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/types/client/project/v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Rm struct{}
@@ -12,7 +13,7 @@ func (r *Rm) Run(ctx *clicontext.CLIContext) error {
 	if err != nil {
 		return err
 	}
-	cc, err := cluster.Client()
+	client, err := cluster.KubeClient()
 	if err != nil {
 		return err
 	}
@@ -20,17 +21,16 @@ func (r *Rm) Run(ctx *clicontext.CLIContext) error {
 	if err != nil {
 		return err
 	}
-	m := map[string]client.Project{}
+	m := map[string]*v1.Namespace{}
 	for _, project := range projects {
-		m[project.Name] = project.Project
-		m[project.ID] = project.Project
+		m[project.Project.Name] = project.Project
 	}
 	for _, arg := range ctx.CLI.Args() {
 		p, ok := m[arg]
 		if !ok {
 			continue
 		}
-		if err := cc.Project.Delete(&p); err != nil {
+		if err := client.Core.Namespaces("").Delete(p.Name, &metav1.DeleteOptions{}); err != nil {
 			return err
 		}
 	}

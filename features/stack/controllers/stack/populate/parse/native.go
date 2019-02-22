@@ -2,7 +2,6 @@ package parse
 
 import (
 	"github.com/rancher/norman/pkg/objectset"
-	"github.com/rancher/rancher/pkg/ref"
 	"github.com/rancher/rio/features/stack/controllers/stack/populate/crd"
 	"github.com/rancher/rio/features/stack/controllers/stack/populate/k8s"
 	"github.com/rancher/rio/pkg/namespace"
@@ -57,7 +56,7 @@ func configs(ns string, stack *riov1.Stack, internalStack *riov1.InternalStack, 
 		newResource.Name = name
 		newResource.Namespace = ns
 		newResource.Spec.ProjectName = stack.Namespace
-		newResource.Spec.StackName = ref.FromStrings(stack.Namespace, stack.Name)
+		newResource.Spec.StackName = stack.Name
 
 		output.Add(newResource)
 	}
@@ -71,7 +70,7 @@ func volumes(ns string, stack *riov1.Stack, internalStack *riov1.InternalStack, 
 		newResource.Name = name
 		newResource.Namespace = ns
 		newResource.Spec.ProjectName = stack.Namespace
-		newResource.Spec.StackName = ref.FromStrings(stack.Namespace, stack.Name)
+		newResource.Spec.StackName = stack.Name
 
 		output.Add(newResource)
 	}
@@ -85,7 +84,7 @@ func services(ns string, stack *riov1.Stack, internalStack *riov1.InternalStack,
 		newResource.Name = name
 		newResource.Namespace = ns
 		newResource.Spec.ProjectName = stack.Namespace
-		newResource.Spec.StackName = ref.FromStrings(stack.Namespace, stack.Name)
+		newResource.Spec.StackName = stack.Name
 
 		output.Add(newResource)
 	}
@@ -99,7 +98,7 @@ func routes(ns string, stack *riov1.Stack, internalStack *riov1.InternalStack, o
 		newResource.Name = name
 		newResource.Namespace = ns
 		newResource.Spec.ProjectName = stack.Namespace
-		newResource.Spec.StackName = ref.FromStrings(stack.Namespace, stack.Name)
+		newResource.Spec.StackName = stack.Name
 
 		output.Add(newResource)
 	}
@@ -113,7 +112,7 @@ func externalservices(ns string, stack *riov1.Stack, internalStack *riov1.Intern
 		newResource.Name = name
 		newResource.Namespace = ns
 		newResource.Spec.ProjectName = stack.Namespace
-		newResource.Spec.StackName = ref.FromStrings(stack.Namespace, stack.Name)
+		newResource.Spec.StackName = stack.Name
 
 		output.Add(newResource)
 	}

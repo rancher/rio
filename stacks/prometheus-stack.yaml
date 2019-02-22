@@ -15,7 +15,7 @@ configs:
         relabel_configs:
         - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
           action: keep
-          regex: istio-telemetry;prometheus
+          regex: ${TELEMETRY_NAME};prometheus
       # Scrape config for envoy stats
       - job_name: 'envoy-stats'
         scrape_interval: 5s
@@ -73,7 +73,7 @@ configs:
         - role: endpoints
           namespaces:
             names:
-            - ${LB_NAMESPACE}
+            - ${TELEMETRY_NAMESPACE}
         relabel_configs:
         - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
           action: keep
@@ -91,7 +91,7 @@ configs:
         relabel_configs:
         - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
           action: keep
-          regex: istio-telemetry;http-monitoring
+          regex: ${TELEMETRY_NAME};http-monitoring
       - job_name: 'pilot'
         # Override the global default and scrape targets from this job every 5 seconds.
         scrape_interval: 5s
@@ -101,11 +101,11 @@ configs:
         - role: endpoints
           namespaces:
             names:
-            - ${LB_NAMESPACE}
+            - ${TELEMETRY_NAMESPACE}
         relabel_configs:
         - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
           action: keep
-          regex: istio-pilot;http-monitoring
+          regex: ${PILOT_NAME};http-monitoring
       - job_name: 'galley'
         # Override the global default and scrape targets from this job every 5 seconds.
         scrape_interval: 5s
@@ -115,7 +115,7 @@ configs:
         - role: endpoints
           namespaces:
             names:
-            - ${LB_NAMESPACE}
+            - ${TELEMETRY_NAMESPACE}
         relabel_configs:
         - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
           action: keep

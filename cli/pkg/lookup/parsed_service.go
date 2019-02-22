@@ -24,13 +24,11 @@ func StackScopedFromLabels(project *clientcfg.Project, labels map[string]string)
 	stack := labels["rio.cattle.io/stack"]
 	rev := labels["rio.cattle.io/version"]
 
-	ns := namespace.StackNamespace(project.ID, stack)
-
 	return StackScoped{
 		Project:      project,
 		Version:      rev,
 		StackName:    stack,
-		ResourceID:   fmt.Sprintf("%s:%s", ns, serviceName),
+		ResourceID:   serviceName,
 		ResourceName: service,
 	}
 }
@@ -50,7 +48,7 @@ func ParseStackScoped(project *clientcfg.Project, serviceName string) StackScope
 	if result.Version == "" || result.Version == settings.DefaultServiceVersion {
 		name = result.ResourceName
 	}
-	result.ResourceID = fmt.Sprintf("%s:%s", namespace.StackNamespace(project.ID, result.StackName), name)
+	result.ResourceID = fmt.Sprintf("%s:%s", namespace.StackNamespace(project.Project.Name, result.StackName), name)
 	return result
 }
 

@@ -1,15 +1,21 @@
 package logs
 
 import (
+	"bufio"
 	"fmt"
-	"io"
-	"os"
 	"time"
 
+	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/docker/libcompose/cli/logger"
 	"github.com/rancher/rio/cli/cmd/ps"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/sirupsen/logrus"
-	"golang.org/x/sync/errgroup"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	_ "k8s.io/apimachinery/pkg/runtime/schema"
+	_ "k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 )
 
 type Logs struct {
@@ -31,6 +37,11 @@ func (l *Logs) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
+	restClient, err := cluster.RestClient()
+	if err != nil {
+		return err
+	}
+
 	pds, err := ps.ListPods(ctx, l.A_All, ctx.CLI.Args()...)
 	if err != nil {
 		return err
@@ -40,97 +51,54 @@ func (l *Logs) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("failed to find container for %v, container \"%s\"", ctx.CLI.Args(), l.C_Container)
 	}
 
-	errg := errgroup.Group{}
-	// TODO: make this suck much less.  Like color output, labels by container name, call the k8s API, not run a binary (too much overhead)
+	factory := logger.NewColorLoggerFactory()
 	for _, pd := range pds {
 		for _, container := range pd.Containers {
-			if l.C_Container != "" && l.C_Container != container.Name {
-				continue
-			}
+			go l.logContainer(pd.Pod, container, restClient, factory)
+		}
+	}
+	<-ctx.Ctx.Done()
 
-			var args []string
-			if l.F_Follow {
-				args = append(args, "-f")
-			}
-			if l.P_Previous {
-				args = append(args, "-p")
-			}
-			if l.S_Since != "" {
-				_, err := time.Parse(time.RFC3339, l.S_Since)
-				if err == nil {
-					args = append(args, "--since-time="+l.S_Since)
-				} else {
-					args = append(args, "--since="+l.S_Since)
-				}
-			}
-			if l.N_Tail > -1 {
-				args = append(args, fmt.Sprintf("--tail=%d", l.N_Tail))
-			}
+	return nil
+}
 
-			args = append(args, "-c", container.Name, pd.Pod.Name)
-
-			cmd, err := cluster.KubectlCmd(pd.Pod.Namespace, "logs", args...)
-			if err != nil {
-				return err
+func (l *Logs) logContainer(pod *v1.Pod, container v1.Container, restClient rest.Interface, factory *logger.ColorLoggerFactory) error {
+	containerName := fmt.Sprintf("%s/%s", pod.Name, container.Name)
+	logger := factory.CreateContainerLogger(containerName)
+	podLogOption := v1.PodLogOptions{
+		Container: container.Name,
+		Follow:    l.F_Follow,
+	}
+	if l.S_Since != "" {
+		t, err := time.Parse(time.RFC3339, l.S_Since)
+		if err == nil {
+			newtime := metav1.NewTime(t)
+			podLogOption.SinceTime = &newtime
+		} else {
+			du, err := time.ParseDuration(l.S_Since)
+			if err == nil {
+				ss := int64(du.Round(time.Second).Seconds())
+				podLogOption.SinceSeconds = &ss
 			}
-
-			prefix := ""
-			if len(pds) > 1 || len(pd.Containers) > 1 {
-				prefix = fmt.Sprintf("%s/%s| ", pd.Pod.Name, container.Name)
-			}
-			cmd.Stdout = NewPrefixWriter(prefix, os.Stdout)
-			cmd.Stderr = NewPrefixWriter(prefix, os.Stderr)
-			errg.Go(func() error {
-				logrus.Debugf("Running %v, KUBECONFIG=%s", cmd.Args, os.Getenv("KUBECONFIG"))
-				return cmd.Run()
-			})
 		}
 	}
 
-	return errg.Wait()
-}
-
-func NewPrefixWriter(prefix string, next io.Writer) io.Writer {
-	return &prefixWriter{
-		prefix:  []byte(prefix),
-		next:    next,
-		nlFound: true,
+	scheme.Scheme.AddUnversionedTypes(v1.SchemeGroupVersion, &v1.PodLogOptions{})
+	req := restClient.Get().
+		Prefix("api", "", "v1").
+		Resource("pods").
+		Name(pod.Name).
+		Namespace(pod.Namespace).
+		SubResource("log").
+		VersionedParams(&podLogOption, runtime.NewParameterCodec(scheme.Scheme))
+	reader, err := req.Stream()
+	if err != nil {
+		return err
 	}
-}
-
-type prefixWriter struct {
-	next    io.Writer
-	prefix  []byte
-	nlFound bool
-}
-
-func (p *prefixWriter) Write(bytes []byte) (n int, err error) {
-	np := make([]byte, 0, len(bytes))
-
-	for _, b := range bytes {
-		if p.nlFound {
-			if len(np) > 0 {
-				_, err := p.next.Write(np)
-				if err != nil {
-					return 0, err
-				}
-				np = make([]byte, 0, len(bytes))
-			}
-
-			_, err = p.next.Write(p.prefix)
-			if err != nil {
-				return 0, err
-			}
-		}
-		p.nlFound = b == '\n'
-		np = append(np, b)
+	defer reader.Close()
+	sc := bufio.NewScanner(reader)
+	for sc.Scan() {
+		logger.Out(append(sc.Bytes(), []byte("\n")...))
 	}
-
-	if len(np) > 0 {
-		_, err := p.next.Write(np)
-		return len(bytes), err
-	}
-
-	return len(bytes), nil
-
+	return nil
 }

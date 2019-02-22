@@ -4,6 +4,7 @@ configs:
       .:53 {
           errors
           health
+          rio
           kubernetes cluster.local in-addr.arpa ip6.arpa {
               pods insecure
               upstream
@@ -24,8 +25,8 @@ services:
     configs:
     - conf:/etc/coredns/Corefile
     expose:
-    - 10.43.0.10:53:53/udp,dns
-    - 10.43.0.10:53:53,dns-tcp
+    - 10.43.0.199:53:53/udp,dns
+    - 10.43.0.199:53:53,dns-tcp
     - 9153,metrics
     global_permissions:
     - list,watch endpoints
@@ -33,7 +34,8 @@ services:
     - list,watch pods
     - list,watch namespaces
     healthcheck: http://localhost:8080/health
-    image: k8s.gcr.io/coredns:1.3.1
+    image: daishan1992/coredns:dev
+    imagePullPolicy: always
     memory: 70m
     read_only: true
     scale: 1

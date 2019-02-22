@@ -31,8 +31,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			}),
 		},
 		FixedAnswers: map[string]string{
-			"LB_NAMESPACE":         settings.IstioExternalLBNamespace,
-			"PROMETHEUS_NAMESPACE": settings.PrometheusNamespace,
+			"LB_NAMESPACE": settings.IstioStackName,
 		},
 	}
 

@@ -3,9 +3,8 @@ package rm
 import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
-	"github.com/rancher/rio/cli/pkg/waiter"
-	projectClient "github.com/rancher/rio/types/client/project/v1"
-	"github.com/rancher/rio/types/client/rio/v1"
+	clitypes "github.com/rancher/rio/cli/pkg/types"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Rm struct {
@@ -13,7 +12,7 @@ type Rm struct {
 }
 
 func (r *Rm) Run(ctx *clicontext.CLIContext) error {
-	types := []string{client.ServiceType, client.StackType, projectClient.PodType, client.ConfigType, client.RouteSetType, client.VolumeType, client.ExternalServiceType}
+	types := []string{clitypes.ServiceType, clitypes.StackType, clitypes.PodType, clitypes.ConfigType, clitypes.RouteSetType, clitypes.VolumeType, clitypes.ExternalServiceType}
 	if len(r.T_Type) > 0 {
 		types = []string{r.T_Type}
 	}
@@ -22,7 +21,8 @@ func (r *Rm) Run(ctx *clicontext.CLIContext) error {
 }
 
 func Remove(ctx *clicontext.CLIContext, types ...string) error {
-	w, err := waiter.NewWaiter(ctx)
+	// todo: add waiter
+	client, err := ctx.KubeClient()
 	if err != nil {
 		return err
 	}
@@ -33,18 +33,38 @@ func Remove(ctx *clicontext.CLIContext, types ...string) error {
 			return err
 		}
 
-		client, err := ctx.ClientLookup(resource.Type)
-		if err != nil {
-			return err
+		switch resource.Type {
+		case clitypes.ServiceType:
+			if err := client.Rio.Services(resource.Namespace).Delete(resource.Name, &metav1.DeleteOptions{}); err != nil {
+				return err
+			}
+		case clitypes.StackType:
+			if err := client.Rio.Stacks(resource.Namespace).Delete(resource.Name, &metav1.DeleteOptions{}); err != nil {
+				return err
+			}
+		case clitypes.PodType:
+			if err := client.Core.Pods(resource.Namespace).Delete(resource.Name, &metav1.DeleteOptions{}); err != nil {
+				return err
+			}
+		case clitypes.ConfigType:
+			if err := client.Rio.Configs(resource.Namespace).Delete(resource.Name, &metav1.DeleteOptions{}); err != nil {
+				return err
+			}
+		case clitypes.RouteSetType:
+			if err := client.Rio.Services(resource.Namespace).Delete(resource.Name, &metav1.DeleteOptions{}); err != nil {
+				return err
+			}
+		case clitypes.VolumeType:
+			if err := client.Rio.Volumes(resource.Namespace).Delete(resource.Name, &metav1.DeleteOptions{}); err != nil {
+				return err
+			}
+		case clitypes.ExternalServiceType:
+			if err := client.Rio.ExternalServices(resource.Namespace).Delete(resource.Name, &metav1.DeleteOptions{}); err != nil {
+				return err
+			}
 		}
 
-		err = client.Delete(&resource.Resource)
-		if err != nil {
-			return err
-		}
-
-		w.Add(&resource.Resource)
 	}
 
-	return w.Wait(ctx.Ctx)
+	return nil
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/rancher/norman"
 	"github.com/rancher/norman/controller"
 	"github.com/rancher/rio/types/apis/apiextensions.k8s.io/v1beta1"
+	buildv1alpha1 "github.com/rancher/rio/types/apis/build.knative.dev/v1alpha1"
 	cmv1alpha1 "github.com/rancher/rio/types/apis/certmanager.k8s.io/v1alpha1"
 	"github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
 	policyv1beta1 "github.com/rancher/rio/types/apis/policy/v1beta1"
@@ -13,8 +14,9 @@ import (
 	autoscalev1 "github.com/rancher/rio/types/apis/rio-autoscale.cattle.io/v1"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	storagev1 "github.com/rancher/rio/types/apis/storage.k8s.io/v1"
+	webhookv1 "github.com/rancher/rio/types/apis/webhookinator.rio.cattle.io/v1"
 	appsv1 "github.com/rancher/types/apis/apps/v1beta2"
-	"github.com/rancher/types/apis/core/v1"
+	v1 "github.com/rancher/types/apis/core/v1"
 	rbacv1 "github.com/rancher/types/apis/rbac.authorization.k8s.io/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -26,6 +28,7 @@ type Context struct {
 	InCluster   bool
 	Apps        *appsv1.Clients
 	AutoScale   *autoscalev1.Clients
+	Build       *buildv1alpha1.Clients
 	CertManager *cmv1alpha1.Clients
 	Core        *v1.Clients
 	Ext         *v1beta1.Clients
@@ -37,12 +40,14 @@ type Context struct {
 	RBAC        *rbacv1.Clients
 	Rio         *riov1.Clients
 	Storage     *storagev1.Clients
+	Webhook     *webhookv1.Clients
 }
 
 func (c *Context) Starters() []controller.Starter {
 	return []controller.Starter{
 		c.AutoScale.Interface,
 		c.Apps.Interface,
+		c.Build.Interface,
 		c.CertManager.Interface,
 		c.Core.Interface,
 		c.Ext.Interface,
@@ -52,6 +57,7 @@ func (c *Context) Starters() []controller.Starter {
 		c.RBAC.Interface,
 		c.Rio.Interface,
 		c.Storage.Interface,
+		c.Webhook.Interface,
 	}
 }
 
@@ -64,6 +70,7 @@ func NewContext(ctx context.Context) *Context {
 	return &Context{
 		Apps:        appsv1.ClientsFrom(ctx),
 		AutoScale:   autoscalev1.ClientsFrom(ctx),
+		Build:       buildv1alpha1.ClientsFrom(ctx),
 		CertManager: cmv1alpha1.ClientsFrom(ctx),
 		Core:        v1.ClientsFrom(ctx),
 		Ext:         v1beta1.ClientsFrom(ctx),
@@ -75,6 +82,7 @@ func NewContext(ctx context.Context) *Context {
 		RBAC:        rbacv1.ClientsFrom(ctx),
 		Rio:         riov1.ClientsFrom(ctx),
 		Storage:     storagev1.ClientsFrom(ctx),
+		Webhook:     webhookv1.ClientsFrom(ctx),
 	}
 }
 

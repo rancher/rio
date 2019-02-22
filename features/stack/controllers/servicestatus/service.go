@@ -43,10 +43,11 @@ type subServiceController struct {
 	serviceLister riov1.ServiceClientCache
 }
 
-func (s *subServiceController) getService(ns string, labels map[string]string) *riov1.Service {
+func (s *subServiceController) getService(labels map[string]string) *riov1.Service {
 	name := labels["rio.cattle.io/service-name"]
+	stackName := labels["rio.cattle.io/stack"]
 
-	svc, err := s.serviceLister.Get(ns, name)
+	svc, err := s.serviceLister.Get(stackName, name)
 	if err != nil {
 		return nil
 	}
@@ -82,7 +83,7 @@ func (s *subServiceController) updateStatus(service, newService *riov1.Service, 
 }
 
 func (s *subServiceController) daemonSetChanged(dep *appsv1.DaemonSet) (runtime.Object, error) {
-	service := s.getService(dep.Namespace, dep.Labels)
+	service := s.getService(dep.Labels)
 	if service == nil {
 		return nil, nil
 	}
@@ -95,7 +96,7 @@ func (s *subServiceController) daemonSetChanged(dep *appsv1.DaemonSet) (runtime.
 }
 
 func (s *subServiceController) statefulSetChanged(dep *appsv1.StatefulSet) (runtime.Object, error) {
-	service := s.getService(dep.Namespace, dep.Labels)
+	service := s.getService(dep.Labels)
 	if service == nil {
 		return nil, nil
 	}
@@ -108,7 +109,7 @@ func (s *subServiceController) statefulSetChanged(dep *appsv1.StatefulSet) (runt
 }
 
 func (s *subServiceController) deploymentChanged(dep *appsv1.Deployment) (runtime.Object, error) {
-	service := s.getService(dep.Namespace, dep.Labels)
+	service := s.getService(dep.Labels)
 	if service == nil {
 		return nil, nil
 	}

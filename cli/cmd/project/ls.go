@@ -39,7 +39,7 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 		}
 
 		writer = table.NewWriter([][]string{
-			{"NAME", "Project.Name"},
+			{"NAME", "Project.Project.Name"},
 			{"CLUSTER", "Project.Cluster.URL"},
 			{"DEFAULT", "{{and .Project.Default .Project.Cluster.Default | boolToStar}}"},
 		}, ctx)
@@ -53,7 +53,7 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 		}
 
 		writer = table.NewWriter([][]string{
-			{"NAME", "Project.Name"},
+			{"NAME", "Project.Project.Name"},
 			{"DEFAULT", "{{.Project.Default | boolToStar}}"},
 		}, ctx)
 	}
@@ -68,7 +68,7 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 		}
 		for i, project := range projects {
 			writer.Write(&Data{
-				ID:      project.ID,
+				ID:      project.Project.Name,
 				Project: &projects[i],
 			})
 		}

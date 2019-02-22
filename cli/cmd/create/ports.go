@@ -6,11 +6,11 @@ import (
 	"strings"
 
 	"github.com/rancher/norman/pkg/kv"
-	"github.com/rancher/rio/types/client/rio/v1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 )
 
-func ParseExposedPorts(specs []string) ([]client.ExposedPort, error) {
-	var result []client.ExposedPort
+func ParseExposedPorts(specs []string) ([]riov1.ExposedPort, error) {
+	var result []riov1.ExposedPort
 
 	for _, spec := range specs {
 		portSpec, name := kv.Split(spec, ",")
@@ -18,20 +18,22 @@ func ParseExposedPorts(specs []string) ([]client.ExposedPort, error) {
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, client.ExposedPort{
-			Name:       name,
-			Protocol:   portBinding.Protocol,
-			TargetPort: portBinding.TargetPort,
-			Port:       portBinding.Port,
-			IP:         portBinding.IP,
+		result = append(result, riov1.ExposedPort{
+			PortBinding: riov1.PortBinding{
+				Protocol:   portBinding.Protocol,
+				TargetPort: portBinding.TargetPort,
+				Port:       portBinding.Port,
+				IP:         portBinding.IP,
+			},
+			Name: name,
 		})
 	}
 
 	return result, nil
 }
 
-func ParsePorts(specs []string) ([]client.PortBinding, error) {
-	var result []client.PortBinding
+func ParsePorts(specs []string) ([]riov1.PortBinding, error) {
+	var result []riov1.PortBinding
 
 	for _, spec := range specs {
 		portBinding, err := parsePortBinding(spec)
@@ -44,11 +46,11 @@ func ParsePorts(specs []string) ([]client.PortBinding, error) {
 	return result, nil
 }
 
-func parsePortBinding(spec string) (client.PortBinding, error) {
+func parsePortBinding(spec string) (riov1.PortBinding, error) {
 	var (
 		err                  error
 		port, targetPortPair string
-		result               client.PortBinding
+		result               riov1.PortBinding
 	)
 
 	parts := strings.SplitN(spec, ":", 3)

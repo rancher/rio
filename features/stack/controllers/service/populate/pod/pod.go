@@ -13,7 +13,7 @@ import (
 	sidekick2 "github.com/rancher/rio/features/stack/controllers/service/populate/sidekick"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -55,10 +55,10 @@ func podSpec(stack *riov1.Stack, volumes map[string]*riov1.Volume, service *riov
 		AutomountServiceAccountToken: &f,
 	}
 
-	podvolume.Populate(volumes, service, &podSpec)
+	podvolume.Populate(volumes, service, &podSpec, stack)
 
 	containers(&podSpec, service)
-	dns(&podSpec, spec)
+	dns(&podSpec, spec, stack)
 	restartPolicy(&podSpec, spec)
 	stopPeriod(&podSpec, spec)
 	scheduling(&podSpec, spec, servicelabels.ServiceLabels(stack, service))
@@ -147,7 +147,7 @@ func scheduling(podSpec *v1.PodSpec, service *riov1.ServiceUnversionedSpec, labe
 	}
 }
 
-func dns(podSpec *v1.PodSpec, service *riov1.ServiceUnversionedSpec) {
+func dns(podSpec *v1.PodSpec, service *riov1.ServiceUnversionedSpec, stack *riov1.Stack) {
 	dnsConfig := &v1.PodDNSConfig{
 		Nameservers: service.DNS,
 		Searches:    service.DNSSearch,

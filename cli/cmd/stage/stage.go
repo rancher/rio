@@ -3,14 +3,13 @@ package stage
 import (
 	"fmt"
 
-	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/cli/cmd/create"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/clientcfg"
 	"github.com/rancher/rio/cli/pkg/lookup"
-	"github.com/rancher/rio/cli/pkg/waiter"
+	"github.com/rancher/rio/cli/pkg/types"
 	"github.com/rancher/rio/pkg/settings"
-	"github.com/rancher/rio/types/client/rio/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Stage struct {
@@ -20,9 +19,9 @@ type Stage struct {
 	Image  string `desc:"Runtime image (Docker image/OCI image)"`
 }
 
-func determineRevision(project *clientcfg.Project, name string, service *types.Resource) (string, error) {
+func determineRevision(project *clientcfg.Project, name string, service types.Resource) (string, error) {
 	revision := "next"
-	if name == service.ID {
+	if name == service.Name {
 		return revision, nil
 	}
 
@@ -48,49 +47,35 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("must specify the service to update")
 	}
 
+	client, err := ctx.KubeClient()
+	if err != nil {
+		return err
+	}
+
 	project, err := ctx.Project()
-	if err != nil {
-		return err
-	}
-
-	wc, err := ctx.ProjectClient()
-	if err != nil {
-		return err
-	}
-
-	w, err := waiter.NewWaiter(ctx)
 	if err != nil {
 		return err
 	}
 
 	stackScope := stripRevision(project, ctx.CLI.Args()[0])
 
-	resource, err := lookup.Lookup(ctx, stackScope.ResourceID, client.ServiceType)
-	if err != nil {
-		byID, err2 := wc.Service.ByID(ctx.CLI.Args()[0])
-		if err2 != nil {
-			return err
-		}
-
-		stackScope = stripRevision(project, lookup.StackScopedFromLabels(project, byID.Labels).String())
-		resource = &types.NamedResource{
-			Resource: byID.Resource,
-			Name:     byID.Name,
-		}
-	}
-
-	baseService, err := wc.Service.ByID(resource.ID)
+	resource, err := lookup.Lookup(ctx, stackScope.ResourceID, types.ServiceType)
 	if err != nil {
 		return err
 	}
 
-	revision, err := determineRevision(project, ctx.CLI.Args()[0], &resource.Resource)
+	baseService, err := client.Rio.Services(project.Project.Name).Get(resource.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	revision, err := determineRevision(project, ctx.CLI.Args()[0], resource)
 	if err != nil {
 		return err
 	}
 
 	stackScope.Version = revision
-	_, err = lookup.Lookup(ctx, stackScope.String(), client.ServiceType)
+	_, err = lookup.Lookup(ctx, stackScope.String(), types.ServiceType)
 	if err == nil {
 		return fmt.Errorf("revision %s already exists", ctx.CLI.Args()[0])
 	}
@@ -102,22 +87,20 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 	}
 
 	serviceDef.Name = fmt.Sprintf("%s-%s", resource.Name, revision)
-	serviceDef.ParentService = resource.Name
-	serviceDef.Version = revision
-	serviceDef.Weight = int64(r.Weight)
-	serviceDef.Scale = int64(r.Scale)
-	serviceDef.ProjectID = baseService.ProjectID
-	serviceDef.StackID = baseService.StackID
-	serviceDef.PortBindings = baseService.PortBindings
-	if serviceDef.Scale == 0 {
-		serviceDef.Scale = baseService.Scale
+	serviceDef.Spec.Revision.ParentService = resource.Name
+	serviceDef.Spec.Revision.Version = revision
+	serviceDef.Spec.Revision.Weight = r.Weight
+	serviceDef.Spec.Scale = r.Scale
+	serviceDef.Spec.ProjectName = baseService.Spec.ProjectName
+	serviceDef.Spec.StackName = baseService.Spec.StackName
+	serviceDef.Spec.PortBindings = baseService.Spec.PortBindings
+	if serviceDef.Spec.Scale == 0 {
+		serviceDef.Spec.Scale = baseService.Spec.Scale
 	}
 
-	revService, err := wc.Service.Create(serviceDef)
-	if err != nil {
+	if _, err := client.Rio.Services(project.Project.Name).Create(serviceDef); err != nil {
 		return err
 	}
 
-	w.Add(&revService.Resource)
-	return w.Wait(ctx.Ctx)
+	return nil
 }

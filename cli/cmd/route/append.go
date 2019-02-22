@@ -7,15 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rancher/rio/cli/pkg/clientcfg"
-
-	"github.com/rancher/rio/cli/pkg/stack"
-
 	"github.com/rancher/norman/pkg/kv"
-	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/cli/cmd/create"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/types/client/rio/v1"
+	"github.com/rancher/rio/cli/pkg/clientcfg"
+	"github.com/rancher/rio/cli/pkg/stack"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -49,8 +47,8 @@ type Add struct {
 
 type RouteAction interface {
 	validateServiceStack(cluster *clientcfg.Cluster, args []string) error
-	buildRouteSpec(ctx *clicontext.CLIContext, args []string) (*client.RouteSpec, error)
-	getRouteSet(ctx *clicontext.CLIContext, args []string) (*client.RouteSet, error)
+	buildRouteSpec(ctx *clicontext.CLIContext, args []string) (*riov1.RouteSpec, error)
+	getRouteSet(ctx *clicontext.CLIContext, args []string) (*riov1.RouteSet, error)
 }
 
 func (a *Append) Run(ctx *clicontext.CLIContext) error {
@@ -63,17 +61,17 @@ func insertRoute(ctx *clicontext.CLIContext, insert bool, a RouteAction) error {
 		return fmt.Errorf("at least 3 arguements are required: HOST[/PATH] to|redirect|mirror TARGET")
 	}
 
+	client, err := ctx.KubeClient()
+	if err != nil {
+		return err
+	}
+
 	cluster, err := ctx.Cluster()
 	if err != nil {
 		return err
 	}
 
 	if err := a.validateServiceStack(cluster, args); err != nil {
-		return err
-	}
-
-	wc, err := ctx.ProjectClient()
-	if err != nil {
 		return err
 	}
 
@@ -88,19 +86,19 @@ func insertRoute(ctx *clicontext.CLIContext, insert bool, a RouteAction) error {
 	}
 
 	if insert {
-		routeSet.Routes = append([]client.RouteSpec{*routeSpec}, routeSet.Routes...)
+		routeSet.Spec.Routes = append([]riov1.RouteSpec{*routeSpec}, routeSet.Spec.Routes...)
 	} else {
-		routeSet.Routes = append(routeSet.Routes, *routeSpec)
+		routeSet.Spec.Routes = append(routeSet.Spec.Routes, *routeSpec)
 	}
 
-	if routeSet.ID == "" {
-		routeSet, err = wc.RouteSet.Create(routeSet)
+	if routeSet.Name == "" {
+		routeSet, err = client.Rio.RouteSets("").Create(routeSet)
 	} else {
-		routeSet, err = wc.RouteSet.Replace(routeSet)
+		routeSet, err = client.Rio.RouteSets("").Update(routeSet)
 	}
 
 	if err == nil {
-		fmt.Println(routeSet.ID)
+		fmt.Println(routeSet.Name)
 	}
 	return err
 }
@@ -117,15 +115,15 @@ func (a *Add) validateServiceStack(cluster *clientcfg.Cluster, args []string) er
 	return nil
 }
 
-func (a *Add) getRouteSet(ctx *clicontext.CLIContext, args []string) (*client.RouteSet, error) {
+func (a *Add) getRouteSet(ctx *clicontext.CLIContext, args []string) (*riov1.RouteSet, error) {
 	_, service, stackName, _, _ := parseMatch(args[0])
 
-	projectId, stackID, name, err := stack.ResolveSpaceStackForName(ctx, stackName+"/"+service)
+	projectName, stackName, name, err := stack.ResolveSpaceStackForName(ctx, stackName+"/"+service)
 	if err != nil {
 		return nil, err
 	}
 
-	routeSet, err := lookupRoute(ctx, projectId, stackID, name)
+	routeSet, err := lookupRoute(ctx, stackName, name)
 	if err != nil {
 		return nil, err
 	}
@@ -134,10 +132,17 @@ func (a *Add) getRouteSet(ctx *clicontext.CLIContext, args []string) (*client.Ro
 		return routeSet, nil
 	}
 
-	return &client.RouteSet{
-		Name:      name,
-		ProjectID: projectId,
-		StackID:   stackID,
+	return &riov1.RouteSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+			Namespace: stackName,
+		},
+		Spec: riov1.RouteSetSpec{
+			StackScoped: riov1.StackScoped{
+				ProjectName: projectName,
+				StackName: stackName,
+			},
+		},
 	}, nil
 }
 
@@ -152,7 +157,7 @@ func actionsString(many bool) string {
 	return strings.Join(s, ", ")
 }
 
-func (a *Add) buildRouteSpec(ctx *clicontext.CLIContext, args []string) (*client.RouteSpec, error) {
+func (a *Add) buildRouteSpec(ctx *clicontext.CLIContext, args []string) (*riov1.RouteSpec, error) {
 	action, err := parseAction(args[1])
 	if err != nil {
 		return nil, err
@@ -167,7 +172,7 @@ func (a *Add) buildRouteSpec(ctx *clicontext.CLIContext, args []string) (*client
 		return nil, err
 	}
 
-	routeSpec := &client.RouteSpec{}
+	routeSpec := &riov1.RouteSpec{}
 	if err := a.addMatch(ctx, args[0], routeSpec); err != nil {
 		return nil, err
 	}
@@ -187,7 +192,7 @@ func (a *Add) buildRouteSpec(ctx *clicontext.CLIContext, args []string) (*client
 	return routeSpec, nil
 }
 
-func (a *Add) addTo(routeSpec *client.RouteSpec, action string, dests []client.WeightedDestination) {
+func (a *Add) addTo(routeSpec *riov1.RouteSpec, action string, dests []riov1.WeightedDestination) {
 	if action != "to" {
 		return
 	}
@@ -195,7 +200,7 @@ func (a *Add) addTo(routeSpec *client.RouteSpec, action string, dests []client.W
 	routeSpec.To = dests
 }
 
-func (a *Add) addTimeout(routeSpec *client.RouteSpec) error {
+func (a *Add) addTimeout(routeSpec *riov1.RouteSpec) error {
 	n, err := create.ParseDurationUnit(a.Timeout, "timeout", time.Millisecond)
 	if err != nil {
 		return err
@@ -205,7 +210,7 @@ func (a *Add) addTimeout(routeSpec *client.RouteSpec) error {
 	return nil
 }
 
-func (a *Add) addRedirect(routeSpec *client.RouteSpec, action string, dest string) {
+func (a *Add) addRedirect(routeSpec *riov1.RouteSpec, action string, dest string) {
 	if action != "redirect" {
 		return
 	}
@@ -214,13 +219,13 @@ func (a *Add) addRedirect(routeSpec *client.RouteSpec, action string, dest strin
 	if path != "" {
 		path = "/" + path
 	}
-	routeSpec.Redirect = &client.Redirect{
+	routeSpec.Redirect = &riov1.Redirect{
 		Path: path,
 		Host: host,
 	}
 }
 
-func (a *Add) addRewrite(routeSpec *client.RouteSpec, action string, dest string) {
+func (a *Add) addRewrite(routeSpec *riov1.RouteSpec, action string, dest string) {
 	if action != "rewrite" {
 		return
 	}
@@ -229,18 +234,18 @@ func (a *Add) addRewrite(routeSpec *client.RouteSpec, action string, dest string
 	if path != "" {
 		path = "/" + path
 	}
-	routeSpec.Rewrite = &client.Rewrite{
+	routeSpec.Rewrite = &riov1.Rewrite{
 		Path: path,
 		Host: host,
 	}
 }
 
-func (a *Add) addMirror(routeSpec *client.RouteSpec, action string, dests []client.WeightedDestination) {
+func (a *Add) addMirror(routeSpec *riov1.RouteSpec, action string, dests []riov1.WeightedDestination) {
 	if action != "mirror" {
 		return
 	}
 
-	routeSpec.Mirror = &client.Destination{
+	routeSpec.Mirror = &riov1.Destination{
 		Stack:    dests[0].Stack,
 		Service:  dests[0].Service,
 		Revision: dests[0].Revision,
@@ -248,13 +253,13 @@ func (a *Add) addMirror(routeSpec *client.RouteSpec, action string, dests []clie
 	}
 }
 
-func (a *Add) addFault(routeSpec *client.RouteSpec) error {
+func (a *Add) addFault(routeSpec *riov1.RouteSpec) error {
 	if a.FaultPercentage <= 0 {
 		return nil
 	}
 
-	f := &client.Fault{
-		Percentage: int64(a.FaultPercentage),
+	f := &riov1.Fault{
+		Percentage: a.FaultPercentage,
 	}
 
 	if a.FaultDelay != "0s" && a.FaultDelay != "" {
@@ -267,21 +272,21 @@ func (a *Add) addFault(routeSpec *client.RouteSpec) error {
 	}
 
 	if a.FaultHTTPCode != 0 {
-		f.Abort = &client.Abort{
-			HTTPStatus: int64(a.FaultHTTPCode),
+		f.Abort = riov1.Abort{
+			HTTPStatus: a.FaultHTTPCode,
 		}
 		return nil
 	}
 
 	if a.FaultHTTP2Error != "" {
-		f.Abort = &client.Abort{
+		f.Abort = riov1.Abort{
 			HTTP2Status: a.FaultHTTP2Error,
 		}
 		return nil
 	}
 
 	if a.FaultGRPCError != "" {
-		f.Abort = &client.Abort{
+		f.Abort = riov1.Abort{
 			GRPCStatus: a.FaultGRPCError,
 		}
 		return nil
@@ -290,14 +295,14 @@ func (a *Add) addFault(routeSpec *client.RouteSpec) error {
 	return nil
 }
 
-func (a *Add) addMatch(ctx *clicontext.CLIContext, matchString string, routeSpec *client.RouteSpec) error {
+func (a *Add) addMatch(ctx *clicontext.CLIContext, matchString string, routeSpec *riov1.RouteSpec) error {
 	scheme, service, _, path, port := parseMatch(matchString)
 	if service == "" {
 		return fmt.Errorf("route host/path must have a host in the format of SERVICE.STACK, for example myservice.mystack")
 	}
 
 	addMatch := false
-	match := client.Match{}
+	match := riov1.Match{}
 
 	if scheme != "" {
 		addMatch = true
@@ -323,7 +328,7 @@ func (a *Add) addMatch(ctx *clicontext.CLIContext, matchString string, routeSpec
 		if err != nil {
 			return fmt.Errorf("invalid format for --from [%s]: %v", a.From, err)
 		}
-		match.From = &client.ServiceSource{
+		match.From = &riov1.ServiceSource{
 			Stack:    wds[0].Stack,
 			Service:  wds[0].Service,
 			Revision: wds[0].Revision,
@@ -336,7 +341,7 @@ func (a *Add) addMatch(ctx *clicontext.CLIContext, matchString string, routeSpec
 		if err != nil {
 			return fmt.Errorf("invalid port number in host/path [%s]: %s", matchString, port)
 		}
-		match.Port = &n
+		match.Port = &[]int{int(n)}[0]
 	}
 
 	if len(a.Header) > 0 {
@@ -356,8 +361,8 @@ func (a *Add) addMatch(ctx *clicontext.CLIContext, matchString string, routeSpec
 	return nil
 }
 
-func stringMapToStringMatchMap(data map[string]string) map[string]client.StringMatch {
-	result := map[string]client.StringMatch{}
+func stringMapToStringMatchMap(data map[string]string) map[string]riov1.StringMatch {
+	result := map[string]riov1.StringMatch{}
 
 	for k, v := range data {
 		result[k] = *create.ParseStringMatch(v)
@@ -366,8 +371,8 @@ func stringMapToStringMatchMap(data map[string]string) map[string]client.StringM
 	return result
 }
 
-func ParseDestinations(targets []string) ([]client.WeightedDestination, error) {
-	var result []client.WeightedDestination
+func ParseDestinations(targets []string) ([]riov1.WeightedDestination, error) {
+	var result []riov1.WeightedDestination
 	for _, target := range targets {
 		var (
 			stack    string
@@ -388,10 +393,12 @@ func ParseDestinations(targets []string) ([]client.WeightedDestination, error) {
 
 		service, revision = kv.Split(service, ":")
 
-		wd := client.WeightedDestination{
-			Stack:    stack,
-			Service:  service,
-			Revision: revision,
+		wd := riov1.WeightedDestination{
+			Destination: riov1.Destination{
+				Stack:    stack,
+				Service:  service,
+				Revision: revision,
+			},
 		}
 
 		weight := opts["weight"]
@@ -400,7 +407,7 @@ func ParseDestinations(targets []string) ([]client.WeightedDestination, error) {
 			if err != nil {
 				return nil, fmt.Errorf("invalid weight format [%s]", weight)
 			}
-			wd.Weight = n
+			wd.Weight = int(n)
 		}
 
 		port := opts["port"]
@@ -409,7 +416,7 @@ func ParseDestinations(targets []string) ([]client.WeightedDestination, error) {
 			if err != nil {
 				return nil, fmt.Errorf("invalid port format [%s]", port)
 			}
-			wd.Port = &n
+			wd.Port = &[]uint32{uint32(n)}[0]
 		}
 
 		result = append(result, wd)
@@ -425,26 +432,18 @@ func parseAction(action string) (string, error) {
 	return action, nil
 }
 
-func lookupRoute(ctx *clicontext.CLIContext, projectId, stackID, name string) (*client.RouteSet, error) {
-	wc, err := ctx.ProjectClient()
-	if err != nil {
-
-	}
-	resp, err := wc.RouteSet.List(&types.ListOpts{
-		Filters: map[string]interface{}{
-			client.RouteSetFieldName:      name,
-			client.RouteSetFieldProjectID: projectId,
-			client.RouteSetFieldStackID:   stackID,
-		},
-	})
+func lookupRoute(ctx *clicontext.CLIContext, stackName, name string) (*riov1.RouteSet, error) {
+	client, err := ctx.KubeClient()
 	if err != nil {
 		return nil, err
 	}
-	if len(resp.Data) != 1 {
-		return nil, nil
+
+	route, err := client.Rio.RouteSets(stackName).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
 	}
 
-	return &resp.Data[0], nil
+	return route, nil
 }
 
 func parseMatch(str string) (scheme string, service string, stack string, path string, port string) {

@@ -12,7 +12,7 @@ import (
 	"github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
 	projectv1 "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
 	corev1 "github.com/rancher/types/apis/core/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -54,7 +54,7 @@ func resolve(namespace, name string, obj runtime.Object) ([]changeset.Key, error
 	case *v1alpha3.VirtualService:
 		return trigger, nil
 	case *v1.Namespace:
-		if t.Name == settings.IstioExternalLBNamespace {
+		if t.Name == settings.IstioStackName {
 			return trigger, nil
 		}
 	}
@@ -87,7 +87,7 @@ func (i *istioDeployController) sync(key string, obj *v1alpha3.VirtualService) (
 		return nil, err
 	}
 
-	secret, err := i.secretsLister.Get(settings.IstioExternalLBNamespace, issuer.TLSSecretName)
+	secret, err := i.secretsLister.Get(settings.IstioStackName, issuer.TLSSecretName)
 	if err != nil && !errors.IsNotFound(err) {
 		return nil, err
 	}

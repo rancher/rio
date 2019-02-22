@@ -6,7 +6,6 @@ import (
 	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1/schema"
-	"github.com/rancher/rio/types/client/rio/v1"
 )
 
 var (
@@ -47,7 +46,7 @@ func ToPretty(schemaType SchemaType, data map[string]interface{}) (map[string]in
 }
 
 func internalizeStack(data map[string]interface{}) (map[string]interface{}, error) {
-	schema := schema.Schemas.Schema(&schema.Version, client.InternalStackType)
+	schema := schema.Schemas.Schema(&schema.Version, "internalStack")
 	err := schema.Mapper.ToInternal(data)
 	return data, err
 }

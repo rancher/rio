@@ -5,7 +5,7 @@ configs:
       ingressControllerMode: "OFF"
       authPolicy: NONE
       rdsRefreshDelay: 10s
-      mixerReportServer: istio-telemetry.${TELEMETRY_NAMESPACE}.svc.cluster.local:9091
+      mixerReportServer: ${TELEMETRY_NAMESPACE}.rio-cloud.svc.cluster.local:9091
       outboundTrafficPolicy:
         mode: ALLOW_ANY
       defaultConfig:
@@ -19,7 +19,7 @@ configs:
         interceptionMode: REDIRECT
         proxyAdminPort: 15000
         controlPlaneAuthPolicy: NONE
-        discoveryAddress: istio-pilot.${NAMESPACE}:15007
+        discoveryAddress: ${PILOT_ADDRESS}:15007
 
 services:
   istio-pilot:
@@ -52,14 +52,16 @@ services:
         - POD_NAMESPACE=$(self/namespace)
         - PILOT_THROTTLE=500
         - PILOT_CACHE_SQUASH=5
-        image: istio/pilot:1.0.5
+        image: istio/pilot:1.0.6
+        imagePullPolicy: always
         secrets: identity:/etc/certs
       istio-proxy:
         expose:
         - 15007/http
         - 15010/grpc
         - 9093/http,http-monitoring
-        image: istio/proxyv2:1.0.5
+        image: istio/proxyv2:1.0.6
+        imagePullPolicy: always
         command:
         - proxy
         - --serviceCluster
@@ -72,10 +74,12 @@ services:
         - POD_NAME=$(self/name)
         - POD_NAMESPACE=$(self/namespace)
         - INSTANCE_IP=$(self/ip)
+        - RIO_STACK="istio"
+        - RIO_PROJECT="rio-system"
         secrets: identity:/etc/certs
 
   istio-citadel:
-    image: istio/citadel:1.0.5
+    image: istio/citadel:1.0.6
     command:
     - --append-dns-names=true
     - --grpc-port=8060
@@ -107,7 +111,8 @@ services:
     sidekicks:
       istio-proxy:
         ports: ${PORTS}
-        image: "istio/proxyv2:1.0.5"
+        image: "istio/proxyv2:1.0.6"
+        imagePullPolicy: always
         command:
         - proxy
         - router
@@ -132,12 +137,14 @@ services:
         - --controlPlaneAuthPolicy
         - NONE
         - --discoveryAddress
-        - istio-pilot:15007
+        - ${PILOT_ADDRESS}:15007
         env:
         - POD_NAME=$(self/name)
         - POD_NAMESPACE=$(self/namespace)
         - INSTANCE_IP=$(self/ip)
         - ISTIO_META_POD_NAME=$(self/name)
+        - RIO_STACK=istio
+        - RIO_PROJECT=rio-system
         secrets:
         - identity:/etc/certs
         - rio-certs:/etc/istio/ingressgateway-certs
@@ -146,5 +153,7 @@ services:
 questions:
 - variable: TELEMETRY_NAMESPACE
   description: "istio-telemetry namespace"
+- variable: PILOT_ADDRESS
+  description: "istio-pilot address"
 
 

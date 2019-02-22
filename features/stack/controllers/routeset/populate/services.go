@@ -9,13 +9,16 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func ServiceForRouteSet(r *riov1.RouteSet, os *objectset.ObjectSet) error {
-	service := v1client.NewService(r.Namespace, r.Name,
+func ServiceForRouteSet(r *riov1.RouteSet, stack *riov1.Stack, os *objectset.ObjectSet) error {
+	service := v1client.NewService(stack.Name, r.Name,
 		v1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Labels: map[string]string{
 					"app":                   r.Name,
 					"rio.cattle.io/version": "v0",
+					"rio.cattle.io/service": r.Name,
+					"rio.cattle.io/stack":   stack.Name,
+					"rio.cattle.io/project": stack.Namespace,
 				},
 			},
 			Spec: v1.ServiceSpec{

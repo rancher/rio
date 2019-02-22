@@ -1,0 +1,34 @@
+services:
+  buildkit:
+    image: moby/buildkit:v0.3.3
+    command:
+    - --addr
+    - tcp://0.0.0.0:9001
+    expose:
+    - 9001:9001/tcp,buildkit
+    privileged: true
+  registry:
+    image: registry:2
+    secrets:
+    - rio-certs:/etc/registry
+    env:
+    - REGISTRY_HTTP_ADDR=0.0.0.0:443
+    - REGISTRY_HTTP_TLS_CERTIFICATE=/etc/registry/tls.crt
+    - REGISTRY_HTTP_TLS_KEY=/etc/registry/tls.key
+    expose:
+    - 443:443/tcp,registry
+  webhook:
+    global_permissions:
+    - "* webhookinator.rio.cattle.io/gitwebhookreceivers"
+    - "* webhookinator.rio.cattle.io/gitwebhookexecutions"
+    - '* configmaps'
+    - '* events'
+    - secrets
+    image: daishan1992/webhookinator:dev
+    command:
+    - webhookinator
+    - --listen-address
+    - :8090
+    imagePullPolicy: always
+    ports:
+    - 8090/tcp

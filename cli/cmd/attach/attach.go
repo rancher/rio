@@ -43,7 +43,8 @@ func RunAttach(ctx *clicontext.CLIContext, timeout time.Duration, stdin, tty boo
 			return err
 		}
 
-		if (pd == nil || len(pd.Containers) == 0 || pd.Containers[0].State != "running") && time.Now().Before(deadline) {
+		// todo:// add state for containers
+		if (pd == nil || len(pd.Containers) == 0) && time.Now().Before(deadline) {
 			time.Sleep(750 * time.Millisecond)
 			continue
 		}

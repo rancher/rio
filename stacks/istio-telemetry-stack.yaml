@@ -2,7 +2,7 @@ services:
   istio-telemetry:
     global_permissions:
     - role=cluster-admin
-    image: istio/mixer:1.0.4
+    image: istio/mixer:1.0.6
     imagePullPolicy: always
     command:
     - --address
@@ -22,7 +22,7 @@ services:
         # - 15090/tcp,http-envoy-prom
         - 15004/tcp
         - 9091/tcp,grpc
-        image: istio/proxyv2:1.0.4
+        image: istio/proxyv2:1.0.6
         command:
         - proxy
         - --serviceCluster

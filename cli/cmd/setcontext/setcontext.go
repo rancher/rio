@@ -31,7 +31,7 @@ func setContext(ctx *clicontext.CLIContext) error {
 		} else {
 			clusters[i].Default = false
 		}
-		if err := ctx.SaveCluster(&clusters[i], false); err != nil {
+		if err := ctx.SaveCluster(&clusters[i], nil); err != nil {
 			return err
 		}
 	}

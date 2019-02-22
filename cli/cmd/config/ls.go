@@ -4,18 +4,19 @@ import (
 	"encoding/base64"
 	"sort"
 
-	"github.com/docker/go-units"
+	units "github.com/docker/go-units"
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/types/client/rio/v1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"github.com/urfave/cli"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Data struct {
 	ID     string
-	Stack  *client.Stack
-	Config *client.Config
+	Stack  *riov1.Stack
+	Config *riov1.Config
 }
 
 type Ls struct {
@@ -27,7 +28,7 @@ func (l *Ls) Customize(cmd *cli.Command) {
 }
 
 func (l *Ls) Run(ctx *clicontext.CLIContext) error {
-	wc, err := ctx.ProjectClient()
+	project, err := ctx.Project()
 	if err != nil {
 		return err
 	}
@@ -37,14 +38,25 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	configs, err := wc.Config.List(util.DefaultListOpts())
+	client, err := ctx.KubeClient()
 	if err != nil {
 		return err
 	}
 
+	configs, err := client.Rio.Configs("").List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	var confs []riov1.Config
+	for _, config := range configs.Items {
+		if config.Spec.ProjectName == project.Project.Name {
+			confs = append(confs, config)
+		}
+	}
+
 	writer := table.NewWriter([][]string{
 		{"NAME", "{{stackScopedName .Stack.Name .Config.Name}}"},
-		{"CREATED", "{{.Config.Created | ago}}"},
+		{"CREATED", "{{.Config.CreationTimestamp | ago}}"},
 		{"SIZE", "{{size .Config}}"},
 	}, ctx)
 	defer writer.Close()
@@ -52,24 +64,24 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 	writer.AddFormatFunc("size", Base64Size)
 	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cluster))
 
-	stackByID, err := util.StacksByID(wc)
+	stackByID, err := util.StacksByID(client, project.Project.Name)
 	if err != nil {
 		return err
 	}
 
-	sort.Slice(configs.Data, func(i, j int) bool {
-		return configs.Data[i].ID < configs.Data[j].ID
+	sort.Slice(confs, func(i, j int) bool {
+		return confs[i].Name < confs[j].Name
 	})
 
-	for i, config := range configs.Data {
-		stack := stackByID[config.StackID]
+	for i, config := range confs {
+		stack := stackByID[config.Spec.StackName]
 		if stack == nil {
 			continue
 		}
 		writer.Write(&Data{
-			ID:     config.ID,
-			Config: &configs.Data[i],
-			Stack:  stackByID[config.StackID],
+			ID:     config.Name,
+			Config: &confs[i],
+			Stack:  stackByID[config.Spec.StackName],
 		})
 	}
 
@@ -77,14 +89,14 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 }
 
 func Base64Size(data interface{}) (string, error) {
-	c, ok := data.(client.Config)
+	c, ok := data.(riov1.Config)
 	if !ok {
 		return "", nil
 	}
 
-	size := len(c.Content)
-	if size > 0 && c.Encoded {
-		content, err := base64.StdEncoding.DecodeString(c.Content)
+	size := len(c.Spec.Content)
+	if size > 0 && c.Spec.Encoded {
+		content, err := base64.StdEncoding.DecodeString(c.Spec.Content)
 		if err != nil {
 			return "", err
 		}

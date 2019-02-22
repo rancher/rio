@@ -4,16 +4,20 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rancher/rio/cli/pkg/stack"
-
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/kvfile"
-	"github.com/rancher/rio/cli/pkg/waiter"
-	client "github.com/rancher/rio/types/client/rio/v1"
+	"github.com/rancher/rio/cli/pkg/stack"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Create struct {
 	AddHost            []string          `desc:"Add a custom host-to-IP mapping (host:ip)"`
+	BuildBranch        string            `desc:"Build repository branch" default:"master"`
+	BuildTag           string            `desc:"Build repository tag"`
+	BuildCommit        string            `desc:"Build repository commit"`
+	BuildSecret        string            `desc:"Set webhook secret"`
+	BuildHook          bool              `desc:"Enable webhook"`
 	CapAdd             []string          `desc:"Add Linux capabilities"`
 	CapDrop            []string          `desc:"Drop Linux capabilities"`
 	Config             []string          `desc:"Configs to expose to the service (format: name:target)"`
@@ -89,13 +93,13 @@ type Scheduling struct {
 }
 
 func (c *Create) Run(ctx *clicontext.CLIContext) error {
-	_, err := c.RunCallback(ctx, func(s *client.Service) *client.Service {
+	_, err := c.RunCallback(ctx, func(s *riov1.Service) *riov1.Service {
 		return s
 	})
 	return err
 }
 
-func (c *Create) RunCallback(ctx *clicontext.CLIContext, cb func(service *client.Service) *client.Service) (*client.Service, error) {
+func (c *Create) RunCallback(ctx *clicontext.CLIContext, cb func(service *riov1.Service) *riov1.Service) (*riov1.Service, error) {
 	var err error
 
 	service, err := c.ToService(ctx.CLI.Args())
@@ -103,27 +107,27 @@ func (c *Create) RunCallback(ctx *clicontext.CLIContext, cb func(service *client
 		return nil, err
 	}
 
-	service.ProjectID, service.StackID, service.Name, err = stack.ResolveSpaceStackForName(ctx, service.Name)
+	service.Spec.ProjectName, service.Spec.StackName, service.Name, err = stack.ResolveSpaceStackForName(ctx, service.Name)
 	if err != nil {
 		return nil, err
 	}
 
-	wc, err := ctx.ProjectClient()
+	client, err := ctx.KubeClient()
 	if err != nil {
 		return nil, err
 	}
 
 	service = cb(service)
 
-	s, err := wc.Service.Create(service)
+	s, err := client.Rio.Services(service.Spec.StackName).Create(service)
 	if err != nil {
 		return nil, err
 	}
 
-	return s, waiter.WaitFor(ctx, &s.Resource)
+	return s, nil
 }
 
-func (c *Create) ToService(args []string) (*client.Service, error) {
+func (c *Create) ToService(args []string) (*riov1.Service, error) {
 	var (
 		err error
 	)
@@ -132,96 +136,123 @@ func (c *Create) ToService(args []string) (*client.Service, error) {
 		return nil, fmt.Errorf("at least one (1) argument is required")
 	}
 
-	service := &client.Service{
-		CPUs:                c.Cpus,
-		CapAdd:              c.CapAdd,
-		CapDrop:             c.CapDrop,
-		Command:             args[1:],
-		DeploymentStrategy:  c.DeploymentStrategy,
-		DNS:                 c.Dns,
-		DNSOptions:          c.DnsOption,
-		DNSSearch:           c.DnsSearch,
-		DefaultVolumeDriver: c.VolumeDriver,
-		Entrypoint:          c.Entrypoint,
-		ExtraHosts:          c.AddHost,
-		Global:              c.Global,
-		Hostname:            c.Hostname,
-		Image:               args[0],
-		ImagePullPolicy:     c.ImagePullPolicy,
-		Init:                c.Init,
-		IpcMode:             c.Ipc,
-		Labels:              c.L_Label,
-		Name:                c.N_Name,
-		NetworkMode:         c.Net_Network,
-		OpenStdin:           c.I_Interactive,
-		PidMode:             c.Pid,
-		Privileged:          c.Privileged,
-		ReadonlyRootfs:      c.ReadOnly,
-		RestartPolicy:       c.Restart,
-		Scheduling: &client.Scheduling{
-			Scheduler: c.Scheduler,
-			Node: &client.NodeScheduling{
-				NodeID:     c.Node,
-				RequireAll: c.NodeRequire,
-				RequireAny: c.NodeRequireAny,
-				Preferred:  c.NodePreferred,
+	service := &riov1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   c.N_Name,
+			Labels: c.L_Label,
+		},
+		Spec: riov1.ServiceSpec{
+			ServiceUnversionedSpec: riov1.ServiceUnversionedSpec{
+				ContainerConfig: riov1.ContainerConfig{
+					CPUs:                c.Cpus,
+					CapAdd:              c.CapAdd,
+					CapDrop:             c.CapDrop,
+					Command:             args[1:],
+					DefaultVolumeDriver: c.VolumeDriver,
+					Entrypoint:          c.Entrypoint,
+					ImagePullPolicy:     c.ImagePullPolicy,
+					Init:                c.Init,
+					OpenStdin:           c.I_Interactive,
+					ContainerPrivilegedConfig: riov1.ContainerPrivilegedConfig{
+						Privileged: c.Privileged,
+					},
+					ReadonlyRootfs: c.ReadOnly,
+					VolumesFrom:    c.VolumesFrom,
+					WorkingDir:     c.W_Workdir,
+					Tty:            c.T_Tty,
+				},
+				PodConfig: riov1.PodConfig{
+					ExtraHosts:    c.AddHost,
+					Global:        c.Global,
+					Hostname:      c.Hostname,
+					DNS:           c.Dns,
+					DNSOptions:    c.DnsOption,
+					DNSSearch:     c.DnsSearch,
+					RestartPolicy: c.Restart,
+					Scheduling: riov1.Scheduling{
+						Scheduler: c.Scheduler,
+						Node: riov1.NodeScheduling{
+							NodeName:   c.Node,
+							RequireAll: c.NodeRequire,
+							RequireAny: c.NodeRequireAny,
+							Preferred:  c.NodePreferred,
+						},
+					},
+				},
+				PrivilegedConfig: riov1.PrivilegedConfig{
+					IpcMode:     c.Ipc,
+					PidMode:     c.Pid,
+					NetworkMode: c.Net_Network,
+				},
+				DeploymentStrategy: c.DeploymentStrategy,
+				Labels:             c.L_Label,
+				UpdateOrder:        c.UpdateOrder,
+				UpdateStrategy:     c.UpdateStrategy,
 			},
 		},
-		Tty:            c.T_Tty,
-		UpdateOrder:    c.UpdateOrder,
-		UpdateStrategy: c.UpdateStrategy,
-		VolumesFrom:    c.VolumesFrom,
-		WorkingDir:     c.W_Workdir,
+	}
+
+	if strings.HasSuffix(args[0], ".git") {
+		service.Spec.ImageBuild = &riov1.ImageBuild{
+			Branch: c.BuildBranch,
+			Url:    args[0],
+			Tag:    c.BuildTag,
+			Commit: c.BuildCommit,
+			Secret: c.BuildSecret,
+			Hook:   c.BuildHook,
+		}
+	} else {
+		service.Spec.Image = args[0]
 	}
 
 	if c.U_User != "" {
 		uidAndGid := strings.Split(c.U_User, ":")
-		service.User = uidAndGid[0]
+		service.Spec.User = uidAndGid[0]
 		if len(uidAndGid) == 2 {
-			service.Group = uidAndGid[1]
+			service.Spec.Group = uidAndGid[1]
 		}
 	}
 
 	if c.Group != "" {
-		service.Group = c.Group
+		service.Spec.Group = c.Group
 	}
 
-	service.Volumes, err = ParseMounts(c.V_Volume)
+	service.Spec.Volumes, err = ParseMounts(c.V_Volume)
 	if err != nil {
 		return nil, err
 	}
 
-	service.Devices, err = ParseDevices(c.Device)
+	service.Spec.Devices, err = ParseDevices(c.Device)
 	if err != nil {
 		return nil, err
 	}
 
-	service.Configs, err = ParseConfigs(c.Config)
+	service.Spec.Configs, err = ParseConfigs(c.Config)
 	if err != nil {
 		return nil, err
 	}
 
-	service.Secrets, err = ParseSecrets(c.Secret)
+	service.Spec.Secrets, err = ParseSecrets(c.Secret)
 	if err != nil {
 		return nil, err
 	}
 
-	service.Metadata = map[string]interface{}{}
+	service.Spec.Metadata = map[string]string{}
 	for k, v := range c.Metadata {
-		service.Metadata[k] = v
+		service.Spec.Metadata[k] = v
 	}
 
-	service.GlobalPermissions, err = ParsePermissions(c.GlobalPermission)
+	service.Spec.GlobalPermissions, err = ParsePermissions(c.GlobalPermission)
 	if err != nil {
 		return nil, err
 	}
 
-	service.Permissions, err = ParsePermissions(c.Permission)
+	service.Spec.Permissions, err = ParsePermissions(c.Permission)
 	if err != nil {
 		return nil, err
 	}
 
-	service.Environment, err = kvfile.ReadKVEnvStrings(c.EnvFile, c.E_Env)
+	service.Spec.Environment, err = kvfile.ReadKVEnvStrings(c.EnvFile, c.E_Env)
 	if err != nil {
 		return nil, err
 	}
@@ -239,17 +270,17 @@ func (c *Create) ToService(args []string) (*client.Service, error) {
 		return nil, err
 	}
 
-	service.Tmpfs, err = ParseTmpfs(c.Tmpfs)
+	service.Spec.Tmpfs, err = ParseTmpfs(c.Tmpfs)
 	if err != nil {
 		return nil, err
 	}
 
-	service.PortBindings, err = ParsePorts(c.P_Publish)
+	service.Spec.PortBindings, err = ParsePorts(c.P_Publish)
 	if err != nil {
 		return nil, err
 	}
 
-	service.ExposedPorts, err = ParseExposedPorts(c.Expose)
+	service.Spec.ExposedPorts, err = ParseExposedPorts(c.Expose)
 	if err != nil {
 		return nil, err
 	}

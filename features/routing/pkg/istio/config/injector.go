@@ -1,10 +1,11 @@
 package config
 
 import (
-	"fmt"
-
+	"github.com/pkg/errors"
 	"github.com/rancher/norman/pkg/objectset/injectors"
+	errors2 "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type IstioInjector struct {
@@ -20,7 +21,7 @@ func NewIstioInjector(cf *Factory) *IstioInjector {
 func (i *IstioInjector) Inject(objs []runtime.Object) ([]runtime.Object, error) {
 	meshConfig, template := i.configFactory.TemplateAndConfig()
 	if meshConfig == nil {
-		return nil, fmt.Errorf("waiting on mesh configuration")
+		return nil, errors2.NewConflict(schema.GroupResource{}, "", errors.New("waiting on mesh configuration"))
 	}
 
 	content, err := injectors.ToBytes(objs)

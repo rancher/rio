@@ -12,6 +12,7 @@ import (
 	"github.com/rancher/rio/features/routing/controllers/externalservice/populate"
 	"github.com/rancher/rio/features/routing/pkg/domains"
 	"github.com/rancher/rio/pkg/namespace"
+	"github.com/rancher/rio/pkg/settings"
 	v1alpha3client "github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
 	v1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	v1alpha3type "istio.io/api/networking/v1alpha3"
@@ -38,9 +39,7 @@ func vsFromRoutesets(stack *v1.Stack, routeSet *v1.RouteSet, externalServiceMap 
 			privateGw,
 			domains.GetPublicGateway(),
 		},
-		Hosts: []string{
-			routeSet.Name,
-			domains.GetExternalDomain(routeSet.Name, stack.Name, stack.Namespace)},
+		Hosts: []string{domains.GetExternalDomain(routeSet.Name, stack.Name, stack.Namespace)},
 	}
 
 	// populate http routing
@@ -48,12 +47,15 @@ func vsFromRoutesets(stack *v1.Stack, routeSet *v1.RouteSet, externalServiceMap 
 		httpRoute := v1alpha3.HTTPRoute{}
 		// populate destinations
 		for _, dest := range routeSpec.To {
+			if dest.Destination.Stack == "" {
+				dest.Destination.Stack = stack.Name
+			}
 			if esvc, ok := externalServiceMap[dest.Service]; ok {
 				httpRoute.Route = append(httpRoute.Route, destWeightForExternalService(dest, esvc, stack))
 			} else if _, ok := routesetMap[dest.Service]; ok {
 				httpRoute.Route = append(httpRoute.Route, destWeightForRouteset(dest))
 				routeSpec.Rewrite = &v1.Rewrite{
-					Host: fmt.Sprintf("%s.%s.svc.cluster.local", dest.Destination.Service, namespace.StackNamespace(stack.Namespace, stack.Name)),
+					Host: fmt.Sprintf("%s-%s.%s", dest.Destination.Service, namespace.StackNamespaceOnlyHash(stack.Namespace, dest.Destination.Stack), settings.ClusterDomain.Get()),
 				}
 				localhostServiceEntry(os, routeSet.Namespace)
 			} else {
@@ -235,7 +237,7 @@ func destWeightForService(d v1.WeightedDestination, stack *v1.Stack) v1alpha3.De
 	}
 	return v1alpha3.DestinationWeight{
 		Destination: v1alpha3.Destination{
-			Host:   fmt.Sprintf("%s.%s.svc.cluster.local", d.Service, namespace.StackNamespace(stack.Namespace, d.Stack)),
+			Host:   fmt.Sprintf("%s.%s.svc.cluster.local", d.Service, d.Stack),
 			Subset: d.Revision,
 			Port: v1alpha3.PortSelector{
 				Number: *d.Port,
@@ -255,9 +257,9 @@ func destWeightForExternalService(d v1.WeightedDestination, esvc *v1.ExternalSer
 		d.Service = u.Host
 	} else if esvc.Spec.Service != "" {
 		stackName, serviceName := kv.Split(esvc.Spec.Service, "/")
-		d.Service = fmt.Sprintf("%s.%s.svc.cluster.local", serviceName, namespace.StackNamespace(stack.Namespace, stackName))
+		d.Service = fmt.Sprintf("%s.%s.svc.cluster.local", serviceName, stackName)
 	} else if len(esvc.Spec.IPAddresses) > 0 {
-		d.Service = fmt.Sprintf("%s.%s.svc.cluster.local", esvc.Name, namespace.StackNamespace(stack.Namespace, stack.Name))
+		d.Service = fmt.Sprintf("%s.%s.svc.cluster.local", esvc.Name, stack.Name)
 	}
 	return v1alpha3.DestinationWeight{
 		Destination: v1alpha3.Destination{

@@ -1,13 +1,14 @@
 package node
 
 import (
-	"github.com/rancher/norman/clientbase"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
+	"github.com/rancher/rio/cli/pkg/mapper"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/cli/pkg/waiter"
-	spaceclient "github.com/rancher/rio/types/client/project/v1"
+	clitypes "github.com/rancher/rio/cli/pkg/types"
 	"github.com/urfave/cli"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func Node() cli.Command {
@@ -39,34 +40,37 @@ func Node() cli.Command {
 
 type Data struct {
 	ID   string
-	Node spaceclient.Node
+	Node v1.Node
 }
 
 func nodeLs(ctx *clicontext.CLIContext) error {
-	cc, err := ctx.ClusterClient()
+	client, err := ctx.KubeClient()
 	if err != nil {
 		return err
 	}
 
-	collection, err := cc.Node.List(nil)
+	collection, err := client.Core.Nodes("").List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
 
 	writer := table.NewWriter([][]string{
 		{"NAME", "{{.Node | name}}"},
-		{"STATE", "Node.State"},
+		{"STATE", "{{.Node | toJson | state}}"},
 		{"ADDRESS", "{{.Node | address}}"},
-		{"DETAIL", "Node.TransitioningMessage"},
+		{"DETAIL", "{{.Node | toJson | transitioning}}"},
 	}, ctx)
 	defer writer.Close()
 
+	wrapper := mapper.GenericStatusMapper
 	writer.AddFormatFunc("address", FormatAddress)
 	writer.AddFormatFunc("name", FormatName)
+	writer.AddFormatFunc("state", wrapper.FormatState)
+	writer.AddFormatFunc("transitioning", wrapper.FormatTransitionMessage)
 
-	for _, item := range collection.Data {
+	for _, item := range collection.Items {
 		writer.Write(&Data{
-			ID:   item.ID,
+			ID:   item.Name,
 			Node: item,
 		})
 	}
@@ -77,41 +81,31 @@ func nodeLs(ctx *clicontext.CLIContext) error {
 func nodeRm(ctx *clicontext.CLIContext) error {
 	names := ctx.CLI.Args()
 
-	w, err := waiter.NewWaiter(ctx)
-	if err != nil {
-		return err
-	}
-
-	c, err := ctx.ProjectClient()
+	client, err := ctx.KubeClient()
 	if err != nil {
 		return err
 	}
 
 	var lastErr error
 	for _, name := range names {
-		node, err := lookup.Lookup(ctx, name, spaceclient.NodeType)
+		node, err := lookup.Lookup(ctx, name, clitypes.NodeType)
 		if err != nil {
 			return err
 		}
 
-		err = c.Ops.DoDelete(node.Links[clientbase.SELF])
-		if err != nil {
+		if err := client.Core.Nodes("").Delete(node.Name, &metav1.DeleteOptions{}); err != nil {
 			lastErr = err
-			continue
 		}
-
-		w.Add(&node.Resource)
 	}
 
 	if lastErr != nil {
 		return lastErr
 	}
-
-	return w.Wait(ctx.Ctx)
+	return nil
 }
 
 func FormatAddress(data interface{}) (string, error) {
-	node, ok := data.(spaceclient.Node)
+	node, ok := data.(v1.Node)
 	if !ok {
 		return "", nil
 	}
@@ -119,7 +113,7 @@ func FormatAddress(data interface{}) (string, error) {
 	internalIP := ""
 	externalIP := ""
 
-	for _, addr := range node.Addresses {
+	for _, addr := range node.Status.Addresses {
 		if addr.Type == "InternalIP" {
 			internalIP = addr.Address
 		} else if addr.Type == "ExternalIP" {
@@ -139,13 +133,13 @@ func FormatAddress(data interface{}) (string, error) {
 }
 
 func FormatName(data interface{}) (string, error) {
-	node, ok := data.(spaceclient.Node)
+	node, ok := data.(v1.Node)
 	if !ok {
 		return "", nil
 	}
 
 	name := node.Name
-	for _, addr := range node.Addresses {
+	for _, addr := range node.Status.Addresses {
 		if addr.Type == "Hostname" {
 			name = addr.Address
 		}

@@ -8,14 +8,14 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/rancher/rio/cli/pkg/clientcfg"
-
 	"github.com/Masterminds/sprig"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/docker/go-units"
+	units "github.com/docker/go-units"
 	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"gopkg.in/yaml.v2"
+	"github.com/rancher/rio/cli/pkg/clientcfg"
+	yaml "gopkg.in/yaml.v2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -30,6 +30,7 @@ var (
 		"yaml":        FormatYAML,
 		"first":       FormatFirst,
 		"dump":        FormatSpew,
+		"toJson":      ToJSON,
 	}
 )
 
@@ -189,17 +190,12 @@ func FormatStackScopedName(cluster *clientcfg.Cluster) func(interface{}, interfa
 }
 
 func FormatCreated(data interface{}) (string, error) {
-	s, ok := data.(string)
+	t, ok := data.(metav1.Time)
 	if !ok {
 		return "", nil
 	}
 
-	t, err := time.Parse(time.RFC3339, s)
-	if err != nil {
-		return "", err
-	}
-
-	return units.HumanDuration(time.Now().UTC().Sub(t)) + " ago", nil
+	return units.HumanDuration(time.Now().UTC().Sub(t.Time)) + " ago", nil
 }
 
 func FormatJSON(data interface{}) (string, error) {
@@ -233,4 +229,8 @@ func FormatFirst(data, data2 interface{}) (string, error) {
 	}
 
 	return "", nil
+}
+
+func ToJSON(data interface{}) (map[string]interface{}, error) {
+	return convert.EncodeToMap(data)
 }

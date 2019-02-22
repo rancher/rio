@@ -18,11 +18,11 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/rancher/rio/types/client/rio/v1"
+	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 )
 
-func ParseDevices(devices []string) ([]client.DeviceMapping, error) {
-	var result []client.DeviceMapping
+func ParseDevices(devices []string) ([]riov1.DeviceMapping, error) {
+	var result []riov1.DeviceMapping
 	for _, device := range devices {
 		mapping, err := parseDevice(device)
 		if err != nil {
@@ -34,7 +34,7 @@ func ParseDevices(devices []string) ([]client.DeviceMapping, error) {
 	return result, nil
 }
 
-func parseDevice(device string) (client.DeviceMapping, error) {
+func parseDevice(device string) (riov1.DeviceMapping, error) {
 	src := ""
 	dst := ""
 	permissions := "rwm"
@@ -53,14 +53,14 @@ func parseDevice(device string) (client.DeviceMapping, error) {
 	case 1:
 		src = arr[0]
 	default:
-		return client.DeviceMapping{}, errors.Errorf("invalid device specification: %s", device)
+		return riov1.DeviceMapping{}, errors.Errorf("invalid device specification: %s", device)
 	}
 
 	if dst == "" {
 		dst = src
 	}
 
-	deviceMapping := client.DeviceMapping{
+	deviceMapping := riov1.DeviceMapping{
 		OnHost:      src,
 		InContainer: dst,
 		Permissions: permissions,
