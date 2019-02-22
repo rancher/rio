@@ -8,8 +8,9 @@ import (
 
 	"github.com/rancher/rio/features/stack/controllers/service/populate/containerlist"
 	"github.com/rancher/rio/features/stack/controllers/service/populate/sidekick"
+	"github.com/rancher/rio/pkg/namespace"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
@@ -68,7 +69,7 @@ func template(volumeDefs map[string]*riov1.Volume, mount riov1.Mount) *riov1.Vol
 	return nil
 }
 
-func Populate(volumeDefs map[string]*riov1.Volume, service *riov1.Service, spec *v1.PodSpec) {
+func Populate(volumeDefs map[string]*riov1.Volume, service *riov1.Service, spec *v1.PodSpec, stack *riov1.Stack) {
 	volumes := map[string]v1.Volume{}
 
 	for _, container := range containerlist.ForService(service) {
@@ -77,11 +78,11 @@ func Populate(volumeDefs map[string]*riov1.Volume, service *riov1.Service, spec 
 		}
 
 		for _, s := range container.Secrets {
-			addVolumeFromSecret(service, s, volumes)
+			addVolumeFromSecret(stack, service, s, volumes)
 		}
 
 		for _, c := range container.Configs {
-			addVolumeFromConfig(c, volumes)
+			addVolumeFromConfig(stack, c, volumes)
 		}
 	}
 
@@ -90,7 +91,7 @@ func Populate(volumeDefs map[string]*riov1.Volume, service *riov1.Service, spec 
 	}
 }
 
-func addVolumeFromConfig(config riov1.ConfigMapping, volumes map[string]v1.Volume) {
+func addVolumeFromConfig(stack *riov1.Stack, config riov1.ConfigMapping, volumes map[string]v1.Volume) {
 	name := NameOfConfig(config)
 	var mode *int32
 	if config.Mode != "" {
@@ -106,7 +107,7 @@ func addVolumeFromConfig(config riov1.ConfigMapping, volumes map[string]v1.Volum
 		VolumeSource: v1.VolumeSource{
 			ConfigMap: &v1.ConfigMapVolumeSource{
 				LocalObjectReference: v1.LocalObjectReference{
-					Name: config.Source,
+					Name: namespace.NameRef(config.Source, stack),
 				},
 				DefaultMode: mode,
 			},
@@ -114,7 +115,7 @@ func addVolumeFromConfig(config riov1.ConfigMapping, volumes map[string]v1.Volum
 	}
 }
 
-func addVolumeFromSecret(service *riov1.Service, secret riov1.SecretMapping, volumes map[string]v1.Volume) {
+func addVolumeFromSecret(stack *riov1.Stack, service *riov1.Service, secret riov1.SecretMapping, volumes map[string]v1.Volume) {
 	t := true
 	name := NameOfSecret(secret)
 	var mode *int32
@@ -128,7 +129,7 @@ func addVolumeFromSecret(service *riov1.Service, secret riov1.SecretMapping, vol
 
 	source := secret.Source
 	if source == "identity" {
-		source = "istio." + service.Name
+		source = "istio." + namespace.NameRef(service.Name, stack)
 	}
 
 	volumes[name] = v1.Volume{

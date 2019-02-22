@@ -11,6 +11,7 @@ import (
 	"github.com/rancher/norman/types/slice"
 	"github.com/rancher/rancher/pkg/controllers/user/approuter"
 	"github.com/rancher/rancher/pkg/ticker"
+	"github.com/rancher/rio/pkg/namespace"
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
@@ -85,7 +86,7 @@ func isGateway(obj runtime.Object) bool {
 	if o == nil || reflect.ValueOf(obj).IsNil() {
 		return false
 	}
-	return o.GetName() == settings.IstioGatewayDeploy && o.GetNamespace() == settings.IstioExternalLBNamespace
+	return o.GetName() == settings.IstioGatewayDeploy && o.GetNamespace() == namespace.CloudNamespace
 }
 
 func (g *Controller) indexEPByNode(ep *v1.Endpoints) ([]string, error) {
@@ -133,7 +134,7 @@ func (g *Controller) resolve(namespace, name string, obj runtime.Object) ([]chan
 }
 
 func (g *Controller) sync(svc *v1.Service) (runtime.Object, error) {
-	if svc.Namespace != settings.IstioExternalLBNamespace {
+	if svc.Namespace != namespace.CloudNamespace {
 		return nil, nil
 	}
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rancher/norman/condition"
+	"github.com/rancher/rio/pkg/namespace"
 	"github.com/rancher/rio/pkg/serviceset"
 	"github.com/rancher/rio/types"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
@@ -43,8 +44,11 @@ type subServiceController struct {
 	serviceLister riov1.ServiceClientCache
 }
 
-func (s *subServiceController) getService(ns string, labels map[string]string) *riov1.Service {
+func (s *subServiceController) getService(labels map[string]string) *riov1.Service {
 	name := labels["rio.cattle.io/service-name"]
+	stackName := labels["rio.cattle.io/stack"]
+	projectName := labels["rio.cattle.io/project"]
+	ns := namespace.StackNamespace(projectName, stackName)
 
 	svc, err := s.serviceLister.Get(ns, name)
 	if err != nil {
@@ -82,7 +86,7 @@ func (s *subServiceController) updateStatus(service, newService *riov1.Service, 
 }
 
 func (s *subServiceController) daemonSetChanged(dep *appsv1.DaemonSet) (runtime.Object, error) {
-	service := s.getService(dep.Namespace, dep.Labels)
+	service := s.getService(dep.Labels)
 	if service == nil {
 		return nil, nil
 	}
@@ -95,7 +99,7 @@ func (s *subServiceController) daemonSetChanged(dep *appsv1.DaemonSet) (runtime.
 }
 
 func (s *subServiceController) statefulSetChanged(dep *appsv1.StatefulSet) (runtime.Object, error) {
-	service := s.getService(dep.Namespace, dep.Labels)
+	service := s.getService(dep.Labels)
 	if service == nil {
 		return nil, nil
 	}
@@ -108,7 +112,7 @@ func (s *subServiceController) statefulSetChanged(dep *appsv1.StatefulSet) (runt
 }
 
 func (s *subServiceController) deploymentChanged(dep *appsv1.Deployment) (runtime.Object, error) {
-	service := s.getService(dep.Namespace, dep.Labels)
+	service := s.getService(dep.Labels)
 	if service == nil {
 		return nil, nil
 	}

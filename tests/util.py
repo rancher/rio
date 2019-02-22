@@ -1,6 +1,7 @@
 import subprocess
 import json
 import time
+import hashlib
 
 # runAndExpect("rio asldfkhsldkfj", 3)
 # output = runAndExpect("rio ps")
@@ -29,7 +30,8 @@ def rioInspect(resource, field=None):
 
 
 def kubectl(namespace, type, resource):
-    cmd = "rio kubectl get -n %s -o=json %s/%s" % (namespace, type, resource)
+    cmd = "rio kubectl get -n rio-cloud -o=json %s/%s-%s" % \
+          (type, resource, namespace.split("-")[1])
     return runToJson(cmd)
 
 
@@ -43,3 +45,9 @@ def wait_for_state(name, exp_state):
             break
 
         time.sleep(1)
+
+
+def hash_if_need(name, stack_name, project_name):
+    sha = hashlib.sha256()
+    sha.update("{}:{}".format(project_name, stack_name).encode('utf-8'))
+    return "{}-{}".format(name, sha.hexdigest()[:8])

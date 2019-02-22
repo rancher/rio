@@ -11,9 +11,11 @@ import (
 	"github.com/rancher/rio/features/stack/controllers/service/populate/rbac"
 	"github.com/rancher/rio/features/stack/controllers/service/populate/servicelabels"
 	sidekick2 "github.com/rancher/rio/features/stack/controllers/service/populate/sidekick"
+	"github.com/rancher/rio/pkg/namespace"
+	"github.com/rancher/rio/pkg/settings"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	"github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -55,10 +57,10 @@ func podSpec(stack *riov1.Stack, volumes map[string]*riov1.Volume, service *riov
 		AutomountServiceAccountToken: &f,
 	}
 
-	podvolume.Populate(volumes, service, &podSpec)
+	podvolume.Populate(volumes, service, &podSpec, stack)
 
 	containers(&podSpec, service)
-	dns(&podSpec, spec)
+	dns(&podSpec, spec, stack)
 	restartPolicy(&podSpec, spec)
 	stopPeriod(&podSpec, spec)
 	scheduling(&podSpec, spec, servicelabels.ServiceLabels(stack, service))
@@ -75,7 +77,7 @@ func roles(stack *riov1.Stack, service *riov1.Service, podSpec *v1.PodSpec, os *
 
 	serviceAccountName := rbac.ServiceAccountName(service)
 	if serviceAccountName != "" {
-		podSpec.ServiceAccountName = serviceAccountName
+		podSpec.ServiceAccountName = namespace.NameRef(serviceAccountName, stack)
 		podSpec.AutomountServiceAccountToken = nil
 	}
 }
@@ -147,18 +149,42 @@ func scheduling(podSpec *v1.PodSpec, service *riov1.ServiceUnversionedSpec, labe
 	}
 }
 
-func dns(podSpec *v1.PodSpec, service *riov1.ServiceUnversionedSpec) {
-	dnsConfig := &v1.PodDNSConfig{
-		Nameservers: service.DNS,
-		Searches:    service.DNSSearch,
+func dns(podSpec *v1.PodSpec, service *riov1.ServiceUnversionedSpec, stack *riov1.Stack) {
+	if stack.Name == "coredns" && stack.Namespace == settings.RioSystemNamespace {
+		podSpec.DNSPolicy = v1.DNSDefault
+		return
+	}
+	nameserver := service.DNS
+	searches := service.DNSSearch
+	// todo: fixme. Need to figure out where to add custom search if user specify their own
+	if len(nameserver) == 0 && len(searches) == 0 && len(service.DNSOptions) == 0 {
+		podSpec.DNSPolicy = v1.DNSNone
+		nameserver = []string{"10.43.0.10"}
+		searches = generateSearches(stack)
+		podSpec.DNSConfig = &v1.PodDNSConfig{
+			Nameservers: []string{"10.43.0.10"},
+			Searches:    generateSearches(stack),
+			Options: []v1.PodDNSConfigOption{
+				{
+					Name:  "ndots",
+					Value: &[]string{"5"}[0],
+				},
+			},
+		}
+		return
 	}
 
-	if len(dnsConfig.Nameservers) > 0 {
+	dnsConfig := &v1.PodDNSConfig{
+		Nameservers: nameserver,
+		Searches:    searches,
+	}
+
+	if len(nameserver) > 0 {
 		podSpec.DNSPolicy = v1.DNSNone
 	}
 
 	var ns []string
-	for _, name := range dnsConfig.Nameservers {
+	for _, name := range nameserver {
 		if name == "host" {
 			podSpec.DNSPolicy = v1.DNSDefault
 		} else if name == "cluster" {
@@ -173,7 +199,8 @@ func dns(podSpec *v1.PodSpec, service *riov1.ServiceUnversionedSpec) {
 	}
 	dnsConfig.Nameservers = ns
 
-	for _, dnsOpt := range service.DNSOptions {
+	options := service.DNSOptions
+	for _, dnsOpt := range options {
 		k, v := kv.Split(dnsOpt, "=")
 		opt := v1.PodDNSConfigOption{
 			Name: k,
@@ -194,5 +221,16 @@ func dns(podSpec *v1.PodSpec, service *riov1.ServiceUnversionedSpec) {
 			IP:        ip,
 			Hostnames: []string{host},
 		})
+	}
+}
+
+func generateSearches(stack *riov1.Stack) []string {
+	return []string{
+		fmt.Sprintf("%s.%s.rio.local", stack.Name, stack.Namespace),
+		"rio-cloud.svc.cluster.local",
+		fmt.Sprintf("%s.rio.local", stack.Namespace),
+		"svc.cluster.local",
+		"rio.local",
+		"cluster.local",
 	}
 }

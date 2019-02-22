@@ -3,16 +3,18 @@ package rbac
 import (
 	"github.com/rancher/norman/pkg/objectset"
 	"github.com/rancher/rio/features/stack/controllers/service/populate/servicelabels"
+	"github.com/rancher/rio/pkg/namespace"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/api/rbac/v1"
+	v1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func Populate(stack *riov1.Stack, service *riov1.Service, os *objectset.ObjectSet) error {
 	labels := servicelabels.RioOnlyServiceLabels(stack, service)
-	addGlobalRoles(service.Name, service.Namespace, labels, service.Spec.GlobalPermissions, os)
-	addRoles(service.Name, service.Namespace, labels, &service.Spec.ServiceUnversionedSpec, os)
+	ns, name := namespace.NameRefWithNamespace(service.Name, stack)
+	addGlobalRoles(name, ns, labels, service.Spec.GlobalPermissions, os)
+	addRoles(name, ns, labels, &service.Spec.ServiceUnversionedSpec, os)
 	return nil
 }
 
@@ -28,10 +30,10 @@ func addGlobalRoles(name, namespace string, labels map[string]string, globalPerm
 		return
 	}
 
-	role := newClusterRole(name, namespace, labels)
+	role := newClusterRole(name, labels)
 	for _, perm := range globalPermissions {
 		if perm.Role != "" {
-			binding := newGlobalBinding(name, namespace, labels)
+			binding := newGlobalBinding(name, labels)
 			binding.Subjects = append(binding.Subjects, v1.Subject{
 				Kind:      "ServiceAccount",
 				Name:      name,
@@ -137,14 +139,14 @@ func addRoles(name, namespace string, labels map[string]string, service *riov1.S
 	}
 
 	if needsGlobalRoleBinding {
-		binding := newGlobalBinding(name, namespace, labels)
+		binding := newGlobalBinding(name, labels)
 		binding.Subjects = append(binding.Subjects, v1.Subject{
 			Kind:      serviceAccount.Kind,
 			Name:      name,
 			Namespace: namespace,
 		})
 		binding.RoleRef = v1.RoleRef{
-			Name:     name + "-" + namespace,
+			Name:     name,
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "ClusterRole",
 		}
@@ -185,28 +187,28 @@ func newRole(name, namespace string, labels map[string]string) *v1.Role {
 	}
 }
 
-func newClusterRole(name, namespace string, labels map[string]string) *v1.ClusterRole {
+func newClusterRole(name string, labels map[string]string) *v1.ClusterRole {
 	return &v1.ClusterRole{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ClusterRole",
 			APIVersion: "rbac.authorization.k8s.io/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        name + "-" + namespace,
+			Name:        name,
 			Labels:      labels,
 			Annotations: map[string]string{},
 		},
 	}
 }
 
-func newGlobalBinding(name, namespace string, labels map[string]string) *v1.ClusterRoleBinding {
+func newGlobalBinding(name string, labels map[string]string) *v1.ClusterRoleBinding {
 	return &v1.ClusterRoleBinding{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ClusterRoleBinding",
 			APIVersion: "rbac.authorization.k8s.io/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        name + "-" + namespace,
+			Name:        name,
 			Labels:      labels,
 			Annotations: map[string]string{},
 		},

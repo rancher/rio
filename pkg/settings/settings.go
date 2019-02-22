@@ -7,7 +7,6 @@ import (
 const (
 	RioSystemNamespace    = "rio-system"
 	IstioGateway          = "rio-gateway"
-	IstioGatewayDeploy    = "istio-gateway"
 	IstioStackName        = "istio"
 	IstioTelemetry        = "istio-telemetry"
 	Prometheus            = "prometheus"
@@ -23,8 +22,9 @@ const (
 	RioWildcardType       = "RIO_WILDCARD_CERT_TYPE"
 	PublicDomainType      = "RIO_PUBLICDOMAIN_CERT_TYPE"
 	CertManagerImageType  = "CERT_MANAGER_IMAGE"
-	IstionConfigMapName   = "mesh"
-	IstionConfigMapKey    = "content"
+
+	IstionConfigMapKey = "content"
+	CloudNamespace     = "rio-cloud"
 )
 
 var (
@@ -37,9 +37,12 @@ var (
 	RDNSURL        = NewSetting("rdns-url", "https://api.lb.rancher.cloud/v1")
 	RioImage       = NewSetting("rio-image", "rancher/rio")
 
+	IstioGatewayDeploy       = namespace.HashIfNeed("istio-gateway", IstioStackName, RioSystemNamespace)
+	IstioPilotNamespace      = namespace.HashIfNeed("istio-pilot", IstioStackName, RioSystemNamespace)
+	IstionConfigMapName      = namespace.HashIfNeed("mesh", IstioStackName, RioSystemNamespace)
 	IstioExternalLBNamespace = namespace.StackNamespace(RioSystemNamespace, IstioStackName)
-	IstioTelemetryNamespace  = namespace.StackNamespace(RioSystemNamespace, IstioTelemetry)
-	PrometheusNamespace      = namespace.StackNamespace(RioSystemNamespace, Prometheus)
+	IstioTelemetryNamespace  = namespace.HashIfNeed(IstioTelemetry, IstioTelemetry, RioSystemNamespace)
+	PrometheusNamespace      = namespace.HashIfNeed(Prometheus, Prometheus, RioSystemNamespace)
 	GrafanaNamespace         = namespace.StackNamespace(RioSystemNamespace, Grafana)
 	IstioGatewaySelector     = map[string]string{
 		"gateway": "external",

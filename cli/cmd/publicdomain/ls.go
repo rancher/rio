@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/rancher/norman/types"
-	"github.com/rancher/rio/api/service"
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/clientcfg"
@@ -110,8 +109,7 @@ func (w wrapper) FormatTarget(obj interface{}) (string, error) {
 			route, err := projectClient.RouteSet.ByID(fmt.Sprintf("%s:%s", ns, v.TargetName))
 			if err == nil {
 				stack := w.stackByID[route.StackID]
-				space := strings.SplitN(stack.ProjectID, "-", 2)[1]
-				return fmt.Sprintf("https://%s.%s", service.HashIfNeed(route.Name, strings.SplitN(ns, "-", 2)[0], space), w.domain), nil
+				return fmt.Sprintf("https://%s.%s", namespace.HashIfNeed(route.Name, strings.SplitN(ns, "-", 2)[0], stack.ProjectID), w.domain), nil
 			}
 		}
 	}

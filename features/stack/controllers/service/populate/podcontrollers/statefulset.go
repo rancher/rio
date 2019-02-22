@@ -3,6 +3,7 @@ package podcontrollers
 import (
 	"github.com/rancher/norman/pkg/objectset"
 	populate2 "github.com/rancher/rio/features/stack/controllers/volume/populate"
+	"github.com/rancher/rio/pkg/namespace"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	appsv1 "k8s.io/api/apps/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -11,14 +12,15 @@ import (
 const useTemplatesLabel = "rio.cattle.io/use-templates"
 
 func statefulSet(stack *riov1.Stack, service *riov1.Service, cp *controllerParams, usedTemplates map[string]*riov1.Volume, os *objectset.ObjectSet) error {
+	ns, name := namespace.NameRefWithNamespace(service.Name, stack)
 	statefulSet := &appsv1.StatefulSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "StatefulSet",
 			APIVersion: "apps/v1beta2",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        service.Name,
-			Namespace:   service.Namespace,
+			Name:        name,
+			Namespace:   ns,
 			Labels:      cp.Labels,
 			Annotations: map[string]string{},
 		},
@@ -58,7 +60,7 @@ func statefulSet(stack *riov1.Stack, service *riov1.Service, cp *controllerParam
 			"rio.cattle.io/volume-template": volumeTemplate.Name,
 		}
 
-		pvc, err := populate2.ToPVC(service.Namespace, labels, *volumeTemplate)
+		pvc, err := populate2.ToPVC(labels, *volumeTemplate, stack)
 		if err != nil {
 			return err
 		}

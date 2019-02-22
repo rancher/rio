@@ -43,7 +43,7 @@ def kubeclusterrolebindingtest(stack, sname):
 
     fullName = (f"{stack}/{sname}")
     id = util.rioInspect(fullName, "id")
-    namespace = id.split(":")[0]
+    namespace = id.split(":")[0].split("-")[1]
 
     cmd = (f'rio kubectl get -o=json clusterrolebinding')
     obj = util.runToJson(cmd)
@@ -59,7 +59,7 @@ def kubeclusterroletest(stack, sname):
 
     fullName = (f"{stack}/{sname}")
     id = util.rioInspect(fullName, "id")
-    namespace = id.split(":")[0]
+    namespace = id.split(":")[0].split("-")[1]
 
     cmd = (f'rio kubectl get -o=json clusterrole')
     obj = util.runToJson(cmd)
@@ -76,6 +76,6 @@ def test_name1(stack):
 
     assert riotest(stack, serviceName) == ['update']
 
-    assert kubesatest(stack, serviceName) == serviceName
+    assert serviceName in kubesatest(stack, serviceName)
     assert kubeclusterroletest(stack, serviceName) == ['update']
-    assert kubeclusterrolebindingtest(stack, serviceName) == serviceName
+    assert serviceName in kubeclusterrolebindingtest(stack, serviceName)

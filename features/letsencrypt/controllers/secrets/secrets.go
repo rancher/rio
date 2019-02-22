@@ -8,13 +8,13 @@ import (
 	"time"
 
 	"github.com/rancher/rio/features/letsencrypt/controllers/issuer"
-
+	"github.com/rancher/rio/pkg/namespace"
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
 	projectv1 "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
-	"github.com/rancher/types/apis/core/v1"
+	v1 "github.com/rancher/types/apis/core/v1"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -69,11 +69,11 @@ func (s *secretController) syncAllSecrets() error {
 	if err != nil {
 		return err
 	}
-	lbSecret, err := s.secretsLister.Get(settings.IstioExternalLBNamespace, issuer.TLSSecretName)
+	lbSecret, err := s.secretsLister.Get(namespace.CloudNamespace, issuer.TLSSecretName)
 	if errors.IsNotFound(err) {
 		newSecret := &corev1.Secret{}
 		newSecret.Name = issuer.TLSSecretName
-		newSecret.Namespace = settings.IstioExternalLBNamespace
+		newSecret.Namespace = namespace.CloudNamespace
 		newSecret.Data = make(map[string][]byte)
 		created, err := s.secrets.Create(newSecret)
 		if err != nil {

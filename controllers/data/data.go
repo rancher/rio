@@ -8,7 +8,7 @@ import (
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
 	corev1 "github.com/rancher/types/apis/core/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -22,7 +22,10 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	}
 
 	rContext.Core.Namespace.OnChange(ctx, "data-controller", d.onChange)
-	return addNameSpace(rContext.Core.Namespace)
+	if err := addNameSpace(rContext.Core.Namespace, settings.RioSystemNamespace, true); err != nil {
+		return err
+	}
+	return addNameSpace(rContext.Core.Namespace, settings.CloudNamespace, false)
 }
 
 type dataHandler struct {
@@ -51,10 +54,12 @@ func addData(inCluster bool) *objectset.ObjectSet {
 	return os
 }
 
-func addNameSpace(client corev1.NamespaceClient) error {
-	ns := corev1.NewNamespace("", settings.RioSystemNamespace, v1.Namespace{})
-	ns.Labels = map[string]string{
-		project.ProjectLabel: "true",
+func addNameSpace(client corev1.NamespaceClient, name string, projectLabel bool) error {
+	ns := corev1.NewNamespace("", name, v1.Namespace{})
+	if projectLabel {
+		ns.Labels = map[string]string{
+			project.ProjectLabel: "true",
+		}
 	}
 
 	ns, err := client.Create(ns)

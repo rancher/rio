@@ -43,11 +43,11 @@ def kuberolebindingtest(stack, sname):
 
     fullName = (f"{stack}/{sname}")
     id = util.rioInspect(fullName, "id")
-    namespace = id.split(":")[0]
+    realname = sname + "-" + id.split(":")[0].split("-")[1]
 
-    cmd = (f'rio kubectl get -n {namespace} -o=json rolebinding')
+    cmd = (f'rio kubectl get -n rio-cloud -o=json rolebinding {realname}')
     obj = util.runToJson(cmd)
-    replicas = obj['items'][0]['roleRef']['name']
+    replicas = obj['roleRef']['name']
 
     return replicas
 
@@ -56,11 +56,11 @@ def kuberoletest(stack, sname):
 
     fullName = (f"{stack}/{sname}")
     id = util.rioInspect(fullName, "id")
-    namespace = id.split(":")[0]
+    realname = sname + "-" + id.split(":")[0].split("-")[1]
 
-    cmd = (f'rio kubectl get -n {namespace} -o=json role')
+    cmd = (f'rio kubectl get -n rio-cloud -o=json role {realname}')
     obj = util.runToJson(cmd)
-    replicas = obj['items'][0]['rules'][0]['verbs']
+    replicas = obj['rules'][0]['verbs']
 
     return replicas
 
@@ -70,6 +70,6 @@ def test_name1(stack):
 
     assert riotest(stack, serviceName) == ['update']
 
-    assert kubesatest(stack, serviceName) == serviceName
+    assert serviceName in kubesatest(stack, serviceName)
     assert kuberoletest(stack, serviceName) == ['update']
-    assert kuberolebindingtest(stack, serviceName) == serviceName
+    assert serviceName in kuberolebindingtest(stack, serviceName)

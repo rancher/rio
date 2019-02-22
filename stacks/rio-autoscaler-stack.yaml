@@ -12,7 +12,7 @@ configs:
       scale-to-zero-grace-period: 2m
 
 services:
-  gateway:
+  autoscalor:
     global_permissions:
     - '* configmaps'
     - '* events'
@@ -32,7 +32,5 @@ services:
     - gateway
     - --listen
     - '80'
-
-externalservices:
-  prometheus:
-    service: prometheus/prometheus
+    env:
+    - RIO_NAMESPACE=${RIO_NAMESPACE}
