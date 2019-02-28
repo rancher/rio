@@ -50,7 +50,7 @@ type ServiceUnversionedSpec struct {
 
 type AutoscaleConfig struct {
 	Concurrency int `json:"concurrency,omitempty" norman:"default=10"`
-	MinScale    int `json:"minScale,omitempty" norman:"default=1"`
+	MinScale    int `json:"minScale,omitempty"`
 	MaxScale    int `json:"maxScale,omitempty" norman:"default=30"`
 }
 
