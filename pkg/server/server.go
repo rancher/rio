@@ -24,6 +24,7 @@ import (
 	"github.com/rancher/rio/controllers"
 	rTypes "github.com/rancher/rio/types"
 	"github.com/rancher/rio/types/apis/apiextensions.k8s.io/v1beta1"
+	buildv1alpha1 "github.com/rancher/rio/types/apis/build.knative.dev/v1alpha1"
 	cmv1alpha1 "github.com/rancher/rio/types/apis/certmanager.k8s.io/v1alpha1"
 	"github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
 	policyv1beta1 "github.com/rancher/rio/types/apis/policy/v1beta1"
@@ -33,11 +34,12 @@ import (
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
 	rioschema "github.com/rancher/rio/types/apis/rio.cattle.io/v1/schema"
 	storagev1 "github.com/rancher/rio/types/apis/storage.k8s.io/v1"
+	webhookv1 "github.com/rancher/rio/types/apis/webhookinator.rio.cattle.io/v1"
 	projectclient "github.com/rancher/rio/types/client/project/v1"
-	"github.com/rancher/rio/types/client/rio/v1"
+	client "github.com/rancher/rio/types/client/rio/v1"
 	"github.com/rancher/types/apis/apps/v1beta2"
-	"github.com/rancher/types/apis/core/v1"
-	"github.com/rancher/types/apis/management.cattle.io/v3"
+	v1 "github.com/rancher/types/apis/core/v1"
+	v3 "github.com/rancher/types/apis/management.cattle.io/v3"
 	rbacv1 "github.com/rancher/types/apis/rbac.authorization.k8s.io/v1"
 	"github.com/sirupsen/logrus"
 	net2 "k8s.io/apimachinery/pkg/util/net"
@@ -76,6 +78,7 @@ func NewConfig(dataDir string, inCluster bool) (*norman.Config, error) {
 
 		Clients: []norman.ClientFactory{
 			autoscalev1.Factory,
+			buildv1alpha1.Factory,
 			cmv1alpha1.Factory,
 			policyv1beta1.Factory,
 			projectv1.Factory,
@@ -87,6 +90,7 @@ func NewConfig(dataDir string, inCluster bool) (*norman.Config, error) {
 			v1beta2.Factory,
 			v1.Factory,
 			v3.Factory,
+			webhookv1.Factory,
 		},
 
 		CustomizeSchemas: setup.Types,
@@ -250,13 +254,14 @@ func printToken(httpsPort int, prefix, file, cmd string) error {
 	}
 
 	token := strings.TrimSpace(string(content))
+	ipstring := ""
 	ip, err := net2.ChooseHostInterface()
 	if err != nil {
-		logrus.Error(err)
-		return err
+		ipstring = "127.0.0.1"
+	} else {
+		ipstring = ip.String()
 	}
-
-	logrus.Infof("%s rio %s -s https://%s:%d -t %s", prefix, cmd, ip.String(), httpsPort, token)
+	logrus.Infof("%s rio %s -s https://%s:%d -t %s", prefix, cmd, ipstring, httpsPort, token)
 	return nil
 }
 

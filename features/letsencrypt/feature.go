@@ -11,9 +11,9 @@ import (
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/pkg/systemstack"
 	"github.com/rancher/rio/types"
-	"github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
-	"github.com/rancher/types/apis/management.cattle.io/v3"
+	v3 "github.com/rancher/types/apis/management.cattle.io/v3"
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
@@ -39,6 +39,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 				},
 			},
 			Answers: map[string]string{
+				// todo: registry in build need production server to be fully functional
 				settings.RioWildcardType:  settings.StagingType,
 				settings.PublicDomainType: settings.ProductionType,
 			},

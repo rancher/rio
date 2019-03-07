@@ -3,6 +3,8 @@ package controllers
 import (
 	"context"
 
+	"github.com/rancher/rio/features/build"
+
 	"github.com/rancher/rio/controllers/data"
 	"github.com/rancher/rio/controllers/feature"
 	"github.com/rancher/rio/controllers/setting"
@@ -53,6 +55,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		return err
 	}
 	if err := grafana.Register(ctx, rContext); err != nil {
+		return err
+	}
+	if err := build.Register(ctx, rContext); err != nil {
 		return err
 	}
 

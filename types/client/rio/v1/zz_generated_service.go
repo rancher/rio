@@ -32,6 +32,7 @@ const (
 	ServiceFieldHealthcheck            = "healthcheck"
 	ServiceFieldHostname               = "hostname"
 	ServiceFieldImage                  = "image"
+	ServiceFieldImageBuild             = "build"
 	ServiceFieldImagePullPolicy        = "imagePullPolicy"
 	ServiceFieldInit                   = "init"
 	ServiceFieldIpcMode                = "ipc"
@@ -105,6 +106,7 @@ type Service struct {
 	Healthcheck            *HealthConfig             `json:"healthcheck,omitempty" yaml:"healthcheck,omitempty"`
 	Hostname               string                    `json:"hostname,omitempty" yaml:"hostname,omitempty"`
 	Image                  string                    `json:"image,omitempty" yaml:"image,omitempty"`
+	ImageBuild             *ImageBuild               `json:"build,omitempty" yaml:"build,omitempty"`
 	ImagePullPolicy        string                    `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
 	Init                   bool                      `json:"init,omitempty" yaml:"init,omitempty"`
 	IpcMode                string                    `json:"ipc,omitempty" yaml:"ipc,omitempty"`

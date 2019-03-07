@@ -13,7 +13,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rancher/rdns-server/model"
-	"github.com/rancher/types/apis/core/v1"
+	v1 "github.com/rancher/types/apis/core/v1"
 	"github.com/sirupsen/logrus"
 	k8scorev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -82,7 +82,7 @@ func (c *Client) do(req *http.Request) (model.Response, error) {
 	return data, nil
 }
 
-func (c *Client) ApplyDomain(hosts []string) (bool, string, error) {
+func (c *Client) ApplyDomain(hosts []string, subDomain map[string][]string) (bool, string, error) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 	d, err := c.GetDomain()
@@ -98,9 +98,9 @@ func (c *Client) ApplyDomain(hosts []string) (bool, string, error) {
 
 	sort.Strings(d.Hosts)
 	sort.Strings(hosts)
-	if !reflect.DeepEqual(d.Hosts, hosts) {
-		logrus.Debugf("Fqdn %s has some changes, need to update", d.Fqdn)
-		fqdn, err := c.UpdateDomain(hosts)
+	if !reflect.DeepEqual(d.Hosts, hosts) || !reflect.DeepEqual(d.SubDomain, subDomain) {
+		logrus.Debugf("Fqdn %s or Subdomains %+v has some changes, need to update", d.Fqdn, d.SubDomain)
+		fqdn, err := c.UpdateDomain(hosts, subDomain)
 		return false, fqdn, err
 	}
 	logrus.Debugf("Fqdn %s has no changes, no need to update", d.Fqdn)
@@ -167,7 +167,7 @@ func (c *Client) CreateDomain(hosts []string) (string, error) {
 	return resp.Data.Fqdn, err
 }
 
-func (c *Client) UpdateDomain(hosts []string) (string, error) {
+func (c *Client) UpdateDomain(hosts []string, subDomain map[string][]string) (string, error) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
@@ -177,7 +177,7 @@ func (c *Client) UpdateDomain(hosts []string) (string, error) {
 	}
 
 	url := buildURL(c.base, "/"+fqdn, "")
-	body, err := jsonBody(&model.DomainOptions{Hosts: hosts})
+	body, err := jsonBody(&model.DomainOptions{Hosts: hosts, SubDomain: subDomain})
 	if err != nil {
 		return "", err
 	}

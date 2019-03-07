@@ -15,6 +15,7 @@ import (
 
 var (
 	namespacedType = reflect.TypeOf(Namespaced{})
+	statusSubResourced = reflect.TypeOf(StatusSubResourced{})
 	resourceType   = reflect.TypeOf(Resource{})
 	blacklistNames = map[string]bool{
 		"links":   true,
@@ -256,6 +257,9 @@ func (s *Schemas) readFields(schema *Schema, t reflect.Type) error {
 			if t.Kind() == reflect.Struct {
 				if t == namespacedType {
 					schema.Scope = NamespaceScope
+				}
+				if t == statusSubResourced {
+					schema.StatusSubResource = StatusSubResourceType
 				}
 				if err := s.readFields(schema, t); err != nil {
 					return err

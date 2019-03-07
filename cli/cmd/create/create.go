@@ -14,6 +14,11 @@ import (
 
 type Create struct {
 	AddHost            []string          `desc:"Add a custom host-to-IP mapping (host:ip)"`
+	BuildBranch        string            `desc:"Build repository branch" default:"master"`
+	BuildTag           string            `desc:"Build repository tag"`
+	BuildCommit        string            `desc:"Build repository commit"`
+	BuildSecret        string            `desc:"Set webhook secret"`
+	BuildHook          bool              `desc:"Enable webhook"`
 	CapAdd             []string          `desc:"Add Linux capabilities"`
 	CapDrop            []string          `desc:"Drop Linux capabilities"`
 	Config             []string          `desc:"Configs to expose to the service (format: name:target)"`
@@ -146,7 +151,6 @@ func (c *Create) ToService(args []string) (*client.Service, error) {
 		ExtraHosts:          c.AddHost,
 		Global:              c.Global,
 		Hostname:            c.Hostname,
-		Image:               args[0],
 		ImagePullPolicy:     c.ImagePullPolicy,
 		Init:                c.Init,
 		IpcMode:             c.Ipc,
@@ -172,6 +176,19 @@ func (c *Create) ToService(args []string) (*client.Service, error) {
 		UpdateStrategy: c.UpdateStrategy,
 		VolumesFrom:    c.VolumesFrom,
 		WorkingDir:     c.W_Workdir,
+	}
+
+	if strings.HasSuffix(args[0], ".git") {
+		service.ImageBuild = &client.ImageBuild{
+			Branch: c.BuildBranch,
+			Url:    args[0],
+			Tag:    c.BuildTag,
+			Commit: c.BuildCommit,
+			Secret: c.BuildSecret,
+			Hook:   c.BuildHook,
+		}
+	} else {
+		service.Image = args[0]
 	}
 
 	if c.U_User != "" {

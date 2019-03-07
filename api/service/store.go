@@ -16,6 +16,7 @@ var SupportedProtocol = map[string]struct{}{
 	"http":  {},
 	"http2": {},
 	"grpc":  {},
+	"tcp":   {},
 }
 
 func New(store types.Store) types.Store {

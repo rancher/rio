@@ -13,7 +13,7 @@ func systemStacks(inCluster bool) []runtime.Object {
 	var result []runtime.Object
 
 	if !inCluster {
-		result = append(result, Stack("coredns", riov1.StackSpec{
+		result = append(result, Stack("coredns", settings.RioSystemNamespace, riov1.StackSpec{
 			DisableMesh: true,
 		}))
 	}
@@ -21,8 +21,8 @@ func systemStacks(inCluster bool) []runtime.Object {
 	return result
 }
 
-func Stack(name string, spec riov1.StackSpec) runtime.Object {
-	s := riov1.NewStack(settings.RioSystemNamespace, name, riov1.Stack{
+func Stack(name, namespace string, spec riov1.StackSpec) runtime.Object {
+	s := riov1.NewStack(namespace, name, riov1.Stack{
 		Spec: spec,
 	})
 	s.Spec.Template = StackData(name)

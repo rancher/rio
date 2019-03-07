@@ -17,14 +17,17 @@ import (
 	"github.com/rancher/rio/api/service"
 	"github.com/rancher/rio/api/space"
 	"github.com/rancher/rio/api/stack"
+	buildv1alpha1 "github.com/rancher/rio/types/apis/build.knative.dev/v1alpha1"
+	buildschema "github.com/rancher/rio/types/apis/build.knative.dev/v1alpha1/schema"
 	"github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
 	networkSchema "github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3/schema"
 	projectSchema "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1/schema"
 	autoscalev1 "github.com/rancher/rio/types/apis/rio-autoscale.cattle.io/v1"
 	autoscaleSchema "github.com/rancher/rio/types/apis/rio-autoscale.cattle.io/v1/schema"
 	"github.com/rancher/rio/types/apis/rio.cattle.io/v1/schema"
+	webhookschema "github.com/rancher/rio/types/apis/webhookinator.rio.cattle.io/v1"
 	projectclient "github.com/rancher/rio/types/client/project/v1"
-	"github.com/rancher/rio/types/client/rio/v1"
+	client "github.com/rancher/rio/types/client/rio/v1"
 )
 
 func Types(ctx context.Context, clientGetter proxy.ClientGetter, schemas *normantypes.Schemas) error {
@@ -36,7 +39,11 @@ func Types(ctx context.Context, clientGetter proxy.ClientGetter, schemas *norman
 		networkSchema.Schemas.Schema(&networkSchema.Version, v1alpha3.VirtualServiceGroupVersionKind.Kind),
 		networkSchema.Schemas.Schema(&networkSchema.Version, v1alpha3.DestinationRuleGroupVersionKind.Kind),
 		networkSchema.Schemas.Schema(&networkSchema.Version, v1alpha3.ServiceEntryGroupVersionKind.Kind),
-		autoscaleSchema.Schemas.Schema(&autoscaleSchema.APIVersion, autoscalev1.ServiceScaleRecommendationGroupVersionKind.Kind))
+		autoscaleSchema.Schemas.Schema(&autoscaleSchema.APIVersion, autoscalev1.ServiceScaleRecommendationGroupVersionKind.Kind),
+		buildschema.Schemas.Schema(&buildschema.Version, buildv1alpha1.BuildGroupVersionKind.Kind),
+		webhookschema.Schemas.Schema(&webhookschema.APIVersion, webhookschema.GitWebHookExecutionGroupVersionKind.Kind),
+		webhookschema.Schemas.Schema(&webhookschema.APIVersion, webhookschema.GitWebHookReceiverGroupVersionKind.Kind),
+	)
 	if err != nil {
 		return err
 	}
