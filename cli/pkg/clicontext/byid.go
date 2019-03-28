@@ -104,11 +104,11 @@ func (c *CLIContext) stackScopedByID(id, schemaType string) (types.Resource, err
 }
 
 func (c *CLIContext) defaultByID(id, schemaType string) (types.Resource, error) {
-	if !strings.Contains(id, ":") || strings.Contains(id, "/") {
-		return types.Resource{}, fmt.Errorf("invalid id format")
+	namespace, name := kv.Split(id, "/")
+	if name == "" {
+		name = namespace
+		namespace = c.ProjectName
 	}
-
-	name, namespace := kv.Split(id, "/")
 
 	return types.Resource{
 		Namespace: namespace,

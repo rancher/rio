@@ -1,6 +1,7 @@
 package externalservice
 
 import (
+	"os"
 	"strings"
 
 	"github.com/rancher/rio/cli/cmd/rm"
@@ -84,7 +85,7 @@ func externalServiceLs(ctx *clicontext.CLIContext) error {
 		{"NAME", "{{stackScopedName .Stack.Name .Service.Name}}"},
 		{"CREATED", "{{.Created | ago}}"},
 		{"TARGET", "{{.Service.Target}}"},
-	}, ctx)
+	}, ctx, os.Stdout)
 	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cluster))
 	defer writer.Close()
 

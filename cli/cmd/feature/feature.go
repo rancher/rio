@@ -2,6 +2,7 @@ package feature
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/rancher/rio/cli/cmd/project"
 	"github.com/rancher/rio/cli/cmd/up"
@@ -54,7 +55,7 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 		{"NAME", "Feature.Name"},
 		{"ENABLED", "{{.Feature.Spec.Enabled | boolToStar}}"},
 		{"DESCRIPTION", "Feature.Spec.Description"},
-	}, ctx)
+	}, ctx, os.Stdout)
 	defer writer.Close()
 
 	writer.AddFormatFunc("boolToStar", project.BoolToStar)

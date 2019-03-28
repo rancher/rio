@@ -1,6 +1,8 @@
 package node
 
 import (
+	"os"
+
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/mapper"
@@ -59,7 +61,7 @@ func nodeLs(ctx *clicontext.CLIContext) error {
 		{"STATE", "{{.Node | toJson | state}}"},
 		{"ADDRESS", "{{.Node | address}}"},
 		{"DETAIL", "{{.Node | toJson | transitioning}}"},
-	}, ctx)
+	}, ctx, os.Stdout)
 	defer writer.Close()
 
 	wrapper := mapper.GenericStatusMapper

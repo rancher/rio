@@ -1,6 +1,8 @@
 package cluster
 
 import (
+	"os"
+
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/clientcfg"
 	"github.com/rancher/rio/cli/pkg/table"
@@ -29,7 +31,7 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 		{"ID", "Cluster.ID"},
 		{"URL", "Cluster.URL"},
 		{"DEFAULT", "{{.Cluster.Default | boolToStar}}"},
-	}, ctx)
+	}, ctx, os.Stdout)
 	defer writer.Close()
 
 	writer.AddFormatFunc("boolToStar", BoolToStar)

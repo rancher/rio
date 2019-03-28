@@ -54,7 +54,11 @@ func (l *Logs) Run(ctx *clicontext.CLIContext) error {
 	factory := logger.NewColorLoggerFactory()
 	for _, pd := range pds {
 		for _, container := range pd.Containers {
-			go l.logContainer(pd.Pod, container, restClient, factory)
+			if l.C_Container == "" || l.C_Container == container.Name {
+				go func(c string) {
+					l.logContainer(pd.Pod, c, restClient, factory)
+				}(container.Name)
+			}
 		}
 	}
 	<-ctx.Ctx.Done()
@@ -62,11 +66,11 @@ func (l *Logs) Run(ctx *clicontext.CLIContext) error {
 	return nil
 }
 
-func (l *Logs) logContainer(pod *v1.Pod, container v1.Container, restClient rest.Interface, factory *logger.ColorLoggerFactory) error {
-	containerName := fmt.Sprintf("%s/%s", pod.Name, container.Name)
-	logger := factory.CreateContainerLogger(containerName)
+func (l *Logs) logContainer(pod *v1.Pod, containerName string, restClient rest.Interface, factory *logger.ColorLoggerFactory) error {
+	cn := fmt.Sprintf("%s/%s", pod.Name, containerName)
+	logger := factory.CreateContainerLogger(cn)
 	podLogOption := v1.PodLogOptions{
-		Container: container.Name,
+		Container: containerName,
 		Follow:    l.F_Follow,
 	}
 	if l.S_Since != "" {

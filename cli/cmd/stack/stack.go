@@ -2,6 +2,10 @@ package stack
 
 import (
 	"fmt"
+	"io"
+	"os"
+
+	"github.com/rancher/rio/cli/pkg/clientcfg"
 
 	"github.com/rancher/rio/cli/pkg/mapper"
 
@@ -82,30 +86,16 @@ func stackLs(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	collection, err := client.Rio.Stacks(project.Project.Name).List(metav1.ListOptions{})
+	data, err := ListStacks(client, project.Project.Name)
 	if err != nil {
 		return err
 	}
 
-	writer := table.NewWriter([][]string{
-		{"NAME", "Stack.Name"},
-		{"STATE", "Stack | toJson | state"},
-		{"CREATED", "{{.Stack.CreationTimestamp | ago}}"},
-		{"DESC", "Stack.Spec.Description"},
-		{"DETAIL", "Stack | toJson | transitioning"},
-	}, ctx)
-
-	m := mapper.GenericStatusMapper
-	writer.AddFormatFunc("state", m.FormatState)
-	writer.AddFormatFunc("transitioning", m.FormatTransitionMessage)
-
+	writer := NewWriter(ctx, os.Stdout)
 	defer writer.Close()
 
-	for _, item := range collection.Items {
-		writer.Write(&Data{
-			ID:    item.Name,
-			Stack: item,
-		})
+	for _, item := range data {
+		writer.Write(item)
 	}
 
 	return writer.Err()
@@ -225,4 +215,35 @@ func stackUpdate(ctx *clicontext.CLIContext) error {
 	}
 
 	return nil
+}
+
+func ListStacks(client *clientcfg.KubeClient, project string) ([]Data, error) {
+	stacks, err := client.Rio.Stacks(project).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	var data []Data
+	for _, s := range stacks.Items {
+		data = append(data, Data{
+			ID:    s.Name,
+			Stack: s,
+		})
+	}
+	return data, nil
+}
+
+func NewWriter(ctx *clicontext.CLIContext, w io.Writer) *table.Writer {
+	writer := table.NewWriter([][]string{
+		{"NAME", "Stack.Name"},
+		{"STATE", "Stack | toJson | state"},
+		{"CREATED", "{{.Stack.CreationTimestamp | ago}}"},
+		{"DESC", "Stack.Spec.Description"},
+		{"DETAIL", "Stack | toJson | transitioning"},
+	}, ctx, w)
+
+	m := mapper.GenericStatusMapper
+	writer.AddFormatFunc("state", m.FormatState)
+	writer.AddFormatFunc("transitioning", m.FormatTransitionMessage)
+	return writer
 }

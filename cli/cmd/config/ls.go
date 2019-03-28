@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/base64"
+	"os"
 	"sort"
 
 	units "github.com/docker/go-units"
@@ -58,7 +59,7 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 		{"NAME", "{{stackScopedName .Stack.Name .Config.Name}}"},
 		{"CREATED", "{{.Config.CreationTimestamp | ago}}"},
 		{"SIZE", "{{size .Config}}"},
-	}, ctx)
+	}, ctx, os.Stdout)
 	defer writer.Close()
 
 	writer.AddFormatFunc("size", Base64Size)

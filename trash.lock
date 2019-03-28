@@ -19,6 +19,8 @@ import:
   version: v1.0.0
 - package: github.com/PuerkitoBio/urlesc
   version: 5bd2802263f21d8788851d5305584c82a5c75d7e
+- package: github.com/alecthomas/chroma
+  version: v0.6.3
 - package: github.com/aokoli/goutils
   version: v1.0.1
 - package: github.com/beorn7/perks
@@ -52,12 +54,16 @@ import:
   version: v2-8-gfa29b1d
 - package: github.com/coreos/prometheus-operator
   version: v0.25.0
+- package: github.com/danwakefield/fnmatch
+  version: cbb64ac3d964b81592e64f957ad53df015803288
 - package: github.com/davecgh/go-spew
   version: v1.1.0-1-g782f496
 - package: github.com/daviddengcn/go-colortext
   version: 511bcaf42ccd42c38aba7427b6673277bf19e2a1
 - package: github.com/dgrijalva/jwt-go
   version: v3.0.0-4-g01aeca5
+- package: github.com/dlclark/regexp2
+  version: 7632a260cbaf5e7594fc1544a503456ecd0827f1
 - package: github.com/docker/distribution
   version: v2.6.0-rc.1-209-gedc3ab29
 - package: github.com/docker/docker
@@ -89,6 +95,10 @@ import:
   version: f6a740d52f961c60348ebb109adde9f4635d7540
 - package: github.com/fsnotify/fsnotify
   version: v1.3.1-1-gf12c623
+- package: github.com/gdamore/encoding
+  version: 6289cdc94c00ac4aa177771c5fce7af2f96b626d
+- package: github.com/gdamore/tcell
+  version: ec71b09872d7b4651034283b37c8f14e29ebb337
 - package: github.com/ghodss/yaml
   version: 73d445a93680fa1a78ae23a5839bad48f32ba1ee
 - package: github.com/go-openapi/jsonpointer
@@ -159,12 +169,16 @@ import:
 - package: github.com/knative/pkg
   version: a7fee93fe6d68bf287d00a7dce1a8c2ce1ad44a3
   repo: https://github.com/rancher/pkg.git
+- package: github.com/lucasb-eyer/go-colorful
+  version: 12d3b2882a08d1abc9488e34f3e1ae35165f2d07
 - package: github.com/lyft/protoc-gen-validate
   version: v0.0.11
 - package: github.com/mailru/easyjson
   version: 2f5df55504ebc322e4d52d34df6a1f5b503bf26d
 - package: github.com/mattbaird/jsonpatch
   version: 81af80346b1a01caae0cbc27fd3c1ba5b11e189f
+- package: github.com/mattn/go-runewidth
+  version: 703b5e6b11ae25aeb2af9ebb5d5fdf8fa2575211
 - package: github.com/mattn/go-shellwords
   version: f8471b0a71ded0ab910825ee2cf230f25de000f1
 - package: github.com/mattn/go-sqlite3
@@ -223,6 +237,10 @@ import:
   version: c8e028e67a0c30cb73c22b7a350c5c611fbd6482
 - package: github.com/renstrom/dedent
   version: v1.0.0-3-g020d11c
+- package: github.com/rivo/tview
+  version: 8d5eba0c2f51d8ae971c5a470e354bbc2aae6777
+- package: github.com/rivo/uniseg
+  version: f699dde9c340bcc39b69a4c67369832af73ec72e
 - package: github.com/robfig/cron
   version: v1-53-gdf38d32
 - package: github.com/russross/blackfriday

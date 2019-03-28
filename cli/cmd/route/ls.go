@@ -2,6 +2,7 @@ package route
 
 import (
 	"fmt"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -98,7 +99,7 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 		{"OPTS", "{{ . | formatOpts }}"},
 		{"ACTION", "{{ . | formatAction }}"},
 		{"TARGET", "{{ . | formatTarget }}"},
-	}, ctx)
+	}, ctx, os.Stdout)
 	defer writer.Close()
 
 	writer.AddFormatFunc("formatURL", FormatURL())

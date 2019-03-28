@@ -2,6 +2,7 @@ package ps
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/rancher/rio/cli/pkg/mapper"
@@ -116,7 +117,7 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 		}
 
 		for _, service := range services {
-			if service.Name == podData.Service.ResourceID && service.Namespace == podData.Service.StackName {
+			if service.Name == podData.Service.ResourceName && service.Namespace == podData.Service.StackName {
 				result = append(result, podData)
 				break
 			}
@@ -171,7 +172,7 @@ func (p *Ps) containers(ctx *clicontext.CLIContext) error {
 		{"IP", "PodData.Pod.Status.PodIP"},
 		{"STATE", "Container | toJson | state"},
 		{"DETAIL", "Container | toJson | transistioning"},
-	}, ctx)
+	}, ctx, os.Stdout)
 	defer writer.Close()
 
 	m := mapper.GenericStatusMapper

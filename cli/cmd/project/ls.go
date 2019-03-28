@@ -1,6 +1,9 @@
 package project
 
 import (
+	"io"
+	"os"
+
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/clientcfg"
 	"github.com/rancher/rio/cli/pkg/table"
@@ -42,7 +45,7 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 			{"NAME", "Project.Project.Name"},
 			{"CLUSTER", "Project.Cluster.URL"},
 			{"DEFAULT", "{{and .Project.Default .Project.Cluster.Default | boolToStar}}"},
-		}, ctx)
+		}, ctx, os.Stdout)
 	} else {
 		cluster, err := ctx.Cluster()
 		if err != nil {
@@ -51,30 +54,46 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 		clusters = []clientcfg.Cluster{
 			*cluster,
 		}
-
-		writer = table.NewWriter([][]string{
-			{"NAME", "Project.Project.Name"},
-			{"DEFAULT", "{{.Project.Default | boolToStar}}"},
-		}, ctx)
+		writer = NewWriter(ctx, os.Stdout)
 	}
 
 	writer.AddFormatFunc("boolToStar", BoolToStar)
 	defer writer.Close()
 
+	data, err := ListProject(clusters)
+	if err != nil {
+		return err
+	}
+	for _, d := range data {
+		writer.Write(d)
+	}
+	return writer.Err()
+}
+
+func ListProject(clusters []clientcfg.Cluster) ([]Data, error) {
+	var data []Data
 	for _, cluster := range clusters {
 		projects, err := cluster.Projects()
 		if err != nil {
-			return err
+			return nil, err
 		}
 		for i, project := range projects {
-			writer.Write(&Data{
+			data = append(data, Data{
 				ID:      project.Project.Name,
 				Project: &projects[i],
 			})
 		}
 	}
+	return data, nil
+}
 
-	return writer.Err()
+func NewWriter(ctx *clicontext.CLIContext, w io.Writer) *table.Writer {
+	writer := table.NewWriter([][]string{
+		{"NAME", "Project.Project.Name"},
+		{"DEFAULT", "{{.Project.Default | boolToStar}}"},
+	}, ctx, w)
+	writer.AddFormatFunc("boolToStar", BoolToStar)
+	return writer
 }
 
 func BoolToStar(obj interface{}) (string, error) {

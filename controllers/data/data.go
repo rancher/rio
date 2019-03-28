@@ -22,7 +22,10 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	}
 
 	rContext.Core.Namespace.OnChange(ctx, "data-controller", d.onChange)
-	return addNameSpace(rContext.Core.Namespace, settings.RioSystemNamespace, true)
+	if err := addNameSpace(rContext.Core.Namespace, settings.RioSystemNamespace, true); err != nil {
+		return err
+	}
+	return addNameSpace(rContext.Core.Namespace, settings.BuildStackName, false)
 }
 
 type dataHandler struct {

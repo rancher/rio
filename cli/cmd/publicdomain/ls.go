@@ -2,6 +2,7 @@ package publicdomain
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/rancher/rio/cli/cmd/util"
@@ -46,7 +47,7 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 	writer := table.NewWriter([][]string{
 		{"DOMAIN", "{{.DomainName}}"},
 		{"TARGET", "{{. | formatTarget}}"},
-	}, ctx)
+	}, ctx, os.Stdout)
 	defer writer.Close()
 
 	projects, err := client.Core.Namespaces("").List(metav1.ListOptions{

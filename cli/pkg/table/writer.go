@@ -3,7 +3,6 @@ package table
 import (
 	"encoding/json"
 	"io"
-	"os"
 	"text/tabwriter"
 	"text/template"
 	"time"
@@ -47,7 +46,7 @@ type Writer struct {
 
 type FormatFunc interface{}
 
-func NewWriter(values [][]string, ctx *clicontext.CLIContext) *Writer {
+func NewWriter(values [][]string, ctx *clicontext.CLIContext, writer io.Writer) *Writer {
 	if ctx.CLI.Bool("ids") {
 		values = append(idsHeader, values...)
 	}
@@ -58,7 +57,7 @@ func NewWriter(values [][]string, ctx *clicontext.CLIContext) *Writer {
 	}
 
 	t := &Writer{
-		Writer:  tabwriter.NewWriter(os.Stdout, 10, 1, 3, ' ', 0),
+		Writer:  tabwriter.NewWriter(writer, 10, 1, 3, ' ', 0),
 		funcMap: funcMap,
 	}
 

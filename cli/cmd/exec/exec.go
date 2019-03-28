@@ -52,7 +52,7 @@ func (e *Exec) Run(ctx *clicontext.CLIContext) error {
 		execArgs = append(execArgs, "-t")
 	}
 
-	execArgs = append(execArgs, podName, "-c", containerName)
+	execArgs = append(execArgs, podName, "-c", containerName, "--")
 	execArgs = append(execArgs, args[1:]...)
 
 	cluster, err := ctx.Cluster()

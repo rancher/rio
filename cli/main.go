@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/rancher/rio/cli/cmd/cow"
+
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/rio/cli/cmd/attach"
 	"github.com/rancher/rio/cli/cmd/cluster"
@@ -140,6 +142,10 @@ func main() {
 		setcontext.SetContext(),
 		feature.Feature(app),
 
+		builder.Command(&cow.Cow{},
+			"Rio Cow",
+			appName+" cow",
+			""),
 		builder.Command(&ps.Ps{},
 			"List services and containers",
 			appName+" ps [OPTIONS] [STACK...]",

@@ -1,6 +1,7 @@
 package volume
 
 import (
+	"os"
 	"sort"
 
 	"github.com/rancher/norman/types/convert"
@@ -60,7 +61,7 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 		{"TEMPLATE", "Volume.Spec.Template"},
 		{"SIZE GB", "Volume.Spec.SizeInGB"},
 		{"CREATED", "{{.Volume.CreationTimestamp | ago}}"},
-	}, ctx)
+	}, ctx, os.Stdout)
 	defer writer.Close()
 
 	writer.AddFormatFunc("driver", FormatDriver)
