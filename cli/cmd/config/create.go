@@ -8,7 +8,8 @@ import (
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/stack"
-	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 )
 
 type Create struct {
@@ -27,14 +28,9 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 	name := ctx.CLI.Args()[0]
 	file := ctx.CLI.Args()[1]
 
-	client, err := ctx.KubeClient()
-	if err != nil {
-		return err
-	}
+	config := riov1.Config{}
 
-	config := &riov1.Config{}
-
-	config.Spec.ProjectName, config.Spec.StackName, config.Name, err = stack.ResolveSpaceStackForName(ctx, name)
+	_, namespace, name, err := stack.ResolveSpaceStackForName(ctx, name)
 	if err != nil {
 		return err
 	}
@@ -52,11 +48,5 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 		config.Spec.Encoded = true
 	}
 
-	config, err = client.Rio.Configs("config.Spec.StackName").Create(config)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println(config.Name)
-	return nil
+	return ctx.Create(v1.NewConfig(namespace, name, config))
 }

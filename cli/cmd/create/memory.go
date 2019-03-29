@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	units "github.com/docker/go-units"
-	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 )
 
 func populateMemory(c *Create, service *riov1.Service) error {

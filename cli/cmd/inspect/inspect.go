@@ -13,19 +13,17 @@ var (
 		clitypes.ServiceType,
 		clitypes.ConfigType,
 		clitypes.StackType,
-		clitypes.RouteSetType,
+		clitypes.RouterType,
 		clitypes.VolumeType,
 		clitypes.ExternalServiceType,
 		clitypes.PodType,
-		clitypes.NodeType,
 		clitypes.FeatureType,
 		clitypes.PublicDomainType,
 	}
 )
 
 type Inspect struct {
-	T_Type  string `desc:"The specific type to inspect"`
-	L_Links bool   `desc:"Include links and actions in output"`
+	T_Type string `desc:"The specific type to inspect"`
 }
 
 func (i *Inspect) Customize(cmd *cli.Command) {
@@ -39,11 +37,6 @@ func (i *Inspect) Customize(cmd *cli.Command) {
 }
 
 func (i *Inspect) Run(ctx *clicontext.CLIContext) error {
-	cluster, err := ctx.Cluster()
-	if err != nil {
-		return err
-	}
-
 	types := InspectTypes
 	if i.T_Type != "" {
 		types = []string{i.T_Type}
@@ -56,11 +49,7 @@ func (i *Inspect) Run(ctx *clicontext.CLIContext) error {
 		}
 
 		t := r.Type
-		if t == clitypes.ServiceType {
-			t = "services.rio.cattle.io"
-		}
-
-		cmd, err := cluster.KubectlCmd(r.Namespace, "get", t, r.Name, "-o", "yaml")
+		cmd, err := ctx.KubectlCmd(r.Namespace, "get", t, r.Name, "-o", "yaml")
 		if err != nil {
 			return err
 		}

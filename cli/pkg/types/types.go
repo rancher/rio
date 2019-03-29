@@ -1,18 +1,20 @@
 package types
 
+import "k8s.io/apimachinery/pkg/runtime"
+
 const (
 	ConfigType          = "config"
 	VolumeType          = "volume"
 	ServiceType         = "service"
 	PodType             = "pod"
 	StackType           = "stack"
-	RouteSetType        = "routeset"
+	RouterType          = "router"
 	ExternalServiceType = "externalservice"
 	FeatureType         = "feature"
-	NodeType            = "node"
 	PublicDomainType    = "publicdomain"
 )
 
 type Resource struct {
-	Name, Namespace, Type string
+	LookupName, Name, Namespace, Type string
+	Object                            runtime.Object
 }

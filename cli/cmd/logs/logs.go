@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/apimachinery/pkg/runtime"
-
 	"github.com/docker/libcompose/cli/logger"
 	"github.com/rancher/rio/cli/cmd/ps"
 	"github.com/rancher/rio/cli/pkg/clicontext"
@@ -14,8 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/apimachinery/pkg/runtime/schema"
 	_ "k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 type Logs struct {
@@ -32,16 +29,6 @@ func (l *Logs) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("at least one argument is required: CONTAINER_OR_SERVICE")
 	}
 
-	cluster, err := ctx.Cluster()
-	if err != nil {
-		return err
-	}
-
-	restClient, err := cluster.RestClient()
-	if err != nil {
-		return err
-	}
-
 	pds, err := ps.ListPods(ctx, l.A_All, ctx.CLI.Args()...)
 	if err != nil {
 		return err
@@ -54,7 +41,7 @@ func (l *Logs) Run(ctx *clicontext.CLIContext) error {
 	factory := logger.NewColorLoggerFactory()
 	for _, pd := range pds {
 		for _, container := range pd.Containers {
-			go l.logContainer(pd.Pod, container, restClient, factory)
+			go l.logContainer(pd.Pod, container, ctx.Core, factory)
 		}
 	}
 	<-ctx.Ctx.Done()
@@ -62,7 +49,7 @@ func (l *Logs) Run(ctx *clicontext.CLIContext) error {
 	return nil
 }
 
-func (l *Logs) logContainer(pod *v1.Pod, container v1.Container, restClient rest.Interface, factory *logger.ColorLoggerFactory) error {
+func (l *Logs) logContainer(pod *v1.Pod, container v1.Container, coreClient corev1.CoreV1Interface, factory *logger.ColorLoggerFactory) error {
 	containerName := fmt.Sprintf("%s/%s", pod.Name, container.Name)
 	logger := factory.CreateContainerLogger(containerName)
 	podLogOption := v1.PodLogOptions{
@@ -72,8 +59,8 @@ func (l *Logs) logContainer(pod *v1.Pod, container v1.Container, restClient rest
 	if l.S_Since != "" {
 		t, err := time.Parse(time.RFC3339, l.S_Since)
 		if err == nil {
-			newtime := metav1.NewTime(t)
-			podLogOption.SinceTime = &newtime
+			newTime := metav1.NewTime(t)
+			podLogOption.SinceTime = &newTime
 		} else {
 			du, err := time.ParseDuration(l.S_Since)
 			if err == nil {
@@ -83,22 +70,17 @@ func (l *Logs) logContainer(pod *v1.Pod, container v1.Container, restClient rest
 		}
 	}
 
-	scheme.Scheme.AddUnversionedTypes(v1.SchemeGroupVersion, &v1.PodLogOptions{})
-	req := restClient.Get().
-		Prefix("api", "", "v1").
-		Resource("pods").
-		Name(pod.Name).
-		Namespace(pod.Namespace).
-		SubResource("log").
-		VersionedParams(&podLogOption, runtime.NewParameterCodec(scheme.Scheme))
+	req := coreClient.Pods(pod.Namespace).GetLogs(pod.Name, &v1.PodLogOptions{})
 	reader, err := req.Stream()
 	if err != nil {
 		return err
 	}
 	defer reader.Close()
+
 	sc := bufio.NewScanner(reader)
 	for sc.Scan() {
 		logger.Out(append(sc.Bytes(), []byte("\n")...))
 	}
+
 	return nil
 }

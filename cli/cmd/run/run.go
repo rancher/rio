@@ -8,11 +8,11 @@ import (
 	"time"
 
 	isatty "github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty"
-	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/rio/cli/cmd/attach"
 	"github.com/rancher/rio/cli/cmd/create"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/wrangler/pkg/kv"
 )
 
 type Run struct {
@@ -53,7 +53,7 @@ func (r *Run) Run(ctx *clicontext.CLIContext) error {
 		fmt.Println("Attaching...")
 		return attach.RunAttach(ctx, time.Minute, true, true, service.Name)
 	}
-	fmt.Printf("%s/%s\n", service.Spec.StackName, service.Name)
+	fmt.Printf("%s/%s\n", service.Namespace, service.Name)
 
 	return nil
 }

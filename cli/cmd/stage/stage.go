@@ -5,11 +5,10 @@ import (
 
 	"github.com/rancher/rio/cli/cmd/create"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/clientcfg"
+	"github.com/rancher/rio/cli/pkg/constants"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/types"
-	"github.com/rancher/rio/pkg/settings"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 )
 
 type Stage struct {
@@ -19,15 +18,15 @@ type Stage struct {
 	Image  string `desc:"Runtime image (Docker image/OCI image)"`
 }
 
-func determineRevision(project *clientcfg.Project, name string, service types.Resource) (string, error) {
+func determineRevision(ctx *clicontext.CLIContext, name string, service types.Resource) (string, error) {
 	revision := "next"
 	if name == service.Name {
 		return revision, nil
 	}
 
-	parsedService := lookup.ParseStackScoped(project, name)
-	if parsedService.Version == settings.DefaultServiceVersion {
-		return "", fmt.Errorf("\"%s\" is not a valid revision to stage", settings.DefaultServiceVersion)
+	parsedService := lookup.ParseStackScoped(ctx.GetDefaultStackName(), name)
+	if parsedService.Version == constants.DefaultServiceVersion {
+		return "", fmt.Errorf("\"%s\" is not a valid revision to stage", constants.DefaultServiceVersion)
 	}
 	if parsedService.Version != "" {
 		revision = parsedService.Version
@@ -36,10 +35,10 @@ func determineRevision(project *clientcfg.Project, name string, service types.Re
 	return revision, nil
 }
 
-func stripRevision(project *clientcfg.Project, name string) lookup.StackScoped {
-	stackScope := lookup.ParseStackScoped(project, name)
+func stripRevision(ctx *clicontext.CLIContext, name string) lookup.StackScoped {
+	stackScope := lookup.ParseStackScoped(ctx.GetDefaultStackName(), name)
 	stackScope.Version = ""
-	return lookup.ParseStackScoped(project, stackScope.String())
+	return stackScope
 }
 
 func (r *Stage) Run(ctx *clicontext.CLIContext) error {
@@ -47,29 +46,15 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("must specify the service to update")
 	}
 
-	client, err := ctx.KubeClient()
+	stackScope := stripRevision(ctx, ctx.CLI.Args()[0])
+
+	resource, err := lookup.Lookup(ctx, stackScope.String(), types.ServiceType)
 	if err != nil {
 		return err
 	}
+	baseService := resource.Object.(*v1.Service)
 
-	project, err := ctx.Project()
-	if err != nil {
-		return err
-	}
-
-	stackScope := stripRevision(project, ctx.CLI.Args()[0])
-
-	resource, err := lookup.Lookup(ctx, stackScope.ResourceID, types.ServiceType)
-	if err != nil {
-		return err
-	}
-
-	baseService, err := client.Rio.Services(project.Project.Name).Get(resource.Name, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-
-	revision, err := determineRevision(project, ctx.CLI.Args()[0], resource)
+	revision, err := determineRevision(ctx, ctx.CLI.Args()[0], resource)
 	if err != nil {
 		return err
 	}
@@ -87,20 +72,15 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 	}
 
 	serviceDef.Name = fmt.Sprintf("%s-%s", resource.Name, revision)
+	serviceDef.Namespace = baseService.Namespace
 	serviceDef.Spec.Revision.ParentService = resource.Name
 	serviceDef.Spec.Revision.Version = revision
 	serviceDef.Spec.Revision.Weight = r.Weight
 	serviceDef.Spec.Scale = r.Scale
-	serviceDef.Spec.ProjectName = baseService.Spec.ProjectName
-	serviceDef.Spec.StackName = baseService.Spec.StackName
 	serviceDef.Spec.PortBindings = baseService.Spec.PortBindings
 	if serviceDef.Spec.Scale == 0 {
 		serviceDef.Spec.Scale = baseService.Spec.Scale
 	}
 
-	if _, err := client.Rio.Services(project.Project.Name).Create(serviceDef); err != nil {
-		return err
-	}
-
-	return nil
+	return ctx.Create(serviceDef)
 }

@@ -1,8 +1,8 @@
 package create
 
 import (
-	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/rio/cli/pkg/kvfile"
+	"github.com/rancher/wrangler/pkg/kv"
 )
 
 func parseLabels(files []string, override map[string]string) (map[string]string, error) {

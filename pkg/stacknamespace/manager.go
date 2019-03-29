@@ -1,8 +1,9 @@
 package stacknamespace
 
 import (
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
-	corev1client "github.com/rancher/types/apis/core/v1"
+	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	corev1controller "github.com/rancher/rio/pkg/generated/controllers/core/v1"
+	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -24,11 +25,11 @@ func GetStackFromNamespace(ns *corev1.Namespace) (namespace, name string) {
 	return ns.Labels[stackNamespaceLabel], ns.Labels[stackNameLabel]
 }
 
-func GetStack(obj metav1.Object, stackCache v1.StackClientCache, namespaces corev1client.NamespaceClientCache) (*v1.Stack, error) {
+func GetStack(obj metav1.Object, stackCache riov1controller.StackCache, namespaces corev1controller.NamespaceCache) (*v1.Stack, error) {
 	if s, ok := obj.(*v1.Stack); ok {
 		return s, nil
 	}
-	nsObj, err := namespaces.Get("", obj.GetNamespace())
+	nsObj, err := namespaces.Get(obj.GetNamespace())
 	if err != nil {
 		return nil, err
 	}

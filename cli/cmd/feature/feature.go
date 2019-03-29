@@ -3,17 +3,15 @@ package feature
 import (
 	"fmt"
 
-	"github.com/rancher/rio/cli/cmd/project"
 	"github.com/rancher/rio/cli/cmd/up"
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/table"
+	"github.com/rancher/rio/cli/pkg/tables"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
 	"github.com/rancher/rio/cli/pkg/up/questions"
-	"github.com/rancher/rio/pkg/settings"
-	projectv1 "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
-	v3 "github.com/rancher/types/apis/management.cattle.io/v3"
+	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	"github.com/urfave/cli"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -50,31 +48,12 @@ type Data struct {
 }
 
 func (l *Ls) Run(ctx *clicontext.CLIContext) error {
-	writer := table.NewWriter([][]string{
-		{"NAME", "Feature.Name"},
-		{"ENABLED", "{{.Feature.Spec.Enabled | boolToStar}}"},
-		{"DESCRIPTION", "Feature.Spec.Description"},
-	}, ctx)
-	defer writer.Close()
-
-	writer.AddFormatFunc("boolToStar", project.BoolToStar)
-	client, err := ctx.KubeClient()
+	features, err := ctx.List(clitypes.FeatureType)
 	if err != nil {
 		return err
 	}
-
-	featuresCollection, err := client.Project.Features("").List(metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-
-	for _, feature := range featuresCollection.Items {
-		writer.Write(Data{
-			ID:      feature.Name,
-			Feature: feature,
-		})
-	}
-	return writer.Err()
+	writer := tables.NewFeature(ctx)
+	return writer.Write(features)
 }
 
 type Disable struct{}
@@ -89,7 +68,6 @@ func (d *Disable) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	ctx.ProjectName = settings.RioSystemNamespace
 	return flipEnableFlag(ctx, resource.Name, nil, false)
 }
 
@@ -101,7 +79,6 @@ func (e *Enable) Run(ctx *clicontext.CLIContext) error {
 	if len(ctx.CLI.Args()) != 1 {
 		return fmt.Errorf("feature name is required")
 	}
-	ctx.ProjectName = settings.RioSystemNamespace
 	resource, err := lookup.Lookup(ctx, ctx.CLI.Args()[0], clitypes.FeatureType)
 	if err != nil {
 		return err
@@ -114,20 +91,15 @@ func (e *Enable) Run(ctx *clicontext.CLIContext) error {
 }
 
 func flipEnableFlag(ctx *clicontext.CLIContext, featureName string, answers map[string]string, enable bool) error {
-	client, err := ctx.KubeClient()
+	feature, err := ctx.Project.Features(ctx.Namespace).Get(featureName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
-
-	feature, err := client.Project.Features("").Get(featureName, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	feature.Spec.Enabled = enable
+	feature.Status.EnableOverride = &enable
 
 	if enable {
 		if len(answers) == 0 {
-			qs, err := questions.NewQuestions(toQuestions(feature.Spec.Questions), feature.Spec.Answers, true)
+			qs, err := questions.NewQuestions(feature.Spec.Questions, feature.Spec.Answers, true)
 			if err != nil {
 				return err
 			}
@@ -145,22 +117,5 @@ func flipEnableFlag(ctx *clicontext.CLIContext, featureName string, answers map[
 			}
 		}
 	}
-	if _, err := client.Project.Features("").Update(feature); err != nil {
-		return err
-	}
-	return nil
-}
-
-func toQuestions(qs []v3.Question) []v3.Question {
-	var r []v3.Question
-	for _, q := range qs {
-		r = append(r, v3.Question{
-			Variable:    q.Variable,
-			Description: q.Description,
-			Label:       q.Label,
-			Options:     q.Options,
-			Default:     q.Default,
-		})
-	}
-	return r
+	return ctx.UpdateObject(feature)
 }

@@ -1,30 +1,32 @@
 package systemstack
 
 import (
-	"github.com/rancher/norman/pkg/objectset"
-	"github.com/rancher/rio/pkg/settings"
+	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/template"
 	"github.com/rancher/rio/stacks"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
-	"github.com/rancher/types/apis/management.cattle.io/v3"
+	"github.com/rancher/wrangler/pkg/apply"
+	"github.com/rancher/wrangler/pkg/objectset"
 )
 
 type SystemStack struct {
-	processor *objectset.Processor
+	namespace string
+	apply     apply.Apply
 	spec      v1.StackSpec
 	name      string
 }
 
-func NewSystemStack(stacksClient v1.StackClient, name string, spec v1.StackSpec) *SystemStack {
+func NewSystemStack(apply apply.Apply, systemNamespace string, stacksClient riov1controller.StackController, name string, spec v1.StackSpec) *SystemStack {
 	return &SystemStack{
-		processor: objectset.NewProcessor("system-stack-" + name).
-			Client(stacksClient),
+		namespace: systemNamespace,
+		apply: apply.WithSetID("system-stack-" + name).
+			WithCacheTypes(stacksClient),
 		spec: spec,
 		name: name,
 	}
 }
 
-func (s *SystemStack) Questions() ([]v3.Question, error) {
+func (s *SystemStack) Questions() ([]v1.Question, error) {
 	content, err := s.content()
 	if err != nil {
 		return nil, err
@@ -50,7 +52,7 @@ func (s *SystemStack) Deploy(answers map[string]string) error {
 		return err
 	}
 
-	stack := v1.NewStack(settings.RioSystemNamespace, s.name, v1.Stack{
+	stack := v1.NewStack(s.namespace, s.name, v1.Stack{
 		Spec: s.spec,
 	})
 
@@ -62,9 +64,9 @@ func (s *SystemStack) Deploy(answers map[string]string) error {
 	}
 	stack.Spec.Template = string(content)
 
-	return s.processor.NewDesiredSet(nil, objectset.NewObjectSet().Add(stack)).Apply()
+	return s.apply.Apply(objectset.NewObjectSet().Add(stack))
 }
 
 func (s *SystemStack) Remove() error {
-	return s.processor.Remove(nil)
+	return s.apply.Apply(nil)
 }

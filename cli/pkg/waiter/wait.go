@@ -6,11 +6,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/coreos/etcd/client"
 	"github.com/rancher/norman/clientbase"
-	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/monitor"
+	"github.com/rancher/rio/cli/pkg/types"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )

@@ -5,8 +5,9 @@ import (
 	"os"
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/types"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 )
 
 type Cat struct {
@@ -14,22 +15,12 @@ type Cat struct {
 
 func (c *Cat) Run(ctx *clicontext.CLIContext) error {
 	for _, arg := range ctx.CLI.Args() {
-		r, err := ctx.ByID(arg, types.ConfigType)
+		r, err := lookup.Lookup(ctx, arg, types.ConfigType)
 		if err != nil {
 			return err
 		}
-		cluster, err := ctx.Cluster()
-		if err != nil {
-			return err
-		}
-		client, err := cluster.KubeClient()
-		if err != nil {
-			return err
-		}
-		config, err := client.Rio.Configs(r.Namespace).Get(r.Name, metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
+
+		config := r.Object.(*v1.Config)
 
 		if len(config.Spec.Content) == 0 {
 			continue

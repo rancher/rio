@@ -3,9 +3,9 @@ package pretty
 import (
 	"fmt"
 
-	"github.com/rancher/norman/types/convert"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1/schema"
+	"github.com/rancher/mapper/convert"
+	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/apis/rio.cattle.io/v1/schema"
 )
 
 var (
@@ -51,7 +51,7 @@ func internalizeStack(data map[string]interface{}) (map[string]interface{}, erro
 	return data, err
 }
 
-func ToInternalStack(data map[string]interface{}) (*v1.InternalStack, error) {
+func ToPrettyStack(data []byte) (*v1.StackFile, error) {
 	data, err := NormalizeData(StackType, data)
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func ToInternalStack(data map[string]interface{}) (*v1.InternalStack, error) {
 		return nil, err
 	}
 
-	stack := &v1.InternalStack{}
+	stack := &v1.StackFile{}
 	err = convert.ToObj(data, stack)
 	return stack, err
 }

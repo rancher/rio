@@ -3,14 +3,13 @@ package clicontext
 import (
 	"context"
 
-	"github.com/rancher/rio/cli/pkg/clientcfg"
 	"github.com/urfave/cli"
 )
 
 const dataKey = "config"
 
 type CLIContext struct {
-	*clientcfg.Config
+	*Config
 	Ctx context.Context
 	CLI *cli.Context
 }

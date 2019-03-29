@@ -6,7 +6,7 @@ import (
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/stack"
-	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -22,11 +22,6 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("two arguments are required, name and size in gigabytes")
 	}
 
-	client, err := ctx.KubeClient()
-	if err != nil {
-		return err
-	}
-
 	name := ctx.CLI.Args()[0]
 	size := ctx.CLI.Args()[1]
 	sizeGB, err := strconv.Atoi(size)
@@ -34,7 +29,12 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("invalid number: %s", size)
 	}
 
-	volume := &riov1.Volume{
+	_, namespace, name, err := stack.ResolveSpaceStackForName(ctx, name)
+	if err != nil {
+		return err
+	}
+
+	volume := riov1.NewVolume(namespace, name, riov1.Volume{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: c.L_Label,
 		},
@@ -44,18 +44,7 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 			Template:   c.T_Template,
 			AccessMode: c.AccessMode,
 		},
-	}
+	})
 
-	volume.Spec.ProjectName, volume.Spec.StackName, volume.Name, err = stack.ResolveSpaceStackForName(ctx, name)
-	if err != nil {
-		return err
-	}
-
-	volume, err = client.Rio.Volumes(volume.Spec.StackName).Create(volume)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println(volume.Name)
-	return nil
+	return ctx.Create(volume)
 }

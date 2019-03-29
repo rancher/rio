@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"strings"
 )
 
 func Limit(s string, count int) string {
@@ -17,4 +18,8 @@ func Hex(s string, length int) string {
 	h := md5.Sum([]byte(s))
 	d := hex.EncodeToString(h[:])
 	return d[:length]
+}
+
+func PublicDomain(s string) string {
+	return Limit(strings.Replace(s, ".", "-", -1), 15)
 }

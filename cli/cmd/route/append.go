@@ -7,12 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rancher/norman/pkg/kv"
-	"github.com/rancher/rio/cli/cmd/create"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/clientcfg"
 	"github.com/rancher/rio/cli/pkg/stack"
-	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/pretty/objectmappers"
+	"github.com/rancher/wrangler/pkg/kv"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -46,9 +45,9 @@ type Add struct {
 }
 
 type RouteAction interface {
-	validateServiceStack(cluster *clientcfg.Cluster, args []string) error
+	validateServiceStack(ctx *clicontext.CLIContext, args []string) error
 	buildRouteSpec(ctx *clicontext.CLIContext, args []string) (*riov1.RouteSpec, error)
-	getRouteSet(ctx *clicontext.CLIContext, args []string) (*riov1.RouteSet, error)
+	getRouteSet(ctx *clicontext.CLIContext, args []string) (*riov1.Router, error)
 }
 
 func (a *Append) Run(ctx *clicontext.CLIContext) error {
@@ -61,17 +60,7 @@ func insertRoute(ctx *clicontext.CLIContext, insert bool, a RouteAction) error {
 		return fmt.Errorf("at least 3 arguements are required: HOST[/PATH] to|redirect|mirror TARGET")
 	}
 
-	client, err := ctx.KubeClient()
-	if err != nil {
-		return err
-	}
-
-	cluster, err := ctx.Cluster()
-	if err != nil {
-		return err
-	}
-
-	if err := a.validateServiceStack(cluster, args); err != nil {
+	if err := a.validateServiceStack(ctx, args); err != nil {
 		return err
 	}
 
@@ -92,33 +81,28 @@ func insertRoute(ctx *clicontext.CLIContext, insert bool, a RouteAction) error {
 	}
 
 	if routeSet.Name == "" {
-		routeSet, err = client.Rio.RouteSets("").Create(routeSet)
-	} else {
-		routeSet, err = client.Rio.RouteSets("").Update(routeSet)
+		return ctx.Create(routeSet)
 	}
 
-	if err == nil {
-		fmt.Println(routeSet.Name)
-	}
-	return err
+	return ctx.UpdateObject(routeSet)
 }
 
-func (a *Add) validateServiceStack(cluster *clientcfg.Cluster, args []string) error {
+func (a *Add) validateServiceStack(ctx *clicontext.CLIContext, args []string) error {
 	_, service, stack, _, _ := parseMatch(args[0])
 	if service == "" {
 		return fmt.Errorf("route host/path must be in the format service.stack[/path], for example myservice.mystack/login")
 	}
 	if stack == "" {
-		stack = cluster.DefaultStackName
+		stack = ctx.GetDefaultStackName()
 	}
 
 	return nil
 }
 
-func (a *Add) getRouteSet(ctx *clicontext.CLIContext, args []string) (*riov1.RouteSet, error) {
+func (a *Add) getRouteSet(ctx *clicontext.CLIContext, args []string) (*riov1.Router, error) {
 	_, service, stackName, _, _ := parseMatch(args[0])
 
-	projectName, stackName, name, err := stack.ResolveSpaceStackForName(ctx, stackName+"/"+service)
+	_, stackName, name, err := stack.ResolveSpaceStackForName(ctx, stackName+"/"+service)
 	if err != nil {
 		return nil, err
 	}
@@ -132,18 +116,7 @@ func (a *Add) getRouteSet(ctx *clicontext.CLIContext, args []string) (*riov1.Rou
 		return routeSet, nil
 	}
 
-	return &riov1.RouteSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-			Namespace: stackName,
-		},
-		Spec: riov1.RouteSetSpec{
-			StackScoped: riov1.StackScoped{
-				ProjectName: projectName,
-				StackName: stackName,
-			},
-		},
-	}, nil
+	return riov1.NewRouter(stackName, name, riov1.Router{}), nil
 }
 
 func actionsString(many bool) string {
@@ -201,7 +174,7 @@ func (a *Add) addTo(routeSpec *riov1.RouteSpec, action string, dests []riov1.Wei
 }
 
 func (a *Add) addTimeout(routeSpec *riov1.RouteSpec) error {
-	n, err := create.ParseDurationUnit(a.Timeout, "timeout", time.Millisecond)
+	n, err := objectmappers.ParseDurationUnit(a.Timeout, "timeout", time.Millisecond)
 	if err != nil {
 		return err
 	}
@@ -263,7 +236,7 @@ func (a *Add) addFault(routeSpec *riov1.RouteSpec) error {
 	}
 
 	if a.FaultDelay != "0s" && a.FaultDelay != "" {
-		d, err := create.ParseDurationUnit(a.FaultDelay, "fault delay", time.Millisecond)
+		d, err := objectmappers.ParseDurationUnit(a.FaultDelay, "fault delay", time.Millisecond)
 		if err != nil {
 			return err
 		}
@@ -306,20 +279,20 @@ func (a *Add) addMatch(ctx *clicontext.CLIContext, matchString string, routeSpec
 
 	if scheme != "" {
 		addMatch = true
-		match.Scheme = create.ParseStringMatch(scheme)
+		match.Scheme = objectmappers.ParseStringMatch(scheme)
 	}
 
 	if path != "" {
 		addMatch = true
-		if !create.IsRegexp(path) && path[0] != '/' {
+		if !objectmappers.IsRegexp(path) && path[0] != '/' {
 			path = "/" + path
 		}
-		match.Path = create.ParseStringMatch(path)
+		match.Path = objectmappers.ParseStringMatch(path)
 	}
 
 	if a.Method != "" {
 		addMatch = true
-		match.Method = create.ParseStringMatch(a.Method)
+		match.Method = objectmappers.ParseStringMatch(a.Method)
 	}
 
 	if a.From != "" {
@@ -365,7 +338,7 @@ func stringMapToStringMatchMap(data map[string]string) map[string]riov1.StringMa
 	result := map[string]riov1.StringMatch{}
 
 	for k, v := range data {
-		result[k] = *create.ParseStringMatch(v)
+		result[k] = *objectmappers.ParseStringMatch(v)
 	}
 
 	return result
@@ -432,13 +405,8 @@ func parseAction(action string) (string, error) {
 	return action, nil
 }
 
-func lookupRoute(ctx *clicontext.CLIContext, stackName, name string) (*riov1.RouteSet, error) {
-	client, err := ctx.KubeClient()
-	if err != nil {
-		return nil, err
-	}
-
-	route, err := client.Rio.RouteSets(stackName).Get(name, metav1.GetOptions{})
+func lookupRoute(ctx *clicontext.CLIContext, stackName, name string) (*riov1.Router, error) {
+	route, err := ctx.Rio.Routers(stackName).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

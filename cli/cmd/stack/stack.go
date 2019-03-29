@@ -3,16 +3,16 @@ package stack
 import (
 	"fmt"
 
-	"github.com/rancher/rio/cli/pkg/mapper"
-
-	"github.com/rancher/rio/cli/pkg/types"
-
+	mapper2 "github.com/rancher/mapper"
+	"github.com/rancher/rio/cli/cmd/rm"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/table"
-	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/cli/pkg/tables"
+	"github.com/rancher/rio/cli/pkg/types"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/urfave/cli"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func Stack() cli.Command {
@@ -66,49 +66,14 @@ func Stack() cli.Command {
 	}
 }
 
-type Data struct {
-	ID    string
-	Stack riov1.Stack
-}
-
 func stackLs(ctx *clicontext.CLIContext) error {
-	project, err := ctx.Project()
+	stacks, err := ctx.List(types.StackType)
 	if err != nil {
 		return err
 	}
 
-	client, err := ctx.KubeClient()
-	if err != nil {
-		return err
-	}
-
-	collection, err := client.Rio.Stacks(project.Project.Name).List(metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-
-	writer := table.NewWriter([][]string{
-		{"NAME", "Stack.Name"},
-		{"STATE", "Stack | toJson | state"},
-		{"CREATED", "{{.Stack.CreationTimestamp | ago}}"},
-		{"DESC", "Stack.Spec.Description"},
-		{"DETAIL", "Stack | toJson | transitioning"},
-	}, ctx)
-
-	m := mapper.GenericStatusMapper
-	writer.AddFormatFunc("state", m.FormatState)
-	writer.AddFormatFunc("transitioning", m.FormatTransitionMessage)
-
-	defer writer.Close()
-
-	for _, item := range collection.Items {
-		writer.Write(&Data{
-			ID:    item.Name,
-			Stack: item,
-		})
-	}
-
-	return writer.Err()
+	writer := tables.NewStack(ctx)
+	return writer.Write(stacks)
 }
 
 func stackCreate(ctx *clicontext.CLIContext) error {
@@ -117,70 +82,20 @@ func stackCreate(ctx *clicontext.CLIContext) error {
 		names = ctx.CLI.Args()
 	}
 
-	project, err := ctx.Project()
-	if err != nil {
-		return err
-	}
-
-	client, err := ctx.KubeClient()
-	if err != nil {
-		return err
-	}
-
-	var lastErr error
+	var stacks []runtime.Object
 	for _, name := range names {
-		stack := &riov1.Stack{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: name,
-			},
+		stacks = append(stacks, riov1.NewStack(ctx.Namespace, name, riov1.Stack{
 			Spec: riov1.StackSpec{
 				Description: ctx.CLI.String("description"),
 			},
-		}
-
-		stack, err = client.Rio.Stacks(project.Project.Name).Create(stack)
-		if err != nil {
-			lastErr = err
-		}
+		}))
 	}
 
-	if lastErr != nil {
-		return lastErr
-	}
-
-	return nil
+	return ctx.MultiCreate(stacks...)
 }
 
 func stackRm(ctx *clicontext.CLIContext) error {
-	names := ctx.CLI.Args()
-
-	project, err := ctx.Project()
-	if err != nil {
-		return err
-	}
-
-	client, err := ctx.KubeClient()
-	if err != nil {
-		return err
-	}
-
-	var lastErr error
-	for _, name := range names {
-		resource, err := lookup.Lookup(ctx, name, types.StackType)
-		if err != nil {
-			return err
-		}
-
-		if err := client.Rio.Stacks(project.Project.Name).Delete(resource.Name, &metav1.DeleteOptions{}); err != nil {
-			lastErr = err
-		}
-	}
-
-	if lastErr != nil {
-		return lastErr
-	}
-
-	return nil
+	return rm.Remove(ctx, types.StackType)
 }
 
 func stackUpdate(ctx *clicontext.CLIContext) error {
@@ -188,41 +103,19 @@ func stackUpdate(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("at least on stack name is required")
 	}
 
-	names := ctx.CLI.Args()
+	var (
+		names  = ctx.CLI.Args()
+		errors []error
+	)
 
-	project, err := ctx.Project()
-	if err != nil {
-		return err
-	}
-
-	client, err := ctx.KubeClient()
-	if err != nil {
-		return err
-	}
-
-	var lastErr error
 	for _, name := range names {
-		resource, err := lookup.Lookup(ctx, name, types.StackType)
-		if err != nil {
-			return err
-		}
-
-		stack, err := client.Rio.Stacks(project.Project.Name).Get(resource.Name, metav1.GetOptions{})
-		if err != nil {
-			lastErr = err
-			continue
-		}
-		stack.Spec.Description = ctx.CLI.String("description")
-
-		if _, err := client.Rio.Stacks(project.Project.Name).Update(stack); err != nil {
-			lastErr = err
-			continue
-		}
+		err := ctx.Update(name, types.StackType, func(obj runtime.Object) error {
+			stack := obj.(*v1.Stack)
+			stack.Spec.Description = ctx.CLI.String("description")
+			return nil
+		})
+		errors = append(errors, err)
 	}
 
-	if lastErr != nil {
-		return lastErr
-	}
-
-	return nil
+	return mapper2.NewErrors(errors...)
 }

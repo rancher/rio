@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/rancher/rio/cli/pkg/tables"
+
 	"github.com/rancher/rio/cli/cmd/ps"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 )
@@ -29,16 +31,11 @@ func (a *Attach) Run(ctx *clicontext.CLIContext) error {
 }
 
 func RunAttach(ctx *clicontext.CLIContext, timeout time.Duration, stdin, tty bool, container string) error {
-	cluster, err := ctx.Cluster()
-	if err != nil {
-		return err
-	}
-
-	var pd *ps.PodData
+	var pd *tables.PodData
 
 	deadline := time.Now().Add(timeout)
 	for {
-		pd, err = ps.ListFirstPod(ctx, true, container)
+		pd, err := ps.ListFirstPod(ctx, true, container)
 		if err != nil {
 			return err
 		}
@@ -68,5 +65,5 @@ func RunAttach(ctx *clicontext.CLIContext, timeout time.Duration, stdin, tty boo
 		execArgs = append(execArgs, "-t")
 	}
 
-	return cluster.Kubectl(pd.Pod.Namespace, "attach", execArgs...)
+	return ctx.Kubectl(pd.Pod.Namespace, "attach", execArgs...)
 }

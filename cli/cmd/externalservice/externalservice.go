@@ -1,17 +1,14 @@
 package externalservice
 
 import (
-	"strings"
-
 	"github.com/rancher/rio/cli/cmd/rm"
-	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
+	"github.com/rancher/rio/cli/pkg/tables"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
-	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/urfave/cli"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func ExternalService(app *cli.App) cli.Command {
@@ -55,63 +52,13 @@ type Data struct {
 }
 
 func externalServiceLs(ctx *clicontext.CLIContext) error {
-	client, err := ctx.KubeClient()
+	externalServices, err := ctx.List(clitypes.ExternalServiceType)
 	if err != nil {
 		return err
 	}
 
-	project, err := ctx.Project()
-	if err != nil {
-		return err
-	}
-
-	cluster, err := ctx.Cluster()
-	if err != nil {
-		return err
-	}
-	collection, err := client.Rio.ExternalServices("").List(metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-	var ess []riov1.ExternalService
-	for _, es := range collection.Items {
-		if es.Spec.ProjectName == project.Project.Name {
-			ess = append(ess, es)
-		}
-	}
-
-	writer := table.NewWriter([][]string{
-		{"NAME", "{{stackScopedName .Stack.Name .Service.Name}}"},
-		{"CREATED", "{{.Created | ago}}"},
-		{"TARGET", "{{.Service.Target}}"},
-	}, ctx)
-	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cluster))
-	defer writer.Close()
-
-	stackByID, err := util.StacksByID(client, project.Project.Name)
-	if err != nil {
-		return err
-	}
-
-	for _, item := range ess {
-		endpoint := ""
-		if item.Spec.FQDN != "" {
-			endpoint = item.Spec.FQDN
-		} else if item.Spec.Service != "" {
-			endpoint = item.Spec.Service
-		} else if len(item.Spec.IPAddresses) > 0 {
-			endpoint = strings.Join(item.Spec.IPAddresses, ",")
-		}
-		writer.Write(&Data{
-			Name:    item.Name,
-			Target:  endpoint,
-			Created: item.CreationTimestamp.String(),
-			Stack:   stackByID[item.Spec.StackName],
-			Service: &item,
-		})
-	}
-
-	return writer.Err()
+	writer := tables.NewExternalService(ctx)
+	return writer.Write(externalServices)
 }
 
 func externalServiceRm(ctx *clicontext.CLIContext) error {

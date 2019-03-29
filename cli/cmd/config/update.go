@@ -9,7 +9,8 @@ import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/types"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type Update struct {
@@ -42,27 +43,24 @@ func (c *Update) Run(ctx *clicontext.CLIContext) error {
 }
 
 func RunUpdate(ctx *clicontext.CLIContext, name, namespace string, content []byte, labels map[string]string) error {
-	client, err := ctx.KubeClient()
-	if err != nil {
-		return err
-	}
+	return ctx.UpdateResource(types.Resource{
+		Namespace: namespace,
+		Name:      name,
+		Type:      types.ConfigType,
+	}, func(obj runtime.Object) error {
+		config := obj.(*v1.Config)
 
-	config, err := client.Rio.Configs(namespace).Get(name, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
+		if len(labels) > 0 {
+			config.Labels = labels
+		}
+		if utf8.Valid(content) {
+			config.Spec.Content = string(content)
+			config.Spec.Encoded = false
+		} else {
+			config.Spec.Content = base64.StdEncoding.EncodeToString(content)
+			config.Spec.Encoded = true
+		}
 
-	if len(labels) > 0 {
-		config.Labels = labels
-	}
-	if utf8.Valid(content) {
-		config.Spec.Content = string(content)
-		config.Spec.Encoded = false
-	} else {
-		config.Spec.Content = base64.StdEncoding.EncodeToString(content)
-		config.Spec.Encoded = true
-	}
-
-	_, err = client.Rio.Configs(namespace).Update(config)
-	return err
+		return nil
+	})
 }

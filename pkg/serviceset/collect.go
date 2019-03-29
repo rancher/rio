@@ -3,12 +3,13 @@ package serviceset
 import (
 	"fmt"
 
-	"github.com/rancher/norman/types/convert"
-	"github.com/rancher/norman/types/convert/merge"
+	"github.com/rancher/rio/cli/pkg/constants"
+
+	"github.com/rancher/mapper/convert"
+	"github.com/rancher/mapper/convert/merge"
 	"github.com/rancher/rio/cli/pkg/types"
-	"github.com/rancher/rio/pkg/settings"
-	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1/schema"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/pretty/schema"
 )
 
 func combineAndNormalize(name string, base map[string]interface{}, rev *riov1.Service) (*riov1.Service, error) {
@@ -16,7 +17,7 @@ func combineAndNormalize(name string, base map[string]interface{}, rev *riov1.Se
 	if err != nil {
 		return nil, err
 	}
-	s := schema.Schemas.Schema(&schema.Version, types.ServiceType)
+	s := schema.Schemas.Schema(types.ServiceType)
 	data = merge.UpdateMerge(s.InternalSchema, schema.Schemas, base, data, false)
 
 	newRev := rev.DeepCopy()
@@ -63,10 +64,10 @@ func servicesByParent(services []*riov1.Service) (Services, error) {
 func normalizeParent(name string, service *riov1.Service) *riov1.Service {
 	service = service.DeepCopy()
 	if service.Spec.Revision.Version == "" {
-		service.Spec.Revision.Version = settings.DefaultServiceVersion
+		service.Spec.Revision.Version = constants.DefaultServiceVersion
 	}
 	service.Spec.Revision.ServiceName = name
-	if service.Spec.Revision.Version == settings.DefaultServiceVersion {
+	if service.Spec.Revision.Version == constants.DefaultServiceVersion {
 		service.Name = name
 	} else {
 		service.Name = name + "-" + service.Spec.Revision.Version

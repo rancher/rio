@@ -1,6 +1,6 @@
 package mapper
 
-import "github.com/rancher/norman/types"
+import types "github.com/rancher/mapper"
 
 type Image struct{}
 

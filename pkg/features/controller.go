@@ -3,13 +3,11 @@ package features
 import (
 	"context"
 
-	"github.com/rancher/norman/types/slice"
-
-	"github.com/rancher/norman/controller"
-	ntypes "github.com/rancher/norman/types"
+	ntypes "github.com/rancher/mapper"
+	"github.com/rancher/mapper/slice"
+	v1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/systemstack"
 	"github.com/rancher/rio/types"
-	"github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
 )
 
 type ControllerRegister func(ctx context.Context, rContext *types.Context) error
@@ -108,7 +106,7 @@ func (f *FeatureController) Start(ctx context.Context, feature *v1.Feature) erro
 		}
 	}
 
-	if err := controller.SyncThenStart(ctx, 5, rContext.Starters()...); err != nil {
+	if err := rContext.Start(ctx); err != nil {
 		return err
 	}
 

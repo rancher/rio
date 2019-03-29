@@ -3,9 +3,7 @@ package lookup
 import (
 	"fmt"
 
-	"github.com/rancher/norman/pkg/kv"
-	"github.com/rancher/rio/cli/pkg/clientcfg"
-	"github.com/rancher/rio/pkg/settings"
+	"github.com/rancher/wrangler/pkg/kv"
 )
 
 type ParsedContainer struct {
@@ -14,10 +12,10 @@ type ParsedContainer struct {
 	Service       StackScoped
 }
 
-func ParseContainer(project *clientcfg.Project, name string) (ParsedContainer, bool) {
+func ParseContainer(defaultStackName string, name string) (ParsedContainer, bool) {
 	result := ParsedContainer{}
 
-	stackScoped := ParseStackScoped(project, name)
+	stackScoped := ParseStackScoped(defaultStackName, name)
 	if stackScoped.Other == "" {
 		return result, false
 	}
@@ -36,8 +34,5 @@ func (p ParsedContainer) String() string {
 }
 
 func (p ParsedContainer) K8sPodName() string {
-	if p.Service.Version == "" || p.Service.Version == settings.DefaultServiceVersion {
-		return fmt.Sprintf("%s-%s", p.Service.ResourceName, p.PodName)
-	}
-	return fmt.Sprintf("%s-%s-%s", p.Service.ResourceName, p.Service.Version, p.PodName)
+	return fmt.Sprintf("%s-%s", p.Service.ResourceName, p.PodName)
 }

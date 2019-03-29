@@ -8,12 +8,12 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/rancher/norman/types/convert"
+	"github.com/rancher/mapper/convert"
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	stackpkg "github.com/rancher/rio/cli/pkg/stack"
 	"github.com/rancher/rio/cli/pkg/up"
-	"github.com/rancher/rio/pkg/yaml"
+	"github.com/rancher/wrangler/pkg/yaml"
 	"github.com/sirupsen/logrus"
 )
 
@@ -101,8 +101,8 @@ func ReadAnswers(answersFile string) (map[string]string, error) {
 		return nil, err
 	}
 
-	data, err := yaml.Parse(content)
-	if err != nil {
+	data := map[string]interface{}{}
+	if err := yaml.Unmarshal(content, &data); err != nil {
 		return nil, err
 	}
 

@@ -1,7 +1,7 @@
 package serviceset
 
 import (
-	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 )
 
 type Services map[string]*ServiceSet

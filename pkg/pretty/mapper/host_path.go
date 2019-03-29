@@ -3,9 +3,9 @@ package mapper
 import (
 	"strings"
 
-	"github.com/rancher/norman/types"
-	"github.com/rancher/norman/types/convert"
-	"github.com/rancher/norman/types/mapper"
+	types "github.com/rancher/mapper"
+	"github.com/rancher/mapper/convert"
+	"github.com/rancher/mapper/mappers"
 )
 
 type HostPath struct {
@@ -54,5 +54,5 @@ func (d HostPath) ToInternal(data map[string]interface{}) error {
 }
 
 func (d HostPath) ModifySchema(schema *types.Schema, schemas *types.Schemas) error {
-	return mapper.ValidateField(d.Field, schema)
+	return mappers.ValidateField(d.Field, schema)
 }

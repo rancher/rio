@@ -3,21 +3,21 @@ package types
 import (
 	"context"
 
-	"github.com/rancher/norman"
-	"github.com/rancher/norman/controller"
-	"github.com/rancher/rio/types/apis/apiextensions.k8s.io/v1beta1"
-	buildv1alpha1 "github.com/rancher/rio/types/apis/build.knative.dev/v1alpha1"
-	cmv1alpha1 "github.com/rancher/rio/types/apis/certmanager.k8s.io/v1alpha1"
-	"github.com/rancher/rio/types/apis/networking.istio.io/v1alpha3"
-	policyv1beta1 "github.com/rancher/rio/types/apis/policy/v1beta1"
-	projectv1 "github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
-	autoscalev1 "github.com/rancher/rio/types/apis/rio-autoscale.cattle.io/v1"
-	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
-	storagev1 "github.com/rancher/rio/types/apis/storage.k8s.io/v1"
-	webhookv1 "github.com/rancher/rio/types/apis/webhookinator.rio.cattle.io/v1"
-	appsv1 "github.com/rancher/types/apis/apps/v1beta2"
-	v1 "github.com/rancher/types/apis/core/v1"
-	rbacv1 "github.com/rancher/types/apis/rbac.authorization.k8s.io/v1"
+	"github.com/rancher/rio/pkg/generated/controllers/apiextensions.k8s.io"
+	"github.com/rancher/rio/pkg/generated/controllers/apps"
+	"github.com/rancher/rio/pkg/generated/controllers/autoscale.rio.cattle.io"
+	"github.com/rancher/rio/pkg/generated/controllers/build.knative.dev"
+	"github.com/rancher/rio/pkg/generated/controllers/certmanager.k8s.io"
+	"github.com/rancher/rio/pkg/generated/controllers/core"
+	"github.com/rancher/rio/pkg/generated/controllers/networking.istio.io"
+	"github.com/rancher/rio/pkg/generated/controllers/policy"
+	"github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io"
+	"github.com/rancher/rio/pkg/generated/controllers/rbac"
+	"github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io"
+	"github.com/rancher/rio/pkg/generated/controllers/storage"
+	"github.com/rancher/rio/pkg/generated/controllers/webhookinator.rio.cattle.io"
+	"github.com/rancher/wrangler/pkg/apply"
+	"github.com/rancher/wrangler/pkg/start"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -25,70 +25,76 @@ import (
 type contextKey struct{}
 
 type Context struct {
-	InCluster   bool
-	Apps        *appsv1.Clients
-	AutoScale   *autoscalev1.Clients
-	Build       *buildv1alpha1.Clients
-	CertManager *cmv1alpha1.Clients
-	Core        *v1.Clients
-	Ext         *v1beta1.Clients
-	Global      *projectv1.Clients
-	K8s         kubernetes.Interface
-	LocalConfig *rest.Config
-	Networking  *v1alpha3.Clients
-	Policy      *policyv1beta1.Clients
-	RBAC        *rbacv1.Clients
-	Rio         *riov1.Clients
-	Storage     *storagev1.Clients
-	Webhook     *webhookv1.Clients
-}
+	Namespace       string
+	SystemNamespace string
 
-func (c *Context) Starters() []controller.Starter {
-	return []controller.Starter{
-		c.AutoScale.Interface,
-		c.Apps.Interface,
-		c.Build.Interface,
-		c.CertManager.Interface,
-		c.Core.Interface,
-		c.Ext.Interface,
-		c.Global.Interface,
-		c.Networking.Interface,
-		c.Policy.Interface,
-		c.RBAC.Interface,
-		c.Rio.Interface,
-		c.Storage.Interface,
-		c.Webhook.Interface,
-	}
+	Apps        *apps.Factory
+	AutoScale   *autoscale.Factory
+	Build       *build.Factory
+	CertManager *certmanager.Factory
+	Core        *core.Factory
+	Ext         *apiextensions.Factory
+	Global      *project.Factory
+	K8s         kubernetes.Interface
+	Networking  *networking.Factory
+	Policy      *policy.Factory
+	RBAC        *rbac.Factory
+	Rio         *rio.Factory
+	Storage     *storage.Factory
+	Webhook     *webhookinator.Factory
+
+	Apply apply.Apply
 }
 
 func From(ctx context.Context) *Context {
 	return ctx.Value(contextKey{}).(*Context)
 }
 
-func NewContext(ctx context.Context) *Context {
-	server := norman.GetServer(ctx)
-	return &Context{
-		Apps:        appsv1.ClientsFrom(ctx),
-		AutoScale:   autoscalev1.ClientsFrom(ctx),
-		Build:       buildv1alpha1.ClientsFrom(ctx),
-		CertManager: cmv1alpha1.ClientsFrom(ctx),
-		Core:        v1.ClientsFrom(ctx),
-		Ext:         v1beta1.ClientsFrom(ctx),
-		Global:      projectv1.ClientsFrom(ctx),
-		K8s:         server.K8sClient,
-		LocalConfig: server.LocalConfig,
-		Networking:  v1alpha3.ClientsFrom(ctx),
-		Policy:      policyv1beta1.ClientsFrom(ctx),
-		RBAC:        rbacv1.ClientsFrom(ctx),
-		Rio:         riov1.ClientsFrom(ctx),
-		Storage:     storagev1.ClientsFrom(ctx),
-		Webhook:     webhookv1.ClientsFrom(ctx),
+func NewContext(namespace string, config *rest.Config) *Context {
+	context := &Context{
+		Namespace:       namespace,
+		SystemNamespace: namespace + "-system",
+		Apps:            apps.NewFactoryFromConfigOrDie(config),
+		AutoScale:       autoscale.NewFactoryFromConfigOrDie(config),
+		Build:           build.NewFactoryFromConfigOrDie(config),
+		CertManager:     certmanager.NewFactoryFromConfigOrDie(config),
+		Core:            core.NewFactoryFromConfigOrDie(config),
+		Ext:             apiextensions.NewFactoryFromConfigOrDie(config),
+		Global:          project.NewFactoryFromConfigOrDie(config),
+		Networking:      networking.NewFactoryFromConfigOrDie(config),
+		Policy:          policy.NewFactoryFromConfigOrDie(config),
+		RBAC:            rbac.NewFactoryFromConfigOrDie(config),
+		Rio:             rio.NewFactoryFromConfigOrDie(config),
+		Storage:         storage.NewFactoryFromConfigOrDie(config),
+		Webhook:         webhookinator.NewFactoryFromConfigOrDie(config),
+		K8s:             kubernetes.NewForConfigOrDie(config),
 	}
+
+	context.Apply = apply.New(context.K8s.Discovery(), apply.NewClientFactory(config))
+	return context
 }
 
-func BuildContext(ctx context.Context) (context.Context, error) {
-	c := NewContext(ctx)
-	return context.WithValue(ctx, contextKey{}, c), nil
+func (c *Context) Start(ctx context.Context) error {
+	return start.All(ctx, 5,
+		c.Apps,
+		c.AutoScale,
+		c.Build,
+		c.CertManager,
+		c.Core,
+		c.Ext,
+		c.Global,
+		c.Networking,
+		c.Policy,
+		c.RBAC,
+		c.Rio,
+		c.Storage,
+		c.Webhook,
+	)
+}
+
+func BuildContext(ctx context.Context, namespace string, config *rest.Config) (context.Context, *Context) {
+	c := NewContext(namespace, config)
+	return context.WithValue(ctx, contextKey{}, c), c
 }
 
 func Register(f func(context.Context, *Context) error) func(ctx context.Context) error {

@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func ReadDir(dir string, answersFromEnv bool) (map[string]*Template, error) {
+func ReadDir(suffix, dir string, answersFromEnv bool) (map[string]*Template, error) {
 	files, err := ioutil.ReadDir(dir)
 	if os.IsNotExist(err) {
 		return nil, nil
@@ -30,10 +30,10 @@ func ReadDir(dir string, answersFromEnv bool) (map[string]*Template, error) {
 		}
 
 		switch {
-		case name == "stack.yaml":
+		case name == suffix:
 			stackName = "default"
-		case strings.HasSuffix(name, "-stack.yaml"):
-			stackName = strings.TrimSuffix(name, "-stack.yaml")
+		case strings.HasSuffix(name, "-"+suffix):
+			stackName = strings.TrimSuffix(name, "-"+suffix)
 		default:
 			continue
 		}

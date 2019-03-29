@@ -13,7 +13,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/up/questions"
-	template2 "github.com/rancher/rio/pkg/template"
+	"github.com/rancher/rio/pkg/stackfile"
+	"github.com/rancher/rio/pkg/template"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -45,7 +46,7 @@ func readFileInPath(relativePath, file string) ([]byte, error) {
 	return ioutil.ReadFile(f)
 }
 
-func readFiles(relativePath string, files []string, template *template2.Template, promptReplaceFile bool) error {
+func readFiles(relativePath string, files []string, template *stackfile.StackFile, promptReplaceFile bool) error {
 	for _, file := range files {
 		existingContent, exists := template.AdditionalFiles[file]
 		content, err := readFileInPath(relativePath, file)
@@ -77,26 +78,16 @@ func readFiles(relativePath string, files []string, template *template2.Template
 }
 
 func Run(ctx *clicontext.CLIContext, content []byte, stackName string, promptReplaceFile, prompt bool, answers map[string]string, file string) error {
-	project, err := ctx.Project()
+	stack, err := ctx.Rio.Stacks(ctx.Namespace).Get(stackName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
-	client, err := ctx.KubeClient()
+	template, err := stackfile.FromStack(stack)
 	if err != nil {
 		return err
 	}
-
-	stack, err := client.Rio.Stacks(project.Project.Name).Get(stackName, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-
-	template, err := template2.FromClientStack(stack)
-	if err != nil {
-		return err
-	}
-	template.Content = content
+	template.Template.Content = content
 
 	files, err := template.RequiredFiles()
 	if err != nil {
@@ -119,35 +110,27 @@ func Run(ctx *clicontext.CLIContext, content []byte, stackName string, promptRep
 		return fmt.Errorf("failed to parse template. If you are using go templating the template must execute with no values: %v", err)
 	}
 
-	mergeAnswers(template, answers)
+	mergeAnswers(&template.Template, answers)
 
 	if err := template.PopulateAnswersFromEnv(); err != nil {
 		return err
 	}
 
-	if err := populateAnswersFromQuestions(template, prompt); err != nil {
+	if err := populateAnswersFromQuestions(&template.Template, prompt); err != nil {
 		return err
 	}
 
-	newStack, err := template.ToClientStack()
-	if err != nil {
-		return err
-	}
-
-	if _, err := client.Rio.Stacks(project.Project.Name).Update(newStack); err != nil {
-		return err
-	}
-
-	return nil
+	stack.Spec = template.ToStackSpec()
+	return ctx.UpdateObject(stack)
 }
 
-func mergeAnswers(template *template2.Template, answers map[string]string) {
+func mergeAnswers(template *template.Template, answers map[string]string) {
 	for k, v := range answers {
 		template.Answers[k] = v
 	}
 }
 
-func populateAnswersFromQuestions(template *template2.Template, forcePrompt bool) error {
+func populateAnswersFromQuestions(template *template.Template, forcePrompt bool) error {
 	qs, err := questions.NewQuestions(template.Questions, template.Answers, forcePrompt)
 	if err != nil {
 		return err

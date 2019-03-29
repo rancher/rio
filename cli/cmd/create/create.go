@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rancher/rio/pkg/pretty/objectmappers"
+
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/kvfile"
 	"github.com/rancher/rio/cli/pkg/stack"
-	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -107,24 +109,14 @@ func (c *Create) RunCallback(ctx *clicontext.CLIContext, cb func(service *riov1.
 		return nil, err
 	}
 
-	service.Spec.ProjectName, service.Spec.StackName, service.Name, err = stack.ResolveSpaceStackForName(ctx, service.Name)
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := ctx.KubeClient()
+	_, service.Namespace, service.Name, err = stack.ResolveSpaceStackForName(ctx, service.Name)
 	if err != nil {
 		return nil, err
 	}
 
 	service = cb(service)
 
-	s, err := client.Rio.Services(service.Spec.StackName).Create(service)
-	if err != nil {
-		return nil, err
-	}
-
-	return s, nil
+	return service, ctx.Create(service)
 }
 
 func (c *Create) ToService(args []string) (*riov1.Service, error) {
@@ -136,7 +128,7 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 		return nil, fmt.Errorf("at least one (1) argument is required")
 	}
 
-	service := &riov1.Service{
+	service := riov1.NewService("", c.N_Name, riov1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   c.N_Name,
 			Labels: c.L_Label,
@@ -190,7 +182,7 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 				UpdateStrategy:     c.UpdateStrategy,
 			},
 		},
-	}
+	})
 
 	if strings.HasSuffix(args[0], ".git") {
 		service.Spec.ImageBuild = &riov1.ImageBuild{
@@ -217,22 +209,22 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 		service.Spec.Group = c.Group
 	}
 
-	service.Spec.Volumes, err = ParseMounts(c.V_Volume)
+	service.Spec.Volumes, err = objectmappers.ParseMounts(c.V_Volume...)
 	if err != nil {
 		return nil, err
 	}
 
-	service.Spec.Devices, err = ParseDevices(c.Device)
+	service.Spec.Devices, err = objectmappers.ParseDevices(c.Device...)
 	if err != nil {
 		return nil, err
 	}
 
-	service.Spec.Configs, err = ParseConfigs(c.Config)
+	service.Spec.Configs, err = objectmappers.ParseConfigMapping(c.Config...)
 	if err != nil {
 		return nil, err
 	}
 
-	service.Spec.Secrets, err = ParseSecrets(c.Secret)
+	service.Spec.Secrets, err = objectmappers.ParseSecrets(c.Secret...)
 	if err != nil {
 		return nil, err
 	}
@@ -242,12 +234,12 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 		service.Spec.Metadata[k] = v
 	}
 
-	service.Spec.GlobalPermissions, err = ParsePermissions(c.GlobalPermission)
+	service.Spec.GlobalPermissions, err = objectmappers.ParsePermissions(c.GlobalPermission...)
 	if err != nil {
 		return nil, err
 	}
 
-	service.Spec.Permissions, err = ParsePermissions(c.Permission)
+	service.Spec.Permissions, err = objectmappers.ParsePermissions(c.Permission...)
 	if err != nil {
 		return nil, err
 	}
@@ -270,17 +262,17 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 		return nil, err
 	}
 
-	service.Spec.Tmpfs, err = ParseTmpfs(c.Tmpfs)
+	service.Spec.Tmpfs, err = objectmappers.ParseTmpfs(c.Tmpfs...)
 	if err != nil {
 		return nil, err
 	}
 
-	service.Spec.PortBindings, err = ParsePorts(c.P_Publish)
+	service.Spec.PortBindings, err = objectmappers.ParsePorts(c.P_Publish...)
 	if err != nil {
 		return nil, err
 	}
 
-	service.Spec.ExposedPorts, err = ParseExposedPorts(c.Expose)
+	service.Spec.ExposedPorts, err = objectmappers.ParseExposedPorts(c.Expose...)
 	if err != nil {
 		return nil, err
 	}

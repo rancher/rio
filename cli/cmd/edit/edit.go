@@ -14,7 +14,7 @@ var (
 		clitypes.StackType,
 		clitypes.ServiceType,
 		clitypes.ConfigType,
-		clitypes.RouteSetType,
+		clitypes.RouterType,
 		clitypes.ExternalServiceType,
 		clitypes.FeatureType,
 	}

@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
+	"github.com/rancher/rio/cli/pkg/types"
 	"github.com/sirupsen/logrus"
 )
 

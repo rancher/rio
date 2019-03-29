@@ -3,7 +3,8 @@ package create
 import (
 	"time"
 
-	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/pretty/objectmappers"
 )
 
 func populateHealthCheck(c *Create, service *riov1.Service) error {
@@ -14,12 +15,12 @@ func populateHealthCheck(c *Create, service *riov1.Service) error {
 		UnhealthyThreshold: c.UnhealthyRetries,
 	}
 
-	hc.InitialDelaySeconds, err = ParseDurationUnit(c.HealthStartPeriod, "--health-start-period", time.Second)
+	hc.InitialDelaySeconds, err = objectmappers.ParseDurationUnit(c.HealthStartPeriod, "--health-start-period", time.Second)
 	if err != nil {
 		return err
 	}
 
-	hc.IntervalSeconds, err = ParseDurationUnit(c.HealthInterval, "--health-interval", time.Second)
+	hc.IntervalSeconds, err = objectmappers.ParseDurationUnit(c.HealthInterval, "--health-interval", time.Second)
 	if err != nil {
 		return err
 	}
@@ -32,7 +33,7 @@ func populateHealthCheck(c *Create, service *riov1.Service) error {
 		hc.Test = []string{c.HealthURL}
 	}
 
-	hc.TimeoutSeconds, err = ParseDurationUnit(c.HealthTimeout, "--health-timeout", time.Second)
+	hc.TimeoutSeconds, err = objectmappers.ParseDurationUnit(c.HealthTimeout, "--health-timeout", time.Second)
 	if err != nil {
 		return err
 	}
@@ -52,12 +53,12 @@ func populateReadyCheck(c *Create, service *riov1.Service) error {
 		UnhealthyThreshold: c.UnreadyRetries,
 	}
 
-	hc.InitialDelaySeconds, err = ParseDurationUnit(c.ReadyStartPeriod, "--ready-start-period", time.Second)
+	hc.InitialDelaySeconds, err = objectmappers.ParseDurationUnit(c.ReadyStartPeriod, "--ready-start-period", time.Second)
 	if err != nil {
 		return err
 	}
 
-	hc.IntervalSeconds, err = ParseDurationUnit(c.ReadyInterval, "--ready-interval", time.Second)
+	hc.IntervalSeconds, err = objectmappers.ParseDurationUnit(c.ReadyInterval, "--ready-interval", time.Second)
 	if err != nil {
 		return err
 	}
@@ -70,7 +71,7 @@ func populateReadyCheck(c *Create, service *riov1.Service) error {
 		hc.Test = []string{c.ReadyURL}
 	}
 
-	hc.TimeoutSeconds, err = ParseDurationUnit(c.ReadyTimeout, "--ready-timeout", time.Second)
+	hc.TimeoutSeconds, err = objectmappers.ParseDurationUnit(c.ReadyTimeout, "--ready-timeout", time.Second)
 
 	if len(c.ReadyCmd) > 0 || len(c.ReadyURL) > 0 {
 		service.Spec.Readycheck = hc
