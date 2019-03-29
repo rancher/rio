@@ -21,38 +21,73 @@ package options
 // given binary target.
 import (
 	// Admission policies
+	"k8s.io/kubernetes/plugin/pkg/admission/defaulttolerationseconds"
+	"k8s.io/kubernetes/plugin/pkg/admission/limitranger"
+	"k8s.io/kubernetes/plugin/pkg/admission/nodetaint"
+	podpriority "k8s.io/kubernetes/plugin/pkg/admission/priority"
+	"k8s.io/kubernetes/plugin/pkg/admission/resourcequota"
 	"k8s.io/kubernetes/plugin/pkg/admission/serviceaccount"
+	"k8s.io/kubernetes/plugin/pkg/admission/storage/persistentvolume/resize"
 	"k8s.io/kubernetes/plugin/pkg/admission/storage/storageclass/setdefault"
-	"k8s.io/kubernetes/plugin/pkg/admission/storage/storageobjectinuseprotection"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apiserver/pkg/admission"
 	"k8s.io/apiserver/pkg/admission/plugin/namespace/lifecycle"
+	mutatingwebhook "k8s.io/apiserver/pkg/admission/plugin/webhook/mutating"
+	validatingwebhook "k8s.io/apiserver/pkg/admission/plugin/webhook/validating"
+	utilfeature "k8s.io/apiserver/pkg/util/feature"
+	"k8s.io/kubernetes/pkg/features"
 )
 
 // AllOrderedPlugins is the list of all the plugins in order.
 var AllOrderedPlugins = []string{
-	lifecycle.PluginName,                    // NamespaceLifecycle
-	serviceaccount.PluginName,               // ServiceAccount
-	setdefault.PluginName,                   // DefaultStorageClass
-	storageobjectinuseprotection.PluginName, // StorageObjectInUseProtection
+	lifecycle.PluginName,                // NamespaceLifecycle
+	limitranger.PluginName,              // LimitRanger
+	serviceaccount.PluginName,           // ServiceAccount
+	nodetaint.PluginName,                // TaintNodesByCondition
+	podpriority.PluginName,              // Priority
+	defaulttolerationseconds.PluginName, // DefaultTolerationSeconds
+	setdefault.PluginName,               // DefaultStorageClass
+	resize.PluginName,                   // PersistentVolumeClaimResize
+	mutatingwebhook.PluginName,          // MutatingAdmissionWebhook
+	validatingwebhook.PluginName,        // ValidatingAdmissionWebhook
+	resourcequota.PluginName,            // ResourceQuota
 }
 
 // RegisterAllAdmissionPlugins registers all admission plugins and
 // sets the recommended plugins order.
 func RegisterAllAdmissionPlugins(plugins *admission.Plugins) {
+	defaulttolerationseconds.Register(plugins)
+	limitranger.Register(plugins)
+	nodetaint.Register(plugins)
+	resourcequota.Register(plugins)
+	podpriority.Register(plugins)
 	serviceaccount.Register(plugins)
 	setdefault.Register(plugins)
-	storageobjectinuseprotection.Register(plugins)
+	resize.Register(plugins)
 }
 
 // DefaultOffAdmissionPlugins get admission plugins off by default for kube-apiserver.
 func DefaultOffAdmissionPlugins() sets.String {
 	defaultOnPlugins := sets.NewString(
 		lifecycle.PluginName,                //NamespaceLifecycle
+		limitranger.PluginName,              //LimitRanger
 		serviceaccount.PluginName,           //ServiceAccount
 		setdefault.PluginName,               //DefaultStorageClass
+		resize.PluginName,                   //PersistentVolumeClaimResize
+		defaulttolerationseconds.PluginName, //DefaultTolerationSeconds
+		mutatingwebhook.PluginName,          //MutatingAdmissionWebhook
+		validatingwebhook.PluginName,        //ValidatingAdmissionWebhook
+		resourcequota.PluginName,            //ResourceQuota
 	)
+
+	if utilfeature.DefaultFeatureGate.Enabled(features.PodPriority) {
+		defaultOnPlugins.Insert(podpriority.PluginName) //PodPriority
+	}
+
+	if utilfeature.DefaultFeatureGate.Enabled(features.TaintNodesByCondition) {
+		defaultOnPlugins.Insert(nodetaint.PluginName) //TaintNodesByCondition
+	}
 
 	return sets.NewString(AllOrderedPlugins...).Difference(defaultOnPlugins)
 }

@@ -51,7 +51,7 @@ func (s *SecureServingOptionsWithLoopback) ApplyTo(secureServingInfo **server.Se
 
 	// create self-signed cert+key with the fake server.LoopbackClientServerNameOverride and
 	// let the server return it when the loopback client connects.
-	certPem, keyPem, err := certutil.GenerateSelfSignedCertKey(server.LoopbackClientServerNameOverride, nil, nil)
+	certPem, keyPem, err := certutil.GenerateSelfSignedCertKeyWithFixtures(server.LoopbackClientServerNameOverride, nil, nil, s.SecureServingOptions.ServerCert.CertDirectory)
 	if err != nil {
 		return fmt.Errorf("failed to generate self-signed certificate for loopback connection: %v", err)
 	}
@@ -63,11 +63,11 @@ func (s *SecureServingOptionsWithLoopback) ApplyTo(secureServingInfo **server.Se
 	secureLoopbackClientConfig, err := (*secureServingInfo).NewLoopbackClientConfig(uuid.NewRandom().String(), certPem)
 	switch {
 	// if we failed and there's no fallback loopback client config, we need to fail
-	case err != nil && secureLoopbackClientConfig == nil:
+	case err != nil && *loopbackClientConfig == nil:
 		return err
 
 	// if we failed, but we already have a fallback loopback client config (usually insecure), allow it
-	case err != nil && secureLoopbackClientConfig != nil:
+	case err != nil && *loopbackClientConfig != nil:
 
 	default:
 		*loopbackClientConfig = secureLoopbackClientConfig

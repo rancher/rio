@@ -18,8 +18,10 @@ package options
 
 import (
 	"fmt"
-	"github.com/spf13/pflag"
 	"strings"
+	"time"
+
+	"github.com/spf13/pflag"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 	versionedinformers "k8s.io/client-go/informers"
@@ -29,11 +31,16 @@ import (
 
 type BuiltInAuthorizationOptions struct {
 	Modes                       []string
+	WebhookConfigFile           string
+	WebhookCacheAuthorizedTTL   time.Duration
+	WebhookCacheUnauthorizedTTL time.Duration
 }
 
 func NewBuiltInAuthorizationOptions() *BuiltInAuthorizationOptions {
 	return &BuiltInAuthorizationOptions{
-		Modes: []string{authzmodes.ModeAlwaysAllow},
+		Modes:                       []string{authzmodes.ModeAlwaysAllow},
+		WebhookCacheAuthorizedTTL:   5 * time.Minute,
+		WebhookCacheUnauthorizedTTL: 30 * time.Second,
 	}
 }
 
@@ -53,6 +60,15 @@ func (s *BuiltInAuthorizationOptions) Validate() []error {
 		if !allowedModes.Has(mode) {
 			allErrors = append(allErrors, fmt.Errorf("authorization-mode %q is not a valid mode", mode))
 		}
+		if mode == authzmodes.ModeWebhook {
+			if s.WebhookConfigFile == "" {
+				allErrors = append(allErrors, fmt.Errorf("authorization-mode Webhook's authorization config file not passed"))
+			}
+		}
+	}
+
+	if s.WebhookConfigFile != "" && !modes.Has(authzmodes.ModeWebhook) {
+		allErrors = append(allErrors, fmt.Errorf("cannot specify --authorization-webhook-config-file without mode Webhook"))
 	}
 
 	if len(s.Modes) != len(modes.List()) {
@@ -66,11 +82,26 @@ func (s *BuiltInAuthorizationOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringSliceVar(&s.Modes, "authorization-mode", s.Modes, ""+
 		"Ordered list of plug-ins to do authorization on secure port. Comma-delimited list of: "+
 		strings.Join(authzmodes.AuthorizationModeChoices, ",")+".")
+
+	fs.StringVar(&s.WebhookConfigFile, "authorization-webhook-config-file", s.WebhookConfigFile, ""+
+		"File with webhook configuration in kubeconfig format, used with --authorization-mode=Webhook. "+
+		"The API server will query the remote service to determine access on the API server's secure port.")
+
+	fs.DurationVar(&s.WebhookCacheAuthorizedTTL, "authorization-webhook-cache-authorized-ttl",
+		s.WebhookCacheAuthorizedTTL,
+		"The duration to cache 'authorized' responses from the webhook authorizer.")
+
+	fs.DurationVar(&s.WebhookCacheUnauthorizedTTL,
+		"authorization-webhook-cache-unauthorized-ttl", s.WebhookCacheUnauthorizedTTL,
+		"The duration to cache 'unauthorized' responses from the webhook authorizer.")
 }
 
-func (s *BuiltInAuthorizationOptions) ToAuthorizationConfig(versionedInformerFactory versionedinformers.SharedInformerFactory) authorizer.AuthorizationConfig {
-	return authorizer.AuthorizationConfig{
+func (s *BuiltInAuthorizationOptions) ToAuthorizationConfig(versionedInformerFactory versionedinformers.SharedInformerFactory) authorizer.Config {
+	return authorizer.Config{
 		AuthorizationModes:          s.Modes,
+		WebhookConfigFile:           s.WebhookConfigFile,
+		WebhookCacheAuthorizedTTL:   s.WebhookCacheAuthorizedTTL,
+		WebhookCacheUnauthorizedTTL: s.WebhookCacheUnauthorizedTTL,
 		VersionedInformerFactory:    versionedInformerFactory,
 	}
 }

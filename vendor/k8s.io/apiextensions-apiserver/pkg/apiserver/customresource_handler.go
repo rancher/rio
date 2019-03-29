@@ -25,9 +25,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"k8s.io/apiserver/pkg/server"
-
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -65,6 +63,7 @@ import (
 	apiextensionsfeatures "k8s.io/apiextensions-apiserver/pkg/features"
 	"k8s.io/apiextensions-apiserver/pkg/registry/customresource"
 	"k8s.io/apiextensions-apiserver/pkg/registry/customresource/tableconvertor"
+	"k8s.io/apiserver/pkg/util/webhook"
 )
 
 // crdHandler serves the `/apis` endpoint.
@@ -92,8 +91,7 @@ type crdHandler struct {
 	// CRD establishing process for HA clusters.
 	masterCount int
 
-	genericAPIServer *server.GenericAPIServer
-	addRoot          sync.Once
+	converterFactory *conversion.CRConverterFactory
 }
 
 // crdInfo stores enough information to serve the storage for the custom resource
@@ -123,7 +121,6 @@ type crdInfo struct {
 type crdStorageMap map[types.UID]*crdInfo
 
 func NewCustomResourceDefinitionHandler(
-	genericAPIServer *server.GenericAPIServer,
 	versionDiscoveryHandler *versionDiscoveryHandler,
 	groupDiscoveryHandler *groupDiscoveryHandler,
 	crdInformer informers.CustomResourceDefinitionInformer,
@@ -131,9 +128,10 @@ func NewCustomResourceDefinitionHandler(
 	restOptionsGetter generic.RESTOptionsGetter,
 	admission admission.Interface,
 	establishingController *establish.EstablishingController,
-	masterCount int) *crdHandler {
+	serviceResolver webhook.ServiceResolver,
+	authResolverWrapper webhook.AuthenticationInfoResolverWrapper,
+	masterCount int) (*crdHandler, error) {
 	ret := &crdHandler{
-		genericAPIServer:        genericAPIServer,
 		versionDiscoveryHandler: versionDiscoveryHandler,
 		groupDiscoveryHandler:   groupDiscoveryHandler,
 		customStorage:           atomic.Value{},
@@ -145,28 +143,20 @@ func NewCustomResourceDefinitionHandler(
 		masterCount:             masterCount,
 	}
 	crdInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			ret.updateAPI(obj, false)
-		},
-		UpdateFunc: func(oldObj, newObj interface{}) {
-			ret.updateCustomResourceDefinition(oldObj, newObj)
-			ret.updateAPI(newObj, false)
-		},
+		UpdateFunc: ret.updateCustomResourceDefinition,
 		DeleteFunc: func(obj interface{}) {
-			ret.updateAPI(obj, true)
 			ret.removeDeadStorage()
 		},
 	})
+	crConverterFactory, err := conversion.NewCRConverterFactory(serviceResolver, authResolverWrapper)
+	if err != nil {
+		return nil, err
+	}
+	ret.converterFactory = crConverterFactory
 
 	ret.customStorage.Store(crdStorageMap{})
 
-	go func() {
-		// pretty hacky, but this will install the CRD api group if no CRDs exist
-		time.Sleep(5 * time.Second)
-		ret.updateAPI(nil, false)
-	}()
-
-	return ret
+	return ret, nil
 }
 
 func (r *crdHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -236,10 +226,16 @@ func (r *crdHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	var handler http.HandlerFunc
+	subresources, err := getSubresourcesForVersion(crd, requestInfo.APIVersion)
+	if err != nil {
+		utilruntime.HandleError(err)
+		http.Error(w, "the server could not properly serve the CR subresources", http.StatusInternalServerError)
+		return
+	}
 	switch {
-	case subresource == "status" && crd.Spec.Subresources != nil && crd.Spec.Subresources.Status != nil:
+	case subresource == "status" && subresources != nil && subresources.Status != nil:
 		handler = r.serveStatus(w, req, requestInfo, crdInfo, terminating, supportedTypes)
-	case subresource == "scale" && crd.Spec.Subresources != nil && crd.Spec.Subresources.Scale != nil:
+	case subresource == "scale" && subresources != nil && subresources.Scale != nil:
 		handler = r.serveScale(w, req, requestInfo, crdInfo, terminating, supportedTypes)
 	case len(subresource) == 0:
 		handler = r.serveResource(w, req, requestInfo, crdInfo, terminating, supportedTypes)
@@ -324,44 +320,6 @@ func (r *crdHandler) serveScale(w http.ResponseWriter, req *http.Request, reques
 	}
 }
 
-func (r *crdHandler) updateAPI(obj interface{}, del bool) {
-	if r.genericAPIServer.DiscoveryGroupManager == nil {
-		return
-	}
-
-	r.addRoot.Do(func() {
-		ver := metav1.GroupVersionForDiscovery{
-			Version:      "v1beta1",
-			GroupVersion: fmt.Sprintf("apiextensions.k8s.io/v1beta1"),
-		}
-		r.genericAPIServer.DiscoveryGroupManager.AddGroup(metav1.APIGroup{
-			Name:             "apiextensions.k8s.io",
-			Versions:         []metav1.GroupVersionForDiscovery{ver},
-			PreferredVersion: ver,
-		})
-	})
-
-	newCRD, ok := obj.(*apiextensions.CustomResourceDefinition)
-	if !ok {
-		return
-	}
-
-	if del {
-		r.genericAPIServer.DiscoveryGroupManager.RemoveGroup(newCRD.Spec.Group)
-		return
-	}
-
-	ver := metav1.GroupVersionForDiscovery{
-		Version:      newCRD.Spec.Version,
-		GroupVersion: fmt.Sprintf("%s/%s", newCRD.Spec.Group, newCRD.Spec.Version),
-	}
-	r.genericAPIServer.DiscoveryGroupManager.AddGroup(metav1.APIGroup{
-		Name:             newCRD.Spec.Group,
-		Versions:         []metav1.GroupVersionForDiscovery{ver},
-		PreferredVersion: ver,
-	})
-}
-
 func (r *crdHandler) updateCustomResourceDefinition(oldObj, newObj interface{}) {
 	oldCRD := oldObj.(*apiextensions.CustomResourceDefinition)
 	newCRD := newObj.(*apiextensions.CustomResourceDefinition)
@@ -388,11 +346,11 @@ func (r *crdHandler) updateCustomResourceDefinition(oldObj, newObj interface{}) 
 		return
 	}
 	if apiequality.Semantic.DeepEqual(&newCRD.Spec, oldInfo.spec) && apiequality.Semantic.DeepEqual(&newCRD.Status.AcceptedNames, oldInfo.acceptedNames) {
-		glog.V(6).Infof("Ignoring customresourcedefinition %s update because neither spec, nor accepted names changed", oldCRD.Name)
+		klog.V(6).Infof("Ignoring customresourcedefinition %s update because neither spec, nor accepted names changed", oldCRD.Name)
 		return
 	}
 
-	glog.V(4).Infof("Updating customresourcedefinition %s", oldCRD.Name)
+	klog.V(4).Infof("Updating customresourcedefinition %s", oldCRD.Name)
 
 	// Copy because we cannot write to storageMap without a race
 	// as it is used without locking elsewhere.
@@ -432,7 +390,7 @@ func (r *crdHandler) removeDeadStorage() {
 			}
 		}
 		if !found {
-			glog.V(4).Infof("Removing dead CRD storage for %s/%s", s.spec.Group, s.spec.Names.Kind)
+			klog.V(4).Infof("Removing dead CRD storage for %s/%s", s.spec.Group, s.spec.Names.Kind)
 			for _, storage := range s.storages {
 				// destroy only the main storage. Those for the subresources share cacher and etcd clients.
 				storage.CustomResource.DestroyFunc()
@@ -479,7 +437,10 @@ func (r *crdHandler) getOrCreateServingInfoFor(crd *apiextensions.CustomResource
 	scaleScopes := map[string]handlers.RequestScope{}
 
 	for _, v := range crd.Spec.Versions {
-		safeConverter, unsafeConverter := conversion.NewCRDConverter(crd)
+		safeConverter, unsafeConverter, err := r.converterFactory.NewConverter(crd)
+		if err != nil {
+			return nil, err
+		}
 		// In addition to Unstructured objects (Custom Resources), we also may sometimes need to
 		// decode unversioned Options objects, so we delegate to parameterScheme for such types.
 		parameterScheme := runtime.NewScheme()
@@ -496,21 +457,33 @@ func (r *crdHandler) getOrCreateServingInfoFor(crd *apiextensions.CustomResource
 		creator := unstructuredCreator{}
 
 		var statusSpec *apiextensions.CustomResourceSubresourceStatus
-		var scaleSpec *apiextensions.CustomResourceSubresourceScale
-		if utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceSubresources) && crd.Spec.Subresources != nil && crd.Spec.Subresources.Scale != nil {
-			scaleSpec = crd.Spec.Subresources.Scale
+		subresources, err := getSubresourcesForVersion(crd, v.Name)
+		if err != nil {
+			utilruntime.HandleError(err)
+			return nil, fmt.Errorf("the server could not properly serve the CR subresources")
 		}
-		if utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceSubresources) && crd.Spec.Subresources != nil && crd.Spec.Subresources.Status != nil {
-			statusSpec = crd.Spec.Subresources.Status
+		if utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceSubresources) && subresources != nil && subresources.Status != nil {
+			statusSpec = subresources.Status
 		}
 
-		table, err := tableconvertor.New(crd.Spec.AdditionalPrinterColumns)
+		var scaleSpec *apiextensions.CustomResourceSubresourceScale
+		if utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceSubresources) && subresources != nil && subresources.Scale != nil {
+			scaleSpec = subresources.Scale
+		}
+
+		columns, err := getColumnsForVersion(crd, v.Name)
 		if err != nil {
-			glog.V(2).Infof("The CRD for %v has an invalid printer specification, falling back to default printing: %v", kind, err)
+			utilruntime.HandleError(err)
+			return nil, fmt.Errorf("the server could not properly serve the CR columns")
+		}
+		table, err := tableconvertor.New(columns)
+		if err != nil {
+			klog.V(2).Infof("The CRD for %v has an invalid printer specification, falling back to default printing: %v", kind, err)
 		}
 
 		storages[v.Name] = customresource.NewStorage(
 			schema.GroupResource{Group: crd.Spec.Group, Resource: crd.Status.AcceptedNames.Plural},
+			schema.GroupVersionKind{Group: crd.Spec.Group, Version: v.Name, Kind: crd.Status.AcceptedNames.Kind},
 			schema.GroupVersionKind{Group: crd.Spec.Group, Version: v.Name, Kind: crd.Status.AcceptedNames.ListKind},
 			customresource.NewStrategy(
 				typer,
@@ -556,6 +529,9 @@ func (r *crdHandler) getOrCreateServingInfoFor(crd *apiextensions.CustomResource
 
 			Resource: schema.GroupVersionResource{Group: crd.Spec.Group, Version: v.Name, Resource: crd.Status.AcceptedNames.Plural},
 			Kind:     kind,
+
+			// a handler for a specific group-version of a custom resource uses that version as the in-memory representation
+			HubGroupVersion: kind.GroupVersion(),
 
 			MetaGroupVersion: metav1.SchemeGroupVersion,
 

@@ -59,8 +59,6 @@ type EtcdOptions struct {
 }
 
 var storageTypes = sets.NewString(
-	storagebackend.StorageTypeUnset,
-	storagebackend.StorageTypeETCD2,
 	storagebackend.StorageTypeETCD3,
 )
 
@@ -115,10 +113,11 @@ func (s *EtcdOptions) AddFlags(fs *pflag.FlagSet) {
 		"have system defaults set by heuristics, others default to default-watch-cache-size")
 
 	fs.StringVar(&s.StorageConfig.Type, "storage-backend", s.StorageConfig.Type,
-		"The storage backend for persistence. Options: 'etcd3' (default), 'etcd2'.")
+		"The storage backend for persistence. Options: 'etcd3' (default).")
 
-	fs.IntVar(&s.StorageConfig.DeserializationCacheSize, "deserialization-cache-size", s.StorageConfig.DeserializationCacheSize,
-		"Number of deserialized json objects to cache in memory.")
+	dummyCacheSize := 0
+	fs.IntVar(&dummyCacheSize, "deserialization-cache-size", 0, "Number of deserialized json objects to cache in memory.")
+	fs.MarkDeprecated("deserialization-cache-size", "the deserialization cache was dropped in 1.13 with support for etcd2")
 
 	fs.StringSliceVar(&s.StorageConfig.ServerList, "etcd-servers", s.StorageConfig.ServerList,
 		"List of etcd servers to connect with (scheme://ip:port), comma separated.")
@@ -135,11 +134,11 @@ func (s *EtcdOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.StorageConfig.CAFile, "etcd-cafile", s.StorageConfig.CAFile,
 		"SSL Certificate Authority file used to secure etcd communication.")
 
-	fs.BoolVar(&s.StorageConfig.Quorum, "etcd-quorum-read", s.StorageConfig.Quorum,
-		"If true, enable quorum read. It defaults to true and is strongly recommended not setting to false.")
-	fs.MarkDeprecated("etcd-quorum-read", "This flag is deprecated and the ability to switch off quorum read will be removed in a future release.")
-
 	fs.StringVar(&s.EncryptionProviderConfigFilepath, "experimental-encryption-provider-config", s.EncryptionProviderConfigFilepath,
+		"The file containing configuration for encryption providers to be used for storing secrets in etcd")
+	fs.MarkDeprecated("experimental-encryption-provider-config", "use --encryption-provider-config.")
+
+	fs.StringVar(&s.EncryptionProviderConfigFilepath, "encryption-provider-config", s.EncryptionProviderConfigFilepath,
 		"The file containing configuration for encryption providers to be used for storing secrets in etcd")
 
 	fs.DurationVar(&s.StorageConfig.CompactionInterval, "etcd-compaction-interval", s.StorageConfig.CompactionInterval,

@@ -19,8 +19,8 @@ package priorities
 import (
 	"fmt"
 
-	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
+	"k8s.io/klog"
 	priorityutil "k8s.io/kubernetes/pkg/scheduler/algorithm/priorities/util"
 	schedulerapi "k8s.io/kubernetes/pkg/scheduler/api"
 	schedulercache "k8s.io/kubernetes/pkg/scheduler/cache"
@@ -58,8 +58,8 @@ func (r *ResourceAllocationPriority) PriorityMap(
 	// Check if the pod has volumes and this could be added to scorer function for balanced resource allocation.
 	score = r.scorer(&requested, &allocatable, false, 0, 0)
 
-	if glog.V(10) {
-		glog.Infof(
+	if klog.V(10) {
+		klog.Infof(
 			"%v -> %v: %v, capacity %d millicores %d memory bytes, total request %d millicores %d memory bytes, score %d",
 			pod.Name, node.Name, r.Name,
 			allocatable.MilliCPU, allocatable.Memory,

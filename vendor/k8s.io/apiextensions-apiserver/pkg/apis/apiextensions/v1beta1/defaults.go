@@ -63,9 +63,9 @@ func SetDefaults_CustomResourceDefinitionSpec(obj *CustomResourceDefinitionSpec)
 	if len(obj.Version) == 0 && len(obj.Versions) != 0 {
 		obj.Version = obj.Versions[0].Name
 	}
-	if len(obj.AdditionalPrinterColumns) == 0 {
-		obj.AdditionalPrinterColumns = []CustomResourceColumnDefinition{
-			{Name: "Age", Type: "date", Description: "", JSONPath: ".metadata.creationTimestamp"},
+	if obj.Conversion == nil {
+		obj.Conversion = &CustomResourceConversion{
+			Strategy: NoneConverter,
 		}
 	}
 }

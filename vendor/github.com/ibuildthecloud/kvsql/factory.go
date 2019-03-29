@@ -92,8 +92,6 @@ func NewKVSQLStorage(c storagebackend.Config) (storage.Interface, func(), error)
 	if transformer == nil {
 		transformer = value.IdentityTransformer
 	}
-	if c.Quorum {
-		return etcd3.New(client, c.Codec, c.Prefix, transformer, c.Paging), destroyFunc, nil
-	}
-	return etcd3.NewWithNoQuorumRead(client, c.Codec, c.Prefix, transformer, c.Paging), destroyFunc, nil
+
+	return etcd3.New(client, c.Codec, c.Prefix, transformer, c.Paging), destroyFunc, nil
 }

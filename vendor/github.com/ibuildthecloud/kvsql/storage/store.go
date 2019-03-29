@@ -23,13 +23,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"k8s.io/klog"
 	"path"
 	"reflect"
 	"strings"
 	"time"
 
 	"github.com/ibuildthecloud/kvsql/clientv3"
-	"github.com/golang/glog"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/conversion"
@@ -83,12 +83,6 @@ type objState struct {
 // New returns an etcd3 implementation of storage.Interface.
 func New(c *clientv3.Client, codec runtime.Codec, prefix string, transformer value.Transformer, pagingEnabled bool) storage.Interface {
 	return newStore(c, true, pagingEnabled, codec, prefix, transformer)
-}
-
-// NewWithNoQuorumRead returns etcd3 implementation of storage.Interface
-// where Get operations don't require quorum read.
-func NewWithNoQuorumRead(c *clientv3.Client, codec runtime.Codec, prefix string, transformer value.Transformer, pagingEnabled bool) storage.Interface {
-	return newStore(c, false, pagingEnabled, codec, prefix, transformer)
 }
 
 func newStore(c *clientv3.Client, quorumRead, pagingEnabled bool, codec runtime.Codec, prefix string, transformer value.Transformer) *store {
@@ -247,7 +241,7 @@ func (s *store) conditionalDelete(ctx context.Context, key string, out runtime.O
 		}
 		if !txnResp.Succeeded {
 			getResp = (*clientv3.GetResponse)(txnResp.Responses[0].GetResponseRange())
-			glog.V(4).Infof("deletion of %s failed because of a conflict, going to retry", key)
+			klog.V(4).Infof("deletion of %s failed because of a conflict, going to retry", key)
 			continue
 		}
 		return decode(s.codec, s.versioner, origState.data, out, origState.rev)
@@ -363,7 +357,7 @@ func (s *store) GuaranteedUpdate(
 		trace.Step("Transaction committed")
 		if !txnResp.Succeeded {
 			getResp := (*clientv3.GetResponse)(txnResp.Responses[0].GetResponseRange())
-			glog.V(4).Infof("GuaranteedUpdate of %s failed because of a conflict, going to retry", key)
+			klog.V(4).Infof("GuaranteedUpdate of %s failed because of a conflict, going to retry", key)
 			origState, err = s.getState(getResp, key, v, ignoreNotFound)
 			if err != nil {
 				return err

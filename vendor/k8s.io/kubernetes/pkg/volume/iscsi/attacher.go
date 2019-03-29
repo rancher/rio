@@ -21,9 +21,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	utilfeature "k8s.io/apiserver/pkg/util/feature"
+	"k8s.io/klog"
+	"k8s.io/kubernetes/pkg/features"
 	"k8s.io/kubernetes/pkg/util/keymutex"
 	"k8s.io/kubernetes/pkg/util/mount"
 	"k8s.io/kubernetes/pkg/volume"
@@ -77,7 +79,7 @@ func (attacher *iscsiAttacher) VolumesAreAttached(specs []*volume.Spec, nodeName
 func (attacher *iscsiAttacher) WaitForAttach(spec *volume.Spec, devicePath string, pod *v1.Pod, timeout time.Duration) (string, error) {
 	mounter, err := volumeSpecToMounter(spec, attacher.host, attacher.targetLocks, pod)
 	if err != nil {
-		glog.Warningf("failed to get iscsi mounter: %v", err)
+		klog.Warningf("failed to get iscsi mounter: %v", err)
 		return "", err
 	}
 	return attacher.manager.AttachDisk(*mounter)
@@ -87,7 +89,7 @@ func (attacher *iscsiAttacher) GetDeviceMountPath(
 	spec *volume.Spec) (string, error) {
 	mounter, err := volumeSpecToMounter(spec, attacher.host, attacher.targetLocks, nil)
 	if err != nil {
-		glog.Warningf("failed to get iscsi mounter: %v", err)
+		klog.Warningf("failed to get iscsi mounter: %v", err)
 		return "", err
 	}
 	if mounter.InitiatorName != "" {
@@ -165,12 +167,12 @@ func (detacher *iscsiDetacher) UnmountDevice(deviceMountPath string) error {
 	if err != nil {
 		return fmt.Errorf("iscsi: failed to detach disk: %s\nError: %v", deviceMountPath, err)
 	}
-	glog.V(4).Infof("iscsi: %q is unmounted, deleting the directory", deviceMountPath)
+	klog.V(4).Infof("iscsi: %q is unmounted, deleting the directory", deviceMountPath)
 	err = os.RemoveAll(deviceMountPath)
 	if err != nil {
 		return fmt.Errorf("iscsi: failed to delete the directory: %s\nError: %v", deviceMountPath, err)
 	}
-	glog.V(4).Infof("iscsi: successfully detached disk: %s", deviceMountPath)
+	klog.V(4).Infof("iscsi: successfully detached disk: %s", deviceMountPath)
 	return nil
 }
 
@@ -198,6 +200,23 @@ func volumeSpecToMounter(spec *volume.Spec, host volume.VolumeHost, targetLocks 
 		return nil, err
 	}
 	exec := host.GetExec(iscsiPluginName)
+	// TODO: remove feature gate check after no longer needed
+	if utilfeature.DefaultFeatureGate.Enabled(features.BlockVolume) {
+		volumeMode, err := volumeutil.GetVolumeMode(spec)
+		if err != nil {
+			return nil, err
+		}
+		klog.V(5).Infof("iscsi: VolumeSpecToMounter volumeMode %s", volumeMode)
+		return &iscsiDiskMounter{
+			iscsiDisk:  iscsiDisk,
+			fsType:     fsType,
+			volumeMode: volumeMode,
+			readOnly:   readOnly,
+			mounter:    &mount.SafeFormatAndMount{Interface: host.GetMounter(iscsiPluginName), Exec: exec},
+			exec:       exec,
+			deviceUtil: volumeutil.NewDeviceHandler(volumeutil.NewIOHandler()),
+		}, nil
+	}
 	return &iscsiDiskMounter{
 		iscsiDisk:  iscsiDisk,
 		fsType:     fsType,

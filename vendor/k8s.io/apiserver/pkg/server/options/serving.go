@@ -20,14 +20,17 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
+	"path"
 	"strconv"
 	"strings"
 
 	"github.com/spf13/pflag"
+	"k8s.io/klog"
 
 	utilnet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/apiserver/pkg/server"
 	utilflag "k8s.io/apiserver/pkg/util/flag"
+	certutil "k8s.io/client-go/util/cert"
 )
 
 type SecureServingOptions struct {
@@ -74,19 +77,25 @@ type CertKey struct {
 }
 
 type GeneratableKeyCert struct {
+	// CertKey allows setting an explicit cert/key file to use.
 	CertKey CertKey
 
-	// CertDirectory is a directory that will contain the certificates.  If the cert and key aren't specifically set
-	// this will be used to derive a match with the "pair-name"
+	// CertDirectory specifies a directory to write generated certificates to if CertFile/KeyFile aren't explicitly set.
+	// PairName is used to determine the filenames within CertDirectory.
+	// If CertDirectory and PairName are not set, an in-memory certificate will be generated.
 	CertDirectory string
+	// PairName is the name which will be used with CertDirectory to make a cert and key filenames.
+	// It becomes CertDirectory/PairName.crt and CertDirectory/PairName.key
+	PairName string
+
+	// GeneratedCert holds an in-memory generated certificate if CertFile/KeyFile aren't explicitly set, and CertDirectory/PairName are not set.
+	GeneratedCert *tls.Certificate
+
 	// FixtureDirectory is a directory that contains test fixture used to avoid regeneration of certs during tests.
 	// The format is:
 	// <host>_<ip>-<ip>_<alternateDNS>-<alternateDNS>.crt
 	// <host>_<ip>-<ip>_<alternateDNS>-<alternateDNS>.key
 	FixtureDirectory string
-	// PairName is the name which will be used with CertDirectory to make a cert and key names
-	// It becomes CertDirector/PairName.crt and CertDirector/PairName.key
-	PairName string
 }
 
 func NewSecureServingOptions() *SecureServingOptions {
@@ -120,6 +129,10 @@ func (s *SecureServingOptions) Validate() []error {
 		errors = append(errors, fmt.Errorf("--secure-port %v must be between 0 and 65535, inclusive. 0 for turning off secure port", s.BindPort))
 	}
 
+	if (len(s.ServerCert.CertKey.CertFile) != 0 || len(s.ServerCert.CertKey.KeyFile) != 0) && s.ServerCert.GeneratedCert != nil {
+		errors = append(errors, fmt.Errorf("cert/key file and in-memory certificate cannot both be set"))
+	}
+
 	return errors
 }
 
@@ -140,6 +153,8 @@ func (s *SecureServingOptions) AddFlags(fs *pflag.FlagSet) {
 		desc += "If 0, don't serve HTTPS at all."
 	}
 	fs.IntVar(&s.BindPort, "secure-port", s.BindPort, desc)
+
+	fs.IntVar(&s.AdvertisePort, "advertise-port", s.AdvertisePort, "The port that will be advertised as kubernetes endpoints")
 
 	fs.StringVar(&s.ServerCert.CertDirectory, "cert-dir", s.ServerCert.CertDirectory, ""+
 		"The directory where the TLS certs are located. "+
@@ -218,6 +233,8 @@ func (s *SecureServingOptions) ApplyTo(config **server.SecureServingInfo) error 
 			return fmt.Errorf("unable to load server certificate: %v", err)
 		}
 		c.Cert = &tlsCert
+	} else if s.ServerCert.GeneratedCert != nil {
+		c.Cert = s.ServerCert.GeneratedCert
 	}
 
 	if len(s.CipherSuites) != 0 {
@@ -252,6 +269,61 @@ func (s *SecureServingOptions) ApplyTo(config **server.SecureServingInfo) error 
 	}
 
 	c.AdvertisePort = s.AdvertisePort
+
+	return nil
+}
+
+func (s *SecureServingOptions) MaybeDefaultWithSelfSignedCerts(publicAddress string, alternateDNS []string, alternateIPs []net.IP) error {
+	if s == nil || (s.BindPort == 0 && s.Listener == nil) {
+		return nil
+	}
+	keyCert := &s.ServerCert.CertKey
+	if len(keyCert.CertFile) != 0 || len(keyCert.KeyFile) != 0 {
+		return nil
+	}
+
+	canReadCertAndKey := false
+	if len(s.ServerCert.CertDirectory) > 0 {
+		if len(s.ServerCert.PairName) == 0 {
+			return fmt.Errorf("PairName is required if CertDirectory is set")
+		}
+		keyCert.CertFile = path.Join(s.ServerCert.CertDirectory, s.ServerCert.PairName+".crt")
+		keyCert.KeyFile = path.Join(s.ServerCert.CertDirectory, s.ServerCert.PairName+".key")
+		if canRead, err := certutil.CanReadCertAndKey(keyCert.CertFile, keyCert.KeyFile); err != nil {
+			return err
+		} else {
+			canReadCertAndKey = canRead
+		}
+	}
+
+	if !canReadCertAndKey {
+		// add either the bind address or localhost to the valid alternates
+		bindIP := s.BindAddress.String()
+		if bindIP == "0.0.0.0" {
+			alternateDNS = append(alternateDNS, "localhost")
+		} else {
+			alternateIPs = append(alternateIPs, s.BindAddress)
+		}
+
+		if cert, key, err := certutil.GenerateSelfSignedCertKeyWithFixtures(publicAddress, alternateIPs, alternateDNS, s.ServerCert.FixtureDirectory); err != nil {
+			return fmt.Errorf("unable to generate self signed cert: %v", err)
+		} else if len(keyCert.CertFile) > 0 && len(keyCert.KeyFile) > 0 {
+			if err := certutil.WriteCert(keyCert.CertFile, cert); err != nil {
+				return err
+			}
+			if err := certutil.WriteKey(keyCert.KeyFile, key); err != nil {
+				return err
+			}
+			klog.Infof("Generated self-signed cert (%s, %s)", keyCert.CertFile, keyCert.KeyFile)
+		} else {
+			tlsCert, err := tls.X509KeyPair(cert, key)
+			if err != nil {
+				return fmt.Errorf("unable to generate self signed cert: %v", err)
+			}
+			s.ServerCert.GeneratedCert = &tlsCert
+			klog.Infof("Generated self-signed cert in-memory")
+		}
+	}
 
 	return nil
 }

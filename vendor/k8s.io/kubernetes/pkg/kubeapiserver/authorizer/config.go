@@ -18,10 +18,12 @@ package authorizer
 
 import (
 	"fmt"
+	"time"
 
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	"k8s.io/apiserver/pkg/authorization/authorizerfactory"
 	"k8s.io/apiserver/pkg/authorization/union"
+	"k8s.io/apiserver/plugin/pkg/authorizer/webhook"
 	versionedinformers "k8s.io/client-go/informers"
 	"k8s.io/kubernetes/pkg/auth/nodeidentifier"
 	"k8s.io/kubernetes/pkg/kubeapiserver/authorizer/modes"
@@ -30,19 +32,27 @@ import (
 	"k8s.io/kubernetes/plugin/pkg/auth/authorizer/rbac/bootstrappolicy"
 )
 
-type AuthorizationConfig struct {
+// Config contains the data on how to authorize a request to the Kube API Server
+type Config struct {
 	AuthorizationModes []string
 
 	// Options for ModeABAC
 
 	// Options for ModeWebhook
 
+	// Kubeconfig file for Webhook authorization plugin.
+	WebhookConfigFile string
+	// TTL for caching of authorized responses from the webhook server.
+	WebhookCacheAuthorizedTTL time.Duration
+	// TTL for caching of unauthorized responses from the webhook server.
+	WebhookCacheUnauthorizedTTL time.Duration
+
 	VersionedInformerFactory versionedinformers.SharedInformerFactory
 }
 
 // New returns the right sort of union of multiple authorizer.Authorizer objects
 // based on the authorizationMode or an error.
-func (config AuthorizationConfig) New() (authorizer.Authorizer, authorizer.RuleResolver, error) {
+func (config Config) New() (authorizer.Authorizer, authorizer.RuleResolver, error) {
 	if len(config.AuthorizationModes) == 0 {
 		return nil, nil, fmt.Errorf("at least one authorization mode must be passed")
 	}
@@ -75,6 +85,15 @@ func (config AuthorizationConfig) New() (authorizer.Authorizer, authorizer.RuleR
 			alwaysDenyAuthorizer := authorizerfactory.NewAlwaysDenyAuthorizer()
 			authorizers = append(authorizers, alwaysDenyAuthorizer)
 			ruleResolvers = append(ruleResolvers, alwaysDenyAuthorizer)
+		case modes.ModeWebhook:
+			webhookAuthorizer, err := webhook.New(config.WebhookConfigFile,
+				config.WebhookCacheAuthorizedTTL,
+				config.WebhookCacheUnauthorizedTTL)
+			if err != nil {
+				return nil, nil, err
+			}
+			authorizers = append(authorizers, webhookAuthorizer)
+			ruleResolvers = append(ruleResolvers, webhookAuthorizer)
 		case modes.ModeRBAC:
 			rbacAuthorizer := rbac.New(
 				&rbac.RoleGetter{Lister: config.VersionedInformerFactory.Rbac().V1().Roles().Lister()},

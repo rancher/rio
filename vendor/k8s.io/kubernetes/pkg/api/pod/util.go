@@ -235,8 +235,10 @@ func UpdatePodCondition(status *api.PodStatus, condition *api.PodCondition) bool
 // DropDisabledAlphaFields removes disabled fields from the pod spec.
 // This should be called from PrepareForCreate/PrepareForUpdate for all resources containing a pod spec.
 func DropDisabledAlphaFields(podSpec *api.PodSpec) {
-	podSpec.Priority = nil
-	podSpec.PriorityClassName = ""
+	if !utilfeature.DefaultFeatureGate.Enabled(features.PodPriority) {
+		podSpec.Priority = nil
+		podSpec.PriorityClassName = ""
+	}
 
 	if !utilfeature.DefaultFeatureGate.Enabled(features.LocalStorageCapacityIsolation) {
 		for i := range podSpec.Volumes {
@@ -244,13 +246,6 @@ func DropDisabledAlphaFields(podSpec *api.PodSpec) {
 				podSpec.Volumes[i].EmptyDir.SizeLimit = nil
 			}
 		}
-	}
-
-	for i := range podSpec.Containers {
-		DropDisabledVolumeMountsAlphaFields(podSpec.Containers[i].VolumeMounts)
-	}
-	for i := range podSpec.InitContainers {
-		DropDisabledVolumeMountsAlphaFields(podSpec.InitContainers[i].VolumeMounts)
 	}
 
 	DropDisabledVolumeDevicesAlphaFields(podSpec)
@@ -300,23 +295,15 @@ func DropDisabledProcMountField(podSpec *api.PodSpec) {
 	}
 }
 
-// DropDisabledVolumeMountsAlphaFields removes disabled fields from []VolumeMount.
-// This should be called from PrepareForCreate/PrepareForUpdate for all resources containing a VolumeMount
-func DropDisabledVolumeMountsAlphaFields(volumeMounts []api.VolumeMount) {
-	if !utilfeature.DefaultFeatureGate.Enabled(features.MountPropagation) {
-		for i := range volumeMounts {
-			volumeMounts[i].MountPropagation = nil
-		}
-	}
-}
-
 // DropDisabledVolumeDevicesAlphaFields removes disabled fields from []VolumeDevice.
 // This should be called from PrepareForCreate/PrepareForUpdate for all resources containing a VolumeDevice
 func DropDisabledVolumeDevicesAlphaFields(podSpec *api.PodSpec) {
-	for i := range podSpec.Containers {
-		podSpec.Containers[i].VolumeDevices = nil
-	}
-	for i := range podSpec.InitContainers {
-		podSpec.InitContainers[i].VolumeDevices = nil
+	if !utilfeature.DefaultFeatureGate.Enabled(features.BlockVolume) {
+		for i := range podSpec.Containers {
+			podSpec.Containers[i].VolumeDevices = nil
+		}
+		for i := range podSpec.InitContainers {
+			podSpec.InitContainers[i].VolumeDevices = nil
+		}
 	}
 }
