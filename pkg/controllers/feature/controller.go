@@ -57,6 +57,11 @@ func (f *featureHandler) syncAll() error {
 		featureObj := v1.NewFeature(f.namespace, feature.Name(), v1.Feature{
 			Spec: feature.Spec(),
 		})
+		if feature.IsSystem() {
+			featureObj.Labels = map[string]string{
+				"rio.cattle.io/system": "true",
+			}
+		}
 		os.Add(featureObj)
 	}
 

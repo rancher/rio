@@ -1256,6 +1256,13 @@ func (in *ServiceStatus) DeepCopyInto(out *ServiceStatus) {
 		*out = new(ScaleStatus)
 		**out = **in
 	}
+	if in.ContainerImages != nil {
+		in, out := &in.ContainerImages, &out.ContainerImages
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
 		*out = make([]Condition, len(*in))

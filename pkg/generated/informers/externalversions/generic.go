@@ -60,6 +60,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Autoscale().V1().ServiceScaleRecommendations().Informer()}, nil
 
 		// Group=project.rio.cattle.io, Version=v1
+	case projectriocattleiov1.SchemeGroupVersion.WithResource("clusterdomains"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Project().V1().ClusterDomains().Informer()}, nil
 	case projectriocattleiov1.SchemeGroupVersion.WithResource("features"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Project().V1().Features().Informer()}, nil
 	case projectriocattleiov1.SchemeGroupVersion.WithResource("publicdomains"):

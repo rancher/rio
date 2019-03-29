@@ -25,8 +25,7 @@ import (
 type contextKey struct{}
 
 type Context struct {
-	Namespace       string
-	SystemNamespace string
+	Namespace string
 
 	Apps        *apps.Factory
 	AutoScale   *autoscale.Factory
@@ -52,22 +51,21 @@ func From(ctx context.Context) *Context {
 
 func NewContext(namespace string, config *rest.Config) *Context {
 	context := &Context{
-		Namespace:       namespace,
-		SystemNamespace: namespace + "-system",
-		Apps:            apps.NewFactoryFromConfigOrDie(config),
-		AutoScale:       autoscale.NewFactoryFromConfigOrDie(config),
-		Build:           build.NewFactoryFromConfigOrDie(config),
-		CertManager:     certmanager.NewFactoryFromConfigOrDie(config),
-		Core:            core.NewFactoryFromConfigOrDie(config),
-		Ext:             apiextensions.NewFactoryFromConfigOrDie(config),
-		Global:          project.NewFactoryFromConfigOrDie(config),
-		Networking:      networking.NewFactoryFromConfigOrDie(config),
-		Policy:          policy.NewFactoryFromConfigOrDie(config),
-		RBAC:            rbac.NewFactoryFromConfigOrDie(config),
-		Rio:             rio.NewFactoryFromConfigOrDie(config),
-		Storage:         storage.NewFactoryFromConfigOrDie(config),
-		Webhook:         webhookinator.NewFactoryFromConfigOrDie(config),
-		K8s:             kubernetes.NewForConfigOrDie(config),
+		Namespace:   namespace,
+		Apps:        apps.NewFactoryFromConfigOrDie(config),
+		AutoScale:   autoscale.NewFactoryFromConfigOrDie(config),
+		Build:       build.NewFactoryFromConfigOrDie(config),
+		CertManager: certmanager.NewFactoryFromConfigOrDie(config),
+		Core:        core.NewFactoryFromConfigOrDie(config),
+		Ext:         apiextensions.NewFactoryFromConfigOrDie(config),
+		Global:      project.NewFactoryFromConfigOrDie(config),
+		Networking:  networking.NewFactoryFromConfigOrDie(config),
+		Policy:      policy.NewFactoryFromConfigOrDie(config),
+		RBAC:        rbac.NewFactoryFromConfigOrDie(config),
+		Rio:         rio.NewFactoryFromConfigOrDie(config),
+		Storage:     storage.NewFactoryFromConfigOrDie(config),
+		Webhook:     webhookinator.NewFactoryFromConfigOrDie(config),
+		K8s:         kubernetes.NewForConfigOrDie(config),
 	}
 
 	context.Apply = apply.New(context.K8s.Discovery(), apply.NewClientFactory(config))

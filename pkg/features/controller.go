@@ -14,6 +14,7 @@ type ControllerRegister func(ctx context.Context, rContext *types.Context) error
 
 type FeatureController struct {
 	FeatureName  string
+	System       bool
 	FeatureSpec  v1.FeatureSpec
 	Controllers  []ControllerRegister
 	OnStop       func() error
@@ -50,6 +51,10 @@ func (f *FeatureController) Register() error {
 
 func (f *FeatureController) Name() string {
 	return f.FeatureName
+}
+
+func (f *FeatureController) IsSystem() bool {
+	return f.System
 }
 
 func (f *FeatureController) Spec() v1.FeatureSpec {

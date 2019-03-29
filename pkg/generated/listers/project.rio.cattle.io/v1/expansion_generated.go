@@ -18,6 +18,14 @@ limitations under the License.
 
 package v1
 
+// ClusterDomainListerExpansion allows custom methods to be added to
+// ClusterDomainLister.
+type ClusterDomainListerExpansion interface{}
+
+// ClusterDomainNamespaceListerExpansion allows custom methods to be added to
+// ClusterDomainNamespaceLister.
+type ClusterDomainNamespaceListerExpansion interface{}
+
 // FeatureListerExpansion allows custom methods to be added to
 // FeatureLister.
 type FeatureListerExpansion interface{}

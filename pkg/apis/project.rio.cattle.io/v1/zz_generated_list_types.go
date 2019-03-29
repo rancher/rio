@@ -27,6 +27,23 @@ import (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
+// ClusterDomainList is a list of ClusterDomain resources
+type ClusterDomainList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []ClusterDomain `json:"items"`
+}
+
+func NewClusterDomain(namespace, name string, obj ClusterDomain) *ClusterDomain {
+	obj.APIVersion, obj.Kind = SchemeGroupVersion.WithKind("ClusterDomain").ToAPIVersionAndKind()
+	obj.Name = name
+	obj.Namespace = namespace
+	return &obj
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
 // FeatureList is a list of Feature resources
 type FeatureList struct {
 	metav1.TypeMeta `json:",inline"`

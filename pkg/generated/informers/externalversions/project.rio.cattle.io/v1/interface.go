@@ -24,6 +24,8 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// ClusterDomains returns a ClusterDomainInformer.
+	ClusterDomains() ClusterDomainInformer
 	// Features returns a FeatureInformer.
 	Features() FeatureInformer
 	// PublicDomains returns a PublicDomainInformer.
@@ -39,6 +41,11 @@ type version struct {
 // New returns a new Interface.
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
+}
+
+// ClusterDomains returns a ClusterDomainInformer.
+func (v *version) ClusterDomains() ClusterDomainInformer {
+	return &clusterDomainInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // Features returns a FeatureInformer.

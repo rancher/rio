@@ -27,6 +27,7 @@ import (
 
 type ProjectV1Interface interface {
 	RESTClient() rest.Interface
+	ClusterDomainsGetter
 	FeaturesGetter
 	PublicDomainsGetter
 }
@@ -34,6 +35,10 @@ type ProjectV1Interface interface {
 // ProjectV1Client is used to interact with features provided by the project.rio.cattle.io group.
 type ProjectV1Client struct {
 	restClient rest.Interface
+}
+
+func (c *ProjectV1Client) ClusterDomains(namespace string) ClusterDomainInterface {
+	return newClusterDomains(c, namespace)
 }
 
 func (c *ProjectV1Client) Features(namespace string) FeatureInterface {

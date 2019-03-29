@@ -29,6 +29,7 @@ func main() {
 		Groups: map[string]args.Group{
 			"project.rio.cattle.io": {
 				Types: []interface{}{
+					projectv1.ClusterDomain{},
 					projectv1.Feature{},
 					projectv1.PublicDomain{},
 				},

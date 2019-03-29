@@ -28,6 +28,10 @@ type FakeProjectV1 struct {
 	*testing.Fake
 }
 
+func (c *FakeProjectV1) ClusterDomains(namespace string) v1.ClusterDomainInterface {
+	return &FakeClusterDomains{c, namespace}
+}
+
 func (c *FakeProjectV1) Features(namespace string) v1.FeatureInterface {
 	return &FakeFeatures{c, namespace}
 }

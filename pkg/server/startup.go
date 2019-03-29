@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/rancher/rio/modules/stack"
+	"github.com/rancher/rio/modules/system"
 	"github.com/rancher/rio/pkg/controllers"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/crd"
@@ -28,6 +29,7 @@ func Startup(ctx context.Context, namespace string, kubeConfig string) error {
 	leader.RunOrDie(ctx, namespace, "rio", rioContext.K8s, func(ctx context.Context) {
 		runtime.Must(controllers.Register(ctx, rioContext))
 		runtime.Must(stack.Register(ctx, rioContext))
+		runtime.Must(system.Register(ctx, rioContext))
 		runtime.Must(rioContext.Start(ctx))
 		<-ctx.Done()
 	})
@@ -44,23 +46,30 @@ func Types(ctx context.Context, config *rest.Config) error {
 	crds := crd.NonNamespacedTypes(
 		"Setting.project.rio.cattle.io/v1")
 	crds = append(crds, crd.NamespacedTypes(
-		"DestinationRule.networking.istio.io/v1alpha3",
-		"Gateway.networking.istio.io/v1alpha3",
-		"ServiceEntry.networking.istio.io/v1alpha3",
-		"VirtualService.networking.istio.io/v1alpha3",
-		"ServiceScaleRecommendation.autoscale.rio.cattle.io/v1",
 		"Build.build.knative.dev/v1alpha1",
-		"GitWebHookExecution.webhookinator.rio.cattle.io/v1",
-		"GitWebHookReceiver.webhookinator.rio.cattle.io/v1",
-		"Service.rio.cattle.io/v1",
-		"Stack.rio.cattle.io/v1",
+
+		"Config.rio.cattle.io/v1",
 		"ExternalService.rio.cattle.io/v1",
 		"Router.rio.cattle.io/v1",
+		"Service.rio.cattle.io/v1",
+		"Stack.rio.cattle.io/v1",
 		"Volume.rio.cattle.io/v1",
-		"Config.rio.cattle.io/v1",
-		"PublicDomain.project.rio.cattle.io/v1",
+
+		"ClusterDomain.project.rio.cattle.io/v1",
 		"Feature.project.rio.cattle.io/v1",
-		"ListenConfig.project.rio.cattle.io/v1")...)
+		"ListenConfig.project.rio.cattle.io/v1",
+		"PublicDomain.project.rio.cattle.io/v1",
+
+		"DestinationRule.networking.istio.io/v1alpha3",
+		"Gateway.networking.istio.io/v1alpha3",
+		"VirtualService.networking.istio.io/v1alpha3",
+
+		"GitWebHookExecution.webhookinator.rio.cattle.io/v1",
+		"GitWebHookReceiver.webhookinator.rio.cattle.io/v1",
+		"ServiceEntry.networking.istio.io/v1alpha3",
+
+		"ServiceScaleRecommendation.autoscale.rio.cattle.io/v1",
+	)...)
 
 	factory.BatchCreateCRDs(ctx, crds...)
 
