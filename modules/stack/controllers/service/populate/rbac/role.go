@@ -9,10 +9,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func Populate(stack *riov1.Stack, service *riov1.Service, os *objectset.ObjectSet) error {
-	labels := servicelabels.RioOnlyServiceLabels(stack, service)
-	addGlobalRoles(service.Name, stack.Name, labels, service.Spec.GlobalPermissions, os)
-	addRoles(service.Name, stack.Name, labels, &service.Spec.ServiceUnversionedSpec, os)
+func Populate(service *riov1.Service, os *objectset.ObjectSet) error {
+	labels := servicelabels.RioOnlyServiceLabels(service)
+	addGlobalRoles(service.Name, service.Namespace, labels, service.Spec.GlobalPermissions, os)
+	addRoles(service.Name, service.Namespace, labels, &service.Spec.ServiceUnversionedSpec, os)
 	return nil
 }
 

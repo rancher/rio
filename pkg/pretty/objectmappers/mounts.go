@@ -49,9 +49,6 @@ func (m MountStringer) MaybeString() interface{} {
 		addOpt(opts, string(m.BindOptions.Propagation))
 	}
 	if m.VolumeOptions != nil {
-		if m.VolumeOptions.NoCopy {
-			addOpt(opts, "nocopy")
-		}
 		if m.VolumeOptions.SubPath != "" {
 			addOpt(opts, "subPath="+m.VolumeOptions.SubPath)
 		}
@@ -144,12 +141,6 @@ func createMount(serviceMount volumespec.ServiceVolumeConfig) v1.Mount {
 	if serviceMount.Bind != nil {
 		mount.BindOptions = &v1.BindOptions{
 			Propagation: v1.Propagation(serviceMount.Bind.Propagation),
-		}
-	}
-
-	if serviceMount.Volume != nil {
-		mount.VolumeOptions = &v1.VolumeOptions{
-			NoCopy: serviceMount.Volume.NoCopy,
 		}
 	}
 

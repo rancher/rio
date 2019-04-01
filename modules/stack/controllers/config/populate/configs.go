@@ -11,7 +11,6 @@ import (
 )
 
 func Config(stack *riov1.Stack, config *riov1.Config, os *objectset.ObjectSet) error {
-	os.AddInput(stack, config)
 	return addConfig(config, stack, os)
 }
 

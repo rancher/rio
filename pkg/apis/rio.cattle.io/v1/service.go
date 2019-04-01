@@ -28,19 +28,21 @@ type ServiceRevision struct {
 }
 
 type ServiceUnversionedSpec struct {
-	Labels             map[string]string `json:"labels,omitempty"`
-	Metadata           map[string]string `json:"metadata,omitempty"` //alias annotations
-	Scale              int               `json:"scale"`
-	BatchSize          int               `json:"batchSize,omitempty"`
-	UpdateOrder        string            `json:"updateOrder,omitempty" norman:"type=enum,options=start-first|stop-first"`
-	UpdateStrategy     string            `json:"updateStrategy,omitempty" norman:"type=enum,options=rolling|on-delete,default=rolling"`
-	DeploymentStrategy string            `json:"deploymentStrategy,omitempty" norman:"type=enum,options=parallel|ordered,default=parallel"`
-	AutoScale          *AutoscaleConfig  `json:"autoScale,omitempty"`
+	Scale              int              `json:"scale"`
+	BatchSize          int              `json:"batchSize,omitempty"`
+	UpdateOrder        string           `json:"updateOrder,omitempty" norman:"type=enum,options=start-first|stop-first"`
+	UpdateStrategy     string           `json:"updateStrategy,omitempty" norman:"type=enum,options=rolling|on-delete,default=rolling"`
+	DeploymentStrategy string           `json:"deploymentStrategy,omitempty" norman:"type=enum,options=parallel|ordered,default=parallel"`
+	AutoScale          *AutoscaleConfig `json:"autoScale,omitempty"`
 
 	PodConfig
 	PrivilegedConfig
-	Sidekicks map[string]SidekickConfig `json:"sidekicks,omitempty"`
+	Containers []Container `json:"sidekicks,omitempty"`
+}
 
+type Container struct {
+	Name          string `json:"name,omitempty"`
+	InitContainer bool   `json:"initContainer,omitempty"`
 	ContainerConfig
 }
 
@@ -174,7 +176,7 @@ type ContainerConfig struct {
 }
 
 type ImageBuild struct {
-	Url        string `json:"url,omitempty"`
+	URL        string `json:"url,omitempty"`
 	Tag        string `json:"tag,omitempty"`
 	Commit     string `json:"commit,omitempty"`
 	Branch     string `json:"branch,omitempty"`
@@ -185,7 +187,6 @@ type ImageBuild struct {
 }
 
 type SidekickConfig struct {
-	InitContainer bool `json:"initContainer,omitempty"`
 	ContainerConfig
 }
 

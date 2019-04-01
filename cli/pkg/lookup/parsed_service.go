@@ -4,8 +4,7 @@ import (
 	"fmt"
 
 	"github.com/rancher/rio/cli/pkg/constants"
-
-	"github.com/rancher/rio/exclude/pkg/settings"
+	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/wrangler/pkg/kv"
 )
 
@@ -22,7 +21,6 @@ func StackScopedFromLabels(defaultStackName string, labels map[string]string) St
 	return StackScoped{
 		DefaultStackName: defaultStackName,
 		Version:          labels["rio.cattle.io/version"],
-		StackName:        labels["rio.cattle.io/stack"],
 		ResourceName:     labels["rio.cattle.io/service-name"],
 		ServiceName:      labels["rio.cattle.io/service"],
 	}

@@ -17,12 +17,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func Populate(stack *riov1.Stack, configsByName map[string]*riov1.Config, volumeDefs map[string]*riov1.Volume, service *riov1.Service, os *objectset.ObjectSet) v1.PodTemplateSpec {
-	podSpec := podSpec(stack, volumeDefs, service, os)
+func Populate(configsByName map[string]*riov1.Config, volumeDefs map[string]*riov1.Volume, service *riov1.Service, os *objectset.ObjectSet) v1.PodTemplateSpec {
+	podSpec := podSpec(volumeDefs, service, os)
 
 	pts := v1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels:      servicelabels.ServiceLabels(stack, service),
+			Labels:      servicelabels.ServiceLabels(service),
 			Annotations: servicelabels.SafeMerge(nil, service.Spec.Metadata),
 		},
 		Spec: podSpec,
@@ -41,7 +41,7 @@ func Populate(stack *riov1.Stack, configsByName map[string]*riov1.Config, volume
 	return pts
 }
 
-func podSpec(stack *riov1.Stack, volumes map[string]*riov1.Volume, service *riov1.Service, os *objectset.ObjectSet) v1.PodSpec {
+func podSpec(volumes map[string]*riov1.Volume, service *riov1.Service, os *objectset.ObjectSet) v1.PodSpec {
 	var (
 		f    = false
 		spec = &service.Spec.ServiceUnversionedSpec
@@ -55,20 +55,20 @@ func podSpec(stack *riov1.Stack, volumes map[string]*riov1.Volume, service *riov
 		AutomountServiceAccountToken: &f,
 	}
 
-	podvolume.Populate(volumes, service, &podSpec, stack)
+	podvolume.Populate(volumes, service, &podSpec)
 
 	containers(&podSpec, service)
-	dns(&podSpec, spec, stack)
+	dns(&podSpec, spec)
 	restartPolicy(&podSpec, spec)
 	stopPeriod(&podSpec, spec)
-	scheduling(&podSpec, spec, servicelabels.ServiceLabels(stack, service))
-	roles(stack, service, &podSpec, os)
+	scheduling(&podSpec, spec, servicelabels.ServiceLabels(service))
+	roles(service, &podSpec, os)
 
 	return podSpec
 }
 
-func roles(stack *riov1.Stack, service *riov1.Service, podSpec *v1.PodSpec, os *objectset.ObjectSet) {
-	if err := rbac.Populate(stack, service, os); err != nil {
+func roles(service *riov1.Service, podSpec *v1.PodSpec, os *objectset.ObjectSet) {
+	if err := rbac.Populate(service, os); err != nil {
 		os.AddErr(err)
 		return
 	}
@@ -156,7 +156,7 @@ func scheduling(podSpec *v1.PodSpec, service *riov1.ServiceUnversionedSpec, labe
 	}
 }
 
-func dns(podSpec *v1.PodSpec, service *riov1.ServiceUnversionedSpec, stack *riov1.Stack) {
+func dns(podSpec *v1.PodSpec, service *riov1.ServiceUnversionedSpec) {
 	dnsConfig := &v1.PodDNSConfig{
 		Nameservers: service.DNS,
 		Searches:    service.DNSSearch,

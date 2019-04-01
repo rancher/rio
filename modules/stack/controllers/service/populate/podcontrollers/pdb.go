@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func pdb(stack *riov1.Stack, service *riov1.Service, cp *controllerParams, os *objectset.ObjectSet) {
+func pdb(service *riov1.Service, cp *controllerParams, os *objectset.ObjectSet) {
 	if !(cp.Scale.Scale > 0 && cp.Scale.BatchSize > 0 && cp.Scale.BatchSize < int(cp.Scale.Scale)) {
 		return
 	}
@@ -28,7 +28,7 @@ func pdb(stack *riov1.Stack, service *riov1.Service, cp *controllerParams, os *o
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", service.Name, pdbQuantity.IntVal),
-			Namespace: stack.Name,
+			Namespace: service.Namespace,
 		},
 		Spec: v1beta12.PodDisruptionBudgetSpec{
 			Selector: &metav1.LabelSelector{

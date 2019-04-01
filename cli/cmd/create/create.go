@@ -187,7 +187,7 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 	if strings.HasSuffix(args[0], ".git") {
 		service.Spec.ImageBuild = &riov1.ImageBuild{
 			Branch: c.BuildBranch,
-			Url:    args[0],
+			URL:    args[0],
 			Tag:    c.BuildTag,
 			Commit: c.BuildCommit,
 			Secret: c.BuildSecret,

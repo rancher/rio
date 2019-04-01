@@ -19,7 +19,7 @@ func isDeployment(service riov1.ServiceUnversionedSpec, usedTemplates map[string
 	return true
 }
 
-func deployment(stack *riov1.Stack, service *riov1.Service, cp *controllerParams, os *objectset.ObjectSet) {
+func deployment(service *riov1.Service, cp *controllerParams, os *objectset.ObjectSet) {
 	dep := &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Deployment",
@@ -27,7 +27,7 @@ func deployment(stack *riov1.Stack, service *riov1.Service, cp *controllerParams
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        service.Name,
-			Namespace:   stack.Name,
+			Namespace:   service.Namespace,
 			Labels:      cp.Labels,
 			Annotations: map[string]string{},
 		},

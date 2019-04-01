@@ -9,29 +9,29 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-func Populate(stack *riov1.Stack, configsByName map[string]*riov1.Config, volumesByName map[string]*riov1.Volume, service *riov1.Service, os *objectset.ObjectSet) error {
-	podTemplateSpec := pod.Populate(stack, configsByName, volumesByName, service, os)
+func Populate(configsByName map[string]*riov1.Config, volumesByName map[string]*riov1.Volume, service *riov1.Service, os *objectset.ObjectSet) error {
+	podTemplateSpec := pod.Populate(configsByName, volumesByName, service, os)
 
-	cp := newControllerParams(stack, service, podTemplateSpec)
+	cp := newControllerParams(service, podTemplateSpec)
 	usedTemplates := podvolume.UsedTemplates(volumesByName, service)
 
-	pdb(stack, service, cp, os)
+	pdb(service, cp, os)
 
 	if service.Spec.Global {
-		daemonSet(stack, service, cp, os)
+		daemonSet(service, cp, os)
 	} else if isDeployment(service.Spec.ServiceUnversionedSpec, usedTemplates) {
-		deployment(stack, service, cp, os)
+		deployment(service, cp, os)
 	} else {
-		return statefulSet(stack, service, cp, usedTemplates, os)
+		return statefulSet(service, cp, usedTemplates, os)
 	}
 
 	return nil
 }
 
-func newControllerParams(stack *riov1.Stack, service *riov1.Service, podTemplateSpec v1.PodTemplateSpec) *controllerParams {
+func newControllerParams(service *riov1.Service, podTemplateSpec v1.PodTemplateSpec) *controllerParams {
 	scaleParams := parseScaleParams(&service.Spec.ServiceUnversionedSpec)
-	selectorLabels := servicelabels.SelectorLabels(stack, service)
-	labels := servicelabels.ServiceLabels(stack, service)
+	selectorLabels := servicelabels.SelectorLabels(service)
+	labels := servicelabels.ServiceLabels(service)
 
 	if podTemplateSpec.Labels == nil {
 		podTemplateSpec.Labels = map[string]string{}
@@ -39,10 +39,6 @@ func newControllerParams(stack *riov1.Stack, service *riov1.Service, podTemplate
 	for k, v := range selectorLabels {
 		podTemplateSpec.Labels[k] = v
 	}
-	podTemplateSpec.Annotations = servicelabels.SafeMerge(podTemplateSpec.Annotations, map[string]string{
-		"rio.cattle.io/stack":   stack.Name,
-		"rio.cattle.io/project": stack.Namespace,
-	})
 
 	return &controllerParams{
 		Scale:           scaleParams,

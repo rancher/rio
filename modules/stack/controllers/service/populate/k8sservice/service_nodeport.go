@@ -13,10 +13,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func nodePorts(stack *riov1.Stack, service *riov1.Service, os *objectset.ObjectSet) {
-	labels := servicelabels.SelectorLabels(stack, service)
+func nodePorts(service *riov1.Service, os *objectset.ObjectSet) {
+	labels := servicelabels.SelectorLabels(service)
 
-	nodePortService := constructors.NewService(stack.Name, service.Name+"-ports", v1.Service{
+	nodePortService := constructors.NewService(service.Namespace, service.Name+"-ports", v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: labels,
 		},

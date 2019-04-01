@@ -68,7 +68,7 @@ func template(volumeDefs map[string]*riov1.Volume, mount riov1.Mount) *riov1.Vol
 	return nil
 }
 
-func Populate(volumeDefs map[string]*riov1.Volume, service *riov1.Service, spec *v1.PodSpec, stack *riov1.Stack) {
+func Populate(volumeDefs map[string]*riov1.Volume, service *riov1.Service, spec *v1.PodSpec) {
 	volumes := map[string]v1.Volume{}
 
 	for _, container := range containerlist.ForService(service) {
@@ -77,11 +77,11 @@ func Populate(volumeDefs map[string]*riov1.Volume, service *riov1.Service, spec 
 		}
 
 		for _, s := range container.Secrets {
-			addVolumeFromSecret(stack, service, s, volumes)
+			addVolumeFromSecret(service, s, volumes)
 		}
 
 		for _, c := range container.Configs {
-			addVolumeFromConfig(stack, c, volumes)
+			addVolumeFromConfig(c, volumes)
 		}
 	}
 
@@ -90,7 +90,7 @@ func Populate(volumeDefs map[string]*riov1.Volume, service *riov1.Service, spec 
 	}
 }
 
-func addVolumeFromConfig(stack *riov1.Stack, config riov1.ConfigMapping, volumes map[string]v1.Volume) {
+func addVolumeFromConfig(config riov1.ConfigMapping, volumes map[string]v1.Volume) {
 	name := NameOfConfig(config)
 	var mode *int32
 	if config.Mode != "" {
@@ -114,7 +114,7 @@ func addVolumeFromConfig(stack *riov1.Stack, config riov1.ConfigMapping, volumes
 	}
 }
 
-func addVolumeFromSecret(stack *riov1.Stack, service *riov1.Service, secret riov1.SecretMapping, volumes map[string]v1.Volume) {
+func addVolumeFromSecret(service *riov1.Service, secret riov1.SecretMapping, volumes map[string]v1.Volume) {
 	t := true
 	name := NameOfSecret(secret)
 	var mode *int32

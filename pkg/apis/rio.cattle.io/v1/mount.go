@@ -47,7 +47,6 @@ type BindOptions struct {
 
 // VolumeOptions represents the options for a mount of type volume.
 type VolumeOptions struct {
-	NoCopy   bool   `json:"noCopy,omitempty"`
 	Driver   string `json:"driver,omitempty"`
 	SizeInGB int    `json:"sizeInGb,omitempty"`
 	SubPath  string `json:"subPath,omitempty"`

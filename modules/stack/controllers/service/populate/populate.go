@@ -9,11 +9,11 @@ import (
 	"github.com/rancher/wrangler/pkg/objectset"
 )
 
-func Service(stack *v1.Stack, configsByName map[string]*v1.Config, volumesByName map[string]*v1.Volume,
+func Service(configsByName map[string]*v1.Config, volumesByName map[string]*v1.Volume,
 	services []*v1.Service, service *v1.Service, os *objectset.ObjectSet) error {
 	var err error
 
-	autoscale.Populate(stack, services, os)
+	autoscale.Populate(services, os)
 
 	serviceSets, err := serviceset.CollectionServices(services)
 	if err != nil {
@@ -26,8 +26,8 @@ func Service(stack *v1.Stack, configsByName map[string]*v1.Config, volumesByName
 	}
 
 	for _, s := range serviceSet.List() {
-		k8sservice.Populate(stack, s, os)
-		if err := podcontrollers.Populate(stack, configsByName, volumesByName, s, os); err != nil {
+		k8sservice.Populate(s, os)
+		if err := podcontrollers.Populate(configsByName, volumesByName, s, os); err != nil {
 			return err
 		}
 	}

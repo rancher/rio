@@ -16,7 +16,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	sc.Apply = sc.Apply.WithCacheTypes(rContext.Core.Core().V1().PersistentVolumeClaim())
 
 	sc.Populator = func(obj runtime.Object, stack *riov1.Stack, os *objectset.ObjectSet) error {
-		return populate.Volume(stack, obj.(*riov1.Volume), os)
+		return populate.Volume(obj.(*riov1.Volume), os)
 	}
 
 	return nil

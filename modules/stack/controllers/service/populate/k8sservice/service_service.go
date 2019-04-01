@@ -10,10 +10,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func serviceSelector(stack *riov1.Stack, service *riov1.Service, os *objectset.ObjectSet) {
-	labels := servicelabels.ServiceLabels(stack, service)
-	selectorLabels := servicelabels.SelectorLabels(stack, service)
-	svc := newServiceSelector(service.Name, stack.Name, labels, selectorLabels)
+func serviceSelector(service *riov1.Service, os *objectset.ObjectSet) {
+	labels := servicelabels.ServiceLabels(service)
+	selectorLabels := servicelabels.SelectorLabels(service)
+	svc := newServiceSelector(service.Name, service.Namespace, labels, selectorLabels)
 	ports, ip := serviceports.ServiceNamedPorts(service)
 
 	if len(ports) > 0 {

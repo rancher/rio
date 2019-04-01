@@ -104,5 +104,5 @@ func (s *serviceHandler) populate(obj runtime.Object, stack *riov1.Stack, os *ob
 		volumesByName[volume.Name] = volume
 	}
 
-	return populate.Service(stack, configsByName, volumesByName, services, service, os)
+	return populate.Service(configsByName, volumesByName, services, service, os)
 }

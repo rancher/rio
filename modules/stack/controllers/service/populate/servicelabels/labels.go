@@ -4,33 +4,28 @@ import (
 	"strings"
 
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/namespace"
 )
 
-func SelectorLabels(stack *v1.Stack, service *v1.Service) map[string]string {
-	m := ServiceLabels(stack, service)
+func SelectorLabels(service *v1.Service) map[string]string {
+	m := ServiceLabels(service)
 	return map[string]string{
 		"app":     m["app"],
 		"version": m["version"],
 	}
 }
 
-func ServiceLabels(stack *v1.Stack, service *v1.Service) map[string]string {
-	m := RioOnlyServiceLabels(stack, service)
+func ServiceLabels(service *v1.Service) map[string]string {
+	m := RioOnlyServiceLabels(service)
 	m = SafeMerge(m, service.Spec.Labels)
-	m["app"] = namespace.HashIfNeed(m["rio.cattle.io/service"], stack.Name, stack.Namespace)
+	m["app"] = service.Name
 	m["version"] = m["rio.cattle.io/version"]
 	return m
 }
 
-func RioOnlyServiceLabels(stack *v1.Stack, service *v1.Service) map[string]string {
+func RioOnlyServiceLabels(service *v1.Service) map[string]string {
 	labels := map[string]string{
 		"rio.cattle.io/service": service.Spec.Revision.ServiceName,
 		"rio.cattle.io/version": service.Spec.Revision.Version,
-	}
-	if stack != nil {
-		labels["rio.cattle.io/stack"] = stack.Name
-		labels["rio.cattle.io/project"] = stack.Namespace
 	}
 	if service.Spec.Revision.ParentService == "" {
 		labels["rio.cattle.io/service-name"] = service.Spec.Revision.ServiceName

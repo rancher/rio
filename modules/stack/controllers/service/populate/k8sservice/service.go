@@ -5,7 +5,7 @@ import (
 	"github.com/rancher/wrangler/pkg/objectset"
 )
 
-func Populate(stack *riov1.Stack, service *riov1.Service, os *objectset.ObjectSet) {
-	nodePorts(stack, service, os)
-	serviceSelector(stack, service, os)
+func Populate(service *riov1.Service, os *objectset.ObjectSet) {
+	nodePorts(service, os)
+	serviceSelector(service, os)
 }

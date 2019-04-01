@@ -10,7 +10,7 @@ import (
 
 const useTemplatesLabel = "rio.cattle.io/use-templates"
 
-func statefulSet(stack *riov1.Stack, service *riov1.Service, cp *controllerParams, usedTemplates map[string]*riov1.Volume, os *objectset.ObjectSet) error {
+func statefulSet(service *riov1.Service, cp *controllerParams, usedTemplates map[string]*riov1.Volume, os *objectset.ObjectSet) error {
 	statefulSet := &appsv1.StatefulSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "StatefulSet",
@@ -18,7 +18,7 @@ func statefulSet(stack *riov1.Stack, service *riov1.Service, cp *controllerParam
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        service.Name,
-			Namespace:   stack.Name,
+			Namespace:   service.Namespace,
 			Labels:      cp.Labels,
 			Annotations: map[string]string{},
 		},
@@ -53,12 +53,10 @@ func statefulSet(stack *riov1.Stack, service *riov1.Service, cp *controllerParam
 
 	for _, volumeTemplate := range usedTemplates {
 		labels := map[string]string{
-			"rio.cattle.io/stack":           stack.Name,
-			"rio.cattle.io/project":         stack.Namespace,
 			"rio.cattle.io/volume-template": volumeTemplate.Name,
 		}
 
-		pvc, err := populate2.ToPVC(labels, *volumeTemplate, stack)
+		pvc, err := populate2.ToPVC(labels, *volumeTemplate)
 		if err != nil {
 			return err
 		}

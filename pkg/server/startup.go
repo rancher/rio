@@ -3,8 +3,10 @@ package server
 import (
 	"context"
 
+	"github.com/rancher/rio/modules/istio/controllers/istio"
 	"github.com/rancher/rio/modules/stack"
 	"github.com/rancher/rio/modules/system"
+	"github.com/rancher/rio/modules/system/features/letsencrypt"
 	"github.com/rancher/rio/pkg/controllers"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/crd"
@@ -29,6 +31,8 @@ func Startup(ctx context.Context, namespace string, kubeConfig string) error {
 	leader.RunOrDie(ctx, namespace, "rio", rioContext.K8s, func(ctx context.Context) {
 		runtime.Must(controllers.Register(ctx, rioContext))
 		runtime.Must(stack.Register(ctx, rioContext))
+		runtime.Must(letsencrypt.Register(ctx, rioContext))
+		runtime.Must(istio.Register(ctx, rioContext))
 		runtime.Must(system.Register(ctx, rioContext))
 		runtime.Must(rioContext.Start(ctx))
 		<-ctx.Done()

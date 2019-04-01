@@ -11,8 +11,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-func ToPVC(labels map[string]string, volume riov1.Volume, stack *riov1.Stack) (*v1.PersistentVolumeClaim, error) {
-	cfg := constructors.NewPersistentVolumeClaim(stack.Name, volume.Name, v1.PersistentVolumeClaim{})
+func ToPVC(labels map[string]string, volume riov1.Volume) (*v1.PersistentVolumeClaim, error) {
+	cfg := constructors.NewPersistentVolumeClaim(volume.Namespace, volume.Name, v1.PersistentVolumeClaim{})
 	cfg.Labels = map[string]string{}
 	for k, v := range labels {
 		cfg.Labels[k] = v
@@ -54,23 +54,16 @@ func ToPVC(labels map[string]string, volume riov1.Volume, stack *riov1.Stack) (*
 	return cfg, nil
 }
 
-func Volume(stack *riov1.Stack, volume *riov1.Volume, output *objectset.ObjectSet) error {
-	output.AddInput(stack, volume)
-	return addVolume(stack, volume, output)
+func Volume(volume *riov1.Volume, output *objectset.ObjectSet) error {
+	return addVolume(volume, output)
 }
 
-func addVolume(stack *riov1.Stack, volume *riov1.Volume, output *objectset.ObjectSet) error {
+func addVolume(volume *riov1.Volume, output *objectset.ObjectSet) error {
 	if volume.Spec.Template {
 		return nil
 	}
 
-	labels := map[string]string{
-		"rio.cattle.io/stack":   stack.Name,
-		"rio.cattle.io/project": stack.Namespace,
-		"rio.cattle.io/volume":  volume.Name,
-	}
-
-	cfg, err := ToPVC(labels, *volume, stack)
+	cfg, err := ToPVC(nil, *volume)
 	if err != nil {
 		return err
 	}

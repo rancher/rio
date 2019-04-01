@@ -33,15 +33,15 @@ type Interface interface {
 	ProjectV1() projectv1.ProjectV1Interface
 	// Deprecated: please explicitly pick a version if possible.
 	Project() projectv1.ProjectV1Interface
-	AutoscaleV1() autoscalev1.AutoscaleV1Interface
-	// Deprecated: please explicitly pick a version if possible.
-	Autoscale() autoscalev1.AutoscaleV1Interface
 	WebhookinatorV1() webhookinatorv1.WebhookinatorV1Interface
 	// Deprecated: please explicitly pick a version if possible.
 	Webhookinator() webhookinatorv1.WebhookinatorV1Interface
 	RioV1() riov1.RioV1Interface
 	// Deprecated: please explicitly pick a version if possible.
 	Rio() riov1.RioV1Interface
+	AutoscaleV1() autoscalev1.AutoscaleV1Interface
+	// Deprecated: please explicitly pick a version if possible.
+	Autoscale() autoscalev1.AutoscaleV1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
@@ -49,9 +49,9 @@ type Interface interface {
 type Clientset struct {
 	*discovery.DiscoveryClient
 	projectV1       *projectv1.ProjectV1Client
-	autoscaleV1     *autoscalev1.AutoscaleV1Client
 	webhookinatorV1 *webhookinatorv1.WebhookinatorV1Client
 	rioV1           *riov1.RioV1Client
+	autoscaleV1     *autoscalev1.AutoscaleV1Client
 }
 
 // ProjectV1 retrieves the ProjectV1Client
@@ -63,17 +63,6 @@ func (c *Clientset) ProjectV1() projectv1.ProjectV1Interface {
 // Please explicitly pick a version.
 func (c *Clientset) Project() projectv1.ProjectV1Interface {
 	return c.projectV1
-}
-
-// AutoscaleV1 retrieves the AutoscaleV1Client
-func (c *Clientset) AutoscaleV1() autoscalev1.AutoscaleV1Interface {
-	return c.autoscaleV1
-}
-
-// Deprecated: Autoscale retrieves the default version of AutoscaleClient.
-// Please explicitly pick a version.
-func (c *Clientset) Autoscale() autoscalev1.AutoscaleV1Interface {
-	return c.autoscaleV1
 }
 
 // WebhookinatorV1 retrieves the WebhookinatorV1Client
@@ -98,6 +87,17 @@ func (c *Clientset) Rio() riov1.RioV1Interface {
 	return c.rioV1
 }
 
+// AutoscaleV1 retrieves the AutoscaleV1Client
+func (c *Clientset) AutoscaleV1() autoscalev1.AutoscaleV1Interface {
+	return c.autoscaleV1
+}
+
+// Deprecated: Autoscale retrieves the default version of AutoscaleClient.
+// Please explicitly pick a version.
+func (c *Clientset) Autoscale() autoscalev1.AutoscaleV1Interface {
+	return c.autoscaleV1
+}
+
 // Discovery retrieves the DiscoveryClient
 func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 	if c == nil {
@@ -118,15 +118,15 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
-	cs.autoscaleV1, err = autoscalev1.NewForConfig(&configShallowCopy)
-	if err != nil {
-		return nil, err
-	}
 	cs.webhookinatorV1, err = webhookinatorv1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
 	cs.rioV1, err = riov1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
+	cs.autoscaleV1, err = autoscalev1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -143,9 +143,9 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
 	cs.projectV1 = projectv1.NewForConfigOrDie(c)
-	cs.autoscaleV1 = autoscalev1.NewForConfigOrDie(c)
 	cs.webhookinatorV1 = webhookinatorv1.NewForConfigOrDie(c)
 	cs.rioV1 = riov1.NewForConfigOrDie(c)
+	cs.autoscaleV1 = autoscalev1.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
@@ -155,9 +155,9 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
 	cs.projectV1 = projectv1.New(c)
-	cs.autoscaleV1 = autoscalev1.New(c)
 	cs.webhookinatorV1 = webhookinatorv1.New(c)
 	cs.rioV1 = riov1.New(c)
+	cs.autoscaleV1 = autoscalev1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

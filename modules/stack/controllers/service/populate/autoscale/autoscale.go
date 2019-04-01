@@ -7,10 +7,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func Populate(stack *v1.Stack, services []*v1.Service, os *objectset.ObjectSet) {
+func Populate(services []*v1.Service, os *objectset.ObjectSet) {
 	labels := map[string]string{}
-	labels["rio.cattle.io/stack"] = stack.Name
-	labels["rio.cattle.io/project"] = stack.Namespace
 	for _, s := range services {
 		if s.Spec.AutoScale != nil {
 			spec := autoscalev1.ServiceScaleRecommendation{

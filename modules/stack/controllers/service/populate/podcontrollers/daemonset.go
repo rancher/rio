@@ -7,7 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func daemonSet(stack *riov1.Stack, service *riov1.Service, cp *controllerParams, os *objectset.ObjectSet) {
+func daemonSet(service *riov1.Service, cp *controllerParams, os *objectset.ObjectSet) {
 	daemonSet := &appsv1.DaemonSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "StatefulSet",
@@ -15,7 +15,7 @@ func daemonSet(stack *riov1.Stack, service *riov1.Service, cp *controllerParams,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        service.Name,
-			Namespace:   stack.Name,
+			Namespace:   service.Namespace,
 			Labels:      cp.Labels,
 			Annotations: map[string]string{},
 		},
