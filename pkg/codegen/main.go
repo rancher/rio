@@ -43,12 +43,9 @@ func main() {
 			},
 			"rio.cattle.io": {
 				Types: []interface{}{
-					riov1.Config{},
 					riov1.ExternalService{},
 					riov1.Router{},
 					riov1.Service{},
-					riov1.Stack{},
-					riov1.Volume{},
 				},
 				GenerateTypes: true,
 			},

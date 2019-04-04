@@ -68,18 +68,12 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Project().V1().PublicDomains().Informer()}, nil
 
 		// Group=rio.cattle.io, Version=v1
-	case riocattleiov1.SchemeGroupVersion.WithResource("configs"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Rio().V1().Configs().Informer()}, nil
 	case riocattleiov1.SchemeGroupVersion.WithResource("externalservices"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rio().V1().ExternalServices().Informer()}, nil
 	case riocattleiov1.SchemeGroupVersion.WithResource("routers"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rio().V1().Routers().Informer()}, nil
 	case riocattleiov1.SchemeGroupVersion.WithResource("services"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rio().V1().Services().Informer()}, nil
-	case riocattleiov1.SchemeGroupVersion.WithResource("stacks"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Rio().V1().Stacks().Informer()}, nil
-	case riocattleiov1.SchemeGroupVersion.WithResource("volumes"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Rio().V1().Volumes().Informer()}, nil
 
 		// Group=webhookinator.rio.cattle.io, Version=v1
 	case webhookinatorriocattleiov1.SchemeGroupVersion.WithResource("gitwebhookexecutions"):

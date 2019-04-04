@@ -18,14 +18,8 @@ limitations under the License.
 
 package v1
 
-type ConfigExpansion interface{}
-
 type ExternalServiceExpansion interface{}
 
 type RouterExpansion interface{}
 
 type ServiceExpansion interface{}
-
-type StackExpansion interface{}
-
-type VolumeExpansion interface{}

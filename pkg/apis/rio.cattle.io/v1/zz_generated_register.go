@@ -49,18 +49,12 @@ var (
 // Adds the list of known types to Scheme.
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
-		&Config{},
-		&ConfigList{},
 		&ExternalService{},
 		&ExternalServiceList{},
 		&Router{},
 		&RouterList{},
 		&Service{},
 		&ServiceList{},
-		&Stack{},
-		&StackList{},
-		&Volume{},
-		&VolumeList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

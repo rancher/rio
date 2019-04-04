@@ -1,8 +1,8 @@
 package v1
 
 import (
-	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/condition"
+	"github.com/rancher/wrangler/pkg/genericcondition"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -31,6 +31,6 @@ type ServiceScaleRecommendationSpec struct {
 }
 
 type ServiceScaleRecommendationStatus struct {
-	DesiredScale *int32         `json:"desiredScale,omitempty"`
-	Conditions   []v1.Condition `json:"conditions,omitempty"`
+	DesiredScale *int32                              `json:"desiredScale,omitempty"`
+	Conditions   []genericcondition.GenericCondition `json:"conditions,omitempty"`
 }

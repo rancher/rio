@@ -28,10 +28,6 @@ type FakeRioV1 struct {
 	*testing.Fake
 }
 
-func (c *FakeRioV1) Configs(namespace string) v1.ConfigInterface {
-	return &FakeConfigs{c, namespace}
-}
-
 func (c *FakeRioV1) ExternalServices(namespace string) v1.ExternalServiceInterface {
 	return &FakeExternalServices{c, namespace}
 }
@@ -42,14 +38,6 @@ func (c *FakeRioV1) Routers(namespace string) v1.RouterInterface {
 
 func (c *FakeRioV1) Services(namespace string) v1.ServiceInterface {
 	return &FakeServices{c, namespace}
-}
-
-func (c *FakeRioV1) Stacks(namespace string) v1.StackInterface {
-	return &FakeStacks{c, namespace}
-}
-
-func (c *FakeRioV1) Volumes(namespace string) v1.VolumeInterface {
-	return &FakeVolumes{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

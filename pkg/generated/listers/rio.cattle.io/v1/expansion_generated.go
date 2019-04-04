@@ -18,14 +18,6 @@ limitations under the License.
 
 package v1
 
-// ConfigListerExpansion allows custom methods to be added to
-// ConfigLister.
-type ConfigListerExpansion interface{}
-
-// ConfigNamespaceListerExpansion allows custom methods to be added to
-// ConfigNamespaceLister.
-type ConfigNamespaceListerExpansion interface{}
-
 // ExternalServiceListerExpansion allows custom methods to be added to
 // ExternalServiceLister.
 type ExternalServiceListerExpansion interface{}
@@ -49,19 +41,3 @@ type ServiceListerExpansion interface{}
 // ServiceNamespaceListerExpansion allows custom methods to be added to
 // ServiceNamespaceLister.
 type ServiceNamespaceListerExpansion interface{}
-
-// StackListerExpansion allows custom methods to be added to
-// StackLister.
-type StackListerExpansion interface{}
-
-// StackNamespaceListerExpansion allows custom methods to be added to
-// StackNamespaceLister.
-type StackNamespaceListerExpansion interface{}
-
-// VolumeListerExpansion allows custom methods to be added to
-// VolumeLister.
-type VolumeListerExpansion interface{}
-
-// VolumeNamespaceListerExpansion allows custom methods to be added to
-// VolumeNamespaceLister.
-type VolumeNamespaceListerExpansion interface{}

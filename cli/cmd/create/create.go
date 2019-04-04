@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rancher/rio/pkg/pretty/objectmappers"
-
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/kvfile"
 	"github.com/rancher/rio/cli/pkg/stack"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/pretty/objectmappers"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -94,6 +94,82 @@ type Scheduling struct {
 	Scheduler      string   `desc:"Use a custom scheduler of the given name"`
 }
 
+func toPodSpec(c *Create) (*v1.Service, error) {
+	//podSpec := v1.PodSpec{
+	//	DNSConfig: &v1.PodDNSConfig{
+	//
+	//	}
+	//	HostAliases:
+	//}
+
+	//AddHost
+	//BuildBranch
+	//BuildTag
+	//BuildCommit
+	//BuildSecret
+	//BuildHook
+	//CapAdd
+	//CapDrop
+	//Config
+	//Cpus
+	//DeploymentStrategy
+	//Detach
+	//Device
+	//DnsOption
+	//DnsSearch
+	//Dns
+	//Entrypoint
+	//E_Env
+	//EnvFile
+	//Expose
+	//Concurrency
+	//GlobalPermission
+	//Group
+	//HealthCmd
+	//HealthInterval
+	//HealthRetries
+	//HealthStartPeriod
+	//HealthTimeout
+	//HealthURL
+	//Hostname
+	//ImagePullPolicy
+	//Init
+	//I_Interactive
+	//Ipc
+	//L_Label
+	//LabelFile
+	//M_Memory
+	//MemoryLimit
+	//Metadata
+	//N_Name
+	//Net_Network
+	//Permission
+	//Pid
+	//Privileged
+	//P_Publish
+	//ReadOnly
+	//ReadyCmd
+	//ReadyInterval
+	//ReadyRetries
+	//ReadyStartPeriod
+	//ReadyTimeout
+	//ReadyURL
+	//Restart
+	//Secret
+	//SecurityOpt
+	//StopTimeout
+	//Tmpfs
+	//T_Tty
+	//UnhealthyRetries
+	//UnreadyRetries
+	//UpdateOrder
+	//UpdateStrategy
+	//U_User
+	//VolumeDriver
+	//VolumesFrom
+	//V_Volume
+	//W_Workdir
+}
 func (c *Create) Run(ctx *clicontext.CLIContext) error {
 	_, err := c.RunCallback(ctx, func(s *riov1.Service) *riov1.Service {
 		return s

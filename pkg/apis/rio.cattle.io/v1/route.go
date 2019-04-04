@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/rancher/mapper/convert"
+	"github.com/rancher/wrangler/pkg/genericcondition"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -24,7 +25,7 @@ type RouterSpec struct {
 }
 
 type RouterStatus struct {
-	Conditions []Condition `json:"conditions,omitempty"`
+	Conditions []genericcondition.GenericCondition `json:"conditions,omitempty"`
 }
 
 type RouteSpec struct {

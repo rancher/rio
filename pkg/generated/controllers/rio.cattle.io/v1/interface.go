@@ -26,12 +26,9 @@ import (
 )
 
 type Interface interface {
-	Config() ConfigController
 	ExternalService() ExternalServiceController
 	Router() RouterController
 	Service() ServiceController
-	Stack() StackController
-	Volume() VolumeController
 }
 
 func New(controllerManager *generic.ControllerManager, client clientset.RioV1Interface,
@@ -49,9 +46,6 @@ type version struct {
 	client            clientset.RioV1Interface
 }
 
-func (c *version) Config() ConfigController {
-	return NewConfigController(v1.SchemeGroupVersion.WithKind("Config"), c.controllerManager, c.client, c.informers.Configs())
-}
 func (c *version) ExternalService() ExternalServiceController {
 	return NewExternalServiceController(v1.SchemeGroupVersion.WithKind("ExternalService"), c.controllerManager, c.client, c.informers.ExternalServices())
 }
@@ -60,10 +54,4 @@ func (c *version) Router() RouterController {
 }
 func (c *version) Service() ServiceController {
 	return NewServiceController(v1.SchemeGroupVersion.WithKind("Service"), c.controllerManager, c.client, c.informers.Services())
-}
-func (c *version) Stack() StackController {
-	return NewStackController(v1.SchemeGroupVersion.WithKind("Stack"), c.controllerManager, c.client, c.informers.Stacks())
-}
-func (c *version) Volume() VolumeController {
-	return NewVolumeController(v1.SchemeGroupVersion.WithKind("Volume"), c.controllerManager, c.client, c.informers.Volumes())
 }

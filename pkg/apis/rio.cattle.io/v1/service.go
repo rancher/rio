@@ -1,11 +1,12 @@
 package v1
 
 import (
-	"github.com/rancher/mapper/convert"
-	"github.com/rancher/mapper/values"
+	"github.com/rancher/wrangler/pkg/genericcondition"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // +genclient
@@ -23,27 +24,8 @@ type ServiceRevision struct {
 	Version       string `json:"version,omitempty"`
 	Weight        int    `json:"weight,omitempty"`
 	Promote       bool   `json:"promote,omitempty"`
-	ServiceName   string `json:"serviceName,omitempty"`
+	App           string `json:"app,omitempty"`
 	ParentService string `json:"parentService,omitempty"`
-}
-
-type ServiceUnversionedSpec struct {
-	Scale              int              `json:"scale"`
-	BatchSize          int              `json:"batchSize,omitempty"`
-	UpdateOrder        string           `json:"updateOrder,omitempty" norman:"type=enum,options=start-first|stop-first"`
-	UpdateStrategy     string           `json:"updateStrategy,omitempty" norman:"type=enum,options=rolling|on-delete,default=rolling"`
-	DeploymentStrategy string           `json:"deploymentStrategy,omitempty" norman:"type=enum,options=parallel|ordered,default=parallel"`
-	AutoScale          *AutoscaleConfig `json:"autoScale,omitempty"`
-
-	PodConfig
-	PrivilegedConfig
-	Containers []Container `json:"sidekicks,omitempty"`
-}
-
-type Container struct {
-	Name          string `json:"name,omitempty"`
-	InitContainer bool   `json:"initContainer,omitempty"`
-	ContainerConfig
 }
 
 type AutoscaleConfig struct {
@@ -53,18 +35,55 @@ type AutoscaleConfig struct {
 }
 
 type ServiceSpec struct {
-	ServiceUnversionedSpec
+	Scale              int              `json:"scale,omitempty"`
+	BatchSize          int              `json:"batchSize,omitempty"`
+	UpdateOrder        string           `json:"updateOrder,omitempty" norman:"type=enum,options=start-first|stop-first"`
+	UpdateStrategy     string           `json:"updateStrategy,omitempty" norman:"type=enum,options=rolling|on-delete,default=rolling"`
+	Global             bool             `json:"global,omitempty"`
+	DeploymentStrategy string           `json:"deploymentStrategy,omitempty" norman:"type=enum,options=parallel|ordered,default=parallel"`
+	AutoScale          *AutoscaleConfig `json:"autoScale,omitempty"`
+
+	Roles        []string            `json:"roles,omitempty"`
+	Rules        []rbacv1.PolicyRule `json:"rules,omitempty"`
+	ClusterRoles []string            `json:"clusterRoles,omitempty"`
+	ClusterRules []rbacv1.PolicyRule `json:"clusterRules,omitempty"`
+
 	Revision ServiceRevision `json:"revision,omitempty"`
+
+	ImageBuilds     []ContainerImageBuild      `json:"imageBuilds,omitempty"`
+	PodSpec         v1.PodSpec                 `json:"podSpec,omitempty"`
+	VolumeTemplates []v1.PersistentVolumeClaim `json:"volumeClaimTemplates,omitempty"`
+	Ports           []ServicePort              `json:"ports,omitempty"`
+}
+
+type Protocol string
+
+const (
+	ProtocolTCP  Protocol = "TCP"
+	ProtocolUDP  Protocol = "UDP"
+	ProtocolSCTP Protocol = "SCTP"
+	ProtocolHTTP Protocol = "HTTP"
+	ProtocolGRPC Protocol = "GRPC"
+)
+
+type ServicePort struct {
+	Name       string             `json:"name,omitempty"`
+	Publish    bool               `json:"publish,omitempty"`
+	IP         string             `json:"ip,omitempty"`
+	Protocol   Protocol           `json:"protocol,omitempty" protobuf:"bytes,2,opt,name=protocol,casttype=Protocol"`
+	Port       int32              `json:"port" protobuf:"varint,3,opt,name=port"`
+	TargetPort intstr.IntOrString `json:"targetPort,omitempty" protobuf:"bytes,4,opt,name=targetPort"`
+	NodePort   int32              `json:"nodePort,omitempty" protobuf:"varint,5,opt,name=nodePort"`
 }
 
 type ServiceStatus struct {
-	DeploymentStatus  *appsv1.DeploymentStatus  `json:"deploymentStatus,omitempty"`
-	DaemonSetStatus   *appsv1.DaemonSetStatus   `json:"daemonSetStatus,omitempty"`
-	StatefulSetStatus *appsv1.StatefulSetStatus `json:"statefulSetStatus,omitempty"`
-	ScaleStatus       *ScaleStatus              `json:"scaleStatus,omitempty"`
-	ContainerImages   map[string]string         `json:"containerImages,omitempty"`
-	Conditions        []Condition               `json:"conditions,omitempty"`
-	Endpoints         []Endpoint                `json:"endpoints,omitempty"`
+	DeploymentStatus  *appsv1.DeploymentStatus            `json:"deploymentStatus,omitempty"`
+	DaemonSetStatus   *appsv1.DaemonSetStatus             `json:"daemonSetStatus,omitempty"`
+	StatefulSetStatus *appsv1.StatefulSetStatus           `json:"statefulSetStatus,omitempty"`
+	ScaleStatus       *ScaleStatus                        `json:"scaleStatus,omitempty"`
+	ContainerImages   map[string]string                   `json:"containerImages,omitempty"`
+	Conditions        []genericcondition.GenericCondition `json:"conditions,omitempty"`
+	Endpoints         []Endpoint                          `json:"endpoints,omitempty"`
 }
 
 type Endpoint struct {
@@ -78,101 +97,10 @@ type ScaleStatus struct {
 	Updated     int `json:"updated,omitempty"`
 }
 
-type PodConfig struct {
-	Hostname               string       `json:"hostname,omitempty"`
-	Global                 bool         `json:"global,omitempty"`
-	Scheduling             Scheduling   `json:"scheduling,omitempty"`
-	StopGracePeriodSeconds *int         `json:"stopGracePeriod,omitempty"`                                                           // support friendly numbers
-	RestartPolicy          string       `json:"restart,omitempty" norman:"type=enum,options=never|on-failure|always,default=always"` //support no and OnFailure
-	DNS                    []string     `json:"dns,omitempty"`                                                                       // support string
-	DNSOptions             []string     `json:"dnsOptions,omitempty"`                                                                // support string
-	DNSSearch              []string     `json:"dnsSearch,omitempty"`                                                                 // support string
-	ExtraHosts             []string     `json:"extraHosts,omitempty"`                                                                // support map
-	GlobalPermissions      []Permission `json:"globalPermissions,omitempty"`
-	Permissions            []Permission `json:"permissions,omitempty"`
-}
+type ContainerImageBuild struct {
+	ContainerName string `json:"containerName,omitempty"`
 
-type Scheduling struct {
-	Node      NodeScheduling `json:"node,omitempty"`
-	Scheduler string         `json:"scheduler,omitempty"`
-}
-
-func (s Scheduling) ToNodeAffinity() (*v1.NodeAffinity, error) {
-	data, err := convert.EncodeToMap(&s)
-	if err != nil {
-		return nil, err
-	}
-	//mapper.SchedulingMapper{}.ToInternal(data)
-	nodeAffinityMap, ok := values.GetValue(data, "affinity", "nodeAffinity")
-	if !ok || convert.IsAPIObjectEmpty(nodeAffinityMap) {
-		return nil, nil
-	}
-	nodeAffinity := &v1.NodeAffinity{}
-	return nodeAffinity, convert.ToObj(nodeAffinityMap, nodeAffinity)
-}
-
-type NodeScheduling struct {
-	NodeName   string   `json:"nodeName,omitempty" norman:"type=reference[/v1/schemas/node]"`
-	RequireAll []string `json:"requireAll,omitempty"`
-	RequireAny []string `json:"requireAny,omitempty"`
-	Preferred  []string `json:"preferred,omitempty"`
-}
-
-type PrivilegedConfig struct {
-	NetworkMode string `json:"net,omitempty" norman:"type=enum,options=default|host,default=default"` // alias network, support bridge
-	IpcMode     string `json:"ipc,omitempty" norman:"type=enum,options=default|host,default=default"`
-	PidMode     string `json:"pid,omitempty" norman:"type=enum,options=default|host,default=default"`
-}
-
-type ContainerPrivilegedConfig struct {
-	Privileged bool `json:"privileged,omitempty"`
-}
-
-type ExposedPort struct {
-	Name string `json:"name,omitempty"`
-	PortBinding
-}
-
-type PortBinding struct {
-	Port       int64  `json:"port,omitempty"`
-	Protocol   string `json:"protocol,omitempty"`
-	IP         string `json:"ip,omitempty"`
-	TargetPort int64  `json:"targetPort,omitempty"`
-}
-
-type ContainerConfig struct {
-	ContainerPrivilegedConfig
-
-	CPUs                   string        `json:"nanoCpus,omitempty"`
-	CapAdd                 []string      `json:"capAdd,omitempty"`  // support string
-	CapDrop                []string      `json:"capDrop,omitempty"` // support string
-	Command                []string      `json:"command,omitempty"` // support string
-	DefaultVolumeDriver    string        `json:"defaultVolumeDriver,omitempty"`
-	Entrypoint             []string      `json:"entrypoint,omitempty"`
-	Environment            []string      `json:"environment,omitempty"` // alias env, support map
-	ExposedPorts           []ExposedPort `json:"expose,omitempty"`      // support []string, map
-	Group                  string        `json:"group,omitempty"`
-	Healthcheck            *HealthConfig `json:"healthcheck,omitempty"`
-	Readycheck             *HealthConfig `json:"readycheck,omitempty"`
-	Image                  string        `json:"image,omitempty"`
-	ImageBuild             *ImageBuild   `json:"build,omitempty"`
-	ImagePullPolicy        string        `json:"imagePullPolicy,omitempty" norman:"type=enum,options=always|never|not-present,default=not-present"`
-	Init                   bool          `json:"init,omitempty"`
-	MemoryLimitBytes       int64         `json:"memoryLimitBytes,omitempty"`
-	MemoryReservationBytes int64         `json:"memoryReservationBytes,omitempty"`
-	OpenStdin              bool          `json:"stdinOpen,omitempty"` // alias interactive
-	PortBindings           []PortBinding `json:"ports,omitempty"`     // support []string
-	ReadonlyRootfs         bool          `json:"readOnly,omitempty"`
-	Tmpfs                  []Tmpfs       `json:"tmpfs,omitempty"` // support []string too
-	Tty                    bool          `json:"tty,omitempty"`
-	User                   string        `json:"user,omitempty"`
-	Volumes                []Mount       `json:"volumes,omitempty"`     // support []string too
-	VolumesFrom            []string      `json:"volumesFrom,omitempty"` // support []string too
-	WorkingDir             string        `json:"workingDir,omitempty"`
-
-	Devices []DeviceMapping `json:"devices,omitempty"` // support []string and map[string]string
-	Configs []ConfigMapping `json:"configs,omitempty"`
-	Secrets []SecretMapping `json:"secrets,omitempty"`
+	ImageBuild
 }
 
 type ImageBuild struct {
@@ -184,32 +112,4 @@ type ImageBuild struct {
 	Template   string `json:"template,omitempty"`
 	Secret     string `json:"secret,omitempty"`
 	Hook       bool   `json:"hook,omitempty"`
-}
-
-type SidekickConfig struct {
-	ContainerConfig
-}
-
-type HealthConfig struct {
-	// Test is the test to perform to check that the container is healthy.
-	// An empty slice means to inherit the default.
-	// The options are:
-	// {} : inherit healthcheck
-	// {"NONE"} : disable healthcheck
-	// {"CMD", args...} : exec arguments directly
-	// {"CMD-SHELL", command} : run command with system's default shell
-	Test []string `json:"test,omitempty"` //alias string, deal with CMD, CMD-SHELL, NONE
-
-	IntervalSeconds     int `json:"intervalSeconds,omitempty" norman:"default=10"`   // support friendly numbers, alias periodSeconds, period
-	TimeoutSeconds      int `json:"timeoutSeconds,omitempty" norman:"default=5"`     // support friendly numbers
-	InitialDelaySeconds int `json:"initialDelaySeconds,omitempty"`                   //alias start_period
-	HealthyThreshold    int `json:"healthyThreshold,omitempty" norman:"default=1"`   //alias retries, successThreshold
-	UnhealthyThreshold  int `json:"unhealthyThreshold,omitempty" norman:"default=3"` //alias failureThreshold, set to retries if unset
-}
-
-// DeviceMapping represents the device mapping between the host and the container.
-type DeviceMapping struct {
-	OnHost      string `json:"onHost,omitempty"`
-	InContainer string `json:"inContainer,omitempty"`
-	Permissions string `json:"permissions,omitempty"`
 }

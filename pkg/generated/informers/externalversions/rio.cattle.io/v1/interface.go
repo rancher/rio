@@ -24,18 +24,12 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-	// Configs returns a ConfigInformer.
-	Configs() ConfigInformer
 	// ExternalServices returns a ExternalServiceInformer.
 	ExternalServices() ExternalServiceInformer
 	// Routers returns a RouterInformer.
 	Routers() RouterInformer
 	// Services returns a ServiceInformer.
 	Services() ServiceInformer
-	// Stacks returns a StackInformer.
-	Stacks() StackInformer
-	// Volumes returns a VolumeInformer.
-	Volumes() VolumeInformer
 }
 
 type version struct {
@@ -47,11 +41,6 @@ type version struct {
 // New returns a new Interface.
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
-}
-
-// Configs returns a ConfigInformer.
-func (v *version) Configs() ConfigInformer {
-	return &configInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // ExternalServices returns a ExternalServiceInformer.
@@ -67,14 +56,4 @@ func (v *version) Routers() RouterInformer {
 // Services returns a ServiceInformer.
 func (v *version) Services() ServiceInformer {
 	return &serviceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// Stacks returns a StackInformer.
-func (v *version) Stacks() StackInformer {
-	return &stackInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// Volumes returns a VolumeInformer.
-func (v *version) Volumes() VolumeInformer {
-	return &volumeInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

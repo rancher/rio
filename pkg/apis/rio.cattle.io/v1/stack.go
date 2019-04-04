@@ -1,50 +1,5 @@
 package v1
 
-import (
-	"github.com/rancher/wrangler/pkg/condition"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
-
-var (
-	StackConditionDefined  = condition.Cond("Defined")
-	StackConditionDeployed = condition.Cond("Deployed")
-)
-
-// +genclient
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-type Stack struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   StackSpec   `json:"spec"`
-	Status StackStatus `json:"status"`
-}
-
-type StackSpec struct {
-	Description               string            `json:"description,omitempty"`
-	Template                  string            `json:"template,omitempty"`
-	AdditionalFiles           map[string]string `json:"additionalFiles,omitempty"`
-	Answers                   map[string]string `json:"answers,omitempty"`
-	Questions                 []Question        `json:"questions,omitempty"`
-	DisableMesh               bool              `json:"disableMesh,omitempty"`
-	EnableAutoscale           bool              `json:"enableAutoscale,omitempty"`
-	EnableKubernetesResources bool              `json:"enableKubernetesResources,omitempty"`
-}
-
-type StackStatus struct {
-	Conditions []Condition `json:"conditions,omitempty"`
-}
-
-type StackFile struct {
-	Services         map[string]Service         `json:"services,omitempty"`
-	Configs          map[string]Config          `json:"configs,omitempty"`
-	Volumes          map[string]Volume          `json:"volumes,omitempty"`
-	Routes           map[string]Router          `json:"routes,omitempty"`
-	ExternalServices map[string]ExternalService `json:"externalservices,omitempty"`
-	Kubernetes       Kubernetes                 `json:"kubernetes,omitempty"`
-}
-
 type Question struct {
 	Variable          string        `json:"variable,omitempty" yaml:"variable,omitempty"`
 	Label             string        `json:"label,omitempty" yaml:"label,omitempty"`

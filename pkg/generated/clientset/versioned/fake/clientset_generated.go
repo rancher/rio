@@ -77,16 +77,6 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 
 var _ clientset.Interface = &Clientset{}
 
-// ProjectV1 retrieves the ProjectV1Client
-func (c *Clientset) ProjectV1() projectv1.ProjectV1Interface {
-	return &fakeprojectv1.FakeProjectV1{Fake: &c.Fake}
-}
-
-// Project retrieves the ProjectV1Client
-func (c *Clientset) Project() projectv1.ProjectV1Interface {
-	return &fakeprojectv1.FakeProjectV1{Fake: &c.Fake}
-}
-
 // WebhookinatorV1 retrieves the WebhookinatorV1Client
 func (c *Clientset) WebhookinatorV1() webhookinatorv1.WebhookinatorV1Interface {
 	return &fakewebhookinatorv1.FakeWebhookinatorV1{Fake: &c.Fake}
@@ -115,4 +105,14 @@ func (c *Clientset) AutoscaleV1() autoscalev1.AutoscaleV1Interface {
 // Autoscale retrieves the AutoscaleV1Client
 func (c *Clientset) Autoscale() autoscalev1.AutoscaleV1Interface {
 	return &fakeautoscalev1.FakeAutoscaleV1{Fake: &c.Fake}
+}
+
+// ProjectV1 retrieves the ProjectV1Client
+func (c *Clientset) ProjectV1() projectv1.ProjectV1Interface {
+	return &fakeprojectv1.FakeProjectV1{Fake: &c.Fake}
+}
+
+// Project retrieves the ProjectV1Client
+func (c *Clientset) Project() projectv1.ProjectV1Interface {
+	return &fakeprojectv1.FakeProjectV1{Fake: &c.Fake}
 }

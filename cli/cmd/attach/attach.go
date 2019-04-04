@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rancher/rio/cli/pkg/tables"
-
 	"github.com/rancher/rio/cli/cmd/ps"
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/cli/pkg/tables"
 )
 
 type Attach struct {

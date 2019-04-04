@@ -2,6 +2,7 @@ package name
 
 import (
 	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"strings"
@@ -22,4 +23,13 @@ func Hex(s string, length int) string {
 
 func PublicDomain(s string) string {
 	return Limit(strings.Replace(s, ".", "-", -1), 15)
+}
+
+func SafeConcatName(name ...string) string {
+	fullPath := strings.Join(name, "-")
+	if len(fullPath) > 63 {
+		digest := sha256.Sum256([]byte(fullPath))
+		return fullPath[0:57] + "-" + string(digest[:])[0:5]
+	}
+	return fullPath
 }

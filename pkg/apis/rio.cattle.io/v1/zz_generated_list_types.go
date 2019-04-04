@@ -27,23 +27,6 @@ import (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ConfigList is a list of Config resources
-type ConfigList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata"`
-
-	Items []Config `json:"items"`
-}
-
-func NewConfig(namespace, name string, obj Config) *Config {
-	obj.APIVersion, obj.Kind = SchemeGroupVersion.WithKind("Config").ToAPIVersionAndKind()
-	obj.Name = name
-	obj.Namespace = namespace
-	return &obj
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
 // ExternalServiceList is a list of ExternalService resources
 type ExternalServiceList struct {
 	metav1.TypeMeta `json:",inline"`
@@ -88,40 +71,6 @@ type ServiceList struct {
 
 func NewService(namespace, name string, obj Service) *Service {
 	obj.APIVersion, obj.Kind = SchemeGroupVersion.WithKind("Service").ToAPIVersionAndKind()
-	obj.Name = name
-	obj.Namespace = namespace
-	return &obj
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// StackList is a list of Stack resources
-type StackList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata"`
-
-	Items []Stack `json:"items"`
-}
-
-func NewStack(namespace, name string, obj Stack) *Stack {
-	obj.APIVersion, obj.Kind = SchemeGroupVersion.WithKind("Stack").ToAPIVersionAndKind()
-	obj.Name = name
-	obj.Namespace = namespace
-	return &obj
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// VolumeList is a list of Volume resources
-type VolumeList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata"`
-
-	Items []Volume `json:"items"`
-}
-
-func NewVolume(namespace, name string, obj Volume) *Volume {
-	obj.APIVersion, obj.Kind = SchemeGroupVersion.WithKind("Volume").ToAPIVersionAndKind()
 	obj.Name = name
 	obj.Namespace = namespace
 	return &obj

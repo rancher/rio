@@ -21,7 +21,7 @@ limitations under the License.
 package v1
 
 import (
-	riocattleiov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	genericcondition "github.com/rancher/wrangler/pkg/genericcondition"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -112,7 +112,7 @@ func (in *ServiceScaleRecommendationStatus) DeepCopyInto(out *ServiceScaleRecomm
 	}
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
-		*out = make([]riocattleiov1.Condition, len(*in))
+		*out = make([]genericcondition.GenericCondition, len(*in))
 		copy(*out, *in)
 	}
 	return

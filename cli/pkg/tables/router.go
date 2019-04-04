@@ -9,7 +9,7 @@ import (
 
 	"github.com/rancher/rio/cli/pkg/table"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/namespace"
+	"github.com/rancher/rio/pkg/name"
 )
 
 type RouteSpecData struct {
@@ -297,7 +297,7 @@ func FormatURL() func(obj interface{}) (string, error) {
 		}
 		hostBuf := strings.Builder{}
 		hostBuf.WriteString("https://")
-		name := namespace.HashIfNeed(data.RouteSet.Name, data.RouteSet.Name, data.RouteSet.Namespace)
+		name := name.SafeConcatName(data.RouteSet.Name, data.RouteSet.Name, data.RouteSet.Namespace)
 		hostBuf.WriteString(name)
 		hostBuf.WriteString(".")
 		hostBuf.WriteString(data.Domain)

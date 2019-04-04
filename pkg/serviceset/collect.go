@@ -3,10 +3,9 @@ package serviceset
 import (
 	"fmt"
 
-	"github.com/rancher/rio/cli/pkg/constants"
-
 	"github.com/rancher/mapper/convert"
 	"github.com/rancher/mapper/convert/merge"
+	"github.com/rancher/rio/cli/pkg/constants"
 	"github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/pretty/schema"
@@ -26,7 +25,7 @@ func combineAndNormalize(name string, base map[string]interface{}, rev *riov1.Se
 		return nil, err
 	}
 
-	newRev.Spec.Revision.ServiceName = name
+	newRev.Spec.Revision.App = name
 	return newRev, nil
 }
 
@@ -66,7 +65,7 @@ func normalizeParent(name string, service *riov1.Service) *riov1.Service {
 	if service.Spec.Revision.Version == "" {
 		service.Spec.Revision.Version = constants.DefaultServiceVersion
 	}
-	service.Spec.Revision.ServiceName = name
+	service.Spec.Revision.App = name
 	if service.Spec.Revision.Version == constants.DefaultServiceVersion {
 		service.Name = name
 	} else {
@@ -107,7 +106,7 @@ func CollectionServices(services []*riov1.Service) (Services, error) {
 			continue
 		}
 
-		name := service.Service.Spec.Revision.ServiceName
+		name := service.Service.Spec.Revision.App
 		if name == "" {
 			name = service.Service.Name
 		}

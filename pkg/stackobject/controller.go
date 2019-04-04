@@ -4,21 +4,20 @@ import (
 	"context"
 	"strings"
 
+	"github.com/rancher/rio/pkg/stack"
+
 	"github.com/pkg/errors"
 	"github.com/rancher/mapper/convert"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	corev1 "github.com/rancher/rio/pkg/generated/controllers/core/v1"
+	corev1controller "github.com/rancher/rio/pkg/generated/controllers/core/v1"
 	v1 "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/stacknamespace"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/condition"
 	"github.com/rancher/wrangler/pkg/generic"
 	"github.com/rancher/wrangler/pkg/objectset"
-	"github.com/rancher/wrangler/pkg/relatedresource"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/cache"
 )
@@ -33,7 +32,7 @@ type ControllerWrapper interface {
 	Updater() generic.Updater
 }
 
-type Populator func(obj runtime.Object, stack *riov1.Stack, os *objectset.ObjectSet) error
+type Populator func(obj runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) error
 
 type Controller struct {
 	Apply          apply.Apply
@@ -41,7 +40,7 @@ type Controller struct {
 	name           string
 	stacksCache    v1.StackCache
 	indexer        cache.Indexer
-	namespaceCache corev1.NamespaceCache
+	namespaceCache corev1controller.NamespaceCache
 	injectors      []string
 }
 
@@ -54,37 +53,11 @@ func NewGeneratingController(ctx context.Context, rContext *types.Context, name 
 		injectors:      injectors,
 		indexer:        controller.Informer().GetIndexer(),
 	}
-	relatedresource.Watch(ctx, "stackchange-"+name, sc.resolve, controller, rContext.Rio.Rio().V1().Stack())
 
 	lcName := name + "-object-controller"
 	controller.AddGenericHandler(ctx, lcName, generic.UpdateOnChange(controller.Updater(), sc.OnChange))
 	controller.AddGenericRemoveHandler(ctx, lcName, sc.OnRemove)
 	return sc
-}
-
-func (o *Controller) resolve(ns, name string, obj runtime.Object) ([]relatedresource.Key, error) {
-	switch obj.(type) {
-	case *riov1.Stack:
-		var ret []interface{}
-		if err := cache.ListAllByNamespace(o.indexer, obj.(*riov1.Stack).Name, labels.Everything(), func(obj interface{}) {
-			ret = append(ret, obj)
-		}); err != nil {
-			return nil, err
-		}
-		var key []relatedresource.Key
-		for _, o := range ret {
-			meta, err := meta.Accessor(o)
-			if err != nil {
-				return nil, err
-			}
-			key = append(key, relatedresource.Key{
-				Name:      meta.GetName(),
-				Namespace: meta.GetNamespace(),
-			})
-		}
-		return key, nil
-	}
-	return nil, nil
 }
 
 func (o *Controller) OnRemove(key string, obj runtime.Object) (runtime.Object, error) {
@@ -101,16 +74,13 @@ func (o *Controller) OnChange(key string, obj runtime.Object) (runtime.Object, e
 		return obj, err
 	}
 
-	stack, err := stacknamespace.GetStack(meta, o.stacksCache, o.namespaceCache)
-	if apierrors.IsNotFound(err) {
-		return obj, nil
-	}
+	ns, err := o.namespaceCache.Get(meta.GetNamespace())
 	if err != nil {
-		return obj, err
+		return nil, err
 	}
 
 	os := objectset.NewObjectSet()
-	if err := o.Populator(obj, stack, os); err != nil {
+	if err := o.Populator(obj, ns, os); err != nil {
 		if err == ErrSkipObjectSet {
 			return obj, nil
 		}
@@ -118,7 +88,7 @@ func (o *Controller) OnChange(key string, obj runtime.Object) (runtime.Object, e
 	}
 
 	desireset := o.Apply.WithOwner(obj)
-	if !stack.Spec.DisableMesh {
+	if stack.MeshEnabled(ns) {
 		for _, i := range o.injectors {
 			desireset = desireset.WithInjectorName(i)
 		}
@@ -131,7 +101,7 @@ func (o *Controller) OnChange(key string, obj runtime.Object) (runtime.Object, e
 
 func (o *Controller) getCondition() condition.Cond {
 	buffer := strings.Builder{}
-	buffer.WriteString(string(riov1.StackConditionDeployed))
+	buffer.WriteString(string(riov1.DeployedCondition))
 	for _, part := range strings.Split(o.name, "-") {
 		buffer.WriteString(convert.Capitalize(part))
 	}

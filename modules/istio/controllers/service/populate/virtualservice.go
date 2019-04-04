@@ -8,8 +8,8 @@ import (
 
 	"github.com/knative/pkg/apis/istio/v1alpha3"
 	"github.com/rancher/rio/modules/istio/pkg/domains"
-	"github.com/rancher/rio/modules/stack/controllers/service/populate/containerlist"
-	"github.com/rancher/rio/modules/stack/controllers/service/populate/servicelabels"
+	"github.com/rancher/rio/modules/service/controllers/service/populate/containerlist"
+	"github.com/rancher/rio/modules/service/controllers/service/populate/servicelabels"
 	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constructors"
