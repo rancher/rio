@@ -1,32 +1,33 @@
 package serviceset
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/rancher/mapper/convert"
-	"github.com/rancher/mapper/convert/merge"
-	"github.com/rancher/rio/cli/pkg/constants"
-	"github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/pretty/schema"
+	"github.com/rancher/rio/pkg/constants"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 )
 
-func combineAndNormalize(name string, base map[string]interface{}, rev *riov1.Service) (*riov1.Service, error) {
-	data, err := convert.EncodeToMap(rev)
-	if err != nil {
-		return nil, err
-	}
-	s := schema.Schemas.Schema(types.ServiceType)
-	data = merge.UpdateMerge(s.InternalSchema, schema.Schemas, base, data, false)
-
-	newRev := rev.DeepCopy()
-	err = convert.ToObj(data, &newRev)
+func combineAndNormalize(base map[string]interface{}, rev *riov1.Service) (*riov1.Service, error) {
+	baseBytes, err := json.Marshal(base)
 	if err != nil {
 		return nil, err
 	}
 
-	newRev.Spec.Revision.App = name
-	return newRev, nil
+	overlay, err := json.Marshal(rev)
+	if err != nil {
+		return nil, err
+	}
+
+	newBytes, err := strategicpatch.StrategicMergePatch(baseBytes, overlay, &riov1.Service{})
+	if err != nil {
+		return nil, err
+	}
+
+	result := &riov1.Service{}
+	return result, json.Unmarshal(newBytes, result)
 }
 
 func servicesByParent(services []*riov1.Service) (Services, error) {
@@ -75,7 +76,7 @@ func normalizeParent(name string, service *riov1.Service) *riov1.Service {
 	return service
 }
 
-func mergeRevisions(name string, serviceSet *ServiceSet) ([]*riov1.Service, error) {
+func mergeRevisions(serviceSet *ServiceSet) ([]*riov1.Service, error) {
 	base, err := convert.EncodeToMap(serviceSet.Service)
 	if err != nil {
 		return nil, err
@@ -83,7 +84,7 @@ func mergeRevisions(name string, serviceSet *ServiceSet) ([]*riov1.Service, erro
 
 	var newRevisions []*riov1.Service
 	for _, rev := range serviceSet.Revisions {
-		rev, err := combineAndNormalize(name, base, rev)
+		rev, err := combineAndNormalize(base, rev)
 		if err != nil {
 			return nil, err
 		}
@@ -112,7 +113,7 @@ func CollectionServices(services []*riov1.Service) (Services, error) {
 		}
 
 		service.Service = normalizeParent(name, service.Service)
-		service.Revisions, err = mergeRevisions(name, service)
+		service.Revisions, err = mergeRevisions(service)
 		if err != nil {
 			return nil, err
 		}

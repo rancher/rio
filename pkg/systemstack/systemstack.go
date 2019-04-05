@@ -1,28 +1,27 @@
 package systemstack
 
 import (
+	"bytes"
+
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/template"
 	"github.com/rancher/rio/stacks"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/objectset"
+	"github.com/rancher/wrangler/pkg/yaml"
 )
 
 type SystemStack struct {
 	namespace string
 	apply     apply.Apply
-	spec      v1.StackSpec
 	name      string
 }
 
-func NewSystemStack(apply apply.Apply, systemNamespace string, stacksClient riov1controller.StackController, name string, spec v1.StackSpec) *SystemStack {
+func NewSystemStack(apply apply.Apply, systemNamespace string, name string) *SystemStack {
 	return &SystemStack{
 		namespace: systemNamespace,
-		apply: apply.WithSetID("system-stack-" + name).
-			WithCacheTypes(stacksClient),
-		spec: spec,
-		name: name,
+		apply:     apply.WithSetID("system-stack-" + name),
+		name:      name,
 	}
 }
 
@@ -52,19 +51,22 @@ func (s *SystemStack) Deploy(answers map[string]string) error {
 		return err
 	}
 
-	stack := v1.NewStack(s.namespace, s.name, v1.Stack{
-		Spec: s.spec,
-	})
-
-	for k, v := range answers {
-		if stack.Spec.Answers == nil {
-			stack.Spec.Answers = map[string]string{}
-		}
-		stack.Spec.Answers[k] = v
+	t := template.Template{
+		Content: content,
 	}
-	stack.Spec.Template = string(content)
+	content, err = t.Parse(answers)
+	if err != nil {
+		return err
+	}
 
-	return s.apply.Apply(objectset.NewObjectSet().Add(stack))
+	objs, err := yaml.ToObjects(bytes.NewBuffer(content))
+	if err != nil {
+		return err
+	}
+
+	os := objectset.NewObjectSet()
+	os.Add(objs...)
+	return s.apply.Apply(os)
 }
 
 func (s *SystemStack) Remove() error {

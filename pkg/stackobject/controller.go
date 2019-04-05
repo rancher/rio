@@ -10,7 +10,6 @@ import (
 	"github.com/rancher/mapper/convert"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	corev1controller "github.com/rancher/rio/pkg/generated/controllers/core/v1"
-	v1 "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/condition"
@@ -38,7 +37,6 @@ type Controller struct {
 	Apply          apply.Apply
 	Populator      Populator
 	name           string
-	stacksCache    v1.StackCache
 	indexer        cache.Indexer
 	namespaceCache corev1controller.NamespaceCache
 	injectors      []string
@@ -48,7 +46,6 @@ func NewGeneratingController(ctx context.Context, rContext *types.Context, name 
 	sc := &Controller{
 		name:           name,
 		Apply:          rContext.Apply.WithSetID(name).WithStrictCaching(),
-		stacksCache:    rContext.Rio.Rio().V1().Stack().Cache(),
 		namespaceCache: rContext.Core.Core().V1().Namespace().Cache(),
 		injectors:      injectors,
 		indexer:        controller.Informer().GetIndexer(),

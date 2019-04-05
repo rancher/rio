@@ -2,11 +2,10 @@ package template
 
 import (
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/pretty/schema"
 )
 
 type Template struct {
-	Meta        schema.TemplateMeta
+	Meta        v1.TemplateMeta
 	Content     []byte
 	Answers     map[string]string
 	BuiltinVars []string

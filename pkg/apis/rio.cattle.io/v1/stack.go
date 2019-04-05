@@ -37,3 +37,10 @@ type SubQuestion struct {
 	InvalidChars string   `json:"invalidChars,omitempty" yaml:"invalid_chars,omitempty"`
 	ShowIf       string   `json:"showIf,omitempty" yaml:"show_if,omitempty"`
 }
+
+type TemplateMeta struct {
+	Name    string `json:"name,omitempty"`
+	Version string `json:"version,omitempty"`
+	IconURL string `json:"iconUrl,omitempty"`
+	Readme  string `json:"readme,omitempty"`
+}

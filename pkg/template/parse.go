@@ -6,14 +6,13 @@ import (
 
 	"github.com/drone/envsubst"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/pretty/schema"
 	"github.com/rancher/rio/pkg/template/gotemplate"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
 type templateFile struct {
-	Meta      schema.TemplateMeta `json:"meta"`
-	Questions []v1.Question       `json:"questions"`
+	Meta      v1.TemplateMeta `json:"meta"`
+	Questions []v1.Question   `json:"questions"`
 }
 
 func (t *Template) RequiredEnv() ([]string, error) {
