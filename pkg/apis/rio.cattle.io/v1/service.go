@@ -42,6 +42,7 @@ type ServiceSpec struct {
 	Global             bool             `json:"global,omitempty"`
 	DeploymentStrategy string           `json:"deploymentStrategy,omitempty" norman:"type=enum,options=parallel|ordered,default=parallel"`
 	AutoScale          *AutoscaleConfig `json:"autoScale,omitempty"`
+	DisableServiceMesh bool             `json:"disableServiceMesh,omitempty"`
 
 	Roles        []string            `json:"roles,omitempty"`
 	Rules        []rbacv1.PolicyRule `json:"rules,omitempty"`
@@ -59,11 +60,12 @@ type ServiceSpec struct {
 type Protocol string
 
 const (
-	ProtocolTCP  Protocol = "TCP"
-	ProtocolUDP  Protocol = "UDP"
-	ProtocolSCTP Protocol = "SCTP"
-	ProtocolHTTP Protocol = "HTTP"
-	ProtocolGRPC Protocol = "GRPC"
+	ProtocolTCP   Protocol = "TCP"
+	ProtocolUDP   Protocol = "UDP"
+	ProtocolSCTP  Protocol = "SCTP"
+	ProtocolHTTP  Protocol = "HTTP"
+	ProtocolHTTP2 Protocol = "HTTP2"
+	ProtocolGRPC  Protocol = "GRPC"
 )
 
 type ServicePort struct {

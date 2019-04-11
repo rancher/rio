@@ -94,7 +94,7 @@ func stacksBuildControllerStackYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/build-controller-stack.yaml", size: 5120, mode: os.FileMode(436), modTime: time.Unix(1553021097, 0)}
+	info := bindataFileInfo{name: "stacks/build-controller-stack.yaml", size: 5120, mode: os.FileMode(420), modTime: time.Unix(1553031688, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -114,7 +114,7 @@ func stacksBuildStackYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/build-stack.yaml", size: 804, mode: os.FileMode(436), modTime: time.Unix(1553021097, 0)}
+	info := bindataFileInfo{name: "stacks/build-stack.yaml", size: 804, mode: os.FileMode(420), modTime: time.Unix(1553031689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -134,7 +134,7 @@ func stacksCertManagerStackYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/cert-manager-stack.yaml", size: 830, mode: os.FileMode(436), modTime: time.Unix(1549917968, 0)}
+	info := bindataFileInfo{name: "stacks/cert-manager-stack.yaml", size: 830, mode: os.FileMode(420), modTime: time.Unix(1547439073, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -154,7 +154,7 @@ func stacksGrafanaStackYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/grafana-stack.yaml", size: 1116, mode: os.FileMode(436), modTime: time.Unix(1553021097, 0)}
+	info := bindataFileInfo{name: "stacks/grafana-stack.yaml", size: 1116, mode: os.FileMode(420), modTime: time.Unix(1551893106, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -174,7 +174,7 @@ func stacksIstioCrdStackYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/istio-crd-stack.yaml", size: 627, mode: os.FileMode(436), modTime: time.Unix(1549917968, 0)}
+	info := bindataFileInfo{name: "stacks/istio-crd-stack.yaml", size: 627, mode: os.FileMode(420), modTime: time.Unix(1547439073, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -194,7 +194,7 @@ func stacksIstioStackYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/istio-stack.yaml", size: 4381, mode: os.FileMode(436), modTime: time.Unix(1553021097, 0)}
+	info := bindataFileInfo{name: "stacks/istio-stack.yaml", size: 4381, mode: os.FileMode(420), modTime: time.Unix(1553031689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -214,7 +214,7 @@ func stacksIstioTelemetryStackYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/istio-telemetry-stack.yaml", size: 27371, mode: os.FileMode(436), modTime: time.Unix(1553021097, 0)}
+	info := bindataFileInfo{name: "stacks/istio-telemetry-stack.yaml", size: 27371, mode: os.FileMode(420), modTime: time.Unix(1553031689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -234,7 +234,7 @@ func stacksKialiStackYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/kiali-stack.yaml", size: 1254, mode: os.FileMode(436), modTime: time.Unix(1549917968, 0)}
+	info := bindataFileInfo{name: "stacks/kiali-stack.yaml", size: 1254, mode: os.FileMode(420), modTime: time.Unix(1549987353, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -254,7 +254,7 @@ func stacksLocalstorageStackYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/localstorage-stack.yaml", size: 1085, mode: os.FileMode(436), modTime: time.Unix(1549917968, 0)}
+	info := bindataFileInfo{name: "stacks/localstorage-stack.yaml", size: 1085, mode: os.FileMode(420), modTime: time.Unix(1547439073, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -274,7 +274,7 @@ func stacksNfsStackYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/nfs-stack.yaml", size: 1217, mode: os.FileMode(436), modTime: time.Unix(1549917968, 0)}
+	info := bindataFileInfo{name: "stacks/nfs-stack.yaml", size: 1217, mode: os.FileMode(420), modTime: time.Unix(1547439073, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -294,7 +294,7 @@ func stacksPrometheusStackYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/prometheus-stack.yaml", size: 12179, mode: os.FileMode(436), modTime: time.Unix(1553021097, 0)}
+	info := bindataFileInfo{name: "stacks/prometheus-stack.yaml", size: 12179, mode: os.FileMode(420), modTime: time.Unix(1551893106, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -314,7 +314,7 @@ func stacksRioAutoscalerStackYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "stacks/rio-autoscaler-stack.yaml", size: 850, mode: os.FileMode(436), modTime: time.Unix(1553021097, 0)}
+	info := bindataFileInfo{name: "stacks/rio-autoscaler-stack.yaml", size: 850, mode: os.FileMode(420), modTime: time.Unix(1553031689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

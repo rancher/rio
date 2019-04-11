@@ -3,17 +3,17 @@ package routeset
 import (
 	"context"
 
-	"github.com/rancher/rio/cli/pkg/constants"
-
-	v14 "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
+	"github.com/rancher/rio/exclude/pkg/settings"
 
 	"github.com/rancher/rio/modules/istio/controllers/routeset/populate"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	v14 "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
 	v12 "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/objectset"
 	"github.com/rancher/wrangler/pkg/relatedresource"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -61,17 +61,13 @@ type routeSetHandler struct {
 	clusterDomainCache   v14.ClusterDomainCache
 }
 
-func (r *routeSetHandler) populate(obj runtime.Object, stack *v1.Stack, os *objectset.ObjectSet) error {
-	if stack != nil && stack.Spec.DisableMesh {
-		return nil
-	}
-
+func (r *routeSetHandler) populate(obj runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) error {
 	routeSet := obj.(*v1.Router)
 	externalServiceMap := map[string]*v1.ExternalService{}
 	routesetMap := map[string]*v1.Router{}
 
 	// TODO watch cluster domain
-	clusterDomain, err := r.clusterDomainCache.Get(r.systemNamespace, constants.ClusterDomainName)
+	clusterDomain, err := r.clusterDomainCache.Get(r.systemNamespace, settings.ClusterDomainName)
 	if err != nil {
 		return err
 	}
@@ -96,5 +92,5 @@ func (r *routeSetHandler) populate(obj runtime.Object, stack *v1.Stack, os *obje
 		return err
 	}
 
-	return populate.DestinationRules(stack, obj.(*v1.Router), os)
+	return populate.DestinationRules(obj.(*v1.Router), os)
 }

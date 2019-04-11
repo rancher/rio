@@ -8,7 +8,6 @@ import (
 	"github.com/rancher/rio/modules/istio/controllers/routeset"
 	"github.com/rancher/rio/modules/istio/controllers/service"
 	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
-	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/features"
 	"github.com/rancher/rio/pkg/systemstack"
 	"github.com/rancher/rio/types"
@@ -22,10 +21,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			Enabled:     true,
 		},
 		SystemStacks: []*systemstack.SystemStack{
-			systemstack.NewSystemStack(rContext.Apply, rContext.Namespace, rContext.Rio.Rio().V1().Stack(), "istio-crd", v1.StackSpec{
-				DisableMesh:               true,
-				EnableKubernetesResources: true,
-			}),
+			// todo
 		},
 		Controllers: []features.ControllerRegister{
 			externalservice.Register,

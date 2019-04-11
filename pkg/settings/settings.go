@@ -4,6 +4,7 @@ const (
 	RioSystemNamespace    = "rio-system"
 	IstioGateway          = "rio-gateway"
 	IstioGatewayDeploy    = "istio-gateway"
+	IstioPilot            = "istio-pilot"
 	IstioStackName        = "istio"
 	GatewaySecretName     = "rio-certs"
 	RioGateway            = "rio-gateway"

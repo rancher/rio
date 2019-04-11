@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/knative/pkg/apis/istio/v1alpha3"
-	"github.com/rancher/rio/modules/service/controllers/service/populate/servicelabels"
 	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constructors"
@@ -86,8 +85,6 @@ func newSubSet(service *v1.Service) v1alpha3.Subset {
 
 func newDestinationRule(service *v1.Service) *v1alpha3.DestinationRule {
 	return constructors.NewDestinationRule(service.Namespace, service.Name, v1alpha3.DestinationRule{
-		ObjectMeta: metav1.ObjectMeta{
-			Labels: servicelabels.RioOnlyServiceLabels(service),
-		},
+		ObjectMeta: metav1.ObjectMeta{},
 	})
 }

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	approuter "github.com/rancher/rdns-server/client"
-	"github.com/rancher/rio/cli/pkg/constants"
+	"github.com/rancher/rio/exclude/pkg/settings"
 	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
@@ -20,13 +20,14 @@ type Controller struct {
 	namespace           string
 	rdnsClient          *approuter.Client
 	clusterDomainClient v1.ClusterDomainClient
+	started             bool
 }
 
 func Register(ctx context.Context, rContext *types.Context) error {
 	rdnsClient := approuter.NewClient(rContext.Core.Core().V1().Secret(),
 		rContext.Core.Core().V1().Secret().Cache(),
 		rContext.Namespace)
-	rdnsClient.SetBaseURL(constants.RDNSURL)
+	rdnsClient.SetBaseURL(settings.RDNSURL)
 
 	g := &Controller{
 		ctx:        ctx,
@@ -41,7 +42,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 }
 
 func (g *Controller) onChange(key string, obj *projectv1.ClusterDomain) (*projectv1.ClusterDomain, error) {
-	if obj == nil || key != g.namespace+"/"+constants.ClusterDomainName {
+	if obj == nil || key != g.namespace+"/"+settings.ClusterDomainName {
 		return nil, nil
 	}
 
@@ -50,6 +51,7 @@ func (g *Controller) onChange(key string, obj *projectv1.ClusterDomain) (*projec
 		if err != nil {
 			return obj, err
 		}
+		g.start()
 		obj.Status.ClusterDomain = domain
 		return obj, err
 	})
@@ -107,6 +109,11 @@ func (g *Controller) ensureDomainExists(ips []string) error {
 }
 
 func (g *Controller) start() {
+	if g.started {
+		return
+	}
+
+	g.started = true
 	go func() {
 		for range ticker.Context(g.ctx, 6*time.Hour) {
 			if err := g.renew(); err != nil {

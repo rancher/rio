@@ -55,22 +55,24 @@ func populateGateway(systemNamespace string, clusterDomain *riov1.ClusterDomain,
 
 	// https port
 	httpsPort, _ := strconv.ParseInt(settings.DefaultHTTPSOpenPort, 10, 0)
-	key := fmt.Sprintf("%s-%s", secret.Name, "tls.crt")
-	value := fmt.Sprintf("%s-%s", secret.Name, "tls.key")
-	if secret != nil && len(secret.Data[key]) > 0 && secret.Annotations["certificate-status"] == "ready" {
-		gws.Servers = append(gws.Servers, v1alpha3.Server{
-			Port: v1alpha3.Port{
-				Protocol: "HTTPS",
-				Number:   int(httpsPort),
-				Name:     fmt.Sprintf("%v-%v", "https", httpsPort),
-			},
-			Hosts: []string{fmt.Sprintf("*.%s", clusterDomain.Status.ClusterDomain)},
-			TLS: &v1alpha3.TLSOptions{
-				Mode:              "SIMPLE",
-				ServerCertificate: filepath.Join(sslDir, key),
-				PrivateKey:        filepath.Join(sslDir, value),
-			},
-		})
+	if secret != nil {
+		key := fmt.Sprintf("%s-%s", secret.Name, "tls.crt")
+		value := fmt.Sprintf("%s-%s", secret.Name, "tls.key")
+		if len(secret.Data[key]) > 0 && secret.Annotations["certificate-status"] == "ready" {
+			gws.Servers = append(gws.Servers, v1alpha3.Server{
+				Port: v1alpha3.Port{
+					Protocol: "HTTPS",
+					Number:   int(httpsPort),
+					Name:     fmt.Sprintf("%v-%v", "https", httpsPort),
+				},
+				Hosts: []string{fmt.Sprintf("*.%s", clusterDomain.Status.ClusterDomain)},
+				TLS: &v1alpha3.TLSOptions{
+					Mode:              "SIMPLE",
+					ServerCertificate: filepath.Join(sslDir, key),
+					PrivateKey:        filepath.Join(sslDir, value),
+				},
+			})
+		}
 	}
 
 	for _, publicdomain := range publicDomains {

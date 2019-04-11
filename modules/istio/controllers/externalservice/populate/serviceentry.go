@@ -2,9 +2,10 @@ package populate
 
 import (
 	"fmt"
-	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/rancher/rio/modules/istio/pkg/parse"
 
 	"github.com/knative/pkg/apis/istio/v1alpha3"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
@@ -28,7 +29,7 @@ func ServiceEntry(svc *v1.ExternalService, os *objectset.ObjectSet) error {
 }
 
 func serviceEntryForFQDN(fqdn string, svc *v1.ExternalService) (*v1alpha3.ServiceEntry, error) {
-	u, err := parseTargetURL(fqdn)
+	u, err := parse.ParseTargetURL(fqdn)
 	if err != nil {
 		return nil, err
 	}
@@ -70,15 +71,4 @@ func serviceEntryForFQDN(fqdn string, svc *v1.ExternalService) (*v1alpha3.Servic
 		},
 	})
 	return se, nil
-}
-
-func parseTargetURL(target string) (*url.URL, error) {
-	if !strings.HasPrefix(target, "https://") && !strings.HasPrefix(target, "http://") {
-		target = "http://" + target
-	}
-	u, err := url.Parse(target)
-	if err != nil {
-		return nil, err
-	}
-	return u, nil
 }

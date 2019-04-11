@@ -11,12 +11,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func DestinationRules(stack *v1.Stack, routeSet *v1.Router, os *objectset.ObjectSet) error {
-	os.Add(destinationRuleForRoutes(stack, routeSet)...)
+func DestinationRules(routeSet *v1.Router, os *objectset.ObjectSet) error {
+	os.Add(destinationRuleForRoutes(routeSet)...)
 	return nil
 }
 
-func destinationRuleForRoutes(stack *v1.Stack, route *v1.Router) []runtime.Object {
+func destinationRuleForRoutes(route *v1.Router) []runtime.Object {
 	var result []runtime.Object
 
 	destSet := populateDestinationFromRouteSet(route)
@@ -35,7 +35,7 @@ func destinationRuleForRoutes(stack *v1.Stack, route *v1.Router) []runtime.Objec
 			})
 		}
 
-		drObject := newDestinationRuleFromName(stack, dest.service, route.Namespace)
+		drObject := newDestinationRuleFromName(dest.service, route.Namespace)
 		drObject.Spec = dr
 		result = append(result, drObject)
 	}
@@ -72,13 +72,8 @@ func populateDestinationFromRouteSet(routes *v1.Router) map[string]destinationSe
 	return result
 }
 
-func newDestinationRuleFromName(stack *v1.Stack, name, namespace string) *v1alpha3.DestinationRule {
+func newDestinationRuleFromName(name, namespace string) *v1alpha3.DestinationRule {
 	return constructors.NewDestinationRule(namespace, name, v1alpha3.DestinationRule{
-		ObjectMeta: metav1.ObjectMeta{
-			Labels: map[string]string{
-				"rio.cattle.io/stack":   stack.Name,
-				"rio.cattle.io/project": stack.Namespace,
-			},
-		},
+		ObjectMeta: metav1.ObjectMeta{},
 	})
 }

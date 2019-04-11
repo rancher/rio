@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rancher/rio/cli/pkg/tables"
-
 	"github.com/rancher/rio/cli/cmd/ps"
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/cli/pkg/tables"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 )

@@ -4,12 +4,11 @@ import (
 	"context"
 
 	certmanagerapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/rancher/rio/cli/pkg/constants"
+	"github.com/rancher/rio/exclude/pkg/settings"
 	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
 	v1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constructors"
 	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/objectset"
@@ -32,6 +31,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			WithStrictCaching().
 			WithCacheTypes(rContext.CertManager.Certmanager().V1alpha1().ClusterIssuer(),
 				rContext.CertManager.Certmanager().V1alpha1().Certificate()),
+		clusterDomainCache: rContext.Global.Project().V1().ClusterDomain().Cache(),
 	}
 
 	rContext.Global.Project().V1().Feature().OnChange(ctx, "letsencrypt-issuer-controller", fh.onChange)
@@ -82,7 +82,7 @@ func (f *featureHandler) addWildcardCert(feature *v1.Feature, os *objectset.Obje
 }
 
 func (f *featureHandler) getClusterDomain() (string, error) {
-	clusterDomain, err := f.clusterDomainCache.Get(f.namespace, constants.ClusterDomainName)
+	clusterDomain, err := f.clusterDomainCache.Get(f.namespace, settings.ClusterDomainName)
 	if errors.IsNotFound(err) {
 		return "", nil
 	} else if err != nil {
@@ -110,7 +110,7 @@ func constructIssuer(issuerName string) *certmanagerapi.ClusterIssuer {
 					{
 						Name: "rdns",
 						RDNS: &certmanagerapi.ACMEIssuerDNS01ProviderRDNS{
-							APIEndpoint: constants.RDNSURL,
+							APIEndpoint: settings.RDNSURL,
 							ClientToken: certmanagerapi.SecretKeySelector{
 								Key: "token",
 								LocalObjectReference: certmanagerapi.LocalObjectReference{

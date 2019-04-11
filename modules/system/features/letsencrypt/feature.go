@@ -45,10 +45,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			settings.CertManagerImageType: settings.CertManagerImage,
 		},
 		SystemStacks: []*systemstack.SystemStack{
-			systemstack.NewSystemStack(rContext.Apply, rContext.Namespace, rContext.Rio.Rio().V1().Stack(), "cert-manager", riov1.StackSpec{
-				DisableMesh:               true,
-				EnableKubernetesResources: true,
-			}),
+			//systemstack.NewSystemStack(rContext.Apply, rContext.Namespace, "cert-manager"),
 		},
 		Controllers: []features.ControllerRegister{
 			issuer.Register,
