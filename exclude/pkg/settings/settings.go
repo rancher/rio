@@ -5,6 +5,7 @@ const (
 	BuildStackName                 = "build"
 	CertManagerImage               = "daishan1992/cert-manager:latest"
 	CertManagerImageType           = "CERT_MANAGER_IMAGE"
+	ClusterDomainName              = "cluster-domain"
 	DefaultHTTPOpenPort            = "80"
 	DefaultHTTPSOpenPort           = "443"
 	DefaultServiceVersion          = "v0"

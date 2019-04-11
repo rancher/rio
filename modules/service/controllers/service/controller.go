@@ -15,13 +15,7 @@ import (
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
-	//cf := config.NewConfigFactory(ctx, rContext.Core.Core().V1().ConfigMap(),
-	//	settings.IstioStackName,
-	//	settings.MeshConfigMapName,
-	//	settings.IstionConfigMapKey)
-	//injector := config.NewIstioInjector(cf)
-
-	c := stackobject.NewGeneratingController(ctx, rContext, "stack-service", rContext.Rio.Rio().V1().Service(), "istio")
+	c := stackobject.NewGeneratingController(ctx, rContext, "stack-service", rContext.Rio.Rio().V1().Service(), "istio-injector")
 	c.Apply = c.Apply.WithCacheTypes(
 		rContext.Build.Build().V1alpha1().Build(),
 		rContext.RBAC.Rbac().V1().Role(),

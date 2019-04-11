@@ -2,16 +2,17 @@ package populate
 
 import (
 	"github.com/rancher/rio/modules/istio/controllers/service/populate"
+	v1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/serviceset"
 	"github.com/rancher/wrangler/pkg/objectset"
 )
 
-func VirtualServiceForExternalService(namespace string, es *riov1.ExternalService, serviceSet *serviceset.ServiceSet,
+func VirtualServiceForExternalService(namespace string, es *riov1.ExternalService, serviceSet *serviceset.ServiceSet, clusterDomain *v1.ClusterDomain,
 	svc *riov1.Service, os *objectset.ObjectSet) {
 
 	dests := populate.DestsForService(svc.Name, serviceSet.Service.Namespace, serviceSet)
-	serviceVS := populate.VirtualServiceFromSpec(namespace, svc.Name, svc.Namespace, svc, dests...)
+	serviceVS := populate.VirtualServiceFromSpec(namespace, svc.Name, svc.Namespace, clusterDomain, svc, dests...)
 
 	// override host match with external service
 	serviceVS.Spec.Hosts = []string{}

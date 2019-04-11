@@ -2,14 +2,10 @@ package populate
 
 import (
 	"fmt"
-	"sort"
 	"strconv"
-	"strings"
 
 	"github.com/knative/pkg/apis/istio/v1alpha3"
 	"github.com/rancher/rio/modules/istio/pkg/domains"
-	"github.com/rancher/rio/modules/service/controllers/service/populate/containerlist"
-	"github.com/rancher/rio/modules/service/controllers/service/populate/servicelabels"
 	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constructors"
@@ -42,34 +38,23 @@ func virtualServices(namespace string, clusterDomain *projectv1.ClusterDomain, s
 	return nil
 }
 
-func httpRoutes(systemNamespace string, publicPorts map[string]bool, service *v1.Service, dests []Dest) ([]v1alpha3.HTTPRoute, bool) {
+func httpRoutes(systemNamespace string, service *v1.Service, dests []Dest) ([]v1alpha3.HTTPRoute, bool) {
 	external := false
 	var result []v1alpha3.HTTPRoute
 
-	containerlist.ForService(service)
 	enableAutoScale := service.Spec.AutoScale != nil
-	for _, con := range containerlist.ForService(service) {
-		for _, exposed := range con.ExposedPorts {
-			publicPort, route := newRoute(domains.GetPublicGateway(systemNamespace), false, &exposed.PortBinding, dests, true, enableAutoScale, service)
-			if publicPort != "" {
-				result = append(result, route)
-			}
-		}
-
-		for _, binding := range con.PortBindings {
-			publicPort, route := newRoute(domains.GetPublicGateway(systemNamespace), true, &binding, dests, true, enableAutoScale, service)
-			if publicPort != "" {
-				external = true
-				publicPorts[publicPort] = true
-				result = append(result, route)
-			}
+	for _, port := range service.Spec.Ports {
+		publicPort, route := newRoute(domains.GetPublicGateway(systemNamespace), port.Publish, port, dests, true, enableAutoScale, service)
+		if publicPort != "" {
+			external = true
+			result = append(result, route)
 		}
 	}
 
 	return result, external
 }
 
-func newRoute(externalGW string, published bool, portBinding *v1.PortBinding, dests []Dest, appendHttps bool, autoscale bool, svc *v1.Service) (string, v1alpha3.HTTPRoute) {
+func newRoute(externalGW string, published bool, portBinding v1.ServicePort, dests []Dest, appendHttps bool, autoscale bool, svc *v1.Service) (string, v1alpha3.HTTPRoute) {
 	route := v1alpha3.HTTPRoute{}
 
 	if !isProtocolSupported(portBinding.Protocol) {
@@ -104,7 +89,7 @@ func newRoute(externalGW string, published bool, portBinding *v1.PortBinding, de
 		}
 		route.AppendHeaders[RioNameHeader] = svc.Name
 		route.AppendHeaders[RioNamespaceHeader] = svc.Namespace
-		route.AppendHeaders[RioPortHeader] = strconv.Itoa(int(portBinding.TargetPort))
+		route.AppendHeaders[RioPortHeader] = portBinding.TargetPort.String()
 		route.Retries = &v1alpha3.HTTPRetry{
 			PerTryTimeout: "1m",
 			Attempts:      3,
@@ -127,7 +112,7 @@ func newRoute(externalGW string, published bool, portBinding *v1.PortBinding, de
 					Host:   dest.Host,
 					Subset: dest.Subset,
 					Port: v1alpha3.PortSelector{
-						Number: uint32(portBinding.TargetPort),
+						Number: uint32(portBinding.TargetPort.IntValue()),
 					},
 				},
 				Weight: dest.Weight,
@@ -214,11 +199,13 @@ func virtualServiceFromService(namespace string, name string, clusterDomain *pro
 }
 
 func VirtualServiceFromSpec(systemNamespace string, name, namespace string, clusterDomain *projectv1.ClusterDomain, service *v1.Service, dests ...Dest) *v1alpha3.VirtualService {
-	publicPorts := map[string]bool{}
-
-	routes, external := httpRoutes(systemNamespace, publicPorts, service, dests)
+	routes, external := httpRoutes(systemNamespace, service, dests)
 	if len(routes) == 0 {
 		return nil
+	}
+
+	if clusterDomain.Status.ClusterDomain == "" {
+		external = false
 	}
 
 	vs := newVirtualService(service)
@@ -228,21 +215,11 @@ func VirtualServiceFromSpec(systemNamespace string, name, namespace string, clus
 		Http:     routes,
 	}
 
-	if external && len(publicPorts) > 0 {
+	if external {
 		externalGW := domains.GetPublicGateway(systemNamespace)
 		externalHost := domains.GetExternalDomain(name, namespace, clusterDomain.Status.ClusterDomain)
 		spec.Gateways = append(spec.Gateways, externalGW)
 		spec.Hosts = append(spec.Hosts, externalHost)
-
-		var portList []string
-		for p := range publicPorts {
-			portList = append(portList, p)
-		}
-		sort.Slice(portList, func(i, j int) bool {
-			return portList[i] < portList[j]
-		})
-
-		vs.Annotations["rio.cattle.io/ports"] = strings.Join(portList, ",")
 	}
 
 	vs.Spec = spec
@@ -253,13 +230,12 @@ func newVirtualService(service *v1.Service) *v1alpha3.VirtualService {
 	return constructors.NewVirtualService(service.Namespace, service.Name, v1alpha3.VirtualService{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{},
-			Labels:      servicelabels.RioOnlyServiceLabels(service),
 		},
 	})
 }
 
-func isProtocolSupported(protocol string) bool {
-	if protocol == "http" || protocol == "http2" || protocol == "grpc" || protocol == "tcp" {
+func isProtocolSupported(protocol v1.Protocol) bool {
+	if protocol == v1.ProtocolHTTP || protocol == v1.ProtocolHTTP2 || protocol == v1.ProtocolGRPC || protocol == v1.ProtocolTCP {
 		return true
 	}
 	return false

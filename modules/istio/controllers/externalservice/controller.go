@@ -3,6 +3,10 @@ package externalservice
 import (
 	"context"
 
+	"github.com/rancher/rio/exclude/pkg/settings"
+
+	v12 "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
+
 	"github.com/rancher/rio/modules/istio/controllers/externalservice/populate"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
@@ -11,6 +15,7 @@ import (
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/kv"
 	"github.com/rancher/wrangler/pkg/objectset"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -20,8 +25,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		rContext.Networking.Networking().V1alpha3().VirtualService())
 
 	p := populator{
-		namespace:    rContext.Namespace,
-		serviceCache: rContext.Rio.Rio().V1().Service().Cache(),
+		namespace:          rContext.Namespace,
+		serviceCache:       rContext.Rio.Rio().V1().Service().Cache(),
+		clusterDomainCache: rContext.Global.Project().V1().ClusterDomain().Cache(),
 	}
 
 	c.Populator = p.populate
@@ -29,11 +35,12 @@ func Register(ctx context.Context, rContext *types.Context) error {
 }
 
 type populator struct {
-	namespace    string
-	serviceCache v1.ServiceCache
+	namespace          string
+	serviceCache       v1.ServiceCache
+	clusterDomainCache v12.ClusterDomainCache
 }
 
-func (p populator) populate(obj runtime.Object, stack *riov1.Stack, os *objectset.ObjectSet) error {
+func (p populator) populate(obj runtime.Object, namespace *corev1.Namespace, os *objectset.ObjectSet) error {
 	if err := populate.ServiceEntry(obj.(*riov1.ExternalService), os); err != nil {
 		return err
 	}
@@ -58,6 +65,8 @@ func (p populator) populate(obj runtime.Object, stack *riov1.Stack, os *objectse
 		return err
 	}
 
-	populate.VirtualServiceForExternalService(p.namespace, obj.(*riov1.ExternalService), serviceSet, svc, os)
+	clusterDomain, err := p.clusterDomainCache.Get(p.namespace, settings.ClusterDomainName)
+
+	populate.VirtualServiceForExternalService(p.namespace, obj.(*riov1.ExternalService), serviceSet, clusterDomain, svc, os)
 	return nil
 }

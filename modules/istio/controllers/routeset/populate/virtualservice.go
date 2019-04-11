@@ -5,13 +5,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rancher/rio/modules/istio/pkg/parse"
+
 	"github.com/knative/pkg/apis/istio/common/v1alpha1"
 	"github.com/knative/pkg/apis/istio/v1alpha3"
 	"github.com/rancher/rio/modules/istio/pkg/domains"
 	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constructors"
-	"github.com/rancher/rio/upstream2/exclude/features/routing/controllers/externalservice/populate"
 	"github.com/rancher/wrangler/pkg/kv"
 	"github.com/rancher/wrangler/pkg/objectset"
 	v1alpha3type "istio.io/api/networking/v1alpha3"
@@ -156,7 +157,6 @@ func virtualServiceFromRoutesets(systemNamespace string, clusterDomain *projectv
 
 	// set port to 80 for virtual services that are created from gateway
 	vs := newVirtualServiceGeneric(routeSet.Name, routeSet.Namespace)
-	vs.Annotations["rio.cattle.io/ports"] = "80"
 	vs.Spec = spec
 
 	return vs
@@ -244,7 +244,7 @@ func destWeightForExternalService(d v1.WeightedDestination, esvc *v1.ExternalSer
 	}
 	if esvc.Spec.FQDN != "" {
 		// ignore error as it should be validated somewhere else
-		u, _ := populate.ParseTargetUrl(esvc.Spec.FQDN)
+		u, _ := parse.ParseTargetURL(esvc.Spec.FQDN)
 		d.Service = u.Host
 	} else if esvc.Spec.Service != "" {
 		stackName, serviceName := kv.Split(esvc.Spec.Service, "/")
