@@ -7,6 +7,7 @@ import (
 
 	"github.com/rancher/rio/modules/service/controllers/routeset"
 	"github.com/rancher/rio/modules/service/controllers/service"
+	"github.com/rancher/rio/modules/service/controllers/serviceset"
 	"github.com/rancher/rio/modules/service/controllers/servicestatus"
 	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/features"
@@ -24,6 +25,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			externalservice.Register,
 			routeset.Register,
 			service.Register,
+			serviceset.Register,
 			servicestatus.Register,
 		},
 	}

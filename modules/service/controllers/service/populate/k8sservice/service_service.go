@@ -20,7 +20,7 @@ func serviceSelector(service *riov1.Service, os *objectset.ObjectSet) {
 }
 
 func newServiceSelector(name, namespace string, labels, selectorLabels map[string]string) *v1.Service {
-	constructors.NewService(namespace, name, v1.Service{
+	return constructors.NewService(namespace, name, v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: labels,
 		},
