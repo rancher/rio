@@ -15,6 +15,35 @@ func (c Cond) GetStatus(obj runtime.Object) string {
 	return getStatus(obj, string(c))
 }
 
+func (c Cond) SetError(obj runtime.Object, reason string, err error) {
+	if err == nil {
+		c.True(obj)
+		c.Message(obj, "")
+		c.Reason(obj, reason)
+		return
+	}
+	if reason == "" {
+		reason = "Error"
+	}
+	c.False(obj)
+	c.Message(obj, err.Error())
+	c.Reason(obj, reason)
+}
+
+func (c Cond) MatchesError(obj runtime.Object, reason string, err error) bool {
+	if err == nil {
+		return c.IsTrue(obj) &&
+			c.GetMessage(obj) == "" &&
+			c.GetReason(obj) == reason
+	}
+	if reason == "" {
+		reason = "Error"
+	}
+	return c.IsFalse(obj) &&
+		c.GetMessage(obj) == err.Error() &&
+		c.GetReason(obj) == reason
+}
+
 func (c Cond) SetStatus(obj runtime.Object, status string) {
 	setStatus(obj, string(c), status)
 }

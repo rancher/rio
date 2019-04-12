@@ -10,7 +10,6 @@ import (
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/objectset"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -39,8 +38,6 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	}
 
 	c.Populator = sh.populate
-	rContext.Rio.Rio().V1().Service().OnChange(ctx, "stack-service-change-controller", sh.onChange)
-
 	return nil
 }
 
@@ -50,25 +47,7 @@ type serviceHandler struct {
 	serviceCache  riov1controller.ServiceCache
 }
 
-func (s *serviceHandler) onChange(key string, service *riov1.Service) (*riov1.Service, error) {
-	if service == nil {
-		return nil, nil
-	}
-
-	if service.Spec.Revision.ParentService != "" {
-		// enqueue parent so that we re-evaluate the destionationRules
-		s.serviceClient.Enqueue(service.Namespace, service.Spec.Revision.ParentService)
-	}
-
-	return service, nil
-}
-
 func (s *serviceHandler) populate(obj runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) error {
 	service := obj.(*riov1.Service)
-	services, err := s.serviceCache.List(service.Namespace, labels.Everything())
-	if err != nil {
-		return err
-	}
-
-	return populate.Service(services, service, os)
+	return populate.Service(service, os)
 }

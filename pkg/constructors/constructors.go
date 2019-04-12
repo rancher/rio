@@ -4,6 +4,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	v1alpha12 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	"github.com/knative/pkg/apis/istio/v1alpha3"
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 )
@@ -65,6 +66,14 @@ func NewVirtualService(namespace, name string, obj v1alpha3.VirtualService) *v1a
 func NewConfigMap(namespace, name string, obj v1.ConfigMap) *v1.ConfigMap {
 	obj.APIVersion = "v1"
 	obj.Kind = "ConfigMap"
+	obj.Name = name
+	obj.Namespace = namespace
+	return &obj
+}
+
+func NewDeployment(namespace, name string, obj appsv1.Deployment) *appsv1.Deployment {
+	obj.APIVersion = "apps/v1"
+	obj.Kind = "Deployment"
 	obj.Name = name
 	obj.Namespace = namespace
 	return &obj

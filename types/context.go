@@ -10,7 +10,6 @@ import (
 	"github.com/rancher/rio/pkg/generated/controllers/certmanager.k8s.io"
 	"github.com/rancher/rio/pkg/generated/controllers/core"
 	"github.com/rancher/rio/pkg/generated/controllers/networking.istio.io"
-	"github.com/rancher/rio/pkg/generated/controllers/policy"
 	"github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io"
 	"github.com/rancher/rio/pkg/generated/controllers/rbac"
 	"github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io"
@@ -36,7 +35,6 @@ type Context struct {
 	Global      *project.Factory
 	K8s         kubernetes.Interface
 	Networking  *networking.Factory
-	Policy      *policy.Factory
 	RBAC        *rbac.Factory
 	Rio         *rio.Factory
 	Storage     *storage.Factory
@@ -60,7 +58,6 @@ func NewContext(namespace string, config *rest.Config) *Context {
 		Ext:         apiextensions.NewFactoryFromConfigOrDie(config),
 		Global:      project.NewFactoryFromConfigOrDie(config),
 		Networking:  networking.NewFactoryFromConfigOrDie(config),
-		Policy:      policy.NewFactoryFromConfigOrDie(config),
 		RBAC:        rbac.NewFactoryFromConfigOrDie(config),
 		Rio:         rio.NewFactoryFromConfigOrDie(config),
 		Storage:     storage.NewFactoryFromConfigOrDie(config),
@@ -82,7 +79,6 @@ func (c *Context) Start(ctx context.Context) error {
 		c.Ext,
 		c.Global,
 		c.Networking,
-		c.Policy,
 		c.RBAC,
 		c.Rio,
 		c.Storage,
