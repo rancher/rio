@@ -2,6 +2,7 @@ package servicelabels
 
 import (
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/services"
 )
 
 func SelectorLabels(service *v1.Service) map[string]string {
@@ -13,9 +14,10 @@ func ServiceLabels(service *v1.Service) map[string]string {
 }
 
 func labels(service *v1.Service) map[string]string {
+	app, version := services.AppAndVersion(service)
 	labels := map[string]string{
-		"app":     service.Spec.Revision.App,
-		"version": service.Spec.Revision.Version,
+		"app":     app,
+		"version": version,
 	}
 
 	return labels

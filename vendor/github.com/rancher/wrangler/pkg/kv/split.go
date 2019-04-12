@@ -8,8 +8,12 @@ func Split(s, sep string) (string, string) {
 }
 
 func SplitMap(s, sep string) map[string]string {
+	return SplitMapFromSlice(strings.Split(s, sep))
+}
+
+func SplitMapFromSlice(parts []string) map[string]string {
 	result := map[string]string{}
-	for _, part := range strings.Split(s, sep) {
+	for _, part := range parts {
 		k, v := Split(part, "=")
 		result[k] = v
 	}

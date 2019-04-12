@@ -12,7 +12,6 @@ import (
 	"github.com/rancher/wrangler/pkg/controller-gen/args"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
-	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
@@ -71,14 +70,6 @@ func main() {
 				ClientSetPackage: "k8s.io/client-go/kubernetes",
 				ListersPackage:   "k8s.io/client-go/listers",
 			},
-			"policy": {
-				Types: []interface{}{
-					policyv1beta1.PodDisruptionBudget{},
-				},
-				InformersPackage: "k8s.io/client-go/informers",
-				ClientSetPackage: "k8s.io/client-go/kubernetes",
-				ListersPackage:   "k8s.io/client-go/listers",
-			},
 			"rbac": {
 				Types: []interface{}{
 					rbacv1.Role{},
@@ -93,8 +84,6 @@ func main() {
 			"apps": {
 				Types: []interface{}{
 					appsv1.Deployment{},
-					appsv1.DaemonSet{},
-					appsv1.StatefulSet{},
 				},
 				InformersPackage: "k8s.io/client-go/informers",
 				ClientSetPackage: "k8s.io/client-go/kubernetes",

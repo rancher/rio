@@ -34,7 +34,7 @@ func servicesByParent(services []*riov1.Service) (Services, error) {
 	result := Services{}
 
 	for _, service := range services {
-		if service.Spec.Revision.ParentService == "" {
+		if service.Spec.App == "" {
 			s, ok := result[service.Name]
 			if !ok {
 				s = &ServiceSet{
@@ -63,14 +63,14 @@ func servicesByParent(services []*riov1.Service) (Services, error) {
 
 func normalizeParent(name string, service *riov1.Service) *riov1.Service {
 	service = service.DeepCopy()
-	if service.Spec.Revision.Version == "" {
-		service.Spec.Revision.Version = constants.DefaultServiceVersion
+	if service.Spec.Version == "" {
+		service.Spec.Version = constants.DefaultServiceVersion
 	}
-	service.Spec.Revision.App = name
-	if service.Spec.Revision.Version == constants.DefaultServiceVersion {
+	service.Spec.App = name
+	if service.Spec.Version == constants.DefaultServiceVersion {
 		service.Name = name
 	} else {
-		service.Name = name + "-" + service.Spec.Revision.Version
+		service.Name = name + "-" + service.Spec.Version
 	}
 
 	return service
@@ -107,7 +107,7 @@ func CollectionServices(services []*riov1.Service) (Services, error) {
 			continue
 		}
 
-		name := service.Service.Spec.Revision.App
+		name := service.Service.Spec.App
 		if name == "" {
 			name = service.Service.Name
 		}

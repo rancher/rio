@@ -9,18 +9,13 @@ import (
 )
 
 func Populate(service *riov1.Service, os *objectset.ObjectSet) error {
-	podTemplateSpec := pod.Populate(service, os)
+	podTemplateSpec, err := pod.Populate(service, os)
+	if err != nil {
+		return err
+	}
 
 	cp := newControllerParams(service, podTemplateSpec)
-	pdb(service, cp, os)
-
-	if service.Spec.Global {
-		daemonSet(service, cp, os)
-	} else if isDeployment(service.Spec) {
-		deployment(service, cp, os)
-	} else {
-		return statefulSet(service, cp, os)
-	}
+	deployment(service, cp, os)
 
 	return nil
 }

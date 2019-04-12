@@ -20,6 +20,7 @@ func Populate(service *riov1.Service, os *objectset.ObjectSet) error {
 	addServiceAccount(labels, *subject, os)
 	addRoles(labels, *subject, service, os)
 	addRules(labels, *subject, service, os)
+	addClusterRules(labels, *subject, service, os)
 	return nil
 }
 
@@ -39,36 +40,40 @@ func subject(service *riov1.Service) *v1.Subject {
 }
 
 func ServiceAccountName(service *riov1.Service) string {
-	if len(service.Spec.Roles) == 0 &&
-		len(service.Spec.ClusterRoles) == 0 &&
-		len(service.Spec.Rules) == 0 &&
-		len(service.Spec.ClusterRules) == 0 {
+	if len(service.Spec.Permissions) == 0 &&
+		len(service.Spec.GlobalPermissions) == 0 {
 		return ""
 	}
 	return service.Name
 }
 
 func addRoles(labels map[string]string, subject v1.Subject, service *riov1.Service, os *objectset.ObjectSet) {
-	for _, role := range service.Spec.Roles {
-		roleBinding := newBinding(service.Namespace, name.SafeConcatName("rio", service.Name, role), labels)
+	for _, role := range service.Spec.Permissions {
+		if role.Role == "" {
+			continue
+		}
+		roleBinding := newBinding(service.Namespace, name.SafeConcatName("rio", service.Name, role.Role), labels)
 		roleBinding.Subjects = []v1.Subject{
 			subject,
 		}
 		roleBinding.RoleRef = v1.RoleRef{
-			Name:     role,
+			Name:     role.Role,
 			Kind:     "Role",
 			APIGroup: "rbac.authorization.k8s.io",
 		}
 		os.Add(roleBinding)
 	}
 
-	for _, role := range service.Spec.ClusterRoles {
-		roleBinding := newClusterBinding(name.SafeConcatName("rio", service.Namespace, service.Name, role), labels)
+	for _, role := range service.Spec.GlobalPermissions {
+		if role.Role == "" {
+			continue
+		}
+		roleBinding := newClusterBinding(name.SafeConcatName("rio", service.Namespace, service.Name, role.Role), labels)
 		roleBinding.Subjects = []v1.Subject{
 			subject,
 		}
 		roleBinding.RoleRef = v1.RoleRef{
-			Name:     role,
+			Name:     role.Role,
 			Kind:     "ClusterRole",
 			APIGroup: "rbac.authorization.k8s.io",
 		}
@@ -77,9 +82,18 @@ func addRoles(labels map[string]string, subject v1.Subject, service *riov1.Servi
 }
 
 func addRules(labels map[string]string, subject v1.Subject, service *riov1.Service, os *objectset.ObjectSet) {
-	if len(service.Spec.Roles) > 0 {
-		role := newRole(service.Namespace, name.SafeConcatName("rio", service.Name), labels)
-		role.Rules = service.Spec.Rules
+	role := newRole(service.Namespace, name.SafeConcatName("rio", service.Name), labels)
+	for _, perm := range service.Spec.Permissions {
+		if perm.Role != "" {
+			continue
+		}
+		policyRule, ok := permToPolicyRule(perm)
+		if ok {
+			role.Rules = append(role.Rules, policyRule)
+		}
+	}
+
+	if len(role.Rules) > 0 {
 		os.Add(role)
 
 		roleBinding := newBinding(service.Namespace, name.SafeConcatName("rio", service.Name, role.Name), labels)
@@ -93,10 +107,21 @@ func addRules(labels map[string]string, subject v1.Subject, service *riov1.Servi
 		}
 		os.Add(roleBinding)
 	}
+}
 
-	if len(service.Spec.ClusterRoles) > 0 {
-		role := newClusterRole(name.SafeConcatName("rio", service.Namespace, service.Name), labels)
-		role.Rules = service.Spec.ClusterRules
+func addClusterRules(labels map[string]string, subject v1.Subject, service *riov1.Service, os *objectset.ObjectSet) {
+	role := newClusterRole(name.SafeConcatName("rio", service.Namespace, service.Name), labels)
+	for _, perm := range service.Spec.GlobalPermissions {
+		if perm.Role != "" {
+			continue
+		}
+		policyRule, ok := permToPolicyRule(perm)
+		if ok {
+			role.Rules = append(role.Rules, policyRule)
+		}
+	}
+
+	if len(role.Rules) > 0 {
 		os.Add(role)
 
 		roleBinding := newClusterBinding(name.SafeConcatName("rio", service.Namespace, service.Name, role.Name), labels)
@@ -110,6 +135,35 @@ func addRules(labels map[string]string, subject v1.Subject, service *riov1.Servi
 		}
 		os.Add(roleBinding)
 	}
+}
+
+func permToPolicyRule(perm riov1.Permission) (v1.PolicyRule, bool) {
+	policyRule := v1.PolicyRule{}
+	valid := false
+
+	if perm.Role != "" {
+		return policyRule, valid
+	}
+
+	policyRule.Verbs = perm.Verbs
+	if perm.Name != "" {
+		valid = true
+		policyRule.ResourceNames = []string{perm.Name}
+	}
+	if perm.APIGroup != "" {
+		valid = true
+		policyRule.APIGroups = []string{perm.APIGroup}
+	}
+	if perm.Resource != "" {
+		valid = true
+		policyRule.Resources = []string{perm.Resource}
+	}
+	if perm.URL != "" {
+		valid = true
+		policyRule.NonResourceURLs = []string{perm.URL}
+	}
+
+	return policyRule, valid
 }
 
 func addServiceAccount(labels map[string]string, subject v1.Subject, os *objectset.ObjectSet) {

@@ -14,7 +14,7 @@ type scaleParams struct {
 
 func parseScaleParams(service *riov1.ServiceSpec) scaleParams {
 	scale := int32(service.Scale)
-	batchSize := service.BatchSize
+	batchSize := service.UpdateBatchSize
 
 	if batchSize == 0 {
 		batchSize = 1
@@ -24,19 +24,8 @@ func parseScaleParams(service *riov1.ServiceSpec) scaleParams {
 		batchSize = int(scale)
 	}
 
-	surge := batchSize
-	unavailable := 0
-
-	if service.UpdateOrder == "start-first" {
-		surge = batchSize
-		unavailable = 0
-	} else if service.UpdateOrder == "stop-first" {
-		surge = 0
-		unavailable = batchSize
-	}
-
-	maxSurge := intstr.FromInt(surge)
-	maxUnavailable := intstr.FromInt(unavailable)
+	maxSurge := intstr.FromInt(batchSize)
+	maxUnavailable := intstr.FromInt(0)
 
 	return scaleParams{
 		Scale:          scale,

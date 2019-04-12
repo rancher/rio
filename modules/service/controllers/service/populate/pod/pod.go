@@ -4,31 +4,28 @@ import (
 	"github.com/rancher/rio/modules/service/controllers/service/populate/rbac"
 	"github.com/rancher/rio/modules/service/controllers/service/populate/servicelabels"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/wrangler/pkg/objectset"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func Populate(service *riov1.Service, os *objectset.ObjectSet) v1.PodTemplateSpec {
-	podSpec := podSpec(service, os)
-
+func Populate(service *riov1.Service, os *objectset.ObjectSet) (v1.PodTemplateSpec, error) {
 	pts := v1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels:      servicelabels.ServiceLabels(service),
 			Annotations: servicelabels.Merge(service.Annotations),
 		},
-		Spec: podSpec,
 	}
 
-	return pts
-}
-
-func podSpec(service *riov1.Service, os *objectset.ObjectSet) v1.PodSpec {
-	podSpec := service.Spec.PodSpec
+	podSpec := podSpec(service)
 	roles(service, &podSpec, os)
-	images(service, &podSpec)
+	if err := images(service, &podSpec); err != nil {
+		return pts, err
+	}
 
-	return podSpec
+	pts.Spec = podSpec
+	return pts, nil
 }
 
 func roles(service *riov1.Service, podSpec *v1.PodSpec, os *objectset.ObjectSet) {
@@ -44,11 +41,14 @@ func roles(service *riov1.Service, podSpec *v1.PodSpec, os *objectset.ObjectSet)
 	}
 }
 
-func images(service *riov1.Service, podSpec *v1.PodSpec) {
+func images(service *riov1.Service, podSpec *v1.PodSpec) error {
 	for i, container := range podSpec.InitContainers {
 		image := service.Status.ContainerImages[container.Name]
 		if image != "" {
 			podSpec.InitContainers[i].Image = image
+		}
+		if podSpec.InitContainers[i].Image == "" {
+			return stackobject.ErrSkipObjectSet
 		}
 	}
 
@@ -57,5 +57,10 @@ func images(service *riov1.Service, podSpec *v1.PodSpec) {
 		if image != "" {
 			podSpec.Containers[i].Image = image
 		}
+		if podSpec.Containers[i].Image == "" {
+			return stackobject.ErrSkipObjectSet
+		}
 	}
+
+	return nil
 }
