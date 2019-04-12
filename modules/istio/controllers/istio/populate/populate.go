@@ -6,9 +6,9 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-func Istio(systemNamespace string, clusterDomain *projectv1.ClusterDomain, publicdomains []*projectv1.PublicDomain, secret *v1.Secret) *objectset.ObjectSet {
+func Istio(systemNamespace string, clusterDomain *projectv1.ClusterDomain, publicdomains []*projectv1.PublicDomain, publicdomainSecrets map[string]*v1.Secret, wildcardSecret *v1.Secret) *objectset.ObjectSet {
 	output := objectset.NewObjectSet()
-	populateGateway(systemNamespace, clusterDomain, secret, publicdomains, output)
+	populateGateway(systemNamespace, clusterDomain, wildcardSecret, publicdomains, publicdomainSecrets, output)
 
 	return output
 }

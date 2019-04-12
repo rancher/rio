@@ -39,6 +39,7 @@ type PublicDomainsGetter interface {
 type PublicDomainInterface interface {
 	Create(*v1.PublicDomain) (*v1.PublicDomain, error)
 	Update(*v1.PublicDomain) (*v1.PublicDomain, error)
+	UpdateStatus(*v1.PublicDomain) (*v1.PublicDomain, error)
 	Delete(name string, options *metav1.DeleteOptions) error
 	DeleteCollection(options *metav1.DeleteOptions, listOptions metav1.ListOptions) error
 	Get(name string, options metav1.GetOptions) (*v1.PublicDomain, error)
@@ -126,6 +127,22 @@ func (c *publicDomains) Update(publicDomain *v1.PublicDomain) (result *v1.Public
 		Namespace(c.ns).
 		Resource("publicdomains").
 		Name(publicDomain.Name).
+		Body(publicDomain).
+		Do().
+		Into(result)
+	return
+}
+
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+
+func (c *publicDomains) UpdateStatus(publicDomain *v1.PublicDomain) (result *v1.PublicDomain, err error) {
+	result = &v1.PublicDomain{}
+	err = c.client.Put().
+		Namespace(c.ns).
+		Resource("publicdomains").
+		Name(publicDomain.Name).
+		SubResource("status").
 		Body(publicDomain).
 		Do().
 		Into(result)

@@ -66,6 +66,10 @@ func (o *Controller) OnChange(key string, obj runtime.Object) (runtime.Object, e
 		return obj, nil
 	}
 
+	if obj == nil {
+		return nil, nil
+	}
+
 	meta, err := meta.Accessor(obj)
 	if err != nil {
 		return obj, err

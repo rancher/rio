@@ -12,11 +12,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func DestinationRulesAndVirtualServices(namespace string, clusterDomain *projectv1.ClusterDomain, services []*v1.Service, service *v1.Service, os *objectset.ObjectSet) error {
+func DestinationRulesAndVirtualServices(namespace string, clusterDomain *projectv1.ClusterDomain, publicdomains []*projectv1.PublicDomain, services []*v1.Service, service *v1.Service, os *objectset.ObjectSet) error {
 	if err := destinationRules(services, service, os); err != nil {
 		return err
 	}
-	return virtualServices(namespace, clusterDomain, services, service, os)
+	return virtualServices(namespace, clusterDomain, publicdomains, services, service, os)
 }
 
 func destinationRules(services []*v1.Service, service *v1.Service, os *objectset.ObjectSet) error {
@@ -78,7 +78,7 @@ func newSubSet(service *v1.Service) v1alpha3.Subset {
 	return v1alpha3.Subset{
 		Name: service.Spec.Revision.Version,
 		Labels: map[string]string{
-			"rio.cattle.io/version": service.Spec.Revision.Version,
+			"version": service.Spec.Revision.Version,
 		},
 	}
 }

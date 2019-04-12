@@ -100,6 +100,18 @@ func (c *FakePublicDomains) Update(publicDomain *projectriocattleiov1.PublicDoma
 	return obj.(*projectriocattleiov1.PublicDomain), err
 }
 
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *FakePublicDomains) UpdateStatus(publicDomain *projectriocattleiov1.PublicDomain) (*projectriocattleiov1.PublicDomain, error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewUpdateSubresourceAction(publicdomainsResource, "status", c.ns, publicDomain), &projectriocattleiov1.PublicDomain{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*projectriocattleiov1.PublicDomain), err
+}
+
 // Delete takes name of the publicDomain and deletes it. Returns an error if one occurs.
 func (c *FakePublicDomains) Delete(name string, options *v1.DeleteOptions) error {
 	_, err := c.Fake.

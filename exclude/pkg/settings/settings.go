@@ -29,6 +29,12 @@ const (
 	SelfSignedType                 = "selfsigned"
 	StagingIssuerName              = "letsencrypt-staging-issuer"
 	StagingType                    = "staging"
+	RioSystemNamespace             = "rio-system"
+	IstioGateway                   = "rio-gateway"
+	IstioGatewayDeploy             = "istio-gateway"
+	IstioPilot                     = "istio-pilot"
+	GatewaySecretName              = "rio-certs"
+	IstionConfigMapName            = "mesh"
 )
 
 var (

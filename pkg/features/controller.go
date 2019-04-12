@@ -110,7 +110,6 @@ func (f *FeatureController) Start(ctx context.Context, feature *v1.Feature) erro
 			return err
 		}
 	}
-
 	if err := rContext.Start(ctx); err != nil {
 		return err
 	}

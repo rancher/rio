@@ -23,7 +23,7 @@ const (
 	RioPortHeader      = "X-Rio-ServicePort"
 )
 
-func virtualServices(namespace string, clusterDomain *projectv1.ClusterDomain, services []*v1.Service, service *v1.Service, os *objectset.ObjectSet) error {
+func virtualServices(namespace string, clusterDomain *projectv1.ClusterDomain, publicdomains []*projectv1.PublicDomain, services []*v1.Service, service *v1.Service, os *objectset.ObjectSet) error {
 	serviceSets, err := serviceset.CollectionServices(services)
 	if err != nil {
 		return err
@@ -34,7 +34,7 @@ func virtualServices(namespace string, clusterDomain *projectv1.ClusterDomain, s
 		return nil
 	}
 
-	os.Add(virtualServiceFromService(namespace, service.Name, clusterDomain, serviceSet)...)
+	os.Add(virtualServiceFromService(namespace, service.Name, clusterDomain, publicdomains, serviceSet)...)
 	return nil
 }
 
@@ -42,9 +42,9 @@ func httpRoutes(systemNamespace string, service *v1.Service, dests []Dest) ([]v1
 	external := false
 	var result []v1alpha3.HTTPRoute
 
-	enableAutoScale := service.Spec.AutoScale != nil
+	enableAutoScale := service.Spec.AutoscaleConfig.MinScale != service.Spec.AutoscaleConfig.MaxScale
 	for _, port := range service.Spec.Ports {
-		publicPort, route := newRoute(domains.GetPublicGateway(systemNamespace), port.Publish, port, dests, true, enableAutoScale, service)
+		publicPort, route := newRoute(domains.GetPublicGateway(systemNamespace), !port.InternalOnly, port, dests, true, enableAutoScale, service)
 		if publicPort != "" {
 			external = true
 			result = append(result, route)
@@ -54,7 +54,7 @@ func httpRoutes(systemNamespace string, service *v1.Service, dests []Dest) ([]v1
 	return result, external
 }
 
-func newRoute(externalGW string, published bool, portBinding v1.ServicePort, dests []Dest, appendHttps bool, autoscale bool, svc *v1.Service) (string, v1alpha3.HTTPRoute) {
+func newRoute(externalGW string, published bool, portBinding v1.ContainerPort, dests []Dest, appendHttps bool, autoscale bool, svc *v1.Service) (string, v1alpha3.HTTPRoute) {
 	route := v1alpha3.HTTPRoute{}
 
 	if !isProtocolSupported(portBinding.Protocol) {
@@ -89,7 +89,7 @@ func newRoute(externalGW string, published bool, portBinding v1.ServicePort, des
 		}
 		route.AppendHeaders[RioNameHeader] = svc.Name
 		route.AppendHeaders[RioNamespaceHeader] = svc.Namespace
-		route.AppendHeaders[RioPortHeader] = portBinding.TargetPort.String()
+		route.AppendHeaders[RioPortHeader] = strconv.Itoa(int(portBinding.TargetPort))
 		route.Retries = &v1alpha3.HTTPRetry{
 			PerTryTimeout: "1m",
 			Attempts:      3,
@@ -112,7 +112,7 @@ func newRoute(externalGW string, published bool, portBinding v1.ServicePort, des
 					Host:   dest.Host,
 					Subset: dest.Subset,
 					Port: v1alpha3.PortSelector{
-						Number: uint32(portBinding.TargetPort.IntValue()),
+						Number: uint32(portBinding.TargetPort),
 					},
 				},
 				Weight: dest.Weight,
@@ -137,7 +137,7 @@ func DestsForService(namespace, name string, service *serviceset.ServiceSet) []D
 	result := []Dest{
 		{
 			Host:   fmt.Sprintf("%s.%s.svc.cluster.local", name, namespace),
-			Subset: service.Service.Spec.Revision.Version,
+			Subset: service,
 		},
 	}
 
@@ -176,16 +176,16 @@ func min(left, right int) int {
 	return right
 }
 
-func virtualServiceFromService(namespace string, name string, clusterDomain *projectv1.ClusterDomain, service *serviceset.ServiceSet) []runtime.Object {
+func virtualServiceFromService(namespace string, name string, clusterDomain *projectv1.ClusterDomain, publicdomains []*projectv1.PublicDomain, service *serviceset.ServiceSet) []runtime.Object {
 	var result []runtime.Object
 
-	serviceVS := VirtualServiceFromSpec(namespace, name, service.Service.Namespace, clusterDomain, service.Service, DestsForService(namespace, name, service)...)
+	serviceVS := VirtualServiceFromSpec(namespace, name, service.Service.Namespace, clusterDomain, publicdomains, service.Service, DestsForService(namespace, name, service)...)
 	if serviceVS != nil {
 		result = append(result, serviceVS)
 	}
 
 	for _, rev := range service.Revisions {
-		revVs := VirtualServiceFromSpec(namespace, rev.Name, service.Service.Namespace, clusterDomain, rev, Dest{
+		revVs := VirtualServiceFromSpec(namespace, rev.Name, service.Service.Namespace, clusterDomain, publicdomains, rev, Dest{
 			Host:   rev.Name,
 			Subset: rev.Spec.Revision.Version,
 			Weight: 100,
@@ -198,7 +198,7 @@ func virtualServiceFromService(namespace string, name string, clusterDomain *pro
 	return result
 }
 
-func VirtualServiceFromSpec(systemNamespace string, name, namespace string, clusterDomain *projectv1.ClusterDomain, service *v1.Service, dests ...Dest) *v1alpha3.VirtualService {
+func VirtualServiceFromSpec(systemNamespace string, name, namespace string, clusterDomain *projectv1.ClusterDomain, publicdomains []*projectv1.PublicDomain, service *v1.Service, dests ...Dest) *v1alpha3.VirtualService {
 	routes, external := httpRoutes(systemNamespace, service, dests)
 	if len(routes) == 0 {
 		return nil
@@ -210,9 +210,13 @@ func VirtualServiceFromSpec(systemNamespace string, name, namespace string, clus
 
 	vs := newVirtualService(service)
 	spec := v1alpha3.VirtualServiceSpec{
-		Hosts:    []string{},
+		Hosts:    []string{service.Name},
 		Gateways: []string{privateGw},
 		Http:     routes,
+	}
+
+	for _, pd := range publicdomains {
+		spec.Hosts = append(spec.Hosts, pd.Spec.DomainName)
 	}
 
 	if external {

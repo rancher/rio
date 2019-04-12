@@ -3,6 +3,9 @@ package issuer
 import (
 	"context"
 
+	"github.com/rancher/wrangler/pkg/kv"
+
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	certmanagerapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/rancher/rio/exclude/pkg/settings"
 	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
@@ -31,17 +34,20 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			WithStrictCaching().
 			WithCacheTypes(rContext.CertManager.Certmanager().V1alpha1().ClusterIssuer(),
 				rContext.CertManager.Certmanager().V1alpha1().Certificate()),
-		clusterDomainCache: rContext.Global.Project().V1().ClusterDomain().Cache(),
+		clusterDomain: rContext.Global.Project().V1().ClusterDomain(),
+		publicdomain:  rContext.Global.Project().V1().PublicDomain(),
 	}
 
 	rContext.Global.Project().V1().Feature().OnChange(ctx, "letsencrypt-issuer-controller", fh.onChange)
+	rContext.CertManager.Certmanager().V1alpha1().Certificate().OnChange(ctx, "letsencrypt-certificate", fh.onChangeCert)
 	return nil
 }
 
 type featureHandler struct {
-	namespace          string
-	apply              apply.Apply
-	clusterDomainCache projectv1controller.ClusterDomainCache
+	namespace     string
+	apply         apply.Apply
+	clusterDomain projectv1controller.ClusterDomainController
+	publicdomain  projectv1controller.PublicDomainController
 }
 
 func (f *featureHandler) onChange(key string, feature *v1.Feature) (*v1.Feature, error) {
@@ -59,6 +65,52 @@ func (f *featureHandler) onChange(key string, feature *v1.Feature) (*v1.Feature,
 	}
 
 	return feature, f.apply.WithOwner(feature).Apply(os)
+}
+
+func (f *featureHandler) onChangeCert(key string, cert *v1alpha1.Certificate) (*v1alpha1.Certificate, error) {
+	clusterDomain, err := f.clusterDomain.Cache().Get(f.namespace, settings.ClusterDomainName)
+	if errors.IsNotFound(err) {
+		return cert, nil
+	} else if err != nil {
+		return cert, err
+	}
+
+	if cert == nil || cert.Namespace != f.namespace {
+		return cert, nil
+	}
+
+	if cert.Name == rioWildcardCerts {
+		for _, con := range cert.Status.Conditions {
+			if con.Type == v1alpha1.CertificateConditionReady && con.Status == certmanagerapi.ConditionTrue {
+				deepcopy := clusterDomain.DeepCopy()
+				deepcopy.Status.HTTPSSupported = true
+				if _, err := f.clusterDomain.Update(deepcopy); err != nil {
+					return cert, err
+				}
+				break
+			}
+		}
+	}
+
+	ns, name := kv.Split(cert.Name, "/")
+	if ns != "" && name != "" {
+		for _, con := range cert.Status.Conditions {
+			if con.Type == v1alpha1.CertificateConditionReady && con.Status == certmanagerapi.ConditionTrue {
+				// update public domain
+				publicDomain, err := f.publicdomain.Cache().Get(ns, name)
+				if err == nil {
+					deepcopy := publicDomain.DeepCopy()
+					deepcopy.Status.HttpsSupported = true
+					_, err := f.publicdomain.Update(deepcopy)
+					return cert, err
+				}
+
+				// todo: update gateway with secret ref
+			}
+		}
+	}
+
+	return cert, nil
 }
 
 func (f *featureHandler) addWildcardCert(feature *v1.Feature, os *objectset.ObjectSet) error {
@@ -82,7 +134,7 @@ func (f *featureHandler) addWildcardCert(feature *v1.Feature, os *objectset.Obje
 }
 
 func (f *featureHandler) getClusterDomain() (string, error) {
-	clusterDomain, err := f.clusterDomainCache.Get(f.namespace, settings.ClusterDomainName)
+	clusterDomain, err := f.clusterDomain.Cache().Get(f.namespace, settings.ClusterDomainName)
 	if errors.IsNotFound(err) {
 		return "", nil
 	} else if err != nil {

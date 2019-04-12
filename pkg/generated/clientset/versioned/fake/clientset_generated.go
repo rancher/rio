@@ -77,14 +77,14 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 
 var _ clientset.Interface = &Clientset{}
 
-// AutoscaleV1 retrieves the AutoscaleV1Client
-func (c *Clientset) AutoscaleV1() autoscalev1.AutoscaleV1Interface {
-	return &fakeautoscalev1.FakeAutoscaleV1{Fake: &c.Fake}
+// RioV1 retrieves the RioV1Client
+func (c *Clientset) RioV1() riov1.RioV1Interface {
+	return &fakeriov1.FakeRioV1{Fake: &c.Fake}
 }
 
-// Autoscale retrieves the AutoscaleV1Client
-func (c *Clientset) Autoscale() autoscalev1.AutoscaleV1Interface {
-	return &fakeautoscalev1.FakeAutoscaleV1{Fake: &c.Fake}
+// Rio retrieves the RioV1Client
+func (c *Clientset) Rio() riov1.RioV1Interface {
+	return &fakeriov1.FakeRioV1{Fake: &c.Fake}
 }
 
 // ProjectV1 retrieves the ProjectV1Client
@@ -97,6 +97,16 @@ func (c *Clientset) Project() projectv1.ProjectV1Interface {
 	return &fakeprojectv1.FakeProjectV1{Fake: &c.Fake}
 }
 
+// AutoscaleV1 retrieves the AutoscaleV1Client
+func (c *Clientset) AutoscaleV1() autoscalev1.AutoscaleV1Interface {
+	return &fakeautoscalev1.FakeAutoscaleV1{Fake: &c.Fake}
+}
+
+// Autoscale retrieves the AutoscaleV1Client
+func (c *Clientset) Autoscale() autoscalev1.AutoscaleV1Interface {
+	return &fakeautoscalev1.FakeAutoscaleV1{Fake: &c.Fake}
+}
+
 // WebhookinatorV1 retrieves the WebhookinatorV1Client
 func (c *Clientset) WebhookinatorV1() webhookinatorv1.WebhookinatorV1Interface {
 	return &fakewebhookinatorv1.FakeWebhookinatorV1{Fake: &c.Fake}
@@ -105,14 +115,4 @@ func (c *Clientset) WebhookinatorV1() webhookinatorv1.WebhookinatorV1Interface {
 // Webhookinator retrieves the WebhookinatorV1Client
 func (c *Clientset) Webhookinator() webhookinatorv1.WebhookinatorV1Interface {
 	return &fakewebhookinatorv1.FakeWebhookinatorV1{Fake: &c.Fake}
-}
-
-// RioV1 retrieves the RioV1Client
-func (c *Clientset) RioV1() riov1.RioV1Interface {
-	return &fakeriov1.FakeRioV1{Fake: &c.Fake}
-}
-
-// Rio retrieves the RioV1Client
-func (c *Clientset) Rio() riov1.RioV1Interface {
-	return &fakeriov1.FakeRioV1{Fake: &c.Fake}
 }

@@ -6,16 +6,16 @@ import (
 
 	"github.com/knative/pkg/apis/istio/v1alpha3"
 	errors2 "github.com/pkg/errors"
+	"github.com/rancher/rio/exclude/pkg/settings"
 	"github.com/rancher/rio/modules/istio/controllers/istio/populate"
 	"github.com/rancher/rio/modules/istio/pkg/istio/config"
 	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
+	v12 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
 	corev1controller "github.com/rancher/rio/pkg/generated/controllers/core/v1"
 	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/apply/injectors"
@@ -25,12 +25,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
-	istioInjector = "istio-inject"
+	istioInjector = "istio-injecter"
 	istioDeploy   = "istio-deploy"
 	istioStack    = "istio-stack"
 )
@@ -65,6 +66,10 @@ defaultConfig:
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
+	if err := ensureClusterDomain(rContext.Namespace, rContext.Global.Project().V1().ClusterDomain()); err != nil {
+		return err
+	}
+
 	if err := setupConfigmapAndInjectors(ctx, rContext); err != nil {
 		return err
 	}
@@ -77,11 +82,11 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		namespace: rContext.Namespace,
 		gatewayApply: rContext.Apply.WithSetID(istioStack).
 			WithCacheTypes(rContext.Networking.Networking().V1alpha3().Gateway()),
-		serviceApply:       rContext.Apply.WithSetID(istioInjector).WithInjectorName(istioInjector),
-		publicDomainLister: rContext.Global.Project().V1().PublicDomain().Cache(),
-		clusterDomain:      rContext.Global.Project().V1().ClusterDomain(),
-		secretsLister:      rContext.Core.Core().V1().Secret().Cache(),
-		nodeLister:         rContext.Core.Core().V1().Node().Cache(),
+		serviceApply:      rContext.Apply.WithSetID(istioInjector).WithInjectorName(istioInjector),
+		publicDomainCache: rContext.Global.Project().V1().PublicDomain().Cache(),
+		clusterDomain:     rContext.Global.Project().V1().ClusterDomain(),
+		secretCache:       rContext.Core.Core().V1().Secret().Cache(),
+		nodeCache:         rContext.Core.Core().V1().Node().Cache(),
 	}
 
 	evalTrigger = trigger.New(rContext.Networking.Networking().V1alpha3().VirtualService())
@@ -110,13 +115,13 @@ func resolve(namespace, name string, obj runtime.Object) ([]relatedresource.Key,
 }
 
 type istioDeployController struct {
-	namespace          string
-	gatewayApply       apply.Apply
-	serviceApply       apply.Apply
-	publicDomainLister projectv1controller.PublicDomainCache
-	clusterDomain      projectv1controller.ClusterDomainController
-	secretsLister      corev1controller.SecretCache
-	nodeLister         corev1controller.NodeCache
+	namespace         string
+	gatewayApply      apply.Apply
+	serviceApply      apply.Apply
+	publicDomainCache projectv1controller.PublicDomainCache
+	clusterDomain     projectv1controller.ClusterDomainController
+	secretCache       corev1controller.SecretCache
+	nodeCache         corev1controller.NodeCache
 }
 
 /*
@@ -131,22 +136,31 @@ func (i *istioDeployController) sync() error {
 		return err
 	}
 
-	pds, err := i.publicDomainLister.List("", labels.Everything())
+	pds, err := i.publicDomainCache.List("", labels.Everything())
 	if err != nil {
 		return err
 	}
 
-	clusterDomain, err := i.clusterDomain.Cache().Get(i.namespace, constants.ClusterDomainName)
+	clusterDomain, err := i.clusterDomain.Cache().Get(i.namespace, settings.ClusterDomainName)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	}
 
-	secret, err := i.secretsLister.Get(settings.IstioStackName, settings.GatewaySecretName)
+	secret, err := i.secretCache.Get(i.namespace, settings.GatewaySecretName)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	}
 
-	os := populate.Istio(i.namespace, clusterDomain, pds, secret)
+	publicdomainSecrets := map[string]*v1.Secret{}
+	for _, pd := range pds {
+		key := fmt.Sprintf("%s/%s", pd.Namespace, pd.Name)
+		secret, err := i.secretCache.Get(i.namespace, key)
+		if err == nil {
+			publicdomainSecrets[key] = secret
+		}
+	}
+
+	os := populate.Istio(i.namespace, clusterDomain, pds, publicdomainSecrets, secret)
 	return i.gatewayApply.Apply(os)
 }
 
@@ -185,7 +199,7 @@ func (i *istioDeployController) syncEndpoint(key string, endpoint *corev1.Endpoi
 				continue
 			}
 
-			node, err := i.nodeLister.Get(*addr.NodeName)
+			node, err := i.nodeCache.Get(*addr.NodeName)
 			if err != nil {
 				return nil, err
 			}
@@ -197,17 +211,21 @@ func (i *istioDeployController) syncEndpoint(key string, endpoint *corev1.Endpoi
 		}
 	}
 
-	clusterDomain, err := i.clusterDomain.Cache().Get(i.namespace, constants.ClusterDomainName)
+	clusterDomain, err := i.clusterDomain.Cache().Get(i.namespace, settings.ClusterDomainName)
 	if err != nil && !errors.IsNotFound(err) {
 		return endpoint, err
 	}
 
-	deepcopy := clusterDomain.DeepCopy()
-	for _, ip := range ips {
-		deepcopy.Spec.Addresses = append(deepcopy.Spec.Addresses, projectv1.Address{
-			IP: ip,
-		})
+	if clusterDomain == nil {
+		return endpoint, nil
 	}
+
+	deepcopy := clusterDomain.DeepCopy()
+	var address []projectv1.Address
+	for _, ip := range ips {
+		address = append(address, projectv1.Address{IP: ip})
+	}
+	deepcopy.Spec.Addresses = address
 
 	if _, err := i.clusterDomain.Update(deepcopy); err != nil {
 		return endpoint, err
@@ -247,4 +265,13 @@ func setupConfigmapAndInjectors(ctx context.Context, rContext *types.Context) er
 	}
 
 	return nil
+}
+
+func ensureClusterDomain(ns string, clusterDomain projectv1controller.ClusterDomainClient) error {
+	_, err := clusterDomain.Get(ns, settings.ClusterDomainName, metav1.GetOptions{})
+	if errors.IsNotFound(err) {
+		_, err := clusterDomain.Create(v12.NewClusterDomain(ns, settings.ClusterDomainName, v12.ClusterDomain{}))
+		return err
+	}
+	return err
 }

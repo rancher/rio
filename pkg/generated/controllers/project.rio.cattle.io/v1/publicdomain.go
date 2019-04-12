@@ -59,7 +59,7 @@ type PublicDomainController interface {
 type PublicDomainClient interface {
 	Create(*v1.PublicDomain) (*v1.PublicDomain, error)
 	Update(*v1.PublicDomain) (*v1.PublicDomain, error)
-
+	UpdateStatus(*v1.PublicDomain) (*v1.PublicDomain, error)
 	Delete(namespace, name string, options *metav1.DeleteOptions) error
 	Get(namespace, name string, options metav1.GetOptions) (*v1.PublicDomain, error)
 	List(namespace string, opts metav1.ListOptions) (*v1.PublicDomainList, error)
@@ -183,6 +183,10 @@ func (c *publicDomainController) Create(obj *v1.PublicDomain) (*v1.PublicDomain,
 
 func (c *publicDomainController) Update(obj *v1.PublicDomain) (*v1.PublicDomain, error) {
 	return c.clientGetter.PublicDomains(obj.Namespace).Update(obj)
+}
+
+func (c *publicDomainController) UpdateStatus(obj *v1.PublicDomain) (*v1.PublicDomain, error) {
+	return c.clientGetter.PublicDomains(obj.Namespace).UpdateStatus(obj)
 }
 
 func (c *publicDomainController) Delete(namespace, name string, options *metav1.DeleteOptions) error {

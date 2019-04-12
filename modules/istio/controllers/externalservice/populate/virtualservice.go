@@ -12,7 +12,7 @@ func VirtualServiceForExternalService(namespace string, es *riov1.ExternalServic
 	svc *riov1.Service, os *objectset.ObjectSet) {
 
 	dests := populate.DestsForService(svc.Name, serviceSet.Service.Namespace, serviceSet)
-	serviceVS := populate.VirtualServiceFromSpec(namespace, svc.Name, svc.Namespace, clusterDomain, svc, dests...)
+	serviceVS := populate.VirtualServiceFromSpec(namespace, svc.Name, svc.Namespace, clusterDomain, nil, svc, dests...)
 
 	// override host match with external service
 	serviceVS.Spec.Hosts = []string{}

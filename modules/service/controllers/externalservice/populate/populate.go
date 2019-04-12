@@ -4,26 +4,25 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/rancher/rio/features/routing/controllers/externalservice/populate"
+	"github.com/rancher/rio/modules/istio/pkg/parse"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/wrangler/pkg/objectset"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func ServiceForExternalService(es *riov1.ExternalService, stack *riov1.Stack, os *objectset.ObjectSet) error {
-	svc := constructors.NewService(stack.Name, es.Name, v1.Service{
+func ServiceForExternalService(es *riov1.ExternalService, namespace *corev1.Namespace, os *objectset.ObjectSet) error {
+	svc := constructors.NewService(namespace.Name, es.Name, v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
 				"rio.cattle.io/service": es.Name,
-				"rio.cattle.io/stack":   stack.Name,
-				"rio.cattle.io/project": stack.Namespace,
 			},
 		},
 	})
 	if es.Spec.FQDN != "" {
-		u, err := populate.ParseTargetUrl(es.Spec.FQDN)
+		u, err := parse.ParseTargetURL(es.Spec.FQDN)
 		if err != nil {
 			return err
 		}
@@ -35,7 +34,7 @@ func ServiceForExternalService(es *riov1.ExternalService, stack *riov1.Stack, os
 		var hosts []string
 		var ports []int32
 		for _, ip := range es.Spec.IPAddresses {
-			u, err := populate.ParseTargetUrl(ip)
+			u, err := parse.ParseTargetURL(ip)
 			if err != nil {
 				return err
 			}

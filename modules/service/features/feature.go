@@ -3,6 +3,8 @@ package features
 import (
 	"context"
 
+	"github.com/rancher/rio/modules/service/controllers/externalservice"
+
 	"github.com/rancher/rio/modules/service/controllers/routeset"
 	"github.com/rancher/rio/modules/service/controllers/service"
 	"github.com/rancher/rio/modules/service/controllers/servicestatus"
@@ -19,6 +21,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			Enabled:     true,
 		},
 		Controllers: []features.ControllerRegister{
+			externalservice.Register,
 			routeset.Register,
 			service.Register,
 			servicestatus.Register,

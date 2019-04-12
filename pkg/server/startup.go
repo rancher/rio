@@ -42,7 +42,9 @@ func Types(ctx context.Context, config *rest.Config) error {
 	}
 
 	crds := crd.NonNamespacedTypes(
-		"Setting.project.rio.cattle.io/v1")
+		"Setting.project.rio.cattle.io/v1",
+		"ClusterIssuer.certmanager.k8s.io/v1alpha1",
+	)
 	crds = append(crds, crd.NamespacedTypes(
 		"Build.build.knative.dev/v1alpha1",
 
@@ -76,7 +78,6 @@ func Types(ctx context.Context, config *rest.Config) error {
 		"Challenge.certmanager.k8s.io/v1alpha1",
 		"Order.certmanager.k8s.io/v1alpha1",
 		"Certificate.certmanager.k8s.io/v1alpha1",
-		"ClusterIssuer.certmanager.k8s.io/v1alpha1",
 	)...)
 
 	factory.BatchCreateCRDs(ctx, crds...)

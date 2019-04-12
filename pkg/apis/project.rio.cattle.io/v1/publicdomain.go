@@ -11,11 +11,15 @@ type PublicDomain struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec PublicDomainSpec `json:"spec,inline"`
+	Spec   PublicDomainSpec   `json:"spec,inline"`
+	Status PublicDomainStatus `json:"status,inline"`
 }
 
 type PublicDomainSpec struct {
-	TargetName      string `json:"targetName,omitempty"`
-	TargetStackName string `json:"targetStackName,omitempty"`
-	DomainName      string `json:"domainName,omitempty"`
+	TargetServiceName string `json:"targetServiceName,omitempty"`
+	DomainName        string `json:"domainName,omitempty"`
+}
+
+type PublicDomainStatus struct {
+	HttpsSupported bool `json:"httpSupported,omitempty"`
 }

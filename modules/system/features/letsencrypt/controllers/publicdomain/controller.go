@@ -104,7 +104,7 @@ func (p *publicDomainHandler) onRemove(key string, domain *v1.PublicDomain) (*v1
 }
 
 func certificateHttp(namespace string, domain *v1.PublicDomain, issuerName string) runtime.Object {
-	name := fmt.Sprintf("%s-tls-certs", domain.Name)
+	name := fmt.Sprintf("%s/%s", domain.Namespace, domain.Name)
 	cert := constructors.NewCertificate(namespace, name,
 		certmanagerapi.Certificate{
 			ObjectMeta: metav1.ObjectMeta{

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	v1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
-	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/features"
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/pkg/systemstack"
@@ -18,7 +17,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			Description: "Enable prometheus",
 		},
 		SystemStacks: []*systemstack.SystemStack{
-			systemstack.NewSystemStack(rContext.Apply, rContext.SystemNamespace, rContext.Rio.Rio().V1().Stack(), "prometheus", riov1.StackSpec{}),
+			//systemstack.NewSystemStack(rContext.Apply, rContext.SystemNamespace, rContext.Rio.Rio().V1().Stack(), "prometheus", riov1.StackSpec{}),
 		},
 		FixedAnswers: map[string]string{
 			"TELEMETRY_NAME":  settings.IstioTelemetry,
