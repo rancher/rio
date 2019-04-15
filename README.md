@@ -1,6 +1,8 @@
 Rio
 ===
 
+## Rio is currently being massively overhauled. Expect to see something around May/June.
+
 1. Simple, fun, end-to-end container experience
 1. Cloud Native Container Distribution
 
