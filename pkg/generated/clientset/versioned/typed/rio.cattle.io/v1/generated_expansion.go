@@ -20,6 +20,8 @@ package v1
 
 type ExternalServiceExpansion interface{}
 
+type PublicDomainExpansion interface{}
+
 type RouterExpansion interface{}
 
 type ServiceExpansion interface{}

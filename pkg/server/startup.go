@@ -51,11 +51,11 @@ func Types(ctx context.Context, config *rest.Config) error {
 		"ExternalService.rio.cattle.io/v1",
 		"Router.rio.cattle.io/v1",
 		"Service.rio.cattle.io/v1",
+		"PublicDomain.rio.cattle.io/v1",
 
 		"ClusterDomain.project.rio.cattle.io/v1",
 		"Feature.project.rio.cattle.io/v1",
 		"ListenConfig.project.rio.cattle.io/v1",
-		"PublicDomain.project.rio.cattle.io/v1",
 
 		"DestinationRule.networking.istio.io/v1alpha3",
 		"Gateway.networking.istio.io/v1alpha3",

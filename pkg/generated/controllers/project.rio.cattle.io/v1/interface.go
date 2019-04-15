@@ -28,7 +28,6 @@ import (
 type Interface interface {
 	ClusterDomain() ClusterDomainController
 	Feature() FeatureController
-	PublicDomain() PublicDomainController
 }
 
 func New(controllerManager *generic.ControllerManager, client clientset.ProjectV1Interface,
@@ -51,7 +50,4 @@ func (c *version) ClusterDomain() ClusterDomainController {
 }
 func (c *version) Feature() FeatureController {
 	return NewFeatureController(v1.SchemeGroupVersion.WithKind("Feature"), c.controllerManager, c.client, c.informers.Features())
-}
-func (c *version) PublicDomain() PublicDomainController {
-	return NewPublicDomainController(v1.SchemeGroupVersion.WithKind("PublicDomain"), c.controllerManager, c.client, c.informers.PublicDomains())
 }

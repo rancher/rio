@@ -53,8 +53,6 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&ClusterDomainList{},
 		&Feature{},
 		&FeatureList{},
-		&PublicDomain{},
-		&PublicDomainList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

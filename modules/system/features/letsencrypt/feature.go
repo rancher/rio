@@ -3,6 +3,9 @@ package letsencrypt
 import (
 	"context"
 
+	"github.com/rancher/rio/modules/system/features/letsencrypt/controllers/secretaggregation"
+	"github.com/rancher/rio/modules/system/features/letsencrypt/controllers/service"
+
 	"github.com/rancher/rio/modules/system/features/letsencrypt/controllers/issuer"
 	"github.com/rancher/rio/modules/system/features/letsencrypt/controllers/publicdomain"
 	v1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
@@ -50,6 +53,8 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		Controllers: []features.ControllerRegister{
 			issuer.Register,
 			publicdomain.Register,
+			service.Register,
+			secretaggregation.Register,
 		},
 	}
 

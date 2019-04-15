@@ -33,11 +33,3 @@ type FeatureListerExpansion interface{}
 // FeatureNamespaceListerExpansion allows custom methods to be added to
 // FeatureNamespaceLister.
 type FeatureNamespaceListerExpansion interface{}
-
-// PublicDomainListerExpansion allows custom methods to be added to
-// PublicDomainLister.
-type PublicDomainListerExpansion interface{}
-
-// PublicDomainNamespaceListerExpansion allows custom methods to be added to
-// PublicDomainNamespaceLister.
-type PublicDomainNamespaceListerExpansion interface{}

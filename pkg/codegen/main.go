@@ -30,7 +30,6 @@ func main() {
 				Types: []interface{}{
 					projectv1.ClusterDomain{},
 					projectv1.Feature{},
-					projectv1.PublicDomain{},
 				},
 				GenerateTypes: true,
 			},
@@ -45,6 +44,7 @@ func main() {
 					riov1.ExternalService{},
 					riov1.Router{},
 					riov1.Service{},
+					riov1.PublicDomain{},
 				},
 				GenerateTypes: true,
 			},

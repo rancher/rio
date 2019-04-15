@@ -6,8 +6,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
+
 	"github.com/knative/pkg/apis/istio/v1alpha3"
-	riov1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
+	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/wrangler/pkg/objectset"
@@ -30,7 +33,7 @@ var (
 	}
 )
 
-func populateGateway(systemNamespace string, clusterDomain *riov1.ClusterDomain, wildcardSecret *v1.Secret, publicDomains []*riov1.PublicDomain, publicDomainSecrets map[string]*v1.Secret, output *objectset.ObjectSet) {
+func populateGateway(systemNamespace string, clusterDomain *projectv1.ClusterDomain, secret *v1.Secret, publicDomains []*riov1.PublicDomain, output *objectset.ObjectSet) {
 	gws := v1alpha3.GatewaySpec{
 		Selector: map[string]string{
 			"gateway": "external",
@@ -50,10 +53,13 @@ func populateGateway(systemNamespace string, clusterDomain *riov1.ClusterDomain,
 		})
 	}
 
-	// https port
+	// wildcards
 	httpsPort, _ := strconv.ParseInt(settings.DefaultHTTPSOpenPort, 10, 0)
-	if wildcardSecret != nil {
-		if len(wildcardSecret.Data[tlsCert]) > 0 {
+
+	if secret != nil {
+		crtFile := fmt.Sprintf("%s-%s-tls.crt", systemNamespace, issuers.RioWildcardCerts)
+		keyPath, crtPath := keyCertPath(systemNamespace, issuers.RioWildcardCerts)
+		if len(secret.Data[crtFile]) > 0 {
 			gws.Servers = append(gws.Servers, v1alpha3.Server{
 				Port: v1alpha3.Port{
 					Protocol: v1alpha3.ProtocolHTTPS,
@@ -63,17 +69,17 @@ func populateGateway(systemNamespace string, clusterDomain *riov1.ClusterDomain,
 				Hosts: []string{fmt.Sprintf("*.%s", clusterDomain.Status.ClusterDomain)},
 				TLS: &v1alpha3.TLSOptions{
 					Mode:              v1alpha3.TLSModeSimple,
-					ServerCertificate: filepath.Join(sslDir, tlsCert),
-					PrivateKey:        filepath.Join(sslDir, tlsKey),
+					ServerCertificate: crtPath,
+					PrivateKey:        keyPath,
 				},
 			})
 		}
 	}
 
 	for _, publicdomain := range publicDomains {
-		key := fmt.Sprintf("%s/%s", publicdomain.Namespace, publicdomain.Name)
-		secret := publicDomainSecrets[key]
-		if secret != nil && len(secret.Data[key]) > 0 {
+		crtFile := fmt.Sprintf("%s-%s-tls.crt", publicdomain.Spec.SecretRef.Namespace, publicdomain.Spec.SecretRef.Name)
+		keyPath, crtPath := keyCertPath(publicdomain.Spec.SecretRef.Namespace, publicdomain.Spec.SecretRef.Name)
+		if len(secret.Data[crtFile]) > 0 {
 			gws.Servers = append(gws.Servers, v1alpha3.Server{
 				Port: v1alpha3.Port{
 					Protocol: v1alpha3.ProtocolHTTPS,
@@ -83,8 +89,8 @@ func populateGateway(systemNamespace string, clusterDomain *riov1.ClusterDomain,
 				Hosts: []string{publicdomain.Spec.DomainName},
 				TLS: &v1alpha3.TLSOptions{
 					Mode:              v1alpha3.TLSModeSimple,
-					ServerCertificate: filepath.Join(sslDir, tlsCert),
-					PrivateKey:        filepath.Join(sslDir, tlsKey),
+					ServerCertificate: crtPath,
+					PrivateKey:        keyPath,
 				},
 			})
 		}
@@ -95,4 +101,10 @@ func populateGateway(systemNamespace string, clusterDomain *riov1.ClusterDomain,
 	})
 
 	output.Add(gateway)
+}
+
+func keyCertPath(namespace, name string) (string, string) {
+	key := fmt.Sprintf("%s-%s-tls.key", namespace, name)
+	cert := fmt.Sprintf("%s-%s-tls.crt", namespace, name)
+	return filepath.Join(sslDir, key), filepath.Join(sslDir, cert)
 }

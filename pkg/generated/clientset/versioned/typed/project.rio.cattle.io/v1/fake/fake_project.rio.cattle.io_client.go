@@ -36,10 +36,6 @@ func (c *FakeProjectV1) Features(namespace string) v1.FeatureInterface {
 	return &FakeFeatures{c, namespace}
 }
 
-func (c *FakeProjectV1) PublicDomains(namespace string) v1.PublicDomainInterface {
-	return &FakePublicDomains{c, namespace}
-}
-
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeProjectV1) RESTClient() rest.Interface {

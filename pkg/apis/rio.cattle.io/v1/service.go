@@ -175,6 +175,7 @@ type ServiceStatus struct {
 	ContainerImages   map[string]string                   `json:"containerImages,omitempty"`
 	Conditions        []genericcondition.GenericCondition `json:"conditions,omitempty"`
 	Endpoints         []Endpoint                          `json:"endpoints,omitempty"`
+	PublicDomains     []string                            `json:"publicDomains,omitempty"`
 }
 
 type Endpoint struct {

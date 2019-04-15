@@ -3,6 +3,7 @@ package v1
 import (
 	"github.com/rancher/wrangler/pkg/condition"
 	"github.com/rancher/wrangler/pkg/genericcondition"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -22,6 +23,7 @@ type ClusterDomain struct {
 }
 
 type ClusterDomainSpec struct {
+	SecretRef  v1.SecretReference
 	Addresses  []Address   `json:"addresses,omitempty"`
 	Subdomains []Subdomain `json:"subdomains,omitempty"`
 }

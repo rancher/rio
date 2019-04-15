@@ -41,20 +41,24 @@ func virtualServiceFromRoutesets(systemNamespace string, clusterDomain *projectv
 		Hosts: []string{domains.GetExternalDomain(routeSet.Name, routeSet.Namespace, clusterDomain.Status.ClusterDomain)},
 	}
 
+	for _, pd := range routeSet.Status.PublicDomains {
+		spec.Hosts = append(spec.Hosts, pd)
+	}
+
 	// populate http routing
 	for _, routeSpec := range routeSet.Spec.Routes {
 		httpRoute := v1alpha3.HTTPRoute{}
 		// populate destinations
 		for _, dest := range routeSpec.To {
-			if dest.Destination.Stack == "" {
-				dest.Destination.Stack = routeSet.Namespace
+			if dest.Destination.Namespace == "" {
+				dest.Destination.Namespace = routeSet.Namespace
 			}
 			if esvc, ok := externalServiceMap[dest.Service]; ok {
 				httpRoute.Route = append(httpRoute.Route, destWeightForExternalService(dest, esvc))
 			} else if _, ok := routesetMap[dest.Service]; ok {
 				httpRoute.Route = append(httpRoute.Route, destWeightForRouteset(dest))
 				routeSpec.Rewrite = &v1.Rewrite{
-					Host: fmt.Sprintf("%s-%s.%s", dest.Destination.Service, dest.Destination.Stack, clusterDomain.Status.ClusterDomain),
+					Host: fmt.Sprintf("%s-%s.%s", dest.Destination.Service, dest.Destination.Namespace, clusterDomain.Status.ClusterDomain),
 				}
 				localhostServiceEntry(os, routeSet.Namespace)
 			} else {
@@ -135,7 +139,7 @@ func virtualServiceFromRoutesets(systemNamespace string, clusterDomain *projectv
 
 		if routeSpec.Mirror != nil {
 			httpRoute.Mirror = &v1alpha3.Destination{
-				Host:   domains.GetExternalDomain(routeSpec.Mirror.Service, routeSpec.Mirror.Stack, clusterDomain.Status.ClusterDomain),
+				Host:   domains.GetExternalDomain(routeSpec.Mirror.Service, routeSpec.Mirror.Namespace, clusterDomain.Status.ClusterDomain),
 				Subset: routeSpec.Mirror.Revision,
 			}
 			if routeSpec.Mirror.Port != nil {
@@ -223,12 +227,12 @@ func destWeightForService(d v1.WeightedDestination, defaultNamespace string) v1a
 	if d.Weight == 0 {
 		d.Weight = 100
 	}
-	if d.Stack == "" {
-		d.Stack = defaultNamespace
+	if d.Namespace == "" {
+		d.Namespace = defaultNamespace
 	}
 	return v1alpha3.DestinationWeight{
 		Destination: v1alpha3.Destination{
-			Host:   fmt.Sprintf("%s.%s.svc.cluster.local", d.Service, d.Stack),
+			Host:   fmt.Sprintf("%s.%s.svc.cluster.local", d.Service, d.Namespace),
 			Subset: d.Revision,
 			Port: v1alpha3.PortSelector{
 				Number: *d.Port,

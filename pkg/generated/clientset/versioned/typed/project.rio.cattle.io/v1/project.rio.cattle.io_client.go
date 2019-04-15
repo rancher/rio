@@ -29,7 +29,6 @@ type ProjectV1Interface interface {
 	RESTClient() rest.Interface
 	ClusterDomainsGetter
 	FeaturesGetter
-	PublicDomainsGetter
 }
 
 // ProjectV1Client is used to interact with features provided by the project.rio.cattle.io group.
@@ -43,10 +42,6 @@ func (c *ProjectV1Client) ClusterDomains(namespace string) ClusterDomainInterfac
 
 func (c *ProjectV1Client) Features(namespace string) FeatureInterface {
 	return newFeatures(c, namespace)
-}
-
-func (c *ProjectV1Client) PublicDomains(namespace string) PublicDomainInterface {
-	return newPublicDomains(c, namespace)
 }
 
 // NewForConfig creates a new ProjectV1Client for the given config.

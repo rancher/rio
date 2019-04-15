@@ -7,29 +7,19 @@ import (
 	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constructors"
+	"github.com/rancher/rio/pkg/services"
 	"github.com/rancher/rio/pkg/serviceset"
 	"github.com/rancher/wrangler/pkg/objectset"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func DestinationRulesAndVirtualServices(namespace string, clusterDomain *projectv1.ClusterDomain, publicdomains []*projectv1.PublicDomain, services []*v1.Service, service *v1.Service, os *objectset.ObjectSet) error {
-	if err := destinationRules(services, service, os); err != nil {
+func DestinationRulesAndVirtualServices(namespace string, clusterDomain *projectv1.ClusterDomain, serviceSet *serviceset.ServiceSet, service *v1.Service, os *objectset.ObjectSet) error {
+	if err := destinationRules(service, serviceSet, os); err != nil {
 		return err
 	}
-	return virtualServices(namespace, clusterDomain, publicdomains, services, service, os)
+	return virtualServices(namespace, clusterDomain, serviceSet, service, os)
 }
 
-func destinationRules(services []*v1.Service, service *v1.Service, os *objectset.ObjectSet) error {
-	serviceSets, err := serviceset.CollectionServices(services)
-	if err != nil {
-		return err
-	}
-
-	serviceSet, ok := serviceSets[service.Name]
-	if !ok {
-		return nil
-	}
-
+func destinationRules(service *v1.Service, serviceSet *serviceset.ServiceSet, os *objectset.ObjectSet) error {
 	dr := destinationRuleForService(service.Namespace, service.Name, serviceSet)
 	os.Add(dr)
 
@@ -45,13 +35,11 @@ func destinationRuleForService(namespace, name string, service *serviceset.Servi
 		Host: fmt.Sprintf("%s.%s.svc.cluster.local", name, namespace),
 	}
 
-	drSpec.Subsets = append(drSpec.Subsets, newSubSet(service.Service))
-
 	for _, rev := range service.Revisions {
 		drSpec.Subsets = append(drSpec.Subsets, newSubSet(rev))
 	}
 
-	dr := newDestinationRule(service.Service)
+	dr := newDestinationRule(namespace, name)
 	dr.Spec = drSpec
 
 	return dr
@@ -61,7 +49,7 @@ func destinationRuleForRevisionService(service *serviceset.ServiceSet) []*v1alph
 	var result []*v1alpha3.DestinationRule
 
 	for _, rev := range service.Revisions {
-		drObject := newDestinationRule(rev)
+		drObject := newDestinationRule(rev.Namespace, rev.Name)
 		drObject.Spec = v1alpha3.DestinationRuleSpec{
 			Host: rev.Name,
 			Subsets: []v1alpha3.Subset{
@@ -75,16 +63,15 @@ func destinationRuleForRevisionService(service *serviceset.ServiceSet) []*v1alph
 }
 
 func newSubSet(service *v1.Service) v1alpha3.Subset {
+	_, version := services.AppAndVersion(service)
 	return v1alpha3.Subset{
-		Name: service.Spec.Revision.Version,
+		Name: version,
 		Labels: map[string]string{
-			"version": service.Spec.Revision.Version,
+			"version": version,
 		},
 	}
 }
 
-func newDestinationRule(service *v1.Service) *v1alpha3.DestinationRule {
-	return constructors.NewDestinationRule(service.Namespace, service.Name, v1alpha3.DestinationRule{
-		ObjectMeta: metav1.ObjectMeta{},
-	})
+func newDestinationRule(namespace, name string) *v1alpha3.DestinationRule {
+	return constructors.NewDestinationRule(namespace, name, v1alpha3.DestinationRule{})
 }

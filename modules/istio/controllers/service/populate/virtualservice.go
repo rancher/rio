@@ -2,13 +2,16 @@ package populate
 
 import (
 	"fmt"
+	"hash/adler32"
 	"strconv"
 
+	"github.com/knative/pkg/apis/istio/common/v1alpha1"
 	"github.com/knative/pkg/apis/istio/v1alpha3"
 	"github.com/rancher/rio/modules/istio/pkg/domains"
 	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constructors"
+	"github.com/rancher/rio/pkg/services"
 	"github.com/rancher/rio/pkg/serviceset"
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/wrangler/pkg/objectset"
@@ -23,18 +26,8 @@ const (
 	RioPortHeader      = "X-Rio-ServicePort"
 )
 
-func virtualServices(namespace string, clusterDomain *projectv1.ClusterDomain, publicdomains []*projectv1.PublicDomain, services []*v1.Service, service *v1.Service, os *objectset.ObjectSet) error {
-	serviceSets, err := serviceset.CollectionServices(services)
-	if err != nil {
-		return err
-	}
-
-	serviceSet, ok := serviceSets[service.Name]
-	if !ok {
-		return nil
-	}
-
-	os.Add(virtualServiceFromService(namespace, service.Name, clusterDomain, publicdomains, serviceSet)...)
+func virtualServices(namespace string, clusterDomain *projectv1.ClusterDomain, serviceSet *serviceset.ServiceSet, service *v1.Service, os *objectset.ObjectSet) error {
+	os.Add(virtualServiceFromService(namespace, clusterDomain, serviceSet)...)
 	return nil
 }
 
@@ -133,62 +126,36 @@ type Dest struct {
 }
 
 func DestsForService(namespace, name string, service *serviceset.ServiceSet) []Dest {
-	latestWeight := 100
-	result := []Dest{
-		{
-			Host:   fmt.Sprintf("%s.%s.svc.cluster.local", name, namespace),
-			Subset: service,
-		},
-	}
-
+	var result []Dest
 	for _, rev := range service.Revisions {
-		if latestWeight == 0 {
-			// no more weight left
-			continue
+		_, ver := services.AppAndVersion(rev)
+		weight := rev.Spec.ServiceRevision.Weight
+		if rev.Status.WeightOverride != nil {
+			weight = *rev.Status.WeightOverride
 		}
-
-		weight := min(rev.Spec.Revision.Weight, 100)
-		if weight <= 0 {
-			continue
-		}
-
-		weight = min(weight, latestWeight)
-		latestWeight -= weight
-
 		result = append(result, Dest{
-			Host:   fmt.Sprintf("%s.%s.svc.cluster.local", rev.Name, service.Service.Namespace),
+			Host:   fmt.Sprintf("%s.%s.svc.cluster.local", name, namespace),
 			Weight: weight,
-			Subset: rev.Spec.Revision.Version,
+			Subset: ver,
 		})
 	}
 
-	result[0].Weight = latestWeight
-	if result[0].Weight == 0 && len(result) > 1 {
-		return result[1:]
-	}
 	return result
 }
 
-func min(left, right int) int {
-	if left < right {
-		return left
-	}
-	return right
-}
-
-func virtualServiceFromService(namespace string, name string, clusterDomain *projectv1.ClusterDomain, publicdomains []*projectv1.PublicDomain, service *serviceset.ServiceSet) []runtime.Object {
+func virtualServiceFromService(namespace string, clusterDomain *projectv1.ClusterDomain, service *serviceset.ServiceSet) []runtime.Object {
 	var result []runtime.Object
 
-	serviceVS := VirtualServiceFromSpec(namespace, name, service.Service.Namespace, clusterDomain, publicdomains, service.Service, DestsForService(namespace, name, service)...)
-	if serviceVS != nil {
-		result = append(result, serviceVS)
-	}
-
 	for _, rev := range service.Revisions {
-		revVs := VirtualServiceFromSpec(namespace, rev.Name, service.Service.Namespace, clusterDomain, publicdomains, rev, Dest{
+		_, version := services.AppAndVersion(rev)
+		weight := rev.Spec.ServiceRevision.Weight
+		if rev.Status.WeightOverride != nil {
+			weight = *rev.Status.WeightOverride
+		}
+		revVs := VirtualServiceFromSpec(namespace, rev.Name, rev.Namespace, clusterDomain, rev, Dest{
 			Host:   rev.Name,
-			Subset: rev.Spec.Revision.Version,
-			Weight: 100,
+			Subset: version,
+			Weight: weight,
 		})
 		if revVs != nil {
 			result = append(result, revVs)
@@ -198,7 +165,7 @@ func virtualServiceFromService(namespace string, name string, clusterDomain *pro
 	return result
 }
 
-func VirtualServiceFromSpec(systemNamespace string, name, namespace string, clusterDomain *projectv1.ClusterDomain, publicdomains []*projectv1.PublicDomain, service *v1.Service, dests ...Dest) *v1alpha3.VirtualService {
+func VirtualServiceFromSpec(systemNamespace string, name, namespace string, clusterDomain *projectv1.ClusterDomain, service *v1.Service, dests ...Dest) *v1alpha3.VirtualService {
 	routes, external := httpRoutes(systemNamespace, service, dests)
 	if len(routes) == 0 {
 		return nil
@@ -215,8 +182,31 @@ func VirtualServiceFromSpec(systemNamespace string, name, namespace string, clus
 		Http:     routes,
 	}
 
-	for _, pd := range publicdomains {
-		spec.Hosts = append(spec.Hosts, pd.Spec.DomainName)
+	acmeSolverBinding := v1.ContainerPort{
+		Port:       80,
+		TargetPort: 8089,
+		Protocol:   v1.ProtocolTCP,
+	}
+	for _, publicDomain := range service.Status.PublicDomains {
+		if publicDomain == "" {
+			continue
+		}
+		spec.Hosts = append(spec.Hosts, publicDomain)
+		ds := []Dest{
+			{
+				Host:   fmt.Sprintf("%s.%s.svc.cluster.local", fmt.Sprintf("cm-acme-http-solver-%d", adler32.Checksum([]byte(publicDomain))), systemNamespace),
+				Subset: "latest",
+				Weight: 100,
+			},
+		}
+		_, route := newRoute(domains.GetPublicGateway(systemNamespace), true, acmeSolverBinding, ds, false, false, nil)
+		route.Match[0].Uri = &v1alpha1.StringMatch{
+			Prefix: "/.well-known/acme-challenge/",
+		}
+		route.Match[0].Authority = &v1alpha1.StringMatch{
+			Prefix: publicDomain,
+		}
+		spec.Http = append(spec.Http, route)
 	}
 
 	if external {

@@ -6,9 +6,11 @@ import (
 
 	certmanagerapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
-	v1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
+	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constructors"
 	v12 "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
+	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/apply"
@@ -25,12 +27,12 @@ func Register(ctx context.Context, rContexts *types.Context) error {
 			WithStrictCaching().
 			WithCacheTypes(rContexts.CertManager.Certmanager().V1alpha1().Certificate()),
 		featureClientCache: rContexts.Global.Project().V1().Feature().Cache(),
-		publicDomains:      rContexts.Global.Project().V1().PublicDomain(),
-		publicDomainCache:  rContexts.Global.Project().V1().PublicDomain().Cache(),
+		publicDomains:      rContexts.Rio.Rio().V1().PublicDomain(),
+		publicDomainCache:  rContexts.Rio.Rio().V1().PublicDomain().Cache(),
 	}
 
-	rContexts.Global.Project().V1().PublicDomain().OnChange(ctx, "letsencrypt-handler", p.onChange)
-	rContexts.Global.Project().V1().PublicDomain().OnRemove(ctx, "letsencrypt-handler", p.onRemove)
+	rContexts.Rio.Rio().V1().PublicDomain().OnChange(ctx, "letsencrypt-handler", p.onChange)
+	rContexts.Rio.Rio().V1().PublicDomain().OnRemove(ctx, "letsencrypt-handler", p.onRemove)
 	rContexts.Global.Project().V1().Feature().OnChange(ctx, "letsencrypt-handler", p.featureChanged)
 
 	return nil
@@ -39,12 +41,12 @@ func Register(ctx context.Context, rContexts *types.Context) error {
 type publicDomainHandler struct {
 	namespace          string
 	apply              apply.Apply
-	publicDomains      v12.PublicDomainController
-	publicDomainCache  v12.PublicDomainCache
+	publicDomains      riov1controller.PublicDomainController
+	publicDomainCache  riov1controller.PublicDomainCache
 	featureClientCache v12.FeatureCache
 }
 
-func (p *publicDomainHandler) featureChanged(key string, feature *v1.Feature) (*v1.Feature, error) {
+func (p *publicDomainHandler) featureChanged(key string, feature *projectv1.Feature) (*projectv1.Feature, error) {
 	if feature == nil {
 		return feature, nil
 	}
@@ -65,12 +67,15 @@ func (p *publicDomainHandler) featureChanged(key string, feature *v1.Feature) (*
 	return feature, nil
 }
 
-func (p *publicDomainHandler) onChange(key string, domain *v1.PublicDomain) (*v1.PublicDomain, error) {
+func (p *publicDomainHandler) onChange(key string, domain *riov1.PublicDomain) (*riov1.PublicDomain, error) {
 	if domain == nil {
 		return nil, nil
 	}
 
-	if domain.Namespace != p.namespace {
+	domain.Status.Endpoint = fmt.Sprintf("https://%s", domain.Spec.DomainName)
+
+	// if public domain have secretRef, do not configure letsencrypt secrets
+	if domain.Spec.SecretRef.Name != "" {
 		return domain, nil
 	}
 
@@ -84,14 +89,14 @@ func (p *publicDomainHandler) onChange(key string, domain *v1.PublicDomain) (*v1
 
 	os := objectset.NewObjectSet()
 
-	if issuerName == "" {
+	if issuerName != "" {
 		os.Add(certificateHttp(p.namespace, domain, issuerName))
 	}
 
 	return domain, p.apply.WithOwner(domain).Apply(os)
 }
 
-func (p *publicDomainHandler) onRemove(key string, domain *v1.PublicDomain) (*v1.PublicDomain, error) {
+func (p *publicDomainHandler) onRemove(key string, domain *riov1.PublicDomain) (*riov1.PublicDomain, error) {
 	if domain == nil {
 		return nil, nil
 	}
@@ -103,8 +108,8 @@ func (p *publicDomainHandler) onRemove(key string, domain *v1.PublicDomain) (*v1
 	return domain, p.apply.WithOwner(domain).Apply(nil)
 }
 
-func certificateHttp(namespace string, domain *v1.PublicDomain, issuerName string) runtime.Object {
-	name := fmt.Sprintf("%s/%s", domain.Namespace, domain.Name)
+func certificateHttp(namespace string, domain *riov1.PublicDomain, issuerName string) runtime.Object {
+	name := fmt.Sprintf("%s-%s", domain.Namespace, domain.Name)
 	cert := constructors.NewCertificate(namespace, name,
 		certmanagerapi.Certificate{
 			ObjectMeta: metav1.ObjectMeta{

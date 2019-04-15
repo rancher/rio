@@ -26,6 +26,8 @@ import (
 type Interface interface {
 	// ExternalServices returns a ExternalServiceInformer.
 	ExternalServices() ExternalServiceInformer
+	// PublicDomains returns a PublicDomainInformer.
+	PublicDomains() PublicDomainInformer
 	// Routers returns a RouterInformer.
 	Routers() RouterInformer
 	// Services returns a ServiceInformer.
@@ -46,6 +48,11 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // ExternalServices returns a ExternalServiceInformer.
 func (v *version) ExternalServices() ExternalServiceInformer {
 	return &externalServiceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// PublicDomains returns a PublicDomainInformer.
+func (v *version) PublicDomains() PublicDomainInformer {
+	return &publicDomainInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // Routers returns a RouterInformer.

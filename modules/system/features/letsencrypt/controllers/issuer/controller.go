@@ -2,29 +2,30 @@ package issuer
 
 import (
 	"context"
-
-	"github.com/rancher/wrangler/pkg/kv"
+	"fmt"
+	"strings"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	certmanagerapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/rancher/rio/exclude/pkg/settings"
 	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
 	v1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constructors"
 	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
+	v12 "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/apply"
+	"github.com/rancher/wrangler/pkg/kv"
 	"github.com/rancher/wrangler/pkg/objectset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
-	rdnsTokenName    = "rdns-token"
-	TLSSecretName    = "rio-certs"
-	rioWildcardCerts = "rio-wildcard"
-	featureName      = "letsencrypt"
-	rioWildcardType  = "RIO_WILDCARD_CERT_TYPE"
+	rdnsTokenName   = "rdns-token"
+	featureName     = "letsencrypt"
+	rioWildcardType = "RIO_WILDCARD_CERT_TYPE"
+	rdnsSuffix      = "lb.rancher.cloud"
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
@@ -35,7 +36,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			WithCacheTypes(rContext.CertManager.Certmanager().V1alpha1().ClusterIssuer(),
 				rContext.CertManager.Certmanager().V1alpha1().Certificate()),
 		clusterDomain: rContext.Global.Project().V1().ClusterDomain(),
-		publicdomain:  rContext.Global.Project().V1().PublicDomain(),
+		publicdomain:  rContext.Rio.Rio().V1().PublicDomain(),
 	}
 
 	rContext.Global.Project().V1().Feature().OnChange(ctx, "letsencrypt-issuer-controller", fh.onChange)
@@ -47,7 +48,7 @@ type featureHandler struct {
 	namespace     string
 	apply         apply.Apply
 	clusterDomain projectv1controller.ClusterDomainController
-	publicdomain  projectv1controller.PublicDomainController
+	publicdomain  v12.PublicDomainController
 }
 
 func (f *featureHandler) onChange(key string, feature *v1.Feature) (*v1.Feature, error) {
@@ -55,12 +56,17 @@ func (f *featureHandler) onChange(key string, feature *v1.Feature) (*v1.Feature,
 		return nil, nil
 	}
 
-	os := objectset.NewObjectSet()
-	for _, issuerName := range issuers.IssuerTypeToName {
-		os.Add(constructIssuer(issuerName))
+	domain, err := f.getClusterDomain()
+	if err != nil {
+		return nil, err
 	}
 
-	if err := f.addWildcardCert(feature, os); err != nil {
+	os := objectset.NewObjectSet()
+	for _, issuerName := range issuers.IssuerTypeToName {
+		os.Add(constructIssuer(issuerName, domain))
+	}
+
+	if err := f.addWildcardCert(feature, domain, os); err != nil {
 		return nil, err
 	}
 
@@ -79,7 +85,7 @@ func (f *featureHandler) onChangeCert(key string, cert *v1alpha1.Certificate) (*
 		return cert, nil
 	}
 
-	if cert.Name == rioWildcardCerts {
+	if cert.Name == issuers.RioWildcardCerts {
 		for _, con := range cert.Status.Conditions {
 			if con.Type == v1alpha1.CertificateConditionReady && con.Status == certmanagerapi.ConditionTrue {
 				deepcopy := clusterDomain.DeepCopy()
@@ -101,11 +107,10 @@ func (f *featureHandler) onChangeCert(key string, cert *v1alpha1.Certificate) (*
 				if err == nil {
 					deepcopy := publicDomain.DeepCopy()
 					deepcopy.Status.HttpsSupported = true
+
 					_, err := f.publicdomain.Update(deepcopy)
 					return cert, err
 				}
-
-				// todo: update gateway with secret ref
 			}
 		}
 	}
@@ -113,13 +118,8 @@ func (f *featureHandler) onChangeCert(key string, cert *v1alpha1.Certificate) (*
 	return cert, nil
 }
 
-func (f *featureHandler) addWildcardCert(feature *v1.Feature, os *objectset.ObjectSet) error {
-	domain, err := f.getClusterDomain()
-	if err != nil {
-		return err
-	}
-
-	if domain == "" {
+func (f *featureHandler) addWildcardCert(feature *v1.Feature, domain string, os *objectset.ObjectSet) error {
+	if domain == "" || !strings.HasSuffix(domain, rdnsSuffix) {
 		return nil
 	}
 
@@ -129,7 +129,7 @@ func (f *featureHandler) addWildcardCert(feature *v1.Feature, os *objectset.Obje
 		return nil
 	}
 
-	os.Add(certificateDNS(f.namespace, rioWildcardCerts, domain, issuer))
+	os.Add(certificateDNS(f.namespace, issuers.RioWildcardCerts, domain, issuer))
 	return nil
 }
 
@@ -144,13 +144,13 @@ func (f *featureHandler) getClusterDomain() (string, error) {
 	return clusterDomain.Status.ClusterDomain, nil
 }
 
-func constructIssuer(issuerName string) *certmanagerapi.ClusterIssuer {
+func constructIssuer(issuerName, domain string) *certmanagerapi.ClusterIssuer {
 	issuer := constructors.NewClusterIssuer(issuerName, certmanagerapi.ClusterIssuer{})
 
 	switch issuerName {
 	case settings.StagingIssuerName, settings.ProductionIssuerName:
 		acme := &certmanagerapi.ACMEIssuer{
-			Email: settings.LetsEncryptAccountEmail,
+			Email: emailFromDomain(domain),
 			PrivateKey: certmanagerapi.SecretKeySelector{
 				LocalObjectReference: certmanagerapi.LocalObjectReference{
 					Name: "letsencrypt-account",
@@ -187,11 +187,15 @@ func constructIssuer(issuerName string) *certmanagerapi.ClusterIssuer {
 	return issuer
 }
 
+func emailFromDomain(domain string) string {
+	return fmt.Sprintf("user-%s@rancher.dev", strings.SplitN(domain, ".", 2)[0])
+}
+
 func certificateDNS(namespace, name, domain, issueName string) runtime.Object {
 	wildcardDomain := "*." + domain
 	return constructors.NewCertificate(namespace, name, certmanagerapi.Certificate{
 		Spec: certmanagerapi.CertificateSpec{
-			SecretName: TLSSecretName,
+			SecretName: issuers.RioWildcardCerts,
 			IssuerRef: certmanagerapi.ObjectReference{
 				Kind: "ClusterIssuer",
 				Name: issueName,

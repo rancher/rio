@@ -6,9 +6,9 @@ import (
 	"time"
 
 	approuter "github.com/rancher/rdns-server/client"
-	"github.com/rancher/rio/exclude/pkg/settings"
 	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/ticker"
 	"github.com/sirupsen/logrus"

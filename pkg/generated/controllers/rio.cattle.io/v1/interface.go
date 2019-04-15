@@ -27,6 +27,7 @@ import (
 
 type Interface interface {
 	ExternalService() ExternalServiceController
+	PublicDomain() PublicDomainController
 	Router() RouterController
 	Service() ServiceController
 }
@@ -48,6 +49,9 @@ type version struct {
 
 func (c *version) ExternalService() ExternalServiceController {
 	return NewExternalServiceController(v1.SchemeGroupVersion.WithKind("ExternalService"), c.controllerManager, c.client, c.informers.ExternalServices())
+}
+func (c *version) PublicDomain() PublicDomainController {
+	return NewPublicDomainController(v1.SchemeGroupVersion.WithKind("PublicDomain"), c.controllerManager, c.client, c.informers.PublicDomains())
 }
 func (c *version) Router() RouterController {
 	return NewRouterController(v1.SchemeGroupVersion.WithKind("Router"), c.controllerManager, c.client, c.informers.Routers())

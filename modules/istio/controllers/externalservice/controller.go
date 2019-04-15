@@ -3,14 +3,12 @@ package externalservice
 import (
 	"context"
 
-	"github.com/rancher/rio/exclude/pkg/settings"
-
-	v12 "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
-
 	"github.com/rancher/rio/modules/istio/controllers/externalservice/populate"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	v12 "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/serviceset"
+	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/kv"
@@ -21,7 +19,7 @@ import (
 
 func Register(ctx context.Context, rContext *types.Context) error {
 	c := stackobject.NewGeneratingController(ctx, rContext, "routing-external-service", rContext.Rio.Rio().V1().ExternalService())
-	c.Apply.WithCacheTypes(rContext.Networking.Networking().V1alpha3().ServiceEntry(),
+	c.Apply = c.Apply.WithCacheTypes(rContext.Networking.Networking().V1alpha3().ServiceEntry(),
 		rContext.Networking.Networking().V1alpha3().VirtualService())
 
 	p := populator{

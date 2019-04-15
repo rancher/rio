@@ -37,6 +37,9 @@ type handler struct {
 }
 
 func (h *handler) onChange(key string, service *riov1.Service) (*riov1.Service, error) {
+	if service == nil {
+		return nil, nil
+	}
 	if strings.Contains(key, "/") {
 		h.services.Enqueue("", service.Namespace)
 		return nil, nil

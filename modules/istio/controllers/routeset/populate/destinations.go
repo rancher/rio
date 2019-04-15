@@ -54,11 +54,11 @@ func populateDestinationFromRouteSet(routes *v1.Router) map[string]destinationSe
 
 	for _, spec := range routes.Spec.Routes {
 		for _, dest := range spec.To {
-			key := dest.Stack + "-" + dest.Service
+			key := dest.Namespace + "-" + dest.Service
 			if _, ok := result[key]; !ok {
 				result[key] = destinationSet{
 					service:  dest.Service,
-					stack:    dest.Stack,
+					stack:    dest.Namespace,
 					revision: map[string]struct{}{},
 				}
 			}

@@ -7,3 +7,8 @@ var IssuerTypeToName = map[string]string{
 	settings.ProductionType: settings.ProductionIssuerName,
 	settings.SelfSignedType: settings.SelfSignedIssuerName,
 }
+
+const (
+	TLSSecretName    = "rio-certs"
+	RioWildcardCerts = "rio-wildcard"
+)

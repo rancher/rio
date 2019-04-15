@@ -30,50 +30,28 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
-	RioV1() riov1.RioV1Interface
-	// Deprecated: please explicitly pick a version if possible.
-	Rio() riov1.RioV1Interface
-	ProjectV1() projectv1.ProjectV1Interface
-	// Deprecated: please explicitly pick a version if possible.
-	Project() projectv1.ProjectV1Interface
 	AutoscaleV1() autoscalev1.AutoscaleV1Interface
 	// Deprecated: please explicitly pick a version if possible.
 	Autoscale() autoscalev1.AutoscaleV1Interface
+	RioV1() riov1.RioV1Interface
+	// Deprecated: please explicitly pick a version if possible.
+	Rio() riov1.RioV1Interface
 	WebhookinatorV1() webhookinatorv1.WebhookinatorV1Interface
 	// Deprecated: please explicitly pick a version if possible.
 	Webhookinator() webhookinatorv1.WebhookinatorV1Interface
+	ProjectV1() projectv1.ProjectV1Interface
+	// Deprecated: please explicitly pick a version if possible.
+	Project() projectv1.ProjectV1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	rioV1           *riov1.RioV1Client
-	projectV1       *projectv1.ProjectV1Client
 	autoscaleV1     *autoscalev1.AutoscaleV1Client
+	rioV1           *riov1.RioV1Client
 	webhookinatorV1 *webhookinatorv1.WebhookinatorV1Client
-}
-
-// RioV1 retrieves the RioV1Client
-func (c *Clientset) RioV1() riov1.RioV1Interface {
-	return c.rioV1
-}
-
-// Deprecated: Rio retrieves the default version of RioClient.
-// Please explicitly pick a version.
-func (c *Clientset) Rio() riov1.RioV1Interface {
-	return c.rioV1
-}
-
-// ProjectV1 retrieves the ProjectV1Client
-func (c *Clientset) ProjectV1() projectv1.ProjectV1Interface {
-	return c.projectV1
-}
-
-// Deprecated: Project retrieves the default version of ProjectClient.
-// Please explicitly pick a version.
-func (c *Clientset) Project() projectv1.ProjectV1Interface {
-	return c.projectV1
+	projectV1       *projectv1.ProjectV1Client
 }
 
 // AutoscaleV1 retrieves the AutoscaleV1Client
@@ -87,6 +65,17 @@ func (c *Clientset) Autoscale() autoscalev1.AutoscaleV1Interface {
 	return c.autoscaleV1
 }
 
+// RioV1 retrieves the RioV1Client
+func (c *Clientset) RioV1() riov1.RioV1Interface {
+	return c.rioV1
+}
+
+// Deprecated: Rio retrieves the default version of RioClient.
+// Please explicitly pick a version.
+func (c *Clientset) Rio() riov1.RioV1Interface {
+	return c.rioV1
+}
+
 // WebhookinatorV1 retrieves the WebhookinatorV1Client
 func (c *Clientset) WebhookinatorV1() webhookinatorv1.WebhookinatorV1Interface {
 	return c.webhookinatorV1
@@ -96,6 +85,17 @@ func (c *Clientset) WebhookinatorV1() webhookinatorv1.WebhookinatorV1Interface {
 // Please explicitly pick a version.
 func (c *Clientset) Webhookinator() webhookinatorv1.WebhookinatorV1Interface {
 	return c.webhookinatorV1
+}
+
+// ProjectV1 retrieves the ProjectV1Client
+func (c *Clientset) ProjectV1() projectv1.ProjectV1Interface {
+	return c.projectV1
+}
+
+// Deprecated: Project retrieves the default version of ProjectClient.
+// Please explicitly pick a version.
+func (c *Clientset) Project() projectv1.ProjectV1Interface {
+	return c.projectV1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -114,19 +114,19 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	}
 	var cs Clientset
 	var err error
-	cs.rioV1, err = riov1.NewForConfig(&configShallowCopy)
-	if err != nil {
-		return nil, err
-	}
-	cs.projectV1, err = projectv1.NewForConfig(&configShallowCopy)
-	if err != nil {
-		return nil, err
-	}
 	cs.autoscaleV1, err = autoscalev1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
+	cs.rioV1, err = riov1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 	cs.webhookinatorV1, err = webhookinatorv1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
+	cs.projectV1, err = projectv1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -142,10 +142,10 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 // panics if there is an error in the config.
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
-	cs.rioV1 = riov1.NewForConfigOrDie(c)
-	cs.projectV1 = projectv1.NewForConfigOrDie(c)
 	cs.autoscaleV1 = autoscalev1.NewForConfigOrDie(c)
+	cs.rioV1 = riov1.NewForConfigOrDie(c)
 	cs.webhookinatorV1 = webhookinatorv1.NewForConfigOrDie(c)
+	cs.projectV1 = projectv1.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
@@ -154,10 +154,10 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
-	cs.rioV1 = riov1.New(c)
-	cs.projectV1 = projectv1.New(c)
 	cs.autoscaleV1 = autoscalev1.New(c)
+	cs.rioV1 = riov1.New(c)
 	cs.webhookinatorV1 = webhookinatorv1.New(c)
+	cs.projectV1 = projectv1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

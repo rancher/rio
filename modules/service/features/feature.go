@@ -3,6 +3,8 @@ package features
 import (
 	"context"
 
+	"github.com/rancher/rio/modules/service/controllers/publicdomain"
+
 	"github.com/rancher/rio/modules/service/controllers/externalservice"
 
 	"github.com/rancher/rio/modules/service/controllers/routeset"
@@ -27,6 +29,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			service.Register,
 			serviceset.Register,
 			servicestatus.Register,
+			publicdomain.Register,
 		},
 	}
 

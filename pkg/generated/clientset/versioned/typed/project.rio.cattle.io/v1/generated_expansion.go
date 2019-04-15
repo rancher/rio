@@ -21,5 +21,3 @@ package v1
 type ClusterDomainExpansion interface{}
 
 type FeatureExpansion interface{}
-
-type PublicDomainExpansion interface{}
