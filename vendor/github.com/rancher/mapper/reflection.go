@@ -89,6 +89,10 @@ func (s *Schemas) importType(t reflect.Type, overrides ...interface{}) (*Schema,
 	}
 
 	mappers := s.mappers[schema.ID]
+	if s.DefaultMappers != nil {
+		mappers = append(s.DefaultMappers(), mappers...)
+	}
+
 	if s.DefaultPostMappers != nil {
 		mappers = append(mappers, s.DefaultPostMappers()...)
 	}

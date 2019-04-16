@@ -6,10 +6,15 @@ import (
 )
 
 type SingleSlice struct {
-	Field string
+	Field           string
+	DontForceString bool
 }
 
 func (d SingleSlice) FromInternal(data map[string]interface{}) {
+	if d.DontForceString {
+		return
+	}
+
 	v, ok := data[d.Field]
 	if !ok {
 		return

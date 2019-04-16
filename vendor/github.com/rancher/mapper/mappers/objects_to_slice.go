@@ -37,7 +37,14 @@ func (p ObjectsToSlice) FromInternal(data map[string]interface{}) {
 			continue
 		}
 
-		result = append(result, target.MaybeString())
+		ret := target.MaybeString()
+		if slc, ok := ret.([]string); ok {
+			for _, v := range slc {
+				result = append(result, v)
+			}
+		} else {
+			result = append(result, ret)
+		}
 	}
 
 	if len(result) == 0 {
@@ -57,6 +64,10 @@ func (p ObjectsToSlice) ToInternal(data map[string]interface{}) error {
 		return nil
 	}
 
+	if str, ok := d.(string); ok {
+		d = []interface{}{str}
+	}
+
 	slc, ok := d.([]interface{})
 	if !ok {
 		return nil
@@ -74,11 +85,17 @@ func (p ObjectsToSlice) ToInternal(data map[string]interface{}) error {
 			return err
 		}
 
-		if _, isMap := newObj.(map[string]interface{}); !isMap {
-			newObj, err = convert.EncodeToMap(newObj)
-		}
+		if mapSlice, isMapSlice := newObj.([]map[string]interface{}); isMapSlice {
+			for _, v := range mapSlice {
+				newSlc = append(newSlc, v)
+			}
+		} else {
+			if _, isMap := newObj.(map[string]interface{}); !isMap {
+				newObj, err = convert.EncodeToMap(newObj)
+			}
 
-		newSlc = append(newSlc, newObj)
+			newSlc = append(newSlc, newObj)
+		}
 	}
 
 	data[p.Field] = newSlc

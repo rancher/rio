@@ -146,9 +146,9 @@ func permToPolicyRule(perm riov1.Permission) (v1.PolicyRule, bool) {
 	}
 
 	policyRule.Verbs = perm.Verbs
-	if perm.Name != "" {
+	if perm.ResourceName != "" {
 		valid = true
-		policyRule.ResourceNames = []string{perm.Name}
+		policyRule.ResourceNames = []string{perm.ResourceName}
 	}
 	if perm.APIGroup != "" {
 		valid = true

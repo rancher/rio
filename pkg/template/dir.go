@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func ReadDir(suffix, dir string, answersFromEnv bool) (map[string]*Template, error) {
+func ReadDir(suffix, dir string) (map[string]*Template, error) {
 	files, err := ioutil.ReadDir(dir)
 	if os.IsNotExist(err) {
 		return nil, nil
@@ -51,12 +51,6 @@ func ReadDir(suffix, dir string, answersFromEnv bool) (map[string]*Template, err
 
 		if err := template.Validate(); err != nil {
 			return nil, errors.Wrapf(err, "invalid template %s", fName)
-		}
-
-		if answersFromEnv {
-			if err := template.PopulateAnswersFromEnv(); err != nil {
-				return nil, errors.Wrapf(err, "reading answers from env for %s", fName)
-			}
 		}
 
 		result[stackName] = template

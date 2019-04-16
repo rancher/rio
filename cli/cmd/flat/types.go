@@ -5,7 +5,7 @@ import (
 
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/pretty/stringers"
-	rbacv1 "k8s.io/api/rbac/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/conversion"
 	"k8s.io/apimachinery/pkg/util/runtime"
 )
@@ -22,7 +22,6 @@ var (
 
 func init() {
 	runtime.Must(converter.RegisterConversionFunc(ExpandServiceSpec))
-	runtime.Must(converter.RegisterConversionFunc(ExpandPolicyRule))
 }
 
 type ServiceSpec struct {
@@ -48,7 +47,7 @@ type Container struct {
 	Command    []string `json:"command,omitempty" protobuf:"bytes,3,rep,name=command"`
 	Args       []string `json:"args,omitempty" protobuf:"bytes,4,rep,name=args"`
 	WorkingDir string   `json:"workingDir,omitempty" protobuf:"bytes,5,opt,name=workingDir"`
-	//Ports []ContainerPort `json:"ports,omitempty" patchStrategy:"merge" patchMergeKey:"containerPort" protobuf:"bytes,6,rep,name=ports"`
+	//Ports      []ContainerPort `json:"ports,omitempty" patchStrategy:"merge" patchMergeKey:"containerPort" protobuf:"bytes,6,rep,name=ports"`
 	//EnvFrom []EnvFromSource `json:"envFrom,omitempty" protobuf:"bytes,19,rep,name=envFrom"`
 	//Env []EnvVar `json:"env,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,7,rep,name=env"`
 	//Resources ResourceRequirements `json:"resources,omitempty" protobuf:"bytes,8,opt,name=resources"`
@@ -109,10 +108,6 @@ func defaultExpand(a, b interface{}, scope conversion.Scope) error {
 	return scope.DefaultConvert(a, b, expandFlags)
 }
 
-func ExpandPolicyRule(rules *[]string, policyRules *[]rbacv1.PolicyRule, scope conversion.Scope) error {
-	return nil
-}
-
 func ExpandServiceSpec(flat *ServiceSpec, expanded *v1.ServiceSpec, scope conversion.Scope) error {
 	var (
 		err error
@@ -135,5 +130,11 @@ func ExpandServiceSpec(flat *ServiceSpec, expanded *v1.ServiceSpec, scope conver
 		return err
 	}
 
+	targetContainer := &corev1.Container{}
+	if err := scope.DefaultConvert(&flat.Container, targetContainer, expandFlags); err != nil {
+		return err
+	}
+
+	expanded.PodSpec.Containers = []corev1.Container{*targetContainer}
 	return nil
 }

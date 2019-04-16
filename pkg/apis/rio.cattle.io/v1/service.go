@@ -41,9 +41,9 @@ type ServiceScale struct {
 }
 
 type AutoscaleConfig struct {
-	Concurrency int `json:"concurrency,omitempty"`
-	MinScale    int `json:"minScale,omitempty"`
-	MaxScale    int `json:"maxScale,omitempty"`
+	Concurrency *int `json:"concurrency,omitempty"`
+	MinScale    *int `json:"minScale,omitempty"`
+	MaxScale    *int `json:"maxScale,omitempty"`
 }
 
 type SystemServiceSpec struct {
@@ -74,9 +74,9 @@ type ServiceSpec struct {
 }
 
 type PodDNSConfig struct {
-	Nameservers []string             `json:"nameservers,omitempty"`
-	Searches    []string             `json:"searches,omitempty"`
-	Options     []PodDNSConfigOption `json:"options,omitempty"`
+	Nameservers []string             `json:"dnsNameservers,omitempty"`
+	Searches    []string             `json:"dnsSearches,omitempty"`
+	Options     []PodDNSConfigOption `json:"dnsOptions,omitempty"`
 }
 
 type PodDNSConfigOption struct {
@@ -97,23 +97,23 @@ type NamedContainer struct {
 }
 
 type Container struct {
-	Image           string            `json:"image,omitempty"`
-	Build           ImageBuild        `json:"build,omitempty"`
-	Command         []string          `json:"command,omitempty"`
-	Args            []string          `json:"args,omitempty"`
-	WorkingDir      string            `json:"workingDir,omitempty"`
-	Ports           []ContainerPort   `json:"ports,omitempty"`
-	Env             []EnvVar          `json:"env,omitempty"`
-	CPUs            resource.Quantity `json:"cpus,omitempty"`
-	Memory          resource.Quantity `json:"memory,omitempty"`
-	Secrets         []DataMount       `json:"secrets,omitempty"`
-	Configs         []DataMount       `json:"configs,omitempty"`
-	LivenessProbe   *v1.Probe         `json:"livenessProbe,omitempty"`
-	ReadinessProbe  *v1.Probe         `json:"readinessProbe,omitempty"`
-	ImagePullPolicy v1.PullPolicy     `json:"imagePullPolicy,omitempty"`
-	Stdin           bool              `json:"stdin,omitempty"`
-	StdinOnce       bool              `json:"stdinOnce,omitempty"`
-	TTY             bool              `json:"tty,omitempty"`
+	Image           string             `json:"image,omitempty"`
+	Build           *ImageBuild        `json:"build,omitempty"`
+	Command         []string           `json:"command,omitempty"`
+	Args            []string           `json:"args,omitempty"`
+	WorkingDir      string             `json:"workingDir,omitempty"`
+	Ports           []ContainerPort    `json:"ports,omitempty"`
+	Env             []EnvVar           `json:"env,omitempty"`
+	CPUs            *resource.Quantity `json:"cpus,omitempty"`
+	Memory          *resource.Quantity `json:"memory,omitempty"`
+	Secrets         []DataMount        `json:"secrets,omitempty"`
+	Configs         []DataMount        `json:"configs,omitempty"`
+	LivenessProbe   *v1.Probe          `json:"livenessProbe,omitempty"`
+	ReadinessProbe  *v1.Probe          `json:"readinessProbe,omitempty"`
+	ImagePullPolicy v1.PullPolicy      `json:"imagePullPolicy,omitempty"`
+	Stdin           bool               `json:"stdin,omitempty"`
+	StdinOnce       bool               `json:"stdinOnce,omitempty"`
+	TTY             bool               `json:"tty,omitempty"`
 
 	ContainerSecurityContext
 }
@@ -131,7 +131,6 @@ type EnvVar struct {
 	SecretName    string `json:"secretName,omitempty"`
 	ConfigMapName string `json:"configMapName,omitempty"`
 	Key           string `json:"key,omitempty"`
-	Optional      *bool  `json:"optional,omitempty"`
 }
 
 type PodConfig struct {
@@ -191,12 +190,10 @@ type ScaleStatus struct {
 
 type ImageBuild struct {
 	Repo       string `json:"repo,omitempty"`
-	Tag        string `json:"tag,omitempty"`
-	Commit     string `json:"commit,omitempty"`
+	Revision   string `json:"revision,omitempty"`
 	Branch     string `json:"branch,omitempty"`
 	StageOnly  string `json:"stageOnly,omitempty"`
 	DockerFile string `json:"dockerFile,omitempty"`
 	Template   string `json:"template,omitempty"`
 	Secret     string `json:"secret,omitempty"`
-	Hook       bool   `json:"hook,omitempty"`
 }

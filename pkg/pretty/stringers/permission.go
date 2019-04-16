@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rancher/mapper/mappers"
+
 	"github.com/rancher/mapper/slice"
+	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/kv"
-	rbacv1 "k8s.io/api/rbac/v1"
 )
 
 var (
@@ -36,11 +38,31 @@ func init() {
 	}
 }
 
-type PolicyRuleStringer struct {
-	rbacv1.PolicyRule
+func NewPermissions(field string) mappers.ObjectsToSlice {
+	return mappers.ObjectsToSlice{
+		Field: field,
+		NewObject: func() mappers.MaybeStringer {
+			return &PermissionStringer{}
+		},
+		ToObject: func(obj interface{}) (interface{}, error) {
+			str, ok := obj.(string)
+			if !ok {
+				return obj, nil
+			}
+			objs, err := ParsePermissions(str)
+			if err != nil {
+				return nil, err
+			}
+			return objs[0], nil
+		},
+	}
 }
 
-func (p PolicyRuleStringer) String() string {
+type PermissionStringer struct {
+	v1.Permission
+}
+
+func (p PermissionStringer) MaybeString() interface{} {
 	buf := strings.Builder{}
 	if slice.StringsEqual(WriteVerbs, p.Verbs) {
 		buf.WriteString("write ")
@@ -49,9 +71,9 @@ func (p PolicyRuleStringer) String() string {
 		buf.WriteString(" ")
 	}
 
-	groups := strings.Join(p.APIGroups, ",")
-	resources := strings.Join(p.Resources, ",")
-	names := strings.Join(p.ResourceNames, ",")
+	groups := p.APIGroup
+	resources := p.Resource
+	names := p.ResourceName
 
 	if groups != "" || strings.Contains(resources, "/") {
 		buf.WriteString(groups)
@@ -64,32 +86,22 @@ func (p PolicyRuleStringer) String() string {
 		buf.WriteString(names)
 	}
 
-	if len(p.NonResourceURLs) > 0 {
+	if len(p.URL) > 0 {
 		buf.WriteString("url=")
-		buf.WriteString(strings.Join(p.NonResourceURLs, ","))
+		buf.WriteString(p.URL)
 	}
 
 	return buf.String()
 }
 
-func ParseRoles(perms ...string) []string {
-	var result []string
+func ParsePermissions(perms ...string) ([]v1.Permission, error) {
+	var result []v1.Permission
 	for _, perm := range perms {
 		if strings.HasPrefix(perm, "role=") {
 			perm = strings.TrimSpace(strings.TrimPrefix(perm, "role="))
-			if perm != "" {
-				result = append(result, perm)
-			}
-		}
-	}
-
-	return result
-}
-
-func ParsePolicyRules(perms ...string) ([]rbacv1.PolicyRule, error) {
-	var result []rbacv1.PolicyRule
-	for _, perm := range perms {
-		if strings.HasPrefix(perm, "role=") {
+			result = append(result, v1.Permission{
+				Role: perm,
+			})
 			continue
 		}
 		perm = strings.TrimSpace(strings.TrimPrefix(perm, "rule="))
@@ -106,18 +118,17 @@ func ParsePolicyRules(perms ...string) ([]rbacv1.PolicyRule, error) {
 	return result, nil
 }
 
-func assignAPIGroupResource(result *rbacv1.PolicyRule, input string) {
+func assignAPIGroupResource(result *v1.Permission, input string) {
 	apiGroup, resource := kv.Split(input, "/")
 	if resource == "" {
-		result.APIGroups = []string{""}
-		result.Resources = strings.Split(apiGroup, ",")
+		result.Resource = apiGroup
 	} else {
-		result.APIGroups = strings.Split(apiGroup, ",")
-		result.Resources = strings.Split(resource, ",")
+		result.APIGroup = apiGroup
+		result.Resource = resource
 	}
 }
 
-func assignVerbs(result *rbacv1.PolicyRule, input string) {
+func assignVerbs(result *v1.Permission, input string) {
 	if input == "read" {
 		result.Verbs = ReadVerbs
 	} else if input == "write" {
@@ -129,8 +140,8 @@ func assignVerbs(result *rbacv1.PolicyRule, input string) {
 	}
 }
 
-func parsePerm(perm string) (rbacv1.PolicyRule, error) {
-	var result rbacv1.PolicyRule
+func parsePerm(perm string) (v1.Permission, error) {
+	var result v1.Permission
 
 	parts := filterURL(strings.Fields(perm), &result)
 
@@ -141,7 +152,7 @@ func parsePerm(perm string) (rbacv1.PolicyRule, error) {
 		assignVerbs(&result, parts[0])
 		assignAPIGroupResource(&result, parts[1])
 		if len(parts) == 3 {
-			result.ResourceNames = strings.Split(parts[2], ",")
+			result.ResourceName = parts[2]
 		}
 	}
 
@@ -152,11 +163,11 @@ func parsePerm(perm string) (rbacv1.PolicyRule, error) {
 	return result, nil
 }
 
-func filterURL(parts []string, policy *rbacv1.PolicyRule) []string {
+func filterURL(parts []string, policy *v1.Permission) []string {
 	var result []string
 	for _, input := range parts {
 		if strings.HasPrefix(input, "url=") {
-			policy.NonResourceURLs = strings.Split(strings.TrimPrefix(input, "url="), ",")
+			policy.URL = strings.TrimPrefix(input, "url=")
 			continue
 		}
 		result = append(result, input)

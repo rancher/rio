@@ -5,9 +5,8 @@ import (
 )
 
 type Template struct {
-	Meta        v1.TemplateMeta
 	Content     []byte
-	Answers     map[string]string
 	BuiltinVars []string
-	Questions   []v1.Question
 }
+
+type AnswerCallback func(key string, questions []v1.Question) (string, error)

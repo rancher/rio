@@ -6,13 +6,12 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/apimachinery/pkg/api/equality"
-
 	"github.com/rancher/wrangler/pkg/kv"
 	"github.com/rancher/wrangler/pkg/name"
 	"github.com/sirupsen/logrus"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -29,6 +28,43 @@ type CRD struct {
 	GVK          schema.GroupVersionKind
 	PluralName   string
 	NonNamespace bool
+}
+
+func (c CRD) ToCustomResourceDefinition() apiext.CustomResourceDefinition {
+	plural := c.PluralName
+	if plural == "" {
+		plural = strings.ToLower(name.GuessPluralName(c.GVK.Kind))
+	}
+
+	name := strings.ToLower(plural + "." + c.GVK.Group)
+
+	crd := apiext.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: apiext.CustomResourceDefinitionSpec{
+			Group: c.GVK.Group,
+			Versions: []apiext.CustomResourceDefinitionVersion{
+				{
+					Name:    c.GVK.Version,
+					Storage: true,
+					Served:  true,
+				},
+			},
+			Names: apiext.CustomResourceDefinitionNames{
+				Plural: plural,
+				Kind:   c.GVK.Kind,
+			},
+		},
+	}
+
+	if c.NonNamespace {
+		crd.Spec.Scope = apiext.ClusterScoped
+	} else {
+		crd.Spec.Scope = apiext.NamespaceScoped
+	}
+
+	return crd
 }
 
 func NamespacedType(name string) CRD {
@@ -177,46 +213,20 @@ func (f *Factory) createCRD(crdDef CRD, ready map[string]*apiext.CustomResourceD
 		plural = strings.ToLower(name.GuessPluralName(crdDef.GVK.Kind))
 	}
 
-	name := strings.ToLower(plural + "." + crdDef.GVK.Group)
+	crd := crdDef.ToCustomResourceDefinition()
 
-	crd := &apiext.CustomResourceDefinition{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: apiext.CustomResourceDefinitionSpec{
-			Group: crdDef.GVK.Group,
-			Versions: []apiext.CustomResourceDefinitionVersion{
-				{
-					Name:    crdDef.GVK.Version,
-					Storage: true,
-					Served:  true,
-				},
-			},
-			Names: apiext.CustomResourceDefinitionNames{
-				Plural: plural,
-				Kind:   crdDef.GVK.Kind,
-			},
-		},
-	}
-
-	if crdDef.NonNamespace {
-		crd.Spec.Scope = apiext.ClusterScoped
-	} else {
-		crd.Spec.Scope = apiext.NamespaceScoped
-	}
-
-	existing, ok := ready[name]
+	existing, ok := ready[crd.Name]
 	if ok {
 		if !equality.Semantic.DeepEqual(crd.Spec.Versions, existing.Spec.Versions) {
 			existing.Spec = crd.Spec
-			logrus.Infof("Updating CRD %s", name)
+			logrus.Infof("Updating CRD %s", crd.Name)
 			return f.CRDClient.ApiextensionsV1beta1().CustomResourceDefinitions().Update(existing)
 		}
 		return existing, nil
 	}
 
-	logrus.Infof("Creating CRD %s", name)
-	return f.CRDClient.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)
+	logrus.Infof("Creating CRD %s", crd.Name)
+	return f.CRDClient.ApiextensionsV1beta1().CustomResourceDefinitions().Create(&crd)
 }
 
 func (f *Factory) getReadyCRDs() (map[string]*apiext.CustomResourceDefinition, error) {

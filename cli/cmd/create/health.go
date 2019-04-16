@@ -1,81 +1,110 @@
 package create
 
 import (
+	"fmt"
+	"net/url"
+	"strconv"
 	"time"
 
+	"github.com/mattn/go-shellwords"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/pretty/objectmappers"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 func populateHealthCheck(c *Create, service *riov1.Service) error {
-	var err error
-
-	hc := &riov1.HealthConfig{
-		HealthyThreshold:   c.HealthRetries,
-		UnhealthyThreshold: c.UnhealthyRetries,
+	if c.HealthURL == "" && c.HealthCmd == "" {
+		return nil
 	}
 
-	hc.InitialDelaySeconds, err = objectmappers.ParseDurationUnit(c.HealthStartPeriod, "--health-start-period", time.Second)
-	if err != nil {
-		return err
+	hc := v1.Probe{
+		FailureThreshold: int32(c.HealthFailureThreshold),
+		SuccessThreshold: int32(c.HealthSuccessThreshold),
 	}
 
-	hc.IntervalSeconds, err = objectmappers.ParseDurationUnit(c.HealthInterval, "--health-interval", time.Second)
-	if err != nil {
-		return err
+	if c.HealthInitialDelay != "" {
+		delay, err := time.ParseDuration(c.HealthInitialDelay)
+		if err != nil {
+			return err
+		}
+
+		hc.InitialDelaySeconds = int32(delay.Seconds())
+	}
+
+	if c.HealthInterval != "" {
+		interval, err := time.ParseDuration(c.HealthInterval)
+		if err != nil {
+			return err
+		}
+
+		hc.PeriodSeconds = int32(interval.Seconds())
+	}
+
+	if c.HealthTimeout != "" {
+		timeout, err := time.ParseDuration(c.HealthTimeout)
+		if err != nil {
+			return err
+		}
+
+		hc.TimeoutSeconds = int32(timeout.Seconds())
 	}
 
 	if len(c.HealthCmd) > 0 {
-		hc.Test = []string{"CMD-SHELL", c.HealthCmd}
+		words, err := shellwords.Parse(c.HealthCmd)
+		if err != nil {
+			return err
+		}
+		hc.Handler.Exec = &v1.ExecAction{
+			Command: words,
+		}
 	}
 
 	if len(c.HealthURL) > 0 {
-		hc.Test = []string{c.HealthURL}
+		u, err := url.Parse(c.HealthURL)
+		if err != nil {
+			return err
+		}
+
+		portStr := u.Port()
+		if portStr == "" {
+			return fmt.Errorf("missing port in health-url %s", c.HealthURL)
+		}
+		port, err := strconv.Atoi(portStr)
+		if err != nil {
+			return err
+		}
+
+		if u.Scheme == "tcp" {
+			hc.TCPSocket = &v1.TCPSocketAction{
+				Port: intstr.FromInt(port),
+			}
+		} else {
+			hc.HTTPGet = &v1.HTTPGetAction{
+				Port: intstr.FromInt(port),
+				Host: u.Host,
+				Path: u.Path,
+			}
+
+			for key, value := range c.HealthHeader {
+				hc.HTTPGet.HTTPHeaders = append(hc.HTTPGet.HTTPHeaders, v1.HTTPHeader{
+					Name:  key,
+					Value: value,
+				})
+			}
+
+			if u.Scheme == "http" {
+				hc.HTTPGet.Scheme = v1.URISchemeHTTP
+			} else if u.Scheme == "https" {
+				hc.HTTPGet.Scheme = v1.URISchemeHTTPS
+			} else {
+				return fmt.Errorf("invalid scheme in health-url %s: %s", c.HealthURL, u.Scheme)
+			}
+
+		}
 	}
 
-	hc.TimeoutSeconds, err = objectmappers.ParseDurationUnit(c.HealthTimeout, "--health-timeout", time.Second)
-	if err != nil {
-		return err
-	}
+	service.Spec.LivenessProbe = &hc
+	service.Spec.ReadinessProbe = &hc
 
-	if len(c.HealthCmd) > 0 || len(c.HealthURL) > 0 {
-		service.Spec.Healthcheck = hc
-	}
-
-	return populateReadyCheck(c, service)
-}
-
-func populateReadyCheck(c *Create, service *riov1.Service) error {
-	var err error
-
-	hc := &riov1.HealthConfig{
-		HealthyThreshold:   c.ReadyRetries,
-		UnhealthyThreshold: c.UnreadyRetries,
-	}
-
-	hc.InitialDelaySeconds, err = objectmappers.ParseDurationUnit(c.ReadyStartPeriod, "--ready-start-period", time.Second)
-	if err != nil {
-		return err
-	}
-
-	hc.IntervalSeconds, err = objectmappers.ParseDurationUnit(c.ReadyInterval, "--ready-interval", time.Second)
-	if err != nil {
-		return err
-	}
-
-	if len(c.ReadyCmd) > 0 {
-		hc.Test = []string{"CMD-SHELL", c.ReadyCmd}
-	}
-
-	if len(c.ReadyURL) > 0 {
-		hc.Test = []string{c.ReadyURL}
-	}
-
-	hc.TimeoutSeconds, err = objectmappers.ParseDurationUnit(c.ReadyTimeout, "--ready-timeout", time.Second)
-
-	if len(c.ReadyCmd) > 0 || len(c.ReadyURL) > 0 {
-		service.Spec.Readycheck = hc
-	}
-
-	return err
+	return nil
 }
