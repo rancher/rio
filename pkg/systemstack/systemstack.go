@@ -4,11 +4,11 @@ import (
 	"bytes"
 
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/riofile"
 	"github.com/rancher/rio/pkg/template"
 	"github.com/rancher/rio/stacks"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/objectset"
-	"github.com/rancher/wrangler/pkg/yaml"
 )
 
 type SystemStack struct {
@@ -34,10 +34,12 @@ func (s *SystemStack) Questions() ([]v1.Question, error) {
 	t := template.Template{
 		Content: content,
 	}
+
 	if err := t.Validate(); err != nil {
 		return nil, err
 	}
-	return nil, err
+
+	return t.Questions()
 }
 
 func (s *SystemStack) content() ([]byte, error) {
@@ -50,21 +52,13 @@ func (s *SystemStack) Deploy(answers map[string]string) error {
 		return err
 	}
 
-	t := template.Template{
-		Content: content,
-	}
-	content, err = t.Parse(nil)
-	if err != nil {
-		return err
-	}
-
-	objs, err := yaml.ToObjects(bytes.NewBuffer(content))
+	rf, err := riofile.Parse(bytes.NewBuffer(content), template.AnswersFromMap(answers))
 	if err != nil {
 		return err
 	}
 
 	os := objectset.NewObjectSet()
-	os.Add(objs...)
+	os.Add(rf.Objects()...)
 	return s.apply.Apply(os)
 }
 

@@ -12,6 +12,15 @@ type templateFile struct {
 	Meta v1.TemplateMeta `json:"template"`
 }
 
+func (t *Template) Questions() ([]v1.Question, error) {
+	tf, err := t.readTemplateFile(t.Content)
+	if err != nil {
+		return nil, err
+	}
+
+	return tf.Meta.Questions, nil
+}
+
 func (t *Template) RequiredEnv() ([]string, error) {
 	names := map[string]bool{}
 	_, err := envsubst.Eval(string(t.Content), func(in string) string {
@@ -75,6 +84,9 @@ func (t *Template) parseContent(answersCB AnswerCallback) ([]byte, error) {
 	)
 
 	evaled, err := envsubst.Eval(string(t.Content), func(key string) string {
+		if answersCB == nil {
+			return ""
+		}
 		val, err := answersCB(key, template.Meta.Questions)
 		if err != nil {
 			callbackErrs = append(callbackErrs, err)
