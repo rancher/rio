@@ -205,6 +205,47 @@ var (
 			Priority:                     &six,
 			RuntimeClassName:             &blah,
 			EnableServiceLinks:           &t,
+			Containers: []corev1.Container{
+				{
+					Name:       "foo",
+					Image:      "foo",
+					Command:    []string{"foo"},
+					Args:       []string{"foo"},
+					WorkingDir: "foo",
+					Ports: []corev1.ContainerPort{
+						{
+							Name:          "portname",
+							HostPort:      1024,
+							ContainerPort: 11024,
+							Protocol:      "UDP",
+							HostIP:        "1.1.1.1",
+						},
+						{
+							Name:          "portname2",
+							HostPort:      1025,
+							ContainerPort: 11025,
+							Protocol:      "TCP",
+							HostIP:        "1.1.1.1",
+						},
+					},
+					//Ports []ContainerPort `json:"ports,omitempty" patchStrategy:"merge" patchMergeKey:"containerPort" protobuf:"bytes,6,rep,name=ports"`
+					//EnvFrom []EnvFromSource `json:"envFrom,omitempty" protobuf:"bytes,19,rep,name=envFrom"`
+					//Env []EnvVar `json:"env,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,7,rep,name=env"`
+					//Resources ResourceRequirements `json:"resources,omitempty" protobuf:"bytes,8,opt,name=resources"`
+					//VolumeMounts []VolumeMount `json:"volumeMounts,omitempty" patchStrategy:"merge" patchMergeKey:"mountPath" protobuf:"bytes,9,rep,name=volumeMounts"`
+					//VolumeDevices []VolumeDevice `json:"volumeDevices,omitempty" patchStrategy:"merge" patchMergeKey:"devicePath" protobuf:"bytes,21,rep,name=volumeDevices"`
+					//LivenessProbe *Probe `json:"livenessProbe,omitempty" protobuf:"bytes,10,opt,name=livenessProbe"`
+					//ReadinessProbe *Probe `json:"readinessProbe,omitempty" protobuf:"bytes,11,opt,name=readinessProbe"`
+					//Lifecycle                *Lifecycle               `json:"lifecycle,omitempty" protobuf:"bytes,12,opt,name=lifecycle"`
+					TerminationMessagePath:   "foo",
+					TerminationMessagePolicy: "foo",
+					ImagePullPolicy:          "foo",
+					//SecurityContext          *SecurityContext `json:"securityContext,omitempty" protobuf:"bytes,15,opt,name=securityContext"`
+					Stdin:     true,
+					StdinOnce: true,
+					TTY:       true,
+				},
+			},
 		},
 	}
 )

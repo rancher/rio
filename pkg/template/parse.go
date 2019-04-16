@@ -1,18 +1,15 @@
 package template
 
 import (
-	"bytes"
-	"os"
-
 	"github.com/drone/envsubst"
+	"github.com/rancher/mapper"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/template/gotemplate"
-	"k8s.io/apimachinery/pkg/util/yaml"
+	"github.com/rancher/wrangler/pkg/yaml"
 )
 
 type templateFile struct {
-	Meta      v1.TemplateMeta `json:"meta"`
-	Questions []v1.Question   `json:"questions"`
+	Meta v1.TemplateMeta `json:"template"`
 }
 
 func (t *Template) RequiredEnv() ([]string, error) {
@@ -29,7 +26,12 @@ func (t *Template) RequiredEnv() ([]string, error) {
 		delete(names, b)
 	}
 
-	for _, q := range t.Questions {
+	template, err := t.readTemplateFile(t.Content)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, q := range template.Meta.Questions {
 		names[q.Variable] = true
 	}
 
@@ -41,29 +43,12 @@ func (t *Template) RequiredEnv() ([]string, error) {
 	return result, nil
 }
 
-func (t *Template) PopulateAnswersFromEnv() error {
-	keys, err := t.RequiredEnv()
-	if err != nil {
-		return err
-	}
-
-	for _, key := range keys {
-		value := os.Getenv(key)
-		if value != "" {
-			t.Answers[key] = value
-		}
-	}
-
-	return nil
-}
-
 func (t *Template) readTemplateFile(content []byte) (*templateFile, error) {
 	templateFile := &templateFile{}
-	yamlParser := yaml.NewYAMLToJSONDecoder(bytes.NewBuffer(content))
-	return templateFile, yamlParser.Decode(templateFile)
+	return templateFile, yaml.Unmarshal(content, templateFile)
 }
 
-func (t *Template) Parse(answers map[string]string) ([]byte, error) {
+func (t *Template) Parse(answers AnswerCallback) ([]byte, error) {
 	return t.parseContent(answers)
 
 }
@@ -74,34 +59,34 @@ func (t *Template) Validate() error {
 		return err
 	}
 
-	templateFile, err := t.readTemplateFile(content)
-	if err != nil {
-		return err
-	}
-
-	t.Meta = templateFile.Meta
-	t.Questions = templateFile.Questions
-	return nil
+	_, err = t.readTemplateFile(content)
+	return err
 }
 
-func (t *Template) parseYAML() ([]byte, error) {
-	answers := map[string]string{}
-	for _, q := range t.Questions {
-		answers[q.Variable] = q.Default
-	}
-	for k, v := range t.Answers {
-		answers[k] = v
-	}
-	return t.parseContent(answers)
-}
-
-func (t *Template) parseContent(answers map[string]string) ([]byte, error) {
-	evaled, err := envsubst.Eval(string(t.Content), func(key string) string {
-		return answers[key]
-	})
+func (t *Template) parseContent(answersCB AnswerCallback) ([]byte, error) {
+	template, err := t.readTemplateFile(t.Content)
 	if err != nil {
 		return nil, err
 	}
 
-	return gotemplate.Apply([]byte(evaled), t.Answers)
+	var (
+		callbackErrs []error
+		answers      = map[string]string{}
+	)
+
+	evaled, err := envsubst.Eval(string(t.Content), func(key string) string {
+		val, err := answersCB(key, template.Meta.Questions)
+		if err != nil {
+			callbackErrs = append(callbackErrs, err)
+		}
+		answers[key] = val
+		return val
+	})
+	if err != nil {
+		return nil, err
+	} else if len(callbackErrs) > 0 {
+		return nil, mapper.NewErrors(callbackErrs...)
+	}
+
+	return gotemplate.Apply([]byte(evaled), answers)
 }

@@ -9,6 +9,13 @@ type AliasField struct {
 	Names []string
 }
 
+func NewAlias(field string, names ...string) AliasField {
+	return AliasField{
+		Field: field,
+		Names: names,
+	}
+}
+
 func (d AliasField) FromInternal(data map[string]interface{}) {
 }
 
