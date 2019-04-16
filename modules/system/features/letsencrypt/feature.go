@@ -40,8 +40,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			},
 			Answers: map[string]string{
 				// todo: registry in build need production server to be fully functional
-				settings.RioWildcardType:  settings.StagingType,
-				settings.PublicDomainType: settings.ProductionType,
+				settings.RioWildcardType: settings.StagingType,
+				// todo: self-signed only for testing
+				settings.PublicDomainType: settings.SelfSignedType,
 			},
 		},
 		FixedAnswers: map[string]string{

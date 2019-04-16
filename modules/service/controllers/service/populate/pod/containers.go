@@ -102,8 +102,7 @@ func envs(c *riov1.Container) (result []v1.EnvVar) {
 					LocalObjectReference: v1.LocalObjectReference{
 						Name: env.ConfigMapName,
 					},
-					Key:      env.Key,
-					Optional: env.Optional,
+					Key: env.Key,
 				},
 			}
 		} else if env.SecretName != "" {
@@ -112,8 +111,7 @@ func envs(c *riov1.Container) (result []v1.EnvVar) {
 					LocalObjectReference: v1.LocalObjectReference{
 						Name: env.ConfigMapName,
 					},
-					Key:      env.Key,
-					Optional: env.Optional,
+					Key: env.Key,
 				},
 			}
 		}
@@ -136,18 +134,18 @@ func ports(c *riov1.Container) (result []v1.ContainerPort) {
 }
 
 func resources(c *riov1.Container) (result v1.ResourceRequirements) {
-	if c.CPUs.IsZero() {
+	if c.CPUs == nil || c.CPUs.IsZero() {
 		result.Requests = v1.ResourceList{
 			v1.ResourceCPU: defaultCPU,
 		}
 	} else {
 		result.Requests = v1.ResourceList{
-			v1.ResourceCPU: c.CPUs,
+			v1.ResourceCPU: *c.CPUs,
 		}
 
 	}
 
-	if c.Memory.IsZero() {
+	if c.Memory == nil || c.Memory.IsZero() {
 		if result.Requests == nil {
 			result.Requests = v1.ResourceList{}
 		}
@@ -156,7 +154,7 @@ func resources(c *riov1.Container) (result v1.ResourceRequirements) {
 		if result.Requests == nil {
 			result.Requests = v1.ResourceList{}
 		}
-		result.Requests[v1.ResourceMemory] = c.Memory
+		result.Requests[v1.ResourceMemory] = *c.Memory
 	}
 
 	return

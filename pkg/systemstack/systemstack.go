@@ -37,8 +37,7 @@ func (s *SystemStack) Questions() ([]v1.Question, error) {
 	if err := t.Validate(); err != nil {
 		return nil, err
 	}
-
-	return t.Questions, nil
+	return nil, err
 }
 
 func (s *SystemStack) content() ([]byte, error) {
@@ -54,7 +53,7 @@ func (s *SystemStack) Deploy(answers map[string]string) error {
 	t := template.Template{
 		Content: content,
 	}
-	content, err = t.Parse(answers)
+	content, err = t.Parse(nil)
 	if err != nil {
 		return err
 	}

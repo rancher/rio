@@ -39,6 +39,9 @@ type secretaggregation struct {
 }
 
 func (s secretaggregation) sync(key string, secret *corev1.Secret) (*corev1.Secret, error) {
+	if secret == nil {
+		return nil, nil
+	}
 	publicdomainSecrets := map[string]struct{}{}
 	publicdomains, err := s.publicDomainsCache.List("", labels.NewSelector())
 	if err != nil {

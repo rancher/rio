@@ -34,10 +34,10 @@ var Scheme = runtime.NewScheme()
 var Codecs = serializer.NewCodecFactory(Scheme)
 var ParameterCodec = runtime.NewParameterCodec(Scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
-	autoscalev1.AddToScheme,
 	riov1.AddToScheme,
 	webhookinatorv1.AddToScheme,
 	projectv1.AddToScheme,
+	autoscalev1.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition
