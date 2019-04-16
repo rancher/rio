@@ -14,7 +14,7 @@ import (
 
 func Register(ctx context.Context, rContext *types.Context) error {
 	c := stackobject.NewGeneratingController(ctx, rContext, "letsencrypt-service", rContext.Rio.Rio().V1().Service())
-	c.Apply = c.Apply.WithCacheTypes(rContext.Networking.Networking().V1alpha3().DestinationRule())
+	c.Apply = c.Apply.WithStrictCaching().WithCacheTypes(rContext.Networking.Networking().V1alpha3().DestinationRule())
 
 	c.Populator = func(obj runtime.Object, namespace *corev1.Namespace, os *objectset.ObjectSet) error {
 		return populate.DestinationRules(obj.(*riov1.Service), namespace.Name, os)

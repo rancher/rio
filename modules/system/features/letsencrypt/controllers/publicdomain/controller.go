@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/rancher/wrangler/pkg/generic"
+
 	certmanagerapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
 	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
@@ -31,7 +33,7 @@ func Register(ctx context.Context, rContexts *types.Context) error {
 		publicDomainCache:  rContexts.Rio.Rio().V1().PublicDomain().Cache(),
 	}
 
-	rContexts.Rio.Rio().V1().PublicDomain().OnChange(ctx, "letsencrypt-handler", p.onChange)
+	rContexts.Rio.Rio().V1().PublicDomain().AddGenericHandler(ctx, "letsencrypt-handler", generic.UpdateOnChange(rContexts.Rio.Rio().V1().PublicDomain().Updater(), p.onChange))
 	rContexts.Rio.Rio().V1().PublicDomain().OnRemove(ctx, "letsencrypt-handler", p.onRemove)
 	rContexts.Global.Project().V1().Feature().OnChange(ctx, "letsencrypt-handler", p.featureChanged)
 
@@ -67,7 +69,8 @@ func (p *publicDomainHandler) featureChanged(key string, feature *projectv1.Feat
 	return feature, nil
 }
 
-func (p *publicDomainHandler) onChange(key string, domain *riov1.PublicDomain) (*riov1.PublicDomain, error) {
+func (p *publicDomainHandler) onChange(key string, obj runtime.Object) (runtime.Object, error) {
+	domain := obj.(*riov1.PublicDomain)
 	if domain == nil {
 		return nil, nil
 	}
@@ -92,6 +95,8 @@ func (p *publicDomainHandler) onChange(key string, domain *riov1.PublicDomain) (
 	if issuerName != "" {
 		os.Add(certificateHttp(p.namespace, domain, issuerName))
 	}
+	domain.Spec.SecretRef.Name = fmt.Sprintf("%s-%s", domain.Namespace, domain.Name)
+	domain.Spec.SecretRef.Namespace = domain.Namespace
 
 	return domain, p.apply.WithOwner(domain).Apply(os)
 }

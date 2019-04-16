@@ -65,6 +65,7 @@ func main() {
 					v1.Endpoints{},
 					v1.ConfigMap{},
 					v1.PersistentVolumeClaim{},
+					v1.Pod{},
 				},
 				InformersPackage: "k8s.io/client-go/informers",
 				ClientSetPackage: "k8s.io/client-go/kubernetes",

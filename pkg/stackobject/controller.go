@@ -4,12 +4,11 @@ import (
 	"context"
 	"strings"
 
-	"github.com/rancher/rio/pkg/stack"
-
 	"github.com/pkg/errors"
 	"github.com/rancher/mapper/convert"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	corev1controller "github.com/rancher/rio/pkg/generated/controllers/core/v1"
+	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/condition"
@@ -73,6 +72,10 @@ func (o *Controller) OnChange(key string, obj runtime.Object) (runtime.Object, e
 	meta, err := meta.Accessor(obj)
 	if err != nil {
 		return obj, err
+	}
+
+	if meta.GetNamespace() == "" {
+		return nil, nil
 	}
 
 	ns, err := o.namespaceCache.Get(meta.GetNamespace())

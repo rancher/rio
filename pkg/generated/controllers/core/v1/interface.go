@@ -31,6 +31,7 @@ type Interface interface {
 	Namespace() NamespaceController
 	Node() NodeController
 	PersistentVolumeClaim() PersistentVolumeClaimController
+	Pod() PodController
 	Secret() SecretController
 	Service() ServiceController
 	ServiceAccount() ServiceAccountController
@@ -65,6 +66,9 @@ func (c *version) Node() NodeController {
 }
 func (c *version) PersistentVolumeClaim() PersistentVolumeClaimController {
 	return NewPersistentVolumeClaimController(v1.SchemeGroupVersion.WithKind("PersistentVolumeClaim"), c.controllerManager, c.client, c.informers.PersistentVolumeClaims())
+}
+func (c *version) Pod() PodController {
+	return NewPodController(v1.SchemeGroupVersion.WithKind("Pod"), c.controllerManager, c.client, c.informers.Pods())
 }
 func (c *version) Secret() SecretController {
 	return NewSecretController(v1.SchemeGroupVersion.WithKind("Secret"), c.controllerManager, c.client, c.informers.Secrets())
