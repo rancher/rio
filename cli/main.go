@@ -7,24 +7,16 @@ import (
 	"path/filepath"
 
 	"github.com/docker/docker/pkg/reexec"
-	"github.com/rancher/rio/cli/cmd/agent"
 	"github.com/rancher/rio/cli/cmd/attach"
-	"github.com/rancher/rio/cli/cmd/cluster"
 	"github.com/rancher/rio/cli/cmd/config"
 	"github.com/rancher/rio/cli/cmd/create"
-	"github.com/rancher/rio/cli/cmd/ctr"
-	"github.com/rancher/rio/cli/cmd/edit"
-	"github.com/rancher/rio/cli/cmd/events"
 	"github.com/rancher/rio/cli/cmd/exec"
 	"github.com/rancher/rio/cli/cmd/export"
 	"github.com/rancher/rio/cli/cmd/externalservice"
 	"github.com/rancher/rio/cli/cmd/feature"
 	"github.com/rancher/rio/cli/cmd/inspect"
 	"github.com/rancher/rio/cli/cmd/kubectl"
-	"github.com/rancher/rio/cli/cmd/login"
 	"github.com/rancher/rio/cli/cmd/logs"
-	"github.com/rancher/rio/cli/cmd/node"
-	"github.com/rancher/rio/cli/cmd/project"
 	"github.com/rancher/rio/cli/cmd/promote"
 	"github.com/rancher/rio/cli/cmd/ps"
 	"github.com/rancher/rio/cli/cmd/publicdomain"
@@ -32,8 +24,6 @@ import (
 	"github.com/rancher/rio/cli/cmd/route"
 	"github.com/rancher/rio/cli/cmd/run"
 	"github.com/rancher/rio/cli/cmd/scale"
-	"github.com/rancher/rio/cli/cmd/server"
-	"github.com/rancher/rio/cli/cmd/setcontext"
 	"github.com/rancher/rio/cli/cmd/stack"
 	"github.com/rancher/rio/cli/cmd/stage"
 	"github.com/rancher/rio/cli/cmd/up"
@@ -41,12 +31,12 @@ import (
 	"github.com/rancher/rio/cli/cmd/weight"
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/clientcfg"
-	"github.com/rancher/rio/cli/pkg/waiter"
-	_ "github.com/rancher/rio/pkg/kubectl"
-	"github.com/rancher/rio/version"
+	"github.com/rancher/rio/pkg/version"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+
+	// Include kubectl
+	_ "github.com/rancher/rio/pkg/kubectl"
 )
 
 const (
@@ -69,13 +59,17 @@ const (
 
 var (
 	appName = filepath.Base(os.Args[0])
-	cfg     = clientcfg.Config{}
+	cfg     = clicontext.Config{}
 )
 
 func main() {
 	if reexec.Init() {
 		return
 	}
+
+	//flag.Set("stderrthreshold", "3")
+	//flag.Set("alsologtostderr", "false")
+	//flag.Set("logtostderr", "false")
 
 	args := os.Args
 
@@ -109,35 +103,17 @@ func main() {
 			Destination: &cfg.WaitState,
 		},
 		cli.StringFlag{
-			Name:        "server",
-			Usage:       "Specify the Rio API endpoint URL",
-			EnvVar:      "RIO_URL",
-			Destination: &cfg.ServerURL,
+			Name:        "namespace,n",
+			Usage:       "Specify which namespace in kubernetes to use",
+			EnvVar:      "RIO_NAMEPSACE",
+			Destination: &cfg.Namespace,
 		},
 		cli.StringFlag{
-			Name:        "token",
-			Usage:       "Specify Rio API token",
-			EnvVar:      "RIO_TOKEN",
-			Destination: &cfg.Token,
-		},
-		cli.StringFlag{
-			Name:        "cluster,c",
-			Usage:       "Specify which cluster to use",
-			EnvVar:      "RIO_CLUSTER",
-			Destination: &cfg.ClusterName,
-		},
-		cli.StringFlag{
-			Name:        "project,p",
-			Usage:       "Specify which project to use",
-			EnvVar:      "RIO_PROJECT",
-			Destination: &cfg.ProjectName,
-		},
-		cli.StringFlag{
-			Name:        "config-dir",
-			Value:       "${HOME}/.rancher/rio",
-			Usage:       "Specify which directory to use for config",
-			EnvVar:      "RIO_CONFIG_DIR",
-			Destination: &cfg.Home,
+			Name:        "kubeconfig",
+			Usage:       "Kubeconfig file to use",
+			EnvVar:      "KUBECONFIG",
+			Value:       "${HOME}/.kube/config",
+			Destination: &cfg.Kubeconfig,
 		},
 	}
 
@@ -145,12 +121,8 @@ func main() {
 		config.Config(app),
 		volume.Volume(app),
 		stack.Stack(),
-		project.Projects(app),
-		cluster.Cluster(app),
-		node.Node(),
 		publicdomain.PublicDomain(app),
 		externalservice.ExternalService(app),
-		setcontext.SetContext(),
 		feature.Feature(app),
 
 		builder.Command(&ps.Ps{},
@@ -179,10 +151,10 @@ func main() {
 			appName+" inspect [ID_OR_NAME...]",
 			""),
 
-		builder.Command(&edit.Edit{},
-			"Edit a service or stack",
-			appName+" edit ID_OR_NAME",
-			""),
+		//builder.Command(&edit.Edit{},
+		//	"Edit a service or stack",
+		//	appName+" edit ID_OR_NAME",
+		//	""),
 		builder.Command(&up.Up{},
 			"Bring up a stack",
 			appName+" up [OPTIONS] [[STACK_NAME] FILE|-]",
@@ -207,15 +179,6 @@ func main() {
 			appName+" logs [OPTIONS] [CONTAINER_OR_SERVICE...]",
 			""),
 
-		builder.Command(&server.Server{},
-			"Run management server",
-			appName+" server [OPTIONS]",
-			""),
-		builder.Command(&agent.Agent{},
-			"Run node agent",
-			appName+" agent [OPTIONS]",
-			""),
-
 		builder.Command(&stage.Stage{},
 			"Stage a new revision of a service",
 			appName+" stage [OPTIONS] SERVICE_ID_NAME",
@@ -230,20 +193,7 @@ func main() {
 			""),
 		route.Route(app),
 
-		builder.Command(&events.Events{},
-			"Stream change events",
-			appName+" events",
-			""),
-
-		waiter.WaitCommand(),
-
-		builder.Command(&login.Login{},
-			"Login into Rio",
-			appName+" login",
-			""),
-
 		kubectl.NewKubectlCommand(),
-		ctr.NewCtrCommand(),
 	}
 	app.Before = func(ctx *cli.Context) error {
 		if err := cfg.Validate(); err != nil {
@@ -257,7 +207,7 @@ func main() {
 		return nil
 	}
 	app.ExitErrHandler = func(context *cli.Context, err error) {
-		if err == clientcfg.ErrNoConfig {
+		if err == clicontext.ErrNoConfig {
 			printConfigUsage()
 		} else {
 			cli.HandleExitCoder(err)

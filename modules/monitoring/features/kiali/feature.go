@@ -1,0 +1,38 @@
+package kiali
+
+import (
+	"context"
+	"encoding/base64"
+
+	v1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/features"
+	"github.com/rancher/rio/pkg/systemstack"
+	"github.com/rancher/rio/types"
+)
+
+func Register(ctx context.Context, rContext *types.Context) error {
+	feature := &features.FeatureController{
+		FeatureName: "kiali",
+		FeatureSpec: v1.FeatureSpec{
+			Description: "Kiali Dashboard",
+			Enabled:     true,
+			Answers: map[string]string{
+				"USERNAME": base64.StdEncoding.EncodeToString([]byte("admin")),
+				"PASSWORD": base64.StdEncoding.EncodeToString([]byte("admin")),
+			},
+			Requires: []string{
+				"prometheus",
+				"grafana",
+				"mixer",
+			},
+		},
+		SystemStacks: []*systemstack.SystemStack{
+			systemstack.NewSystemStack(rContext.Apply, rContext.Namespace, "kiali"),
+		},
+		FixedAnswers: map[string]string{
+			"PROMETHEUS_URL": "http://prometheus:9090",
+			"GRAFANA_URL":    "http://grafana:3000",
+		},
+	}
+	return feature.Register()
+}

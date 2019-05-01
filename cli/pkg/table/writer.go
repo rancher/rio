@@ -3,19 +3,18 @@ package table
 import (
 	"encoding/json"
 	"io"
-	"os"
 	"text/tabwriter"
 	"text/template"
 	"time"
 
-	"github.com/rancher/rio/cli/pkg/clientcfg"
+	"github.com/rancher/rio/pkg/apis/common"
 
 	"github.com/Masterminds/sprig"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/docker/go-units"
-	"github.com/rancher/norman/types/convert"
-	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/mapper/convert"
 	"gopkg.in/yaml.v2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -24,16 +23,27 @@ var (
 	}
 
 	localFuncMap = map[string]interface{}{
-		"ago":         FormatCreated,
-		"json":        FormatJSON,
-		"jsoncompact": FormatJSONCompact,
-		"yaml":        FormatYAML,
-		"first":       FormatFirst,
-		"dump":        FormatSpew,
+		"ago":           FormatCreated,
+		"json":          FormatJSON,
+		"jsoncompact":   FormatJSONCompact,
+		"yaml":          FormatYAML,
+		"first":         FormatFirst,
+		"dump":          FormatSpew,
+		"toJson":        ToJSON,
+		"boolToStar":    BoolToStar,
+		"state":         State,
+		"transitioning": Transitioning,
 	}
 )
 
-type Writer struct {
+type Writer interface {
+	Write(obj interface{})
+	Close() error
+	Err() error
+	AddFormatFunc(name string, f FormatFunc)
+}
+
+type writer struct {
 	closed        bool
 	quite         bool
 	HeaderFormat  string
@@ -46,8 +56,15 @@ type Writer struct {
 
 type FormatFunc interface{}
 
-func NewWriter(values [][]string, ctx *clicontext.CLIContext) *Writer {
-	if ctx.CLI.Bool("ids") {
+type WriterConfig interface {
+	IDs() bool
+	Quiet() bool
+	Format() string
+	Writer() io.Writer
+}
+
+func NewWriter(values [][]string, config WriterConfig) Writer {
+	if config.IDs() {
 		values = append(idsHeader, values...)
 	}
 
@@ -56,19 +73,19 @@ func NewWriter(values [][]string, ctx *clicontext.CLIContext) *Writer {
 		funcMap[k] = v
 	}
 
-	t := &Writer{
-		Writer:  tabwriter.NewWriter(os.Stdout, 10, 1, 3, ' ', 0),
+	t := &writer{
+		Writer:  tabwriter.NewWriter(config.Writer(), 10, 1, 3, ' ', 0),
 		funcMap: funcMap,
 	}
 
 	t.HeaderFormat, t.ValueFormat = SimpleFormat(values)
 
-	if ctx.CLI.Bool("quiet") {
+	if config.Quiet() {
 		t.HeaderFormat = ""
 		t.ValueFormat = "{{.ID}}\n"
 	}
 
-	customFormat := ctx.CLI.String("format")
+	customFormat := config.Format()
 	if customFormat == "json" {
 		t.HeaderFormat = ""
 		t.ValueFormat = "json"
@@ -86,15 +103,15 @@ func NewWriter(values [][]string, ctx *clicontext.CLIContext) *Writer {
 	return t
 }
 
-func (t *Writer) AddFormatFunc(name string, f FormatFunc) {
+func (t *writer) AddFormatFunc(name string, f FormatFunc) {
 	t.funcMap[name] = f
 }
 
-func (t *Writer) Err() error {
+func (t *writer) Err() error {
 	return t.Close()
 }
 
-func (t *Writer) writeHeader() {
+func (t *writer) writeHeader() {
 	if t.HeaderFormat != "" && !t.headerPrinted {
 		t.headerPrinted = true
 		t.err = t.printTemplate(t.Writer, t.HeaderFormat, struct{}{})
@@ -104,7 +121,7 @@ func (t *Writer) writeHeader() {
 	}
 }
 
-func (t *Writer) Write(obj interface{}) {
+func (t *writer) Write(obj interface{}) {
 	if t.err != nil {
 		return
 	}
@@ -141,7 +158,7 @@ func (t *Writer) Write(obj interface{}) {
 	}
 }
 
-func (t *Writer) Close() error {
+func (t *writer) Close() error {
 	if t.closed {
 		return t.err
 	}
@@ -159,7 +176,7 @@ func (t *Writer) Close() error {
 	return t.Writer.Flush()
 }
 
-func (t *Writer) printTemplate(out io.Writer, templateContent string, obj interface{}) error {
+func (t *writer) printTemplate(out io.Writer, templateContent string, obj interface{}) error {
 	tmpl, err := template.New("").Funcs(t.funcMap).Parse(templateContent)
 	if err != nil {
 		return err
@@ -168,7 +185,7 @@ func (t *Writer) printTemplate(out io.Writer, templateContent string, obj interf
 	return tmpl.Execute(out, obj)
 }
 
-func FormatStackScopedName(cluster *clientcfg.Cluster) func(interface{}, interface{}) (string, error) {
+func FormatStackScopedName(defaultStackName string) func(interface{}, interface{}) (string, error) {
 	return func(data, data2 interface{}) (string, error) {
 		stackName, ok := data.(string)
 		if !ok {
@@ -180,7 +197,7 @@ func FormatStackScopedName(cluster *clientcfg.Cluster) func(interface{}, interfa
 			return "", nil
 		}
 
-		if stackName == cluster.DefaultStackName {
+		if stackName == defaultStackName {
 			return serviceName, nil
 		}
 
@@ -189,17 +206,12 @@ func FormatStackScopedName(cluster *clientcfg.Cluster) func(interface{}, interfa
 }
 
 func FormatCreated(data interface{}) (string, error) {
-	s, ok := data.(string)
+	t, ok := data.(metav1.Time)
 	if !ok {
 		return "", nil
 	}
 
-	t, err := time.Parse(time.RFC3339, s)
-	if err != nil {
-		return "", err
-	}
-
-	return units.HumanDuration(time.Now().UTC().Sub(t)) + " ago", nil
+	return units.HumanDuration(time.Now().UTC().Sub(t.Time)) + " ago", nil
 }
 
 func FormatJSON(data interface{}) (string, error) {
@@ -232,5 +244,30 @@ func FormatFirst(data, data2 interface{}) (string, error) {
 		return str, nil
 	}
 
+	return "", nil
+}
+
+func ToJSON(data interface{}) (map[string]interface{}, error) {
+	return convert.EncodeToMap(data)
+}
+
+func BoolToStar(obj interface{}) (string, error) {
+	if b, ok := obj.(bool); ok && b {
+		return "*", nil
+	}
+	return "", nil
+}
+
+func State(obj interface{}) (string, error) {
+	if b, ok := obj.(common.StateGetter); ok {
+		return b.State().State, nil
+	}
+	return "", nil
+}
+
+func Transitioning(obj interface{}) (string, error) {
+	if b, ok := obj.(common.StateGetter); ok {
+		return b.State().Message, nil
+	}
 	return "", nil
 }

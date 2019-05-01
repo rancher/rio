@@ -34,24 +34,24 @@ def kubetest(stack, sname):
 def test_name1(stack):
     serviceName = "testname"
     rio_name_setup(stack, serviceName)
-    assert riotest(stack, serviceName) == serviceName
+    assert serviceName in riotest(stack, serviceName)
 
-    assert kubetest(stack, serviceName) == serviceName
+    assert serviceName in kubetest(stack, serviceName)
 
 
 def test_name2(stack):
     serviceName = "a"
     rio_name_setup(stack, serviceName)
 
-    assert riotest(stack, serviceName) == serviceName
+    assert serviceName in riotest(stack, serviceName)
 
-    assert kubetest(stack, serviceName) == serviceName
+    assert serviceName in kubetest(stack, serviceName)
 
 
 def test_name3(stack):
     serviceName = "areallylongnamethatcanbelonger"
     rio_name_setup(stack, serviceName)
 
-    assert riotest(stack, serviceName) == serviceName
+    assert serviceName in riotest(stack, serviceName)
 
-    assert kubetest(stack, serviceName) == serviceName
+    assert serviceName in kubetest(stack, serviceName)

@@ -1,45 +1,82 @@
-//go:generate go run types/codegen/cleanup/main.go
+//go:generate go run pkg/codegen/cleanup/main.go
 //go:generate go run vendor/github.com/jteeuwen/go-bindata/go-bindata/AppendSliceValue.go vendor/github.com/jteeuwen/go-bindata/go-bindata/main.go vendor/github.com/jteeuwen/go-bindata/go-bindata/version.go -o ./stacks/bindata.go -ignore bindata.go -pkg stacks ./stacks/
 //go:generate go fmt stacks/bindata.go
-//go:generate go run types/codegen/main.go
+//go:generate go run pkg/codegen/main.go
 
 package main
 
 import (
 	"context"
-	"net/http"
 	"os"
+	"strings"
 
-	_ "net/http/pprof"
-
-	"github.com/docker/docker/pkg/reexec"
-	"github.com/rancher/norman/signal"
-	_ "github.com/rancher/rio/pkg/kubectl"
+	"github.com/docker/libcompose/version"
 	"github.com/rancher/rio/pkg/server"
+	"github.com/rancher/wrangler/pkg/signals"
 	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli"
+)
+
+var (
+	debug          bool
+	kubeconfig     string
+	namespace      string
+	customRegistry string
 )
 
 func main() {
-	if reexec.Init() {
-		return
+	app := cli.NewApp()
+	app.Name = "rio-controller"
+	app.Version = version.VERSION
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:        "kubeconfig",
+			EnvVar:      "KUBECONFIG",
+			Value:       "${HOME}/.kube/config",
+			Destination: &kubeconfig,
+		},
+		cli.StringFlag{
+			Name:        "namespace",
+			EnvVar:      "RIO_NAMESPACE",
+			Value:       "rio-system",
+			Destination: &namespace,
+		},
+		cli.StringFlag{
+			Name:        "custom-registry",
+			EnvVar:      "CUSTOM_REGISTRY",
+			Destination: &customRegistry,
+		},
+		cli.BoolFlag{
+			Name:        "debug",
+			EnvVar:      "RIO_DEBUG",
+			Destination: &debug,
+		},
 	}
+	app.Action = run
 
-	if err := run(); err != nil {
+	if err := app.Run(os.Args); err != nil {
 		logrus.Fatal(err)
 	}
 }
 
-func run() error {
-	go func() {
-		logrus.Fatal(http.ListenAndServe("localhost:6061", nil))
-	}()
-
-	if os.Getenv("RIO_DEBUG") == "true" {
+func run(c *cli.Context) error {
+	if debug {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
-	inCluster := os.Getenv("RIO_IN_CLUSTER") == "true"
-	ctx := signal.SigTermCancelContext(context.Background())
-	_, err := server.StartServer(ctx, "./data-dir", 5080, 5443, true, inCluster)
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+
+	kubeconfig = strings.Replace(kubeconfig, "${HOME}", homeDir, -1)
+	kubeconfig = strings.Replace(kubeconfig, "$HOME", homeDir, -1)
+
+	ctx := signals.SetupSignalHandler(context.Background())
+	if err := server.Startup(ctx, namespace, customRegistry, kubeconfig); err != nil {
+		return err
+	}
+
 	<-ctx.Done()
-	return err
+	return nil
 }

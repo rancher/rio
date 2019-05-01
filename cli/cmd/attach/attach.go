@@ -6,6 +6,7 @@ import (
 
 	"github.com/rancher/rio/cli/cmd/ps"
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/cli/pkg/tables"
 )
 
 type Attach struct {
@@ -29,21 +30,17 @@ func (a *Attach) Run(ctx *clicontext.CLIContext) error {
 }
 
 func RunAttach(ctx *clicontext.CLIContext, timeout time.Duration, stdin, tty bool, container string) error {
-	cluster, err := ctx.Cluster()
-	if err != nil {
-		return err
-	}
-
-	var pd *ps.PodData
+	var pd *tables.PodData
 
 	deadline := time.Now().Add(timeout)
 	for {
-		pd, err = ps.ListFirstPod(ctx, true, container)
+		pd, err := ps.ListFirstPod(ctx, true, container)
 		if err != nil {
 			return err
 		}
 
-		if (pd == nil || len(pd.Containers) == 0 || pd.Containers[0].State != "running") && time.Now().Before(deadline) {
+		// todo:// add state for containers
+		if (pd == nil || len(pd.Containers) == 0) && time.Now().Before(deadline) {
 			time.Sleep(750 * time.Millisecond)
 			continue
 		}
@@ -67,5 +64,5 @@ func RunAttach(ctx *clicontext.CLIContext, timeout time.Duration, stdin, tty boo
 		execArgs = append(execArgs, "-t")
 	}
 
-	return cluster.Kubectl(pd.Pod.Namespace, "attach", execArgs...)
+	return ctx.Kubectl(pd.Pod.Namespace, "attach", execArgs...)
 }

@@ -1,9 +1,10 @@
 package mapper
 
 import (
-	"github.com/rancher/norman/types"
-	"github.com/rancher/norman/types/convert"
-	"github.com/rancher/norman/types/mapper"
+	types "github.com/rancher/mapper"
+	"github.com/rancher/mapper/convert"
+	"github.com/rancher/mapper/mappers"
+	"github.com/rancher/rio/pkg/pretty/objectmappers"
 )
 
 type StringMatchMap struct {
@@ -18,8 +19,8 @@ func (d StringMatchMap) FromInternal(data map[string]interface{}) {
 
 	m := convert.ToMapInterface(v)
 
-	for k, v := range m {
-		m[k] = stringMatchToString(v)
+	for k := range m {
+		objectmappers.NewStringMatch(k).FromInternal(m)
 	}
 }
 
@@ -30,9 +31,9 @@ func (d StringMatchMap) ToInternal(data map[string]interface{}) error {
 	}
 
 	m := convert.ToMapInterface(v)
-	for k, v := range m {
-		if str, ok := v.(string); ok {
-			m[k] = ParseStringMatch(str)
+	for k := range m {
+		if err := objectmappers.NewStringMatch(k).ToInternal(m); err != nil {
+			return err
 		}
 	}
 
@@ -40,5 +41,5 @@ func (d StringMatchMap) ToInternal(data map[string]interface{}) error {
 }
 
 func (d StringMatchMap) ModifySchema(schema *types.Schema, schemas *types.Schemas) error {
-	return mapper.ValidateField(d.Field, schema)
+	return mappers.ValidateField(d.Field, schema)
 }

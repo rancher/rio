@@ -3,10 +3,11 @@ package promote
 import (
 	"fmt"
 
+	"github.com/rancher/mapper"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/lookup"
-	"github.com/rancher/rio/cli/pkg/waiter"
-	"github.com/rancher/rio/types/client/rio/v1"
+	"github.com/rancher/rio/cli/pkg/types"
+	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type Promote struct {
@@ -14,45 +15,24 @@ type Promote struct {
 }
 
 func (p *Promote) Run(ctx *clicontext.CLIContext) error {
-	w, err := waiter.NewWaiter(ctx)
-	if err != nil {
-		return err
-	}
-
+	var errors []error
 	for _, arg := range ctx.CLI.Args() {
-		resource, err := lookup.Lookup(ctx, arg, client.ServiceType)
-		if err != nil {
-			return err
-		}
+		err := ctx.Update(arg, types.ServiceType, func(obj runtime.Object) error {
+			service := obj.(*v1.Service)
+			if service.Spec.Revision.ParentService == "" {
+				return fmt.Errorf("can not promote the base version")
+			}
 
-		wc, err := ctx.ProjectClient()
-		if err != nil {
-			return err
-		}
+			service.Spec.Revision.Promote = true
 
-		service, err := wc.Service.ByID(resource.ID)
-		if err != nil {
-			return err
-		}
+			if p.Scale > 0 {
+				service.Spec.Scale = p.Scale
+			}
 
-		if service.ParentService == "" {
-			return fmt.Errorf("can not promote the base version")
-		}
-
-		updates := &client.Service{
-			Promote: true,
-		}
-		if p.Scale > 0 {
-			updates.Scale = int64(p.Scale)
-		}
-
-		service, err = wc.Service.Update(&client.Service{Resource: resource.Resource}, updates)
-		if err != nil {
-			return err
-		}
-
-		w.Add(&service.Resource)
+			return nil
+		})
+		errors = append(errors, err)
 	}
 
-	return w.Wait(ctx.Ctx)
+	return mapper.NewErrors(errors...)
 }

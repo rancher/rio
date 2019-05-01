@@ -1,16 +1,15 @@
 package config
 
 import (
-	"fmt"
-
-	"github.com/rancher/rio/cli/pkg/stack"
-
 	"encoding/base64"
+	"fmt"
 	"unicode/utf8"
 
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/types/client/rio/v1"
+	"github.com/rancher/rio/cli/pkg/stack"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 )
 
 type Create struct {
@@ -29,14 +28,9 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 	name := ctx.CLI.Args()[0]
 	file := ctx.CLI.Args()[1]
 
-	wc, err := ctx.ProjectClient()
-	if err != nil {
-		return err
-	}
+	config := riov1.Config{}
 
-	config := &client.Config{}
-
-	config.ProjectID, config.StackID, config.Name, err = stack.ResolveSpaceStackForName(ctx, name)
+	_, namespace, name, err := stack.ResolveSpaceStackForName(ctx, name)
 	if err != nil {
 		return err
 	}
@@ -48,17 +42,11 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 
 	config.Labels = c.L_Label
 	if utf8.Valid(content) {
-		config.Content = string(content)
+		config.Spec.Content = string(content)
 	} else {
-		config.Content = base64.StdEncoding.EncodeToString(content)
-		config.Encoded = true
+		config.Spec.Content = base64.StdEncoding.EncodeToString(content)
+		config.Spec.Encoded = true
 	}
 
-	config, err = wc.Config.Create(config)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println(config.ID)
-	return nil
+	return ctx.Create(v1.NewConfig(namespace, name, config))
 }

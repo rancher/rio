@@ -3,15 +3,16 @@ package stack
 import (
 	"fmt"
 
+	mapper2 "github.com/rancher/mapper"
+	"github.com/rancher/rio/cli/cmd/rm"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-
-	"github.com/rancher/norman/clientbase"
-	"github.com/rancher/rio/cli/cmd/util"
-	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/cli/pkg/waiter"
-	"github.com/rancher/rio/types/client/rio/v1"
+	"github.com/rancher/rio/cli/pkg/tables"
+	"github.com/rancher/rio/cli/pkg/types"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/urfave/cli"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func Stack() cli.Command {
@@ -65,40 +66,14 @@ func Stack() cli.Command {
 	}
 }
 
-type Data struct {
-	ID    string
-	Stack client.Stack
-}
-
 func stackLs(ctx *clicontext.CLIContext) error {
-	wc, err := ctx.ProjectClient()
+	stacks, err := ctx.List(types.StackType)
 	if err != nil {
 		return err
 	}
 
-	collection, err := wc.Stack.List(util.DefaultListOpts())
-	if err != nil {
-		return err
-	}
-
-	writer := table.NewWriter([][]string{
-		{"NAME", "Stack.Name"},
-		{"STATE", "Stack.State"},
-		{"CREATED", "{{.Stack.Created | ago}}"},
-		{"DESC", "Stack.Description"},
-		{"DETAIL", "Stack.TransitioningMessage"},
-	}, ctx)
-
-	defer writer.Close()
-
-	for _, item := range collection.Data {
-		writer.Write(&Data{
-			ID:    item.ID,
-			Stack: item,
-		})
-	}
-
-	return writer.Err()
+	writer := tables.NewStack(ctx)
+	return writer.Write(stacks)
 }
 
 func stackCreate(ctx *clicontext.CLIContext) error {
@@ -107,72 +82,20 @@ func stackCreate(ctx *clicontext.CLIContext) error {
 		names = ctx.CLI.Args()
 	}
 
-	wc, err := ctx.ProjectClient()
-	if err != nil {
-		return err
-	}
-
-	w, err := waiter.NewWaiter(ctx)
-	if err != nil {
-		return err
-	}
-
-	var lastErr error
+	var stacks []runtime.Object
 	for _, name := range names {
-		stack := &client.Stack{
-			Name:        name,
-			Description: ctx.CLI.String("description"),
-		}
-
-		stack, err = wc.Stack.Create(stack)
-		if err != nil {
-			lastErr = err
-		}
-
-		w.Add(&stack.Resource)
+		stacks = append(stacks, riov1.NewStack(ctx.Namespace, name, riov1.Stack{
+			Spec: riov1.StackSpec{
+				Description: ctx.CLI.String("description"),
+			},
+		}))
 	}
 
-	if lastErr != nil {
-		return lastErr
-	}
-
-	return w.Wait(ctx.Ctx)
+	return ctx.MultiCreate(stacks...)
 }
 
 func stackRm(ctx *clicontext.CLIContext) error {
-	names := ctx.CLI.Args()
-
-	wc, err := ctx.ProjectClient()
-	if err != nil {
-		return err
-	}
-
-	w, err := waiter.NewWaiter(ctx)
-	if err != nil {
-		return err
-	}
-
-	var lastErr error
-	for _, name := range names {
-		stack, err := lookup.Lookup(ctx, name, client.StackType)
-		if err != nil {
-			return err
-		}
-
-		err = wc.Ops.DoDelete(stack.Links[clientbase.SELF])
-		if err != nil {
-			lastErr = err
-			continue
-		}
-
-		w.Add(&stack.Resource)
-	}
-
-	if lastErr != nil {
-		return lastErr
-	}
-
-	return w.Wait(ctx.Ctx)
+	return rm.Remove(ctx, types.StackType)
 }
 
 func stackUpdate(ctx *clicontext.CLIContext) error {
@@ -180,40 +103,19 @@ func stackUpdate(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("at least on stack name is required")
 	}
 
-	names := ctx.CLI.Args()
+	var (
+		names  = ctx.CLI.Args()
+		errors []error
+	)
 
-	wc, err := ctx.ProjectClient()
-	if err != nil {
-		return err
-	}
-
-	w, err := waiter.NewWaiter(ctx)
-	if err != nil {
-		return err
-	}
-
-	var lastErr error
 	for _, name := range names {
-		stack, err := lookup.Lookup(ctx, name, client.StackType)
-		if err != nil {
-			return err
-		}
-
-		resp := &client.Stack{}
-		err = wc.Ops.DoUpdate(client.StackType, &stack.Resource, &client.Stack{
-			Description: ctx.CLI.String("description"),
-		}, resp)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-
-		w.Add(&stack.Resource)
+		err := ctx.Update(name, types.StackType, func(obj runtime.Object) error {
+			stack := obj.(*v1.Stack)
+			stack.Spec.Description = ctx.CLI.String("description")
+			return nil
+		})
+		errors = append(errors, err)
 	}
 
-	if lastErr != nil {
-		return lastErr
-	}
-
-	return w.Wait(ctx.Ctx)
+	return mapper2.NewErrors(errors...)
 }

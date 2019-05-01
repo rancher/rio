@@ -1,10 +1,10 @@
 package mapper
 
 import (
-	"github.com/rancher/norman/types"
-	"github.com/rancher/norman/types/convert"
-	"github.com/rancher/norman/types/mapper"
-	"github.com/rancher/norman/types/values"
+	types "github.com/rancher/mapper"
+	"github.com/rancher/mapper/convert"
+	"github.com/rancher/mapper/mappers"
+	"github.com/rancher/mapper/values"
 )
 
 type SchedulingMapper struct {
@@ -42,5 +42,5 @@ func (d SchedulingMapper) ToInternal(data map[string]interface{}) error {
 }
 
 func (d SchedulingMapper) ModifySchema(schema *types.Schema, schemas *types.Schemas) error {
-	return mapper.ValidateField(d.Field, schema)
+	return mappers.ValidateField(d.Field, schema)
 }

@@ -4,11 +4,11 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/rancher/norman/pkg/kv"
-	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/waiter"
-	"github.com/rancher/rio/types/client/rio/v1"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/wrangler/pkg/kv"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func ResolveSpaceStackForName(c *clicontext.CLIContext, in string) (string, string, string, error) {
@@ -20,50 +20,29 @@ func ResolveSpaceStackForName(c *clicontext.CLIContext, in string) (string, stri
 		}
 	}
 
-	cluster, err := c.Cluster()
-	if err != nil {
-		return "", "", "", err
-	}
-
-	w, err := c.Project()
-	if err != nil {
-		return "", "", "", err
-	}
-
-	wc, err := w.Client()
-	if err != nil {
-		return "", "", "", err
-	}
-
 	if stackName == "" {
-		stackName = cluster.DefaultStackName
+		stackName = c.DefaultStackName
 	}
 
-	stacks, err := wc.Stack.List(&types.ListOpts{
-		Filters: map[string]interface{}{
-			"name": stackName,
-		},
-	})
-	if err != nil {
+	stack, err := c.Rio.Stacks(c.Namespace).Get(stackName, metav1.GetOptions{})
+	if err != nil && !apierrors.IsNotFound(err) {
 		return "", "", "", errors.Wrapf(err, "failed to determine stack")
 	}
 
-	var s *client.Stack
-	if len(stacks.Data) == 0 {
-		s, err = wc.Stack.Create(&client.Stack{
-			Name:      stackName,
-			ProjectID: w.ID,
+	var s *riov1.Stack
+	if apierrors.IsNotFound(err) {
+		s, err = c.Rio.Stacks(stackName).Create(&riov1.Stack{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      stackName,
+				Namespace: c.Namespace,
+			},
 		})
 		if err != nil {
 			return "", "", "", errors.Wrapf(err, "failed to create stack %s", stackName)
 		}
 	} else {
-		s = &stacks.Data[0]
+		s = stack
 	}
 
-	if err := waiter.EnsureActive(c, &s.Resource); err != nil {
-		return "", "", "", err
-	}
-
-	return s.ProjectID, s.ID, name, nil
+	return s.Namespace, s.Name, name, nil
 }

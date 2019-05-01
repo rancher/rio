@@ -9,7 +9,7 @@ var stackLsFlags = []cli.Flag{
 	},
 	cli.StringFlag{
 		Name:  "format",
-		Usage: "'json' or 'yaml' or Custom format: '{{.ID}} {{.Stack.Name}}'",
+		Usage: "'json' or 'yaml' or Custom format: '{{.ID}} {{.Stack.ServiceName}}'",
 	},
 	cli.BoolFlag{
 		Name:  "ids",

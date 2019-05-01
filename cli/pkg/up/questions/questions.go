@@ -7,13 +7,14 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/rancher/mapper"
+
 	"github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty"
 	"github.com/pkg/errors"
-	"github.com/rancher/norman/parse/builder"
-	"github.com/rancher/norman/pkg/kv"
-	"github.com/rancher/norman/types"
-	"github.com/rancher/norman/types/convert"
-	"github.com/rancher/types/apis/management.cattle.io/v3"
+	"github.com/rancher/mapper/builder"
+	"github.com/rancher/mapper/convert"
+	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/wrangler/pkg/kv"
 )
 
 type Questions struct {
@@ -22,7 +23,7 @@ type Questions struct {
 }
 
 type question struct {
-	q            v3.Question
+	q            v1.Question
 	oldAnswer    string
 	asked        bool
 	inprogress   bool
@@ -203,8 +204,8 @@ func (q *question) prompt() (string, error) {
 	}
 }
 
-func validate(val string, q v3.Question) error {
-	field := &types.Field{}
+func validate(val string, q v1.Question) error {
+	field := &mapper.Field{}
 	err := convert.ToObj(q, field)
 	if err != nil {
 		return err
@@ -270,7 +271,7 @@ func (c *condition) eval() (bool, error) {
 	return true, nil
 }
 
-func NewQuestions(qs []v3.Question, answers map[string]string, forcePrompt bool) (*Questions, error) {
+func NewQuestions(qs []v1.Question, answers map[string]string, forcePrompt bool) (*Questions, error) {
 	result := map[string]string{}
 	questions := map[string]*question{}
 	var order []*question
@@ -289,7 +290,7 @@ func NewQuestions(qs []v3.Question, answers map[string]string, forcePrompt bool)
 		questions[q.Variable] = qq
 
 		for _, subQ := range q.Subquestions {
-			sq := v3.Question{}
+			sq := v1.Question{}
 			err := convert.ToObj(subQ, &q)
 			if err != nil {
 				return nil, err

@@ -7,13 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rancher/norman/pkg/kv"
-
 	isatty "github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty"
 	"github.com/rancher/rio/cli/cmd/attach"
 	"github.com/rancher/rio/cli/cmd/create"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	client "github.com/rancher/rio/types/client/rio/v1"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/wrangler/pkg/kv"
 )
 
 type Run struct {
@@ -22,16 +21,16 @@ type Run struct {
 }
 
 func (r *Run) Run(ctx *clicontext.CLIContext) error {
-	service, err := r.RunCallback(ctx, func(service *client.Service) *client.Service {
+	service, err := r.RunCallback(ctx, func(service *riov1.Service) *riov1.Service {
 		if strings.ContainsRune(r.Scale, '-') {
 			min, max := kv.Split(r.Scale, "-")
 			minScale, _ := strconv.Atoi(min)
 			maxScale, _ := strconv.Atoi(max)
-			service.AutoScale = &client.AutoscaleConfig{}
-			service.AutoScale.MinScale = int64(minScale)
-			service.AutoScale.MaxScale = int64(maxScale)
-			service.AutoScale.Concurrency = int64(r.Concurrency)
-			service.Scale = int64(minScale)
+			service.Spec.AutoScale = &riov1.AutoscaleConfig{}
+			service.Spec.AutoScale.MinScale = minScale
+			service.Spec.AutoScale.MaxScale = maxScale
+			service.Spec.AutoScale.Concurrency = r.Concurrency
+			service.Spec.Scale = minScale
 			return service
 		}
 
@@ -39,7 +38,7 @@ func (r *Run) Run(ctx *clicontext.CLIContext) error {
 		if scale == 0 {
 			scale = 1
 		}
-		service.Scale = int64(scale)
+		service.Spec.Scale = scale
 		return service
 	})
 	if err != nil {
@@ -50,10 +49,11 @@ func (r *Run) Run(ctx *clicontext.CLIContext) error {
 		isatty.IsTerminal(os.Stderr.Fd()) &&
 		isatty.IsTerminal(os.Stdin.Fd())
 
-	if istty && !r.Detach && service.OpenStdin && service.Tty {
+	if istty && !r.Detach && service.Spec.OpenStdin && service.Spec.Tty {
 		fmt.Println("Attaching...")
-		return attach.RunAttach(ctx, time.Minute, true, true, service.ID)
+		return attach.RunAttach(ctx, time.Minute, true, true, service.Name)
 	}
+	fmt.Printf("%s/%s\n", service.Namespace, service.Name)
 
 	return nil
 }

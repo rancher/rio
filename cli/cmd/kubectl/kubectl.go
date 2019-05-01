@@ -19,10 +19,5 @@ func NewKubectlCommand() cli.Command {
 }
 
 func kubectl(ctx *clicontext.CLIContext) error {
-	cluster, err := ctx.Cluster()
-	if err != nil {
-		return err
-	}
-
-	return cluster.Kubectl("", "", os.Args[2:]...)
+	return ctx.Kubectl("", "", os.Args[2:]...)
 }

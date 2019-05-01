@@ -47,8 +47,3 @@ if [ "$PROC" > 8 ]; then
 fi
 tox -- -n $PROC
 cd ..
-
-bats -r ./tests || {
-    tail -n 100 /var/lib/rancher/rio/agent/agent.log
-    exit 1
-}

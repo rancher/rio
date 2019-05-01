@@ -6,7 +6,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/types/client/rio/v1"
+	"github.com/rancher/rio/cli/pkg/types"
 	"github.com/urfave/cli"
 )
 
@@ -27,9 +27,9 @@ func (p *Ps) Run(ctx *clicontext.CLIContext) error {
 
 	if !p.C_Containers {
 		for _, arg := range ctx.CLI.Args() {
-			stack, err := lookup.Lookup(ctx, arg, client.StackType)
+			stack, err := lookup.Lookup(ctx, arg, types.StackType)
 			if err == nil {
-				stacks[stack.ID] = true
+				stacks[stack.Name] = true
 			} else {
 				notStacks = append(notStacks, arg)
 			}

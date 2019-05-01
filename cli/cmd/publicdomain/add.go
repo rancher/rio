@@ -1,13 +1,11 @@
 package publicdomain
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/pkg/errors"
-	"github.com/rancher/norman/pkg/kv"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/types/client/project/v1"
+	"github.com/rancher/rio/cli/pkg/stack"
+	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
+	name2 "github.com/rancher/rio/pkg/name"
 )
 
 type Add struct {
@@ -19,43 +17,17 @@ func (a *Add) Run(ctx *clicontext.CLIContext) error {
 	}
 	domainName := ctx.CLI.Args().Get(0)
 	target := ctx.CLI.Args().Get(1)
-	cluster, err := ctx.Cluster()
-	if err != nil {
-		return err
-	}
-	spaceClient, err := cluster.Client()
-	if err != nil {
-		return err
-	}
-	space, stack, targetName := resolveSpaceStackName(target, cluster.DefaultProjectName, cluster.DefaultStackName)
-	domain := &client.PublicDomain{
-		DomainName:        domainName,
-		TargetProjectName: space,
-		TargetStackName:   stack,
-		TargetName:        targetName,
-	}
-	domain, err = spaceClient.PublicDomain.Create(domain)
-	if err != nil {
-		return err
-	}
-	fmt.Println(domain.Name)
-	return nil
-}
 
-func resolveSpaceStackName(name, defaultProject, defaultStack string) (string, string, string) {
-	parts := strings.SplitN(name, "/", 3)
-	if len(parts) == 3 {
-		return parts[0], parts[1], parts[2]
+	_, namespace, name, err := stack.ResolveSpaceStackForName(ctx, target)
+	if err != nil {
+		return err
 	}
-	stackName, name := kv.Split(name, "/")
-	if stackName != "" && name == "" {
-		if !strings.HasSuffix(name, "/") {
-			name = stackName
-			stackName = ""
-		}
-	}
-	if stackName == "" {
-		stackName = defaultStack
-	}
-	return defaultProject, stackName, name
+
+	return ctx.Create(projectv1.NewPublicDomain(ctx.Namespace, name2.PublicDomain(domainName), projectv1.PublicDomain{
+		Spec: projectv1.PublicDomainSpec{
+			DomainName:      domainName,
+			TargetStackName: namespace,
+			TargetName:      name,
+		},
+	}))
 }

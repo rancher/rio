@@ -5,97 +5,65 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/rancher/norman/condition"
-	"github.com/rancher/norman/controller"
-	"github.com/rancher/norman/lifecycle"
-	"github.com/rancher/norman/objectclient"
-	"github.com/rancher/norman/pkg/changeset"
-	"github.com/rancher/norman/pkg/objectset"
-	"github.com/rancher/norman/types/convert"
-	"github.com/rancher/rio/features/routing/pkg/istio/config"
-	"github.com/rancher/rio/pkg/namespace"
-	"github.com/rancher/rio/pkg/stacknamespace"
+	"github.com/rancher/mapper/convert"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	corev1controller "github.com/rancher/rio/pkg/generated/controllers/core/v1"
 	"github.com/rancher/rio/types"
-	riov1 "github.com/rancher/rio/types/apis/rio.cattle.io/v1"
-	v1 "github.com/rancher/types/apis/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"github.com/rancher/wrangler/pkg/apply"
+	"github.com/rancher/wrangler/pkg/condition"
+	"github.com/rancher/wrangler/pkg/generic"
+	"github.com/rancher/wrangler/pkg/objectset"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/cache"
 )
 
 var ErrSkipObjectSet = errors.New("skip objectset")
 
-type ClientAccessor interface {
-	Generic() controller.GenericController
-	ObjectClient() *objectclient.ObjectClient
+type ControllerWrapper interface {
+	Informer() cache.SharedIndexInformer
+	AddGenericHandler(ctx context.Context, name string, handler generic.Handler)
+	AddGenericRemoveHandler(ctx context.Context, name string, handler generic.Handler)
+	Enqueue(namespace, name string)
+	Updater() generic.Updater
 }
 
-type Populator func(obj runtime.Object, stack *riov1.Stack, os *objectset.ObjectSet) error
+type Populator func(obj runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) error
 
 type Controller struct {
-	Processor      *objectset.Processor
+	Apply          apply.Apply
 	Populator      Populator
 	name           string
-	stacksCache    riov1.StackClientCache
 	indexer        cache.Indexer
-	namespaceCache v1.NamespaceClientCache
-	injector       []config.IstioInjector
+	namespaceCache corev1controller.NamespaceCache
+	injectors      []string
 }
 
-func NewGeneratingController(ctx context.Context, rContext *types.Context, name string, client ClientAccessor, injector ...config.IstioInjector) *Controller {
+func NewGeneratingController(ctx context.Context, rContext *types.Context, name string, controller ControllerWrapper, injectors ...string) *Controller {
 	sc := &Controller{
 		name:           name,
-		Processor:      objectset.NewProcessor(name),
-		stacksCache:    rContext.Rio.Stack.Cache(),
-		namespaceCache: rContext.Core.Namespace.Cache(),
-		injector:       injector,
-		indexer:        client.Generic().Informer().GetIndexer(),
+		Apply:          rContext.Apply.WithSetID(name).WithStrictCaching(),
+		namespaceCache: rContext.Core.Core().V1().Namespace().Cache(),
+		injectors:      injectors,
+		indexer:        controller.Informer().GetIndexer(),
 	}
-	changeset.Watch(ctx, "stackchange-"+name, sc.resolve, client.Generic(), rContext.Rio.Stack)
 
 	lcName := name + "-object-controller"
-	lc := lifecycle.NewObjectLifecycleAdapter(lcName, false, sc, client.ObjectClient())
-	client.Generic().AddHandler(ctx, name, lc)
-
+	controller.AddGenericHandler(ctx, lcName, generic.UpdateOnChange(controller.Updater(), sc.OnChange))
+	controller.AddGenericRemoveHandler(ctx, lcName+"-remove", sc.OnRemove)
 	return sc
 }
 
-func (o *Controller) resolve(ns, name string, obj runtime.Object) ([]changeset.Key, error) {
-	switch obj.(type) {
-	case *riov1.Stack:
-		var ret []interface{}
-		if err := cache.ListAllByNamespace(o.indexer, namespace.StackToNamespace(obj.(*riov1.Stack)), labels.Everything(), func(obj interface{}) {
-			ret = append(ret, obj)
-		}); err != nil {
-			return nil, err
-		}
-		var key []changeset.Key
-		for _, o := range ret {
-			meta, err := meta.Accessor(o)
-			if err != nil {
-				return nil, err
-			}
-			key = append(key, changeset.Key{
-				Name:      meta.GetName(),
-				Namespace: meta.GetNamespace(),
-			})
-		}
-		return key, nil
+func (o *Controller) OnRemove(key string, obj runtime.Object) (runtime.Object, error) {
+	return obj, o.Apply.WithOwner(obj).Apply(nil)
+}
+
+func (o *Controller) OnChange(key string, obj runtime.Object) (runtime.Object, error) {
+	if obj == nil {
+		return obj, nil
 	}
-	return nil, nil
-}
 
-func (o *Controller) Create(obj runtime.Object) (runtime.Object, error) {
-	return obj, nil
-}
-
-func (o *Controller) Finalize(obj runtime.Object) (runtime.Object, error) {
-	return obj, o.Processor.Remove(obj)
-}
-
-func (o *Controller) Updated(obj runtime.Object) (runtime.Object, error) {
 	if o.Populator == nil {
 		return obj, nil
 	}
@@ -105,48 +73,35 @@ func (o *Controller) Updated(obj runtime.Object) (runtime.Object, error) {
 		return obj, err
 	}
 
-	stack, err := stacknamespace.GetStack(meta, o.stacksCache, o.namespaceCache)
-	if apierrors.IsNotFound(err) {
-		return obj, nil
-	}
+	ns, err := o.namespaceCache.Get(meta.GetNamespace())
 	if err != nil {
 		return obj, err
 	}
 
 	os := objectset.NewObjectSet()
-	if err := o.Populator(obj, stack, os); err != nil {
+	if err := o.Populator(obj, ns, os); err != nil {
 		if err == ErrSkipObjectSet {
 			return obj, nil
 		}
 		os.AddErr(err)
 	}
 
-	desireset := o.Processor.NewDesiredSet(obj, os)
-	if !stack.Spec.DisableMesh {
-		for _, i := range o.injector {
-			desireset.AddInjector(i.Inject)
+	desireset := o.Apply.WithOwner(obj)
+	if svc, ok := obj.(*riov1.Service); ok && !svc.Spec.DisableServiceMesh {
+		for _, i := range o.injectors {
+			desireset = desireset.WithInjectorName(i)
 		}
 	}
 
-	cond := o.getCondition()
-
-	if err = desireset.Apply(); err != nil {
-		cond.False(obj)
-		cond.ReasonAndMessageFromError(obj, err)
-	} else if cond.GetLastUpdated(obj) != "" {
-		cond.True(obj)
-		cond.Message(obj, "")
-		cond.Reason(obj, "")
-	}
-
-	return obj, err
+	return obj, o.getCondition().Do(func() (runtime.Object, error) {
+		return obj, desireset.Apply(os)
+	})
 }
 
 func (o *Controller) getCondition() condition.Cond {
-	setID := o.Processor.SetID()
 	buffer := strings.Builder{}
-	buffer.WriteString(string(riov1.StackConditionDeployed))
-	for _, part := range strings.Split(setID, "-") {
+	buffer.WriteString(string(riov1.DeployedCondition))
+	for _, part := range strings.Split(o.name, "-") {
 		buffer.WriteString(convert.Capitalize(part))
 	}
 	return condition.Cond(buffer.String())

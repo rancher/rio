@@ -6,8 +6,9 @@ import (
 
 	"github.com/rancher/rio/cli/cmd/ps"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/types/client/project/v1"
+	"github.com/rancher/rio/cli/pkg/tables"
 	"github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 )
 
 type Exec struct {
@@ -41,7 +42,7 @@ func (e *Exec) Run(ctx *clicontext.CLIContext) error {
 	container := findContainer(pd, e.C_Container)
 	podNS, podName, containerName := pd.Pod.Namespace, pd.Pod.Name, container.Name
 
-	execArgs := []string{}
+	var execArgs []string
 	if logrus.GetLevel() >= logrus.DebugLevel {
 		execArgs = append(execArgs, "-v=9")
 	}
@@ -55,14 +56,10 @@ func (e *Exec) Run(ctx *clicontext.CLIContext) error {
 	execArgs = append(execArgs, podName, "-c", containerName)
 	execArgs = append(execArgs, args[1:]...)
 
-	cluster, err := ctx.Cluster()
-	if err != nil {
-		return err
-	}
-	return cluster.Kubectl(podNS, "exec", execArgs...)
+	return ctx.Kubectl(podNS, "exec", execArgs...)
 }
 
-func findContainer(pd *ps.PodData, name string) *client.Container {
+func findContainer(pd *tables.PodData, name string) *v1.Container {
 	for _, c := range pd.Containers {
 		if c.Name == name {
 			return &c
