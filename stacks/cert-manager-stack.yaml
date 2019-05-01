@@ -1,5 +1,6 @@
 services:
   cert-manager:
+    disableServiceMesh: true
     global_permissions:
     - '* certmanager.k8s.io/*'
     - '* extensions/ingresses'
@@ -8,28 +9,14 @@ services:
     - '* events'
     - '* services'
     - '* pods'
-    image: ${CERT_MANAGER_IMAGE}
+    image: daishan1992/cert-manager:latest
     imagePullPolicy: Always
-    command:
+    args:
     - cert-manager
     - --leader-election-namespace
-    - rio-system
+    - ${NAMESPACE}
     - --cluster-resource-namespace
-    - rio-system
+    - ${NAMESPACE}
     - --logtostderr
     - "true"
-
-kubernetes:
-  namespaced_custom_resource_definitions:
-  # cert manager
-  - Issuer.certmanager.k8s.io/v1alpha1
-  - Challenge.certmanager.k8s.io/v1alpha1
-  - Order.certmanager.k8s.io/v1alpha1
-  - Certificate.certmanager.k8s.io/v1alpha1
-  custom_resource_definitions:
-  - ClusterIssuer.certmanager.k8s.io/v1alpha1
-
-questions:
-- variable: CERT_MANAGER_IMAGE
-  description: "cert manager image to use"
 

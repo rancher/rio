@@ -27,14 +27,14 @@ configs:
       cattle.io/creator: norman
 services:
   local-path-provisioner:
-    command:
+    args:
     - local-path-provisioner
     - --debug
     - start
     - --config
     - /etc/config/config.json
-    configs: config:/etc/config/config.json
-    environment:
+    configs: config/content:/etc/config/config.json
+    env:
     - POD_NAMESPACE=$(self/namespace)
     global_permissions:
     - nodes

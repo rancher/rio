@@ -24,18 +24,18 @@ services:
     - get,list,watch,create,update,patch endpoints
     restart: always
 
-    sidekicks:
-      init-volumes:
-        image: daishan1992/nfs-client:latest
-        command:
-        - "sh"
-        - "-c"
-        - "mount -t nfs4 ${NFS_SERVER_HOSTNAME}:${NFS_SERVER_EXPORT_PATH} /persistentvolumes"
-        volumes:
-        - data:/persistentvolumes:shared
-        privileged: true
-        initContainer: true
-        imagePullPolicy: always
+    containers:
+      name: init-volumes
+      init: true
+      image: daishan1992/nfs-client:latest
+      args:
+      - "sh"
+      - "-c"
+      - "mount -t nfs4 ${NFS_SERVER_HOSTNAME}:${NFS_SERVER_EXPORT_PATH} /persistentvolumes"
+      volumes:
+      - data:/persistentvolumes:shared
+      privileged: true
+      imagePullPolicy: always
 
 questions:
 - variable: NFS_SERVER_HOSTNAME

@@ -12,27 +12,25 @@ configs:
       scale-to-zero-grace-period: 2m
 
 services:
-  gateway:
+  autoscaler:
+    disableServiceMesh: true
     global_permissions:
     - '* configmaps'
     - '* events'
     - get,list,update,watch,delete rio.cattle.io/services
-    - get,watch,list,update rio-autoscale.cattle.io/servicescalerecommendations
+    - get,watch,list,update autoscale.rio.cattle.io/servicescalerecommendations
     - get,watch,list pods
     - get,list,watch,update endpoints
     - get,watch,list services
-
     image: daishan1992/rio-autoscaler:dev
     imagePullPolicy: always
-    expose:
+    ports:
     - 80/http
-    command:
+    args:
     - rio-autoscaler
     - --debug
     - gateway
     - --listen
     - '80'
-
-externalservices:
-  prometheus:
-    service: prometheus/prometheus
+    env:
+    - NAMESPACE=$(self/namespace)
