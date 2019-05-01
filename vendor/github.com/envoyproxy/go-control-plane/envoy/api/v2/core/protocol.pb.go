@@ -3,20 +3,19 @@
 
 package core
 
-import proto "github.com/gogo/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import _ "github.com/gogo/protobuf/gogoproto"
-import types "github.com/gogo/protobuf/types"
-import _ "github.com/lyft/protoc-gen-validate/validate"
+import (
+	bytes "bytes"
+	fmt "fmt"
+	io "io"
+	math "math"
+	time "time"
 
-import time "time"
-
-import bytes "bytes"
-
-import github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
-
-import io "io"
+	_ "github.com/envoyproxy/protoc-gen-validate/validate"
+	_ "github.com/gogo/protobuf/gogoproto"
+	proto "github.com/gogo/protobuf/proto"
+	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
+	types "github.com/gogo/protobuf/types"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -41,7 +40,7 @@ func (m *TcpProtocolOptions) Reset()         { *m = TcpProtocolOptions{} }
 func (m *TcpProtocolOptions) String() string { return proto.CompactTextString(m) }
 func (*TcpProtocolOptions) ProtoMessage()    {}
 func (*TcpProtocolOptions) Descriptor() ([]byte, []int) {
-	return fileDescriptor_protocol_421b79c49b67d717, []int{0}
+	return fileDescriptor_d86476e078060b60, []int{0}
 }
 func (m *TcpProtocolOptions) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -58,8 +57,8 @@ func (m *TcpProtocolOptions) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return b[:n], nil
 	}
 }
-func (dst *TcpProtocolOptions) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_TcpProtocolOptions.Merge(dst, src)
+func (m *TcpProtocolOptions) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TcpProtocolOptions.Merge(m, src)
 }
 func (m *TcpProtocolOptions) XXX_Size() int {
 	return m.Size()
@@ -75,7 +74,7 @@ type HttpProtocolOptions struct {
 	// period in which there are no active requests. If not set, there is no idle timeout. When the
 	// idle timeout is reached the connection will be closed. Note that request based timeouts mean
 	// that HTTP/2 PINGs will not keep the connection alive.
-	IdleTimeout          *time.Duration `protobuf:"bytes,1,opt,name=idle_timeout,json=idleTimeout,stdduration" json:"idle_timeout,omitempty"`
+	IdleTimeout          *time.Duration `protobuf:"bytes,1,opt,name=idle_timeout,json=idleTimeout,proto3,stdduration" json:"idle_timeout,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
 	XXX_sizecache        int32          `json:"-"`
@@ -85,7 +84,7 @@ func (m *HttpProtocolOptions) Reset()         { *m = HttpProtocolOptions{} }
 func (m *HttpProtocolOptions) String() string { return proto.CompactTextString(m) }
 func (*HttpProtocolOptions) ProtoMessage()    {}
 func (*HttpProtocolOptions) Descriptor() ([]byte, []int) {
-	return fileDescriptor_protocol_421b79c49b67d717, []int{1}
+	return fileDescriptor_d86476e078060b60, []int{1}
 }
 func (m *HttpProtocolOptions) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -102,8 +101,8 @@ func (m *HttpProtocolOptions) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return b[:n], nil
 	}
 }
-func (dst *HttpProtocolOptions) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_HttpProtocolOptions.Merge(dst, src)
+func (m *HttpProtocolOptions) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HttpProtocolOptions.Merge(m, src)
 }
 func (m *HttpProtocolOptions) XXX_Size() int {
 	return m.Size()
@@ -126,7 +125,7 @@ type Http1ProtocolOptions struct {
 	// are generally sent by clients to forward/explicit proxies. This allows clients to configure
 	// envoy as their HTTP proxy. In Unix, for example, this is typically done by setting the
 	// *http_proxy* environment variable.
-	AllowAbsoluteUrl *types.BoolValue `protobuf:"bytes,1,opt,name=allow_absolute_url,json=allowAbsoluteUrl" json:"allow_absolute_url,omitempty"`
+	AllowAbsoluteUrl *types.BoolValue `protobuf:"bytes,1,opt,name=allow_absolute_url,json=allowAbsoluteUrl,proto3" json:"allow_absolute_url,omitempty"`
 	// Handle incoming HTTP/1.0 and HTTP 0.9 requests.
 	// This is off by default, and not fully standards compliant. There is support for pre-HTTP/1.1
 	// style connect logic, dechunking, and handling lack of client host iff
@@ -145,7 +144,7 @@ func (m *Http1ProtocolOptions) Reset()         { *m = Http1ProtocolOptions{} }
 func (m *Http1ProtocolOptions) String() string { return proto.CompactTextString(m) }
 func (*Http1ProtocolOptions) ProtoMessage()    {}
 func (*Http1ProtocolOptions) Descriptor() ([]byte, []int) {
-	return fileDescriptor_protocol_421b79c49b67d717, []int{2}
+	return fileDescriptor_d86476e078060b60, []int{2}
 }
 func (m *Http1ProtocolOptions) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -162,8 +161,8 @@ func (m *Http1ProtocolOptions) XXX_Marshal(b []byte, deterministic bool) ([]byte
 		return b[:n], nil
 	}
 }
-func (dst *Http1ProtocolOptions) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Http1ProtocolOptions.Merge(dst, src)
+func (m *Http1ProtocolOptions) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Http1ProtocolOptions.Merge(m, src)
 }
 func (m *Http1ProtocolOptions) XXX_Size() int {
 	return m.Size()
@@ -196,32 +195,41 @@ func (m *Http1ProtocolOptions) GetDefaultHostForHttp_10() string {
 }
 
 type Http2ProtocolOptions struct {
-	// `Maximum table size <http://httpwg.org/specs/rfc7541.html#rfc.section.4.2>`_
+	// `Maximum table size <https://httpwg.org/specs/rfc7541.html#rfc.section.4.2>`_
 	// (in octets) that the encoder is permitted to use for the dynamic HPACK table. Valid values
 	// range from 0 to 4294967295 (2^32 - 1) and defaults to 4096. 0 effectively disables header
 	// compression.
-	HpackTableSize *types.UInt32Value `protobuf:"bytes,1,opt,name=hpack_table_size,json=hpackTableSize" json:"hpack_table_size,omitempty"`
-	// `Maximum concurrent streams <http://httpwg.org/specs/rfc7540.html#rfc.section.5.1.2>`_
+	HpackTableSize *types.UInt32Value `protobuf:"bytes,1,opt,name=hpack_table_size,json=hpackTableSize,proto3" json:"hpack_table_size,omitempty"`
+	// `Maximum concurrent streams <https://httpwg.org/specs/rfc7540.html#rfc.section.5.1.2>`_
 	// allowed for peer on one HTTP/2 connection. Valid values range from 1 to 2147483647 (2^31 - 1)
 	// and defaults to 2147483647.
-	MaxConcurrentStreams *types.UInt32Value `protobuf:"bytes,2,opt,name=max_concurrent_streams,json=maxConcurrentStreams" json:"max_concurrent_streams,omitempty"`
+	MaxConcurrentStreams *types.UInt32Value `protobuf:"bytes,2,opt,name=max_concurrent_streams,json=maxConcurrentStreams,proto3" json:"max_concurrent_streams,omitempty"`
 	// This field also acts as a soft limit on the number of bytes Envoy will buffer per-stream in the
 	// HTTP/2 codec buffers. Once the buffer reaches this pointer, watermark callbacks will fire to
 	// stop the flow of data to the codec buffers.
-	InitialStreamWindowSize *types.UInt32Value `protobuf:"bytes,3,opt,name=initial_stream_window_size,json=initialStreamWindowSize" json:"initial_stream_window_size,omitempty"`
+	InitialStreamWindowSize *types.UInt32Value `protobuf:"bytes,3,opt,name=initial_stream_window_size,json=initialStreamWindowSize,proto3" json:"initial_stream_window_size,omitempty"`
 	// Similar to *initial_stream_window_size*, but for connection-level flow-control
 	// window. Currently, this has the same minimum/maximum/default as *initial_stream_window_size*.
-	InitialConnectionWindowSize *types.UInt32Value `protobuf:"bytes,4,opt,name=initial_connection_window_size,json=initialConnectionWindowSize" json:"initial_connection_window_size,omitempty"`
-	XXX_NoUnkeyedLiteral        struct{}           `json:"-"`
-	XXX_unrecognized            []byte             `json:"-"`
-	XXX_sizecache               int32              `json:"-"`
+	InitialConnectionWindowSize *types.UInt32Value `protobuf:"bytes,4,opt,name=initial_connection_window_size,json=initialConnectionWindowSize,proto3" json:"initial_connection_window_size,omitempty"`
+	// Allows proxying Websocket and other upgrades over H2 connect.
+	AllowConnect bool `protobuf:"varint,5,opt,name=allow_connect,json=allowConnect,proto3" json:"allow_connect,omitempty"`
+	// [#not-implemented-hide:] Hiding until envoy has full metadata support.
+	// Still under implementation. DO NOT USE.
+	//
+	// Allows metadata. See [metadata
+	// docs](https://github.com/envoyproxy/envoy/blob/master/source/docs/h2_metadata.md) for more
+	// information.
+	AllowMetadata        bool     `protobuf:"varint,6,opt,name=allow_metadata,json=allowMetadata,proto3" json:"allow_metadata,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *Http2ProtocolOptions) Reset()         { *m = Http2ProtocolOptions{} }
 func (m *Http2ProtocolOptions) String() string { return proto.CompactTextString(m) }
 func (*Http2ProtocolOptions) ProtoMessage()    {}
 func (*Http2ProtocolOptions) Descriptor() ([]byte, []int) {
-	return fileDescriptor_protocol_421b79c49b67d717, []int{3}
+	return fileDescriptor_d86476e078060b60, []int{3}
 }
 func (m *Http2ProtocolOptions) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -238,8 +246,8 @@ func (m *Http2ProtocolOptions) XXX_Marshal(b []byte, deterministic bool) ([]byte
 		return b[:n], nil
 	}
 }
-func (dst *Http2ProtocolOptions) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Http2ProtocolOptions.Merge(dst, src)
+func (m *Http2ProtocolOptions) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Http2ProtocolOptions.Merge(m, src)
 }
 func (m *Http2ProtocolOptions) XXX_Size() int {
 	return m.Size()
@@ -278,9 +286,23 @@ func (m *Http2ProtocolOptions) GetInitialConnectionWindowSize() *types.UInt32Val
 	return nil
 }
 
+func (m *Http2ProtocolOptions) GetAllowConnect() bool {
+	if m != nil {
+		return m.AllowConnect
+	}
+	return false
+}
+
+func (m *Http2ProtocolOptions) GetAllowMetadata() bool {
+	if m != nil {
+		return m.AllowMetadata
+	}
+	return false
+}
+
 // [#not-implemented-hide:]
 type GrpcProtocolOptions struct {
-	Http2ProtocolOptions *Http2ProtocolOptions `protobuf:"bytes,1,opt,name=http2_protocol_options,json=http2ProtocolOptions" json:"http2_protocol_options,omitempty"`
+	Http2ProtocolOptions *Http2ProtocolOptions `protobuf:"bytes,1,opt,name=http2_protocol_options,json=http2ProtocolOptions,proto3" json:"http2_protocol_options,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
 	XXX_unrecognized     []byte                `json:"-"`
 	XXX_sizecache        int32                 `json:"-"`
@@ -290,7 +312,7 @@ func (m *GrpcProtocolOptions) Reset()         { *m = GrpcProtocolOptions{} }
 func (m *GrpcProtocolOptions) String() string { return proto.CompactTextString(m) }
 func (*GrpcProtocolOptions) ProtoMessage()    {}
 func (*GrpcProtocolOptions) Descriptor() ([]byte, []int) {
-	return fileDescriptor_protocol_421b79c49b67d717, []int{4}
+	return fileDescriptor_d86476e078060b60, []int{4}
 }
 func (m *GrpcProtocolOptions) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -307,8 +329,8 @@ func (m *GrpcProtocolOptions) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return b[:n], nil
 	}
 }
-func (dst *GrpcProtocolOptions) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GrpcProtocolOptions.Merge(dst, src)
+func (m *GrpcProtocolOptions) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GrpcProtocolOptions.Merge(m, src)
 }
 func (m *GrpcProtocolOptions) XXX_Size() int {
 	return m.Size()
@@ -333,6 +355,51 @@ func init() {
 	proto.RegisterType((*Http2ProtocolOptions)(nil), "envoy.api.v2.core.Http2ProtocolOptions")
 	proto.RegisterType((*GrpcProtocolOptions)(nil), "envoy.api.v2.core.GrpcProtocolOptions")
 }
+
+func init() { proto.RegisterFile("envoy/api/v2/core/protocol.proto", fileDescriptor_d86476e078060b60) }
+
+var fileDescriptor_d86476e078060b60 = []byte{
+	// 593 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x53, 0xcd, 0x6e, 0x13, 0x3f,
+	0x10, 0x97, 0xff, 0xe9, 0xbf, 0x14, 0xf7, 0x83, 0x76, 0x1b, 0xb5, 0xa1, 0xa0, 0x34, 0x0a, 0x20,
+	0xa2, 0x1e, 0x76, 0xdb, 0x54, 0xe2, 0xce, 0x16, 0x95, 0x72, 0x40, 0x54, 0xdb, 0x16, 0xc4, 0x01,
+	0x59, 0x8e, 0xe3, 0x26, 0x16, 0xce, 0x8e, 0xe5, 0xf5, 0x26, 0x6d, 0x9f, 0x84, 0x47, 0xe0, 0x19,
+	0x38, 0x20, 0x8e, 0x1c, 0x79, 0x03, 0x50, 0x6e, 0x9c, 0x79, 0x80, 0xa0, 0xb5, 0x9d, 0x08, 0x92,
+	0x4a, 0x20, 0x4e, 0x19, 0xcd, 0xfc, 0xbe, 0x26, 0x3b, 0xc6, 0x35, 0x9e, 0xf6, 0xe1, 0x32, 0xa2,
+	0x4a, 0x44, 0xfd, 0x66, 0xc4, 0x40, 0xf3, 0x48, 0x69, 0x30, 0xc0, 0x40, 0x86, 0xb6, 0x08, 0xd6,
+	0x2c, 0x22, 0xa4, 0x4a, 0x84, 0xfd, 0x66, 0x58, 0x20, 0xb6, 0xaa, 0x1d, 0x80, 0x8e, 0xf4, 0xc8,
+	0x56, 0x7e, 0x1e, 0xb5, 0x73, 0x4d, 0x8d, 0x80, 0xd4, 0x51, 0x66, 0xe7, 0x03, 0x4d, 0x95, 0xe2,
+	0x3a, 0xf3, 0xf3, 0xcd, 0x3e, 0x95, 0xa2, 0x4d, 0x0d, 0x8f, 0xc6, 0x85, 0x1f, 0x94, 0x3b, 0xd0,
+	0x01, 0x5b, 0x46, 0x45, 0xe5, 0xba, 0xf5, 0x32, 0x0e, 0x4e, 0x99, 0x3a, 0xf6, 0xb1, 0x5e, 0xa8,
+	0xc2, 0x29, 0xab, 0xbf, 0xc6, 0xeb, 0x47, 0xc6, 0x4c, 0xb7, 0x83, 0x18, 0x2f, 0x89, 0xb6, 0xe4,
+	0xc4, 0x88, 0x1e, 0x87, 0xdc, 0x54, 0x50, 0x0d, 0x35, 0x16, 0x9b, 0xb7, 0x43, 0x17, 0x29, 0x1c,
+	0x47, 0x0a, 0x9f, 0xf8, 0xc8, 0xf1, 0xdc, 0xbb, 0xaf, 0xdb, 0x28, 0x59, 0x2c, 0x48, 0xa7, 0x8e,
+	0x53, 0xff, 0x88, 0x70, 0xb9, 0xd0, 0xde, 0x9b, 0x16, 0x3f, 0xc2, 0x01, 0x95, 0x12, 0x06, 0x84,
+	0xb6, 0x32, 0x90, 0xb9, 0xe1, 0x24, 0xd7, 0xd2, 0x5b, 0x6c, 0xcd, 0x58, 0xc4, 0x00, 0xf2, 0x25,
+	0x95, 0x39, 0x4f, 0x56, 0x2d, 0xeb, 0xb1, 0x27, 0x9d, 0x69, 0x19, 0xdc, 0xc7, 0x2b, 0x94, 0x31,
+	0xae, 0x0c, 0xe9, 0x1a, 0xa3, 0xc8, 0xde, 0x6e, 0xe5, 0xbf, 0x1a, 0x6a, 0x2c, 0x24, 0x4b, 0xae,
+	0x6b, 0xdd, 0x77, 0x83, 0x47, 0xb8, 0xd2, 0xe6, 0xe7, 0x34, 0x97, 0x86, 0x74, 0x21, 0x33, 0xe4,
+	0x1c, 0xf4, 0x04, 0x5f, 0xaa, 0xa1, 0xc6, 0xcd, 0xa4, 0xec, 0xe7, 0x47, 0x90, 0x99, 0x43, 0xd0,
+	0x8e, 0x57, 0xff, 0x51, 0x72, 0x0b, 0x34, 0xa7, 0x17, 0x38, 0xc4, 0xab, 0x5d, 0x45, 0xd9, 0x5b,
+	0x62, 0x68, 0x4b, 0x72, 0x92, 0x89, 0x2b, 0xee, 0xe3, 0xdf, 0x9d, 0x89, 0x7f, 0xf6, 0x2c, 0x35,
+	0xfb, 0x4d, 0xb7, 0xc0, 0x8a, 0x65, 0x9d, 0x16, 0xa4, 0x13, 0x71, 0xc5, 0x03, 0x86, 0x37, 0x7a,
+	0xf4, 0x82, 0x30, 0x48, 0x59, 0xae, 0x35, 0x4f, 0x0d, 0xc9, 0x8c, 0xe6, 0xb4, 0x97, 0xd9, 0x35,
+	0xfe, 0xa0, 0x16, 0xdf, 0xfa, 0xf0, 0xfd, 0x53, 0x09, 0xef, 0x2c, 0x54, 0x46, 0xa3, 0xd1, 0xe8,
+	0x46, 0x03, 0x25, 0xe5, 0x1e, 0xbd, 0x38, 0x98, 0x68, 0x9d, 0x38, 0xa9, 0x40, 0xe2, 0x2d, 0x91,
+	0x0a, 0x23, 0xa8, 0xf4, 0xea, 0x64, 0x20, 0xd2, 0x36, 0x0c, 0x5c, 0xec, 0xd2, 0x5f, 0x18, 0xad,
+	0x15, 0x46, 0x4b, 0x3b, 0xd8, 0x1b, 0x8d, 0x46, 0xa5, 0x64, 0xd3, 0x4b, 0x3a, 0x93, 0x57, 0x56,
+	0xd0, 0xae, 0x64, 0x70, 0x75, 0xec, 0xc6, 0x20, 0x4d, 0x39, 0x2b, 0xfe, 0xb1, 0xdf, 0x1c, 0xe7,
+	0xfe, 0xcd, 0xf1, 0x8e, 0x97, 0x3d, 0x98, 0xa8, 0xfe, 0xe2, 0x7a, 0x0f, 0x2f, 0xbb, 0x8b, 0xf2,
+	0x9e, 0x95, 0xff, 0xfd, 0x19, 0x14, 0x4d, 0xcf, 0x08, 0x1e, 0xe0, 0x15, 0x07, 0xea, 0x71, 0x43,
+	0xdb, 0xd4, 0xd0, 0xca, 0xbc, 0x45, 0x39, 0xea, 0x73, 0xdf, 0xac, 0x1b, 0xbc, 0xfe, 0x54, 0x2b,
+	0x36, 0xfd, 0xcd, 0xdf, 0xe0, 0x8d, 0xe2, 0x66, 0x9a, 0x64, 0xfc, 0xb0, 0x09, 0xb8, 0x89, 0xff,
+	0xf2, 0x0f, 0xc3, 0x99, 0x17, 0x1e, 0x5e, 0x77, 0x3c, 0x49, 0xb9, 0x7b, 0x4d, 0x37, 0x8e, 0xdf,
+	0x0f, 0xab, 0xe8, 0xf3, 0xb0, 0x8a, 0xbe, 0x0c, 0xab, 0xe8, 0xdb, 0xb0, 0x8a, 0xf0, 0xb6, 0x00,
+	0x27, 0xa9, 0x34, 0x5c, 0x5c, 0xce, 0xaa, 0xc7, 0xcb, 0x63, 0x0d, 0xfb, 0x7b, 0x8c, 0x5a, 0xf3,
+	0x36, 0xda, 0xfe, 0xcf, 0x00, 0x00, 0x00, 0xff, 0xff, 0x2f, 0x9a, 0xd7, 0xd3, 0x8e, 0x04, 0x00,
+	0x00,
+}
+
 func (this *TcpProtocolOptions) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -452,6 +519,12 @@ func (this *Http2ProtocolOptions) Equal(that interface{}) bool {
 		return false
 	}
 	if !this.InitialConnectionWindowSize.Equal(that1.InitialConnectionWindowSize) {
+		return false
+	}
+	if this.AllowConnect != that1.AllowConnect {
+		return false
+	}
+	if this.AllowMetadata != that1.AllowMetadata {
 		return false
 	}
 	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
@@ -640,6 +713,26 @@ func (m *Http2ProtocolOptions) MarshalTo(dAtA []byte) (int, error) {
 		}
 		i += n6
 	}
+	if m.AllowConnect {
+		dAtA[i] = 0x28
+		i++
+		if m.AllowConnect {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.AllowMetadata {
+		dAtA[i] = 0x30
+		i++
+		if m.AllowMetadata {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
 	}
@@ -687,6 +780,9 @@ func encodeVarintProtocol(dAtA []byte, offset int, v uint64) int {
 	return offset + 1
 }
 func (m *TcpProtocolOptions) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	if m.XXX_unrecognized != nil {
@@ -696,6 +792,9 @@ func (m *TcpProtocolOptions) Size() (n int) {
 }
 
 func (m *HttpProtocolOptions) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	if m.IdleTimeout != nil {
@@ -709,6 +808,9 @@ func (m *HttpProtocolOptions) Size() (n int) {
 }
 
 func (m *Http1ProtocolOptions) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	if m.AllowAbsoluteUrl != nil {
@@ -729,6 +831,9 @@ func (m *Http1ProtocolOptions) Size() (n int) {
 }
 
 func (m *Http2ProtocolOptions) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	if m.HpackTableSize != nil {
@@ -747,6 +852,12 @@ func (m *Http2ProtocolOptions) Size() (n int) {
 		l = m.InitialConnectionWindowSize.Size()
 		n += 1 + l + sovProtocol(uint64(l))
 	}
+	if m.AllowConnect {
+		n += 2
+	}
+	if m.AllowMetadata {
+		n += 2
+	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -754,6 +865,9 @@ func (m *Http2ProtocolOptions) Size() (n int) {
 }
 
 func (m *GrpcProtocolOptions) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	if m.Http2ProtocolOptions != nil {
@@ -794,7 +908,7 @@ func (m *TcpProtocolOptions) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -815,6 +929,9 @@ func (m *TcpProtocolOptions) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthProtocol
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthProtocol
 			}
 			if (iNdEx + skippy) > l {
@@ -845,7 +962,7 @@ func (m *HttpProtocolOptions) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -873,7 +990,7 @@ func (m *HttpProtocolOptions) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -882,6 +999,9 @@ func (m *HttpProtocolOptions) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthProtocol
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthProtocol
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -899,6 +1019,9 @@ func (m *HttpProtocolOptions) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthProtocol
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthProtocol
 			}
 			if (iNdEx + skippy) > l {
@@ -929,7 +1052,7 @@ func (m *Http1ProtocolOptions) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -957,7 +1080,7 @@ func (m *Http1ProtocolOptions) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -966,6 +1089,9 @@ func (m *Http1ProtocolOptions) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthProtocol
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthProtocol
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -990,7 +1116,7 @@ func (m *Http1ProtocolOptions) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= (int(b) & 0x7F) << shift
+				v |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1010,7 +1136,7 @@ func (m *Http1ProtocolOptions) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1020,6 +1146,9 @@ func (m *Http1ProtocolOptions) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthProtocol
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthProtocol
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1032,6 +1161,9 @@ func (m *Http1ProtocolOptions) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthProtocol
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthProtocol
 			}
 			if (iNdEx + skippy) > l {
@@ -1062,7 +1194,7 @@ func (m *Http2ProtocolOptions) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -1090,7 +1222,7 @@ func (m *Http2ProtocolOptions) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1099,6 +1231,9 @@ func (m *Http2ProtocolOptions) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthProtocol
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthProtocol
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1123,7 +1258,7 @@ func (m *Http2ProtocolOptions) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1132,6 +1267,9 @@ func (m *Http2ProtocolOptions) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthProtocol
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthProtocol
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1156,7 +1294,7 @@ func (m *Http2ProtocolOptions) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1165,6 +1303,9 @@ func (m *Http2ProtocolOptions) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthProtocol
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthProtocol
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1189,7 +1330,7 @@ func (m *Http2ProtocolOptions) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1198,6 +1339,9 @@ func (m *Http2ProtocolOptions) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthProtocol
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthProtocol
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1208,6 +1352,46 @@ func (m *Http2ProtocolOptions) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AllowConnect", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowProtocol
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.AllowConnect = bool(v != 0)
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AllowMetadata", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowProtocol
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.AllowMetadata = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipProtocol(dAtA[iNdEx:])
@@ -1215,6 +1399,9 @@ func (m *Http2ProtocolOptions) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthProtocol
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthProtocol
 			}
 			if (iNdEx + skippy) > l {
@@ -1245,7 +1432,7 @@ func (m *GrpcProtocolOptions) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -1273,7 +1460,7 @@ func (m *GrpcProtocolOptions) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1282,6 +1469,9 @@ func (m *GrpcProtocolOptions) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthProtocol
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthProtocol
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1299,6 +1489,9 @@ func (m *GrpcProtocolOptions) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthProtocol
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthProtocol
 			}
 			if (iNdEx + skippy) > l {
@@ -1368,8 +1561,11 @@ func skipProtocol(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
-			iNdEx += length
 			if length < 0 {
+				return 0, ErrInvalidLengthProtocol
+			}
+			iNdEx += length
+			if iNdEx < 0 {
 				return 0, ErrInvalidLengthProtocol
 			}
 			return iNdEx, nil
@@ -1400,6 +1596,9 @@ func skipProtocol(dAtA []byte) (n int, err error) {
 					return 0, err
 				}
 				iNdEx = start + next
+				if iNdEx < 0 {
+					return 0, ErrInvalidLengthProtocol
+				}
 			}
 			return iNdEx, nil
 		case 4:
@@ -1418,45 +1617,3 @@ var (
 	ErrInvalidLengthProtocol = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowProtocol   = fmt.Errorf("proto: integer overflow")
 )
-
-func init() {
-	proto.RegisterFile("envoy/api/v2/core/protocol.proto", fileDescriptor_protocol_421b79c49b67d717)
-}
-
-var fileDescriptor_protocol_421b79c49b67d717 = []byte{
-	// 540 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x93, 0xc1, 0x6e, 0xd3, 0x40,
-	0x10, 0x86, 0x65, 0x52, 0x41, 0xd9, 0x46, 0x25, 0x75, 0xad, 0x36, 0x04, 0x64, 0xa2, 0x08, 0x89,
-	0xa8, 0x07, 0xbb, 0x75, 0x25, 0xee, 0xa4, 0xa8, 0x84, 0x13, 0xc8, 0x4d, 0x41, 0x1c, 0xd0, 0x6a,
-	0xb3, 0xd9, 0x24, 0x2b, 0x36, 0x9e, 0xd5, 0x7a, 0x9d, 0x94, 0x3e, 0x09, 0x6f, 0x00, 0xcf, 0xc0,
-	0x01, 0x71, 0xe4, 0xc8, 0x1b, 0x80, 0x72, 0xe3, 0x29, 0x8c, 0xec, 0xdd, 0x04, 0x91, 0x54, 0x02,
-	0xf5, 0xb6, 0x9a, 0x99, 0xff, 0xff, 0xfe, 0xf1, 0xc8, 0xa8, 0xc9, 0x92, 0x29, 0xbc, 0x0f, 0x89,
-	0xe4, 0xe1, 0x34, 0x0a, 0x29, 0x28, 0x16, 0x4a, 0x05, 0x1a, 0x28, 0x88, 0xa0, 0x7c, 0xb8, 0x3b,
-	0xe5, 0x44, 0x40, 0x24, 0x0f, 0xa6, 0x51, 0x50, 0x4c, 0x34, 0xfc, 0x11, 0xc0, 0x48, 0xd8, 0xc9,
-	0x7e, 0x36, 0x0c, 0x07, 0x99, 0x22, 0x9a, 0x43, 0x62, 0x24, 0xeb, 0xfd, 0x99, 0x22, 0x52, 0x32,
-	0x95, 0xda, 0xfe, 0xfe, 0x94, 0x08, 0x3e, 0x20, 0x9a, 0x85, 0x8b, 0x87, 0x6d, 0x78, 0x23, 0x18,
-	0x41, 0xf9, 0x0c, 0x8b, 0x97, 0xa9, 0xb6, 0x3c, 0xe4, 0xf6, 0xa8, 0x7c, 0x69, 0x63, 0xbd, 0x90,
-	0x05, 0x29, 0x6d, 0xbd, 0x41, 0xbb, 0x5d, 0xad, 0x57, 0xcb, 0x6e, 0x07, 0x55, 0xf9, 0x40, 0x30,
-	0xac, 0xf9, 0x84, 0x41, 0xa6, 0xeb, 0x4e, 0xd3, 0x69, 0x6f, 0x45, 0x77, 0x03, 0x13, 0x29, 0x58,
-	0x44, 0x0a, 0x9e, 0xda, 0xc8, 0x9d, 0x8d, 0x0f, 0x3f, 0x1e, 0x38, 0xf1, 0x56, 0x21, 0xea, 0x19,
-	0x4d, 0xeb, 0x8b, 0x83, 0xbc, 0xc2, 0xfb, 0x68, 0xd5, 0xbc, 0x8b, 0x5c, 0x22, 0x04, 0xcc, 0x30,
-	0xe9, 0xa7, 0x20, 0x32, 0xcd, 0x70, 0xa6, 0x84, 0x45, 0x34, 0xd6, 0x10, 0x1d, 0x00, 0xf1, 0x8a,
-	0x88, 0x8c, 0xc5, 0xb5, 0x52, 0xf5, 0xc4, 0x8a, 0xce, 0x95, 0x70, 0x1f, 0xa2, 0x6d, 0x42, 0x29,
-	0x93, 0x1a, 0x8f, 0xb5, 0x96, 0xf8, 0xe8, 0xb0, 0x7e, 0xa3, 0xe9, 0xb4, 0x37, 0xe3, 0xaa, 0xa9,
-	0x96, 0xf4, 0x43, 0xf7, 0x31, 0xaa, 0x0f, 0xd8, 0x90, 0x64, 0x42, 0xe3, 0x31, 0xa4, 0x1a, 0x0f,
-	0x41, 0x2d, 0xe7, 0x2b, 0x4d, 0xa7, 0x7d, 0x3b, 0xf6, 0x6c, 0xbf, 0x0b, 0xa9, 0x3e, 0x05, 0x65,
-	0x74, 0xad, 0x8f, 0x15, 0xb3, 0x40, 0xb4, 0xba, 0xc0, 0x29, 0xaa, 0x8d, 0x25, 0xa1, 0xef, 0xb0,
-	0x26, 0x7d, 0xc1, 0x70, 0xca, 0x2f, 0x99, 0x8d, 0x7f, 0x7f, 0x2d, 0xfe, 0xf9, 0xf3, 0x44, 0x1f,
-	0x47, 0x66, 0x81, 0xed, 0x52, 0xd5, 0x2b, 0x44, 0x67, 0xfc, 0x92, 0xb9, 0x14, 0xed, 0x4d, 0xc8,
-	0x05, 0xa6, 0x90, 0xd0, 0x4c, 0x29, 0x96, 0x68, 0x9c, 0x6a, 0xc5, 0xc8, 0x24, 0x2d, 0xd7, 0xf8,
-	0x87, 0x5b, 0xe7, 0xce, 0xe7, 0x5f, 0x5f, 0x2b, 0xe8, 0x60, 0xb3, 0x9e, 0xe7, 0x79, 0x7e, 0xab,
-	0xed, 0xc4, 0xde, 0x84, 0x5c, 0x9c, 0x2c, 0xbd, 0xce, 0x8c, 0x95, 0x2b, 0x50, 0x83, 0x27, 0x5c,
-	0x73, 0x22, 0xac, 0x3b, 0x9e, 0xf1, 0x64, 0x00, 0x33, 0x13, 0xbb, 0xf2, 0x1f, 0xa0, 0x9d, 0x02,
-	0x54, 0x3d, 0x40, 0x16, 0x94, 0xe7, 0x95, 0x78, 0xdf, 0x5a, 0x1a, 0xc8, 0xeb, 0xd2, 0xb0, 0x5c,
-	0x49, 0x23, 0x7f, 0x41, 0xa3, 0x90, 0x24, 0x8c, 0x16, 0x5f, 0xec, 0x2f, 0xe2, 0xc6, 0xf5, 0x88,
-	0xf7, 0xac, 0xed, 0xc9, 0xd2, 0xf5, 0x0f, 0xb5, 0xa5, 0xd1, 0xee, 0x33, 0x25, 0xe9, 0xea, 0x9d,
-	0xde, 0xa2, 0xbd, 0xe2, 0xce, 0x11, 0x5e, 0xfc, 0x8c, 0x18, 0x4c, 0xc7, 0x5e, 0xeb, 0x51, 0xb0,
-	0xf6, 0x57, 0x06, 0x57, 0x1d, 0x3c, 0xf6, 0xc6, 0x57, 0x54, 0x3b, 0xb5, 0x4f, 0x73, 0xdf, 0xf9,
-	0x36, 0xf7, 0x9d, 0xef, 0x73, 0xdf, 0xf9, 0x39, 0xf7, 0x9d, 0xfe, 0xcd, 0x12, 0x74, 0xfc, 0x3b,
-	0x00, 0x00, 0xff, 0xff, 0xd0, 0x8c, 0x8d, 0xbc, 0x10, 0x04, 0x00, 0x00,
-}

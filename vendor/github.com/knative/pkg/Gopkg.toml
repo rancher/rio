@@ -8,26 +8,27 @@ required = [
   "k8s.io/code-generator/cmd/client-gen",
   "k8s.io/code-generator/cmd/lister-gen",
   "k8s.io/code-generator/cmd/informer-gen",
-  "github.com/knative/test-infra/tools/dep-collector",
-  "github.com/knative/test-infra/scripts",
   "github.com/evanphx/json-patch",
+  "github.com/knative/test-infra/scripts",
+  "github.com/knative/test-infra/tools/dep-collector",
+  "github.com/pkg/errors",
 ]
 
 [[constraint]]
   name = "k8s.io/api"
-  version = "kubernetes-1.11.3"
+  version = "kubernetes-1.12.6"
 
 [[constraint]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.11.3"
+  version = "kubernetes-1.12.6"
 
 [[constraint]]
   name = "k8s.io/client-go"
-  version = "kubernetes-1.11.3"
+  version = "kubernetes-1.12.6"
 
 [[constraint]]
   name = "k8s.io/code-generator"
-  version = "kubernetes-1.11.3"
+  version = "kubernetes-1.12.6"
 
 [[override]]
   name = "github.com/json-iterator/go"
@@ -38,6 +39,21 @@ required = [
 [[override]]
   name = "go.uber.org/zap"
   revision = "67bc79d13d155c02fd008f721863ff8cc5f30659"
+
+[[constraint]]
+  name = "github.com/google/go-cmp"
+  # HEAD as of 2019-04-09
+  revision = "6f77996f0c42f7b84e5a2b252227263f93432e9b"
+
+[[override]]
+  name = "github.com/rogpeppe/go-internal"
+  # HEAD as of 2019-01-09
+  # Needed because release 1.0.0 does not contain a LICENSE file
+  revision = "4bbc89b6501cca7dd6b5557d78d70c8d2c6e8b97"
+
+[[constraint]]
+  name = "contrib.go.opencensus.io/exporter/stackdriver"
+  version = "0.9.2"
 
 [[constraint]]
   name = "github.com/knative/test-infra"
