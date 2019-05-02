@@ -1,18 +1,16 @@
 package ps
 
 import (
-	"fmt"
-
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/table"
-	"github.com/rancher/rio/cli/pkg/types"
 	"github.com/urfave/cli"
 )
 
 type Ps struct {
 	C_Containers bool `desc:"print containers, not services"`
+	R_Revisions  bool `desc:"print revisions"`
 	A_All        bool `desc:"include all container, not just ones related to services"`
+	System       bool `desc:"whether to show system resources"`
 }
 
 func (p *Ps) Customize(cmd *cli.Command) {
@@ -20,29 +18,13 @@ func (p *Ps) Customize(cmd *cli.Command) {
 }
 
 func (p *Ps) Run(ctx *clicontext.CLIContext) error {
-	var (
-		stacks    = map[string]bool{}
-		notStacks []string
-	)
-
-	if !p.C_Containers {
-		for _, arg := range ctx.CLI.Args() {
-			stack, err := lookup.Lookup(ctx, arg, types.StackType)
-			if err == nil {
-				stacks[stack.Name] = true
-			} else {
-				notStacks = append(notStacks, arg)
-			}
-		}
-	}
-
-	if p.C_Containers || (len(ctx.CLI.Args()) > 0 && len(stacks) == 0) {
+	if p.C_Containers {
 		return p.containers(ctx)
 	}
 
-	if len(notStacks) > 0 {
-		return fmt.Errorf("failed to find stacks for %v", notStacks)
+	if p.R_Revisions {
+		return p.revisions(ctx)
 	}
 
-	return p.services(ctx, stacks)
+	return p.apps(ctx)
 }

@@ -22,5 +22,5 @@ func (c *CLIContext) Writer() io.Writer {
 }
 
 func (c *CLIContext) GetDefaultStackName() string {
-	return c.DefaultStackName
+	return c.DefaultNamespace
 }

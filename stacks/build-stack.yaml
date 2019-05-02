@@ -37,7 +37,7 @@ services:
     minScale: 1
     concurrency: 5
     ports:
-    - 9001/tcp,buildkit
+    - 9001/tcp,buildkit,internal=true
     systemSpec:
       podSpec:
         containers:
@@ -62,6 +62,8 @@ services:
     - REGISTRY_HTTP_TLS_KEY=/etc/registry/tls.key
     ports:
     - 443:443/tcp,registry
+    volumes:
+    - storage-registry:/var/lib/registry
   webhook:
     global_permissions:
     - "* webhookinator.rio.cattle.io/gitwebhookreceivers"

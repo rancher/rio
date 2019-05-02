@@ -62,6 +62,16 @@ func (s serviceHandler) populate(obj runtime.Object, namespace *corev1.Namespace
 	dr := populate.DestinationRuleForService(app)
 	os.Add(dr)
 
+	public := false
+	for _, rev := range app.Spec.Revisions {
+		if rev.Public {
+			public = true
+		}
+	}
+	if !public {
+		return nil
+	}
+
 	var dests []populate.Dest
 	for version, rev := range app.Status.RevisionWeight {
 		dests = append(dests, populate.Dest{

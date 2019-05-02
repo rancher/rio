@@ -15,6 +15,7 @@ var (
 )
 
 type Create struct {
+	App                    string            `desc:"Specify the app label"`
 	AddHost                []string          `desc:"Add a custom host-to-IP mapping (host:ip)"`
 	Annotations            map[string]string `desc:"Annotations to attach to this service"`
 	BuildBranch            string            `desc:"Build repository branch" default:"master"`
@@ -49,9 +50,14 @@ type Create struct {
 	Permission             []string          `desc:"Permissions to grant to container's service account in current stack"`
 	P_Ports                []string          `desc:"Publish a container's port(s) externally"`
 	ReadOnly               bool              `desc:"Mount the container's root filesystem as read only"`
+	RolloutInterval        int               `desc:"Rollout interval in seconds"`
+	RolloutIncrement       int               `desc:"Rollout increment value"`
 	Secret                 []string          `desc:"Secrets to inject to the service (format: name:target)"`
+	StageOnly              bool              `desc:"Whether to stage new created revision for build"`
 	T_Tty                  bool              `desc:"Allocate a pseudo-TTY"`
+	Version                string            `desc:"Specify the revision "`
 	U_User                 string            `desc:"UID[:GID] Sets the UID used and optionally GID for entrypoint process (format: <uid>[:<gid>])"`
+	Weight                 int               `desc:"Specify the weight for the revision"`
 	W_Workdir              string            `desc:"Working directory inside the container"`
 }
 
@@ -70,10 +76,7 @@ func (c *Create) RunCallback(ctx *clicontext.CLIContext, cb func(service *riov1.
 		return nil, err
 	}
 
-	_, service.Namespace, service.Name, err = stack.ResolveSpaceStackForName(ctx, service.Name)
-	if err != nil {
-		return nil, err
-	}
+	service.Namespace, service.Name = stack.NamespaceAndName(ctx, service.Name)
 
 	service = cb(service)
 
@@ -90,6 +93,16 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 	}
 
 	var spec riov1.ServiceSpec
+
+	spec.App = c.App
+	spec.Version = c.Version
+	spec.Weight = c.Weight
+
+	spec.RolloutConfig.RolloutInterval = c.RolloutInterval
+	spec.RolloutConfig.RolloutIncrement = c.RolloutIncrement
+	if c.RolloutIncrement != 0 && c.RolloutInterval != 0 {
+		spec.RolloutConfig.Rollout = true
+	}
 
 	spec.Args = args[1:]
 	spec.Stdin = c.I_Interactive
@@ -115,25 +128,26 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 
 	spec.Options = stringers.ParseDNSOptions(c.DnsOption...)
 
+	cpus, err := stringers.ParseQuantity(c.Cpus)
+	if err != nil {
+		return nil, err
+	}
+	spec.CPUs = &cpus
+
 	service := riov1.NewService("", c.N_Name, riov1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels:      c.L_Label,
 			Annotations: c.Annotations,
 		},
+		Spec: spec,
 	})
 
-	spec.CPUs, err = stringers.ParseQuantity(c.Cpus)
-	if err != nil {
-		return nil, err
-	}
-
 	if stringers.IsRepo(args[0]) {
-		service.Spec.Build = riov1.ImageBuild{
-			Branch:   c.BuildBranch,
-			Repo:     args[0],
-			Revision: c.BuildRevision,
-			Secret:   c.BuildSecret,
-		}
+		service.Spec.Build.Branch = c.BuildBranch
+		service.Spec.Build.Revision = c.BuildRevision
+		service.Spec.Build.Secret = c.BuildSecret
+		service.Spec.Build.Repo = args[0]
+		service.Spec.Build.StageOnly = c.StageOnly
 	} else {
 		service.Spec.Image = args[0]
 	}

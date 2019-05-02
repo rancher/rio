@@ -21,7 +21,7 @@ import (
 const (
 	privateGw          = "mesh"
 	RioNameHeader      = "X-Rio-ServiceName"
-	RioNamespaceHeader = "X-Rio-Namespace"
+	RioNamespaceHeader = "X-Rio-SystemNamespace"
 	RioPortHeader      = "X-Rio-ServicePort"
 )
 

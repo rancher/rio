@@ -16,8 +16,8 @@ services:
     env:
     - GODEBUG=gctrace=2
     ports:
-    - 9093/tcp,monitoring
-    - 42422/tcp,prometheus
+    - 9093/tcp,monitoring,internal=true
+    - 42422/tcp,prometheus,internal=true
     containers:
     - name: istio-proxy
       ports:

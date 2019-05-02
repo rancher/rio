@@ -3,9 +3,9 @@ package lookup
 import (
 	"fmt"
 
-	"github.com/rancher/rio/cli/pkg/constants"
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/wrangler/pkg/kv"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type StackScoped struct {
@@ -17,12 +17,12 @@ type StackScoped struct {
 	Other            string
 }
 
-func StackScopedFromLabels(defaultStackName string, labels map[string]string) StackScoped {
+func StackScopedFromLabels(defaultStackName string, pod *corev1.Pod) StackScoped {
 	return StackScoped{
 		DefaultStackName: defaultStackName,
-		Version:          labels["rio.cattle.io/version"],
-		ResourceName:     labels["rio.cattle.io/service-name"],
-		ServiceName:      labels["rio.cattle.io/service"],
+		Version:          pod.Labels["version"],
+		StackName:        pod.Namespace,
+		ServiceName:      pod.Labels["app"],
 	}
 }
 
@@ -36,10 +36,8 @@ func ParseStackScoped(defaultStackName string, serviceName string) StackScoped {
 	result.ResourceName, result.Other = kv.Split(result.ResourceName, "/")
 	result.ResourceName, result.Version = kv.Split(result.ResourceName, ":")
 
-	if result.Version == "" || result.Version == constants.DefaultServiceVersion {
-		result.ServiceName = result.ResourceName
-	} else {
-		result.ServiceName = result.ResourceName
+	result.ServiceName = result.ResourceName
+	if result.Version != "" {
 		result.ResourceName = fmt.Sprintf("%s-%s", result.ResourceName, result.Version)
 	}
 	return result

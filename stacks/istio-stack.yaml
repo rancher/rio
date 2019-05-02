@@ -113,7 +113,9 @@ services:
     update_order: stop-first
     containers:
     - name: istio-proxy
-      ports: ${PORTS}
+      ports:
+      - 80:80,http2,internal=true
+      - 443:443,https,internal=true
       image: istio/proxyv2:1.1.3
       imagePullPolicy: always
       args:

@@ -38,16 +38,6 @@ type subServiceController struct {
 	serviceLister v1.ServiceCache
 }
 
-func (s *subServiceController) getService(namespace string, labels map[string]string) *riov1.Service {
-	name := labels["rio.cattle.io/service-name"]
-
-	svc, err := s.serviceLister.Get(namespace, name)
-	if err != nil {
-		return nil
-	}
-	return svc
-}
-
 func (s *subServiceController) updateStatus(service, newService *riov1.Service, dep runtime.Object, generation, observedGeneration int64) error {
 	isUpgrading := false
 
@@ -79,10 +69,19 @@ func (s *subServiceController) deploymentChanged(key string, dep *appsv1.Deploym
 	} else if err != nil {
 		return nil, err
 	}
+	if service.DeletionTimestamp != nil {
+		return dep, nil
+	}
 
 	newService := service.DeepCopy()
 	newService.Status.DeploymentStatus = dep.Status.DeepCopy()
 	newService.Status.DeploymentStatus.ObservedGeneration = 0
+	newService.Status.ScaleStatus = &riov1.ScaleStatus{
+		Ready:       int(dep.Status.ReadyReplicas),
+		Unavailable: int(dep.Status.UnavailableReplicas),
+		Available:   int(dep.Status.AvailableReplicas - dep.Status.ReadyReplicas),
+		Updated:     int(dep.Status.UpdatedReplicas),
+	}
 
 	return nil, s.updateStatus(service, newService, dep, dep.Generation, dep.Status.ObservedGeneration)
 }

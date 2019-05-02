@@ -28,7 +28,7 @@ func (t *tableWriter) Write(objs []runtime.Object) (err error) {
 	sort.Slice(objs, func(i, j int) bool {
 		leftMeta, _ := meta.Accessor(objs[i])
 		rightMeta, _ := meta.Accessor(objs[j])
-		return leftMeta.GetName() < rightMeta.GetName()
+		return leftMeta.GetNamespace()+"/"+leftMeta.GetName() < rightMeta.GetNamespace()+"/"+rightMeta.GetName()
 	})
 
 	defer func() {

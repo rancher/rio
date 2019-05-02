@@ -143,14 +143,10 @@ func updateDomain(router *riov1.Router, clusterDomain *projectv1.ClusterDomain) 
 	if clusterDomain.Status.HTTPSSupported {
 		protocol = "https"
 	}
-	router.Status.Endpoints = []riov1.Endpoint{
-		{
-			URL: fmt.Sprintf("%s://%s", protocol, domains.GetExternalDomain(router.Name, router.Namespace, clusterDomain.Status.ClusterDomain)),
-		},
+	router.Status.Endpoints = []string{
+		fmt.Sprintf("%s://%s", protocol, domains.GetExternalDomain(router.Name, router.Namespace, clusterDomain.Status.ClusterDomain)),
 	}
 	for _, pd := range router.Status.PublicDomains {
-		router.Status.Endpoints = append(router.Status.Endpoints, riov1.Endpoint{
-			URL: fmt.Sprintf("%s://%s", protocol, pd),
-		})
+		router.Status.Endpoints = append(router.Status.Endpoints, fmt.Sprintf("%s://%s", protocol, pd))
 	}
 }

@@ -6,37 +6,18 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/docker/docker/pkg/reexec"
-	"github.com/rancher/rio/cli/cmd/attach"
-	"github.com/rancher/rio/cli/cmd/config"
-	"github.com/rancher/rio/cli/cmd/create"
-	"github.com/rancher/rio/cli/cmd/exec"
-	"github.com/rancher/rio/cli/cmd/export"
-	"github.com/rancher/rio/cli/cmd/externalservice"
-	"github.com/rancher/rio/cli/cmd/feature"
-	"github.com/rancher/rio/cli/cmd/inspect"
-	"github.com/rancher/rio/cli/cmd/kubectl"
-	"github.com/rancher/rio/cli/cmd/logs"
-	"github.com/rancher/rio/cli/cmd/promote"
-	"github.com/rancher/rio/cli/cmd/ps"
-	"github.com/rancher/rio/cli/cmd/publicdomain"
+	"github.com/rancher/rio/cli/cmd/info"
 	"github.com/rancher/rio/cli/cmd/rm"
-	"github.com/rancher/rio/cli/cmd/route"
 	"github.com/rancher/rio/cli/cmd/run"
-	"github.com/rancher/rio/cli/cmd/scale"
-	"github.com/rancher/rio/cli/cmd/stack"
-	"github.com/rancher/rio/cli/cmd/stage"
-	"github.com/rancher/rio/cli/cmd/up"
-	"github.com/rancher/rio/cli/cmd/volume"
 	"github.com/rancher/rio/cli/cmd/weight"
+
+	"github.com/docker/docker/pkg/reexec"
+	"github.com/rancher/rio/cli/cmd/ps"
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/pkg/version"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
-
-	// Include kubectl
-	_ "github.com/rancher/rio/pkg/kubectl"
 )
 
 const (
@@ -66,10 +47,6 @@ func main() {
 	if reexec.Init() {
 		return
 	}
-
-	//flag.Set("stderrthreshold", "3")
-	//flag.Set("alsologtostderr", "false")
-	//flag.Set("logtostderr", "false")
 
 	args := os.Args
 
@@ -106,7 +83,8 @@ func main() {
 			Name:        "namespace,n",
 			Usage:       "Specify which namespace in kubernetes to use",
 			EnvVar:      "RIO_NAMEPSACE",
-			Destination: &cfg.Namespace,
+			Value:       "rio-system",
+			Destination: &cfg.SystemNamespace,
 		},
 		cli.StringFlag{
 			Name:        "kubeconfig",
@@ -118,12 +96,11 @@ func main() {
 	}
 
 	app.Commands = []cli.Command{
-		config.Config(app),
-		volume.Volume(app),
-		stack.Stack(),
-		publicdomain.PublicDomain(app),
-		externalservice.ExternalService(app),
-		feature.Feature(app),
+		info.Info(app),
+		//config.Config(app),
+		//publicdomain.PublicDomain(app),
+		//externalservice.ExternalService(app),
+		//feature.Feature(app),
 
 		builder.Command(&ps.Ps{},
 			"List services and containers",
@@ -134,66 +111,64 @@ func main() {
 			"Create and run a new service",
 			appName+" run [OPTIONS] IMAGE [COMMAND] [ARG...]",
 			desc),
-		builder.Command(&create.Create{},
-			"Create a new service",
-			appName+" create [OPTIONS] IMAGE [COMMAND] [ARG...]",
-			desc),
-		builder.Command(&scale.Scale{},
-			"Scale a service",
-			appName+" scale [SERVICE=NUMBER...]",
-			""),
+		//builder.Command(&create.Create{},
+		//	"Create a new service",
+		//	appName+" create [OPTIONS] IMAGE [COMMAND] [ARG...]",
+		//	desc),
+		//builder.Command(&scale.Scale{},
+		//	"Scale a service",
+		//	appName+" scale [SERVICE=NUMBER...]",
+		//	""),
 		builder.Command(&rm.Rm{},
 			"Delete a service or stack",
 			appName+" rm ID_OR_NAME",
 			""),
-		builder.Command(&inspect.Inspect{},
-			"Print the raw API output of a resource",
-			appName+" inspect [ID_OR_NAME...]",
-			""),
-
+		//builder.Command(&inspect.Inspect{},
+		//	"Print the raw API output of a resource",
+		//	appName+" inspect [ID_OR_NAME...]",
+		//	""),
+		//
 		//builder.Command(&edit.Edit{},
 		//	"Edit a service or stack",
 		//	appName+" edit ID_OR_NAME",
 		//	""),
-		builder.Command(&up.Up{},
-			"Bring up a stack",
-			appName+" up [OPTIONS] [[STACK_NAME] FILE|-]",
-			""),
-		builder.Command(&export.Export{},
-			"Export a stack",
-			appName+" export STACK_ID_OR_NAME",
-			""),
-
-		config.NewCatCommand("", app),
-
-		builder.Command(&exec.Exec{},
-			"Run a command in a running container",
-			appName+" exec [OPTIONS] CONTAINER COMMAND [ARG...]",
-			""),
-		builder.Command(&attach.Attach{},
-			"Attach to a running process in a container",
-			appName+" attach [OPTIONS] CONTAINER",
-			""),
-		builder.Command(&logs.Logs{},
-			"Print logs from containers",
-			appName+" logs [OPTIONS] [CONTAINER_OR_SERVICE...]",
-			""),
-
-		builder.Command(&stage.Stage{},
-			"Stage a new revision of a service",
-			appName+" stage [OPTIONS] SERVICE_ID_NAME",
-			""),
-		builder.Command(&promote.Promote{},
-			"Promote a staged version to latest",
-			appName+" promote [SERVICE_ID_NAME]",
-			""),
+		//builder.Command(&up.Up{},
+		//	"Bring up a stack",
+		//	appName+" up [OPTIONS] [[STACK_NAME] FILE|-]",
+		//	""),
+		//builder.Command(&export.Export{},
+		//	"Export a stack",
+		//	appName+" export STACK_ID_OR_NAME",
+		//	""),
+		//
+		//config.NewCatCommand("", app),
+		//
+		//builder.Command(&exec.Exec{},
+		//	"Run a command in a running container",
+		//	appName+" exec [OPTIONS] CONTAINER COMMAND [ARG...]",
+		//	""),
+		//builder.Command(&attach.Attach{},
+		//	"Attach to a running process in a container",
+		//	appName+" attach [OPTIONS] CONTAINER",
+		//	""),
+		//builder.Command(&logs.Logs{},
+		//	"Print logs from containers",
+		//	appName+" logs [OPTIONS] [CONTAINER_OR_SERVICE...]",
+		//	""),
+		//
+		//builder.Command(&stage.Stage{},
+		//	"Stage a new revision of a service",
+		//	appName+" stage [OPTIONS] SERVICE_ID_NAME",
+		//	""),
+		//builder.Command(&promote.Promote{},
+		//	"Promote a staged version to latest",
+		//	appName+" promote [SERVICE_ID_NAME]",
+		//	""),
 		builder.Command(&weight.Weight{},
 			"Weight a percentage of traffic to a staged service",
 			appName+" weight [OPTIONS] [SERVICE_REVISION=PERCENTAGE...]",
 			""),
-		route.Route(app),
-
-		kubectl.NewKubectlCommand(),
+		//route.Route(app),
 	}
 	app.Before = func(ctx *cli.Context) error {
 		if err := cfg.Validate(); err != nil {

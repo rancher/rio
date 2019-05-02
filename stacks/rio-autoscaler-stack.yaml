@@ -25,7 +25,7 @@ services:
     image: daishan1992/rio-autoscaler:dev
     imagePullPolicy: always
     ports:
-    - 80/http
+    - 80/http,internal=true
     args:
     - rio-autoscaler
     - --debug

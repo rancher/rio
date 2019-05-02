@@ -182,12 +182,12 @@ func FormatRouteTarget(obj interface{}) (string, error) {
 
 	if target == "to" {
 		for _, to := range data.RouteSpec.To {
-			writeDest(buf, data.RouteSet.Namespace, to.Stack, to.Service, to.Revision, int(*to.Port), to.Weight)
+			writeDest(buf, data.RouteSet.Namespace, to.Namespace, to.Service, to.Revision, int(*to.Port), to.Weight)
 		}
 	} else if target == "redirect" && data.RouteSpec.Redirect != nil {
 		writeHostPath(buf, data.RouteSpec.Redirect.Host, data.RouteSpec.Redirect.Path)
 	} else if target == "mirror" && data.RouteSpec.Mirror != nil && data.RouteSpec.Mirror.Port != nil {
-		writeDest(buf, data.RouteSet.Namespace, data.RouteSpec.Mirror.Stack, data.RouteSpec.Mirror.Service,
+		writeDest(buf, data.RouteSet.Namespace, data.RouteSpec.Mirror.Namespace, data.RouteSpec.Mirror.Service,
 			data.RouteSpec.Mirror.Revision,
 			int(*data.RouteSpec.Mirror.Port), 0)
 	} else if target == "rewrite" {

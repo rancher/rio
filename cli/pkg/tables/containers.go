@@ -2,7 +2,6 @@ package tables
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/table"
@@ -25,7 +24,7 @@ func NewContainer(cfg Config) TableWriter {
 		{"NODE", "PodData.Pod.Spec.NodeName"},
 		{"IP", "PodData.Pod.Status.PodIP"},
 		{"STATE", "Container | toJson | state"},
-		{"DETAIL", "Container | toJson | transistioning"},
+		{"DETAIL", "Container | toJson | transitioning"},
 	}, cfg)
 
 	writer.AddFormatFunc("containerName", containerName)
@@ -39,7 +38,7 @@ func containerName(obj, obj2 interface{}) (string, error) {
 	container, _ := obj2.(*v1.Container)
 
 	if !podData.Managed {
-		return fmt.Sprintf("%s/%s", strings.Split(podData.Name, ":")[1], container.Name), nil
+		return fmt.Sprintf("%s/%s", podData.Name, container.Name), nil
 	}
 
 	pc := lookup.ParsedContainer{

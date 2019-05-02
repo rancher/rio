@@ -74,7 +74,7 @@ func (u *Up) doUp(ctx *clicontext.CLIContext, file, stack string) error {
 		stack += "/"
 	}
 
-	_, stackID, _, err := stackpkg.ResolveSpaceStackForName(ctx, stack)
+	_, stackID, _, err := stackpkg.NamespaceAndName(ctx, stack)
 	if err != nil {
 		return err
 	}

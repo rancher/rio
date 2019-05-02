@@ -2,7 +2,6 @@ package tables
 
 import (
 	"fmt"
-	"sort"
 	"strconv"
 
 	"github.com/rancher/rio/cli/pkg/table"
@@ -16,8 +15,8 @@ func NewService(cfg Config) TableWriter {
 		{"CREATED", "{{.Obj.CreationTimestamp | ago}}"},
 		{"STATE", "{{.Obj | state}}"},
 		{"SCALE", "{{scale .Obj.Spec.Scale .Obj.Status.ScaleStatus}}"},
-		{"ENDPOINT", ""},
-		{"EXTERNAL", ""},
+		{"ENDPOINT", "{{.Obj.Status.Endpoints | array}}"},
+		{"WEIGHT", "{{.Obj.Spec.Weight | graph}}"},
 		{"DETAIL", "{{first (.Obj |  transitioning) (.Obj | transitioning)}}"},
 	}, cfg)
 
@@ -56,7 +55,7 @@ func FormatScale(data, data2 interface{}) (string, error) {
 
 func FormatServiceName(cfg Config) func(data, data2 interface{}) (string, error) {
 	return func(data, data2 interface{}) (string, error) {
-		stackName, ok := data.(string)
+		ns, ok := data.(string)
 		if !ok {
 			return "", nil
 		}
@@ -66,11 +65,7 @@ func FormatServiceName(cfg Config) func(data, data2 interface{}) (string, error)
 			return "", nil
 		}
 
-		if service.Spec.Revision.ParentService == "" || service.Spec.Revision.Version == "" {
-			return table.FormatStackScopedName(cfg.GetDefaultStackName())(stackName, service.Name)
-		}
-
-		return table.FormatStackScopedName(cfg.GetDefaultStackName())(stackName, service.Spec.Revision.ParentService+":"+service.Spec.Revision.Version)
+		return table.FormatStackScopedName(cfg.GetDefaultStackName())(ns, service.Name)
 	}
 }
 
@@ -79,20 +74,8 @@ func FormatImage(data interface{}) (string, error) {
 	if !ok {
 		return fmt.Sprint(data), nil
 	}
-	if s.Spec.Image == "" || len(s.Spec.Sidekicks) > 0 {
-		return s.Spec.Sidekicks[firstSortedKey(s.Spec.Sidekicks)].Image, nil
+	if s.Spec.Image == "" || len(s.Spec.Sidecars) > 0 {
+		return s.Spec.Sidecars[0].Image, nil
 	}
 	return s.Spec.Image, nil
-}
-
-func firstSortedKey(m map[string]v1.SidekickConfig) string {
-	var keys []string
-	for k := range m {
-		keys = append(keys, k)
-	}
-	if len(keys) == 0 {
-		return ""
-	}
-	sort.Strings(keys)
-	return keys[0]
 }

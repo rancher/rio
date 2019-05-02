@@ -1,14 +1,15 @@
 package clicontext
 
 import (
-	"flag"
 	"os"
 	"strings"
 
 	"github.com/pkg/errors"
 	projectv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/project.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/settings"
 	"github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/kubernetes/staging/src/k8s.io/client-go/tools/clientcmd"
@@ -17,15 +18,13 @@ import (
 var ErrNoConfig = errors.New("no config found")
 
 type Config struct {
-	Namespace        string
+	SystemNamespace  string
 	Kubeconfig       string
-	DefaultStackName string
+	DefaultNamespace string
 	Debug            bool
 	Wait             bool
 	WaitTimeout      int
 	WaitState        string
-	ServerURL        string
-	Token            string
 
 	Core    corev1.CoreV1Interface
 	Rio     riov1.RioV1Interface
@@ -34,7 +33,6 @@ type Config struct {
 
 func (c *Config) Validate() error {
 	if c.Debug {
-		flag.Set("v", "9")
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
@@ -50,7 +48,7 @@ func (c *Config) Validate() error {
 		&clientcmd.ConfigOverrides{
 			ClusterInfo: clientcmdapi.Cluster{Server: ""},
 			Context: clientcmdapi.Context{
-				Namespace: c.Namespace,
+				Namespace: c.SystemNamespace,
 			},
 		})
 
@@ -82,11 +80,15 @@ func (c *Config) Validate() error {
 	c.Rio = rio
 	c.Project = project
 	c.Core = core
-	c.Namespace = namespace
-	c.DefaultStackName = "default"
+	c.SystemNamespace = namespace
+	c.DefaultNamespace = "default"
 	return nil
 }
 
 func (c *Config) Domain() (string, error) {
-	return "fixme.domain", nil
+	clusterDomain, err := c.Project.ClusterDomains(c.SystemNamespace).Get(settings.ClusterDomainName, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	return clusterDomain.Status.ClusterDomain, nil
 }

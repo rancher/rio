@@ -31,10 +31,10 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
-	GitV1() gitv1.GitV1Interface
+	AutoscaleV1() autoscalev1.AutoscaleV1Interface
 	ProjectV1() projectv1.ProjectV1Interface
 	RioV1() riov1.RioV1Interface
-	AutoscaleV1() autoscalev1.AutoscaleV1Interface
+	GitV1() gitv1.GitV1Interface
 	WebhookinatorV1() webhookinatorv1.WebhookinatorV1Interface
 }
 
@@ -42,16 +42,16 @@ type Interface interface {
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	gitV1           *gitv1.GitV1Client
+	autoscaleV1     *autoscalev1.AutoscaleV1Client
 	projectV1       *projectv1.ProjectV1Client
 	rioV1           *riov1.RioV1Client
-	autoscaleV1     *autoscalev1.AutoscaleV1Client
+	gitV1           *gitv1.GitV1Client
 	webhookinatorV1 *webhookinatorv1.WebhookinatorV1Client
 }
 
-// GitV1 retrieves the GitV1Client
-func (c *Clientset) GitV1() gitv1.GitV1Interface {
-	return c.gitV1
+// AutoscaleV1 retrieves the AutoscaleV1Client
+func (c *Clientset) AutoscaleV1() autoscalev1.AutoscaleV1Interface {
+	return c.autoscaleV1
 }
 
 // ProjectV1 retrieves the ProjectV1Client
@@ -64,9 +64,9 @@ func (c *Clientset) RioV1() riov1.RioV1Interface {
 	return c.rioV1
 }
 
-// AutoscaleV1 retrieves the AutoscaleV1Client
-func (c *Clientset) AutoscaleV1() autoscalev1.AutoscaleV1Interface {
-	return c.autoscaleV1
+// GitV1 retrieves the GitV1Client
+func (c *Clientset) GitV1() gitv1.GitV1Interface {
+	return c.gitV1
 }
 
 // WebhookinatorV1 retrieves the WebhookinatorV1Client
@@ -90,7 +90,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	}
 	var cs Clientset
 	var err error
-	cs.gitV1, err = gitv1.NewForConfig(&configShallowCopy)
+	cs.autoscaleV1, err = autoscalev1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
-	cs.autoscaleV1, err = autoscalev1.NewForConfig(&configShallowCopy)
+	cs.gitV1, err = gitv1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -122,10 +122,10 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 // panics if there is an error in the config.
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
-	cs.gitV1 = gitv1.NewForConfigOrDie(c)
+	cs.autoscaleV1 = autoscalev1.NewForConfigOrDie(c)
 	cs.projectV1 = projectv1.NewForConfigOrDie(c)
 	cs.rioV1 = riov1.NewForConfigOrDie(c)
-	cs.autoscaleV1 = autoscalev1.NewForConfigOrDie(c)
+	cs.gitV1 = gitv1.NewForConfigOrDie(c)
 	cs.webhookinatorV1 = webhookinatorv1.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
@@ -135,10 +135,10 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
-	cs.gitV1 = gitv1.New(c)
+	cs.autoscaleV1 = autoscalev1.New(c)
 	cs.projectV1 = projectv1.New(c)
 	cs.rioV1 = riov1.New(c)
-	cs.autoscaleV1 = autoscalev1.New(c)
+	cs.gitV1 = gitv1.New(c)
 	cs.webhookinatorV1 = webhookinatorv1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)

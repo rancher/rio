@@ -13,7 +13,7 @@ import (
 
 func NewNamespace(name string, obj v1.Namespace) *v1.Namespace {
 	obj.APIVersion = "v1"
-	obj.Kind = "Namespace"
+	obj.Kind = "SystemNamespace"
 	obj.Name = name
 	return &obj
 }

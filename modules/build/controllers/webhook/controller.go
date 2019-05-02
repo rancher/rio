@@ -134,7 +134,7 @@ func (w webhookHandler) createGithubWebhook(svc *riov1.Service, obj *webhookv1.G
 
 	in := &scm.HookInput{
 		Name:   "rio-webhookinator",
-		Target: getHookEndpoint(obj, svc.Status.Endpoints[0].URL),
+		Target: getHookEndpoint(obj, svc.Status.Endpoints[0]),
 		Secret: obj.Status.Token,
 		Events: scm.HookEvents{
 			Push: true,

@@ -71,7 +71,7 @@ func (h *handler) onChange(key string, service *riov1.Service) (*riov1.Service, 
 
 	// ServiceSet
 	for app, services := range serviceSet {
-		ss := riov1.NewApp(key, app, riov1.App{
+		app := riov1.NewApp(key, app, riov1.App{
 			Spec: riov1.AppSpec{
 				Revisions: make([]riov1.Revision, 0),
 			},
@@ -84,10 +84,24 @@ func (h *handler) onChange(key string, service *riov1.Service) (*riov1.Service, 
 		var serviceWeight []riov1.Revision
 		for _, service := range services.Revisions {
 			_, version := services2.AppAndVersion(service)
+			public := false
+			for _, port := range service.Spec.Ports {
+				if !port.InternalOnly {
+					public = true
+					break
+				}
+			}
+			scale := service.Spec.Scale
+			if scale == 0 {
+				scale = 1
+			}
 			serviceWeight = append(serviceWeight, riov1.Revision{
+				Public:          public,
 				Weight:          service.Spec.Weight,
 				ServiceName:     service.Name,
 				Version:         version,
+				Scale:           scale,
+				ScaleStatus:     service.Status.ScaleStatus,
 				RolloutConfig:   service.Spec.RolloutConfig,
 				DeploymentReady: isReady(service.Status.DeploymentStatus),
 			})
@@ -110,8 +124,8 @@ func (h *handler) onChange(key string, service *riov1.Service) (*riov1.Service, 
 		sort.Slice(serviceWeight, func(i, j int) bool {
 			return serviceWeight[i].Version < serviceWeight[j].Version
 		})
-		ss.Spec.Revisions = serviceWeight
-		os.Add(ss)
+		app.Spec.Revisions = serviceWeight
+		os.Add(app)
 	}
 
 	return service, h.apply.WithOwner(ns).Apply(os)

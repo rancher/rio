@@ -19,7 +19,6 @@ import (
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
-	"github.com/rancher/wrangler/pkg/generic"
 	"github.com/rancher/wrangler/pkg/objectset"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -28,6 +27,7 @@ import (
 
 const (
 	serviceDomainUpdate = "service-domain-update"
+	appDomainHandler    = "app-domain-update"
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
@@ -47,7 +47,8 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		publicDomainCache:    rContext.Rio.Rio().V1().PublicDomain().Cache(),
 	}
 
-	rContext.Rio.Rio().V1().Service().AddGenericHandler(ctx, serviceDomainUpdate, generic.UpdateOnChange(rContext.Rio.Rio().V1().Service().Updater(), sh.syncDomain))
+	rContext.Rio.Rio().V1().Service().OnChange(ctx, serviceDomainUpdate, riov1controller.UpdateServiceOnChange(rContext.Rio.Rio().V1().Service().Updater(), sh.syncDomain))
+	rContext.Rio.Rio().V1().App().OnChange(ctx, appDomainHandler, riov1controller.UpdateAppOnChange(rContext.Rio.Rio().V1().App().Updater(), sh.syncAppDomain))
 
 	c.Populator = sh.populate
 	return nil
@@ -95,12 +96,11 @@ func (s *serviceHandler) populate(obj runtime.Object, namespace *corev1.Namespac
 	return err
 }
 
-func (s *serviceHandler) syncDomain(key string, obj runtime.Object) (runtime.Object, error) {
-	if obj == nil {
-		return obj, nil
-	}
-	svc := obj.(*riov1.Service)
+func (s *serviceHandler) syncDomain(key string, svc *riov1.Service) (*riov1.Service, error) {
 	if svc == nil {
+		return svc, nil
+	}
+	if svc.DeletionTimestamp != nil {
 		return svc, nil
 	}
 
@@ -111,6 +111,46 @@ func (s *serviceHandler) syncDomain(key string, obj runtime.Object) (runtime.Obj
 
 	updateDomain(svc, clusterDomain)
 	return svc, nil
+}
+
+func (s *serviceHandler) syncAppDomain(key string, obj *riov1.App) (*riov1.App, error) {
+	if obj == nil {
+		return obj, nil
+	}
+	if obj.DeletionTimestamp != nil {
+		return obj, nil
+	}
+
+	clusterDomain, err := s.clusterDomainCache.Get(s.systemNamespace, settings.ClusterDomainName)
+	if err != nil {
+		return obj, err
+	}
+
+	updateAppDomain(obj, clusterDomain)
+	return obj, nil
+}
+
+func updateAppDomain(app *riov1.App, clusterDomain *projectv1.ClusterDomain) {
+	public := true
+	for _, svc := range app.Spec.Revisions {
+		if !svc.Public {
+			public = false
+			break
+		}
+	}
+
+	protocol := "http"
+	if clusterDomain.Status.HTTPSSupported {
+		protocol = "https"
+	}
+	var endpoints []string
+	if public && clusterDomain.Status.ClusterDomain != "" {
+		endpoints = append(endpoints, fmt.Sprintf("%s://%s", protocol, domains.GetExternalDomain(app.Name, app.Namespace, clusterDomain.Status.ClusterDomain)))
+	}
+	for _, pd := range app.Status.PublicDomains {
+		endpoints = append(endpoints, fmt.Sprintf("%s://%s", protocol, pd))
+	}
+	app.Status.Endpoints = endpoints
 }
 
 func updateDomain(service *riov1.Service, clusterDomain *projectv1.ClusterDomain) {
@@ -127,18 +167,13 @@ func updateDomain(service *riov1.Service, clusterDomain *projectv1.ClusterDomain
 		protocol = "https"
 	}
 
-	var endpoints []riov1.Endpoint
+	var endpoints []string
 	if public && clusterDomain.Status.ClusterDomain != "" {
-		endpoints = append(endpoints, riov1.Endpoint{
-			URL: fmt.Sprintf("%s://%s", protocol, domains.GetExternalDomain(service.Name, service.Namespace, clusterDomain.Status.ClusterDomain)),
-		},
-		)
+		endpoints = append(endpoints, fmt.Sprintf("%s://%s", protocol, domains.GetExternalDomain(service.Name, service.Namespace, clusterDomain.Status.ClusterDomain)))
 	}
 
 	for _, pd := range service.Status.PublicDomains {
-		endpoints = append(endpoints, riov1.Endpoint{
-			URL: fmt.Sprintf("%s://%s", protocol, pd),
-		})
+		endpoints = append(endpoints, fmt.Sprintf("%s://%s", protocol, pd))
 	}
 	service.Status.Endpoints = endpoints
 }

@@ -26,10 +26,9 @@ func (r *Run) Run(ctx *clicontext.CLIContext) error {
 			min, max := kv.Split(r.Scale, "-")
 			minScale, _ := strconv.Atoi(min)
 			maxScale, _ := strconv.Atoi(max)
-			service.Spec.AutoScale = &riov1.AutoscaleConfig{}
-			service.Spec.AutoScale.MinScale = minScale
-			service.Spec.AutoScale.MaxScale = maxScale
-			service.Spec.AutoScale.Concurrency = r.Concurrency
+			service.Spec.AutoscaleConfig.MinScale = &minScale
+			service.Spec.AutoscaleConfig.MaxScale = &maxScale
+			service.Spec.AutoscaleConfig.Concurrency = &r.Concurrency
 			service.Spec.Scale = minScale
 			return service
 		}
@@ -49,7 +48,7 @@ func (r *Run) Run(ctx *clicontext.CLIContext) error {
 		isatty.IsTerminal(os.Stderr.Fd()) &&
 		isatty.IsTerminal(os.Stdin.Fd())
 
-	if istty && !r.Detach && service.Spec.OpenStdin && service.Spec.Tty {
+	if istty && service.Spec.Stdin && service.Spec.TTY {
 		fmt.Println("Attaching...")
 		return attach.RunAttach(ctx, time.Minute, true, true, service.Name)
 	}

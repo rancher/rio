@@ -11,7 +11,7 @@ spec:
   rolloutInterval: 3
   image: ibuildthecloud/demo:v1
   imagePullPolicy: Always
-  weight: 0
+  weight: 90
   ports:
     - targetPort: 80
   scale: 1
@@ -23,7 +23,7 @@ metadata:
   namespace: default
 spec:
   app: helloworld-example
-  weight: 100
+  weight: 10
   rollout: true
   rolloutIncrement: 2
   rolloutInterval: 3

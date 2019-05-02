@@ -5,12 +5,12 @@ import (
 
 	units "github.com/docker/go-units"
 	"github.com/rancher/rio/cli/pkg/table"
-	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 func NewConfig(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
-		{"NAME", "{{stackScopedName .Obj.Namespace .Obj.ServiceName}}"},
+		{"NAME", "{{stackScopedName .Obj.SystemNamespace .Obj.ServiceName}}"},
 		{"CREATED", "{{.Obj.CreationTimestamp | ago}}"},
 		{"SIZE", "{{.Obj | size}}"},
 	}, cfg)
@@ -24,18 +24,19 @@ func NewConfig(cfg Config) TableWriter {
 }
 
 func Base64Size(data interface{}) (string, error) {
-	c, ok := data.(*v1.Config)
+	c, ok := data.(*corev1.ConfigMap)
 	if !ok {
 		return "", nil
 	}
 
-	size := len(c.Spec.Content)
-	if size > 0 && c.Spec.Encoded {
-		content, err := base64.StdEncoding.DecodeString(c.Spec.Content)
-		if err != nil {
-			return "", err
+	size := len(c.Data) + len(c.BinaryData)
+	if size > 0 {
+		for _, v := range c.Data {
+			size += len(v)
 		}
-		size = len(content)
+		for _, v := range c.BinaryData {
+			size += len(base64.StdEncoding.EncodeToString(v))
+		}
 	}
 
 	return units.HumanSize(float64(size)), nil

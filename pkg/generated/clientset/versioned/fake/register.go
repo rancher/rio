@@ -35,10 +35,10 @@ var scheme = runtime.NewScheme()
 var codecs = serializer.NewCodecFactory(scheme)
 var parameterCodec = runtime.NewParameterCodec(scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
-	gitv1.AddToScheme,
+	autoscalev1.AddToScheme,
 	projectv1.AddToScheme,
 	riov1.AddToScheme,
-	autoscalev1.AddToScheme,
+	gitv1.AddToScheme,
 	webhookinatorv1.AddToScheme,
 }
 

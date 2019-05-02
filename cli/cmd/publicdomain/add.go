@@ -18,7 +18,7 @@ func (a *Add) Run(ctx *clicontext.CLIContext) error {
 	domainName := ctx.CLI.Args().Get(0)
 	target := ctx.CLI.Args().Get(1)
 
-	_, namespace, name, err := stack.ResolveSpaceStackForName(ctx, target)
+	_, namespace, name, err := stack.NamespaceAndName(ctx, target)
 	if err != nil {
 		return err
 	}

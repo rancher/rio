@@ -30,23 +30,23 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 	var result []tables.PodData
 
 	var pods []types.Resource
-	var services []types.Resource
+	var apps []types.Resource
 
 	for _, name := range podOrServices {
-		r, err := lookup.Lookup(ctx, name, types.PodType, types.ServiceType)
+		r, err := lookup.Lookup(ctx, name, types.PodType, types.AppType)
 		if err != nil {
 			return nil, err
 		}
 		switch r.Type {
 		case types.PodType:
 			pods = append(pods, r)
-		case types.ServiceType:
-			services = append(services, r)
+		case types.AppType:
+			apps = append(apps, r)
 		}
 	}
 
 	for _, pod := range pods {
-		containerName, _ := lookup.ParseContainer(ctx.DefaultStackName, pod.LookupName)
+		containerName, _ := lookup.ParseContainer(ctx.DefaultNamespace, pod.LookupName)
 		pod := pod.Object.(*v1.Pod)
 		podData, ok := toPodData(ctx, all, pod, containerName.ContainerName)
 		if ok {
@@ -54,7 +54,7 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 		}
 	}
 
-	if len(pods) > 0 && len(services) == 0 {
+	if len(pods) > 0 && len(apps) == 0 {
 		return result, nil
 	}
 
@@ -69,13 +69,13 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 			continue
 		}
 
-		if len(services) == 0 {
+		if len(apps) == 0 {
 			result = append(result, podData)
 			continue
 		}
 
-		for _, service := range services {
-			if service.Name == podData.Service.ResourceName && service.Namespace == podData.Service.StackName {
+		for _, app := range apps {
+			if app.Name == podData.Service.ServiceName && app.Namespace == podData.Service.StackName {
 				result = append(result, podData)
 				break
 			}
@@ -86,13 +86,12 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 }
 
 func toPodData(ctx *clicontext.CLIContext, all bool, pod *v1.Pod, containerName string) (tables.PodData, bool) {
-	stackScoped := lookup.StackScopedFromLabels(ctx.DefaultStackName, pod.Labels)
-	projectID := pod.Labels["rio.cattle.io/project"]
+	stackScoped := lookup.StackScopedFromLabels(ctx.DefaultNamespace, pod)
 
 	podData := tables.PodData{
 		Pod:     pod,
 		Service: &stackScoped,
-		Managed: projectID != "",
+		Managed: pod.Namespace == ctx.SystemNamespace,
 	}
 
 	lookupName := stackScoped.ResourceName + "-"
@@ -102,7 +101,11 @@ func toPodData(ctx *clicontext.CLIContext, all bool, pod *v1.Pod, containerName 
 		podData.Name = pod.Name
 	}
 
-	if !all && (podData.Name == "" || !podData.Managed || projectID != ctx.Namespace) {
+	if !all && podData.Name == "" {
+		return podData, false
+	}
+
+	if podData.Managed && !ctx.CLI.Bool("system") {
 		return podData, false
 	}
 

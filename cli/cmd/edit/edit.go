@@ -48,7 +48,7 @@ func (edit *Edit) Run(ctx *clicontext.CLIContext) error {
 //
 //	args := ctx.CLI.Args()
 //	if len(args) == 0 {
-//		args = []string{cluster.DefaultStackName}
+//		args = []string{cluster.DefaultNamespace}
 //	}
 //
 //	for _, arg := range args {

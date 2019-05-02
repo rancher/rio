@@ -79,8 +79,12 @@ func parsePortBinding(spec string) (result v1.ContainerPort, err error) {
 	if len(parts) > 1 {
 		if !strings.Contains(parts[1], "=") {
 			portName = parts[1]
+			if len(parts) > 2 {
+				opts = kv.SplitMapFromSlice(parts[2:])
+			}
+		} else {
+			opts = kv.SplitMapFromSlice(parts[1:])
 		}
-		opts = kv.SplitMapFromSlice(parts[1:])
 	}
 
 	ports, proto := kv.Split(parts[0], "/")

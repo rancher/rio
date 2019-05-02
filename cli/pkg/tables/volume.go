@@ -13,7 +13,7 @@ type Config interface {
 
 func NewVolume(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
-		{"NAME", "{{stackScopedName .Obj.Namespace .Obj.ServiceName}}"},
+		{"NAME", "{{stackScopedName .Obj.SystemNamespace .Obj.ServiceName}}"},
 		{"DRIVER", "{{.Obj.Spec.Driver | driver}}"},
 		{"TEMPLATE", "Obj.Spec.Template"},
 		{"SIZE GB", "Obj.Spec.SizeInGB"},

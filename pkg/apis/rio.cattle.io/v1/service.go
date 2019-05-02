@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"github.com/rancher/rio/pkg/apis/common"
 	"github.com/rancher/wrangler/pkg/condition"
 	"github.com/rancher/wrangler/pkg/genericcondition"
 	appsv1 "k8s.io/api/apps/v1"
@@ -180,12 +181,8 @@ type ServiceStatus struct {
 	WeightOverride    *int                                `json:"weightOverride,omitempty"`
 	ContainerImages   map[string]string                   `json:"containerImages,omitempty"`
 	Conditions        []genericcondition.GenericCondition `json:"conditions,omitempty"`
-	Endpoints         []Endpoint                          `json:"endpoints,omitempty"`
+	Endpoints         []string                            `json:"endpoints,omitempty"`
 	PublicDomains     []string                            `json:"publicDomains,omitempty"`
-}
-
-type Endpoint struct {
-	URL string `json:"url,omitempty"`
 }
 
 type ScaleStatus struct {
@@ -203,4 +200,28 @@ type ImageBuild struct {
 	DockerFile string `json:"dockerFile,omitempty"`
 	Template   string `json:"template,omitempty"`
 	Secret     string `json:"secret,omitempty"`
+}
+
+func (in *Service) State() common.State {
+	state := common.StateFromConditionAndMeta(in.ObjectMeta, in.Status.Conditions)
+	if len(in.Status.Conditions) == 0 {
+		state.State = "pending"
+	}
+	if scaleIsZero(in) {
+		state.State = "inactive"
+	}
+	return state
+}
+
+func scaleIsZero(service *Service) bool {
+	if service.Status.ScaleStatus == nil {
+		return true
+	}
+	ready := service.Status.ScaleStatus.Ready
+	available := service.Status.ScaleStatus.Available
+	unavailable := service.Status.ScaleStatus.Unavailable
+	updated := service.Status.ScaleStatus.Updated
+	scale := service.Spec.Scale
+
+	return ready+available+unavailable+updated+scale == 0
 }

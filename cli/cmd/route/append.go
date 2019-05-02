@@ -102,7 +102,7 @@ func (a *Add) validateServiceStack(ctx *clicontext.CLIContext, args []string) er
 func (a *Add) getRouteSet(ctx *clicontext.CLIContext, args []string) (*riov1.Router, error) {
 	_, service, stackName, _, _ := parseMatch(args[0])
 
-	_, stackName, name, err := stack.ResolveSpaceStackForName(ctx, stackName+"/"+service)
+	_, stackName, name, err := stack.NamespaceAndName(ctx, stackName+"/"+service)
 	if err != nil {
 		return nil, err
 	}

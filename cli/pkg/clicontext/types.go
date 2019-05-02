@@ -3,32 +3,30 @@ package clicontext
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 	"sync"
-
-	"golang.org/x/sync/errgroup"
-
-	"k8s.io/apimachinery/pkg/selection"
-
-	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/docker/docker/pkg/namesgenerator"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/types"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
 	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
-	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/selection"
 )
 
 func init() {
 	lookup.RegisterType(types.ConfigType, lookup.StackScopedNameType, lookup.SingleNameNameType)
-	lookup.RegisterType(types.VolumeType, lookup.StackScopedNameType, lookup.SingleNameNameType)
 	lookup.RegisterType(types.RouterType, lookup.StackScopedNameType, lookup.SingleNameNameType)
 	lookup.RegisterType(types.ExternalServiceType, lookup.StackScopedNameType, lookup.SingleNameNameType)
+	lookup.RegisterType(types.AppType, lookup.StackScopedNameType, lookup.SingleNameNameType)
 	lookup.RegisterType(types.ServiceType, lookup.StackScopedNameType, lookup.SingleNameNameType, lookup.VersionedSingleNameNameType, lookup.VersionedStackScopedNameType)
 	lookup.RegisterType(types.PodType, lookup.FourPartsNameType, lookup.ThreePartsNameType)
 	lookup.RegisterType(types.StackType, lookup.SingleNameNameType)
@@ -41,16 +39,14 @@ func (c *CLIContext) getResource(r types.Resource) (ret types.Resource, err erro
 	switch r.Type {
 	case clitypes.ServiceType:
 		r.Object, err = c.Rio.Services(r.Namespace).Get(r.Name, metav1.GetOptions{})
-	case clitypes.StackType:
-		r.Object, err = c.Rio.Stacks(c.Namespace).Get(r.Name, metav1.GetOptions{})
+	case clitypes.AppType:
+		r.Object, err = c.Rio.Apps(r.Namespace).Get(r.Name, metav1.GetOptions{})
 	case clitypes.PodType:
 		r.Object, err = c.Core.Pods(r.Namespace).Get(r.Name, metav1.GetOptions{})
 	case clitypes.ConfigType:
-		r.Object, err = c.Rio.Configs(r.Namespace).Get(r.Name, metav1.GetOptions{})
+		r.Object, err = c.Core.ConfigMaps(r.Namespace).Get(r.Name, metav1.GetOptions{})
 	case clitypes.RouterType:
-		r.Object, err = c.Rio.Services(r.Namespace).Get(r.Name, metav1.GetOptions{})
-	case clitypes.VolumeType:
-		r.Object, err = c.Rio.Volumes(r.Namespace).Get(r.Name, metav1.GetOptions{})
+		r.Object, err = c.Rio.Routers(r.Namespace).Get(r.Name, metav1.GetOptions{})
 	case clitypes.ExternalServiceType:
 		r.Object, err = c.Rio.ExternalServices(r.Namespace).Get(r.Name, metav1.GetOptions{})
 	default:
@@ -64,16 +60,12 @@ func (c *CLIContext) DeleteResource(r types.Resource) (err error) {
 	switch r.Type {
 	case clitypes.ServiceType:
 		err = c.Rio.Services(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
-	case clitypes.StackType:
-		err = c.Rio.Stacks(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
 	case clitypes.PodType:
 		err = c.Core.Pods(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
 	case clitypes.ConfigType:
-		err = c.Rio.Configs(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
+		err = c.Core.ConfigMaps(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
 	case clitypes.RouterType:
 		err = c.Rio.Services(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
-	case clitypes.VolumeType:
-		err = c.Rio.Volumes(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
 	case clitypes.ExternalServiceType:
 		err = c.Rio.ExternalServices(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
 	default:
@@ -93,19 +85,15 @@ func (c *CLIContext) Create(obj runtime.Object) (err error) {
 	}
 
 	switch o := obj.(type) {
-	case *v1.Service:
+	case *riov1.Service:
 		_, err = c.Rio.Services(o.Namespace).Create(o)
-	case *v1.Stack:
-		_, err = c.Rio.Stacks(o.Namespace).Create(o)
 	case *corev1.Pod:
 		_, err = c.Core.Pods(o.Namespace).Create(o)
-	case *v1.Config:
-		_, err = c.Rio.Configs(o.Namespace).Create(o)
-	case *v1.Router:
+	case *corev1.ConfigMap:
+		_, err = c.Core.ConfigMaps(o.Namespace).Create(o)
+	case *riov1.Router:
 		_, err = c.Rio.Routers(o.Namespace).Create(o)
-	case *v1.Volume:
-		_, err = c.Rio.Volumes(o.Namespace).Create(o)
-	case *v1.ExternalService:
+	case *riov1.ExternalService:
 		_, err = c.Rio.ExternalServices(o.Namespace).Create(o)
 	default:
 		return fmt.Errorf("unknown delete type %v", reflect.TypeOf(obj))
@@ -115,19 +103,15 @@ func (c *CLIContext) Create(obj runtime.Object) (err error) {
 
 func (c *CLIContext) UpdateObject(obj runtime.Object) (err error) {
 	switch o := obj.(type) {
-	case *v1.Service:
+	case *riov1.Service:
 		_, err = c.Rio.Services(o.Namespace).Update(o)
-	case *v1.Stack:
-		_, err = c.Rio.Stacks(o.Namespace).Update(o)
 	case *corev1.Pod:
 		_, err = c.Core.Pods(o.Namespace).Update(o)
-	case *v1.Config:
-		_, err = c.Rio.Configs(o.Namespace).Update(o)
-	case *v1.Router:
+	case *corev1.ConfigMap:
+		_, err = c.Core.ConfigMaps(o.Namespace).Update(o)
+	case *riov1.Router:
 		_, err = c.Rio.Routers(o.Namespace).Update(o)
-	case *v1.Volume:
-		_, err = c.Rio.Volumes(o.Namespace).Update(o)
-	case *v1.ExternalService:
+	case *riov1.ExternalService:
 		_, err = c.Rio.ExternalServices(o.Namespace).Update(o)
 	case *projectv1.Feature:
 		_, err = c.Project.Features(o.Namespace).Update(o)
@@ -140,7 +124,7 @@ func (c *CLIContext) UpdateObject(obj runtime.Object) (err error) {
 func (c *CLIContext) List(typeName string) (ret []runtime.Object, err error) {
 	switch typeName {
 	case clitypes.StackType:
-		return c.listNamespace(c.Namespace, typeName)
+		return c.listNamespace(c.SystemNamespace, typeName)
 	case clitypes.FeatureType:
 		return c.listFeatures()
 	default:
@@ -156,8 +140,11 @@ func (c *CLIContext) List(typeName string) (ret []runtime.Object, err error) {
 			if err != nil {
 				return nil, err
 			}
+			if !c.CLI.Bool("system") && meta.GetName() == c.SystemNamespace {
+				continue
+			}
 			eg.Go(func() error {
-				obj, err := c.listNamespace(meta.GetNamespace(), typeName)
+				obj, err := c.listNamespace(meta.GetName(), typeName)
 				if err != nil {
 					return err
 				}
@@ -167,8 +154,16 @@ func (c *CLIContext) List(typeName string) (ret []runtime.Object, err error) {
 				return nil
 			})
 		}
+		if err := eg.Wait(); err != nil {
+			return ret, err
+		}
+		sort.Slice(ret, func(i, j int) bool {
+			meta1, _ := meta.Accessor(ret[i])
+			meta2, _ := meta.Accessor(ret[j])
+			return meta1.GetNamespace()+"/"+meta1.GetName() < meta2.GetNamespace()+"/"+meta2.GetName()
+		})
 
-		return ret, eg.Wait()
+		return ret, nil
 	}
 }
 
@@ -183,7 +178,7 @@ func (c *CLIContext) listFeatures() (ret []runtime.Object, err error) {
 	}
 
 	req, _ := labels.NewRequirement("rio.cattle.io/system", selection.NotIn, []string{"true"})
-	nonSystem, err := c.Project.Features(c.Namespace).List(metav1.ListOptions{
+	nonSystem, err := c.Project.Features(c.SystemNamespace).List(metav1.ListOptions{
 		LabelSelector: labels.NewSelector().Add(*req).String(),
 	})
 	if err != nil {
@@ -203,14 +198,20 @@ func (c *CLIContext) listNamespace(namespace, typeName string) (ret []runtime.Ob
 	opts := metav1.ListOptions{}
 
 	switch typeName {
-	case clitypes.ServiceType:
-		objs, err := c.Rio.Services(namespace).List(opts)
+	case clitypes.StackType:
+		objs, err := c.Core.Namespaces().List(opts)
 		for i := range objs.Items {
 			ret = append(ret, &objs.Items[i])
 		}
 		return ret, err
-	case clitypes.StackType:
-		objs, err := c.Rio.Stacks(namespace).List(opts)
+	case clitypes.AppType:
+		objs, err := c.Rio.Apps(namespace).List(opts)
+		for i := range objs.Items {
+			ret = append(ret, &objs.Items[i])
+		}
+		return ret, err
+	case clitypes.ServiceType:
+		objs, err := c.Rio.Services(namespace).List(opts)
 		for i := range objs.Items {
 			ret = append(ret, &objs.Items[i])
 		}
@@ -222,19 +223,13 @@ func (c *CLIContext) listNamespace(namespace, typeName string) (ret []runtime.Ob
 		}
 		return ret, err
 	case clitypes.ConfigType:
-		objs, err := c.Rio.Configs(namespace).List(opts)
+		objs, err := c.Core.ConfigMaps(namespace).List(opts)
 		for i := range objs.Items {
 			ret = append(ret, &objs.Items[i])
 		}
 		return ret, err
 	case clitypes.RouterType:
 		objs, err := c.Rio.Routers(namespace).List(opts)
-		for i := range objs.Items {
-			ret = append(ret, &objs.Items[i])
-		}
-		return ret, err
-	case clitypes.VolumeType:
-		objs, err := c.Rio.Volumes(namespace).List(opts)
 		for i := range objs.Items {
 			ret = append(ret, &objs.Items[i])
 		}
@@ -246,7 +241,7 @@ func (c *CLIContext) listNamespace(namespace, typeName string) (ret []runtime.Ob
 		}
 		return ret, err
 	case clitypes.FeatureType:
-		objs, err := c.Project.Features(c.Namespace).List(projectOpts)
+		objs, err := c.Project.Features(c.SystemNamespace).List(projectOpts)
 		for i := range objs.Items {
 			ret = append(ret, &objs.Items[i])
 		}

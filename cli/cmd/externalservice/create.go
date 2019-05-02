@@ -35,7 +35,7 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 		}
 	}
 
-	_, namespace, name, err := stack.ResolveSpaceStackForName(ctx, ctx.CLI.Args()[0])
+	_, namespace, name, err := stack.NamespaceAndName(ctx, ctx.CLI.Args()[0])
 	if err != nil {
 		return err
 	}

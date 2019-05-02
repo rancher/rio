@@ -30,7 +30,7 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 
 	config := riov1.Config{}
 
-	_, namespace, name, err := stack.ResolveSpaceStackForName(ctx, name)
+	_, namespace, name, err := stack.NamespaceAndName(ctx, name)
 	if err != nil {
 		return err
 	}

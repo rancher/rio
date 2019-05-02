@@ -30,7 +30,7 @@ type appWeightHandler struct {
 
 func (s appWeightHandler) sync(key string, obj *riov1.App) (*riov1.App, error) {
 	if obj == nil {
-		return obj, nil
+		return nil, nil
 	}
 
 	app := obj.DeepCopy()
@@ -112,7 +112,7 @@ func (s appWeightHandler) sync(key string, obj *riov1.App) (*riov1.App, error) {
 					time.Sleep(time.Second * time.Duration(rev.RolloutInterval))
 					s.apps.Enqueue(app.Namespace, app.Name)
 				}()
-				continue
+				break
 			}
 
 			if abs(weightToAdjust) < rev.RolloutIncrement {
@@ -126,6 +126,7 @@ func (s appWeightHandler) sync(key string, obj *riov1.App) (*riov1.App, error) {
 				observed.Weight += rolloutamount
 				magicSteal(versions, weights, app.Status.RevisionWeight, -rolloutamount)
 			}
+			time.Sleep(time.Second * time.Duration(rev.RolloutInterval))
 			observed.LastWrite = metav1.NewTime(time.Now())
 			app.Status.RevisionWeight[rev.Version] = observed
 		} else {
@@ -134,6 +135,8 @@ func (s appWeightHandler) sync(key string, obj *riov1.App) (*riov1.App, error) {
 			app.Status.RevisionWeight[rev.Version] = weightRev
 			magicSteal(versions, weights, app.Status.RevisionWeight, -weightToAdjust)
 		}
+		// only execute one revision at one sync call
+		break
 	}
 	return app, nil
 }
@@ -160,7 +163,7 @@ func abs(v int) int {
 }
 
 /*
-Steal weight from other service. Don't try to read it. :)
+	Steal weight from other service. Don't try to read it. :)
 */
 func magicSteal(versions []string, weightSpecs []int, result map[string]riov1.ServiceObservedWeight, weightToAdjust int) {
 	if len(versions) == 0 {

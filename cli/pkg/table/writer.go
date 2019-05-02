@@ -2,7 +2,9 @@ package table
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
+	"strings"
 	"text/tabwriter"
 	"text/template"
 	"time"
@@ -11,9 +13,9 @@ import (
 
 	"github.com/Masterminds/sprig"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/docker/go-units"
+	units "github.com/docker/go-units"
 	"github.com/rancher/mapper/convert"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -32,6 +34,8 @@ var (
 		"toJson":        ToJSON,
 		"boolToStar":    BoolToStar,
 		"state":         State,
+		"array":         ToArray,
+		"graph":         Graph,
 		"transitioning": Transitioning,
 	}
 )
@@ -183,6 +187,23 @@ func (t *writer) printTemplate(out io.Writer, templateContent string, obj interf
 	}
 
 	return tmpl.Execute(out, obj)
+}
+
+func ToArray(s []string) (string, error) {
+	return strings.Join(s, ", "), nil
+}
+
+func Graph(value int) (string, error) {
+	bars := int(float64(value) / 100.0 * 30)
+	builder := &strings.Builder{}
+	for i := 0; i < bars; i++ {
+		if i == bars-1 {
+			builder.WriteString(fmt.Sprintf("> %v", value))
+			break
+		}
+		builder.WriteString("=")
+	}
+	return builder.String(), nil
 }
 
 func FormatStackScopedName(defaultStackName string) func(interface{}, interface{}) (string, error) {
