@@ -29,7 +29,7 @@ func init() {
 	lookup.RegisterType(types.AppType, lookup.StackScopedNameType, lookup.SingleNameNameType)
 	lookup.RegisterType(types.ServiceType, lookup.StackScopedNameType, lookup.SingleNameNameType, lookup.VersionedSingleNameNameType, lookup.VersionedStackScopedNameType)
 	lookup.RegisterType(types.PodType, lookup.FourPartsNameType, lookup.ThreePartsNameType)
-	lookup.RegisterType(types.StackType, lookup.SingleNameNameType)
+	lookup.RegisterType(types.NamespaceType, lookup.SingleNameNameType)
 	lookup.RegisterType(types.FeatureType, lookup.SingleNameNameType)
 	lookup.RegisterType(types.PublicDomainType, lookup.FullDomainNameTypeNameType)
 
@@ -123,24 +123,30 @@ func (c *CLIContext) UpdateObject(obj runtime.Object) (err error) {
 
 func (c *CLIContext) List(typeName string) (ret []runtime.Object, err error) {
 	switch typeName {
-	case clitypes.StackType:
+	case clitypes.NamespaceType:
 		return c.listNamespace(c.SystemNamespace, typeName)
 	case clitypes.FeatureType:
 		return c.listFeatures()
 	default:
-		stacks, err := c.List(types.StackType)
+		namespaces, err := c.List(types.NamespaceType)
 		if err != nil {
 			return nil, err
 		}
 
 		lock := sync.Mutex{}
 		eg := errgroup.Group{}
-		for _, stack := range stacks {
-			meta, err := meta.Accessor(stack)
+		for _, ns := range namespaces {
+			meta, err := meta.Accessor(ns)
 			if err != nil {
 				return nil, err
 			}
+			if c.CLI.String("namespace") != "" && meta.GetName() != c.CLI.String("namespace") {
+				continue
+			}
 			if !c.CLI.Bool("system") && meta.GetName() == c.SystemNamespace {
+				continue
+			}
+			if c.CLI.Bool("system") && meta.GetName() != c.SystemNamespace {
 				continue
 			}
 			eg.Go(func() error {
@@ -198,7 +204,7 @@ func (c *CLIContext) listNamespace(namespace, typeName string) (ret []runtime.Ob
 	opts := metav1.ListOptions{}
 
 	switch typeName {
-	case clitypes.StackType:
+	case clitypes.NamespaceType:
 		objs, err := c.Core.Namespaces().List(opts)
 		for i := range objs.Items {
 			ret = append(ret, &objs.Items[i])

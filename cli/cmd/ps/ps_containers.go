@@ -46,7 +46,7 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 	}
 
 	for _, pod := range pods {
-		containerName, _ := lookup.ParseContainer(ctx.DefaultNamespace, pod.LookupName)
+		containerName, _ := lookup.ParseContainer(ctx.GetDefaultNamespace(), pod.LookupName)
 		pod := pod.Object.(*v1.Pod)
 		podData, ok := toPodData(ctx, all, pod, containerName.ContainerName)
 		if ok {
@@ -86,7 +86,7 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 }
 
 func toPodData(ctx *clicontext.CLIContext, all bool, pod *v1.Pod, containerName string) (tables.PodData, bool) {
-	stackScoped := lookup.StackScopedFromLabels(ctx.DefaultNamespace, pod)
+	stackScoped := lookup.StackScopedFromLabels(ctx.GetDefaultNamespace(), pod)
 
 	podData := tables.PodData{
 		Pod:     pod,
@@ -120,7 +120,7 @@ func toPodData(ctx *clicontext.CLIContext, all bool, pod *v1.Pod, containerName 
 }
 
 func (p *Ps) containers(ctx *clicontext.CLIContext) error {
-	pds, err := ListPods(ctx, p.A_All, ctx.CLI.Args()...)
+	pds, err := ListPods(ctx, true, ctx.CLI.Args()...)
 	if err != nil {
 		return err
 	}

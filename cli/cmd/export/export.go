@@ -7,7 +7,7 @@ import (
 
 var (
 	exportTypes = []string{
-		clitypes.StackType,
+		clitypes.NamespaceType,
 		clitypes.ServiceType,
 	}
 )

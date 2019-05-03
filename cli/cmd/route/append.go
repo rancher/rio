@@ -8,9 +8,8 @@ import (
 	"time"
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/stack"
+	"github.com/rancher/rio/cli/pkg/pretty/objectmappers"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/pretty/objectmappers"
 	"github.com/rancher/wrangler/pkg/kv"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -34,8 +33,6 @@ type Add struct {
 	FaultPercentage int               `desc:"Percentage of matching requests to fault"`
 	FaultDelay      string            `desc:"Inject a delay for fault (ms|s|m|h)" default:"0s"`
 	FaultHTTPCode   int               `desc:"HTTP code to send for fault injection"`
-	FaultHTTP2Error string            `desc:"HTTP2 error to send for fault injection"`
-	FaultGRPCError  string            `desc:"gRPC error to send for fault injection"`
 	AddHeader       []string          `desc:"Add HTTP header to request (format key=value)"`
 	RetryAttempts   int               `desc:"How many times to retry"`
 	RetryTimeout    string            `desc:"Timeout per retry (ms|s|m|h)" default:"0s"`
@@ -88,26 +85,21 @@ func insertRoute(ctx *clicontext.CLIContext, insert bool, a RouteAction) error {
 }
 
 func (a *Add) validateServiceStack(ctx *clicontext.CLIContext, args []string) error {
-	_, service, stack, _, _ := parseMatch(args[0])
+	_, service, namespace, _, _ := parseMatch(args[0])
 	if service == "" {
 		return fmt.Errorf("route host/path must be in the format service.stack[/path], for example myservice.mystack/login")
 	}
-	if stack == "" {
-		stack = ctx.GetDefaultStackName()
+	if namespace == "" {
+		namespace = ctx.GetDefaultNamespace()
 	}
 
 	return nil
 }
 
 func (a *Add) getRouteSet(ctx *clicontext.CLIContext, args []string) (*riov1.Router, error) {
-	_, service, stackName, _, _ := parseMatch(args[0])
+	_, service, namespace, _, _ := parseMatch(args[0])
 
-	_, stackName, name, err := stack.NamespaceAndName(ctx, stackName+"/"+service)
-	if err != nil {
-		return nil, err
-	}
-
-	routeSet, err := lookupRoute(ctx, stackName, name)
+	routeSet, err := lookupRoute(ctx, namespace, service)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +108,7 @@ func (a *Add) getRouteSet(ctx *clicontext.CLIContext, args []string) (*riov1.Rou
 		return routeSet, nil
 	}
 
-	return riov1.NewRouter(stackName, name, riov1.Router{}), nil
+	return riov1.NewRouter(namespace, service, riov1.Router{}), nil
 }
 
 func actionsString(many bool) string {
@@ -219,10 +211,10 @@ func (a *Add) addMirror(routeSpec *riov1.RouteSpec, action string, dests []riov1
 	}
 
 	routeSpec.Mirror = &riov1.Destination{
-		Stack:    dests[0].Stack,
-		Service:  dests[0].Service,
-		Revision: dests[0].Revision,
-		Port:     dests[0].Port,
+		Namespace: dests[0].Namespace,
+		Service:   dests[0].Service,
+		Revision:  dests[0].Revision,
+		Port:      dests[0].Port,
 	}
 }
 
@@ -247,20 +239,6 @@ func (a *Add) addFault(routeSpec *riov1.RouteSpec) error {
 	if a.FaultHTTPCode != 0 {
 		f.Abort = riov1.Abort{
 			HTTPStatus: a.FaultHTTPCode,
-		}
-		return nil
-	}
-
-	if a.FaultHTTP2Error != "" {
-		f.Abort = riov1.Abort{
-			HTTP2Status: a.FaultHTTP2Error,
-		}
-		return nil
-	}
-
-	if a.FaultGRPCError != "" {
-		f.Abort = riov1.Abort{
-			GRPCStatus: a.FaultGRPCError,
 		}
 		return nil
 	}
@@ -302,7 +280,7 @@ func (a *Add) addMatch(ctx *clicontext.CLIContext, matchString string, routeSpec
 			return fmt.Errorf("invalid format for --from [%s]: %v", a.From, err)
 		}
 		match.From = &riov1.ServiceSource{
-			Stack:    wds[0].Stack,
+			Stack:    wds[0].Namespace,
 			Service:  wds[0].Service,
 			Revision: wds[0].Revision,
 		}
@@ -368,9 +346,9 @@ func ParseDestinations(targets []string) ([]riov1.WeightedDestination, error) {
 
 		wd := riov1.WeightedDestination{
 			Destination: riov1.Destination{
-				Stack:    stack,
-				Service:  service,
-				Revision: revision,
+				Namespace: stack,
+				Service:   service,
+				Revision:  revision,
 			},
 		}
 
@@ -405,8 +383,8 @@ func parseAction(action string) (string, error) {
 	return action, nil
 }
 
-func lookupRoute(ctx *clicontext.CLIContext, stackName, name string) (*riov1.Router, error) {
-	route, err := ctx.Rio.Routers(stackName).Get(name, metav1.GetOptions{})
+func lookupRoute(ctx *clicontext.CLIContext, namespace, name string) (*riov1.Router, error) {
+	route, err := ctx.Rio.Routers(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -414,7 +392,7 @@ func lookupRoute(ctx *clicontext.CLIContext, stackName, name string) (*riov1.Rou
 	return route, nil
 }
 
-func parseMatch(str string) (scheme string, service string, stack string, path string, port string) {
+func parseMatch(str string) (scheme string, service string, namespace string, path string, port string) {
 	parts := strings.SplitN(str, "://", 2)
 	if len(parts) == 2 {
 		scheme = parts[0]
@@ -422,7 +400,7 @@ func parseMatch(str string) (scheme string, service string, stack string, path s
 	}
 
 	str, path = kv.Split(str, "/")
-	service, stack = kv.Split(str, ".")
-	stack, port = kv.Split(stack, ":")
+	service, namespace = kv.Split(str, ".")
+	namespace, port = kv.Split(namespace, ":")
 	return
 }

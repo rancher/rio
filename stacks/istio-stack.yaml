@@ -44,7 +44,7 @@ services:
       - PILOT_CACHE_SQUASH=5
       - PILOT_DISABLE_XDS_MARSHALING_TO_ANY=1
       - PILOT_TRACE_SAMPLING=100
-      image: daishan1992/pilot:dev
+      image: istio/pilot:1.1.3
       imagePullPolicy: always
       secrets: identity:/etc/certs
       readinessProbe:

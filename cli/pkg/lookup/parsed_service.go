@@ -47,7 +47,7 @@ func (p StackScoped) String() string {
 	result := ""
 
 	if p.StackName != "" {
-		if p.Other != "" || p.StackName != p.DefaultStackName {
+		if p.Other != "" {
 			result = p.StackName + "/"
 		}
 	}

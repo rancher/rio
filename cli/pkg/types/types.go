@@ -8,7 +8,7 @@ const (
 	AppType             = "app"
 	ServiceType         = "service"
 	PodType             = "pod"
-	StackType           = "stack"
+	NamespaceType       = "namespace"
 	RouterType          = "router"
 	ExternalServiceType = "externalservice"
 	FeatureType         = "feature"

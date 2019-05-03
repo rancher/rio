@@ -6,9 +6,16 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/rancher/rio/cli/cmd/inspect"
+	"github.com/rancher/rio/cli/cmd/revision"
+
 	"github.com/rancher/rio/cli/cmd/info"
+	"github.com/rancher/rio/cli/cmd/promote"
 	"github.com/rancher/rio/cli/cmd/rm"
+	"github.com/rancher/rio/cli/cmd/route"
 	"github.com/rancher/rio/cli/cmd/run"
+	"github.com/rancher/rio/cli/cmd/scale"
+	"github.com/rancher/rio/cli/cmd/stage"
 	"github.com/rancher/rio/cli/cmd/weight"
 
 	"github.com/docker/docker/pkg/reexec"
@@ -115,19 +122,19 @@ func main() {
 		//	"Create a new service",
 		//	appName+" create [OPTIONS] IMAGE [COMMAND] [ARG...]",
 		//	desc),
-		//builder.Command(&scale.Scale{},
-		//	"Scale a service",
-		//	appName+" scale [SERVICE=NUMBER...]",
-		//	""),
+		builder.Command(&scale.Scale{},
+			"Scale a service",
+			appName+" scale [SERVICE=NUMBER...]",
+			""),
 		builder.Command(&rm.Rm{},
 			"Delete a service or stack",
 			appName+" rm ID_OR_NAME",
 			""),
-		//builder.Command(&inspect.Inspect{},
-		//	"Print the raw API output of a resource",
-		//	appName+" inspect [ID_OR_NAME...]",
-		//	""),
-		//
+		builder.Command(&inspect.Inspect{},
+			"Print the raw API output of a resource",
+			appName+" inspect [ID_OR_NAME...]",
+			""),
+
 		//builder.Command(&edit.Edit{},
 		//	"Edit a service or stack",
 		//	appName+" edit ID_OR_NAME",
@@ -156,19 +163,27 @@ func main() {
 		//	appName+" logs [OPTIONS] [CONTAINER_OR_SERVICE...]",
 		//	""),
 		//
-		//builder.Command(&stage.Stage{},
-		//	"Stage a new revision of a service",
-		//	appName+" stage [OPTIONS] SERVICE_ID_NAME",
+		//builder.Command(&install.Install{},
+		//	"Install rio management plane",
+		//	appName+" install [OPTIONS]",
 		//	""),
-		//builder.Command(&promote.Promote{},
-		//	"Promote a staged version to latest",
-		//	appName+" promote [SERVICE_ID_NAME]",
-		//	""),
+		builder.Command(&revision.Revision{},
+			"List service revisions",
+			appName+" revision [OPTIONS] [APP...]",
+			""),
+		builder.Command(&stage.Stage{},
+			"Stage a new revision of a service",
+			appName+" stage [OPTIONS] SERVICE_ID_NAME",
+			""),
+		builder.Command(&promote.Promote{},
+			"Promote a staged version to latest",
+			appName+" promote [SERVICE_ID_NAME]",
+			""),
 		builder.Command(&weight.Weight{},
 			"Weight a percentage of traffic to a staged service",
 			appName+" weight [OPTIONS] [SERVICE_REVISION=PERCENTAGE...]",
 			""),
-		//route.Route(app),
+		route.Route(app),
 	}
 	app.Before = func(ctx *cli.Context) error {
 		if err := cfg.Validate(); err != nil {

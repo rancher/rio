@@ -24,7 +24,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	c.Apply = c.Apply.WithStrictCaching().
 		WithCacheTypes(rContext.Networking.Networking().V1alpha3().DestinationRule(),
 			rContext.Networking.Networking().V1alpha3().VirtualService(),
-			rContext.Extensions.Extensions().V1beta1().Ingress())
+			rContext.Extensions.Extensions().V1beta1().Ingress()).WithRateLimiting(10)
 
 	sh := &serviceHandler{
 		systemNamespace:    rContext.Namespace,

@@ -48,7 +48,7 @@ func (o *desiredSet) getRateLimit(labelHash string) flowcontrol.RateLimiter {
 	} else {
 		rl = rls[labelHash]
 		if rl == nil {
-			rl = flowcontrol.NewTokenBucketRateLimiter(60/60, 10)
+			rl = flowcontrol.NewTokenBucketRateLimiter(o.ratelimitingQps, 10)
 			rls[labelHash] = rl
 		}
 	}

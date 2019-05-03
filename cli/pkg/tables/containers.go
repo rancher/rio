@@ -38,7 +38,7 @@ func containerName(obj, obj2 interface{}) (string, error) {
 	container, _ := obj2.(*v1.Container)
 
 	if !podData.Managed {
-		return fmt.Sprintf("%s/%s", podData.Name, container.Name), nil
+		return fmt.Sprintf("%s/%s/%s", podData.Pod.Namespace, podData.Name, container.Name), nil
 	}
 
 	pc := lookup.ParsedContainer{

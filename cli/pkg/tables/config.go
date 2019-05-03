@@ -16,7 +16,7 @@ func NewConfig(cfg Config) TableWriter {
 	}, cfg)
 
 	writer.AddFormatFunc("size", Base64Size)
-	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cfg.GetDefaultStackName()))
+	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cfg.GetDefaultNamespace()))
 
 	return &tableWriter{
 		writer: writer,

@@ -95,6 +95,10 @@ func (s appWeightHandler) sync(key string, obj *riov1.App) (*riov1.App, error) {
 		if rev.AdjustedWeight == observed.Weight {
 			continue
 		}
+		go func() {
+			time.Sleep(time.Second * time.Duration(rev.RolloutInterval))
+			s.apps.Enqueue(app.Namespace, app.Name)
+		}()
 
 		weightToAdjust := rev.AdjustedWeight - observed.Weight
 		revision := app.DeepCopy().Spec.Revisions
@@ -108,10 +112,6 @@ func (s appWeightHandler) sync(key string, obj *riov1.App) (*riov1.App, error) {
 
 		if isRolloutSet(rev) {
 			if time.Now().Before(observed.LastWrite.Add(time.Second * time.Duration(rev.RolloutInterval))) {
-				go func() {
-					time.Sleep(time.Second * time.Duration(rev.RolloutInterval))
-					s.apps.Enqueue(app.Namespace, app.Name)
-				}()
 				break
 			}
 
@@ -126,12 +126,13 @@ func (s appWeightHandler) sync(key string, obj *riov1.App) (*riov1.App, error) {
 				observed.Weight += rolloutamount
 				magicSteal(versions, weights, app.Status.RevisionWeight, -rolloutamount)
 			}
-			time.Sleep(time.Second * time.Duration(rev.RolloutInterval))
 			observed.LastWrite = metav1.NewTime(time.Now())
+			observed.ServiceName = rev.ServiceName
 			app.Status.RevisionWeight[rev.Version] = observed
 		} else {
 			weightRev := app.Status.RevisionWeight[rev.Version]
 			weightRev.Weight += weightToAdjust
+			weightRev.ServiceName = rev.ServiceName
 			app.Status.RevisionWeight[rev.Version] = weightRev
 			magicSteal(versions, weights, app.Status.RevisionWeight, -weightToAdjust)
 		}

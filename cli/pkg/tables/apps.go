@@ -11,7 +11,7 @@ import (
 
 func NewApp(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
-		{"NAME", "{{stackScopedName .Obj.Namespace .Obj.Name}}"},
+		{"NAME", "{{stackScopedName .Obj.Namespace .Obj.Name ``}}"},
 		{"ENDPOINT", "{{.Obj.Status.Endpoints | array}}"},
 		{"SCALE", "{{appScale .Obj.Spec.Revisions}}"},
 		{"WEIGHT", "{{weightVersioned .Obj}}"},
@@ -19,7 +19,7 @@ func NewApp(cfg Config) TableWriter {
 
 	writer.AddFormatFunc("appScale", formatAppScale)
 	writer.AddFormatFunc("weightVersioned", formatWeightGraph)
-	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cfg.GetDefaultStackName()))
+	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cfg.GetDefaultNamespace()))
 
 	return &tableWriter{
 		writer: writer,

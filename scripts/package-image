@@ -8,7 +8,7 @@ cd $(dirname $0)/../package
 TAG=${TAG:-${VERSION}${SUFFIX}}
 REPO=${REPO:-rancher}
 
-cp ../bin/rio-incluster ./rio
+cp ../bin/rio-controller ./rio
 
 IMAGE=${REPO}/rio:${TAG}
 docker build -t ${IMAGE} .

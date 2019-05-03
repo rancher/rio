@@ -7,10 +7,9 @@ import (
 )
 
 type Ps struct {
-	C_Containers bool `desc:"print containers, not services"`
-	R_Revisions  bool `desc:"print revisions"`
-	A_All        bool `desc:"include all container, not just ones related to services"`
-	System       bool `desc:"whether to show system resources"`
+	C_Containers bool   `desc:"print containers, not services"`
+	N_Namespace  string `desc:"specify namespace"`
+	System       bool   `desc:"whether to show system resources"`
 }
 
 func (p *Ps) Customize(cmd *cli.Command) {
@@ -20,10 +19,6 @@ func (p *Ps) Customize(cmd *cli.Command) {
 func (p *Ps) Run(ctx *clicontext.CLIContext) error {
 	if p.C_Containers {
 		return p.containers(ctx)
-	}
-
-	if p.R_Revisions {
-		return p.revisions(ctx)
 	}
 
 	return p.apps(ctx)

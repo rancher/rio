@@ -11,7 +11,7 @@ const (
 
 var (
 	editTypes = []string{
-		clitypes.StackType,
+		clitypes.NamespaceType,
 		clitypes.ServiceType,
 		clitypes.ConfigType,
 		clitypes.RouterType,
@@ -120,7 +120,7 @@ func (edit *Edit) Run(ctx *clicontext.CLIContext) error {
 //}
 //
 //func (edit *Edit) update(ctx *clicontext.CLIContext, format string, obj *types.Resource, self string, content []byte) error {
-//	if obj.Type == clitypes.StackType {
+//	if obj.Type == clitypes.NamespaceType {
 //		return up.Run(ctx, content, obj.ID, true, edit.Prompt, nil, "")
 //	}
 //

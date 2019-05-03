@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/rancher/rio/pkg/services"
+
 	"github.com/rancher/rio/cli/pkg/table"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 )
@@ -33,6 +35,9 @@ func FormatScale(data, data2 interface{}) (string, error) {
 	scale, ok := data.(int)
 	if !ok {
 		return fmt.Sprint(data), nil
+	}
+	if scale == 0 {
+		scale = 1
 	}
 	scaleStr := strconv.Itoa(scale)
 
@@ -65,7 +70,9 @@ func FormatServiceName(cfg Config) func(data, data2 interface{}) (string, error)
 			return "", nil
 		}
 
-		return table.FormatStackScopedName(cfg.GetDefaultStackName())(ns, service.Name)
+		app, version := services.AppAndVersion(service)
+
+		return table.FormatStackScopedName(cfg.GetDefaultNamespace())(ns, app, version)
 	}
 }
 
@@ -74,7 +81,7 @@ func FormatImage(data interface{}) (string, error) {
 	if !ok {
 		return fmt.Sprint(data), nil
 	}
-	if s.Spec.Image == "" || len(s.Spec.Sidecars) > 0 {
+	if s.Spec.Image == "" && len(s.Spec.Sidecars) > 0 {
 		return s.Spec.Sidecars[0].Image, nil
 	}
 	return s.Spec.Image, nil

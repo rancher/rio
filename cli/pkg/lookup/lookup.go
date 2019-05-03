@@ -10,7 +10,7 @@ import (
 
 type ClientLookup interface {
 	ByID(namespace, name, typeName string) (types.Resource, error)
-	GetDefaultStackName() string
+	GetDefaultNamespace() string
 }
 
 func getValidNameTypes(name string) (ret []nameType) {

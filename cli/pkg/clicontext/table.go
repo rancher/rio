@@ -21,6 +21,6 @@ func (c *CLIContext) Writer() io.Writer {
 	return os.Stdout
 }
 
-func (c *CLIContext) GetDefaultStackName() string {
-	return c.DefaultNamespace
+func (c *CLIContext) GetDefaultNamespace() string {
+	return c.CLI.String("namespace")
 }

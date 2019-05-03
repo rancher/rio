@@ -206,8 +206,8 @@ func Graph(value int) (string, error) {
 	return builder.String(), nil
 }
 
-func FormatStackScopedName(defaultStackName string) func(interface{}, interface{}) (string, error) {
-	return func(data, data2 interface{}) (string, error) {
+func FormatStackScopedName(defaultStackName string) func(interface{}, interface{}, interface{}) (string, error) {
+	return func(data, data2, data3 interface{}) (string, error) {
 		stackName, ok := data.(string)
 		if !ok {
 			return "", nil
@@ -220,6 +220,11 @@ func FormatStackScopedName(defaultStackName string) func(interface{}, interface{
 
 		if stackName == defaultStackName {
 			return serviceName, nil
+		}
+
+		version, ok := data3.(string)
+		if ok && version != "" {
+			serviceName = serviceName + ":" + version
 		}
 
 		return stackName + "/" + serviceName, nil

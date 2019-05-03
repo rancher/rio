@@ -65,7 +65,7 @@ func (n nameType) Lookup(lookup ClientLookup, name, typeName string) (types.Reso
 	if !n.types[typeName] {
 		return types.Resource{}, errors.NewNotFound(schema.GroupResource{}, name)
 	}
-	r := n.lookup(lookup.GetDefaultStackName(), name, typeName)
+	r := n.lookup(lookup.GetDefaultNamespace(), name, typeName)
 	r, err := lookup.ByID(r.Namespace, r.Name, typeName)
 	r.LookupName = name
 	return r, err

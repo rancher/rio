@@ -92,7 +92,7 @@ func (r *routerWriter) Write(obj interface{}) {
 
 func NewRouter(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
-		{"NAME", "{{stackScopedName .Obj.Namespace .Obj.ServiceName}}"},
+		{"NAME", "{{stackScopedName .RouteSet.Namespace .RouteSet.Name ``}}"},
 		{"URL", "{{ . | formatURL }}"},
 		{"OPTS", "{{ . | formatOpts }}"},
 		{"ACTION", "{{ . | formatAction }}"},
@@ -103,7 +103,7 @@ func NewRouter(cfg Config) TableWriter {
 	writer.AddFormatFunc("formatURL", FormatURL())
 	writer.AddFormatFunc("formatAction", FormatAction)
 	writer.AddFormatFunc("formatTarget", FormatRouteTarget)
-	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cfg.GetDefaultStackName()))
+	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cfg.GetDefaultNamespace()))
 
 	domain, _ := cfg.Domain()
 
@@ -190,8 +190,8 @@ func FormatRouteTarget(obj interface{}) (string, error) {
 		writeDest(buf, data.RouteSet.Namespace, data.RouteSpec.Mirror.Namespace, data.RouteSpec.Mirror.Service,
 			data.RouteSpec.Mirror.Revision,
 			int(*data.RouteSpec.Mirror.Port), 0)
-	} else if target == "rewrite" {
-		writeHostPath(buf, data.RouteSpec.Redirect.Host, data.RouteSpec.Redirect.Path)
+	} else if target == "rewrite" && data.RouteSpec.Rewrite != nil {
+		writeHostPath(buf, data.RouteSpec.Rewrite.Host, data.RouteSpec.Rewrite.Path)
 	}
 
 	return buf.String(), nil

@@ -1,0 +1,66 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: rio-cluster-admin
+  namespace: ${NAMESPACE}
+rules:
+  - apiGroups:
+    - '*'
+    resources:
+    - '*'
+    verbs:
+    - '*'
+  - nonResourceURLs:
+    - '*'
+    verbs:
+    - '*'
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: rio-controller-binding
+  namespace: ${NAMESPACE}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: rio-cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: rio-controller
+    namespace: ${NAMESPACE}
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rio-controller-serviceaccount
+  namespace: ${NAMESPACE}
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: rio-controller
+  namespace: ${NAMESPACE}
+spec:
+  selector:
+    matchLabels:
+      rio-controller: true
+  template:
+    metadata:
+      labels:
+        rio-controller: true
+    spec:
+      serviceAccountName: rio-controller-serviceaccount
+      containers:
+      - image: daishan1992/rio-controller:dev
+        imagePullPolicy: Always
+        name: rio-controller
+        env:
+        - name: CUSTOM_REGISTRY
+          value: ${CUSTOM_REGISTRY}
+        - name: RIO_NAMESPACE
+          value: ${NAMESPACE}
+        - name: RIO_DEBUG
+          value: ${RIO_DEBUG}

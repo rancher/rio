@@ -28,13 +28,11 @@ func (s *Scale) Run(ctx *clicontext.CLIContext) error {
 				min, max := kv.Split(scaleStr, "-")
 				minScale, _ := strconv.Atoi(min)
 				maxScale, _ := strconv.Atoi(max)
-				concurrency := 10
-				if service.Spec.AutoScale != nil {
-					concurrency = int(service.Spec.AutoScale.Concurrency)
+				if service.Spec.AutoscaleConfig.Concurrency == nil {
+					service.Spec.AutoscaleConfig.Concurrency = &[]int{10}[0]
 				}
-				service.Spec.AutoScale.MinScale = minScale
-				service.Spec.AutoScale.MaxScale = maxScale
-				service.Spec.AutoScale.Concurrency = concurrency
+				service.Spec.AutoscaleConfig.MinScale = &minScale
+				service.Spec.AutoscaleConfig.MaxScale = &maxScale
 			} else {
 				scale, err := strconv.Atoi(scaleStr)
 				if err != nil {

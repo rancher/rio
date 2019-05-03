@@ -7,7 +7,7 @@ import (
 
 type Config interface {
 	table.WriterConfig
-	GetDefaultStackName() string
+	GetDefaultNamespace() string
 	Domain() (string, error)
 }
 
@@ -22,7 +22,7 @@ func NewVolume(cfg Config) TableWriter {
 	defer writer.Close()
 
 	writer.AddFormatFunc("driver", FormatDriver)
-	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cfg.GetDefaultStackName()))
+	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cfg.GetDefaultNamespace()))
 
 	return &tableWriter{
 		writer: writer,

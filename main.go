@@ -32,13 +32,11 @@ func main() {
 		cli.StringFlag{
 			Name:        "kubeconfig",
 			EnvVar:      "KUBECONFIG",
-			Value:       "${HOME}/.kube/config",
 			Destination: &kubeconfig,
 		},
 		cli.StringFlag{
 			Name:        "namespace",
 			EnvVar:      "RIO_NAMESPACE",
-			Value:       "rio-system",
 			Destination: &namespace,
 		},
 		cli.StringFlag{

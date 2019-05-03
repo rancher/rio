@@ -10,11 +10,11 @@ import (
 
 var (
 	InspectTypes = []string{
+		clitypes.AppType,
 		clitypes.ServiceType,
 		clitypes.ConfigType,
-		clitypes.StackType,
+		clitypes.NamespaceType,
 		clitypes.RouterType,
-		clitypes.VolumeType,
 		clitypes.ExternalServiceType,
 		clitypes.PodType,
 		clitypes.FeatureType,
@@ -49,7 +49,7 @@ func (i *Inspect) Run(ctx *clicontext.CLIContext) error {
 		}
 
 		t := r.Type
-		cmd, err := ctx.KubectlCmd(r.Namespace, "get", t, r.Name, "-o", "yaml")
+		cmd, err := ctx.KubectlCmd(r.Namespace, "get", t, r.Name, "-o", ctx.CLI.String("format"))
 		if err != nil {
 			return err
 		}

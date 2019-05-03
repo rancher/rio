@@ -18,13 +18,12 @@ import (
 var ErrNoConfig = errors.New("no config found")
 
 type Config struct {
-	SystemNamespace  string
-	Kubeconfig       string
-	DefaultNamespace string
-	Debug            bool
-	Wait             bool
-	WaitTimeout      int
-	WaitState        string
+	SystemNamespace string
+	Kubeconfig      string
+	Debug           bool
+	Wait            bool
+	WaitTimeout     int
+	WaitState       string
 
 	Core    corev1.CoreV1Interface
 	Rio     riov1.RioV1Interface
@@ -81,7 +80,6 @@ func (c *Config) Validate() error {
 	c.Project = project
 	c.Core = core
 	c.SystemNamespace = namespace
-	c.DefaultNamespace = "default"
 	return nil
 }
 

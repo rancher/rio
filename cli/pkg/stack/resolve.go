@@ -17,7 +17,7 @@ func NamespaceAndName(c *clicontext.CLIContext, in string) (string, string) {
 	}
 
 	if namespace == "" {
-		namespace = c.DefaultNamespace
+		namespace = "default"
 	}
 
 	return namespace, name

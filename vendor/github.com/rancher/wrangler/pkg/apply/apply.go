@@ -37,6 +37,7 @@ type Apply interface {
 	WithPatcher(gvk schema.GroupVersionKind, patchers Patcher) Apply
 	WithStrictCaching() Apply
 	WithDefaultNamespace(ns string) Apply
+	WithRateLimiting(ratelimitingQps float32) Apply
 }
 
 func New(discovery discovery.DiscoveryInterface, cf ClientFactory, igs ...InformerGetter) Apply {
@@ -112,6 +113,7 @@ func (a *apply) newDesiredSet() desiredSet {
 	return desiredSet{
 		a:                a,
 		defaultNamespace: defaultNamespace,
+		ratelimitingQps:  1,
 	}
 }
 
@@ -149,4 +151,8 @@ func (a *apply) WithStrictCaching() Apply {
 
 func (a *apply) WithDefaultNamespace(ns string) Apply {
 	return a.newDesiredSet().WithDefaultNamespace(ns)
+}
+
+func (a *apply) WithRateLimiting(ratelimitingQps float32) Apply {
+	return a.newDesiredSet().WithRateLimiting(ratelimitingQps)
 }
