@@ -4,7 +4,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/stack"
-	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	name2 "github.com/rancher/rio/pkg/name"
 )
 
@@ -18,16 +18,12 @@ func (a *Add) Run(ctx *clicontext.CLIContext) error {
 	domainName := ctx.CLI.Args().Get(0)
 	target := ctx.CLI.Args().Get(1)
 
-	_, namespace, name, err := stack.NamespaceAndName(ctx, target)
-	if err != nil {
-		return err
-	}
+	namespace, name := stack.NamespaceAndName(ctx, target)
 
-	return ctx.Create(projectv1.NewPublicDomain(ctx.Namespace, name2.PublicDomain(domainName), projectv1.PublicDomain{
-		Spec: projectv1.PublicDomainSpec{
-			DomainName:      domainName,
-			TargetStackName: namespace,
-			TargetName:      name,
+	return ctx.Create(riov1.NewPublicDomain(namespace, name2.PublicDomain(domainName), riov1.PublicDomain{
+		Spec: riov1.PublicDomainSpec{
+			DomainName:        domainName,
+			TargetServiceName: name,
 		},
 	}))
 }

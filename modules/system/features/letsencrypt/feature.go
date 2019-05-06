@@ -14,6 +14,7 @@ import (
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
+	apply := rContext.Apply.WithCacheTypes(rContext.Rio.Rio().V1().Service(), rContext.Core.Core().V1().ConfigMap())
 	feature := &features.FeatureController{
 		FeatureName: "letsencrypt",
 		FeatureSpec: v1.FeatureSpec{
@@ -36,7 +37,6 @@ func Register(ctx context.Context, rContext *types.Context) error {
 				},
 			},
 			Answers: map[string]string{
-				// todo: registry in build need production server to be fully functional
 				settings.RioWildcardType: settings.ProductionType,
 				// todo: self-signed only for testing
 				settings.PublicDomainType: settings.SelfSignedType,
@@ -46,7 +46,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			"NAMESPACE": rContext.Namespace,
 		},
 		SystemStacks: []*systemstack.SystemStack{
-			systemstack.NewSystemStack(rContext.Apply, rContext.Namespace, "cert-manager"),
+			systemstack.NewStack(apply, rContext.Namespace, "cert-manager", true),
 		},
 		Controllers: []features.ControllerRegister{
 			issuer.Register,

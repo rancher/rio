@@ -5,14 +5,13 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/docker/docker/pkg/reexec"
 	"github.com/sirupsen/logrus"
 )
 
 func (c *Config) KubectlCmd(namespace, command string, args ...string) (*exec.Cmd, error) {
-	execArgs := []string{"kubectl"}
+	var execArgs []string
 	if logrus.GetLevel() >= logrus.DebugLevel {
-		execArgs = append(execArgs, "-v=9")
+		execArgs = append(execArgs, "--v=9")
 	}
 	if namespace != "" {
 		execArgs = append(execArgs, "-n", namespace)
@@ -22,8 +21,8 @@ func (c *Config) KubectlCmd(namespace, command string, args ...string) (*exec.Cm
 	}
 	execArgs = append(execArgs, args...)
 
-	logrus.Debugf("%v, KUBECONFIG=%s", execArgs, c.Kubeconfig)
-	cmd := reexec.Command(execArgs...)
+	logrus.Debugf("kubectl %v, KUBECONFIG=%s", execArgs, c.Kubeconfig)
+	cmd := exec.Command("kubectl", execArgs...)
 	cmd.Env = append(os.Environ(), fmt.Sprintf("KUBECONFIG=%s", c.Kubeconfig))
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin

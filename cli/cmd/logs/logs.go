@@ -20,6 +20,7 @@ type Logs struct {
 	S_Since     string `desc:"Logs since a certain time, either duration (5s, 2m, 3h) or RFC3339"`
 	P_Previous  bool   `desc:"Print the logs for the previous instance of the container in a pod if it exists"`
 	C_Container string `desc:"Print the logs of a specific container"`
+	R_Revision  string `desc:"Print the logs of a specific revision"`
 	N_Tail      int    `desc:"Number of recent lines of logs to print, -1 for all" default:"200"`
 	A_All       bool   `desc:"Include hidden or systems logs when logging"`
 }
@@ -40,7 +41,14 @@ func (l *Logs) Run(ctx *clicontext.CLIContext) error {
 
 	factory := logger.NewColorLoggerFactory()
 	for _, pd := range pds {
+		if l.R_Revision != "" && pd.Service.Version != l.R_Revision {
+			continue
+		}
 		for _, container := range pd.Containers {
+			if l.C_Container != "" && container.Name != l.C_Container {
+				continue
+			}
+
 			go l.logContainer(pd.Pod, container, ctx.Core, factory)
 		}
 	}
@@ -52,7 +60,7 @@ func (l *Logs) Run(ctx *clicontext.CLIContext) error {
 func (l *Logs) logContainer(pod *v1.Pod, container v1.Container, coreClient corev1.CoreV1Interface, factory *logger.ColorLoggerFactory) error {
 	containerName := fmt.Sprintf("%s/%s", pod.Name, container.Name)
 	logger := factory.CreateContainerLogger(containerName)
-	podLogOption := v1.PodLogOptions{
+	podLogOption := &v1.PodLogOptions{
 		Container: container.Name,
 		Follow:    l.F_Follow,
 	}
@@ -70,7 +78,7 @@ func (l *Logs) logContainer(pod *v1.Pod, container v1.Container, coreClient core
 		}
 	}
 
-	req := coreClient.Pods(pod.Namespace).GetLogs(pod.Name, &v1.PodLogOptions{})
+	req := coreClient.Pods(pod.Namespace).GetLogs(pod.Name, podLogOption)
 	reader, err := req.Stream()
 	if err != nil {
 		return err

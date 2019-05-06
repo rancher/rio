@@ -9,7 +9,6 @@ import (
 type Ps struct {
 	C_Containers bool   `desc:"print containers, not services"`
 	N_Namespace  string `desc:"specify namespace"`
-	System       bool   `desc:"whether to show system resources"`
 }
 
 func (p *Ps) Customize(cmd *cli.Command) {

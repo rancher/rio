@@ -11,6 +11,7 @@ import (
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
+	apply := rContext.Apply.WithCacheTypes(rContext.Rio.Rio().V1().Service(), rContext.Core.Core().V1().ConfigMap())
 	feature := &features.FeatureController{
 		FeatureName: "kiali",
 		FeatureSpec: v1.FeatureSpec{
@@ -27,7 +28,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			},
 		},
 		SystemStacks: []*systemstack.SystemStack{
-			systemstack.NewSystemStack(rContext.Apply, rContext.Namespace, "kiali"),
+			systemstack.NewStack(apply, rContext.Namespace, "kiali", true),
 		},
 		FixedAnswers: map[string]string{
 			"PROMETHEUS_URL": "http://prometheus:9090",

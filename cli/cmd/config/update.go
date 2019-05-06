@@ -9,7 +9,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/types"
-	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -48,17 +48,15 @@ func RunUpdate(ctx *clicontext.CLIContext, name, namespace string, content []byt
 		Name:      name,
 		Type:      types.ConfigType,
 	}, func(obj runtime.Object) error {
-		config := obj.(*v1.Config)
+		config := obj.(*corev1.ConfigMap)
 
 		if len(labels) > 0 {
 			config.Labels = labels
 		}
 		if utf8.Valid(content) {
-			config.Spec.Content = string(content)
-			config.Spec.Encoded = false
+			config.Data["content"] = string(content)
 		} else {
-			config.Spec.Content = base64.StdEncoding.EncodeToString(content)
-			config.Spec.Encoded = true
+			config.Data["content"] = base64.StdEncoding.EncodeToString(content)
 		}
 
 		return nil

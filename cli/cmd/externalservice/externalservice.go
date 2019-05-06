@@ -48,7 +48,6 @@ type Data struct {
 	Target  string
 	Created string
 	Service *riov1.ExternalService
-	Stack   *riov1.Stack
 }
 
 func externalServiceLs(ctx *clicontext.CLIContext) error {

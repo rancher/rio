@@ -15,14 +15,23 @@ type SystemStack struct {
 	namespace string
 	apply     apply.Apply
 	name      string
+	contents  []byte
 }
 
-func NewSystemStack(apply apply.Apply, systemNamespace string, name string) *SystemStack {
+func NewStack(apply apply.Apply, systemNamespace string, name string, system bool) *SystemStack {
+	setID := "stack-" + name
+	if system {
+		setID = "system-" + setID
+	}
 	return &SystemStack{
 		namespace: systemNamespace,
-		apply:     apply.WithSetID("system-stack-" + name).WithDefaultNamespace(systemNamespace),
+		apply:     apply.WithSetID(setID).WithDefaultNamespace(systemNamespace),
 		name:      name,
 	}
+}
+
+func (s *SystemStack) WithContent(contents []byte) {
+	s.contents = contents
 }
 
 func (s *SystemStack) Questions() ([]v1.Question, error) {
@@ -43,6 +52,9 @@ func (s *SystemStack) Questions() ([]v1.Question, error) {
 }
 
 func (s *SystemStack) content() ([]byte, error) {
+	if len(s.contents) > 0 {
+		return s.contents, nil
+	}
 	return stacks.Asset("stacks/" + s.name + "-stack.yaml")
 }
 

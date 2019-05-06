@@ -21,6 +21,14 @@ func (c *CLIContext) Writer() io.Writer {
 	return os.Stdout
 }
 
+func (c *CLIContext) GetSetNamespace() string {
+	return c.CLI.GlobalString("namespace")
+}
+
 func (c *CLIContext) GetDefaultNamespace() string {
-	return c.CLI.String("namespace")
+	return c.CLI.GlobalString("namespace")
+}
+
+func (c *CLIContext) GetSystemNamespace() string {
+	return c.SystemNamespace
 }

@@ -57,7 +57,7 @@ type Create struct {
 	T_Tty                  bool              `desc:"Allocate a pseudo-TTY"`
 	Version                string            `desc:"Specify the revision "`
 	U_User                 string            `desc:"UID[:GID] Sets the UID used and optionally GID for entrypoint process (format: <uid>[:<gid>])"`
-	Weight                 int               `desc:"Specify the weight for the revision"`
+	Weight                 int               `desc:"Specify the weight for the revision" default:"100"`
 	W_Workdir              string            `desc:"Working directory inside the container"`
 }
 
@@ -143,6 +143,7 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 	})
 
 	if stringers.IsRepo(args[0]) {
+		service.Spec.Build = &riov1.ImageBuild{}
 		service.Spec.Build.Branch = c.BuildBranch
 		service.Spec.Build.Revision = c.BuildRevision
 		service.Spec.Build.Secret = c.BuildSecret

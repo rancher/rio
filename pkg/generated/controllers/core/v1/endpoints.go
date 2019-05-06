@@ -130,8 +130,8 @@ func UpdateEndpointsOnChange(updater generic.Updater, handler EndpointsHandler) 
 			copyObj = newObj
 		}
 		if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
-			newObj, _ := updater(copyObj)
-			if newObj != nil {
+			newObj, err := updater(copyObj)
+			if newObj != nil && err == nil {
 				copyObj = newObj.(*v1.Endpoints)
 			}
 		}

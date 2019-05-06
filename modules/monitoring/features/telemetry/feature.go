@@ -10,6 +10,7 @@ import (
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
+	apply := rContext.Apply.WithCacheTypes(rContext.Rio.Rio().V1().Service(), rContext.Core.Core().V1().ConfigMap())
 	feature := &features.FeatureController{
 		FeatureName: "mixer",
 		FeatureSpec: v1.FeatureSpec{
@@ -24,7 +25,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			Enabled: true,
 		},
 		SystemStacks: []*systemstack.SystemStack{
-			systemstack.NewSystemStack(rContext.Apply, rContext.Namespace, "istio-telemetry"),
+			systemstack.NewStack(apply, rContext.Namespace, "istio-telemetry", true),
 		},
 		FixedAnswers: map[string]string{
 			"NAMESPACE": rContext.Namespace,

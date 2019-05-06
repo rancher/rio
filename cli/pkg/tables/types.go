@@ -13,6 +13,12 @@ type TableWriter interface {
 	TableWriter() table.Writer
 }
 
+type Config interface {
+	table.WriterConfig
+	GetDefaultNamespace() string
+	Domain() (string, error)
+}
+
 type tableWriter struct {
 	writer  table.Writer
 	context interface{}

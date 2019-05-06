@@ -5,6 +5,10 @@ import (
 	"sort"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/api/errors"
+
+	"github.com/rancher/wrangler/pkg/kv"
+
 	"github.com/rancher/rio/modules/service/controllers/service/populate/serviceports"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constructors"
@@ -26,6 +30,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	h := handler{
 		namespace:      rContext.Namespace,
 		apply:          rContext.Apply.WithSetID("serviceset"),
+		apps:           rContext.Rio.Rio().V1().App(),
 		services:       rContext.Rio.Rio().V1().Service(),
 		serviceCache:   rContext.Rio.Rio().V1().Service().Cache(),
 		namespaceCache: rContext.Core.Core().V1().Namespace().Cache(),
@@ -39,20 +44,23 @@ type handler struct {
 	namespace      string
 	apply          apply.Apply
 	services       riov1controller.ServiceController
+	apps           riov1controller.AppController
 	serviceCache   riov1controller.ServiceCache
 	namespaceCache v1.NamespaceCache
 }
 
 func (h *handler) onChange(key string, service *riov1.Service) (*riov1.Service, error) {
 	if strings.Contains(key, "/") {
-		if service != nil && service.Namespace != "" {
-			h.services.Enqueue("", service.Namespace)
-		}
+		namespace, _ := kv.Split(key, "/")
+		h.services.Enqueue("", namespace)
 		return nil, nil
 	}
 
 	ns, err := h.namespaceCache.Get(key)
 	if err != nil {
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
 
@@ -103,7 +111,7 @@ func (h *handler) onChange(key string, service *riov1.Service) (*riov1.Service, 
 				Scale:           scale,
 				ScaleStatus:     service.Status.ScaleStatus,
 				RolloutConfig:   service.Spec.RolloutConfig,
-				DeploymentReady: isReady(service.Status.DeploymentStatus),
+				DeploymentReady: IsReady(service.Status.DeploymentStatus),
 			})
 			totalweight += service.Spec.Weight
 		}
@@ -128,10 +136,10 @@ func (h *handler) onChange(key string, service *riov1.Service) (*riov1.Service, 
 		os.Add(app)
 	}
 
-	return service, h.apply.WithOwner(ns).Apply(os)
+	return service, h.apply.WithOwner(ns).WithCacheTypes(h.apps).Apply(os)
 }
 
-func isReady(status *appv1.DeploymentStatus) bool {
+func IsReady(status *appv1.DeploymentStatus) bool {
 	if status == nil {
 		return false
 	}

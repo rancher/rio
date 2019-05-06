@@ -48,12 +48,11 @@ func (i *Inspect) Run(ctx *clicontext.CLIContext) error {
 			return err
 		}
 
-		t := r.Type
-		cmd, err := ctx.KubectlCmd(r.Namespace, "get", t, r.Name, "-o", ctx.CLI.String("format"))
-		if err != nil {
+		t := table.NewWriter(nil, ctx)
+		t.Write(r.Object)
+		if err := t.Close(); err != nil {
 			return err
 		}
-		return cmd.Run()
 	}
 
 	return nil

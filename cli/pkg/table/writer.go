@@ -206,7 +206,7 @@ func Graph(value int) (string, error) {
 	return builder.String(), nil
 }
 
-func FormatStackScopedName(defaultStackName string) func(interface{}, interface{}, interface{}) (string, error) {
+func FormatStackScopedName(defaultNamespace string) func(interface{}, interface{}, interface{}) (string, error) {
 	return func(data, data2, data3 interface{}) (string, error) {
 		stackName, ok := data.(string)
 		if !ok {
@@ -218,7 +218,7 @@ func FormatStackScopedName(defaultStackName string) func(interface{}, interface{
 			return "", nil
 		}
 
-		if stackName == defaultStackName {
+		if stackName == defaultNamespace {
 			return serviceName, nil
 		}
 
@@ -279,6 +279,9 @@ func ToJSON(data interface{}) (map[string]interface{}, error) {
 
 func BoolToStar(obj interface{}) (string, error) {
 	if b, ok := obj.(bool); ok && b {
+		return "*", nil
+	}
+	if b, ok := obj.(*bool); ok && b != nil && *b {
 		return "*", nil
 	}
 	return "", nil

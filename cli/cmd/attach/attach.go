@@ -31,15 +31,15 @@ func (a *Attach) Run(ctx *clicontext.CLIContext) error {
 
 func RunAttach(ctx *clicontext.CLIContext, timeout time.Duration, stdin, tty bool, container string) error {
 	var pd *tables.PodData
+	var err error
 
 	deadline := time.Now().Add(timeout)
 	for {
-		pd, err := ps.ListFirstPod(ctx, true, container)
+		pd, err = ps.ListFirstPod(ctx, true, container)
 		if err != nil {
 			return err
 		}
 
-		// todo:// add state for containers
 		if (pd == nil || len(pd.Containers) == 0) && time.Now().Before(deadline) {
 			time.Sleep(750 * time.Millisecond)
 			continue

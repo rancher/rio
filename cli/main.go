@@ -6,7 +6,20 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/rancher/rio/cli/cmd/apply"
+	"github.com/rancher/rio/cli/cmd/attach"
+	"github.com/rancher/rio/cli/cmd/config"
+	"github.com/rancher/rio/cli/cmd/create"
+	"github.com/rancher/rio/cli/cmd/edit"
+	"github.com/rancher/rio/cli/cmd/exec"
+	"github.com/rancher/rio/cli/cmd/export"
+	"github.com/rancher/rio/cli/cmd/logs"
+
+	"github.com/rancher/rio/cli/cmd/externalservice"
+	"github.com/rancher/rio/cli/cmd/feature"
 	"github.com/rancher/rio/cli/cmd/inspect"
+	"github.com/rancher/rio/cli/cmd/install"
+	"github.com/rancher/rio/cli/cmd/publicdomain"
 	"github.com/rancher/rio/cli/cmd/revision"
 
 	"github.com/rancher/rio/cli/cmd/info"
@@ -22,7 +35,7 @@ import (
 	"github.com/rancher/rio/cli/cmd/ps"
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/pkg/version"
+	"github.com/rancher/rio/version"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
@@ -87,11 +100,15 @@ func main() {
 			Destination: &cfg.WaitState,
 		},
 		cli.StringFlag{
-			Name:        "namespace,n",
-			Usage:       "Specify which namespace in kubernetes to use",
-			EnvVar:      "RIO_NAMEPSACE",
+			Name:        "system-namespace",
 			Value:       "rio-system",
 			Destination: &cfg.SystemNamespace,
+		},
+		cli.StringFlag{
+			Name:        "namespace,n",
+			Usage:       "Specify which namespace in kubernetes to use",
+			EnvVar:      "NAMESPACE",
+			Destination: &cfg.DefaultNamespace,
 		},
 		cli.StringFlag{
 			Name:        "kubeconfig",
@@ -100,14 +117,18 @@ func main() {
 			Value:       "${HOME}/.kube/config",
 			Destination: &cfg.Kubeconfig,
 		},
+		cli.BoolFlag{
+			Name:  "system",
+			Usage: "Only show system resources",
+		},
 	}
 
 	app.Commands = []cli.Command{
 		info.Info(app),
-		//config.Config(app),
-		//publicdomain.PublicDomain(app),
-		//externalservice.ExternalService(app),
-		//feature.Feature(app),
+		config.Config(app),
+		publicdomain.PublicDomain(app),
+		externalservice.ExternalService(app),
+		feature.Feature(app),
 
 		builder.Command(&ps.Ps{},
 			"List services and containers",
@@ -118,10 +139,10 @@ func main() {
 			"Create and run a new service",
 			appName+" run [OPTIONS] IMAGE [COMMAND] [ARG...]",
 			desc),
-		//builder.Command(&create.Create{},
-		//	"Create a new service",
-		//	appName+" create [OPTIONS] IMAGE [COMMAND] [ARG...]",
-		//	desc),
+		builder.Command(&create.Create{},
+			"Create a new service",
+			appName+" create [OPTIONS] IMAGE [COMMAND] [ARG...]",
+			desc),
 		builder.Command(&scale.Scale{},
 			"Scale a service",
 			appName+" scale [SERVICE=NUMBER...]",
@@ -135,38 +156,38 @@ func main() {
 			appName+" inspect [ID_OR_NAME...]",
 			""),
 
-		//builder.Command(&edit.Edit{},
-		//	"Edit a service or stack",
-		//	appName+" edit ID_OR_NAME",
-		//	""),
-		//builder.Command(&up.Up{},
-		//	"Bring up a stack",
-		//	appName+" up [OPTIONS] [[STACK_NAME] FILE|-]",
-		//	""),
-		//builder.Command(&export.Export{},
-		//	"Export a stack",
-		//	appName+" export STACK_ID_OR_NAME",
-		//	""),
-		//
-		//config.NewCatCommand("", app),
-		//
-		//builder.Command(&exec.Exec{},
-		//	"Run a command in a running container",
-		//	appName+" exec [OPTIONS] CONTAINER COMMAND [ARG...]",
-		//	""),
-		//builder.Command(&attach.Attach{},
-		//	"Attach to a running process in a container",
-		//	appName+" attach [OPTIONS] CONTAINER",
-		//	""),
-		//builder.Command(&logs.Logs{},
-		//	"Print logs from containers",
-		//	appName+" logs [OPTIONS] [CONTAINER_OR_SERVICE...]",
-		//	""),
-		//
-		//builder.Command(&install.Install{},
-		//	"Install rio management plane",
-		//	appName+" install [OPTIONS]",
-		//	""),
+		builder.Command(&edit.Edit{},
+			"Edit a service or stack",
+			appName+" edit ID_OR_NAME",
+			""),
+		builder.Command(&apply.Apply{},
+			"Bring up a stack",
+			appName+" up [OPTIONS] [[STACK_NAME] FILE|-]",
+			""),
+		builder.Command(&export.Export{},
+			"Export a stack",
+			appName+" export STACK_ID_OR_NAME",
+			""),
+
+		config.NewCatCommand("", app),
+
+		builder.Command(&exec.Exec{},
+			"Run a command in a running container",
+			appName+" exec [OPTIONS] CONTAINER COMMAND [ARG...]",
+			""),
+		builder.Command(&attach.Attach{},
+			"Attach to a running process in a container",
+			appName+" attach [OPTIONS] CONTAINER",
+			""),
+		builder.Command(&logs.Logs{},
+			"Print logs from containers",
+			appName+" logs [OPTIONS] [CONTAINER_OR_SERVICE...]",
+			""),
+
+		builder.Command(&install.Install{},
+			"Install rio management plane",
+			appName+" install [OPTIONS]",
+			""),
 		builder.Command(&revision.Revision{},
 			"List service revisions",
 			appName+" revision [OPTIONS] [APP...]",

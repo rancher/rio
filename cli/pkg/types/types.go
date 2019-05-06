@@ -4,7 +4,6 @@ import "k8s.io/apimachinery/pkg/runtime"
 
 const (
 	ConfigType          = "config"
-	VolumeType          = "volume"
 	AppType             = "app"
 	ServiceType         = "service"
 	PodType             = "pod"
@@ -13,9 +12,16 @@ const (
 	ExternalServiceType = "externalservice"
 	FeatureType         = "feature"
 	PublicDomainType    = "publicdomain"
+
+	ConfigTypeFull          = "configmaps"
+	AppTypeFull             = "apps.rio.cattle.io"
+	ServiceTypeFull         = "services.rio.cattle.io"
+	RouterTypeFull          = "routers.rio.cattle.io"
+	ExternalServiceTypeFull = "externalservices.rio.cattle.io"
+	PublicDomainTypeFull    = "publicdomains.rio.cattle.io"
 )
 
 type Resource struct {
-	LookupName, Name, Namespace, Type string
-	Object                            runtime.Object
+	LookupName, Name, Namespace, Type, FullType string
+	Object                                      runtime.Object
 }

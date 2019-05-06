@@ -11,10 +11,6 @@ var stackLsFlags = []cli.Flag{
 		Name:  "format",
 		Usage: "'json' or 'yaml' or Custom format: '{{.ID}} {{.Stack.ServiceName}}'",
 	},
-	cli.BoolFlag{
-		Name:  "ids",
-		Usage: "Include ID column in output",
-	},
 }
 
 func WriterFlags() []cli.Flag {

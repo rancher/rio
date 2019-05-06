@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/docker/libcompose/version"
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/version"
 	"github.com/urfave/cli"
 )
 
@@ -25,7 +25,7 @@ func info(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	builder.WriteString(fmt.Sprintf("Rio Version: %s\n", version.VERSION))
+	builder.WriteString(fmt.Sprintf("Rio Version: %s\n", version.Version))
 	builder.WriteString(fmt.Sprintf("Cluster Domain: %s\n", domain))
 	builder.WriteString(fmt.Sprintf("System Namespace: %s", ctx.SystemNamespace))
 	fmt.Println(builder.String())

@@ -10,6 +10,7 @@ import (
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
+	apply := rContext.Apply.WithCacheTypes(rContext.Rio.Rio().V1().Service(), rContext.Core.Core().V1().ConfigMap())
 	feature := &features.FeatureController{
 		FeatureName: "grafana",
 		FeatureSpec: v1.FeatureSpec{
@@ -21,7 +22,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			Enabled: true,
 		},
 		SystemStacks: []*systemstack.SystemStack{
-			systemstack.NewSystemStack(rContext.Apply, rContext.Namespace, "grafana"),
+			systemstack.NewStack(apply, rContext.Namespace, "grafana", true),
 		},
 	}
 	return feature.Register()

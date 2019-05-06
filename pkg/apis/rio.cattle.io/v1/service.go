@@ -1,6 +1,9 @@
 package v1
 
 import (
+	"bytes"
+	"strconv"
+
 	"github.com/rancher/rio/pkg/apis/common"
 	"github.com/rancher/wrangler/pkg/condition"
 	"github.com/rancher/wrangler/pkg/genericcondition"
@@ -168,6 +171,24 @@ type ContainerPort struct {
 	Protocol     Protocol `json:"protocol,omitempty"`
 	Port         int32    `json:"port"`
 	TargetPort   int32    `json:"targetPort,omitempty"`
+}
+
+func (c ContainerPort) MaybeString() interface{} {
+	b := bytes.Buffer{}
+	if c.Port != 0 && c.TargetPort != 0 {
+		b.WriteString(strconv.FormatInt(int64(c.Port), 10))
+		b.WriteString(":")
+		b.WriteString(strconv.FormatInt(int64(c.TargetPort), 10))
+	} else if c.TargetPort != 0 {
+		b.WriteString(strconv.FormatInt(int64(c.TargetPort), 10))
+	}
+
+	if b.Len() > 0 && c.Protocol != "" && c.Protocol != "tcp" {
+		b.WriteString("/")
+		b.WriteString(string(c.Protocol))
+	}
+
+	return b.String()
 }
 
 type ServiceStatus struct {

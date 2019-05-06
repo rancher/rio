@@ -3,7 +3,7 @@ package feature
 import (
 	"fmt"
 
-	"github.com/rancher/rio/cli/cmd/up"
+	"github.com/rancher/rio/cli/cmd/apply"
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
@@ -83,7 +83,7 @@ func (e *Enable) Run(ctx *clicontext.CLIContext) error {
 	if err != nil {
 		return err
 	}
-	answers, err := up.ReadAnswers(e.A_Answers)
+	answers, err := apply.ReadAnswers(e.A_Answers)
 	if err != nil {
 		return fmt.Errorf("failed to parse answer file [%s]: %v", e.A_Answers, err)
 	}
@@ -91,7 +91,7 @@ func (e *Enable) Run(ctx *clicontext.CLIContext) error {
 }
 
 func flipEnableFlag(ctx *clicontext.CLIContext, featureName string, answers map[string]string, enable bool) error {
-	feature, err := ctx.Project.Features(ctx.Namespace).Get(featureName, metav1.GetOptions{})
+	feature, err := ctx.Project.Features(ctx.SystemNamespace).Get(featureName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}

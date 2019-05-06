@@ -35,10 +35,7 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 		}
 	}
 
-	_, namespace, name, err := stack.NamespaceAndName(ctx, ctx.CLI.Args()[0])
-	if err != nil {
-		return err
-	}
+	namespace, name := stack.NamespaceAndName(ctx, ctx.CLI.Args()[0])
 
 	return ctx.Create(riov1.NewExternalService(namespace, name, externalService))
 }

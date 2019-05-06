@@ -3,10 +3,13 @@ package ps
 import (
 	"strings"
 
+	services2 "github.com/rancher/rio/pkg/services"
+
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/tables"
 	"github.com/rancher/rio/cli/pkg/types"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -30,18 +33,18 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 	var result []tables.PodData
 
 	var pods []types.Resource
-	var apps []types.Resource
+	var services []types.Resource
 
 	for _, name := range podOrServices {
-		r, err := lookup.Lookup(ctx, name, types.PodType, types.AppType)
+		r, err := lookup.Lookup(ctx, name, types.PodType, types.ServiceType)
 		if err != nil {
 			return nil, err
 		}
 		switch r.Type {
 		case types.PodType:
 			pods = append(pods, r)
-		case types.AppType:
-			apps = append(apps, r)
+		case types.ServiceType:
+			services = append(services, r)
 		}
 	}
 
@@ -54,7 +57,7 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 		}
 	}
 
-	if len(pods) > 0 && len(apps) == 0 {
+	if len(pods) > 0 && len(services) == 0 {
 		return result, nil
 	}
 
@@ -69,13 +72,14 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 			continue
 		}
 
-		if len(apps) == 0 {
+		if len(services) == 0 {
 			result = append(result, podData)
 			continue
 		}
 
-		for _, app := range apps {
-			if app.Name == podData.Service.ServiceName && app.Namespace == podData.Service.StackName {
+		for _, service := range services {
+			appName, version := services2.AppAndVersion(service.Object.(*riov1.Service))
+			if appName == podData.Service.ServiceName && service.Namespace == podData.Service.StackName && podData.Service.Version == version {
 				result = append(result, podData)
 				break
 			}

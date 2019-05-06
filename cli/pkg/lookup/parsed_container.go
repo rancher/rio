@@ -1,7 +1,7 @@
 package lookup
 
 import (
-	"fmt"
+	"strings"
 
 	"github.com/rancher/wrangler/pkg/kv"
 )
@@ -15,7 +15,17 @@ type ParsedContainer struct {
 func ParseContainer(defaultStackName string, name string) (ParsedContainer, bool) {
 	result := ParsedContainer{}
 
-	stackScoped := ParseStackScoped(defaultStackName, name)
+	var stackScoped StackScoped
+	if len(strings.Split(name, "/")) == 4 {
+		stackScoped = ParseStackScoped(defaultStackName, name)
+	} else {
+		namespace, other := kv.Split(name, "/")
+		stackScoped = StackScoped{
+			StackName: namespace,
+			Other:     other,
+		}
+	}
+
 	if stackScoped.Other == "" {
 		return result, false
 	}
@@ -31,8 +41,4 @@ func (p ParsedContainer) String() string {
 		p.Service.Other += "/" + p.ContainerName
 	}
 	return p.Service.String()
-}
-
-func (p ParsedContainer) K8sPodName() string {
-	return fmt.Sprintf("%s-%s", p.Service.ResourceName, p.PodName)
 }

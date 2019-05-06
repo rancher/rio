@@ -133,6 +133,8 @@ func (s appWeightHandler) sync(key string, obj *riov1.App) (*riov1.App, error) {
 			weightRev := app.Status.RevisionWeight[rev.Version]
 			weightRev.Weight += weightToAdjust
 			weightRev.ServiceName = rev.ServiceName
+			observed.LastWrite = metav1.NewTime(time.Now())
+
 			app.Status.RevisionWeight[rev.Version] = weightRev
 			magicSteal(versions, weights, app.Status.RevisionWeight, -weightToAdjust)
 		}
@@ -174,38 +176,18 @@ func magicSteal(versions []string, weightSpecs []int, result map[string]riov1.Se
 	for i, ver := range versions {
 		rev := result[ver]
 		toAdjust := rev.Weight - weightSpecs[i]
-		if negative(toAdjust, weightToAdjust) {
-			if toAdjust+weightToAdjust >= 0 {
-				if abs(toAdjust) > abs(weightToAdjust) {
-					rev.Weight = rev.Weight + weightToAdjust
-					weightToAdjust = 0
-					result[ver] = rev
-					break
-				} else {
-					rev.Weight = rev.Weight - toAdjust
-					weightToAdjust += toAdjust
-					result[ver] = rev
-				}
-			}
-		}
-	}
-
-	if weightToAdjust == 0 {
-		return
-	}
-
-	for _, ver := range versions {
-		rev := result[ver]
-		if weightToAdjust < 0 && rev.Weight < weightToAdjust {
-			weightToAdjust += rev.Weight
-			rev.Weight = 0
-			result[versions[0]] = rev
+		if toAdjust == 0 {
 			continue
-		} else {
-			rev.Weight += weightToAdjust
-			weightToAdjust = 0
-			result[versions[0]] = rev
-			break
+		}
+		if negative(toAdjust, weightToAdjust) {
+			if abs(toAdjust) > abs(weightToAdjust) {
+				rev.Weight += weightToAdjust
+				weightToAdjust = 0
+			} else {
+				weightToAdjust += toAdjust
+				rev.Weight = weightSpecs[i]
+			}
+			result[ver] = rev
 		}
 	}
 

@@ -2,8 +2,11 @@ package riofile
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"io/ioutil"
+
+	"github.com/rancher/rio/cli/pkg/table"
 
 	"github.com/rancher/wrangler/pkg/crd"
 
@@ -58,6 +61,27 @@ func (r *Riofile) Objects() (result []runtime.Object) {
 	}
 
 	return
+}
+
+func ParseFrom(services map[string]riov1.Service, configs map[string]v1.ConfigMap) ([]byte, error) {
+	rf := riofile{
+		Services: services,
+		Configs:  configs,
+	}
+	rawdata, err := json.Marshal(rf)
+	if err != nil {
+		return nil, err
+	}
+	data := map[string]interface{}{}
+	if err := json.Unmarshal(rawdata, &data); err != nil {
+		return nil, err
+	}
+	schema.Schema("Riofile").Mapper.FromInternal(data)
+	result, err := table.FormatYAML(data)
+	if err != nil {
+		return nil, err
+	}
+	return []byte(result), nil
 }
 
 func Parse(reader io.Reader, answers template.AnswerCallback) (*Riofile, error) {

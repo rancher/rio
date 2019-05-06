@@ -19,6 +19,7 @@ import (
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
+	apply := rContext.Apply.WithCacheTypes(rContext.Rio.Rio().V1().Service(), rContext.Core.Core().V1().ConfigMap())
 	ports := []string{
 		fmt.Sprintf("%v:%v,http2", settings.DefaultHTTPOpenPort, settings.DefaultHTTPOpenPort),
 		fmt.Sprintf("%v:%v,https", settings.DefaultHTTPSOpenPort, settings.DefaultHTTPSOpenPort),
@@ -35,8 +36,8 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			Enabled:     true,
 		},
 		SystemStacks: []*systemstack.SystemStack{
-			systemstack.NewSystemStack(rContext.Apply, rContext.Namespace, "mesh"),
-			systemstack.NewSystemStack(rContext.Apply, rContext.Namespace, "istio"),
+			systemstack.NewStack(apply, rContext.Namespace, "mesh", true),
+			systemstack.NewStack(apply, rContext.Namespace, "istio", true),
 		},
 		Controllers: []features.ControllerRegister{
 			externalservice.Register,

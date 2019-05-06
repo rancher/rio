@@ -11,6 +11,7 @@ import (
 
 const (
 	dns1035                      string = "[a-z]([-a-z0-9]*[a-z0-9])?"
+	alphanumeric                 string = "[a-zA-Z0-9_]*"
 	FourPartsNameType                   = NameType("fourParts")
 	FullDomainNameTypeNameType          = NameType("domainName")
 	SingleNameNameType                  = NameType("singleName")
@@ -41,7 +42,7 @@ var (
 			lookup: resolveStackScoped,
 		},
 		VersionedStackScopedNameType: {
-			Regexp: regexp.MustCompile("^" + dns1035 + "/" + dns1035 + ":" + dns1035 + "$"),
+			Regexp: regexp.MustCompile("^" + dns1035 + "/" + dns1035 + ":" + alphanumeric + "$"),
 			lookup: resolveStackScoped,
 		},
 		ThreePartsNameType: {
@@ -65,7 +66,13 @@ func (n nameType) Lookup(lookup ClientLookup, name, typeName string) (types.Reso
 	if !n.types[typeName] {
 		return types.Resource{}, errors.NewNotFound(schema.GroupResource{}, name)
 	}
-	r := n.lookup(lookup.GetDefaultNamespace(), name, typeName)
+	var r types.Resource
+	switch typeName {
+	case types.FeatureType:
+		r = n.lookup(lookup.GetSystemNamespace(), name, typeName)
+	default:
+		r = n.lookup(lookup.GetDefaultNamespace(), name, typeName)
+	}
 	r, err := lookup.ByID(r.Namespace, r.Name, typeName)
 	r.LookupName = name
 	return r, err
@@ -115,7 +122,7 @@ func resolvePod(defaultStackName, name, typeName string) types.Resource {
 	container, _ := ParseContainer(defaultStackName, name)
 	return types.Resource{
 		Namespace: container.Service.StackName,
-		Name:      container.K8sPodName(),
+		Name:      container.PodName,
 		Type:      typeName,
 	}
 }

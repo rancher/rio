@@ -7,14 +7,19 @@ package main
 
 import (
 	"context"
+	"flag"
+	"net/http"
 	"os"
 	"strings"
 
-	"github.com/docker/libcompose/version"
+	_ "net/http/pprof"
+
 	"github.com/rancher/rio/pkg/server"
+	"github.com/rancher/rio/version"
 	"github.com/rancher/wrangler/pkg/signals"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+	"k8s.io/klog"
 )
 
 var (
@@ -27,7 +32,7 @@ var (
 func main() {
 	app := cli.NewApp()
 	app.Name = "rio-controller"
-	app.Version = version.VERSION
+	app.Version = version.Version
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:        "kubeconfig",
@@ -38,11 +43,6 @@ func main() {
 			Name:        "namespace",
 			EnvVar:      "RIO_NAMESPACE",
 			Destination: &namespace,
-		},
-		cli.StringFlag{
-			Name:        "custom-registry",
-			EnvVar:      "CUSTOM_REGISTRY",
-			Destination: &customRegistry,
 		},
 		cli.BoolFlag{
 			Name:        "debug",
@@ -58,7 +58,11 @@ func main() {
 }
 
 func run(c *cli.Context) error {
+	go func() {
+		logrus.Fatal(http.ListenAndServe("localhost:6061", nil))
+	}()
 	if debug {
+		setupDebugLogging()
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
@@ -70,6 +74,10 @@ func run(c *cli.Context) error {
 	kubeconfig = strings.Replace(kubeconfig, "${HOME}", homeDir, -1)
 	kubeconfig = strings.Replace(kubeconfig, "$HOME", homeDir, -1)
 
+	if os.Getenv("RIO_IN_CLUSTER") != "" {
+		kubeconfig = ""
+	}
+
 	ctx := signals.SetupSignalHandler(context.Background())
 	if err := server.Startup(ctx, namespace, customRegistry, kubeconfig); err != nil {
 		return err
@@ -77,4 +85,12 @@ func run(c *cli.Context) error {
 
 	<-ctx.Done()
 	return nil
+}
+
+func setupDebugLogging() {
+	flag.Set("alsologtostderr", "true")
+	flag.Parse()
+
+	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
+	klog.InitFlags(klogFlags)
 }

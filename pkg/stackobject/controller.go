@@ -73,6 +73,10 @@ func (o *Controller) OnChange(key string, obj runtime.Object) (runtime.Object, e
 		return obj, err
 	}
 
+	if meta.GetDeletionTimestamp() != nil {
+		return obj, err
+	}
+
 	ns, err := o.namespaceCache.Get(meta.GetNamespace())
 	if err != nil {
 		return obj, err

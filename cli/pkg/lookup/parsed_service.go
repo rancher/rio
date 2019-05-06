@@ -38,7 +38,7 @@ func ParseStackScoped(defaultStackName string, serviceName string) StackScoped {
 
 	result.ServiceName = result.ResourceName
 	if result.Version != "" {
-		result.ResourceName = fmt.Sprintf("%s-%s", result.ResourceName, result.Version)
+		result.ResourceName = fmt.Sprintf("%s:%s", result.ResourceName, result.Version)
 	}
 	return result
 }

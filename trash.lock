@@ -1,5 +1,9 @@
 package: package=github.com/rancher/rio
 import:
+- package: github.com/Azure/go-ansiterm
+  version: d6e3b3328b783f23731bc4d058875b0371ff8109
+- package: github.com/MakeNowJust/heredoc
+  version: bb23615498cded5e105af4ce27de75b089cbe851
 - package: github.com/Masterminds/semver
   version: v1.4.2
 - package: github.com/Masterminds/sprig
@@ -25,6 +29,8 @@ import:
   version: v0.3.1-11-g9e638d38cf6977
 - package: github.com/docker/libcompose
   version: 213509acef0fe8f2358f4c0bb977eb3f4889ea15
+- package: github.com/docker/spdystream
+  version: 449fdfce4d962303d702fec724ef0ad181c92528
 - package: github.com/drone/envsubst
   version: f4d1a8ef8670afc9eea1fb95ee09a979fd2763a3
 - package: github.com/drone/go-scm
@@ -35,6 +41,10 @@ import:
   version: v0.0.14
 - package: github.com/evanphx/json-patch
   version: v4.1.0-19-g5858425f75500d
+- package: github.com/exponent-io/jsonpath
+  version: d6023ce2651d8eafb5c75bb0c7167536102ec9f5
+- package: github.com/fatih/camelcase
+  version: f6a740d52f961c60348ebb109adde9f4635d7540
 - package: github.com/ghodss/yaml
   version: v1.0.0-4-gc7ce16629ff4cd
 - package: github.com/gogo/googleapis
@@ -43,6 +53,8 @@ import:
   version: v1.1.1
 - package: github.com/golang/protobuf
   version: v1.1.0
+- package: github.com/google/btree
+  version: 7d79101e329e5a3adf994758c578dab82b90c017
 - package: github.com/google/go-cmp
   version: 6f77996f0c42f7b84e5a2b252227263f93432e9b
 - package: github.com/google/gofuzz
@@ -55,6 +67,8 @@ import:
   version: v1.6.2
 - package: github.com/gorilla/websocket
   version: v1.2.0
+- package: github.com/gregjones/httpcache
+  version: 787624de3eb7bd915c329cba748687a3b22666a6
 - package: github.com/hashicorp/errwrap
   version: 7554cd9344cec97297fa6649b055a8c98c2a1e55
 - package: github.com/hashicorp/go-multierror
@@ -90,6 +104,8 @@ import:
   version: f8471b0a71ded0ab910825ee2cf230f25de000f1
 - package: github.com/matttproud/golang_protobuf_extensions
   version: v1.0.1
+- package: github.com/mitchellh/go-wordwrap
+  version: ad45545899c7b13c020ea92b2072220eefad42b8
 - package: github.com/modern-go/concurrent
   version: 1.0.3
 - package: github.com/modern-go/reflect2
@@ -106,6 +122,8 @@ import:
   version: v3.9.0
 - package: github.com/patrickmn/go-cache
   version: v2.1.0
+- package: github.com/peterbourgon/diskv
+  version: v2.0.1
 - package: github.com/pkg/errors
   version: v0.8.0
 - package: github.com/pmezard/go-difflib
@@ -123,8 +141,12 @@ import:
 - package: github.com/rancher/rdns-server
   version: 2967d247de7e8be972d326fe394e331eb8ca8d2b
 - package: github.com/rancher/wrangler
-  version: 6a4fd47705f4db727b21c44f7f5f9c2956c43ee0
+  version: 31f3a4b0e30cf2887e5077f5f39831dffd322cf3
   repo: https://github.com/StrongMonkey/wrangler.git
+- package: github.com/russross/blackfriday
+  version: v1.4-2-g300106c228d52c
+- package: github.com/shurcooL/sanitized_anchor_name
+  version: 10ef21a441db47d8b13ebcc5fd2310f636973c77
 - package: github.com/sirupsen/logrus
   version: v1.0.3-11-g89742aefa4b206
 - package: github.com/spf13/cobra

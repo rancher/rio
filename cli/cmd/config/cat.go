@@ -2,12 +2,13 @@ package config
 
 import (
 	"encoding/base64"
-	"os"
+	"fmt"
+	"strings"
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/types"
-	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type Cat struct {
@@ -20,27 +21,26 @@ func (c *Cat) Run(ctx *clicontext.CLIContext) error {
 			return err
 		}
 
-		config := r.Object.(*v1.Config)
+		config := r.Object.(*corev1.ConfigMap)
 
-		if len(config.Spec.Content) == 0 {
+		if len(config.Data)+len(config.BinaryData) == 0 {
 			continue
 		}
 
-		var out []byte
-		if config.Spec.Encoded {
-			bytes, err := base64.StdEncoding.DecodeString(config.Spec.Content)
-			if err != nil {
-				return err
-			}
-			out = bytes
-		} else {
-			out = []byte(config.Spec.Content)
+		builder := &strings.Builder{}
+		for k, v := range config.Data {
+			builder.WriteString(k)
+			builder.WriteString(":")
+			builder.WriteString(" |- \n")
+			builder.WriteString(v)
 		}
-
-		_, err = os.Stdout.Write(out)
-		if err != nil {
-			return err
+		for k, v := range config.BinaryData {
+			builder.WriteString(k)
+			builder.WriteString(":")
+			builder.WriteString(" |- \n")
+			builder.WriteString(base64.StdEncoding.EncodeToString(v))
 		}
+		fmt.Println(builder.String())
 	}
 
 	return nil

@@ -8,9 +8,12 @@ import (
 	projectv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/project.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/settings"
+	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/rest"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/kubernetes/staging/src/k8s.io/client-go/tools/clientcmd"
 )
@@ -18,12 +21,17 @@ import (
 var ErrNoConfig = errors.New("no config found")
 
 type Config struct {
-	SystemNamespace string
-	Kubeconfig      string
-	Debug           bool
-	Wait            bool
-	WaitTimeout     int
-	WaitState       string
+	SystemNamespace  string
+	DefaultNamespace string
+	Kubeconfig       string
+	Debug            bool
+	Wait             bool
+	WaitTimeout      int
+	WaitState        string
+
+	Apply      apply.Apply
+	RestConfig *rest.Config
+	K8s        *kubernetes.Clientset
 
 	Core    corev1.CoreV1Interface
 	Rio     riov1.RioV1Interface
@@ -51,11 +59,6 @@ func (c *Config) Validate() error {
 			},
 		})
 
-	namespace, _, err := loader.Namespace()
-	if err != nil {
-		return err
-	}
-
 	restConfig, err := loader.ClientConfig()
 	if err != nil {
 		return err
@@ -76,10 +79,14 @@ func (c *Config) Validate() error {
 		return err
 	}
 
+	k8s := kubernetes.NewForConfigOrDie(restConfig)
+
+	c.Apply = apply.New(k8s.Discovery(), apply.NewClientFactory(restConfig))
+	c.K8s = k8s
+	c.RestConfig = restConfig
 	c.Rio = rio
 	c.Project = project
 	c.Core = core
-	c.SystemNamespace = namespace
 	return nil
 }
 

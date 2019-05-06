@@ -130,8 +130,8 @@ func UpdateRouterOnChange(updater generic.Updater, handler RouterHandler) Router
 			copyObj = newObj
 		}
 		if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
-			newObj, _ := updater(copyObj)
-			if newObj != nil {
+			newObj, err := updater(copyObj)
+			if newObj != nil && err == nil {
 				copyObj = newObj.(*v1.Router)
 			}
 		}

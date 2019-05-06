@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"unicode/utf8"
 
+	"github.com/rancher/rio/pkg/constructors"
+
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/stack"
-	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type Create struct {
@@ -25,15 +26,13 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("two arguments are required")
 	}
 
-	name := ctx.CLI.Args()[0]
+	namespace, name := stack.NamespaceAndName(ctx, ctx.CLI.Args()[0])
 	file := ctx.CLI.Args()[1]
 
-	config := riov1.Config{}
-
-	_, namespace, name, err := stack.NamespaceAndName(ctx, name)
-	if err != nil {
-		return err
-	}
+	config := constructors.NewConfigMap(namespace, name, corev1.ConfigMap{
+		Data:       make(map[string]string),
+		BinaryData: make(map[string][]byte),
+	})
 
 	content, err := util.ReadFile(file)
 	if err != nil {
@@ -42,11 +41,10 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 
 	config.Labels = c.L_Label
 	if utf8.Valid(content) {
-		config.Spec.Content = string(content)
+		config.Data["content"] = string(content)
 	} else {
-		config.Spec.Content = base64.StdEncoding.EncodeToString(content)
-		config.Spec.Encoded = true
+		config.Data["content"] = base64.StdEncoding.EncodeToString(content)
 	}
 
-	return ctx.Create(v1.NewConfig(namespace, name, config))
+	return ctx.Create(config)
 }

@@ -11,7 +11,7 @@ type Rm struct {
 }
 
 func (r *Rm) Run(ctx *clicontext.CLIContext) error {
-	types := []string{clitypes.ServiceType, clitypes.PodType, clitypes.ConfigType, clitypes.RouterType, clitypes.VolumeType, clitypes.ExternalServiceType}
+	types := []string{clitypes.ServiceType, clitypes.PodType, clitypes.ConfigType, clitypes.RouterType, clitypes.PublicDomainType, clitypes.ExternalServiceType, clitypes.AppType}
 	if len(r.T_Type) > 0 {
 		types = []string{r.T_Type}
 	}

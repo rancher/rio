@@ -15,6 +15,7 @@ type Exec struct {
 	I_Stdin     bool   `desc:"Pass stdin to the container"`
 	T_Tty       bool   `desc:"Stdin is a TTY"`
 	C_Container string `desc:"Specific container in pod, default is first container"`
+	R_Revision  string `desc:"Specific revision , default is first revision"`
 }
 
 func (e *Exec) Run(ctx *clicontext.CLIContext) error {
@@ -23,13 +24,23 @@ func (e *Exec) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("at least two arguments are required CONTAINER CMD")
 	}
 
-	pd, err := ps.ListFirstPod(ctx, true, args[0])
+	pds, err := ps.ListPods(ctx, true, args[0])
 	if err != nil {
 		return err
 	}
 
-	if pd == nil {
+	if len(pds) == 0 {
 		return fmt.Errorf("failed to find pod for %s, container \"%s\"", args[0], e.C_Container)
+	}
+
+	pd := pds[0]
+	if e.R_Revision != "" {
+		for _, p := range pds {
+			if p.Service.Version == e.R_Revision {
+				pd = p
+				break
+			}
+		}
 	}
 
 	if e.C_Container == "" {
@@ -39,7 +50,7 @@ func (e *Exec) Run(ctx *clicontext.CLIContext) error {
 		}
 	}
 
-	container := findContainer(pd, e.C_Container)
+	container := findContainer(&pd, e.C_Container)
 	podNS, podName, containerName := pd.Pod.Namespace, pd.Pod.Name, container.Name
 
 	var execArgs []string

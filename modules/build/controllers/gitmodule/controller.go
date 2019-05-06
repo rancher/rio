@@ -19,6 +19,10 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
+const (
+	refreshInterval = 30
+)
+
 func Register(ctx context.Context, rContext *types.Context) error {
 	h := handler{
 		ctx:       ctx,
@@ -60,13 +64,20 @@ func (h handler) update(key string, obj *gitv1.GitModule) (*gitv1.GitModule, err
 		specCopy.Build.Revision = commit
 		specCopy.Build.Branch = ""
 		specCopy.App = appName
-		specCopy.Version = commit
+		specCopy.Version = commit[0:5]
 		specCopy.Image = ""
 		if !specCopy.Build.StageOnly {
 			if err := h.scaleDownRevisions(obj.Spec.ServiceNamespace, appName); err != nil {
 				return obj, err
 			}
 			specCopy.Weight = 100
+			specCopy.Rollout = true
+			if specCopy.RolloutInterval == 0 {
+				specCopy.RolloutInterval = 5
+				specCopy.RolloutIncrement = 5
+			}
+		} else {
+			specCopy.Weight = 0
 		}
 		newServiceName := name.SafeConcatName(svc.Name, name.Hex(obj.Spec.Repo, 7), name.Hex(commit, 5))
 		newService := riov1.NewService(svc.Namespace, newServiceName, riov1.Service{
@@ -104,7 +115,7 @@ func (h handler) scaleDownRevisions(namespace, name string) error {
 
 func (h handler) start() {
 	go func() {
-		for range ticker.Context(h.ctx, 60*time.Second) {
+		for range ticker.Context(h.ctx, refreshInterval*time.Second) {
 			modules, err := h.modules.Cache().List("", labels.NewSelector())
 			if err == nil {
 				for _, m := range modules {
