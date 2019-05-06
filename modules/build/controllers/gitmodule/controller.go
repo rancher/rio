@@ -53,44 +53,66 @@ func (h handler) update(key string, obj *gitv1.GitModule) (*gitv1.GitModule, err
 	if err != nil {
 		return obj, err
 	}
-	if commit != obj.Status.LastRevision && obj.Status.LastRevision != "" {
+	if commit != obj.Status.LastRevision {
 		svc, err := h.services.Cache().Get(obj.Spec.ServiceNamespace, obj.Spec.ServiceName)
 		if err != nil {
 			return obj, err
 		}
-		appName, _ := services.AppAndVersion(svc)
-		specCopy := svc.Spec.DeepCopy()
-		specCopy.Build.Repo = obj.Spec.Repo
-		specCopy.Build.Revision = commit
-		specCopy.Build.Branch = ""
-		specCopy.App = appName
-		specCopy.Version = commit[0:5]
-		specCopy.Image = ""
-		if !specCopy.Build.StageOnly {
-			if err := h.scaleDownRevisions(obj.Spec.ServiceNamespace, appName); err != nil {
+		if obj.Status.LastRevision == "" {
+			if err := h.updateBaseRevision(commit, svc); err != nil {
 				return obj, err
 			}
-			specCopy.Weight = 100
-			specCopy.Rollout = true
-			if specCopy.RolloutInterval == 0 {
-				specCopy.RolloutInterval = 5
-				specCopy.RolloutIncrement = 5
-			}
 		} else {
-			specCopy.Weight = 0
-		}
-		newServiceName := name.SafeConcatName(svc.Name, name.Hex(obj.Spec.Repo, 7), name.Hex(commit, 5))
-		newService := riov1.NewService(svc.Namespace, newServiceName, riov1.Service{
-			Spec: *specCopy,
-		})
-		logrus.Infof("Creating new service revision, name: %s, namespace: %s, revision: %s", newService.Name, newService.Namespace, commit)
-		if _, err := h.services.Create(newService); err != nil {
-			return obj, err
+			if err := h.createNewRevision(commit, svc, obj); err != nil {
+				return obj, err
+			}
 		}
 	}
-
 	obj.Status.LastRevision = commit
 	return obj, nil
+}
+
+func (h handler) updateBaseRevision(commit string, svc *riov1.Service) error {
+	deepcopy := svc.DeepCopy()
+	deepcopy.Spec.Build.Revision = commit
+	logrus.Infof("updating revision %s to base service %s/%s", commit, svc.Namespace, svc.Name)
+	if _, err := h.services.Update(deepcopy); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (h handler) createNewRevision(commit string, svc *riov1.Service, obj *gitv1.GitModule) error {
+	appName, _ := services.AppAndVersion(svc)
+	specCopy := svc.Spec.DeepCopy()
+	specCopy.Build.Repo = obj.Spec.Repo
+	specCopy.Build.Revision = commit
+	specCopy.Build.Branch = ""
+	specCopy.App = appName
+	specCopy.Version = commit[0:5]
+	specCopy.Image = ""
+	if !specCopy.Build.StageOnly {
+		if err := h.scaleDownRevisions(obj.Spec.ServiceNamespace, appName); err != nil {
+			return err
+		}
+		specCopy.Weight = 100
+		specCopy.Rollout = true
+		if specCopy.RolloutInterval == 0 {
+			specCopy.RolloutInterval = 5
+			specCopy.RolloutIncrement = 5
+		}
+	} else {
+		specCopy.Weight = 0
+	}
+	newServiceName := name.SafeConcatName(svc.Name, name.Hex(obj.Spec.Repo, 7), name.Hex(commit, 5))
+	newService := riov1.NewService(svc.Namespace, newServiceName, riov1.Service{
+		Spec: *specCopy,
+	})
+	logrus.Infof("Creating new service revision, name: %s, namespace: %s, revision: %s", newService.Name, newService.Namespace, commit)
+	if _, err := h.services.Create(newService); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (h handler) scaleDownRevisions(namespace, name string) error {

@@ -26,7 +26,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		rContext.Core.Core().V1().Service(),
 		rContext.Core.Core().V1().Secret(),
 		rContext.AutoScale.Autoscale().V1().ServiceScaleRecommendation(),
-		rContext.Webhook.Webhookinator().V1().GitWebHookReceiver())
+		rContext.Webhook.Webhookinator().V1().GitWebHookReceiver()).WithRateLimiting(5)
 
 	sh := &serviceHandler{
 		namespace:     rContext.Namespace,

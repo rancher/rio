@@ -1303,6 +1303,10 @@ func (in *ServiceStatus) DeepCopyInto(out *ServiceStatus) {
 		*out = new(ScaleStatus)
 		**out = **in
 	}
+	if in.ScaleFromZeroTimestamp != nil {
+		in, out := &in.ScaleFromZeroTimestamp, &out.ScaleFromZeroTimestamp
+		*out = (*in).DeepCopy()
+	}
 	if in.ObservedScale != nil {
 		in, out := &in.ObservedScale, &out.ObservedScale
 		*out = new(int)

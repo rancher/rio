@@ -192,18 +192,19 @@ func (c ContainerPort) MaybeString() interface{} {
 }
 
 type ServiceStatus struct {
-	DeploymentStatus  *appsv1.DeploymentStatus            `json:"deploymentStatus,omitempty"`
-	DaemonSetStatus   *appsv1.DaemonSetStatus             `json:"daemonSetStatus,omitempty"`
-	StatefulSetStatus *appsv1.StatefulSetStatus           `json:"statefulSetStatus,omitempty"`
-	ScaleStatus       *ScaleStatus                        `json:"scaleStatus,omitempty"`
-	ObservedScale     *int                                `json:"observedScale,omitempty"`
-	ScaleOverride     *int                                `json:"scaleOverride,omitempty"`
-	ObservedWeight    *int                                `json:"observedWeight,omitempty"`
-	WeightOverride    *int                                `json:"weightOverride,omitempty"`
-	ContainerImages   map[string]string                   `json:"containerImages,omitempty"`
-	Conditions        []genericcondition.GenericCondition `json:"conditions,omitempty"`
-	Endpoints         []string                            `json:"endpoints,omitempty"`
-	PublicDomains     []string                            `json:"publicDomains,omitempty"`
+	DeploymentStatus       *appsv1.DeploymentStatus            `json:"deploymentStatus,omitempty"`
+	DaemonSetStatus        *appsv1.DaemonSetStatus             `json:"daemonSetStatus,omitempty"`
+	StatefulSetStatus      *appsv1.StatefulSetStatus           `json:"statefulSetStatus,omitempty"`
+	ScaleStatus            *ScaleStatus                        `json:"scaleStatus,omitempty"`
+	ScaleFromZeroTimestamp *metav1.Time                        `json:"scaleFromZeroTimestamp,omitempty"`
+	ObservedScale          *int                                `json:"observedScale,omitempty"`
+	ScaleOverride          *int                                `json:"scaleOverride,omitempty"`
+	ObservedWeight         *int                                `json:"observedWeight,omitempty"`
+	WeightOverride         *int                                `json:"weightOverride,omitempty"`
+	ContainerImages        map[string]string                   `json:"containerImages,omitempty"`
+	Conditions             []genericcondition.GenericCondition `json:"conditions,omitempty"`
+	Endpoints              []string                            `json:"endpoints,omitempty"`
+	PublicDomains          []string                            `json:"publicDomains,omitempty"`
 }
 
 type ScaleStatus struct {

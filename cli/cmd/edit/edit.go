@@ -50,15 +50,11 @@ func (edit *Edit) Run(ctx *clicontext.CLIContext) error {
 }
 
 func (edit *Edit) Edit(ctx *clicontext.CLIContext) error {
-	if edit.T_Type == "" {
-		return fmt.Errorf("when using raw edit you must specify a specific type")
-	}
-
 	if len(ctx.CLI.Args()) != 1 {
 		return fmt.Errorf("exactly one ID (not name) arguement is required for raw edit")
 	}
 
-	r, err := lookup.Lookup(ctx, ctx.CLI.Args()[0], edit.T_Type)
+	r, err := lookup.Lookup(ctx, ctx.CLI.Args()[0], clitypes.ServiceType)
 	if err != nil {
 		return err
 	}

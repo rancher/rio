@@ -95,9 +95,9 @@ func (p populator) populate(obj runtime.Object, ns *corev1.Namespace, os *object
 
 func populateBuild(service *riov1.Service, customRegistry, systemNamespace, domain string, addSecrets bool, os *objectset.ObjectSet) error {
 	// we only support setting imageBuild for primary container
-	rev, err := revision(service.Spec.Build)
-	if err != nil {
-		return err
+	rev := service.Spec.Build.Revision
+	if rev == "" {
+		return nil
 	}
 
 	build := constructors.NewBuild(service.Namespace, name.SafeConcatName(service.Name, name.Hex(service.Spec.Build.Repo, 5), rev), v1alpha1.Build{
