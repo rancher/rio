@@ -169,7 +169,8 @@ func updateDomain(service *riov1.Service, clusterDomain *projectv1.ClusterDomain
 
 	var endpoints []string
 	if public && clusterDomain.Status.ClusterDomain != "" {
-		endpoints = append(endpoints, fmt.Sprintf("%s://%s", protocol, domains.GetExternalDomain(service.Name, service.Namespace, clusterDomain.Status.ClusterDomain)))
+		_, version := services2.AppAndVersion(service)
+		endpoints = append(endpoints, fmt.Sprintf("%s://%s", protocol, domains.GetExternalDomain(service.Name+"-"+version, service.Namespace, clusterDomain.Status.ClusterDomain)))
 	}
 
 	for _, pd := range service.Status.PublicDomains {

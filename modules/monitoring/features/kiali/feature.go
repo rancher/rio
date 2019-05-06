@@ -3,6 +3,7 @@ package kiali
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 
 	v1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/features"
@@ -31,8 +32,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			systemstack.NewStack(apply, rContext.Namespace, "kiali", true),
 		},
 		FixedAnswers: map[string]string{
-			"PROMETHEUS_URL": "http://prometheus:9090",
-			"GRAFANA_URL":    "http://grafana:3000",
+			"PROMETHEUS_URL": fmt.Sprintf("http://prometheus.%s:9090", rContext.Namespace),
+			"GRAFANA_URL":    fmt.Sprintf("http://grafana.%s:3000", rContext.Namespace),
+			"NAMESPACE":      rContext.Namespace,
 		},
 	}
 	return feature.Register()

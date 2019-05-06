@@ -29,6 +29,8 @@ services:
     - '4'
     configs:
     - kiali-config/content:/kiali-configuration/config.yaml
+    secrets:
+    - kiali:/kiali-secret/
     ports:
     - 20001/http
 
