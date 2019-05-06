@@ -22,12 +22,13 @@ type ServiceScaleRecommendation struct {
 }
 
 type ServiceScaleRecommendationSpec struct {
-	ServiceNameToRead string `json:"serviceNameToRead,omitempty"`
-	ZeroScaleService  string `json:"zeroScaleService,omitempty"`
-	MinScale          int32  `json:"minScale,omitempty"`
-	MaxScale          int32  `json:"maxScale,omitempty"`
-	Concurrency       int    `json:"concurrency,omitempty"`
-	PrometheusURL     string `json:"prometheusURL,omitempty"`
+	ServiceNameToRead string            `json:"serviceNameToRead,omitempty"`
+	ZeroScaleService  string            `json:"zeroScaleService,omitempty"`
+	MinScale          int32             `json:"minScale,omitempty"`
+	MaxScale          int32             `json:"maxScale,omitempty"`
+	Concurrency       int               `json:"concurrency,omitempty"`
+	PrometheusURL     string            `json:"prometheusURL,omitempty"`
+	Selector          map[string]string `json:"selector,omitempty"`
 }
 
 type ServiceScaleRecommendationStatus struct {

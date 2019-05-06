@@ -30,7 +30,7 @@ func formatAppScale(obj interface{}) (string, error) {
 	revisions := obj.([]riov1.Revision)
 	builder := &strings.Builder{}
 	for _, rev := range revisions {
-		scale, err := FormatScale(rev.Scale, rev.ScaleStatus)
+		scale, err := FormatScale(rev.Scale, rev.ScaleStatus, nil)
 		if err != nil {
 			return "", nil
 		}

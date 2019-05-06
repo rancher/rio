@@ -16,7 +16,7 @@ func NewService(cfg Config) TableWriter {
 		{"IMAGE", "{{.Obj | image}}"},
 		{"CREATED", "{{.Obj.CreationTimestamp | ago}}"},
 		{"STATE", "{{.Obj | state}}"},
-		{"SCALE", "{{scale .Obj.Spec.Scale .Obj.Status.ScaleStatus}}"},
+		{"SCALE", "{{scale .Obj.Spec.Scale .Obj.Status.ScaleStatus .Obj.Status.ObservedScale}}"},
 		{"ENDPOINT", "{{.Obj.Status.Endpoints | array}}"},
 		{"WEIGHT", "{{.Obj.Spec.Weight | graph}}"},
 		{"DETAIL", "{{first (.Obj |  transitioning) (.Obj | transitioning)}}"},
@@ -31,13 +31,17 @@ func NewService(cfg Config) TableWriter {
 	}
 }
 
-func FormatScale(data, data2 interface{}) (string, error) {
+func FormatScale(data, data2, data3 interface{}) (string, error) {
 	scale, ok := data.(int)
 	if !ok {
 		return fmt.Sprint(data), nil
 	}
 	if scale == 0 {
 		scale = 1
+	}
+	observedScale, ok := data3.(*int)
+	if ok && observedScale != nil {
+		scale = *observedScale
 	}
 	scaleStr := strconv.Itoa(scale)
 

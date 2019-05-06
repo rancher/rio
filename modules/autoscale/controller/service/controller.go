@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/rancher/rio/pkg/services"
+
 	autoscalev1 "github.com/rancher/rio/pkg/apis/autoscale.rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/stackobject"
@@ -37,6 +39,7 @@ func (p populator) populateServiceRecommendation(object runtime.Object, ns *core
 	if service.Spec.MinScale != nil && service.Spec.MaxScale != nil && service.Spec.Concurrency != nil {
 		autoscale = true
 	}
+	app, version := services.AppAndVersion(service)
 	if autoscale {
 		spec := autoscalev1.ServiceScaleRecommendation{
 			ObjectMeta: metav1.ObjectMeta{
@@ -48,6 +51,10 @@ func (p populator) populateServiceRecommendation(object runtime.Object, ns *core
 				Concurrency:       *service.Spec.Concurrency,
 				PrometheusURL:     fmt.Sprintf("http://prometheus.%s:9090", p.systemNamespace),
 				ServiceNameToRead: service.Name,
+				Selector: map[string]string{
+					"app":     app,
+					"version": version,
+				},
 			},
 			Status: autoscalev1.ServiceScaleRecommendationStatus{
 				DesiredScale: &[]int32{int32(service.Spec.Scale)}[0],

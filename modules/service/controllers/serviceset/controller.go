@@ -103,6 +103,9 @@ func (h *handler) onChange(key string, service *riov1.Service) (*riov1.Service, 
 			if scale == 0 {
 				scale = 1
 			}
+			if service.Status.ObservedScale != nil && *service.Status.ObservedScale != 0 {
+				scale = *service.Status.ObservedScale
+			}
 			serviceWeight = append(serviceWeight, riov1.Revision{
 				Public:          public,
 				Weight:          service.Spec.Weight,
