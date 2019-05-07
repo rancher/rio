@@ -84,12 +84,21 @@ func (s serviceHandler) populate(obj runtime.Object, namespace *corev1.Namespace
 		return dests[i].Subset < dests[j].Subset
 	})
 
-	lastIndex := len(app.Spec.Revisions) - 1
-	lastRevision, err := s.serviceCache.Get(app.Namespace, app.Spec.Revisions[lastIndex].ServiceName)
-	if err != nil {
-		return err
+	var revision *riov1.Service
+	for i := len(app.Spec.Revisions) - 1; i >= 0; i-- {
+		revision, err = s.serviceCache.Get(app.Namespace, app.Spec.Revisions[i].ServiceName)
+		if err != nil && !errors.IsNotFound(err) {
+			return err
+		} else if errors.IsNotFound(err) {
+			continue
+		}
+		break
 	}
-	revVs := populate.VirtualServiceFromSpec(true, s.systemNamespace, app.Name, app.Namespace, clusterDomain, lastRevision, dests...)
+	if revision == nil {
+		return nil
+	}
+
+	revVs := populate.VirtualServiceFromSpec(true, s.systemNamespace, app.Name, app.Namespace, clusterDomain, revision, dests...)
 	os.Add(revVs)
 
 	// generating ingress for whole service set

@@ -7,6 +7,10 @@ import (
 	"strings"
 	"sync"
 
+	"k8s.io/apimachinery/pkg/api/errors"
+
+	multierror "github.com/hashicorp/go-multierror"
+
 	"github.com/rancher/wrangler/pkg/kv"
 
 	"github.com/docker/docker/pkg/namesgenerator"
@@ -107,6 +111,20 @@ func (c *CLIContext) DeleteResource(r types.Resource) (err error) {
 		err = c.Rio.ExternalServices(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
 	case clitypes.PublicDomainType:
 		err = c.Rio.PublicDomains(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
+	case clitypes.AppType:
+		app := r.Object.(*riov1.App)
+		var errs multierror.Error
+		for _, rev := range app.Spec.Revisions {
+			newerr := c.Rio.Services(r.Namespace).Delete(rev.ServiceName, &metav1.DeleteOptions{})
+			if newerr != nil && !errors.IsNotFound(err) {
+				errs.Errors = append(errs.Errors, newerr)
+			}
+		}
+		newerr := c.Rio.Apps(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
+		if newerr != nil {
+			errs.Errors = append(errs.Errors, newerr)
+		}
+		err = errs.ErrorOrNil()
 	default:
 		return fmt.Errorf("unknown delete type %s", r.Type)
 	}

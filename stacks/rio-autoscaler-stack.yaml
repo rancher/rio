@@ -28,9 +28,14 @@ services:
     - 80/http,internal=true
     args:
     - rio-autoscaler
-    - --debug
     - gateway
     - --listen
     - '80'
     env:
     - NAMESPACE=$(self/namespace)
+    - DEBUG=${DEBUG}
+
+templates:
+  questions:
+  - variable: DEBUG
+    description: "whether to turn on debug"

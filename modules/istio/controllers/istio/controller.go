@@ -151,6 +151,9 @@ func (i *istioDeployController) resolveEndpoint(namespace, name string, obj runt
 }
 
 func (i *istioDeployController) syncEndpoint(key string, endpoint *corev1.Endpoints) (*corev1.Endpoints, error) {
+	if endpoint == nil {
+		return nil, nil
+	}
 	if endpoint.Namespace != i.namespace || endpoint.Name != settings.IstioGatewayDeploy {
 		return endpoint, nil
 	}

@@ -210,7 +210,3 @@ kubernetes:
                   "--frontend-opt", "filename=$${DOCKERFILE}",
                   "--local", "context=.", "--local", "dockerfile=.",
                   "--exporter=image", "--exporter-opt", "name=$${IMAGE}", "--exporter-opt", "push=$${PUSH}"]
-        volumeMounts:
-        - name: secret-volume-build-secrets
-          subPath: .dockerconfigjson
-          mountPath: /builder/home/.docker/config.json

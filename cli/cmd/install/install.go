@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/rancher/rio/pkg/constructors"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+
 	"github.com/rancher/rio/modules/service/controllers/serviceset"
 	"github.com/sirupsen/logrus"
 
@@ -19,6 +23,17 @@ type Install struct {
 
 func (i *Install) Run(ctx *clicontext.CLIContext) error {
 	controllerStack := systemstack.NewStack(ctx.Apply, i.Namespace, "rio-controller", true)
+	if _, err := ctx.Core.Namespaces().Get(i.Namespace, metav1.GetOptions{}); err != nil {
+		if errors.IsNotFound(err) {
+			ns := constructors.NewNamespace(i.Namespace, v1.Namespace{})
+			fmt.Printf("Creating namespace %s\n", i.Namespace)
+			if _, err := ctx.Core.Namespaces().Create(ns); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
 
 	if err := controllerStack.Deploy(map[string]string{
 		"NAMESPACE": i.Namespace,

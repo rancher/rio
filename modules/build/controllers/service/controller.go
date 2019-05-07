@@ -108,7 +108,7 @@ func populateBuild(service *riov1.Service, customRegistry, systemNamespace, doma
 			},
 		},
 		Spec: v1alpha1.BuildSpec{
-			ServiceAccountName: serviceAccountName,
+			//ServiceAccountName: serviceAccountName,
 			Source: &v1alpha1.SourceSpec{
 				Git: &v1alpha1.GitSourceSpec{
 					Url:      service.Spec.Build.Repo,
