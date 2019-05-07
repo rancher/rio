@@ -37,9 +37,9 @@ var ParameterCodec = runtime.NewParameterCodec(Scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
 	gitv1.AddToScheme,
 	webhookinatorv1.AddToScheme,
-	autoscalev1.AddToScheme,
 	riov1.AddToScheme,
 	projectv1.AddToScheme,
+	autoscalev1.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition

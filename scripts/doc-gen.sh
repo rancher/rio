@@ -1,1 +1,2 @@
-refdocs -config ./doc/doc-config.json -api-dir "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1" -out-file ./doc/docs.html --template-dir ./doc
+#!/usr/bin/env bash
+refdocs -config ./docs/doc-config.json -api-dir "github.com/rancher/rio/pkg/apis/" -out-file ./api-docs.md --template-dir ./docs

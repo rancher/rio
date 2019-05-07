@@ -9,6 +9,7 @@ type CustomArgs struct {
 	Package      string
 	TypesByGroup map[schema.GroupVersion][]*types.Name
 	Options      Options
+	OutputBase   string
 }
 
 type Options struct {

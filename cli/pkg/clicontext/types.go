@@ -163,7 +163,6 @@ func (c *CLIContext) Create(obj runtime.Object) (err error) {
 func (c *CLIContext) UpdateObject(obj runtime.Object) (err error) {
 	switch o := obj.(type) {
 	case *riov1.Service:
-		fmt.Printf("%+v", obj.(*riov1.Service).Spec.Scale)
 		_, err = c.Rio.Services(o.Namespace).Update(o)
 	case *corev1.Pod:
 		_, err = c.Core.Pods(o.Namespace).Update(o)

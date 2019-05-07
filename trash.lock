@@ -141,7 +141,7 @@ import:
 - package: github.com/rancher/rdns-server
   version: 2967d247de7e8be972d326fe394e331eb8ca8d2b
 - package: github.com/rancher/wrangler
-  version: 31f3a4b0e30cf2887e5077f5f39831dffd322cf3
+  version: d1ff29d245b296e6319b36a65b0fcf574a36c9e1
   repo: https://github.com/StrongMonkey/wrangler.git
 - package: github.com/russross/blackfriday
   version: v1.4-2-g300106c228d52c

@@ -18,7 +18,6 @@ limitations under the License.
 
 // +k8s:deepcopy-gen=package
 // +groupName=git.rio.cattle.io
-
 package v1
 
 import (

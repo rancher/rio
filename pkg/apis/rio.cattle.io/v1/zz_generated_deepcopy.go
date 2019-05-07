@@ -1288,16 +1288,6 @@ func (in *ServiceStatus) DeepCopyInto(out *ServiceStatus) {
 		*out = new(appsv1.DeploymentStatus)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.DaemonSetStatus != nil {
-		in, out := &in.DaemonSetStatus, &out.DaemonSetStatus
-		*out = new(appsv1.DaemonSetStatus)
-		(*in).DeepCopyInto(*out)
-	}
-	if in.StatefulSetStatus != nil {
-		in, out := &in.StatefulSetStatus, &out.StatefulSetStatus
-		*out = new(appsv1.StatefulSetStatus)
-		(*in).DeepCopyInto(*out)
-	}
 	if in.ScaleStatus != nil {
 		in, out := &in.ScaleStatus, &out.ScaleStatus
 		*out = new(ScaleStatus)
@@ -1309,16 +1299,6 @@ func (in *ServiceStatus) DeepCopyInto(out *ServiceStatus) {
 	}
 	if in.ObservedScale != nil {
 		in, out := &in.ObservedScale, &out.ObservedScale
-		*out = new(int)
-		**out = **in
-	}
-	if in.ScaleOverride != nil {
-		in, out := &in.ScaleOverride, &out.ScaleOverride
-		*out = new(int)
-		**out = **in
-	}
-	if in.ObservedWeight != nil {
-		in, out := &in.ObservedWeight, &out.ObservedWeight
 		*out = new(int)
 		**out = **in
 	}

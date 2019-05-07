@@ -1,7 +1,11 @@
 package controllergen
 
 import (
+	"io"
+	"io/ioutil"
+	"os"
 	"path/filepath"
+	"strings"
 
 	cgargs "github.com/rancher/wrangler/pkg/controller-gen/args"
 	"github.com/rancher/wrangler/pkg/controller-gen/generators"
@@ -33,6 +37,18 @@ func Run(opts cgargs.Options) {
 	genericArgs.GoHeaderFilePath = opts.Boilerplate
 	genericArgs.InputDirs = parseTypes(customArgs)
 
+	if genericArgs.OutputBase == "./" { //go modules
+		tempDir, err := ioutil.TempDir("", "")
+		if err != nil {
+			return
+		}
+
+		genericArgs.OutputBase = tempDir
+
+		defer os.RemoveAll(tempDir)
+	}
+	customArgs.OutputBase = genericArgs.OutputBase
+
 	clientGen := generators.NewClientGenerator()
 
 	if err := genericArgs.Execute(
@@ -54,6 +70,10 @@ func Run(opts cgargs.Options) {
 		return
 	}
 
+	if err := copyGoPathToModules(customArgs); err != nil {
+		klog.Fatalf("go modules copy failed: %v", err)
+	}
+
 	if err := generateDeepcopy(groups, customArgs); err != nil {
 		klog.Fatalf("deepcopy failed: %v", err)
 	}
@@ -69,9 +89,77 @@ func Run(opts cgargs.Options) {
 	if err := generateInformers(groups, customArgs); err != nil {
 		klog.Fatalf("informers failed: %v", err)
 	}
-	//if err := clientGen.GenerateMocks(); err != nil {
-	//	klog.Fatalf("mocks failed: %v", err)
-	//}
+
+	if err := copyGoPathToModules(customArgs); err != nil {
+		klog.Fatalf("go modules copy failed: %v", err)
+	}
+
+	if err := clientGen.GenerateMocks(); err != nil {
+		klog.Fatalf("mocks failed: %v", err)
+	}
+
+	if err := copyGoPathToModules(customArgs); err != nil {
+		klog.Fatalf("go modules copy failed: %v", err)
+	}
+}
+
+//until k8s code-gen supports gopath
+func copyGoPathToModules(customArgs *cgargs.CustomArgs) error {
+
+	pathsToCopy := map[string]bool{}
+	for _, types := range customArgs.TypesByGroup {
+		 for _, names := range types {
+		 	pkgSplit := strings.Split(names.Package, string(os.PathSeparator))
+		 	pkg := filepath.Join(customArgs.OutputBase, strings.Join(pkgSplit[:3], string(os.PathSeparator)))
+			pathsToCopy[pkg] = true
+		}
+	}
+
+	for pkg, _ := range pathsToCopy {
+		if _, err := os.Stat(pkg); os.IsNotExist(err) {
+			continue
+		}
+
+		return filepath.Walk(pkg, func(path string, info os.FileInfo, err error) error {
+			newPath := strings.Replace(path, pkg, ".", 1)
+			if _, err := os.Stat(newPath); os.IsNotExist(err) {
+				if info.IsDir() {
+					return os.Mkdir(newPath, info.Mode())
+				}
+
+				return copyFile(path, newPath)
+			}
+
+			return err
+		})
+	}
+
+	return nil
+}
+
+func copyFile(src, dst string) error {
+	var err error
+	var srcfd *os.File
+	var dstfd *os.File
+	var srcinfo os.FileInfo
+
+	if srcfd, err = os.Open(src); err != nil {
+		return err
+	}
+	defer srcfd.Close()
+
+	if dstfd, err = os.Create(dst); err != nil {
+		return err
+	}
+	defer dstfd.Close()
+
+	if _, err = io.Copy(dstfd, srcfd); err != nil {
+		return err
+	}
+	if srcinfo, err = os.Stat(src); err != nil {
+		return err
+	}
+	return os.Chmod(dst, srcinfo.Mode())
 }
 
 func generateDeepcopy(groups map[string]bool, customArgs *cgargs.CustomArgs) error {
@@ -79,6 +167,7 @@ func generateDeepcopy(groups map[string]bool, customArgs *cgargs.CustomArgs) err
 
 	args := args.Default().WithoutDefaultFlagParsing()
 	args.CustomArgs = deepCopyCustomArgs
+	args.OutputBase = customArgs.OutputBase
 	args.OutputFileBaseName = "zz_generated_deepcopy"
 	args.GoHeaderFilePath = customArgs.Options.Boilerplate
 
@@ -93,12 +182,12 @@ func generateDeepcopy(groups map[string]bool, customArgs *cgargs.CustomArgs) err
 	return args.Execute(dp.NameSystems(),
 		dp.DefaultNameSystem(),
 		dp.Packages)
-
 }
 
 func generateClientset(groups map[string]bool, customArgs *cgargs.CustomArgs) error {
 	args, clientSetArgs := csargs.NewDefaults()
 	clientSetArgs.ClientsetName = "versioned"
+	args.OutputBase = customArgs.OutputBase
 	args.OutputPackagePath = filepath.Join(customArgs.Package, "clientset")
 	args.GoHeaderFilePath = customArgs.Options.Boilerplate
 
@@ -128,6 +217,7 @@ func generateInformers(groups map[string]bool, customArgs *cgargs.CustomArgs) er
 	args, clientSetArgs := infargs.NewDefaults()
 	clientSetArgs.VersionedClientSetPackage = filepath.Join(customArgs.Package, "clientset/versioned")
 	clientSetArgs.ListersPackage = filepath.Join(customArgs.Package, "listers")
+	args.OutputBase = customArgs.OutputBase
 	args.OutputPackagePath = filepath.Join(customArgs.Package, "informers")
 	args.GoHeaderFilePath = customArgs.Options.Boilerplate
 
@@ -145,6 +235,7 @@ func generateInformers(groups map[string]bool, customArgs *cgargs.CustomArgs) er
 
 func generateListers(groups map[string]bool, customArgs *cgargs.CustomArgs) error {
 	args, _ := lsargs.NewDefaults()
+	args.OutputBase = customArgs.OutputBase
 	args.OutputPackagePath = filepath.Join(customArgs.Package, "listers")
 	args.GoHeaderFilePath = customArgs.Options.Boilerplate
 

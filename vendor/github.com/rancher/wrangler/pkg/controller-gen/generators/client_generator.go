@@ -117,7 +117,6 @@ func (cg *ClientGenerator) typesGroupVersionDocPackage(name *types.Name, gv sche
 
 // +k8s:deepcopy-gen=package
 // +groupName=%s
-
 `, gv.Group))...)
 
 	return p
@@ -160,9 +159,18 @@ func (cg *ClientGenerator) groupVersionPackage(gv schema.GroupVersion, generator
 	})
 }
 
+func removePackage(pkg string) string {
+	pkgSplit := strings.Split(pkg, string(os.PathSeparator))
+	return strings.Join(pkgSplit[3:], string(os.PathSeparator))
+}
+
 func (cg *ClientGenerator) GenerateMocks() error {
 	base := args.DefaultSourceTree()
+
 	for packagePath, resources := range cg.Fakes {
+		if base == "./" {
+			packagePath = removePackage(packagePath)
+		}
 		genPath := path.Join(base, packagePath)
 
 		// Clean the fakes dir
