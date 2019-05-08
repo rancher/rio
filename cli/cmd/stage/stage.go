@@ -1,46 +1,26 @@
 package stage
 
 import (
+	"encoding/json"
 	"fmt"
+	"sort"
 
-	"github.com/rancher/norman/types"
-	"github.com/rancher/rio/cli/cmd/create"
+	"github.com/rancher/rio/cli/cmd/edit"
+
+	"github.com/rancher/rio/cli/pkg/types"
+
+	"github.com/aokoli/goutils"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/clientcfg"
-	"github.com/rancher/rio/cli/pkg/lookup"
-	"github.com/rancher/rio/cli/pkg/waiter"
-	"github.com/rancher/rio/pkg/settings"
-	"github.com/rancher/rio/types/client/rio/v1"
+	"github.com/rancher/rio/cli/pkg/stack"
+	"github.com/rancher/rio/cli/pkg/table"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/wrangler/pkg/kv"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Stage struct {
-	create.Create
-	Scale  int    `desc:"Number of replicas to run"`
-	Weight int    `desc:"Percentage of traffic routed to staged service"`
 	Image  string `desc:"Runtime image (Docker image/OCI image)"`
-}
-
-func determineRevision(project *clientcfg.Project, name string, service *types.Resource) (string, error) {
-	revision := "next"
-	if name == service.ID {
-		return revision, nil
-	}
-
-	parsedService := lookup.ParseStackScoped(project, name)
-	if parsedService.Version == settings.DefaultServiceVersion {
-		return "", fmt.Errorf("\"%s\" is not a valid revision to stage", settings.DefaultServiceVersion)
-	}
-	if parsedService.Version != "" {
-		revision = parsedService.Version
-	}
-
-	return revision, nil
-}
-
-func stripRevision(project *clientcfg.Project, name string) lookup.StackScoped {
-	stackScope := lookup.ParseStackScoped(project, name)
-	stackScope.Version = ""
-	return lookup.ParseStackScoped(project, stackScope.String())
+	E_Edit bool   `desc:"Edit the config to change the spec in new revision"`
 }
 
 func (r *Stage) Run(ctx *clicontext.CLIContext) error {
@@ -48,76 +28,82 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("must specify the service to update")
 	}
 
-	project, err := ctx.Project()
-	if err != nil {
-		return err
+	if len(ctx.CLI.Args()) > 1 {
+		return fmt.Errorf("more than one argument found")
 	}
 
-	wc, err := ctx.ProjectClient()
-	if err != nil {
-		return err
-	}
-
-	w, err := waiter.NewWaiter(ctx)
-	if err != nil {
-		return err
-	}
-
-	stackScope := stripRevision(project, ctx.CLI.Args()[0])
-
-	resource, err := lookup.Lookup(ctx, stackScope.ResourceID, client.ServiceType)
-	if err != nil {
-		byID, err2 := wc.Service.ByID(ctx.CLI.Args()[0])
-		if err2 != nil {
-			return err
-		}
-
-		stackScope = stripRevision(project, lookup.StackScopedFromLabels(project, byID.Labels).String())
-		resource = &types.NamedResource{
-			Resource: byID.Resource,
-			Name:     byID.Name,
+	var err error
+	appName, version := kv.Split(ctx.CLI.Args()[0], ":")
+	if version == "" {
+		version, err = goutils.RandomNumeric(5)
+		if err != nil {
+			return fmt.Errorf("failed to generate random version, err: %v", err)
 		}
 	}
-
-	baseService, err := wc.Service.ByID(resource.ID)
+	namespace, name := stack.NamespaceAndName(ctx, appName)
+	app, err := ctx.Rio.Apps(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
+	sort.Slice(app.Spec.Revisions, func(i, j int) bool {
+		return app.Spec.Revisions[i].Weight > app.Spec.Revisions[j].Weight
+	})
+	if len(app.Spec.Revisions) > 0 {
+		if r.E_Edit {
+			rev := app.Spec.Revisions[0]
+			r, err := ctx.ByID(app.Namespace, rev.ServiceName, types.ServiceType)
+			if err != nil {
+				return err
+			}
 
-	revision, err := determineRevision(project, ctx.CLI.Args()[0], &resource.Resource)
-	if err != nil {
-		return err
+			str, err := table.FormatJSON(r.Object)
+			if err != nil {
+				return err
+			}
+
+			update, err := edit.EditLoop(nil, []byte(str), func(content []byte) error {
+				var obj *riov1.Service
+				if err := json.Unmarshal(content, &obj); err != nil {
+					return err
+				}
+				svc := riov1.NewService(namespace, name, riov1.Service{
+					Spec: obj.Spec,
+				})
+				svc.Name = app.Name + "-" + version
+				svc.Spec.Version = version
+				svc.Spec.App = app.Name
+				svc.Spec.Weight = 0
+				return ctx.Create(svc)
+			})
+			if err != nil {
+				return err
+			}
+			if update {
+				fmt.Printf("%s/%s:%s\n", r.Namespace, app.Name, version)
+			}
+		} else {
+			rev := app.Spec.Revisions[0]
+			svc, err := ctx.Rio.Services(app.Namespace).Get(rev.ServiceName, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			spec := svc.Spec.DeepCopy()
+			spec.Version = version
+			spec.App = app.Name
+			spec.Weight = 0
+			stagedService := riov1.NewService(app.Namespace, app.Name+"-"+version, riov1.Service{})
+
+			if ctx.CLI.String("image") != "" {
+				spec.Image = ctx.CLI.String("image")
+			}
+
+			stagedService.Spec = *spec
+			if err := ctx.Create(stagedService); err != nil {
+				return err
+			}
+			fmt.Printf("%s/%s:%s\n", stagedService.Namespace, app.Name, version)
+		}
 	}
 
-	stackScope.Version = revision
-	_, err = lookup.Lookup(ctx, stackScope.String(), client.ServiceType)
-	if err == nil {
-		return fmt.Errorf("revision %s already exists", ctx.CLI.Args()[0])
-	}
-
-	args := append([]string{r.Image}, ctx.CLI.Args()[1:]...)
-	serviceDef, err := r.ToService(args)
-	if err != nil {
-		return err
-	}
-
-	serviceDef.Name = fmt.Sprintf("%s-%s", resource.Name, revision)
-	serviceDef.ParentService = resource.Name
-	serviceDef.Version = revision
-	serviceDef.Weight = int64(r.Weight)
-	serviceDef.Scale = int64(r.Scale)
-	serviceDef.ProjectID = baseService.ProjectID
-	serviceDef.StackID = baseService.StackID
-	serviceDef.PortBindings = baseService.PortBindings
-	if serviceDef.Scale == 0 {
-		serviceDef.Scale = baseService.Scale
-	}
-
-	revService, err := wc.Service.Create(serviceDef)
-	if err != nil {
-		return err
-	}
-
-	w.Add(&revService.Resource)
-	return w.Wait(ctx.Ctx)
+	return nil
 }

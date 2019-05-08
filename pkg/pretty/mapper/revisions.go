@@ -1,9 +1,9 @@
 package mapper
 
 import (
-	"github.com/rancher/norman/types"
-	"github.com/rancher/norman/types/convert"
-	"github.com/rancher/norman/types/values"
+	types "github.com/rancher/mapper"
+	"github.com/rancher/mapper/convert"
+	"github.com/rancher/mapper/values"
 )
 
 type RevisionMapper struct {

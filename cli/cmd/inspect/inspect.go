@@ -1,32 +1,31 @@
 package inspect
 
 import (
+	"strings"
+
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/table"
-	client2 "github.com/rancher/rio/types/client/project/v1"
-	"github.com/rancher/rio/types/client/rio/v1"
+	clitypes "github.com/rancher/rio/cli/pkg/types"
 	"github.com/urfave/cli"
 )
 
 var (
 	InspectTypes = []string{
-		client.ServiceType,
-		client.ConfigType,
-		client.StackType,
-		client.RouteSetType,
-		client.VolumeType,
-		client.ExternalServiceType,
-		client2.PodType,
-		client2.NodeType,
-		client2.FeatureType,
-		client2.PublicDomainType,
+		clitypes.AppType,
+		clitypes.ServiceType,
+		clitypes.ConfigType,
+		clitypes.NamespaceType,
+		clitypes.RouterType,
+		clitypes.ExternalServiceType,
+		clitypes.PodType,
+		clitypes.FeatureType,
+		clitypes.PublicDomainType,
 	}
 )
 
 type Inspect struct {
-	T_Type  string `desc:"The specific type to inspect"`
-	L_Links bool   `desc:"Include links and actions in output"`
+	T_Type string `desc:"The specific type to inspect"`
 }
 
 func (i *Inspect) Customize(cmd *cli.Command) {
@@ -40,55 +39,33 @@ func (i *Inspect) Customize(cmd *cli.Command) {
 }
 
 func (i *Inspect) Run(ctx *clicontext.CLIContext) error {
-	projectClient, err := ctx.ProjectClient()
-	if err != nil {
-		return err
+	types := InspectTypes
+	if i.T_Type != "" {
+		types = []string{i.T_Type}
 	}
-	spaceClient, err := ctx.ClusterClient()
-	if err != nil {
-		return err
-	}
-	ctx.WC = projectClient
-	ctx.PC = spaceClient
+
 	for _, arg := range ctx.CLI.Args() {
-		r, err := find(ctx, arg, i.T_Type, InspectTypes)
+		if strings.Contains(arg, ":") {
+			types = []string{clitypes.ServiceType}
+		} else {
+			for i, t := range types {
+				if t == clitypes.ServiceType {
+					types = append(types[0:i], types[i+1:]...)
+					break
+				}
+			}
+		}
+		r, err := lookup.Lookup(ctx, arg, types...)
 		if err != nil {
 			return err
 		}
-		if r == nil {
-			continue
-		}
-
-		if !i.L_Links {
-			delete(r, "links")
-			delete(r, "actions")
-		}
 
 		t := table.NewWriter(nil, ctx)
-		t.Write(r)
+		t.Write(r.Object)
 		if err := t.Close(); err != nil {
 			return err
 		}
 	}
 
 	return nil
-}
-
-func find(c lookup.ClientLookup, arg, override string, types []string) (map[string]interface{}, error) {
-	if len(override) > 0 {
-		types = []string{override}
-	}
-	r, err := lookup.Lookup(c, arg, types...)
-	if err == nil {
-		client, err := c.ClientLookup(r.Type)
-		if err != nil {
-			return nil, err
-		}
-		data := map[string]interface{}{}
-		err = client.GetLink(r.Resource, "self", &data)
-		if err == nil {
-			return data, nil
-		}
-	}
-	return nil, nil
 }

@@ -1,16 +1,16 @@
 package config
 
 import (
-	"fmt"
-
-	"github.com/rancher/rio/cli/pkg/stack"
-
 	"encoding/base64"
+	"fmt"
 	"unicode/utf8"
+
+	"github.com/rancher/rio/pkg/constructors"
 
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/types/client/rio/v1"
+	"github.com/rancher/rio/cli/pkg/stack"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type Create struct {
@@ -26,20 +26,13 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("two arguments are required")
 	}
 
-	name := ctx.CLI.Args()[0]
+	namespace, name := stack.NamespaceAndName(ctx, ctx.CLI.Args()[0])
 	file := ctx.CLI.Args()[1]
 
-	wc, err := ctx.ProjectClient()
-	if err != nil {
-		return err
-	}
-
-	config := &client.Config{}
-
-	config.ProjectID, config.StackID, config.Name, err = stack.ResolveSpaceStackForName(ctx, name)
-	if err != nil {
-		return err
-	}
+	config := constructors.NewConfigMap(namespace, name, corev1.ConfigMap{
+		Data:       make(map[string]string),
+		BinaryData: make(map[string][]byte),
+	})
 
 	content, err := util.ReadFile(file)
 	if err != nil {
@@ -48,17 +41,10 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 
 	config.Labels = c.L_Label
 	if utf8.Valid(content) {
-		config.Content = string(content)
+		config.Data["content"] = string(content)
 	} else {
-		config.Content = base64.StdEncoding.EncodeToString(content)
-		config.Encoded = true
+		config.Data["content"] = base64.StdEncoding.EncodeToString(content)
 	}
 
-	config, err = wc.Config.Create(config)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println(config.ID)
-	return nil
+	return ctx.Create(config)
 }

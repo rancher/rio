@@ -1,15 +1,12 @@
 package template
 
 import (
-	"github.com/rancher/rio/pkg/pretty"
-	"github.com/rancher/types/apis/management.cattle.io/v3"
+	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 )
 
 type Template struct {
-	Namespace       string
-	Meta            pretty.TemplateMeta
-	Content         []byte
-	AdditionalFiles map[string][]byte
-	Answers         map[string]string
-	Questions       []v3.Question
+	Content     []byte
+	BuiltinVars []string
 }
+
+type AnswerCallback func(key string, questions []v1.Question) (string, error)

@@ -1,11 +1,12 @@
 package rm
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
-	"github.com/rancher/rio/cli/pkg/waiter"
-	projectClient "github.com/rancher/rio/types/client/project/v1"
-	"github.com/rancher/rio/types/client/rio/v1"
+	clitypes "github.com/rancher/rio/cli/pkg/types"
 )
 
 type Rm struct {
@@ -13,7 +14,7 @@ type Rm struct {
 }
 
 func (r *Rm) Run(ctx *clicontext.CLIContext) error {
-	types := []string{client.ServiceType, client.StackType, projectClient.PodType, client.ConfigType, client.RouteSetType, client.VolumeType, client.ExternalServiceType}
+	types := []string{clitypes.ServiceType, clitypes.PodType, clitypes.ConfigType, clitypes.RouterType, clitypes.PublicDomainType, clitypes.ExternalServiceType, clitypes.AppType}
 	if len(r.T_Type) > 0 {
 		types = []string{r.T_Type}
 	}
@@ -22,29 +23,27 @@ func (r *Rm) Run(ctx *clicontext.CLIContext) error {
 }
 
 func Remove(ctx *clicontext.CLIContext, types ...string) error {
-	w, err := waiter.NewWaiter(ctx)
-	if err != nil {
-		return err
-	}
-
 	for _, arg := range ctx.CLI.Args() {
+		if strings.Contains(arg, ":") {
+			types = []string{clitypes.ServiceType}
+		} else {
+			for i, t := range types {
+				if t == clitypes.ServiceType {
+					types = append(types[0:i], types[i+1:]...)
+					break
+				}
+			}
+		}
+		fmt.Println(types)
 		resource, err := lookup.Lookup(ctx, arg, types...)
 		if err != nil {
 			return err
 		}
 
-		client, err := ctx.ClientLookup(resource.Type)
-		if err != nil {
+		if err := ctx.DeleteResource(resource); err != nil {
 			return err
 		}
-
-		err = client.Delete(&resource.Resource)
-		if err != nil {
-			return err
-		}
-
-		w.Add(&resource.Resource)
 	}
 
-	return w.Wait(ctx.Ctx)
+	return nil
 }

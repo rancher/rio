@@ -25,7 +25,7 @@ fi
 
 echo Building incluster
 GOOS=linux GOARCH=amd64
-CGO_ENABLED=0 go build -ldflags "$LDFLAGS $STATIC" -o bin/rio-incluster
+CGO_ENABLED=0 go build -ldflags "$LDFLAGS $STATIC" -o bin/rio-controller
 
-echo Building cli full
-CGO_ENABLED=1 go build -tags "static_build libsqlite3 k8s ctr no_etcd netgo osusergo" -ldflags "$LDFLAGS $STATIC_SQLITE" -o bin/rio-full ./cli/main.go
+echo Building cli
+CGO_ENABLED=1 go build -ldflags "$LDFLAGS $STATIC_SQLITE" -o bin/rio ./cli/main.go

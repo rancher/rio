@@ -6,44 +6,37 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/docker/docker/pkg/reexec"
-	"github.com/rancher/rio/cli/cmd/agent"
+	"github.com/rancher/rio/cli/cmd/render"
+
+	"github.com/rancher/rio/cli/cmd/apply"
 	"github.com/rancher/rio/cli/cmd/attach"
-	"github.com/rancher/rio/cli/cmd/cluster"
 	"github.com/rancher/rio/cli/cmd/config"
 	"github.com/rancher/rio/cli/cmd/create"
-	"github.com/rancher/rio/cli/cmd/ctr"
 	"github.com/rancher/rio/cli/cmd/edit"
-	"github.com/rancher/rio/cli/cmd/events"
 	"github.com/rancher/rio/cli/cmd/exec"
 	"github.com/rancher/rio/cli/cmd/export"
+	"github.com/rancher/rio/cli/cmd/logs"
+
 	"github.com/rancher/rio/cli/cmd/externalservice"
 	"github.com/rancher/rio/cli/cmd/feature"
 	"github.com/rancher/rio/cli/cmd/inspect"
-	"github.com/rancher/rio/cli/cmd/kubectl"
-	"github.com/rancher/rio/cli/cmd/login"
-	"github.com/rancher/rio/cli/cmd/logs"
-	"github.com/rancher/rio/cli/cmd/node"
-	"github.com/rancher/rio/cli/cmd/project"
-	"github.com/rancher/rio/cli/cmd/promote"
-	"github.com/rancher/rio/cli/cmd/ps"
+	"github.com/rancher/rio/cli/cmd/install"
 	"github.com/rancher/rio/cli/cmd/publicdomain"
+	"github.com/rancher/rio/cli/cmd/revision"
+
+	"github.com/rancher/rio/cli/cmd/info"
+	"github.com/rancher/rio/cli/cmd/promote"
 	"github.com/rancher/rio/cli/cmd/rm"
 	"github.com/rancher/rio/cli/cmd/route"
 	"github.com/rancher/rio/cli/cmd/run"
 	"github.com/rancher/rio/cli/cmd/scale"
-	"github.com/rancher/rio/cli/cmd/server"
-	"github.com/rancher/rio/cli/cmd/setcontext"
-	"github.com/rancher/rio/cli/cmd/stack"
 	"github.com/rancher/rio/cli/cmd/stage"
-	"github.com/rancher/rio/cli/cmd/up"
-	"github.com/rancher/rio/cli/cmd/volume"
 	"github.com/rancher/rio/cli/cmd/weight"
+
+	"github.com/docker/docker/pkg/reexec"
+	"github.com/rancher/rio/cli/cmd/ps"
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/clientcfg"
-	"github.com/rancher/rio/cli/pkg/waiter"
-	_ "github.com/rancher/rio/pkg/kubectl"
 	"github.com/rancher/rio/version"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -69,7 +62,7 @@ const (
 
 var (
 	appName = filepath.Base(os.Args[0])
-	cfg     = clientcfg.Config{}
+	cfg     = clicontext.Config{}
 )
 
 func main() {
@@ -109,48 +102,34 @@ func main() {
 			Destination: &cfg.WaitState,
 		},
 		cli.StringFlag{
-			Name:        "server",
-			Usage:       "Specify the Rio API endpoint URL",
-			EnvVar:      "RIO_URL",
-			Destination: &cfg.ServerURL,
+			Name:        "system-namespace",
+			Value:       "rio-system",
+			Destination: &cfg.SystemNamespace,
 		},
 		cli.StringFlag{
-			Name:        "token",
-			Usage:       "Specify Rio API token",
-			EnvVar:      "RIO_TOKEN",
-			Destination: &cfg.Token,
+			Name:        "namespace,n",
+			Usage:       "Specify which namespace in kubernetes to use",
+			EnvVar:      "NAMESPACE",
+			Destination: &cfg.DefaultNamespace,
 		},
 		cli.StringFlag{
-			Name:        "cluster,c",
-			Usage:       "Specify which cluster to use",
-			EnvVar:      "RIO_CLUSTER",
-			Destination: &cfg.ClusterName,
+			Name:        "kubeconfig",
+			Usage:       "Kubeconfig file to use",
+			EnvVar:      "KUBECONFIG",
+			Value:       "${HOME}/.kube/config",
+			Destination: &cfg.Kubeconfig,
 		},
-		cli.StringFlag{
-			Name:        "project,p",
-			Usage:       "Specify which project to use",
-			EnvVar:      "RIO_PROJECT",
-			Destination: &cfg.ProjectName,
-		},
-		cli.StringFlag{
-			Name:        "config-dir",
-			Value:       "${HOME}/.rancher/rio",
-			Usage:       "Specify which directory to use for config",
-			EnvVar:      "RIO_CONFIG_DIR",
-			Destination: &cfg.Home,
+		cli.BoolFlag{
+			Name:  "system",
+			Usage: "Only show system resources",
 		},
 	}
 
 	app.Commands = []cli.Command{
+		info.Info(app),
 		config.Config(app),
-		volume.Volume(app),
-		stack.Stack(),
-		project.Projects(app),
-		cluster.Cluster(app),
-		node.Node(),
 		publicdomain.PublicDomain(app),
 		externalservice.ExternalService(app),
-		setcontext.SetContext(),
 		feature.Feature(app),
 
 		builder.Command(&ps.Ps{},
@@ -183,7 +162,11 @@ func main() {
 			"Edit a service or stack",
 			appName+" edit ID_OR_NAME",
 			""),
-		builder.Command(&up.Up{},
+		builder.Command(&render.Render{},
+			"Render rio file to k8s manifests",
+			appName+" render FILENAME",
+			""),
+		builder.Command(&apply.Apply{},
 			"Bring up a stack",
 			appName+" up [OPTIONS] [[STACK_NAME] FILE|-]",
 			""),
@@ -207,15 +190,14 @@ func main() {
 			appName+" logs [OPTIONS] [CONTAINER_OR_SERVICE...]",
 			""),
 
-		builder.Command(&server.Server{},
-			"Run management server",
-			appName+" server [OPTIONS]",
+		builder.Command(&install.Install{},
+			"Install rio management plane",
+			appName+" install [OPTIONS]",
 			""),
-		builder.Command(&agent.Agent{},
-			"Run node agent",
-			appName+" agent [OPTIONS]",
+		builder.Command(&revision.Revision{},
+			"List service revisions",
+			appName+" revision [OPTIONS] [APP...]",
 			""),
-
 		builder.Command(&stage.Stage{},
 			"Stage a new revision of a service",
 			appName+" stage [OPTIONS] SERVICE_ID_NAME",
@@ -229,21 +211,6 @@ func main() {
 			appName+" weight [OPTIONS] [SERVICE_REVISION=PERCENTAGE...]",
 			""),
 		route.Route(app),
-
-		builder.Command(&events.Events{},
-			"Stream change events",
-			appName+" events",
-			""),
-
-		waiter.WaitCommand(),
-
-		builder.Command(&login.Login{},
-			"Login into Rio",
-			appName+" login",
-			""),
-
-		kubectl.NewKubectlCommand(),
-		ctr.NewCtrCommand(),
 	}
 	app.Before = func(ctx *cli.Context) error {
 		if err := cfg.Validate(); err != nil {
@@ -257,7 +224,7 @@ func main() {
 		return nil
 	}
 	app.ExitErrHandler = func(context *cli.Context, err error) {
-		if err == clientcfg.ErrNoConfig {
+		if err == clicontext.ErrNoConfig {
 			printConfigUsage()
 		} else {
 			cli.HandleExitCoder(err)

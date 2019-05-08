@@ -3,10 +3,10 @@ package mapper
 import (
 	"time"
 
-	"github.com/rancher/norman/types"
-	"github.com/rancher/norman/types/convert"
-	"github.com/rancher/norman/types/mapper"
-	"github.com/rancher/rio/cli/cmd/create"
+	types "github.com/rancher/mapper"
+	"github.com/rancher/mapper/convert"
+	"github.com/rancher/mapper/mappers"
+	"github.com/rancher/rio/pkg/pretty/objectmappers"
 )
 
 type Duration struct {
@@ -35,7 +35,7 @@ func (d Duration) ToInternal(data map[string]interface{}) error {
 	}
 
 	if str, ok := v.(string); ok {
-		sec, err := create.ParseDurationUnit(str, d.Field, d.Unit)
+		sec, err := objectmappers.ParseDurationUnit(str, d.Field, d.Unit)
 		if err != nil {
 			return err
 		}
@@ -46,5 +46,5 @@ func (d Duration) ToInternal(data map[string]interface{}) error {
 }
 
 func (d Duration) ModifySchema(schema *types.Schema, schemas *types.Schemas) error {
-	return mapper.ValidateField(d.Field, schema)
+	return mappers.ValidateField(d.Field, schema)
 }
