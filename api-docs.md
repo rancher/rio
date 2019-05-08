@@ -3214,6 +3214,7 @@ string
 </em>
 </td>
 <td>
+The variable name to reference using ${...} syntax
 </td>
 </tr>
 <tr>
@@ -3224,6 +3225,7 @@ string
 </em>
 </td>
 <td>
+A friend name for the question
 </td>
 </tr>
 <tr>
@@ -3234,6 +3236,7 @@ string
 </em>
 </td>
 <td>
+A longer description of the question
 </td>
 </tr>
 <tr>
@@ -3244,6 +3247,7 @@ string
 </em>
 </td>
 <td>
+The field type: string, int, bool, enum. default is string
 </td>
 </tr>
 <tr>
@@ -3254,6 +3258,7 @@ bool
 </em>
 </td>
 <td>
+The answer can not be blank
 </td>
 </tr>
 <tr>
@@ -3264,6 +3269,7 @@ string
 </em>
 </td>
 <td>
+Default value of the answer if not specified by the user
 </td>
 </tr>
 <tr>
@@ -3274,6 +3280,7 @@ string
 </em>
 </td>
 <td>
+Group the question with questions in the same group (Most used by UI)
 </td>
 </tr>
 <tr>
@@ -3284,6 +3291,7 @@ int
 </em>
 </td>
 <td>
+Minimum length of the answer
 </td>
 </tr>
 <tr>
@@ -3294,6 +3302,7 @@ int
 </em>
 </td>
 <td>
+Maximum length of the answer
 </td>
 </tr>
 <tr>
@@ -3304,6 +3313,7 @@ int
 </em>
 </td>
 <td>
+Minimum value of an int answer
 </td>
 </tr>
 <tr>
@@ -3314,6 +3324,7 @@ int
 </em>
 </td>
 <td>
+Maximum value of an int answer
 </td>
 </tr>
 <tr>
@@ -3324,6 +3335,7 @@ int
 </em>
 </td>
 <td>
+An array of valid answers for type enum questions
 </td>
 </tr>
 <tr>
@@ -3334,6 +3346,7 @@ string
 </em>
 </td>
 <td>
+Answer must be composed of only these characters
 </td>
 </tr>
 <tr>
@@ -3344,6 +3357,7 @@ string
 </em>
 </td>
 <td>
+Answer must not have any of these characters
 </td>
 </tr>
 <tr>
@@ -3356,6 +3370,7 @@ string
 </em>
 </td>
 <td>
+A list of questions that are considered child questions
 </td>
 </tr>
 <tr>
@@ -3366,6 +3381,7 @@ string
 </em>
 </td>
 <td>
+Ask question only if this evaluates to true, more info on syntax below
 </td>
 </tr>
 <tr>
@@ -3376,6 +3392,7 @@ string
 </em>
 </td>
 <td>
+Ask subquestions if this evaluates to true
 </td>
 </tr>
 </tbody>
@@ -5665,5 +5682,5 @@ string
 <hr/>
 <p><em>
 Generated with <code>gen-crd-api-reference-docs</code>
-on git commit <code>66e3cca7</code>.
+on git commit <code>b41e9f57</code>.
 </em></p>

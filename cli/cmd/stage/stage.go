@@ -1,19 +1,26 @@
 package stage
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
+
+	"github.com/rancher/rio/cli/cmd/edit"
+
+	"github.com/rancher/rio/cli/pkg/types"
 
 	"github.com/aokoli/goutils"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/stack"
+	"github.com/rancher/rio/cli/pkg/table"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/kv"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Stage struct {
-	Image string `desc:"Runtime image (Docker image/OCI image)"`
+	Image  string `desc:"Runtime image (Docker image/OCI image)"`
+	E_Edit bool   `desc:"Edit the config to change the spec in new revision"`
 }
 
 func (r *Stage) Run(ctx *clicontext.CLIContext) error {
@@ -42,26 +49,60 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 		return app.Spec.Revisions[i].Weight > app.Spec.Revisions[j].Weight
 	})
 	if len(app.Spec.Revisions) > 0 {
-		rev := app.Spec.Revisions[0]
-		svc, err := ctx.Rio.Services(app.Namespace).Get(rev.ServiceName, metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
-		spec := svc.Spec.DeepCopy()
-		spec.Version = version
-		spec.App = app.Name
-		spec.Weight = 0
-		stagedService := riov1.NewService(app.Namespace, app.Name+"-"+version, riov1.Service{})
+		if r.E_Edit {
+			rev := app.Spec.Revisions[0]
+			r, err := ctx.ByID(app.Namespace, rev.ServiceName, types.ServiceType)
+			if err != nil {
+				return err
+			}
 
-		if ctx.CLI.String("image") != "" {
-			spec.Image = ctx.CLI.String("image")
-		}
+			str, err := table.FormatJSON(r.Object)
+			if err != nil {
+				return err
+			}
 
-		stagedService.Spec = *spec
-		if err := ctx.Create(stagedService); err != nil {
-			return err
+			update, err := edit.EditLoop(nil, []byte(str), func(content []byte) error {
+				var obj *riov1.Service
+				if err := json.Unmarshal(content, &obj); err != nil {
+					return err
+				}
+				svc := riov1.NewService(namespace, name, riov1.Service{
+					Spec: obj.Spec,
+				})
+				svc.Name = app.Name + "-" + version
+				svc.Spec.Version = version
+				svc.Spec.App = app.Name
+				svc.Spec.Weight = 0
+				return ctx.Create(svc)
+			})
+			if err != nil {
+				return err
+			}
+			if update {
+				fmt.Printf("%s/%s:%s\n", r.Namespace, app.Name, version)
+			}
+		} else {
+			rev := app.Spec.Revisions[0]
+			svc, err := ctx.Rio.Services(app.Namespace).Get(rev.ServiceName, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			spec := svc.Spec.DeepCopy()
+			spec.Version = version
+			spec.App = app.Name
+			spec.Weight = 0
+			stagedService := riov1.NewService(app.Namespace, app.Name+"-"+version, riov1.Service{})
+
+			if ctx.CLI.String("image") != "" {
+				spec.Image = ctx.CLI.String("image")
+			}
+
+			stagedService.Spec = *spec
+			if err := ctx.Create(stagedService); err != nil {
+				return err
+			}
+			fmt.Printf("%s/%s:%s\n", stagedService.Namespace, app.Name, version)
 		}
-		fmt.Printf("%s/%s:%s\n", stagedService.Namespace, app.Name, version)
 	}
 
 	return nil

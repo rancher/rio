@@ -159,7 +159,7 @@ func virtualServiceFromService(namespace string, clusterDomain *projectv1.Cluste
 
 	// virtual service for each revision
 	app, version := services.AppAndVersion(service)
-	revVs := VirtualServiceFromSpec(false, namespace, service.Name+"-"+version, service.Namespace, clusterDomain, service, Dest{
+	revVs := VirtualServiceFromSpec(false, namespace, app+"-"+version, service.Namespace, clusterDomain, service, Dest{
 		Host:   app,
 		Subset: version,
 		Weight: 100,

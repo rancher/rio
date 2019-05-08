@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/rancher/rio/cli/cmd/render"
+
 	"github.com/rancher/rio/cli/cmd/apply"
 	"github.com/rancher/rio/cli/cmd/attach"
 	"github.com/rancher/rio/cli/cmd/config"
@@ -159,6 +161,10 @@ func main() {
 		builder.Command(&edit.Edit{},
 			"Edit a service or stack",
 			appName+" edit ID_OR_NAME",
+			""),
+		builder.Command(&render.Render{},
+			"Render rio file to k8s manifests",
+			appName+" render FILENAME",
 			""),
 		builder.Command(&apply.Apply{},
 			"Bring up a stack",

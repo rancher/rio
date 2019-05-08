@@ -1,6 +1,8 @@
 package rm
 
 import (
+	"strings"
+
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
@@ -21,6 +23,16 @@ func (r *Rm) Run(ctx *clicontext.CLIContext) error {
 
 func Remove(ctx *clicontext.CLIContext, types ...string) error {
 	for _, arg := range ctx.CLI.Args() {
+		if strings.Contains(arg, ":") {
+			types = []string{clitypes.ServiceType}
+		} else {
+			for i, t := range types {
+				if t == clitypes.ServiceType {
+					types = append(types[0:i], types[i+1:]...)
+					break
+				}
+			}
+		}
 		resource, err := lookup.Lookup(ctx, arg, types...)
 		if err != nil {
 			return err

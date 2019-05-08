@@ -1,6 +1,8 @@
 package inspect
 
 import (
+	"strings"
+
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/table"
@@ -43,6 +45,16 @@ func (i *Inspect) Run(ctx *clicontext.CLIContext) error {
 	}
 
 	for _, arg := range ctx.CLI.Args() {
+		if strings.Contains(arg, ":") {
+			types = []string{clitypes.ServiceType}
+		} else {
+			for i, t := range types {
+				if t == clitypes.ServiceType {
+					types = append(types[0:i], types[i+1:]...)
+					break
+				}
+			}
+		}
 		r, err := lookup.Lookup(ctx, arg, types...)
 		if err != nil {
 			return err

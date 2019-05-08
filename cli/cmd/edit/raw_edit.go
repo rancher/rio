@@ -42,7 +42,7 @@ func (edit *Edit) rawEdit(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	updated, err := editLoop(nil, []byte(str), func(content []byte) error {
+	updated, err := EditLoop(nil, []byte(str), func(content []byte) error {
 		return ctx.UpdateResource(r, func(obj runtime.Object) error {
 			if err := json.Unmarshal(content, &obj); err != nil {
 				return err

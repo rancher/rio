@@ -22,7 +22,7 @@ services:
     - get,watch,list pods
     - get,list,watch,update endpoints
     - get,watch,list services
-    image: daishan1992/rio-autoscaler:dev
+    image: strongmonkey1992/rio-autoscaler:dev
     imagePullPolicy: always
     ports:
     - 80/http,internal=true

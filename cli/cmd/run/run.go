@@ -33,11 +33,14 @@ func (r *Run) Run(ctx *clicontext.CLIContext) error {
 			return service
 		}
 
+		// disable autoscaling
 		scale, _ := strconv.Atoi(r.Scale)
 		if scale == 0 {
 			scale = 1
 		}
 		service.Spec.Scale = scale
+		service.Spec.AutoscaleConfig.MinScale = &scale
+		service.Spec.AutoscaleConfig.MaxScale = &scale
 		return service
 	})
 	if err != nil {

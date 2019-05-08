@@ -3,6 +3,8 @@ package systemstack
 import (
 	"bytes"
 
+	"k8s.io/apimachinery/pkg/runtime"
+
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/riofile"
 	"github.com/rancher/rio/pkg/template"
@@ -72,6 +74,19 @@ func (s *SystemStack) Deploy(answers map[string]string) error {
 	os := objectset.NewObjectSet()
 	os.Add(rf.Objects()...)
 	return s.apply.Apply(os)
+}
+
+func (s *SystemStack) Objects(answers map[string]string) ([]runtime.Object, error) {
+	content, err := s.content()
+	if err != nil {
+		return nil, err
+	}
+
+	rf, err := riofile.Parse(bytes.NewBuffer(content), template.AnswersFromMap(answers))
+	if err != nil {
+		return nil, err
+	}
+	return rf.Objects(), nil
 }
 
 func (s *SystemStack) Remove() error {

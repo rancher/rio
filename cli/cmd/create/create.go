@@ -112,6 +112,11 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 	spec.Nameservers = c.Dns
 	spec.Searches = c.DnsSearch
 
+	min, max := 1, 10
+	spec.AutoscaleConfig.MinScale = &min
+	spec.AutoscaleConfig.MaxScale = &max
+	spec.AutoscaleConfig.Concurrency = &c.Concurrency
+
 	if c.ReadOnly {
 		spec.ReadOnlyRootFilesystem = &t
 	}

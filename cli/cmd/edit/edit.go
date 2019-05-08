@@ -46,15 +46,15 @@ func (edit *Edit) Run(ctx *clicontext.CLIContext) error {
 		return edit.rawEdit(ctx)
 	}
 
-	return edit.Edit(ctx)
+	return edit.Edit(ctx, ctx.CLI.Args()[0])
 }
 
-func (edit *Edit) Edit(ctx *clicontext.CLIContext) error {
+func (edit *Edit) Edit(ctx *clicontext.CLIContext, arg string) error {
 	if len(ctx.CLI.Args()) != 1 {
 		return fmt.Errorf("exactly one ID (not name) arguement is required for raw edit")
 	}
 
-	r, err := lookup.Lookup(ctx, ctx.CLI.Args()[0], clitypes.ServiceType)
+	r, err := lookup.Lookup(ctx, arg, clitypes.ServiceType)
 	if err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func (edit *Edit) Edit(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	updated, err := editLoop(nil, content, func(content []byte) error {
+	updated, err := EditLoop(nil, content, func(content []byte) error {
 		stack := systemstack.NewStack(ctx.Apply, r.Namespace, "edit-"+r.Name, true)
 		stack.WithContent(content)
 		return stack.Deploy(nil)
@@ -99,7 +99,7 @@ func (edit *Edit) Edit(ctx *clicontext.CLIContext) error {
 
 type updateFunc func(content []byte) error
 
-func editLoop(prefix, input []byte, update updateFunc) (bool, error) {
+func EditLoop(prefix, input []byte, update updateFunc) (bool, error) {
 	for {
 		buf := &bytes.Buffer{}
 		buf.Write(prefix)

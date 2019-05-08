@@ -34,30 +34,19 @@ need to be an expert in the details.
 
 ## Quick Start
 
-### Prerequisites
+1. Have a Kubernetes cluster running. Rio can be running in any kubernetes cluster that supports ingress. (https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/)
+   For example, if you want to use [k3s](https://k3s.io/), run `curl -sfL https://get.k3s.io | sh -`.
+2. Download the latest Rio CLI release from the [release page](https://github.com/rancher/rio/releases), Linux, Mac and Windows binaries are provided.
+3. Set up KUBECONFIG variable. `export KUBECONFIG=/path/to/kubeconfig`.
+4. Run `rio install`. 
 
-1. A supported Virtual Machine provider
-    1. [VirtualBox](https://www.virtualbox.org/wiki/Downloads) is recommended and default
-    1. [VMware Fusion](https://www.vmware.com/products/fusion.html) for Mac users performs better (in theory)
-1. [Vagrant 1.6+](https://www.vagrantup.com/downloads.html)
-
-Checkout a copy of Rio:
+You should be able to see logs like this
 ```
-$ git clone https://github.com/rancher/rio.git
-$ cd rio
+Deploying Rio control plane....
+Rio control plane is deployed. Run `kubectl -n rio-system describe deploy rio-controller` to get more detail.
+Welcome to Rio!
 ```
-
-Configure [vagrant.yaml](./vagrant.yaml) for your desired VM provider, if not VirtualBox. You may also change the number of nodes and in your Rio cluster and the resources allocated to each node.
-
-Run `vagrant up` from the project root directory. You may be asked to select a bridged network interface; select the interface being used to connect to the internet. Depending on your host OS and directory permissions, you may be asked to authenticate during `rio` client installation on the host.
-
-Run `rio -v` to ensure rio is installed on your host machine. Run `rio ps` to ensure the client is authenticated with the Rio cluster.
-```
-$ rio -v
-rio version v0.0.3
-$ rio ps
-NAME      IMAGE     CREATED   SCALE     STATE     ENDPOINT   DETAIL
-```
+Waiting for all the management pods to be up and running. `kubectl get po -n rio-system`
 
 Done! Now try [an example](./README.md#rio-stage-options-service_id_name).
 
@@ -65,59 +54,21 @@ Done! Now try [an example](./README.md#rio-stage-options-service_id_name).
 
 Download: [Linux, Mac, Windows](https://github.com/rancher/rio/releases)
 
-Rio will run in two different modes:
-
-**Rio Standalone**: In this mode Rio comes with all the container tech you need built in. All you need are modern Linux
- servers.  Rio does not need Docker, Kubernetes or anything else installed on the host.  This mode is good if you want
- to run containers but don't want to be a Kubernetes expert.  Rio will ensure that you have the most secure setup and
- keep all the components up to date.  This is by far the easiest way to run clusters.
-
-**Run on Kubernetes**: In this mode Rio will use an existing Kubernetes cluster.  The advantages of this approach is
-that you get more flexibility in terms of networking, storage, and other components at the cost of greatly increased
-complexity.  For the time being this mode is also good for your laptop as Minikube and Docker For Mac/Windows both
-provide a simple way to run Kubernetes on your laptop.  In the future Rio will have a mode that is simpler and does not
-require Docker For Mac/Windows or Minikube.
-
-### Standalone
-
-Standalone requires Linux 4.x+ that support overlay, squashfs, and containers in general.
-This will be most current distributions.
-
-Rio forms a cluster.  To create the cluster you need one or more servers and one or more agents.  Right now HA is in the works still
-so only one server is supported.  To start a server run
-
-    sudo rio server
-
-That will start the server and register the current host as a node in the cluster.  At this point you have a full single node
-cluster.  If you don't wish to use the current server as a node then run
-
-    rio server --disable-agent
-
-This mode does have the benefit of not requiring root privileges.  On startup the server will print something similar as below
-
-```
-
-INFO[0005] To use CLI: rio login -s https://10.20.0.3:7443 -t R108527fc31eb165d69e4ebb048168769d97734707dc22bd197b5ae2fcab27d9e64::admin:fb5ef140c22562de2789168ac6973bda 
-INFO[0005] To join node to cluster: rio agent -s https://10.20.0.3:7443 -t R108527fc31eb165d69e4ebb048168769d97734707dc22bd197b5ae2fcab27d9e64::node:9cb35d8ae4a4621abdacfa6d8d1ea1b6 
-
-```
-
-Use those two command to either access the server from the CLI or add another node to the cluster.  If you are root
-on the host that is running the Rio server, `rio login` is not required.
-
-The state of the server will be in `/var/lib/rancher/rio/server` or `${HOME}/.rancher/rio/server` if running as non-root.
-For more robust HA setups that state can be moved to MySQL or etcd (this is still in the works).  The state of the agent
-will be in `/var/lib/rancher/rio/agent`.
-
-### On Kubernetes
-
-If you wish to run on an existing Kubernetes cluster all that is requires is that you have a working `kubectl` setup.  Then
-just run
-
-    rio login
+Run `rio install`.
 
 Follow the onscreen prompts and Rio will try to install itself into the current `kubectl` cluster.  Please note `cluster-admin`
 privileges are required for Rio.  This will probably changes, but for now we need the world.
+
+All the prerequisite that Rio needs is just a KUBECONFIG file. Rio itself Contains the CLI and management plane controller 
+which install CRD and start controller in the current cluster. By default if you install rio in your current cluster you will
+automatically get a DNS record registered for your ingress IPs. If you run `rio info` you should be able to see the domain.
+
+```
+» rio info                                                                                   
+Rio Version: dev
+Cluster Domain: xxxxx.on-rio.io
+System Namespace: rio-system
+```
 
 Using Rio
 =========
@@ -131,19 +82,11 @@ similar function.  When you run containers in Rio you are really creating a Scal
 create a service.  You can later scale that service with `rio scale`.  Services are assigned a DNS name so that group
 of containers can be accessed from other services.
 
-### Stack
+### Apps
 
-A stack is a group of services and their related resources, such as configuration files, volumes and routes.  A stack
-ends up typically representing one application.  All the names of services are unique within a stack, but not globally
-unique.  This means a stack creates a scope for service discovery.  Under the hood a stack will use a Kubernetes
-namespace.
-
-### Project
-
-A project is a collection of stacks, and other resources such as secrets. The `rio` command line runs commands within
-a single project.  Using `rio --project PROJECT` you can point to a different project.  Stack names are unique
-within a project only.  As the permissions model of Rio matures the project will be the primary unit that is used
-for collaboration.  Users are invited to and given access to projects.
+App contains multiple service revisions. Each service is rio can uniquely be identified as a revision, group by app and version.
+App aggregates all the revisions by app name, provides an entry to access all the revisions. What percentage of traffic goes to which 
+revision depends on how much weight is set on each revision.
 
 ### Service Mesh
 
@@ -152,9 +95,18 @@ abilities for services to talk to each other, inbound traffic and outbound traff
 validated, and routed dynamically according to the configuration.  Rio specifically does not require the user to
 understand much about the underlying service mesh.  Just know that all communication is going through the service mesh.
 
+### Router
+
+Router is an abstract layer sitting on top of services, it provides a configuration to different services. It can define various 
+routing rules to match different backends. Router also provides an entry to access and a Dns name in the cluster.
+
+### ExternalService
+
+ExternalService provides a way to create dns record for services that are outside of mesh. It can be IP addresses and FQDN.
+
 ## Basics
 
-For each of these command you can run `rio cmd --help` to get all the available options.
+For each of these command you can run `rio --help` to get all the available options.
 
 ### rio run [OPTIONS] IMAGE [COMMAND] [ARG...]
 
@@ -189,175 +141,272 @@ fuzzy matching.
 Return the raw json API response of the object.  You can use `--format` to change
 to yaml or format the output using go formatting.
 
-## Stack Files
+## Rio Files
 
-Stacks in Rio can be imported, exported and dynamically edited.  The syntax of the stack files
+Services in Rio can be imported, exported and dynamically edited. The syntax of the rio files
 is an extension of the docker-compose format.  We wish to be backwards compatible with
 docker-compose where feasible.  This means Rio should be able to run a docker-compose file, but
-a Rio stack file will not run in docker-compose as we are only backwards compatible.  Below is an
-example of more complex stack file that is used to deploy istio
+a Rio stack file will not run in docker-compose as we are only backwards compatible.  
+
+Rio files has three parts: Services, Config and raw Kubernetes manifest. Below is an example of more complex stack 
+file that is used to deploy build compenents.
 
 ```yaml
 configs:
-  mesh:
+  logging:
     content: |-
-      disablePolicyChecks: true
-      ingressControllerMode: "OFF"
-      authPolicy: NONE
-      rdsRefreshDelay: 10s
-      outboundTrafficPolicy:
-        mode: ALLOW_ANY
-      defaultConfig:
-        discoveryRefreshDelay: 10s
-        connectTimeout: 30s
-        configPath: "/etc/istio/proxy"
-        binaryPath: "/usr/local/bin/envoy"
-        serviceCluster: istio-proxy
-        drainDuration: 45s
-        parentShutdownDuration: 1m0s
-        interceptionMode: REDIRECT
-        proxyAdminPort: 15000
-        controlPlaneAuthPolicy: NONE
-        discoveryAddress: istio-pilot.${NAMESPACE}:15007
+      loglevel.controller: info
+        loglevel.creds-init: info
+        loglevel.git-init: info
+        loglevel.webhook: info
+        zap-logger-config: |
+          {
+            "level": "info",
+            "development": false,
+            "sampling": {
+              "initial": 100,
+              "thereafter": 100
+            },
+            "outputPaths": ["stdout"],
+            "errorOutputPaths": ["stderr"],
+            "encoding": "json",
+            "encoderConfig": {
+              "timeKey": "",
+              "levelKey": "level",
+              "nameKey": "logger",
+              "callerKey": "caller",
+              "messageKey": "msg",
+              "stacktraceKey": "stacktrace",
+              "lineEnding": "",
+              "levelEncoder": "",
+              "timeEncoder": "",
+              "durationEncoder": "",
+              "callerEncoder": ""
+            }
+          }
 
 services:
-  istio-pilot:
-    command: discovery
-    configs:
-    - mesh:/etc/istio/config/mesh
-    environment:
-    - POD_NAME=$(self/name)
-    - POD_NAMESPACE=$(self/namespace)
-    - PILOT_THROTTLE=500
-    - PILOT_CACHE_SQUASH=5
-    global_permissions:
-    - '* config.istio.io/*'
-    - '* networking.istio.io/*'
-    - '* authentication.istio.io/*'
-    - '* apiextensions.k8s.io/customresourcedefinitions'
-    - '* extensions/thirdpartyresources'
-    - '* extensions/thirdpartyresources.extensions'
-    - '* extensions/ingresses'
-    - '* extensions/ingresses/status'
-    - create,get,list,watch,update configmaps
-    - endpoints
-    - pods
-    - services
-    - namespaces
-    - nodes
-    - secrets
-    image: istio/pilot:0.8.0
-    secrets: identity:/etc/certs
-    sidekicks:
-      istio-proxy:
-        expose:
-        - 15007/http
-        - 15010/grpc
-        image: istio/proxyv2:0.8.0
-        command:
-        - proxy
-        - --serviceCluster
-        - istio-pilot
-        - --templateFile
-        - /etc/istio/proxy/envoy_pilot.yaml.tmpl
-        - --controlPlaneAuthPolicy
-        - NONE
-        environment:
-        - POD_NAME=$(self/name)
-        - POD_NAMESPACE=$(self/namespace)
-        - INSTANCE_IP=$(self/ip)
-        secrets: identity:/etc/certs
-
-  istio-citadel:
-    image: "istio/citadel:0.8.0"
-    command:
-    - --append-dns-names=true
-    - --grpc-port=8060
-    - --grpc-hostname=citadel
-    - --self-signed-ca=true
-    - --citadel-storage-namespace=istio-system
-    global_permissions:
-    - write secrets
-    - serviceaccounts
-    - services
-    permissions:
-    - get,delete deployments
-    - get,delete serviceaccounts
-    - get,delete services
-    - get,delete deployments
-    - get,list,update,delete extensions/deployments
-    - get,list,update,delete extensions/replicasets
-    secrets: identity:/etc/certs
-
-  istio-gateway:
+  buildkit:
+    maxScale: 10
+    minScale: 1
+    concurrency: 5
+    ports:
+    - 9001/tcp,buildkit,internal=true
+    systemSpec:
+      podSpec:
+        containers:
+        - image: moby/buildkit:v0.3.3
+          args:
+          - --addr
+          - tcp://0.0.0.0:9001
+          name: buildkitd
+          ports:
+          - containerPort: 9001
+          securityContext:
+            privileged: true
+  registry:
+    image: registry:2
     labels:
-      "gateway": "external"
-    image: "istio/proxyv2:0.8.0"
-    net: host
-    dns: cluster
-    command:
-    - proxy
-    - router
-    - -v
-    - "2"
-    - --discoveryRefreshDelay
-    - '1s' #discoveryRefreshDelay
-    - --drainDuration
-    - '45s' #drainDuration
-    - --parentShutdownDuration
-    - '1m0s' #parentShutdownDuration
-    - --connectTimeout
-    - '10s' #connectTimeout
-    - --serviceCluster
-    - istio-proxy
-    - --zipkinAddress
-    - ""
-    - --statsdUdpAddress
-    - ""
-    - --proxyAdminPort
-    - "15000"
-    - --controlPlaneAuthPolicy
-    - NONE
-    - --discoveryAddress
-    - istio-pilot:15007
+      request-subdomain: 'true'
+    secrets:
+    - rio-wildcard:/etc/registry
     env:
-    - POD_NAME=$(self/name)
-    - POD_NAMESPACE=$(self/namespace)
-    - INSTANCE_IP=$(self/ip)
-    - ISTIO_META_POD_NAME=$(self/name)
-    secrets: identity:/etc/certs
+    - REGISTRY_HTTP_ADDR=0.0.0.0:443
+    - REGISTRY_HTTP_TLS_CERTIFICATE=/etc/registry/tls.crt
+    - REGISTRY_HTTP_TLS_KEY=/etc/registry/tls.key
+    ports:
+    - 443:443/tcp,registry
+    volumes:
+    - storage-registry:/var/lib/registry
+  webhook:
     global_permissions:
-    - "get,watch,list,update extensions/thirdpartyresources"
-    - "get,watch,list,update */virtualservices"
-    - "get,watch,list,update */destinationrules"
-    - "get,watch,list,update */gateways"
+    - "* webhookinator.rio.cattle.io/gitwebhookreceivers"
+    - "* webhookinator.rio.cattle.io/gitwebhookexecutions"
+    - '* configmaps'
+    - '* events'
+    - secrets
+    image: daishan1992/webhookinator:dev
+    args:
+    - webhookinator
+    - --listen-address
+    - :8090
+    imagePullPolicy: always
+    ports:
+    - 8090/tcp,http-webhookinator
+  build-controller:
+    global_permissions:
+    - '* pods'
+    - '* namespaces'
+    - '* secrets'
+    - '* events'
+    - '* serviceaccounts'
+    - '* configmaps'
+    - '* extentions/deployments'
+    - 'create,get,list,watch,patch,update,delete build.knative.dev/builds'
+    - 'create,get,list,watch,patch,update,delete build.knative.dev/builds/status'
+    - 'create,get,list,watch,patch,update,delete build.knative.dev/buildtemplates'
+    - 'create,get,list,watch,patch,update,delete build.knative.dev/clusterbuildtemplates'
+    - '* caching.internal.knative.dev/images'
+    - '* apiextensions.k8s.io/customresourcedefinitions'
+    image: gcr.io/knative-releases/github.com/knative/build/cmd/controller@sha256:77b883fec7820bd3219c011796f552f15572a037895fbe7a7c78c7328fd96187
+    configs:
+    - logging/content:/etc/config-logging
+    env:
+    - SYSTEM_NAMESPACE=${NAMESPACE}
+    args:
+    - -logtostderr
+    - -stderrthreshold
+    - INFO
+    - -creds-image
+    - gcr.io/knative-releases/github.com/knative/build/cmd/creds-init@sha256:ebf58f848c65c50a7158a155db7e0384c3430221564c4bbaf83e8fbde8f756fe
+    - -git-image
+    - gcr.io/knative-releases/github.com/knative/build/cmd/git-init@sha256:09f22919256ba4f7451e4e595227fb852b0a55e5e1e4694cb7df5ba0ad742b23
+    - -nop-image
+    - gcr.io/knative-releases/github.com/knative/build/cmd/nop@sha256:a318ee728d516ff732e2861c02ddf86197e52c6288049695781acb7710c841d4
+
+
+kubernetes:
+  manifest: |-
+    apiVersion: apiextensions.k8s.io/v1beta1
+    kind: CustomResourceDefinition
+    metadata:
+      labels:
+        knative.dev/crd-install: "true"
+      name: builds.build.knative.dev
+    spec:
+      additionalPrinterColumns:
+      - JSONPath: .status.conditions[?(@.type=="Succeeded")].status
+        name: Succeeded
+        type: string
+      - JSONPath: .status.conditions[?(@.type=="Succeeded")].reason
+        name: Reason
+        type: string
+      - JSONPath: .status.startTime
+        name: StartTime
+        type: date
+      - JSONPath: .status.completionTime
+        name: CompletionTime
+        type: date
+      group: build.knative.dev
+      names:
+        categories:
+        - all
+        - knative
+        kind: Build
+        plural: builds
+      scope: Namespaced
+      subresources:
+        status: {}
+      version: v1alpha1
+    ---
+    apiVersion: caching.internal.knative.dev/v1alpha1
+    kind: Image
+    metadata:
+      name: creds-init
+      namespace: ${NAMESPACE}
+    spec:
+      image: gcr.io/knative-releases/github.com/knative/build/cmd/creds-init@sha256:ebf58f848c65c50a7158a155db7e0384c3430221564c4bbaf83e8fbde8f756fe
+    ---
+    apiVersion: caching.internal.knative.dev/v1alpha1
+    kind: Image
+    metadata:
+      name: git-init
+      namespace: ${NAMESPACE}
+    spec:
+      image: gcr.io/knative-releases/github.com/knative/build/cmd/git-init@sha256:09f22919256ba4f7451e4e595227fb852b0a55e5e1e4694cb7df5ba0ad742b23
+    ---
+    apiVersion: caching.internal.knative.dev/v1alpha1
+    kind: Image
+    metadata:
+      name: gcs-fetcher
+      namespace: ${NAMESPACE}
+    spec:
+      image: gcr.io/cloud-builders/gcs-fetcher
+    ---
+    apiVersion: caching.internal.knative.dev/v1alpha1
+    kind: Image
+    metadata:
+      name: nop
+      namespace: ${NAMESPACE}
+    spec:
+      image: gcr.io/knative-releases/github.com/knative/build/cmd/nop@sha256:a318ee728d516ff732e2861c02ddf86197e52c6288049695781acb7710c841d4
+    ---
+    apiVersion: build.knative.dev/v1alpha1
+    kind: ClusterBuildTemplate
+    metadata:
+      name: buildkit
+    spec:
+      parameters:
+      - name: IMAGE
+        description: Where to publish the resulting image
+      - name: DOCKERFILE
+        description: The name of the Dockerfile
+        default: "Dockerfile"
+      - name: PUSH
+        description: Whether push or not
+        default: "true"
+      - name: DIRECTORY
+        description: The directory containing the app
+        default: "/workspace"
+      - name: BUILDKIT_CLIENT_IMAGE
+        description: The name of the BuildKit client (buildctl) image
+        default: "moby/buildkit:v0.3.1-rootless@sha256:2407cc7f24e154a7b699979c7ced886805cac67920169dcebcca9166493ee2b6"
+      - name: BUILDKIT_DAEMON_ADDRESS
+        description: The address of the BuildKit daemon (buildkitd) service
+        default: "tcp://buildkitd:1234"
+      steps:
+      - name: build-and-push
+        image: $${BUILDKIT_CLIENT_IMAGE}
+        workingDir: $${DIRECTORY}
+        command: ["buildctl", "--addr=$${BUILDKIT_DAEMON_ADDRESS}", "build",
+                  "--progress=plain",
+                  "--frontend=dockerfile.v0",
+                  "--frontend-opt", "filename=$${DOCKERFILE}",
+                  "--local", "context=.", "--local", "dockerfile=.",
+                  "--exporter=image", "--exporter-opt", "name=$${IMAGE}", "--exporter-opt", "push=$${PUSH}"]
 
 ```
 
-### rio export STACK_ID_OR_NAME
+### rio export SERVICE_NAME
 
-Export a specific stack.  This will print the stack to standard out.  You can pipe the out
-of the export command to a file using the shell, for example `rio export mystack > stack.yml`
+Export a specific service.  This will print the service to standard out.  You can pipe the out
+of the export command to a file using the shell, for example `rio export myservice > rio-stack.yml`
 
-### rio up [OPTIONS] [[STACK_NAME] FILE|-]
+### rio apply -f FILE|-
 
-Import a stack from file or standard in.  The `rio up` can be ran in different forms
+Import a stack from file or standard in.
 
+1. Create a rio file with the following content.
+
+```yaml
+services:
+  demo:
+    image: ibuildthecloud/demo:v1
+    ports:
+    - 80/http
+```
+
+2. Run the following scripts 
 ```bash
 # Create stack foo from standard input
-cat stack.yml | rio up foo -
+cat service.yml | rio apply -f -
 
-# Create stack foo from file
-rio up foo stack.yml
-
-# Run up for all files in the current directory matching *-stack.yml.  The portion before
-# -stack.yml will be used as the stack name
-rio up
+# see if the service 
+rio ps
 ```
 
-### rio edit ID_OR_NAME
+Apply a remote url
+```bash
+$ rio apply -f https://raw.githubusercontent.com/StrongMonkey/demo/master/demo-stack.yaml
+INFO[0000] Deploying rio-file to namespace [default] from https://raw.githubusercontent.com/StrongMonkey/demo/master/demo-stack.yaml
+$ rio revision 
+NAME              IMAGE                    CREATED              STATE     SCALE     ENDPOINT                                   WEIGHT                               DETAIL
+default/demo:v0   ibuildthecloud/demo:v1   About a minute ago   active    1         https://demo-v0-default.8axlxl.on-rio.io   =============================> 100   
+```
 
-Edit a specific stack and run `rio up` with the new contents.
+### rio edit $NAME
+
+Edit a specific service and run `rio up` with the new contents. Only works for services right now
 
 ### Questions
 
@@ -371,9 +420,10 @@ services:
       VAR: ${BLAH}
     image: nginx
     
-questions:
-- variable: BLAH
-  description: "You should answer something good"
+template:
+  questions:
+  - variable: BLAH
+    description: "You should answer something good"
 ```
 
 The values of the questions can be references anywhere in the stack file using
@@ -518,6 +568,33 @@ Update a config of the given NAME from FILE or from standard input if `-` is pas
 
 The standard `rio edit` command can edit configs also
 
+## Cluster Domain and TLS
+
+By default Rio will create a DNS record pointing to your ingress IPs. Rio also uses Letsencrypt to create
+a wildcard certificate for the cluster domain so that all the traffic to access your application can be encrypted.
+For example, When you deploy your workload, you can access your workload in HTTPS. The domain always follow the format
+of ${app}-${namespace}.${cluster-domain}. You can see your cluster domain by running `rio info`.
+
+
+```bash
+# See cluster info
+$ rio info
+Rio Version: dev
+Cluster Domain: 8axlxl.on-rio.io
+System Namespace: rio-system
+
+# Run your workload
+$ rio run -p 80/http --name svc --scale=3 ibuildthecloud/demo:v1
+
+# See the endpoint of your workload 
+$ rio ps
+NAME          ENDPOINT                               SCALE     WEIGHT
+default/svc   https://svc-default.8axlxl.on-rio.io   v0/3      v0/100%
+
+### Access your workload
+$ curl https://svc-default.8axlxl.on-rio.io
+Hello World
+```
 
 ## Service Mesh
 
@@ -536,62 +613,228 @@ scenario to do a canary deployment.
 ```bash
 
 # Create a new service
-$ rio run -p 80/http --name test/svc --scale=3 ibuildthecloud/demo:v1
+$ rio run -p 80/http --name svc --scale=3 ibuildthecloud/demo:v1
 
 # Ensure service is running and determine public URL
-$ rio ps
-NAME       IMAGE                    CREATED          SCALE     STATE     ENDPOINT                                  DETAIL
-test/svc   ibuildthecloud/demo:v1   17 seconds ago   3         active    http://svc.test.8gr18g.lb.rancher.cloud   
+$ rio revision default/svc
+AME              IMAGE                    CREATED          STATE     SCALE     ENDPOINT                                     WEIGHT                               DETAIL
+default/svc:v0   ibuildthecloud/demo:v1   16 minutes ago   active    3         https://svc-v0-default.8axlxl.on-rio.io      =============================> 100   
 
 # Stage new version, updating just the docker image and assigning it to "v3" version.
-$ rio stage --image=ibuildthecloud/demo:v3 test/svc:v3
+$ rio stage --image=ibuildthecloud/demo:v3 default/svc:v3 
+
+# To change the spec of new service
+$ rio stage --edit test/svc:v3
 
 # Notice a new URL was created for your staged service
-$ rio ps
-NAME          IMAGE                    CREATED        SCALE     STATE     ENDPOINT                                     DETAIL
-test/svc      ibuildthecloud/demo:v1   10 hours ago   3         active    http://svc.test.8gr18g.lb.rancher.cloud      
-test/svc:v3   ibuildthecloud/demo:v3   10 hours ago   3         active    http://svc-v3.test.8gr18g.lb.rancher.cloud   
+$ rio revision default/svc
+NAME             IMAGE                    CREATED          STATE     SCALE     ENDPOINT                                     WEIGHT                               DETAIL
+default/svc:v0   ibuildthecloud/demo:v1   16 minutes ago   active    3         https://svc-v0-default.8axlxl.on-rio.io      =============================> 100   
+default/svc:v3   ibuildthecloud/demo:v3   24 seconds ago   active    3         https://svc-v3-default.8axlxl.on-rio.io 
 
-# Access current service
-$ curl -s http://svc.test.8gr18g.lb.rancher.cloud
+# Access current revision
+$ curl -s https://svc-v0-default.8axlxl.on-rio.io
 Hello World
 
 # Access staged service under new URL
-$ curl -s http://svc-v3.test.8gr18g.lb.rancher.cloud
+$ curl -s https://svc-v3-default.8axlxl.on-rio.io
 Hello World v3
 
-# Export to see stack file format
-$ rio export test
-services:
-  svc:
-    image: ibuildthecloud/demo:v1
-    ports:
-    - 80/http
-    revisions:
-      v3:
-        image: ibuildthecloud/demo:v3
-        scale: 3
-    scale: 3
+# Show access url for all the revision
+$ rio ps
+NAME          ENDPOINT                               SCALE        WEIGHT
+default/svc   https://svc-default.8axlxl.on-rio.io   v0/3; v3/3   v0/100%; v3/0%
 
-# Send some production traffic to new version
-$ rio weight test/svc:v3=50%
-
-# See that 50% of traffic goes to new service
-$ curl -s http://svc.test.8gr18g.lb.rancher.cloud
+# Access the app(stands for all the revision). Note that right now there is no traffic to v3.
+$ curl -s https://svc-default.8axlxl.on-rio.io
 Hello World
-$ curl -s http://svc.test.8gr18g.lb.rancher.cloud
+
+# Promote v3 service. The traffic will be shifted to v3 gradually. By default we apply 5% shift every 5 seconds, but it can be configred
+# using flags `--rollout-increment` and `--rollout-interval`. To turn off rollout(traffic percentage will be changed to
+# the desired value immediately), run `--no-rollout`.
+$ rio promote default/svc:v3
+NAME             IMAGE                    CREATED          STATE     SCALE     ENDPOINT                                  WEIGHT                         DETAIL
+default/svc:v0   ibuildthecloud/demo:v1   37 minutes ago   active    3         https://svc-v0-default.8axlxl.on-rio.io   ========================> 85   
+default/svc:v3   ibuildthecloud/demo:v3   21 minutes ago   active    3         https://svc-v3-default.8axlxl.on-rio.io   ===> 15
+
+# Access the app. You should be able to see traffic routing to the new revision
+$ curl https://svc-default.8axlxl.on-rio.io
+Hello World
+$ curl https://svc-default.8axlxl.on-rio.io
 Hello World v3
 
-# Happy with the new version we promote the stage version to be the primary
-$ rio promote test/svc:v3
+# Wait for v3 to be 100% weight. Access the app, all traffic should be routed to new revision right now.
+$ rio revision default/svc
+NAME             IMAGE                    CREATED          STATE     SCALE     ENDPOINT                                  WEIGHT                               DETAIL
+default/svc:v0   ibuildthecloud/demo:v1   42 minutes ago   active    3         https://svc-v0-default.8axlxl.on-rio.io                                        
+default/svc:v3   ibuildthecloud/demo:v3   26 minutes ago   active    3         https://svc-v3-default.8axlxl.on-rio.io   =============================> 100  
+$ curl https://svc-default.8axlxl.on-rio.io
+Hello World v3
 
-# All new traffic is v3
-$ curl -s http://svc.test.8gr18g.lb.rancher.cloud
-Hello World v3
-$ curl -s http://svc.test.8gr18g.lb.rancher.cloud
-Hello World v3
+# Adjust weight
+$ rio weight default/svc:v0=5% default/svc:v3=95%
+NAME             IMAGE                    CREATED          STATE     SCALE     ENDPOINT                                  WEIGHT                            DETAIL
+default/svc:v0   ibuildthecloud/demo:v1   44 minutes ago   active    3         https://svc-v0-default.8axlxl.on-rio.io   > 5                               
+default/svc:v3   ibuildthecloud/demo:v3   27 minutes ago   active    3         https://svc-v3-default.8axlxl.on-rio.io   ===========================> 95   
 
 ```
+
+### rio stage [OPTIONS] SERVICE_ID_NAME
+
+```bash
+# Export to see v0 service
+$ rio export default/svc:v0
+kubernetes:
+  type: kubernetes
+services:
+  svc:
+    cpus: "0"
+    image: ibuildthecloud/demo:v1
+    imagePullPolicy: IfNotPresent
+    ports:
+    - "80"
+    rollout: true
+    rolloutIncrement: 5
+    rolloutInterval: 5
+    scale: 3
+    type: service
+    weight: 95
+type: riofile
+```
+
+## Autoscaling
+
+By default rio will enable autoscaling for workloads. Depends on Qps and Current active requests on your workload,
+Rio will scale the workload to the proper scale.
+
+```bash
+# Run a workload, set minimal scale and maximum scale
+$ rio run -p 8080/http --name autoscale --scale=1-20 strongmonkey1992/autoscale:v0 
+default/autoscale
+
+# Put some load to the workload. We use tool [hey](https://github.com/rakyll/hey) to put loads.
+$ hey -z 600s -c 60 https://autoscale-default.8axlxl.on-rio.io
+
+# Noted that service has been scaled to 6
+$ rio revision default/autoscale
+NAME                   IMAGE                           CREATED         STATE     SCALE     ENDPOINT                                        WEIGHT                               DETAIL
+default/autoscale:v0   strongmonkey1992/autoscale:v0   4 minutes ago   active    6         https://autoscale-v0-default.8axlxl.on-rio.io   =============================> 100
+
+# Run a workload that can be scaled to zero
+$ rio run -p 8080/http --name autoscale-zero --scale=0-20 strongmonkey1992/autoscale:v0
+
+# Wait for a couple of minutes. The workload is scaled to zero.
+NAME                        IMAGE                           CREATED         STATE     SCALE       ENDPOINT   WEIGHT                               DETAIL
+default/autoscale-zero:v0   strongmonkey1992/autoscale:v0   4 minutes ago   pending   (0/0/1)/0              =============================> 100  
+
+# Access the workload. Once there is an active request, workload can be re-scaled to active.
+$ rio ps 
+NAME                     ENDPOINT                                          SCALE           WEIGHT
+default/autoscale-zero   https://autoscale-zero-default.8axlxl.on-rio.io   v0/(0/0/0)/1    v0/100%
+$ curl -s https://autoscale-zero-default.8axlxl.on-rio.io
+Hi there, I am StrongMonkey:v13
+
+# Workload is re-scaled to 1
+$ rio revision default/autoscale-zero
+NAME                        IMAGE                           CREATED          STATE     SCALE     ENDPOINT                                             WEIGHT                               DETAIL
+default/autoscale-zero:v0   strongmonkey1992/autoscale:v0   18 minutes ago   active    1         https://autoscale-zero-v0-default.8axlxl.on-rio.io   =============================> 100  
+```
+
+## Source code to Deployment
+
+Rio supports configure a git-based source code repository to deploy the actual workload. It can be as easy
+as giving Rio a valid git repository repo. 
+
+```bash
+# Run a workload from a git repo. We assume the repo has a Dockerfile at root directory to build the image
+$ rio run -p 8080/http -n build https://github.com/StrongMonkey/demo.git
+default/build
+
+# Waiting for the image to be built. Note the image column is empty. Once the image is ready service will be active
+$ rio revision
+NAME               IMAGE     CREATED          STATE      SCALE     ENDPOINT                                    WEIGHT                               DETAIL
+default/build:v0             27 seconds ago   inactive   1         https://build-v0-default.8axlxl.on-rio.io   =============================> 100   
+
+# Image is ready. Noted that we deploy the default docker registry into the cluster. 
+# The image name has the format of ${registry-domain}/${namespace}/${name}:${commit} 
+$ rio revision
+NAME               IMAGE                                                                                         CREATED         STATE     SCALE     ENDPOINT                                    WEIGHT                               DETAIL
+default/build:v0   registry-rio-system.8axlxl.on-rio.io/default/build:34512dddba18781fb6909c303eb206a73d41d9ba   2 minutes ago   active    1         https://build-v0-default.8axlxl.on-rio.io   =============================> 100   
+
+# Show the endpoint of your workload
+$ rio ps 
+NAME            ENDPOINT                                 SCALE     WEIGHT
+default/build   https://build-default.8axlxl.on-rio.io   v0/1      v0/100%
+
+# Access the endpoint
+$ curl -s https://build-default.8axlxl.on-rio.io
+Hi there, I am StrongMonkey:v1
+```
+
+When you point your workload to a git repo, Rio will automatically watch any commit or tag pushed to
+a specific branch(default is master). By default Rio will pull and check the branch at a certain interval, but this
+can be configured to use a webhook.
+
+```bash
+# edit the code, change v1 to v3, push the code
+$ vim main.go | git add -u | git commit -m "change to v3" | git push $remote
+
+# A new revision has been automatically created. Noticed that once the new revision is created, the traffic will
+# automatically shifted from old revision to new revision.
+$ rio revision default/build
+NAME                  IMAGE                                                                                                       CREATED          STATE     SCALE     ENDPOINT                                       WEIGHT                   DETAIL
+default/build:v0      registry-rio-system.8axlxl.on-rio.io/default/build:34512dddba18781fb6909c303eb206a73d41d9ba                 20 minutes ago   active    1         https://build-v0-default.8axlxl.on-rio.io      ==================> 65   
+default/build:25a0a   registry-rio-system.8axlxl.on-rio.io/default/build-e46cfb4-08a3b:25a0acda54812619f8063c121f6ed5ed2bfb968f   50 seconds ago   active    1         https://build-25a0a-default.8axlxl.on-rio.io   =========> 35    
+
+# Access the endpoint
+$ curl https://build-default.8axlxl.on-rio.io
+Hi there, I am StrongMonkey:v1
+$ curl https://build-default.8axlxl.on-rio.io
+Hi there, I am StrongMonkey:v3
+
+# Wait for all the traffic are shifted to the new revision, 
+$ rio revision default/build
+NAME                  IMAGE                                                                                                       CREATED          STATE     SCALE     ENDPOINT                                       WEIGHT                               DETAIL
+default/build:v0      registry-rio-system.8axlxl.on-rio.io/default/build:34512dddba18781fb6909c303eb206a73d41d9ba                 24 minutes ago   active    1         https://build-v0-default.8axlxl.on-rio.io                                           
+default/build:25a0a   registry-rio-system.8axlxl.on-rio.io/default/build-e46cfb4-08a3b:25a0acda54812619f8063c121f6ed5ed2bfb968f   4 minutes ago    active    1         https://build-25a0a-default.8axlxl.on-rio.io   =============================> 100
+
+# Access the workload. Noted that all the traffic are routed to the new revision
+$ curl https://build-default.8axlxl.on-rio.io
+Hi there, I am StrongMonkey:v3
+```
+
+## Monitoring
+
+By default Rio will deploy [grafana](https://grafana.com/) and [kiali](https://www.kiali.io/) to give user abilities to watch all metrics corresponding to service mesh.
+
+```bash
+# Monitoring services are deployed into rio-system namespace
+$ rio --system ps 
+NAME                                ENDPOINT                                       SCALE     WEIGHT
+rio-system/autoscaler                                                              v0/1      v0/100%
+rio-system/build-controller                                                        v0/1      v0/100%
+rio-system/buildkit                                                                v0/1      v0/100%
+rio-system/cert-manager                                                            v0/1      v0/100%
+rio-system/grafana                  https://grafana-rio-system.8axlxl.on-rio.io    v0/1      v0/100%
+rio-system/istio-citadel                                                           v0/1      v0/100%
+rio-system/istio-gateway                                                           v0/1      v0/100%
+rio-system/istio-pilot                                                             v0/1      v0/100%
+rio-system/istio-telemetry                                                         v0/1      v0/100%
+rio-system/kiali                    https://kiali-rio-system.8axlxl.on-rio.io      v0/1      v0/100%
+rio-system/local-path-provisioner                                                  v0/1      v0/100%
+rio-system/prometheus                                                              v0/1      v0/100%
+rio-system/registry                 https://registry-rio-system.8axlxl.on-rio.io   v0/1      v0/100%
+rio-system/webhook                  https://webhook-rio-system.8axlxl.on-rio.io    v0/1      v0/100%
+```
+
+
+
+
+
+
+
+
+
 
 ## Roadmap
 
@@ -601,17 +844,18 @@ Hello World v3
 | Orchestration | Kubernetes | included
 | Networking | Flannel | included
 | Service Mesh | Istio | included
-| Monitoring | Prometheus
+| Monitoring | Prometheus | included
 | Logging | Fluentd
 | Storage | Longhorn |
 | CI | Drone
-| Registry | Docker Registry 2
-| Builder | Moby BuildKit
-| TLS | Let's Encrypt
+| Registry | Docker Registry 2 | included
+| Builder | Moby BuildKit | included
+| TLS | Let's Encrypt | included
 | Image Scanning | Clair
+| Autoscaling | Knative
 
 ## License
-Copyright (c) 2018 [Rancher Labs, Inc.](http://rancher.com)
+Copyright (c) 2014 - 2019 [Rancher Labs, Inc.](http://rancher.com)
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

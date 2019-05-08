@@ -88,8 +88,8 @@ func (s *serviceHandler) populate(obj runtime.Object, namespace *corev1.Namespac
 	}
 
 	// generating ingress for revision
-	_, version := services2.AppAndVersion(service)
-	if err := populate.Ingress(clusterDomain, s.systemNamespace, service.Namespace, name.SafeConcatName(service.Name, version), tls, os); err != nil {
+	app, version := services2.AppAndVersion(service)
+	if err := populate.Ingress(clusterDomain, s.systemNamespace, service.Namespace, name.SafeConcatName(app, version), tls, os); err != nil {
 		return err
 	}
 
@@ -169,8 +169,8 @@ func updateDomain(service *riov1.Service, clusterDomain *projectv1.ClusterDomain
 
 	var endpoints []string
 	if public && clusterDomain.Status.ClusterDomain != "" {
-		_, version := services2.AppAndVersion(service)
-		endpoints = append(endpoints, fmt.Sprintf("%s://%s", protocol, domains.GetExternalDomain(service.Name+"-"+version, service.Namespace, clusterDomain.Status.ClusterDomain)))
+		app, version := services2.AppAndVersion(service)
+		endpoints = append(endpoints, fmt.Sprintf("%s://%s", protocol, domains.GetExternalDomain(app+"-"+version, service.Namespace, clusterDomain.Status.ClusterDomain)))
 	}
 
 	for _, pd := range service.Status.PublicDomains {
