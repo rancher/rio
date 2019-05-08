@@ -1,10 +1,435 @@
 Rio
 ===
 
-## Rio is currently being massively overhauled. Expect to see something around May/June.
+1. Simple, fun, end-to-end container experience
+2. Cloud Native Container Distribution
+
+Rio is a user oriented end-to-end container solution with a focus on keeping containers simple and
+combating the current trend of complexity. It's kept fun and simple through it's familiar and
+opinionated user experience.  Additionally, Rio is a "Cloud Native Container Distribution"
+meaning it includes builtin Cloud Native technologies such as Kubernetes, Istio, Containerd, etc.
+so that the user need not be an expert in installing, using, and maintaining these systems.
+
+## Current Status: Early Preview
+
+This is an early preview, features may be broken, not work as described, and has been known to be irresistibly drawn
+to large cities, where it will back up sewers, reverse street signs, and steal everyone's left shoe.
+Please try it out and file bugs.
+
+### Goals
+
+1. Fun. Containers should be fun.
+1. Simple. Simple can only be achieved by applying some opinion and as such Rio is an opinionated tool.
+1. Portable. Each Rio cluster should have the same functionality available to it.  The differences between clusters
+are only speed, reliability, and permissions.  Running in production should be just as simple as your laptop (and vice versa)
+1. Secure. Rio will by default use the best security settings and encryption and such will be enabled by default.
+1. Product Grade. Running Rio should give you a production worthy system and not need you to bolt on infinite more ops tools.
+1. Cloud Native Distribution.  Rio will include all the the key cloud native technologies by default such that each user does not
+need to be an expert in the details.
+
+## Quick Start
+
+1. Have a Kubernetes cluster running. 
+
+    [K3S](https://k3s.io/)
+    
+    [RKE](https://github.com/rancher/rke)
+    
+    [Minikube](https://kubernetes.io/docs/setup/minikube/) 
+    
+    [Docker For Mac](https://docs.docker.com/v17.12/docker-for-mac/#kubernetes-tab)
+    
+    [GKE](https://cloud.google.com/kubernetes-engine/)
+    
+    [AKS](https://docs.microsoft.com/en-us/azure/aks/)
+    
+    [EKS](https://aws.amazon.com/eks/)
+  
+2. Run 
+
+```bash
+# Download to CLI (available for macOS, Windows, Linux)
+curl -sfL https://get.rio.io | sh -   # or manually from https://github.com/rancher/rio/releases
+# Setup your cluster for Rio
+rio install
+# Run a sample service
+rio run https://github.com/rancher/rio-demo
+# Check the status
+rio ps 
+rio console
+rio info
+```
+
+Note: Rio needs your kubernetes cluster supports [service loadbalancer](https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer) to expose service mesh gateway.
+If your cluster doesn't support it, simply run `rio install --host-ports` to use host ports to expose gateway.
+
+Using Rio
+=========
+
+## Concepts
+
+### Service
+
+The main unit that is being dealt with in Rio are services.  Services are just a collection of containers that provide a
+similar function.  When you run containers in Rio you are really creating a Scalable Service.  `rio run` and `rio create` will
+create a service.  You can later scale that service with `rio scale`.  Services are assigned a DNS name so that group
+of containers can be accessed from other services.
+
+### Apps
+
+App contains multiple service revisions. Each service is rio can uniquely be identified as a revision, group by app and version.
+App aggregates all the revisions by app name, provides an entry to access all the revisions. What percentage of traffic goes to which 
+revision depends on how much weight is set on each revision.
+
+### Router
+
+Router is an abstract layer sitting on top of services, it provides a configuration to different services. It can define various 
+routing rules to match different backends. Router also provides an entry to access and a Dns name in the cluster.
+
+### ExternalService
+
+ExternalService provides a way to create dns record for services that are outside of mesh. It can be IP addresses and FQDN.
+
+### PublicDomain
+
+PublicDomain can be configured to give service or router a different public domain to access the workload.
+
+## Service Mesh
+
+Rio has a built in service mesh, powered by Istio and Envoy.  The service mesh provides all of the core communication
+abilities for services to talk to each other, inbound traffic and outbound traffic.  All traffic can be encrypted,
+validated, and routed dynamically according to the configuration.  Rio specifically does not require the user to
+understand much about the underlying service mesh.  Just know that all communication is going through the service mesh.
+
+## Cluster Domain and TLS
+
+By default Rio will create a DNS record pointing to your ingress IPs. Rio also uses Letsencrypt to create
+a wildcard certificate for the cluster domain so that all the traffic to access your application can be encrypted.
+For example, When you deploy your workload, you can access your workload in HTTPS. The domain always follow the format
+of ${app}-${namespace}.${cluster-domain}. You can see your cluster domain by running `rio info`.
+
+
+```bash
+# Run your workload
+$ rio run -p 80/http --name svc --scale=3 ibuildthecloud/demo:v1
+default/svc:v0
+
+# See the endpoint of your workload 
+$ rio ps
+NAME          ENDPOINT                                    REVISIONS   SCALE     WEIGHT
+default/svc   https://svc-default.iazlia.on-rio.io:9443   v0          0/3       100%
+
+### Access your workload
+$ curl https://svc-default.iazlia.on-rio.io:9443
+Hello World
+```
+
+## Service Mesh
+
+### Staging Versions
+
+Service mesh will route traffic to given services.  Services can have multiple versions of
+the service deployed at once and then the you can control how much traffic, or which traffic
+is routed to each version.
+
+### rio stage [OPTIONS] SERVICE_ID_NAME
+
+The `rio stage` command takes all the same options as `rio create` but instead of updating
+the existing service, it will stage a new version of the service.  For example, below is
+scenario to do a canary deployment.
+
+```bash
+
+# Create a new service
+$ rio run -p 80/http --name svc --scale=3 ibuildthecloud/demo:v1
+default/svc:v0
+
+# Ensure service is running and determine public URL
+$ rio revision default/svc
+NAME             IMAGE                    CREATED          STATE     SCALE     ENDPOINT                                       WEIGHT                               DETAIL
+default/svc:v0   ibuildthecloud/demo:v1   14 seconds ago   active    3         https://svc-v0-default.iazlia.on-rio.io:9443   =============================> 100   
+
+
+# Stage new version, updating just the docker image and assigning it to "v3" version.
+$ rio stage --image=ibuildthecloud/demo:v3 default/svc:v3
+default/svc:v3
+
+# To change the spec of new service
+$ rio stage --edit default/svc:v3 
+
+# Notice a new URL was created for your staged service
+$ rio revision default/svc
+NAME             IMAGE                    CREATED              STATE     SCALE     ENDPOINT                                       WEIGHT                               DETAIL
+default/svc:v0   ibuildthecloud/demo:v1   About a minute ago   active    3         https://svc-v0-default.iazlia.on-rio.io:9443   =============================> 100   
+default/svc:v3   ibuildthecloud/demo:v3   49 seconds ago       active    3         https://svc-v3-default.iazlia.on-rio.io:9443                                       
+
+# Access current revision
+$ curl -s https://svc-v0-default.iazlia.on-rio.io:9443
+Hello World
+
+# Access staged service under new URL
+$ curl -s https://svc-v3-default.iazlia.on-rio.io:9443
+Hello World v3
+
+# Show access url for all the revision
+$ rio ps
+NAME          ENDPOINT                                    REVISIONS   SCALE     WEIGHT
+default/svc   https://svc-default.iazlia.on-rio.io:9443   v0,v3       3,3       100%,0%
+
+# Access the app(stands for all the revision). Note that right now there is no traffic to v3.
+$ curl https://svc-default.iazlia.on-rio.io:9443 
+Hello World
+
+# Promote v3 service. The traffic will be shifted to v3 gradually. By default we apply 5% shift every 5 seconds, but it can be configred
+# using flags `--rollout-increment` and `--rollout-interval`. To turn off rollout(traffic percentage will be changed to
+# the desired value immediately), run `--no-rollout`.
+$ rio promote default/svc:v3
+
+$ rio revision default/svc
+NAME             IMAGE                    CREATED         STATE     SCALE     ENDPOINT                                       WEIGHT                   DETAIL
+default/svc:v0   ibuildthecloud/demo:v1   3 minutes ago   active    3         https://svc-v0-default.iazlia.on-rio.io:9443   ==================> 65   
+default/svc:v3   ibuildthecloud/demo:v3   2 minutes ago   active    3         https://svc-v3-default.iazlia.on-rio.io:9443   =========> 35          
+
+# Access the app. You should be able to see traffic routing to the new revision
+$ curl https://svc-default.iazlia.on-rio.io:9443
+Hello World
+
+$ curl https://svc-default.iazlia.on-rio.io:9443
+Hello World v3
+
+# Wait for v3 to be 100% weight. Access the app, all traffic should be routed to new revision right now.
+$ rio revision default/svc
+NAME             IMAGE                    CREATED         STATE     SCALE     ENDPOINT                                       WEIGHT                               DETAIL
+default/svc:v0   ibuildthecloud/demo:v1   5 minutes ago   active    3         https://svc-v0-default.iazlia.on-rio.io:9443                                        
+default/svc:v3   ibuildthecloud/demo:v3   4 minutes ago   active    3         https://svc-v3-default.iazlia.on-rio.io:9443   =============================> 100 
+
+$ curl https://svc-default.iazlia.on-rio.io:9443
+Hello World v3
+
+# Adjust weight
+$ rio weight default/svc:v0=5% default/svc:v3=95%
+
+$ rio ps
+NAME          ENDPOINT                                    REVISIONS   SCALE     WEIGHT
+default/svc   https://svc-default.iazlia.on-rio.io:9443   v0,v3       3,3       5%,95%
+```
+
+### rio route
+
+`rio route` allows you to create router which contains routing rule to different workloads.
+
+```base
+# Create a route to point to svc:v0 and svc:v3
+$ rio route append route1/to-svc-v0 to default/svc:v0
+$ rio route append route1/to-svc-v3 to default/svc:v3
+
+# Access the route
+$ rio route
+NAME             URL                                                      OPTS         ACTION    TARGET
+default/route1   https://route1-default.iazlia.on-rio.io:9443/to-svc-v0   timeout=0s   to        svc:v0,port=80
+default/route1   https://route1-default.iazlia.on-rio.io:9443/to-svc-v3   timeout=0s   to        svc:v3,port=80
+
+$ curl -s https://route1-default.iazlia.on-rio.io:9443/to-svc-v0
+Hello World
+
+$ curl -s https://route1-default.iazlia.on-rio.io:9443/to-svc-v3
+Hello World v3
+```
+
+### rio externalservice
+
+`rio externalservice` allows you to create dns record for external services that are outside service mesh
+
+```bash
+# Create a externalservice pointing to an IP
+$ rio externalservice create external 1.1.1.1
+
+#  Create a externalservice pointing to an FQDN
+$ rio externalservice create external-fqdn my.app.com
+
+$ rio external
+NAME                    CREATED         TARGET
+default/external        3 minutes ago   1.1.1.1
+default/external-fqdn   3 seconds ago   my.app.com
+```
+
+### rio domain
+
+`rio domain` allows you to create your own domain and pointing to a specific service or route
+
+```bash
+# Create a domain that 
+$ rio domain add foo.bar default/route1 
+default/foo-bar
+
+$ rio domain
+DOMAIN    TARGET
+foo.bar   default/route1
+```
+
+## Autoscaling
+
+By default rio will enable autoscaling for workloads. Depends on Qps and Current active requests on your workload,
+Rio will scale the workload to the proper scale.
+
+```bash
+# Run a workload, set minimal scale and maximum scale
+$ rio run -p 8080/http --name autoscale --scale=1-20 strongmonkey1992/autoscale:v0 
+default/autoscale:v0
+
+# Put some load to the workload. We use tool [hey](https://github.com/rakyll/hey) to put loads.
+$ hey -z 600s -c 60 http://autoscale-default.iazlia.on-rio.io:9080
+
+# Noted that service has been scaled to 6
+$ rio revision default/autoscale
+NAME                   IMAGE                           CREATED          STATE     SCALE     ENDPOINT                                             WEIGHT                               DETAIL
+default/autoscale:v0   strongmonkey1992/autoscale:v0   40 seconds ago   active    6         https://autoscale-v0-default.iazlia.on-rio.io:9443   =============================> 100   
+
+
+# Run a workload that can be scaled to zero
+$ rio run -p 8080/http --name autoscale-zero --scale=0-20 strongmonkey1992/autoscale:v0
+default/autoscale-zero:v0
+
+# Wait for a couple of minutes. The workload is scaled to zero.
+$ rio revision default/autoscale-zero
+NAME                        IMAGE                           CREATED              STATE     SCALE     ENDPOINT                                                  WEIGHT                               DETAIL
+default/autoscale-zero:v0   strongmonkey1992/autoscale:v0   About a minute ago   active    0         https://autoscale-zero-v0-default.iazlia.on-rio.io:9443   =============================> 100   
+
+# Access the workload. Once there is an active request, workload can be re-scaled to active.
+$ rio ps 
+NAME                     ENDPOINT                                               REVISIONS   SCALE     WEIGHT
+default/autoscale-zero   https://autoscale-zero-default.iazlia.on-rio.io:9443   v0          0/1       100%
+
+$ curl -s https://autoscale-zero-default.iazlia.on-rio.io:9443
+Hi there, I am StrongMonkey:v13
+
+# Workload is re-scaled to 1
+$ rio revision default/autoscale-zero
+NAME                     ENDPOINT                                               REVISIONS   SCALE     WEIGHT
+default/autoscale-zero   https://autoscale-zero-default.iazlia.on-rio.io:9443   v0          1         100%
+
+```
+
+## Source code to Deployment
+
+Rio supports configure a git-based source code repository to deploy the actual workload. It can be as easy
+as giving Rio a valid git repository repo. 
+
+```bash
+# Run a workload from a git repo. We assume the repo has a Dockerfile at root directory to build the image
+$ rio run -p 8080/http -n build https://github.com/StrongMonkey/demo.git
+default/build:v0
+
+# Waiting for the image to be built. Note the image column is empty. Once the image is ready service will be active
+$ rio revision
+NAME               IMAGE     CREATED          STATE      SCALE     ENDPOINT                                         WEIGHT                               DETAIL
+default/build:v0             29 seconds ago   inactive   1         https://build-v0-default.iazlia.on-rio.io:9443   =============================> 100   
+
+# Image is ready. Noted that we deploy the default docker registry into the cluster. 
+# The image name has the format of ${registry-domain}/${namespace}/${name}:${commit} 
+$ rio revision
+NAME               IMAGE                                                                                         CREATED              STATE     SCALE     ENDPOINT                                         WEIGHT                               DETAIL
+default/build:v0   registry-rio-system.iazlia.on-rio.io/default/build:32a4e453ca3bf0672ece9abf6901fa307d951add   About a minute ago   active    0/1       https://build-v0-default.iazlia.on-rio.io:9443   =============================> 100   
+
+
+# Show the endpoint of your workload
+$ rio ps 
+NAME            ENDPOINT                                      REVISIONS   SCALE     WEIGHT
+default/build   https://build-default.iazlia.on-rio.io:9443   v0          1         100%
+
+# Access the endpoint
+$ curl -s https://build-default.iazlia.on-rio.io:9443
+Hi there, I am StrongMonkey:v1
+```
+
+When you point your workload to a git repo, Rio will automatically watch any commit or tag pushed to
+a specific branch(default is master). By default Rio will pull and check the branch at a certain interval, but this
+can be configured to use a webhook.
+
+```bash
+# edit the code, change v1 to v3, push the code
+$ vim main.go | git add -u | git commit -m "change to v3" | git push $remote
+
+# A new revision has been automatically created. Noticed that once the new revision is created, the traffic will
+# automatically shifted from old revision to new revision.
+$ rio revision default/build
+NAME                   IMAGE                                                                                                       CREATED          STATE     SCALE     ENDPOINT                                             WEIGHT                               DETAIL
+default/build:v0       registry-rio-system.iazlia.on-rio.io/default/build:32a4e453ca3bf0672ece9abf6901fa307d951add                 11 minutes ago   active    1         https://build-v0-default.iazlia.on-rio.io:9443                                            
+default/build:vc6d4c   registry-rio-system.iazlia.on-rio.io/default/build-e46cfb4-1d207:c6d4c4452b064e476940de7b33c7a70ac0d9e153   22 seconds ago   active    1         https://build-vc6d4c-default.iazlia.on-rio.io:9443   =============================> 100   
+
+# Access the endpoint
+$ curl https://build-default.8axlxl.on-rio.io
+Hi there, I am StrongMonkey:v1
+$ curl https://build-default.8axlxl.on-rio.io
+Hi there, I am StrongMonkey:v3
+
+# Wait for all the traffic are shifted to the new revision, 
+$ rio revision default/build
+NAME                  IMAGE                                                                                                       CREATED          STATE     SCALE     ENDPOINT                                       WEIGHT                               DETAIL
+default/build:v0      registry-rio-system.8axlxl.on-rio.io/default/build:34512dddba18781fb6909c303eb206a73d41d9ba                 24 minutes ago   active    1         https://build-v0-default.8axlxl.on-rio.io                                           
+default/build:25a0a   registry-rio-system.8axlxl.on-rio.io/default/build-e46cfb4-08a3b:25a0acda54812619f8063c121f6ed5ed2bfb968f   4 minutes ago    active    1         https://build-25a0a-default.8axlxl.on-rio.io   =============================> 100
+
+# Access the workload. Noted that all the traffic are routed to the new revision
+$ curl https://build-default.8axlxl.on-rio.io
+Hi there, I am StrongMonkey:v3
+```
+
+To configure a webhook, run the following command
+```bash
+$ rio secret create -d accessToken=$(github_access_token) webhook
+default/webhook
+
+# Right now every commit and tag event will trigger a new revision
+$ rio run -p 8080/http --build-secret webhook -n build-webhook https://github.com/StrongMonkey/demo.git
+default/build-webhook
+```
+
+## Monitoring
+
+By default Rio will deploy [grafana](https://grafana.com/) and [kiali](https://www.kiali.io/) to give user abilities to watch all metrics corresponding to service mesh.
+
+```bash
+# Monitoring services are deployed into rio-system namespace
+$ rio --system ps 
+NAME                          ENDPOINT                                            REVISIONS   SCALE     WEIGHT
+rio-system/autoscaler                                                             v0          1         100%
+rio-system/build-controller                                                       v0          1         100%
+rio-system/buildkit                                                               v0          1         100%
+rio-system/cert-manager                                                           v0          1         100%
+rio-system/grafana            https://grafana-rio-system.iazlia.on-rio.io:9443    v0          1         100%
+rio-system/istio-citadel                                                          v0          1         100%
+rio-system/istio-gateway                                                          v0          1         100%
+rio-system/istio-pilot                                                            v0          1         100%
+rio-system/istio-telemetry                                                        v0          1         100%
+rio-system/kiali              https://kiali-rio-system.iazlia.on-rio.io:9443      v0          1         100%
+rio-system/prometheus                                                             v0          1         100%
+rio-system/registry           https://registry-rio-system.iazlia.on-rio.io:9443   v0          1         100%
+rio-system/webhook            https://webhook-rio-system.iazlia.on-rio.io:9443    v0          1         100%
+
+```
+
+![Grafana](https://raw.githubusercontent.com/StrongMonkey/rio/refactor/grafana-example.png)
+
+## Roadmap
+
+| Function | Implementation | Status |
+|----------|----------------|--------|
+| Container Runtime | containerd | included
+| Orchestration | Kubernetes | included
+| Networking | Flannel | included
+| Service Mesh | Istio | included
+| Monitoring | Prometheus | included
+| Logging | Fluentd
+| Storage | Longhorn |
+| CI | Drone
+| Registry | Docker Registry 2 | included
+| Builder | Moby BuildKit | included
+| TLS | Let's Encrypt | included
+| Image Scanning | Clair
+| Autoscaling | Knative | included
 
 ## License
-Copyright (c) 2018 [Rancher Labs, Inc.](http://rancher.com)
+Copyright (c) 2014 - 2019 [Rancher Labs, Inc.](http://rancher.com)
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
