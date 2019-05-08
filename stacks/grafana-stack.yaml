@@ -22,26 +22,22 @@ configs:
         name: Prometheus
         orgId: 1
         type: prometheus
-        url: http://prometheus
-
-externalservices:
-  prometheus:
-    service: prometheus/prometheus
+        url: http://prometheus:9090
 
 services:
   grafana:
-    environment:
-      - GRAFANA_PORT=3000
-      - GF_AUTH_BASIC_ENABLED=false
-      - GF_AUTH_ANONYMOUS_ENABLED=true
-      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
-      - GF_PATHS_DATA=/data/grafana
+    env:
+    - GRAFANA_PORT=3000
+    - GF_AUTH_BASIC_ENABLED=false
+    - GF_AUTH_ANONYMOUS_ENABLED=true
+    - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    - GF_PATHS_DATA=/data/grafana
     image: daishan1992/grafana:latest
     imagePullPolicy: always
-    expose:
-      - 3000/http
+    ports:
+    - 3000/http
     configs:
-      - grafana-dashboardproviders:/etc/grafana/provisioning/dashboards/dashboardproviders.yaml
-      - grafana-datasources:/etc/grafana/provisioning/datasources/datasources.yaml
+    - grafana-dashboardproviders/content:/etc/grafana/provisioning/dashboards/dashboardproviders.yaml
+    - grafana-datasources/content:/etc/grafana/provisioning/datasources/datasources.yaml
     volumes:
-      - data:/data/grafana
+    - data:/data/grafana

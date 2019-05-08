@@ -1,59 +1,47 @@
 services:
   istio-telemetry:
+    disableServiceMesh: true
     global_permissions:
     - role=cluster-admin
-    image: istio/mixer:1.0.4
+    image: istio/mixer:1.1.3
     imagePullPolicy: always
-    command:
+    args:
+    - --monitoringPort=9093
     - --address
     - unix:///sock/mixer.socket
     - --configStoreURL=k8s://
     - --configDefaultNamespace=${NAMESPACE}
     volumes:
     - uds-socket:/sock
-    environment:
+    env:
     - GODEBUG=gctrace=2
-    expose:
-    - 9093/tcp,http-monitoring
-    - 42422/tcp,prometheus
-    sidekicks:
-      istio-proxy:
-        expose:
-        # - 15090/tcp,http-envoy-prom
-        - 15004/tcp
-        - 9091/tcp,grpc
-        image: istio/proxyv2:1.0.4
-        command:
-        - proxy
-        - --serviceCluster
-        - istio-telemetry
-        - --templateFile
-        - /etc/istio/proxy/envoy_telemetry.yaml.tmpl
-        - --controlPlaneAuthPolicy
-        - NONE
-        environment:
-        - POD_NAME=$(self/name)
-        - POD_NAMESPACE=$(self/namespace)
-        - INSTANCE_IP=$(self/ip)
-        secrets: identity:/etc/certs
-        volumes:
-        - uds-socket:/sock
+    ports:
+    - 9093/tcp,monitoring,internal=true
+    - 42422/tcp,prometheus,internal=true
+    containers:
+    - name: istio-proxy
+      ports:
+      - 15004/tcp
+      - 9091/tcp,grpc
+      image: istio/proxyv2:1.1.3
+      args:
+      - proxy
+      - --serviceCluster
+      - istio-telemetry
+      - --templateFile
+      - /etc/istio/proxy/envoy_telemetry.yaml.tmpl
+      - --controlPlaneAuthPolicy
+      - NONE
+      env:
+      - POD_NAME=$(self/name)
+      - POD_NAMESPACE=$(self/namespace)
+      - INSTANCE_IP=$(self/ip)
+      secrets: identity:/etc/certs
+      volumes:
+      - uds-socket:/sock
 
 kubernetes:
-  namespaced_custom_resource_definitions:
-  - metric.config.istio.io/v1alpha2
-  - rule.config.istio.io/v1alpha2
-  - prometheus.config.istio.io/v1alpha2
-  - kubernetes.config.istio.io/v1alpha2
-  - template.config.istio.io/v1alpha2
-  - attributemanifest.config.istio.io/v1alpha2
-  - instance.config.istio.io/v1alpha2
-  - adapter.config.istio.io/v1alpha2
-  - handler.config.istio.io/v1alpha2
-  - logentry.config.istio.io/v1alpha2
-  - stdio.config.istio.io/v1alpha2
-  - kubernetesenv.config.istio.io/v1alpha2
-  namespaced_manifest: |-
+  manifest: |-
     apiVersion: "config.istio.io/v1alpha2"
     kind: attributemanifest
     metadata:

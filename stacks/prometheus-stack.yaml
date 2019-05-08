@@ -73,7 +73,7 @@ configs:
         - role: endpoints
           namespaces:
             names:
-            - ${LB_NAMESPACE}
+            - ${TELEMETRY_NAMESPACE}
         relabel_configs:
         - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
           action: keep
@@ -101,7 +101,7 @@ configs:
         - role: endpoints
           namespaces:
             names:
-            - ${LB_NAMESPACE}
+            - ${TELEMETRY_NAMESPACE}
         relabel_configs:
         - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
           action: keep
@@ -115,7 +115,7 @@ configs:
         - role: endpoints
           namespaces:
             names:
-            - ${LB_NAMESPACE}
+            - ${TELEMETRY_NAMESPACE}
         relabel_configs:
         - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
           action: keep
@@ -284,6 +284,7 @@ configs:
 
 services:
   prometheus:
+    disableServiceMesh: true
     global_permissions:
     - nodes
     - services
@@ -294,10 +295,10 @@ services:
     - get url=/metrics
     image: prom/prometheus:v2.3.1
     imagePullPolicy: IfNotPresent
-    expose:
-    - 9090/http
+    ports:
+    - 9090/http,http-prometheus,internal=true
     configs:
-    - prometheus-config:/etc/prometheus/prometheus.yml
-    command:
+    - prometheus-config/content:/etc/prometheus/prometheus.yml
+    args:
     - --storage.tsdb.retention=6h
     - --config.file=/etc/prometheus/prometheus.yml
