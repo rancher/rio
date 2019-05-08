@@ -18,29 +18,38 @@ services:
     - "get,list,watch batch/*"
     - "get,list,watch apps/*"
     - "get,list,watch autoscaling/*"
-    image: docker.io/kiali/kiali:v0.10
-    environment:
+    image: docker.io/kiali/kiali:v0.19
+    env:
     - ACTIVE_NAMESPACE=${NAMESPACE}
-    - SERVER_CREDENTIALS_USERNAME=${USERNAME}
-    - SERVER_CREDENTIALS_PASSWORD=${PASSWORD}
     - PROMETHEUS_SERVICE_URL=${PROMETHEUS_URL}
-    command:
+    args:
     - -config
     - /kiali-configuration/config.yaml
     - -v
     - '4'
     configs:
-    - kiali-config:/kiali-configuration/config.yaml
-    expose:
+    - kiali-config/content:/kiali-configuration/config.yaml
+    secrets:
+    - kiali:/kiali-secret/
+    ports:
     - 20001/http
 
-externalservices:
-  prometheus:
-    service: prometheus/prometheus
-  grafana:
-    service: grafana/grafana
+kubernetes:
+  manifest: |-
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: kiali
+      namespace: ${NAMESPACE}
+      labels:
+        app: kiali
+    type: Opaque
+    data:
+      username: ${USERNAME}
+      passphrase: ${PASSWORD}
 
-questions:
+templates:
+  questions:
   - variable: USERNAME
     description: "username to login dashboard"
   - variable: PASSWORD

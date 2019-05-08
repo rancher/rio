@@ -1,30 +1,42 @@
 package systemstack
 
 import (
-	"github.com/rancher/norman/pkg/objectset"
-	"github.com/rancher/rio/pkg/settings"
+	"bytes"
+
+	"k8s.io/apimachinery/pkg/runtime"
+
+	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/riofile"
 	"github.com/rancher/rio/pkg/template"
 	"github.com/rancher/rio/stacks"
-	"github.com/rancher/rio/types/apis/rio.cattle.io/v1"
-	"github.com/rancher/types/apis/management.cattle.io/v3"
+	"github.com/rancher/wrangler/pkg/apply"
+	"github.com/rancher/wrangler/pkg/objectset"
 )
 
 type SystemStack struct {
-	processor *objectset.Processor
-	spec      v1.StackSpec
+	namespace string
+	apply     apply.Apply
 	name      string
+	contents  []byte
 }
 
-func NewSystemStack(stacksClient v1.StackClient, name string, spec v1.StackSpec) *SystemStack {
+func NewStack(apply apply.Apply, systemNamespace string, name string, system bool) *SystemStack {
+	setID := "stack-" + name
+	if system {
+		setID = "system-" + setID
+	}
 	return &SystemStack{
-		processor: objectset.NewProcessor("system-stack-" + name).
-			Client(stacksClient),
-		spec: spec,
-		name: name,
+		namespace: systemNamespace,
+		apply:     apply.WithSetID(setID).WithDefaultNamespace(systemNamespace),
+		name:      name,
 	}
 }
 
-func (s *SystemStack) Questions() ([]v3.Question, error) {
+func (s *SystemStack) WithContent(contents []byte) {
+	s.contents = contents
+}
+
+func (s *SystemStack) Questions() ([]v1.Question, error) {
 	content, err := s.content()
 	if err != nil {
 		return nil, err
@@ -33,14 +45,18 @@ func (s *SystemStack) Questions() ([]v3.Question, error) {
 	t := template.Template{
 		Content: content,
 	}
+
 	if err := t.Validate(); err != nil {
 		return nil, err
 	}
 
-	return t.Questions, nil
+	return t.Questions()
 }
 
 func (s *SystemStack) content() ([]byte, error) {
+	if len(s.contents) > 0 {
+		return s.contents, nil
+	}
 	return stacks.Asset("stacks/" + s.name + "-stack.yaml")
 }
 
@@ -50,21 +66,29 @@ func (s *SystemStack) Deploy(answers map[string]string) error {
 		return err
 	}
 
-	stack := v1.NewStack(settings.RioSystemNamespace, s.name, v1.Stack{
-		Spec: s.spec,
-	})
-
-	for k, v := range answers {
-		if stack.Spec.Answers == nil {
-			stack.Spec.Answers = map[string]string{}
-		}
-		stack.Spec.Answers[k] = v
+	rf, err := riofile.Parse(bytes.NewBuffer(content), template.AnswersFromMap(answers))
+	if err != nil {
+		return err
 	}
-	stack.Spec.Template = string(content)
 
-	return s.processor.NewDesiredSet(nil, objectset.NewObjectSet().Add(stack)).Apply()
+	os := objectset.NewObjectSet()
+	os.Add(rf.Objects()...)
+	return s.apply.Apply(os)
+}
+
+func (s *SystemStack) Objects(answers map[string]string) ([]runtime.Object, error) {
+	content, err := s.content()
+	if err != nil {
+		return nil, err
+	}
+
+	rf, err := riofile.Parse(bytes.NewBuffer(content), template.AnswersFromMap(answers))
+	if err != nil {
+		return nil, err
+	}
+	return rf.Objects(), nil
 }
 
 func (s *SystemStack) Remove() error {
-	return s.processor.Remove(nil)
+	return s.apply.Apply(nil)
 }

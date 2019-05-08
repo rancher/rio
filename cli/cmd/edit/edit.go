@@ -3,22 +3,16 @@ package edit
 import (
 	"bytes"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"net/http"
-	"net/url"
 	"os"
 
-	"github.com/rancher/norman/clientbase"
-	"github.com/rancher/norman/types"
-	"github.com/rancher/rio/cli/cmd/config"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/up"
-	"github.com/rancher/rio/cli/pkg/waiter"
-	"github.com/rancher/rio/cli/pkg/yamldownload"
-	projectclient "github.com/rancher/rio/types/client/project/v1"
-	"github.com/rancher/rio/types/client/rio/v1"
+	"github.com/rancher/rio/cli/pkg/lookup"
+	clitypes "github.com/rancher/rio/cli/pkg/types"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/riofile"
+	"github.com/rancher/rio/pkg/systemstack"
 	"github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/kubectl/cmd/util/editor"
 )
 
@@ -28,12 +22,12 @@ const (
 
 var (
 	editTypes = []string{
-		client.StackType,
-		client.ServiceType,
-		client.ConfigType,
-		client.RouteSetType,
-		client.ExternalServiceType,
-		projectclient.FeatureType,
+		clitypes.NamespaceType,
+		clitypes.ServiceType,
+		clitypes.ConfigType,
+		clitypes.RouterType,
+		clitypes.ExternalServiceType,
+		clitypes.FeatureType,
 	}
 )
 
@@ -44,61 +38,68 @@ type Edit struct {
 }
 
 func (edit *Edit) Run(ctx *clicontext.CLIContext) error {
-	waiter, err := waiter.NewWaiter(ctx)
-	if err != nil {
-		return err
+	if len(ctx.CLI.Args()) == 0 {
+		return fmt.Errorf("at least one parameter is required")
 	}
 
 	if edit.Raw {
 		return edit.rawEdit(ctx)
 	}
 
-	cluster, err := ctx.Cluster()
+	return edit.Edit(ctx, ctx.CLI.Args()[0])
+}
+
+func (edit *Edit) Edit(ctx *clicontext.CLIContext, arg string) error {
+	if len(ctx.CLI.Args()) != 1 {
+		return fmt.Errorf("exactly one ID (not name) arguement is required for raw edit")
+	}
+
+	r, err := lookup.Lookup(ctx, arg, clitypes.ServiceType)
 	if err != nil {
 		return err
 	}
 
-	args := ctx.CLI.Args()
-	if len(args) == 0 {
-		args = []string{cluster.DefaultStackName}
+	r, err = ctx.ByID(r.Namespace, r.Name, clitypes.ServiceType)
+	if err != nil {
+		return err
 	}
 
-	for _, arg := range args {
-		obj, body, url, err := yamldownload.DownloadYAML(ctx, format, "edit", arg, editTypes...)
-		if err != nil {
-			return err
-		}
-		defer body.Close()
-
-		var prefix []byte
-		input, err := ioutil.ReadAll(body)
-		if err != nil {
-			return err
-		}
-
-		updated, err := editLoop(prefix, input, func(content []byte) error {
-			if err := edit.update(ctx, format, &obj.Resource, url, content); err != nil {
-				return err
-			}
-			waiter.Add(&obj.Resource)
-			return nil
-		})
-
-		if err != nil {
-			return err
-		}
-
-		if !updated {
-			logrus.Infof("No change for %s(%s)", arg, obj.ID)
-		}
+	services := make(map[string]riov1.Service)
+	configs := make(map[string]corev1.ConfigMap)
+	obj := r.Object
+	switch obj.(type) {
+	case *riov1.Service:
+		newSvc := riov1.Service{}
+		newSvc.Spec = obj.(*riov1.Service).Spec
+		services[r.Name] = newSvc
+	case *corev1.ConfigMap:
+		configs[r.Name] = *obj.(*corev1.ConfigMap)
 	}
 
-	return waiter.Wait(ctx.Ctx)
+	content, err := riofile.ParseFrom(services, configs)
+	if err != nil {
+		return err
+	}
+
+	updated, err := EditLoop(nil, content, func(content []byte) error {
+		stack := systemstack.NewStack(ctx.Apply, r.Namespace, "edit-"+r.Name, true)
+		stack.WithContent(content)
+		return stack.Deploy(nil)
+	})
+	if err != nil {
+		return err
+	}
+
+	if !updated {
+		logrus.Infof("No change for %s/%s", r.Namespace, r.Name)
+	}
+
+	return nil
 }
 
 type updateFunc func(content []byte) error
 
-func editLoop(prefix, input []byte, update updateFunc) (bool, error) {
+func EditLoop(prefix, input []byte, update updateFunc) (bool, error) {
 	for {
 		buf := &bytes.Buffer{}
 		buf.Write(prefix)
@@ -131,50 +132,51 @@ func editLoop(prefix, input []byte, update updateFunc) (bool, error) {
 	return true, nil
 }
 
-func (edit *Edit) update(ctx *clicontext.CLIContext, format string, obj *types.Resource, self string, content []byte) error {
-	if obj.Type == client.StackType {
-		return up.Run(ctx, content, obj.ID, true, edit.Prompt, nil, "")
-	}
-
-	if obj.Type == client.ConfigType {
-		return config.RunUpdate(ctx, obj.ID, content, nil)
-	}
-
-	parsed, err := url.Parse(self)
-	if err != nil {
-		return err
-	}
-
-	q := parsed.Query()
-	q.Set("_edited", "true")
-	q.Set("_replace", "true")
-	parsed.RawQuery = q.Encode()
-
-	req, err := http.NewRequest(http.MethodPut, parsed.String(), bytes.NewReader(content))
-	if err != nil {
-		return err
-	}
-
-	wc, err := ctx.ProjectClient()
-	if err != nil {
-		return err
-	}
-
-	wc.Ops.SetupRequest(req)
-	req.Header.Set("Content-Type", format)
-
-	resp, err := wc.Ops.Client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		io.Copy(ioutil.Discard, resp.Body)
-		resp.Body.Close()
-	}()
-
-	if resp.StatusCode >= 300 {
-		return clientbase.NewAPIError(resp, parsed.String())
-	}
-
-	return nil
-}
+//
+//func (edit *Edit) update(ctx *clicontext.CLIContext, format string, obj *types.Resource, self string, content []byte) error {
+//	if obj.Type == clitypes.NamespaceType {
+//		return up.Run(ctx, content, obj.ID, true, edit.Prompt, nil, "")
+//	}
+//
+//	if obj.Type == clitypes.ConfigType {
+//		return config.RunUpdate(ctx, obj.ID, content, nil)
+//	}
+//
+//	parsed, err := url.Parse(self)
+//	if err != nil {
+//		return err
+//	}
+//
+//	q := parsed.Query()
+//	q.Set("_edited", "true")
+//	q.Set("_replace", "true")
+//	parsed.RawQuery = q.Encode()
+//
+//	req, err := http.NewRequest(http.MethodPut, parsed.String(), bytes.NewReader(content))
+//	if err != nil {
+//		return err
+//	}
+//
+//	wc, err := ctx.ProjectClient()
+//	if err != nil {
+//		return err
+//	}
+//
+//	wc.Ops.SetupRequest(req)
+//	req.Header.Set("Content-Type", format)
+//
+//	resp, err := wc.Ops.Client.Do(req)
+//	if err != nil {
+//		return err
+//	}
+//	defer func() {
+//		io.Copy(ioutil.Discard, resp.Body)
+//		resp.Body.Close()
+//	}()
+//
+//	if resp.StatusCode >= 300 {
+//		return clientbase.NewAPIError(resp, parsed.String())
+//	}
+//
+//	return nil
+//}

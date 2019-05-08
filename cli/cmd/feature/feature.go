@@ -3,18 +3,17 @@ package feature
 import (
 	"fmt"
 
-	"github.com/rancher/norman/types"
-	"github.com/rancher/rio/cli/cmd/project"
-	"github.com/rancher/rio/cli/cmd/up"
+	"github.com/rancher/rio/cli/cmd/apply"
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/table"
+	"github.com/rancher/rio/cli/pkg/tables"
+	clitypes "github.com/rancher/rio/cli/pkg/types"
 	"github.com/rancher/rio/cli/pkg/up/questions"
-	"github.com/rancher/rio/pkg/settings"
-	"github.com/rancher/rio/types/client/project/v1"
-	"github.com/rancher/types/apis/management.cattle.io/v3"
+	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	"github.com/urfave/cli"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func Feature(app *cli.App) cli.Command {
@@ -45,38 +44,16 @@ type Ls struct{}
 
 type Data struct {
 	ID      string
-	Feature client.Feature
+	Feature projectv1.Feature
 }
 
 func (l *Ls) Run(ctx *clicontext.CLIContext) error {
-	writer := table.NewWriter([][]string{
-		{"NAME", "Feature.Name"},
-		{"ENABLED", "{{.Feature.Enabled | boolToStar}}"},
-		{"DESCRIPTION", "Feature.Description"},
-	}, ctx)
-	defer writer.Close()
-
-	writer.AddFormatFunc("boolToStar", project.BoolToStar)
-	cluster, err := ctx.Cluster()
+	features, err := ctx.List(clitypes.FeatureType)
 	if err != nil {
 		return err
 	}
-	spaceClient, err := cluster.Client()
-	if err != nil {
-		return err
-	}
-	featuresCollection, err := spaceClient.Feature.List(&types.ListOpts{})
-	if err != nil {
-		return err
-	}
-
-	for _, feature := range featuresCollection.Data {
-		writer.Write(Data{
-			ID:      feature.ID,
-			Feature: feature,
-		})
-	}
-	return writer.Err()
+	writer := tables.NewFeature(ctx)
+	return writer.Write(features)
 }
 
 type Disable struct{}
@@ -86,13 +63,12 @@ func (d *Disable) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("feature name is required")
 	}
 
-	resource, err := lookup.Lookup(ctx, ctx.CLI.Args()[0], client.FeatureType)
+	resource, err := lookup.Lookup(ctx, ctx.CLI.Args()[0], clitypes.FeatureType)
 	if err != nil {
 		return err
 	}
 
-	ctx.ProjectName = settings.RioSystemNamespace
-	return flipEnableFlag(ctx, resource.ID, nil, false)
+	return flipEnableFlag(ctx, resource.Name, nil, false)
 }
 
 type Enable struct {
@@ -103,36 +79,27 @@ func (e *Enable) Run(ctx *clicontext.CLIContext) error {
 	if len(ctx.CLI.Args()) != 1 {
 		return fmt.Errorf("feature name is required")
 	}
-	ctx.ProjectName = settings.RioSystemNamespace
-	resource, err := lookup.Lookup(ctx, ctx.CLI.Args()[0], client.FeatureType)
+	resource, err := lookup.Lookup(ctx, ctx.CLI.Args()[0], clitypes.FeatureType)
 	if err != nil {
 		return err
 	}
-	answers, err := up.ReadAnswers(e.A_Answers)
+	answers, err := apply.ReadAnswers(e.A_Answers)
 	if err != nil {
 		return fmt.Errorf("failed to parse answer file [%s]: %v", e.A_Answers, err)
 	}
-	return flipEnableFlag(ctx, resource.ID, answers, true)
+	return flipEnableFlag(ctx, resource.Name, answers, true)
 }
 
-func flipEnableFlag(ctx *clicontext.CLIContext, featureID string, answers map[string]string, enable bool) error {
-	cluster, err := ctx.Cluster()
+func flipEnableFlag(ctx *clicontext.CLIContext, featureName string, answers map[string]string, enable bool) error {
+	feature, err := ctx.Project.Features(ctx.SystemNamespace).Get(featureName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
-	spaceClient, err := cluster.Client()
-	if err != nil {
-		return err
-	}
-	feature, err := spaceClient.Feature.ByID(featureID)
-	if err != nil {
-		return err
-	}
-	feature.Enabled = enable
+	feature.Status.EnableOverride = &enable
 
 	if enable {
 		if len(answers) == 0 {
-			qs, err := questions.NewQuestions(toQuestions(feature.Questions), feature.Answers, true)
+			qs, err := questions.NewQuestions(feature.Spec.Questions, feature.Spec.Answers, true)
 			if err != nil {
 				return err
 			}
@@ -140,33 +107,15 @@ func flipEnableFlag(ctx *clicontext.CLIContext, featureID string, answers map[st
 			if err != nil {
 				return err
 			}
-			feature.Answers = answers
+			feature.Spec.Answers = answers
 		} else {
-			if feature.Answers == nil {
-				feature.Answers = map[string]string{}
+			if feature.Spec.Answers == nil {
+				feature.Spec.Answers = map[string]string{}
 			}
 			for k, v := range answers {
-				feature.Answers[k] = v
+				feature.Spec.Answers[k] = v
 			}
 		}
 	}
-	_, err = spaceClient.Feature.Replace(feature)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func toQuestions(qs []client.Question) []v3.Question {
-	var r []v3.Question
-	for _, q := range qs {
-		r = append(r, v3.Question{
-			Variable:    q.Variable,
-			Description: q.Description,
-			Label:       q.Label,
-			Options:     q.Options,
-			Default:     q.Default,
-		})
-	}
-	return r
+	return ctx.UpdateObject(feature)
 }

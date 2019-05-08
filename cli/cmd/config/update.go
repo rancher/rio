@@ -8,7 +8,9 @@ import (
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
-	"github.com/rancher/rio/types/client/rio/v1"
+	"github.com/rancher/rio/cli/pkg/types"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type Update struct {
@@ -23,7 +25,7 @@ func (c *Update) Run(ctx *clicontext.CLIContext) error {
 	name := ctx.CLI.Args()[0]
 	file := ctx.CLI.Args()[1]
 
-	resource, err := lookup.Lookup(ctx, name, client.ConfigType)
+	resource, err := lookup.Lookup(ctx, name, types.ConfigType)
 	if err != nil {
 		return err
 	}
@@ -33,35 +35,30 @@ func (c *Update) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	err = RunUpdate(ctx, resource.ID, content, c.L_Label)
+	err = RunUpdate(ctx, resource.Name, resource.Namespace, content, c.L_Label)
 	if err == nil {
-		fmt.Println(resource.ID)
+		fmt.Println(resource.Name)
 	}
 	return err
 }
 
-func RunUpdate(ctx *clicontext.CLIContext, id string, content []byte, labels map[string]string) error {
-	wc, err := ctx.ProjectClient()
-	if err != nil {
-		return err
-	}
+func RunUpdate(ctx *clicontext.CLIContext, name, namespace string, content []byte, labels map[string]string) error {
+	return ctx.UpdateResource(types.Resource{
+		Namespace: namespace,
+		Name:      name,
+		Type:      types.ConfigType,
+	}, func(obj runtime.Object) error {
+		config := obj.(*corev1.ConfigMap)
 
-	config, err := wc.Config.ByID(id)
-	if err != nil {
-		return err
-	}
+		if len(labels) > 0 {
+			config.Labels = labels
+		}
+		if utf8.Valid(content) {
+			config.Data["content"] = string(content)
+		} else {
+			config.Data["content"] = base64.StdEncoding.EncodeToString(content)
+		}
 
-	if len(labels) > 0 {
-		config.Labels = labels
-	}
-	if utf8.Valid(content) {
-		config.Content = string(content)
-		config.Encoded = false
-	} else {
-		config.Content = base64.StdEncoding.EncodeToString(content)
-		config.Encoded = true
-	}
-
-	_, err = wc.Config.Update(config, config)
-	return err
+		return nil
+	})
 }

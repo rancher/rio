@@ -3,69 +3,51 @@ package lookup
 import (
 	"fmt"
 
-	"github.com/rancher/norman/pkg/kv"
-	"github.com/rancher/rio/cli/pkg/clientcfg"
-	"github.com/rancher/rio/pkg/namespace"
 	"github.com/rancher/rio/pkg/settings"
+	"github.com/rancher/wrangler/pkg/kv"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type StackScoped struct {
-	Project      *clientcfg.Project
-	StackName    string
-	ResourceName string
-	ResourceID   string
-	Version      string
-	Other        string
+	DefaultStackName string
+	StackName        string
+	ResourceName     string
+	Version          string
+	ServiceName      string
+	Other            string
 }
 
-func StackScopedFromLabels(project *clientcfg.Project, labels map[string]string) StackScoped {
-	service := labels["rio.cattle.io/service"]
-	serviceName := labels["rio.cattle.io/service-name"]
-	stack := labels["rio.cattle.io/stack"]
-	rev := labels["rio.cattle.io/version"]
-
-	ns := namespace.StackNamespace(project.ID, stack)
-
+func StackScopedFromLabels(defaultStackName string, pod *corev1.Pod) StackScoped {
 	return StackScoped{
-		Project:      project,
-		Version:      rev,
-		StackName:    stack,
-		ResourceID:   fmt.Sprintf("%s:%s", ns, serviceName),
-		ResourceName: service,
+		DefaultStackName: defaultStackName,
+		Version:          pod.Labels["version"],
+		StackName:        pod.Namespace,
+		ServiceName:      pod.Labels["app"],
 	}
 }
 
-func ParseStackScoped(project *clientcfg.Project, serviceName string) StackScoped {
+func ParseStackScoped(defaultStackName string, serviceName string) StackScoped {
 	var result StackScoped
 	result.StackName, result.ResourceName = kv.Split(serviceName, "/")
 	if result.ResourceName == "" {
 		result.ResourceName = result.StackName
-		result.StackName = project.Cluster.DefaultStackName
+		result.StackName = defaultStackName
 	}
 	result.ResourceName, result.Other = kv.Split(result.ResourceName, "/")
 	result.ResourceName, result.Version = kv.Split(result.ResourceName, ":")
-	result.Project = project
 
-	name := fmt.Sprintf("%s-%s", result.ResourceName, result.Version)
-	if result.Version == "" || result.Version == settings.DefaultServiceVersion {
-		name = result.ResourceName
+	result.ServiceName = result.ResourceName
+	if result.Version != "" {
+		result.ResourceName = fmt.Sprintf("%s:%s", result.ResourceName, result.Version)
 	}
-	result.ResourceID = fmt.Sprintf("%s:%s", namespace.StackNamespace(project.ID, result.StackName), name)
 	return result
-}
-
-func (p StackScoped) LookupName() string {
-	if p.Version == "" || p.Version == settings.DefaultServiceVersion {
-		return p.ResourceName
-	}
-	return fmt.Sprintf("%s-%s", p.ResourceName, p.Version)
 }
 
 func (p StackScoped) String() string {
 	result := ""
 
 	if p.StackName != "" {
-		if p.Other != "" || p.StackName != p.Project.Cluster.DefaultStackName {
+		if p.Other != "" {
 			result = p.StackName + "/"
 		}
 	}

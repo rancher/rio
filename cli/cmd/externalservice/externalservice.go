@@ -1,15 +1,13 @@
 package externalservice
 
 import (
-	"strings"
-
-	"github.com/rancher/norman/types"
 	"github.com/rancher/rio/cli/cmd/rm"
-	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
-	client "github.com/rancher/rio/types/client/rio/v1"
+	"github.com/rancher/rio/cli/pkg/tables"
+	clitypes "github.com/rancher/rio/cli/pkg/types"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/urfave/cli"
 )
 
@@ -32,7 +30,7 @@ func ExternalService(app *cli.App) cli.Command {
 			},
 			builder.Command(&Create{},
 				"Create external services",
-				app.Name+" create [OPTIONS] [EXTERNAL_SERVICE] [(IP)(FQDN)(SERVICE/STACK)]",
+				app.Name+" create [OPTIONS] [EXTERNAL_SERVICE] [(IP)(FQDN)(STACK/SERVICE)]",
 				""),
 			{
 				Name:      "delete",
@@ -49,57 +47,19 @@ type Data struct {
 	Name    string
 	Target  string
 	Created string
-	Service *client.ExternalService
-	Stack   *client.Stack
+	Service *riov1.ExternalService
 }
 
 func externalServiceLs(ctx *clicontext.CLIContext) error {
-	wc, err := ctx.ProjectClient()
-	if err != nil {
-		return err
-	}
-	cluster, err := ctx.Cluster()
-	if err != nil {
-		return err
-	}
-	collection, err := wc.ExternalService.List(&types.ListOpts{})
-	if err != nil {
-		return err
-	}
-	writer := table.NewWriter([][]string{
-		{"NAME", "{{stackScopedName .Stack.Name .Service.Name}}"},
-		{"CREATED", "{{.Created | ago}}"},
-		{"TARGET", "{{.Service.Target}}"},
-	}, ctx)
-	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cluster))
-	defer writer.Close()
-
-	stackByID, err := util.StacksByID(wc)
+	externalServices, err := ctx.List(clitypes.ExternalServiceType)
 	if err != nil {
 		return err
 	}
 
-	for _, item := range collection.Data {
-		endpoint := ""
-		if item.FQDN != "" {
-			endpoint = item.FQDN
-		} else if item.Service != "" {
-			endpoint = item.Service
-		} else if len(item.IPAddresses) > 0 {
-			endpoint = strings.Join(item.IPAddresses, ",")
-		}
-		writer.Write(&Data{
-			Name:    item.Name,
-			Target:  endpoint,
-			Created: item.Created,
-			Stack:   stackByID[item.StackID],
-			Service: &item,
-		})
-	}
-
-	return writer.Err()
+	writer := tables.NewExternalService(ctx)
+	return writer.Write(externalServices)
 }
 
 func externalServiceRm(ctx *clicontext.CLIContext) error {
-	return rm.Remove(ctx, client.ExternalServiceType)
+	return rm.Remove(ctx, clitypes.ExternalServiceType)
 }

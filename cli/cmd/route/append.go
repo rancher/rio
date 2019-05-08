@@ -7,15 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rancher/rio/cli/pkg/clientcfg"
+	"k8s.io/apimachinery/pkg/api/errors"
 
-	"github.com/rancher/rio/cli/pkg/stack"
-
-	"github.com/rancher/norman/pkg/kv"
-	"github.com/rancher/norman/types"
-	"github.com/rancher/rio/cli/cmd/create"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/types/client/rio/v1"
+	"github.com/rancher/rio/cli/pkg/pretty/objectmappers"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/wrangler/pkg/kv"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -37,8 +35,6 @@ type Add struct {
 	FaultPercentage int               `desc:"Percentage of matching requests to fault"`
 	FaultDelay      string            `desc:"Inject a delay for fault (ms|s|m|h)" default:"0s"`
 	FaultHTTPCode   int               `desc:"HTTP code to send for fault injection"`
-	FaultHTTP2Error string            `desc:"HTTP2 error to send for fault injection"`
-	FaultGRPCError  string            `desc:"gRPC error to send for fault injection"`
 	AddHeader       []string          `desc:"Add HTTP header to request (format key=value)"`
 	RetryAttempts   int               `desc:"How many times to retry"`
 	RetryTimeout    string            `desc:"Timeout per retry (ms|s|m|h)" default:"0s"`
@@ -48,9 +44,9 @@ type Add struct {
 }
 
 type RouteAction interface {
-	validateServiceStack(cluster *clientcfg.Cluster, args []string) error
-	buildRouteSpec(ctx *clicontext.CLIContext, args []string) (*client.RouteSpec, error)
-	getRouteSet(ctx *clicontext.CLIContext, args []string) (*client.RouteSet, error)
+	validateServiceStack(ctx *clicontext.CLIContext, args []string) error
+	buildRouteSpec(ctx *clicontext.CLIContext, args []string) (*riov1.RouteSpec, error)
+	getRouteSet(ctx *clicontext.CLIContext, args []string) (*riov1.Router, bool, error)
 }
 
 func (a *Append) Run(ctx *clicontext.CLIContext) error {
@@ -63,17 +59,7 @@ func insertRoute(ctx *clicontext.CLIContext, insert bool, a RouteAction) error {
 		return fmt.Errorf("at least 3 arguements are required: HOST[/PATH] to|redirect|mirror TARGET")
 	}
 
-	cluster, err := ctx.Cluster()
-	if err != nil {
-		return err
-	}
-
-	if err := a.validateServiceStack(cluster, args); err != nil {
-		return err
-	}
-
-	wc, err := ctx.ProjectClient()
-	if err != nil {
+	if err := a.validateServiceStack(ctx, args); err != nil {
 		return err
 	}
 
@@ -82,63 +68,57 @@ func insertRoute(ctx *clicontext.CLIContext, insert bool, a RouteAction) error {
 		return err
 	}
 
-	routeSet, err := a.getRouteSet(ctx, args)
+	routeSet, shouldCreate, err := a.getRouteSet(ctx, args)
 	if err != nil {
 		return err
 	}
 
 	if insert {
-		routeSet.Routes = append([]client.RouteSpec{*routeSpec}, routeSet.Routes...)
+		routeSet.Spec.Routes = append([]riov1.RouteSpec{*routeSpec}, routeSet.Spec.Routes...)
 	} else {
-		routeSet.Routes = append(routeSet.Routes, *routeSpec)
+		routeSet.Spec.Routes = append(routeSet.Spec.Routes, *routeSpec)
 	}
 
-	if routeSet.ID == "" {
-		routeSet, err = wc.RouteSet.Create(routeSet)
-	} else {
-		routeSet, err = wc.RouteSet.Replace(routeSet)
+	if shouldCreate {
+		return ctx.Create(routeSet)
 	}
 
-	if err == nil {
-		fmt.Println(routeSet.ID)
-	}
-	return err
+	return ctx.UpdateObject(routeSet)
 }
 
-func (a *Add) validateServiceStack(cluster *clientcfg.Cluster, args []string) error {
-	_, service, stack, _, _ := parseMatch(args[0])
+func (a *Add) validateServiceStack(ctx *clicontext.CLIContext, args []string) error {
+	_, service, namespace, _, _ := parseMatch(args[0])
 	if service == "" {
 		return fmt.Errorf("route host/path must be in the format service.stack[/path], for example myservice.mystack/login")
 	}
-	if stack == "" {
-		stack = cluster.DefaultStackName
+	if namespace == "" {
+		namespace = ctx.GetDefaultNamespace()
 	}
 
 	return nil
 }
 
-func (a *Add) getRouteSet(ctx *clicontext.CLIContext, args []string) (*client.RouteSet, error) {
-	_, service, stackName, _, _ := parseMatch(args[0])
-
-	projectId, stackID, name, err := stack.ResolveSpaceStackForName(ctx, stackName+"/"+service)
-	if err != nil {
-		return nil, err
+func (a *Add) getRouteSet(ctx *clicontext.CLIContext, args []string) (*riov1.Router, bool, error) {
+	_, service, namespace, _, _ := parseMatch(args[0])
+	if namespace == "" {
+		if ctx.DefaultNamespace != "" {
+			namespace = ctx.DefaultNamespace
+		} else {
+			namespace = "default"
+		}
 	}
 
-	routeSet, err := lookupRoute(ctx, projectId, stackID, name)
+	routeSet, err := lookupRoute(ctx, namespace, service)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	if routeSet != nil {
-		return routeSet, nil
+		return routeSet, false, nil
 	}
 
-	return &client.RouteSet{
-		Name:      name,
-		ProjectID: projectId,
-		StackID:   stackID,
-	}, nil
+	r := riov1.NewRouter(namespace, service, riov1.Router{})
+	return r, true, nil
 }
 
 func actionsString(many bool) string {
@@ -152,7 +132,7 @@ func actionsString(many bool) string {
 	return strings.Join(s, ", ")
 }
 
-func (a *Add) buildRouteSpec(ctx *clicontext.CLIContext, args []string) (*client.RouteSpec, error) {
+func (a *Add) buildRouteSpec(ctx *clicontext.CLIContext, args []string) (*riov1.RouteSpec, error) {
 	action, err := parseAction(args[1])
 	if err != nil {
 		return nil, err
@@ -167,7 +147,7 @@ func (a *Add) buildRouteSpec(ctx *clicontext.CLIContext, args []string) (*client
 		return nil, err
 	}
 
-	routeSpec := &client.RouteSpec{}
+	routeSpec := &riov1.RouteSpec{}
 	if err := a.addMatch(ctx, args[0], routeSpec); err != nil {
 		return nil, err
 	}
@@ -187,7 +167,7 @@ func (a *Add) buildRouteSpec(ctx *clicontext.CLIContext, args []string) (*client
 	return routeSpec, nil
 }
 
-func (a *Add) addTo(routeSpec *client.RouteSpec, action string, dests []client.WeightedDestination) {
+func (a *Add) addTo(routeSpec *riov1.RouteSpec, action string, dests []riov1.WeightedDestination) {
 	if action != "to" {
 		return
 	}
@@ -195,8 +175,8 @@ func (a *Add) addTo(routeSpec *client.RouteSpec, action string, dests []client.W
 	routeSpec.To = dests
 }
 
-func (a *Add) addTimeout(routeSpec *client.RouteSpec) error {
-	n, err := create.ParseDurationUnit(a.Timeout, "timeout", time.Millisecond)
+func (a *Add) addTimeout(routeSpec *riov1.RouteSpec) error {
+	n, err := objectmappers.ParseDurationUnit(a.Timeout, "timeout", time.Millisecond)
 	if err != nil {
 		return err
 	}
@@ -205,7 +185,7 @@ func (a *Add) addTimeout(routeSpec *client.RouteSpec) error {
 	return nil
 }
 
-func (a *Add) addRedirect(routeSpec *client.RouteSpec, action string, dest string) {
+func (a *Add) addRedirect(routeSpec *riov1.RouteSpec, action string, dest string) {
 	if action != "redirect" {
 		return
 	}
@@ -214,13 +194,13 @@ func (a *Add) addRedirect(routeSpec *client.RouteSpec, action string, dest strin
 	if path != "" {
 		path = "/" + path
 	}
-	routeSpec.Redirect = &client.Redirect{
+	routeSpec.Redirect = &riov1.Redirect{
 		Path: path,
 		Host: host,
 	}
 }
 
-func (a *Add) addRewrite(routeSpec *client.RouteSpec, action string, dest string) {
+func (a *Add) addRewrite(routeSpec *riov1.RouteSpec, action string, dest string) {
 	if action != "rewrite" {
 		return
 	}
@@ -229,36 +209,36 @@ func (a *Add) addRewrite(routeSpec *client.RouteSpec, action string, dest string
 	if path != "" {
 		path = "/" + path
 	}
-	routeSpec.Rewrite = &client.Rewrite{
+	routeSpec.Rewrite = &riov1.Rewrite{
 		Path: path,
 		Host: host,
 	}
 }
 
-func (a *Add) addMirror(routeSpec *client.RouteSpec, action string, dests []client.WeightedDestination) {
+func (a *Add) addMirror(routeSpec *riov1.RouteSpec, action string, dests []riov1.WeightedDestination) {
 	if action != "mirror" {
 		return
 	}
 
-	routeSpec.Mirror = &client.Destination{
-		Stack:    dests[0].Stack,
-		Service:  dests[0].Service,
-		Revision: dests[0].Revision,
-		Port:     dests[0].Port,
+	routeSpec.Mirror = &riov1.Destination{
+		Namespace: dests[0].Namespace,
+		Service:   dests[0].Service,
+		Revision:  dests[0].Revision,
+		Port:      dests[0].Port,
 	}
 }
 
-func (a *Add) addFault(routeSpec *client.RouteSpec) error {
+func (a *Add) addFault(routeSpec *riov1.RouteSpec) error {
 	if a.FaultPercentage <= 0 {
 		return nil
 	}
 
-	f := &client.Fault{
-		Percentage: int64(a.FaultPercentage),
+	f := &riov1.Fault{
+		Percentage: a.FaultPercentage,
 	}
 
 	if a.FaultDelay != "0s" && a.FaultDelay != "" {
-		d, err := create.ParseDurationUnit(a.FaultDelay, "fault delay", time.Millisecond)
+		d, err := objectmappers.ParseDurationUnit(a.FaultDelay, "fault delay", time.Millisecond)
 		if err != nil {
 			return err
 		}
@@ -267,22 +247,8 @@ func (a *Add) addFault(routeSpec *client.RouteSpec) error {
 	}
 
 	if a.FaultHTTPCode != 0 {
-		f.Abort = &client.Abort{
-			HTTPStatus: int64(a.FaultHTTPCode),
-		}
-		return nil
-	}
-
-	if a.FaultHTTP2Error != "" {
-		f.Abort = &client.Abort{
-			HTTP2Status: a.FaultHTTP2Error,
-		}
-		return nil
-	}
-
-	if a.FaultGRPCError != "" {
-		f.Abort = &client.Abort{
-			GRPCStatus: a.FaultGRPCError,
+		f.Abort = riov1.Abort{
+			HTTPStatus: a.FaultHTTPCode,
 		}
 		return nil
 	}
@@ -290,31 +256,31 @@ func (a *Add) addFault(routeSpec *client.RouteSpec) error {
 	return nil
 }
 
-func (a *Add) addMatch(ctx *clicontext.CLIContext, matchString string, routeSpec *client.RouteSpec) error {
+func (a *Add) addMatch(ctx *clicontext.CLIContext, matchString string, routeSpec *riov1.RouteSpec) error {
 	scheme, service, _, path, port := parseMatch(matchString)
 	if service == "" {
 		return fmt.Errorf("route host/path must have a host in the format of SERVICE.STACK, for example myservice.mystack")
 	}
 
 	addMatch := false
-	match := client.Match{}
+	match := riov1.Match{}
 
 	if scheme != "" {
 		addMatch = true
-		match.Scheme = create.ParseStringMatch(scheme)
+		match.Scheme = objectmappers.ParseStringMatch(scheme)
 	}
 
 	if path != "" {
 		addMatch = true
-		if !create.IsRegexp(path) && path[0] != '/' {
+		if !objectmappers.IsRegexp(path) && path[0] != '/' {
 			path = "/" + path
 		}
-		match.Path = create.ParseStringMatch(path)
+		match.Path = objectmappers.ParseStringMatch(path)
 	}
 
 	if a.Method != "" {
 		addMatch = true
-		match.Method = create.ParseStringMatch(a.Method)
+		match.Method = objectmappers.ParseStringMatch(a.Method)
 	}
 
 	if a.From != "" {
@@ -323,8 +289,8 @@ func (a *Add) addMatch(ctx *clicontext.CLIContext, matchString string, routeSpec
 		if err != nil {
 			return fmt.Errorf("invalid format for --from [%s]: %v", a.From, err)
 		}
-		match.From = &client.ServiceSource{
-			Stack:    wds[0].Stack,
+		match.From = &riov1.ServiceSource{
+			Stack:    wds[0].Namespace,
 			Service:  wds[0].Service,
 			Revision: wds[0].Revision,
 		}
@@ -336,7 +302,7 @@ func (a *Add) addMatch(ctx *clicontext.CLIContext, matchString string, routeSpec
 		if err != nil {
 			return fmt.Errorf("invalid port number in host/path [%s]: %s", matchString, port)
 		}
-		match.Port = &n
+		match.Port = &[]int{int(n)}[0]
 	}
 
 	if len(a.Header) > 0 {
@@ -356,23 +322,23 @@ func (a *Add) addMatch(ctx *clicontext.CLIContext, matchString string, routeSpec
 	return nil
 }
 
-func stringMapToStringMatchMap(data map[string]string) map[string]client.StringMatch {
-	result := map[string]client.StringMatch{}
+func stringMapToStringMatchMap(data map[string]string) map[string]riov1.StringMatch {
+	result := map[string]riov1.StringMatch{}
 
 	for k, v := range data {
-		result[k] = *create.ParseStringMatch(v)
+		result[k] = *objectmappers.ParseStringMatch(v)
 	}
 
 	return result
 }
 
-func ParseDestinations(targets []string) ([]client.WeightedDestination, error) {
-	var result []client.WeightedDestination
+func ParseDestinations(targets []string) ([]riov1.WeightedDestination, error) {
+	var result []riov1.WeightedDestination
 	for _, target := range targets {
 		var (
-			stack    string
-			service  string
-			revision string
+			namespace string
+			service   string
+			revision  string
 		)
 
 		target, optStr := kv.Split(target, ",")
@@ -380,18 +346,21 @@ func ParseDestinations(targets []string) ([]client.WeightedDestination, error) {
 
 		parts := strings.SplitN(target, "/", 2)
 		if len(parts) == 2 {
-			stack = parts[0]
+			namespace = parts[0]
 			service = parts[1]
 		} else {
+			namespace = "default"
 			service = parts[0]
 		}
 
 		service, revision = kv.Split(service, ":")
 
-		wd := client.WeightedDestination{
-			Stack:    stack,
-			Service:  service,
-			Revision: revision,
+		wd := riov1.WeightedDestination{
+			Destination: riov1.Destination{
+				Namespace: namespace,
+				Service:   service,
+				Revision:  revision,
+			},
 		}
 
 		weight := opts["weight"]
@@ -400,7 +369,7 @@ func ParseDestinations(targets []string) ([]client.WeightedDestination, error) {
 			if err != nil {
 				return nil, fmt.Errorf("invalid weight format [%s]", weight)
 			}
-			wd.Weight = n
+			wd.Weight = int(n)
 		}
 
 		port := opts["port"]
@@ -409,7 +378,7 @@ func ParseDestinations(targets []string) ([]client.WeightedDestination, error) {
 			if err != nil {
 				return nil, fmt.Errorf("invalid port format [%s]", port)
 			}
-			wd.Port = &n
+			wd.Port = &[]uint32{uint32(n)}[0]
 		}
 
 		result = append(result, wd)
@@ -425,29 +394,19 @@ func parseAction(action string) (string, error) {
 	return action, nil
 }
 
-func lookupRoute(ctx *clicontext.CLIContext, projectId, stackID, name string) (*client.RouteSet, error) {
-	wc, err := ctx.ProjectClient()
+func lookupRoute(ctx *clicontext.CLIContext, namespace, name string) (*riov1.Router, error) {
+	route, err := ctx.Rio.Routers(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
-
-	}
-	resp, err := wc.RouteSet.List(&types.ListOpts{
-		Filters: map[string]interface{}{
-			client.RouteSetFieldName:      name,
-			client.RouteSetFieldProjectID: projectId,
-			client.RouteSetFieldStackID:   stackID,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-	if len(resp.Data) != 1 {
+		if !errors.IsNotFound(err) {
+			return nil, err
+		}
 		return nil, nil
 	}
 
-	return &resp.Data[0], nil
+	return route, nil
 }
 
-func parseMatch(str string) (scheme string, service string, stack string, path string, port string) {
+func parseMatch(str string) (scheme string, service string, namespace string, path string, port string) {
 	parts := strings.SplitN(str, "://", 2)
 	if len(parts) == 2 {
 		scheme = parts[0]
@@ -455,7 +414,7 @@ func parseMatch(str string) (scheme string, service string, stack string, path s
 	}
 
 	str, path = kv.Split(str, "/")
-	service, stack = kv.Split(str, ".")
-	stack, port = kv.Split(stack, ":")
+	service, namespace = kv.Split(str, ".")
+	namespace, port = kv.Split(namespace, ":")
 	return
 }

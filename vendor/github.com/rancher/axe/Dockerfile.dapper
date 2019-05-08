@@ -1,0 +1,27 @@
+FROM golang:1.11-alpine
+
+RUN apk -U add bash git gcc musl-dev docker vim less file curl wget ca-certificates
+RUN go get -d golang.org/x/lint/golint && \
+    git -C /go/src/golang.org/x/lint/golint checkout -b current 06c8688daad7faa9da5a0c2f163a3d14aac986ca && \
+    go install golang.org/x/lint/golint && \
+    rm -rf /go/src /go/pkg
+RUN go get -d github.com/alecthomas/gometalinter && \
+    git -C /go/src/github.com/alecthomas/gometalinter checkout -b current v2.0.11 && \
+    go install github.com/alecthomas/gometalinter && \
+    gometalinter --install && \
+    rm -rf /go/src /go/pkg
+RUN go get -d github.com/rancher/trash && \
+    git -C /go/src/github.com/rancher/trash checkout -b current v0.2.6 && \
+    go install github.com/rancher/trash && \
+    rm -rf /go/src /go/pkg
+
+ENV DAPPER_ENV REPO TAG DRONE_TAG
+ENV DAPPER_SOURCE /go/src/github.com/rancher/axe/
+ENV DAPPER_OUTPUT ./bin ./dist
+ENV DAPPER_DOCKER_SOCKET true
+ENV TRASH_CACHE ${DAPPER_SOURCE}/.trash-cache
+ENV HOME ${DAPPER_SOURCE}
+WORKDIR ${DAPPER_SOURCE}
+
+ENTRYPOINT ["./scripts/entry"]
+CMD ["ci"]

@@ -1,28 +1,6 @@
-configs:
-  mesh:
-    content: |-
-      disablePolicyChecks: true
-      ingressControllerMode: "OFF"
-      authPolicy: NONE
-      rdsRefreshDelay: 10s
-      mixerReportServer: istio-telemetry.${TELEMETRY_NAMESPACE}.svc.cluster.local:9091
-      outboundTrafficPolicy:
-        mode: ALLOW_ANY
-      defaultConfig:
-        discoveryRefreshDelay: 10s
-        connectTimeout: 30s
-        configPath: "/etc/istio/proxy"
-        binaryPath: "/usr/local/bin/envoy"
-        serviceCluster: istio-proxy
-        drainDuration: 45s
-        parentShutdownDuration: 1m0s
-        interceptionMode: REDIRECT
-        proxyAdminPort: 15000
-        controlPlaneAuthPolicy: NONE
-        discoveryAddress: istio-pilot.${NAMESPACE}:15007
-
 services:
   istio-pilot:
+    disableServiceMesh: true
     labels:
       istio: pilot
     global_permissions:
@@ -42,52 +20,79 @@ services:
     - namespaces
     - nodes
     - secrets
-    sidekicks:
-      discovery:
-        command: discovery --log_output_level=debug --resync=2h
-        configs:
-        - mesh:/etc/istio/config/mesh
-        environment:
-        - POD_NAME=$(self/name)
-        - POD_NAMESPACE=$(self/namespace)
-        - PILOT_THROTTLE=500
-        - PILOT_CACHE_SQUASH=5
-        image: istio/pilot:1.0.5
-        secrets: identity:/etc/certs
-      istio-proxy:
-        expose:
-        - 15007/http
-        - 15010/grpc
-        - 9093/http,http-monitoring
-        image: istio/proxyv2:1.0.5
-        command:
-        - proxy
-        - --serviceCluster
-        - istio-pilot
-        - --templateFile
-        - /etc/istio/proxy/envoy_pilot.yaml.tmpl
-        - --controlPlaneAuthPolicy
-        - NONE
-        environment:
-        - POD_NAME=$(self/name)
-        - POD_NAMESPACE=$(self/namespace)
-        - INSTANCE_IP=$(self/ip)
-        secrets: identity:/etc/certs
+    containers:
+    - name: discovery
+      args:
+      - discovery
+      - --monitoringAddr=:15014
+      - --domain
+      - cluster.local
+      - --secureGrpcAddr
+      - ""
+      - --keepaliveMaxServerConnectionAge
+      - 30m
+      configs:
+      - mesh/meshConfig:/etc/istio/config/mesh
+      ports:
+      - 8080/http,http-legacy-discovery
+      - 15010/grpc,grpc-xds
+      - 15014/http,http-monitoring
+      env:
+      - POD_NAME=$(self/name)
+      - POD_NAMESPACE=$(self/namespace)
+      - PILOT_THROTTLE=500
+      - PILOT_CACHE_SQUASH=5
+      - PILOT_DISABLE_XDS_MARSHALING_TO_ANY=1
+      - PILOT_TRACE_SAMPLING=100
+      image: istio/pilot:1.1.3
+      imagePullPolicy: always
+      secrets: identity:/etc/certs
+      readinessProbe:
+        failureThreshold: 3
+        httpGet:
+          path: /ready
+          port: 8080
+          scheme: HTTP
+        initialDelaySeconds: 5
+        periodSeconds: 30
+        successThreshold: 1
+        timeoutSeconds: 5
+    - name: istio-proxy
+      ports:
+      - 15011/https,https-xds
+      image: istio/proxyv2:1.1.3
+      imagePullPolicy: always
+      args:
+      - proxy
+      - --domain
+      - $(POD_NAMESPACE).svc.cluster.local
+      - --serviceCluster
+      - istio-pilot
+      - --templateFile
+      - /etc/istio/proxy/envoy_pilot.yaml.tmpl
+      - --controlPlaneAuthPolicy
+      - NONE
+      env:
+      - POD_NAME=$(self/name)
+      - POD_NAMESPACE=$(self/namespace)
+      - INSTANCE_IP=$(self/ip)
+      secrets: identity:/etc/certs
 
   istio-citadel:
-    image: istio/citadel:1.0.5
-    command:
+    disableServiceMesh: true
+    image: istio/citadel:1.1.3
+    args:
     - --append-dns-names=true
     - --grpc-port=8060
     - --grpc-hostname=citadel
     - --self-signed-ca=true
-    - --citadel-storage-namespace=rio-system
+    - --monitoring-port=15014
+    - --citadel-storage-namespace=${NAMESPACE}
     global_permissions:
     - write secrets
     - serviceaccounts
     - services
     permissions:
-    - get,delete deployments
     - get,delete serviceaccounts
     - get,delete services
     - get,delete deployments
@@ -96,55 +101,66 @@ services:
     secrets: identity:/etc/certs
 
   istio-gateway:
+    disableServiceMesh: true
     labels:
       "gateway": "external"
+      "istio": "gateway"
     global_permissions:
     - "get,watch,list,update extensions/thirdpartyresources"
     - "get,watch,list,update */virtualservices"
     - "get,watch,list,update */destinationrules"
     - "get,watch,list,update */gateways"
     update_order: stop-first
-    sidekicks:
-      istio-proxy:
-        ports: ${PORTS}
-        image: "istio/proxyv2:1.0.5"
-        command:
-        - proxy
-        - router
-        - -v
-        - "2"
-        - --discoveryRefreshDelay
-        - '1s' #discoveryRefreshDelay
-        - --drainDuration
-        - '45s' #drainDuration
-        - --parentShutdownDuration
-        - '1m0s' #parentShutdownDuration
-        - --connectTimeout
-        - '10s' #connectTimeout
-        - --serviceCluster
-        - istio-proxy
-        - --zipkinAddress
-        - ""
-        - --statsdUdpAddress
-        - ""
-        - --proxyAdminPort
-        - "15000"
-        - --controlPlaneAuthPolicy
-        - NONE
-        - --discoveryAddress
-        - istio-pilot:15007
-        env:
-        - POD_NAME=$(self/name)
-        - POD_NAMESPACE=$(self/namespace)
-        - INSTANCE_IP=$(self/ip)
-        - ISTIO_META_POD_NAME=$(self/name)
-        secrets:
-        - identity:/etc/certs
-        - rio-certs:/etc/istio/ingressgateway-certs
-
-
-questions:
-- variable: TELEMETRY_NAMESPACE
-  description: "istio-telemetry namespace"
-
+    containers:
+    - name: istio-proxy
+      ports:
+      - 80:80,http2,internal=true
+      - 443:443,https,internal=true
+      image: istio/proxyv2:1.1.3
+      imagePullPolicy: always
+      args:
+      - proxy
+      - router
+      - --domain
+      - $(POD_NAMESPACE).svc.cluster.local
+      - --log_output_level
+      - info
+      - --drainDuration
+      - '45s' #drainDuration
+      - --parentShutdownDuration
+      - '1m0s' #parentShutdownDuration
+      - --connectTimeout
+      - '10s' #connectTimeout
+      - --serviceCluster
+      - istio-gateway
+      - --zipkinAddress
+      - ""
+      - --statsdUdpAddress
+      - ""
+      - --proxyAdminPort
+      - "15000"
+      - --statusPort
+      - "15020"
+      - --controlPlaneAuthPolicy
+      - NONE
+      - --discoveryAddress
+      - istio-pilot:15010
+      env:
+      - POD_NAME=$(self/name)
+      - POD_NAMESPACE=$(self/namespace)
+      - INSTANCE_IP=$(self/ip)
+      - ISTIO_META_POD_NAME=$(self/name)
+      - ISTIO_META_CONFIG_NAMESPACE=$(self/namespace)
+      secrets:
+      - identity:/etc/certs
+      readinessProbe:
+        failureThreshold: 30
+        httpGet:
+          path: /healthz/ready
+          port: 15020
+          scheme: HTTP
+        initialDelaySeconds: 1
+        periodSeconds: 2
+        successThreshold: 1
+        timeoutSeconds: 1
 

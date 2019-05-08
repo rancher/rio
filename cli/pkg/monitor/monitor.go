@@ -11,7 +11,6 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/patrickmn/go-cache"
 	"github.com/rancher/norman/clientbase"
-	"github.com/rancher/norman/types"
 	"github.com/sirupsen/logrus"
 )
 

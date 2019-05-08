@@ -1,11 +1,9 @@
 package lookup
 
 import (
-	"fmt"
+	"strings"
 
-	"github.com/rancher/norman/pkg/kv"
-	"github.com/rancher/rio/cli/pkg/clientcfg"
-	"github.com/rancher/rio/pkg/settings"
+	"github.com/rancher/wrangler/pkg/kv"
 )
 
 type ParsedContainer struct {
@@ -14,10 +12,20 @@ type ParsedContainer struct {
 	Service       StackScoped
 }
 
-func ParseContainer(project *clientcfg.Project, name string) (ParsedContainer, bool) {
+func ParseContainer(defaultStackName string, name string) (ParsedContainer, bool) {
 	result := ParsedContainer{}
 
-	stackScoped := ParseStackScoped(project, name)
+	var stackScoped StackScoped
+	if len(strings.Split(name, "/")) == 4 {
+		stackScoped = ParseStackScoped(defaultStackName, name)
+	} else {
+		namespace, other := kv.Split(name, "/")
+		stackScoped = StackScoped{
+			StackName: namespace,
+			Other:     other,
+		}
+	}
+
 	if stackScoped.Other == "" {
 		return result, false
 	}
@@ -33,11 +41,4 @@ func (p ParsedContainer) String() string {
 		p.Service.Other += "/" + p.ContainerName
 	}
 	return p.Service.String()
-}
-
-func (p ParsedContainer) K8sPodName() string {
-	if p.Service.Version == "" || p.Service.Version == settings.DefaultServiceVersion {
-		return fmt.Sprintf("%s-%s", p.Service.ResourceName, p.PodName)
-	}
-	return fmt.Sprintf("%s-%s-%s", p.Service.ResourceName, p.Service.Version, p.PodName)
 }

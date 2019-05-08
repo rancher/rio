@@ -1,9 +1,9 @@
 package mapper
 
 import (
-	"github.com/rancher/norman/types"
-	"github.com/rancher/norman/types/convert"
-	"github.com/rancher/norman/types/mapper"
+	types "github.com/rancher/mapper"
+	"github.com/rancher/mapper/convert"
+	"github.com/rancher/mapper/mappers"
 )
 
 type RouteSet struct {
@@ -45,5 +45,5 @@ func (r RouteSet) ToInternal(data map[string]interface{}) error {
 }
 
 func (r RouteSet) ModifySchema(schema *types.Schema, schemas *types.Schemas) error {
-	return mapper.ValidateField(r.Field, schema)
+	return mappers.ValidateField(r.Field, schema)
 }

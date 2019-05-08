@@ -3,19 +3,18 @@ package features
 import (
 	"context"
 
-	"github.com/rancher/norman/types/slice"
-
-	"github.com/rancher/norman/controller"
-	ntypes "github.com/rancher/norman/types"
+	ntypes "github.com/rancher/mapper"
+	"github.com/rancher/mapper/slice"
+	v1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/systemstack"
 	"github.com/rancher/rio/types"
-	"github.com/rancher/rio/types/apis/project.rio.cattle.io/v1"
 )
 
 type ControllerRegister func(ctx context.Context, rContext *types.Context) error
 
 type FeatureController struct {
 	FeatureName  string
+	System       bool
 	FeatureSpec  v1.FeatureSpec
 	Controllers  []ControllerRegister
 	OnStop       func() error
@@ -52,6 +51,10 @@ func (f *FeatureController) Register() error {
 
 func (f *FeatureController) Name() string {
 	return f.FeatureName
+}
+
+func (f *FeatureController) IsSystem() bool {
+	return f.System
 }
 
 func (f *FeatureController) Spec() v1.FeatureSpec {
@@ -107,10 +110,10 @@ func (f *FeatureController) Start(ctx context.Context, feature *v1.Feature) erro
 			return err
 		}
 	}
-
-	if err := controller.SyncThenStart(ctx, 5, rContext.Starters()...); err != nil {
-		return err
-	}
+	// todo: make boot faster
+	go func() {
+		rContext.Start(ctx)
+	}()
 
 	if f.OnStart != nil {
 		if err := f.OnStart(feature); err != nil {

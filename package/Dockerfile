@@ -1,5 +1,5 @@
-FROM alpine:3.8
-RUN apk -U --no-cache add ca-certificates
+FROM alpine
+RUN apk -U --no-cache add ca-certificates git
 ENV RIO_IN_CLUSTER=true
-COPY rio /
-CMD ["/rio"]
+COPY rio-controller /usr/bin
+CMD ["rio-controller"]
