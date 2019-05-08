@@ -40,7 +40,7 @@ need to be an expert in the details.
 3. Set up KUBECONFIG variable. `export KUBECONFIG=/path/to/kubeconfig`.
 4. Run `rio install`. 
 
-You should be able to see logs like this
+You should be able to see logs like
 ```
 Deploying Rio control plane....
 Rio control plane is deployed. Run `kubectl -n rio-system describe deploy rio-controller` to get more detail.
@@ -48,13 +48,13 @@ Welcome to Rio!
 ```
 Waiting for all the management pods to be up and running. `kubectl get po -n rio-system`
 
-Done! Now try [an example](./README.md#rio-stage-options-service_id_name).
+Done! Now try [an example](./README.md#Source-code-to-Deployment).
 
 ## Installation
 
 Download: [Linux, Mac, Windows](https://github.com/rancher/rio/releases)
 
-Run `rio install`.
+Installation should be as easy as running `rio install`.
 
 Follow the onscreen prompts and Rio will try to install itself into the current `kubectl` cluster.  Please note `cluster-admin`
 privileges are required for Rio.  This will probably changes, but for now we need the world.
@@ -63,8 +63,8 @@ All the prerequisite that Rio needs is just a KUBECONFIG file. Rio itself Contai
 which install CRD and start controller in the current cluster. By default if you install rio in your current cluster you will
 automatically get a DNS record registered for your ingress IPs. If you run `rio info` you should be able to see the domain.
 
-```
-» rio info                                                                                   
+```bash
+$ rio info                                                                                   
 Rio Version: dev
 Cluster Domain: xxxxx.on-rio.io
 System Namespace: rio-system
@@ -127,7 +127,9 @@ view the individual containers backing the service run `rio ps -c` or you can ru
 
 Scale a service up or down. You can pass as many services as you wish for example
 
-    rio scale myservice=3 otherstack/myservice2=1
+```bash
+$ rio scale myservice=3 otherstack/myservice2=1
+```
 
 ### rio rm [ID_OR_NAME...]
 
@@ -519,7 +521,7 @@ Get or tail logs of a service or container
 
 In a stack you can define the contents of files that can then be injected into containers. For example
 
-```
+```yaml
 configs:
   index:
     content: "<h1>hi</h1>"
@@ -531,14 +533,13 @@ services:
     - 80/http
     configs:
     - index:/usr/share/nginx/html/index.html
-
 ```
 
 Configs can be defined using a string or base64 format, using
 either the contents or encoded keys for string or base64
 respectively.
 
-```
+```yaml
 configs:
   index:
     # String format
@@ -660,6 +661,7 @@ default/svc:v3   ibuildthecloud/demo:v3   21 minutes ago   active    3         h
 # Access the app. You should be able to see traffic routing to the new revision
 $ curl https://svc-default.8axlxl.on-rio.io
 Hello World
+
 $ curl https://svc-default.8axlxl.on-rio.io
 Hello World v3
 
@@ -668,6 +670,7 @@ $ rio revision default/svc
 NAME             IMAGE                    CREATED          STATE     SCALE     ENDPOINT                                  WEIGHT                               DETAIL
 default/svc:v0   ibuildthecloud/demo:v1   42 minutes ago   active    3         https://svc-v0-default.8axlxl.on-rio.io                                        
 default/svc:v3   ibuildthecloud/demo:v3   26 minutes ago   active    3         https://svc-v3-default.8axlxl.on-rio.io   =============================> 100  
+
 $ curl https://svc-default.8axlxl.on-rio.io
 Hello World v3
 
@@ -679,7 +682,55 @@ default/svc:v3   ibuildthecloud/demo:v3   27 minutes ago   active    3         h
 
 ```
 
-### rio stage [OPTIONS] SERVICE_ID_NAME
+### rio route
+
+`rio route` allows you to create router which contains routing rule to different workloads.
+
+```base
+# Create a route to point to svc:v0 and svc:v3
+$ rio route append route1/to-svc-v0 to default/svc:v0
+$ rio route append route1/to-svc-v3 to default/svc:v3
+
+# Access the route
+$ rio route
+NAME             URL                                                 OPTS         ACTION    TARGET
+default/route1   https://route1-default.8axlxl.on-rio.io/to-svc-v0   timeout=0s   to        svc:v0,port=80
+default/route1   https://route1-default.8axlxl.on-rio.io/to-svc-v3   timeout=0s   to        svc:v3,port=80
+
+$ curl -s https://route1-default.8axlxl.on-rio.io/to-svc-v0
+Hello World
+
+$ curl -s https://route1-default.8axlxl.on-rio.io/to-svc-v3
+Hello World v3
+```
+
+### rio externalservice
+
+`rio externalservice` allows you to create dns record for external services that are outside service mesh
+
+```bash
+# Create a externalservice pointing to an IP
+$ rio externalservice create external 1.1.1.1
+
+#  Create a externalservice pointing to an FQDN
+$ rio externalservice create external-fqdn my.app.com
+
+$ rio external
+NAME                    CREATED         TARGET
+default/external        3 minutes ago   1.1.1.1
+default/external-fqdn   3 seconds ago   my.app.com
+```
+
+### rio domain
+
+`rio domain` allows you to create your own domain and pointing to a specific service or route
+
+```bash
+# Create a domain that 
+rio domain add foo.bar default/route1 
+```
+
+### rio export [OPTIONS] SERVICE_NAME
 
 ```bash
 # Export to see v0 service
@@ -731,6 +782,7 @@ default/autoscale-zero:v0   strongmonkey1992/autoscale:v0   4 minutes ago   pend
 $ rio ps 
 NAME                     ENDPOINT                                          SCALE           WEIGHT
 default/autoscale-zero   https://autoscale-zero-default.8axlxl.on-rio.io   v0/(0/0/0)/1    v0/100%
+
 $ curl -s https://autoscale-zero-default.8axlxl.on-rio.io
 Hi there, I am StrongMonkey:v13
 
@@ -827,14 +879,7 @@ rio-system/registry                 https://registry-rio-system.8axlxl.on-rio.io
 rio-system/webhook                  https://webhook-rio-system.8axlxl.on-rio.io    v0/1      v0/100%
 ```
 
-
-
-
-
-
-
-
-
+![Grafana](https://raw.githubusercontent.com/StrongMonkey/rio/refactor/grafana-example.png)
 
 ## Roadmap
 
@@ -852,7 +897,7 @@ rio-system/webhook                  https://webhook-rio-system.8axlxl.on-rio.io 
 | Builder | Moby BuildKit | included
 | TLS | Let's Encrypt | included
 | Image Scanning | Clair
-| Autoscaling | Knative
+| Autoscaling | Knative | included
 
 ## License
 Copyright (c) 2014 - 2019 [Rancher Labs, Inc.](http://rancher.com)

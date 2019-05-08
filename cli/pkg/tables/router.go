@@ -9,7 +9,6 @@ import (
 
 	"github.com/rancher/rio/cli/pkg/table"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/name"
 )
 
 type RouteSpecData struct {
@@ -182,6 +181,10 @@ func FormatRouteTarget(obj interface{}) (string, error) {
 
 	if target == "to" {
 		for _, to := range data.RouteSpec.To {
+			if to.Port == nil {
+				port := uint32(80)
+				to.Port = &port
+			}
 			writeDest(buf, data.RouteSet.Namespace, to.Namespace, to.Service, to.Revision, int(*to.Port), to.Weight)
 		}
 	} else if target == "redirect" && data.RouteSpec.Redirect != nil {
@@ -295,16 +298,11 @@ func FormatURL() func(obj interface{}) (string, error) {
 		if !ok {
 			return "", fmt.Errorf("invalid data")
 		}
-		hostBuf := strings.Builder{}
-		hostBuf.WriteString("https://")
-		name := name.SafeConcatName(data.RouteSet.Name, data.RouteSet.Name, data.RouteSet.Namespace)
-		hostBuf.WriteString(name)
-		hostBuf.WriteString(".")
-		hostBuf.WriteString(data.Domain)
-		if data.port() > 0 {
-			hostBuf.WriteString(":")
-			hostBuf.WriteString(strconv.Itoa(data.port()))
+		if len(data.RouteSet.Status.Endpoints) == 0 {
+			return "", nil
 		}
+		hostBuf := strings.Builder{}
+		hostBuf.WriteString(data.RouteSet.Status.Endpoints[0])
 		hostBuf.WriteString(data.path())
 		return hostBuf.String(), nil
 	}

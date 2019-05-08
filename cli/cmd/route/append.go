@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/errors"
+
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/pretty/objectmappers"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
@@ -44,7 +46,7 @@ type Add struct {
 type RouteAction interface {
 	validateServiceStack(ctx *clicontext.CLIContext, args []string) error
 	buildRouteSpec(ctx *clicontext.CLIContext, args []string) (*riov1.RouteSpec, error)
-	getRouteSet(ctx *clicontext.CLIContext, args []string) (*riov1.Router, error)
+	getRouteSet(ctx *clicontext.CLIContext, args []string) (*riov1.Router, bool, error)
 }
 
 func (a *Append) Run(ctx *clicontext.CLIContext) error {
@@ -66,7 +68,7 @@ func insertRoute(ctx *clicontext.CLIContext, insert bool, a RouteAction) error {
 		return err
 	}
 
-	routeSet, err := a.getRouteSet(ctx, args)
+	routeSet, shouldCreate, err := a.getRouteSet(ctx, args)
 	if err != nil {
 		return err
 	}
@@ -77,7 +79,7 @@ func insertRoute(ctx *clicontext.CLIContext, insert bool, a RouteAction) error {
 		routeSet.Spec.Routes = append(routeSet.Spec.Routes, *routeSpec)
 	}
 
-	if routeSet.Name == "" {
+	if shouldCreate {
 		return ctx.Create(routeSet)
 	}
 
@@ -96,19 +98,27 @@ func (a *Add) validateServiceStack(ctx *clicontext.CLIContext, args []string) er
 	return nil
 }
 
-func (a *Add) getRouteSet(ctx *clicontext.CLIContext, args []string) (*riov1.Router, error) {
+func (a *Add) getRouteSet(ctx *clicontext.CLIContext, args []string) (*riov1.Router, bool, error) {
 	_, service, namespace, _, _ := parseMatch(args[0])
+	if namespace == "" {
+		if ctx.DefaultNamespace != "" {
+			namespace = ctx.DefaultNamespace
+		} else {
+			namespace = "default"
+		}
+	}
 
 	routeSet, err := lookupRoute(ctx, namespace, service)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	if routeSet != nil {
-		return routeSet, nil
+		return routeSet, false, nil
 	}
 
-	return riov1.NewRouter(namespace, service, riov1.Router{}), nil
+	r := riov1.NewRouter(namespace, service, riov1.Router{})
+	return r, true, nil
 }
 
 func actionsString(many bool) string {
@@ -326,9 +336,9 @@ func ParseDestinations(targets []string) ([]riov1.WeightedDestination, error) {
 	var result []riov1.WeightedDestination
 	for _, target := range targets {
 		var (
-			stack    string
-			service  string
-			revision string
+			namespace string
+			service   string
+			revision  string
 		)
 
 		target, optStr := kv.Split(target, ",")
@@ -336,9 +346,10 @@ func ParseDestinations(targets []string) ([]riov1.WeightedDestination, error) {
 
 		parts := strings.SplitN(target, "/", 2)
 		if len(parts) == 2 {
-			stack = parts[0]
+			namespace = parts[0]
 			service = parts[1]
 		} else {
+			namespace = "default"
 			service = parts[0]
 		}
 
@@ -346,7 +357,7 @@ func ParseDestinations(targets []string) ([]riov1.WeightedDestination, error) {
 
 		wd := riov1.WeightedDestination{
 			Destination: riov1.Destination{
-				Namespace: stack,
+				Namespace: namespace,
 				Service:   service,
 				Revision:  revision,
 			},
@@ -386,7 +397,10 @@ func parseAction(action string) (string, error) {
 func lookupRoute(ctx *clicontext.CLIContext, namespace, name string) (*riov1.Router, error) {
 	route, err := ctx.Rio.Routers(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
-		return nil, err
+		if !errors.IsNotFound(err) {
+			return nil, err
+		}
+		return nil, nil
 	}
 
 	return route, nil

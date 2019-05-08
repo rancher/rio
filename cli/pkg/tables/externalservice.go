@@ -9,8 +9,8 @@ import (
 
 func NewExternalService(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
-		{"NAME", "{{stackScopedName .Obj.SystemNamespace .Obj.ServiceName}}"},
-		{"CREATED", "{{.Obj.Created | ago}}"},
+		{"NAME", "{{stackScopedName .Obj.Namespace .Obj.Name ``}}"},
+		{"CREATED", "{{.Obj.CreationTimestamp | ago}}"},
 		{"TARGET", "{{.Obj | formatTarget}}"},
 	}, cfg)
 	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cfg.GetDefaultNamespace()))
