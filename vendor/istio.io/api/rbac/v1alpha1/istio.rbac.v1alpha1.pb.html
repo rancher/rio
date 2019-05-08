@@ -1,10 +1,10 @@
 ---
 title: RBAC
-description: Configuration for Role Based Access Control
+description: Configuration for Role Based Access Control.
 location: https://istio.io/docs/reference/config/authorization/istio.rbac.v1alpha1.html
 layout: protoc-gen-docs
 generator: protoc-gen-docs
-number_of_entries: 9
+number_of_entries: 8
 ---
 <p>Istio RBAC (Role Based Access Control) defines ServiceRole and ServiceRoleBinding
 objects.</p>
@@ -37,7 +37,7 @@ spec:
     methods: [&quot;GET&quot;, &quot;HEAD&quot;]
     constraints:
     - key: &quot;destination.labels[version]&quot;
-      value: [&quot;v1&quot;, &quot;v2&quot;]
+      values: [&quot;v1&quot;, &quot;v2&quot;]
 </code></pre>
 
 <p>A ServiceRoleBinding specification includes two parts:</p>
@@ -106,11 +106,10 @@ If set to [&ldquo;*&rdquo;], it refers to all services in the namespace.</p>
 <p>Optional. A list of HTTP paths or gRPC methods.
 gRPC methods must be presented as fully-qualified name in the form of
 &ldquo;/packageName.serviceName/methodName&rdquo; and are case sensitive.
-Exact match, prefix match, and suffix match are supported for paths.
-For example, the path &ldquo;/books/review&rdquo; matches
-&ldquo;/books/review&rdquo; (exact match), or &ldquo;/books/<em>&rdquo; (prefix match),
-or &ldquo;</em>/review&rdquo; (suffix match).
-If not specified, it applies to any path.</p>
+Exact match, prefix match, and suffix match are supported. For example,
+the path &ldquo;/books/review&rdquo; matches &ldquo;/books/review&rdquo; (exact match),
+or &ldquo;/books/<em>&rdquo; (prefix match), or &ldquo;</em>/review&rdquo; (suffix match).
+If not specified, it matches to any path.</p>
 
 </td>
 </tr>
@@ -120,7 +119,7 @@ If not specified, it applies to any path.</p>
 <td>
 <p>Optional. A list of HTTP methods (e.g., &ldquo;GET&rdquo;, &ldquo;POST&rdquo;).
 It is ignored in gRPC case because the value is always &ldquo;POST&rdquo;.
-If set to [&ldquo;*&rdquo;] or not specified, it applies to any method.</p>
+If not specified, it matches to any methods.</p>
 
 </td>
 </tr>
@@ -128,8 +127,7 @@ If set to [&ldquo;*&rdquo;] or not specified, it applies to any method.</p>
 <td><code>constraints</code></td>
 <td><code><a href="#AccessRule-Constraint">AccessRule.Constraint[]</a></code></td>
 <td>
-<p>Optional. Extra constraints in the ServiceRole specification.
-The above ServiceRole example shows an example of constraint &ldquo;version&rdquo;.</p>
+<p>Optional. Extra constraints in the ServiceRole specification.</p>
 
 </td>
 </tr>
@@ -162,70 +160,9 @@ The above ServiceRole example shows an example of constraint &ldquo;version&rdqu
 <td><code>string[]</code></td>
 <td>
 <p>List of valid values for the constraint.
-Exact match, prefix match, and suffix match are supported for constraint values.
-For example, the value &ldquo;v1alpha2&rdquo; matches
-&ldquo;v1alpha2&rdquo; (exact match), or &ldquo;v1<em>&rdquo; (prefix match),
-or &ldquo;</em>alpha2&rdquo; (suffix match).</p>
-
-</td>
-</tr>
-</tbody>
-</table>
-</section>
-<h2 id="RbacConfig">RbacConfig</h2>
-<section>
-<p>RbacConfig defines the global config to control Istio RBAC behavior.
-This Custom Resource is a singleton where only one Custom Resource should be created globally in
-the mesh and the namespace should be the same to other Istio components, which usually is istio-system.
-Note: This is enforced in both istioctl and server side, new Custom Resource will be rejected if found any
-existing one, the user should either delete the existing one or change the existing one directly.</p>
-
-<p>Below is an example of RbacConfig object &ldquo;istio-rbac-config&rdquo; which enables Istio RBAC for all
-services in the default namespace.</p>
-
-<pre><code class="language-yaml">apiVersion: &quot;rbac.istio.io/v1alpha1&quot;
-kind: RbacConfig
-metadata:
-  name: default
-  namespace: istio-system
-spec:
-  mode: ON_WITH_INCLUSION
-  inclusion:
-    namespaces: [ &quot;default&quot; ]
-</code></pre>
-
-<table class="message-fields">
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr id="RbacConfig-mode">
-<td><code>mode</code></td>
-<td><code><a href="#RbacConfig-Mode">RbacConfig.Mode</a></code></td>
-<td>
-<p>Istio RBAC mode.</p>
-
-</td>
-</tr>
-<tr id="RbacConfig-inclusion">
-<td><code>inclusion</code></td>
-<td><code><a href="#RbacConfig-Target">RbacConfig.Target</a></code></td>
-<td>
-<p>A list of services or namespaces that should be enforced by Istio RBAC policies. Note: This field have
-effect only when mode is ON<em>WITH</em>INCLUSION and will be ignored for any other modes.</p>
-
-</td>
-</tr>
-<tr id="RbacConfig-exclusion">
-<td><code>exclusion</code></td>
-<td><code><a href="#RbacConfig-Target">RbacConfig.Target</a></code></td>
-<td>
-<p>A list of services or namespaces that should not be enforced by Istio RBAC policies. Note: This field have
-effect only when mode is ON<em>WITH</em>EXCLUSION and will be ignored for any other modes.</p>
+Exact match, prefix match, and suffix match are supported.
+For example, the value &ldquo;v1alpha2&rdquo; matches &ldquo;v1alpha2&rdquo; (exact match),
+or &ldquo;v1<em>&rdquo; (prefix match), or &ldquo;</em>alpha2&rdquo; (suffix match).</p>
 
 </td>
 </tr>
@@ -335,8 +272,7 @@ Currently, &ldquo;ServiceRole&rdquo; is the only supported value for &ldquo;kind
 <td><code>string</code></td>
 <td>
 <p>Required. The name of the ServiceRole object being referenced.
-The ServiceRole object must be in the same namespace as the ServiceRoleBinding
-object.</p>
+The ServiceRole object must be in the same namespace as the ServiceRoleBinding object.</p>
 
 </td>
 </tr>
@@ -345,9 +281,7 @@ object.</p>
 </section>
 <h2 id="ServiceRole">ServiceRole</h2>
 <section>
-<p>ServiceRole specification contains a list of access rules (permissions).
-This represent the &ldquo;Spec&rdquo; part of the ServiceRole object. The name and namespace
-of the ServiceRole is specified in &ldquo;metadata&rdquo; section of the ServiceRole object.</p>
+<p>ServiceRole specification contains a list of access rules (permissions).</p>
 
 <table class="message-fields">
 <thead>
@@ -371,10 +305,7 @@ of the ServiceRole is specified in &ldquo;metadata&rdquo; section of the Service
 </section>
 <h2 id="ServiceRoleBinding">ServiceRoleBinding</h2>
 <section>
-<p>ServiceRoleBinding assigns a ServiceRole to a list of subjects.
-This represents the &ldquo;Spec&rdquo; part of the ServiceRoleBinding object. The name and namespace
-of the ServiceRoleBinding is specified in &ldquo;metadata&rdquo; section of the ServiceRoleBinding
-object.</p>
+<p>ServiceRoleBinding assigns a ServiceRole to a list of subjects.</p>
 
 <table class="message-fields">
 <thead>
@@ -430,8 +361,7 @@ The supported keys in <code>properties</code> are listed in &ldquo;constraint an
 <td><code>properties</code></td>
 <td><code>map&lt;string,&nbsp;string&gt;</code></td>
 <td>
-<p>Optional. The set of properties that identify the subject.
-The above ServiceRoleBinding example shows an example of property &ldquo;source.namespace&rdquo;.</p>
+<p>Optional. The set of properties that identify the subject.</p>
 
 </td>
 </tr>

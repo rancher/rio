@@ -134,11 +134,13 @@ type VirtualServiceSpec struct {
 
 	// An ordered list of route rules for HTTP traffic.
 	// The first rule matching an incoming request is used.
-	Http []HTTPRoute `json:"http,omitempty"`
+	HTTP []HTTPRoute `json:"http,omitempty"`
 
 	// An ordered list of route rules for TCP traffic.
 	// The first rule matching an incoming request is used.
-	Tcp []TCPRoute `json:"tcp,omitempty"`
+	TCP []TCPRoute `json:"tcp,omitempty"`
+
+	TLS []TLSRoute `json:"tls,omitempty"`
 }
 
 // Describes match conditions and actions for routing HTTP/1.1, HTTP2, and
@@ -154,7 +156,7 @@ type HTTPRoute struct {
 	// forwarding target can be one of several versions of a service (see
 	// glossary in beginning of document). Weights associated with the
 	// service version determine the proportion of traffic it receives.
-	Route []DestinationWeight `json:"route,omitempty"`
+	Route []HTTPRouteDestination `json:"route,omitempty"`
 
 	// A http rule can either redirect or forward (default) traffic. If
 	// traffic passthrough option is specified in the rule,
@@ -194,10 +196,40 @@ type HTTPRoute struct {
 
 	// Additional HTTP headers to add before forwarding a request to the
 	// destination service.
-	AppendHeaders map[string]string `json:"appendHeaders,omitempty"`
+	DeprecatedAppendHeaders map[string]string `json:"appendHeaders,omitempty"`
+
+	// Header manipulation rules
+	Headers *Headers `json:"headers,omitempty"`
 
 	// Http headers to remove before returning the response to the caller
 	RemoveResponseHeaders map[string]string `json:"removeResponseHeaders,omitempty"`
+
+	// Cross-Origin Resource Sharing policy
+	CorsPolicy *CorsPolicy `json:"corsPolicy,omitempty"`
+}
+
+// Headers describes header manipulation rules.
+type Headers struct {
+	// Header manipulation rules to apply before forwarding a request
+	// to the destination service
+	Request *HeaderOperations `json:"request,omitempty"`
+
+	// Header manipulation rules to apply before returning a response
+	// to the caller
+	Response *HeaderOperations `json:"response,omitempty"`
+}
+
+// HeaderOperations Describes the header manipulations to apply
+type HeaderOperations struct {
+	// Overwrite the headers specified by key with the given values
+	Set map[string]string `json:"set,omitempty"`
+
+	// Append the given values to the headers specified by keys
+	// (will create a comma-separated list of values)
+	Add map[string]string `json:"add,omitempty"`
+
+	// Remove a the specified headers
+	Remove []string `json:"remove,omitempty"`
 }
 
 // HttpMatchRequest specifies a set of criterion to be met in order for the
@@ -235,7 +267,7 @@ type HTTPMatchRequest struct {
 	//
 	// - `regex: "value"` for ECMAscript style regex-based match
 	//
-	Uri *v1alpha1.StringMatch `json:"uri,omitempty"`
+	URI *v1alpha1.StringMatch `json:"uri,omitempty"`
 
 	// URI Scheme
 	// values are case-sensitive and formatted as follows:
@@ -284,12 +316,24 @@ type HTTPMatchRequest struct {
 	// **Note:** The keys `uri`, `scheme`, `method`, and `authority` will be ignored.
 	Headers map[string]v1alpha1.StringMatch `json:"headers,omitempty"`
 
+	// Specifies the ports on the host that is being addressed. Many services
+	// only expose a single port or label ports with the protocols they support,
+	// in these cases it is not required to explicitly select the port.
 	Port uint32 `json:"port,omitempty"`
 
+	// One or more labels that constrain the applicability of a rule to
+	// workloads with the given labels. If the VirtualService has a list of
+	// gateways specified at the top, it should include the reserved gateway
+	// `mesh` in order for this field to be applicable.
+	SourceLabels map[string]string `json:"sourceLabels,omitempty"`
+
+	// Names of gateways where the rule should be applied to. Gateway names
+	// at the top of the VirtualService (if any) are overridden. The gateway match is
+	// independent of sourceLabels.
 	Gateways []string `json:"gateways,omitempty"`
 }
 
-type DestinationWeight struct {
+type HTTPRouteDestination struct {
 	// REQUIRED. Destination uniquely identifies the instances of a service
 	// to which the request/connection should be forwarded to.
 	Destination Destination `json:"destination"`
@@ -299,6 +343,9 @@ type DestinationWeight struct {
 	// If there is only destination in a rule, the weight value is assumed to
 	// be 100.
 	Weight int `json:"weight"`
+
+	// Header manipulation rules
+	Headers *Headers `json:"headers,omitempty"`
 }
 
 // Destination indicates the network addressable service to which the
@@ -474,36 +521,98 @@ type TCPRoute struct {
 	// is matched if any one of the match blocks succeed.
 	Match []L4MatchAttributes `json:"match"`
 
+	// The destinations to which the connection should be forwarded to. Weights
+	// must add to 100%.
+	Route []HTTPRouteDestination `json:"route"`
+}
+
+// Describes match conditions and actions for routing unterminated TLS
+// traffic (TLS/HTTPS) The following routing rule forwards unterminated TLS
+// traffic arriving at port 443 of gateway called mygateway to internal
+// services in the mesh based on the SNI value.
+//
+// ```yaml
+// kind: VirtualService
+// metadata:
+//   name: bookinfo-sni
+// spec:
+//   hosts:
+//   - '*.bookinfo.com'
+//   gateways:
+//   - mygateway
+//   tls:
+//   - match:
+//     - port: 443
+//       sniHosts:
+//       - login.bookinfo.com
+//     route:
+//     - destination:
+//         host: login.prod.svc.cluster.local
+//   - match:
+//     - port: 443
+//       sniHosts:
+//       - reviews.bookinfo.com
+//     route:
+//     - destination:
+//         host: reviews.prod.svc.cluster.local
+// ```
+type TLSRoute struct {
+	// REQUIRED. Match conditions to be satisfied for the rule to be
+	// activated. All conditions inside a single match block have AND
+	// semantics, while the list of match blocks have OR semantics. The rule
+	// is matched if any one of the match blocks succeed.
+	Match []TLSMatchAttributes `json:"match"`
+
 	// The destination to which the connection should be forwarded to.
-	// Currently, only one destination is allowed for TCP services. When TCP
-	// weighted routing support is introduced in Envoy, multiple destinations
-	// with weights can be specified.
-	Route DestinationWeight `json:"route"`
+	Route []HTTPRouteDestination `json:"route"`
 }
 
 // L4 connection match attributes. Note that L4 connection matching support
 // is incomplete.
 type L4MatchAttributes struct {
 	// IPv4 or IPv6 ip address of destination with optional subnet.  E.g.,
-	// a.b.c.d/xx form or just a.b.c.d. This is only valid when the
-	// destination service has several IPs and the application explicitly
-	// specifies a particular IP.
-	DestinationSubnet string `json:"destinationSubnet,omitempty"`
+	// a.b.c.d/xx form or just a.b.c.d.
+	DestinationSubnets []string `json:"destinationSubnets,omitempty"`
 
 	// Specifies the port on the host that is being addressed. Many services
 	// only expose a single port or label ports with the protocols they support,
 	// in these cases it is not required to explicitly select the port.
 	Port int `json:"port,omitempty"`
 
-	// IPv4 or IPv6 ip address of source with optional subnet. E.g., a.b.c.d/xx
-	// form or just a.b.c.d
-	SourceSubnet string `json:"sourceSubnet,omitempty"`
+	// One or more labels that constrain the applicability of a rule to
+	// workloads with the given labels. If the VirtualService has a list of
+	// gateways specified at the top, it should include the reserved gateway
+	// `mesh` in order for this field to be applicable.
+	SourceLabels map[string]string `json:"sourceLabels,omitempty"`
+
+	// Names of gateways where the rule should be applied to. Gateway names
+	// at the top of the VirtualService (if any) are overridden. The gateway match is
+	// independent of sourceLabels.
+	Gateways []string `json:"gateways,omitempty"`
+}
+
+// TLS connection match attributes.
+type TLSMatchAttributes struct {
+	// REQUIRED. SNI (server name indicator) to match on. Wildcard prefixes
+	// can be used in the SNI value, e.g., *.com will match foo.example.com
+	// as well as example.com. An SNI value must be a subset (i.e., fall
+	// within the domain) of the corresponding virtual service's hosts
+	SniHosts []string `json:"sniHosts"`
+
+	// IPv4 or IPv6 ip addresses of destination with optional subnet.  E.g.,
+	// a.b.c.d/xx form or just a.b.c.d.
+	DestinationSubnets []string `json:"destinationSubnets,omitempty"`
+
+	// Specifies the port on the host that is being addressed. Many services
+	// only expose a single port or label ports with the protocols they support,
+	// in these cases it is not required to explicitly select the port.
+	Port int `json:"port,omitempty"`
 
 	// One or more labels that constrain the applicability of a rule to
 	// workloads with the given labels. If the VirtualService has a list of
 	// gateways specified at the top, it should include the reserved gateway
 	// `mesh` in order for this field to be applicable.
-	SourceLabel map[string]string `json:"sourceLabel,omitempty"`
+	SourceLabels map[string]string `json:"sourceLabels,omitempty"`
 
 	// Names of gateways where the rule should be applied to. Gateway names
 	// at the top of the VirtualService (if any) are overridden. The gateway match is
@@ -537,7 +646,7 @@ type HTTPRedirect struct {
 	// On a redirect, overwrite the Path portion of the URL with this
 	// value. Note that the entire path will be replaced, irrespective of the
 	// request URI being matched as an exact path or prefix.
-	Uri string `json:"uri,omitempty"`
+	URI string `json:"uri,omitempty"`
 
 	// On a redirect, overwrite the Authority/Host portion of the URL with
 	// this value.
@@ -546,7 +655,7 @@ type HTTPRedirect struct {
 
 // HTTPRewrite can be used to rewrite specific parts of a HTTP request
 // before forwarding the request to the destination. Rewrite primitive can
-// be used only with the DestinationWeights. The following example
+// be used only with the HTTPRouteDestinations. The following example
 // demonstrates how to rewrite the URL prefix for api call (/ratings) to
 // ratings service before making the actual API call.
 //
@@ -572,7 +681,7 @@ type HTTPRewrite struct {
 	// rewrite the path (or the prefix) portion of the URI with this
 	// value. If the original URI was matched based on prefix, the value
 	// provided in this field will replace the corresponding matched prefix.
-	Uri string `json:"uri,omitempty"`
+	URI string `json:"uri,omitempty"`
 
 	// rewrite the Authority/Host header with this value.
 	Authority string `json:"authority,omitempty"`
@@ -658,7 +767,7 @@ type CorsPolicy struct {
 	// access. Serialized into Access-Control-Expose-Headers header.
 	ExposeHeaders []string `json:"exposeHeaders,omitempty"`
 
-	// Specifies how long the the results of a preflight request can be
+	// Specifies how long the results of a preflight request can be
 	// cached. Translates to the Access-Control-Max-Age header.
 	MaxAge string `json:"maxAge,omitempty"`
 
@@ -759,9 +868,7 @@ type InjectAbort struct {
 	Percent int `json:"percent,omitempty"`
 
 	// REQUIRED. HTTP status code to use to abort the Http request.
-	HttpStatus int `json:"httpStatus"`
-	GrpcStatus string `json:"grpcStatus"`
-	Http2Error string `json:"http2Error"`
+	HTTPStatus int `json:"httpStatus"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
