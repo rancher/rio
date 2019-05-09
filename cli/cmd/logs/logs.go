@@ -48,6 +48,11 @@ func (l *Logs) Run(ctx *clicontext.CLIContext) error {
 			if l.C_Container != "" && container.Name != l.C_Container {
 				continue
 			}
+			if container.Name == "istio-proxy" || container.Name == "istio-init" {
+				if l.C_Container == "" {
+					continue
+				}
+			}
 
 			go l.logContainer(pd.Pod, container, ctx.Core, factory)
 		}

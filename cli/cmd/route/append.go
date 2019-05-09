@@ -36,6 +36,8 @@ type Add struct {
 	FaultDelay      string            `desc:"Inject a delay for fault (ms|s|m|h)" default:"0s"`
 	FaultHTTPCode   int               `desc:"HTTP code to send for fault injection"`
 	AddHeader       []string          `desc:"Add HTTP header to request (format key=value)"`
+	SetHeader       []string          `desc:"Override HTTP header to request (format key=value)"`
+	RemoveHeader    []string          `desc:"Remove HTTP header to request (format key=value)"`
 	RetryAttempts   int               `desc:"How many times to retry"`
 	RetryTimeout    string            `desc:"Timeout per retry (ms|s|m|h)" default:"0s"`
 	Timeout         string            `desc:"Timeout for all requests (ms|s|m|h)" default:"0s"`
@@ -152,7 +154,10 @@ func (a *Add) buildRouteSpec(ctx *clicontext.CLIContext, args []string) (*riov1.
 		return nil, err
 	}
 
-	routeSpec.AddHeaders = a.AddHeader
+	routeSpec.Headers.Add = kv.SplitMapFromSlice(a.AddHeader)
+	routeSpec.Headers.Set = kv.SplitMapFromSlice(a.SetHeader)
+	routeSpec.Headers.Remove = a.RemoveHeader
+
 	if err := a.addFault(routeSpec); err != nil {
 		return nil, err
 	}

@@ -39,7 +39,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			Answers: map[string]string{
 				settings.RioWildcardType: settings.ProductionType,
 				// todo: self-signed only for testing
-				settings.PublicDomainType: settings.SelfSignedType,
+				settings.PublicDomainType: settings.StagingType,
 			},
 		},
 		FixedAnswers: map[string]string{

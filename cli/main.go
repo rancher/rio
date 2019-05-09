@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/rancher/rio/cli/cmd/tui"
+
 	"github.com/rancher/rio/cli/cmd/render"
 
 	"github.com/rancher/rio/cli/cmd/apply"
@@ -209,6 +211,10 @@ func main() {
 		builder.Command(&weight.Weight{},
 			"Weight a percentage of traffic to a staged service",
 			appName+" weight [OPTIONS] [SERVICE_REVISION=PERCENTAGE...]",
+			""),
+		builder.Command(&tui.Tui{},
+			"Terminal interactive UI",
+			" tui",
 			""),
 		route.Route(app),
 	}

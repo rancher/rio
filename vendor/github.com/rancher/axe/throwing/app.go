@@ -7,7 +7,6 @@ import (
 
 	"github.com/gdamore/tcell"
 	"github.com/rancher/axe/throwing/types"
-	"github.com/rancher/axe/version"
 	"github.com/rivo/tview"
 	"k8s.io/client-go/kubernetes"
 )
@@ -81,15 +80,14 @@ func NewAppView(clientset *kubernetes.Clientset, dr types.Drawer, handler EventH
 }
 
 func (app *AppView) Init() error {
-	app.version = version.VERSION
 	k8sversion, err := app.getK8sVersion()
 	if err != nil {
 		return err
 	}
+	app.context, app.cancel = context.WithCancel(context.Background())
 	app.tableViews = map[string]*TableView{
 		app.RootPage: NewTableView(app, app.RootPage, app.Drawer),
 	}
-	app.context, app.cancel = context.WithCancel(context.Background())
 	app.k8sVersion = k8sversion
 	app.menuView.init()
 	app.footerView.init()
@@ -105,7 +103,7 @@ func (app *AppView) Init() error {
 
 	app.setInputHandler()
 
-	go app.watch()
+	//go app.watch()
 
 	main := tview.NewFlex()
 	{
@@ -130,7 +128,7 @@ func (app *AppView) watch() {
 		case <-app.switchPage:
 			app.cancel()
 			// recreate context
-			app.context, app.cancel = context.WithCancel(context.Background())
+			app.context, app.cancel = context.WithCancel(app.context)
 			go app.currentPrimitive.run(app.context)
 		}
 	}
@@ -209,7 +207,7 @@ func (m *menuView) init() {
 		m.Flex.SetBackgroundColor(tcell.ColorGray)
 		m.Flex.AddItem(m.logoView(), 6, 1, false)
 		m.Flex.AddItem(m.versionView(), 4, 1, false)
-		m.Flex.AddItem(m.tipsView(), 14, 1, false)
+		m.Flex.AddItem(m.tipsView(), 20, 1, false)
 		m.Flex.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 			if event.Rune() == 'm' {
 				m.AppView.SwitchToRootPage()

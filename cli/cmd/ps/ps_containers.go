@@ -8,7 +8,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/tables"
-	"github.com/rancher/rio/cli/pkg/types"
+	clitypes "github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,19 +32,28 @@ func ListFirstPod(ctx *clicontext.CLIContext, all bool, podOrServices ...string)
 func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]tables.PodData, error) {
 	var result []tables.PodData
 
-	var pods []types.Resource
-	var services []types.Resource
+	var pods []clitypes.Resource
+	var services []clitypes.Resource
+	var apps []clitypes.Resource
 
 	for _, name := range podOrServices {
-		r, err := lookup.Lookup(ctx, name, types.PodType, types.ServiceType)
+		var types []string
+		if strings.Contains(name, ":") {
+			types = []string{clitypes.ServiceType}
+		} else {
+			types = []string{clitypes.PodType, clitypes.AppType}
+		}
+		r, err := lookup.Lookup(ctx, name, types...)
 		if err != nil {
 			return nil, err
 		}
 		switch r.Type {
-		case types.PodType:
+		case clitypes.PodType:
 			pods = append(pods, r)
-		case types.ServiceType:
+		case clitypes.ServiceType:
 			services = append(services, r)
+		case clitypes.AppType:
+			apps = append(apps, r)
 		}
 	}
 
@@ -72,7 +81,7 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 			continue
 		}
 
-		if len(services) == 0 {
+		if len(services) == 0 && len(apps) == 0 {
 			result = append(result, podData)
 			continue
 		}
@@ -80,6 +89,13 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 		for _, service := range services {
 			appName, version := services2.AppAndVersion(service.Object.(*riov1.Service))
 			if appName == podData.Service.ServiceName && service.Namespace == podData.Service.StackName && podData.Service.Version == version {
+				result = append(result, podData)
+				break
+			}
+		}
+
+		for _, app := range apps {
+			if app.Name == podData.Service.ServiceName && app.Namespace == podData.Service.StackName {
 				result = append(result, podData)
 				break
 			}

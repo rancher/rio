@@ -34,7 +34,7 @@ func httpRoutes(systemNamespace string, service *v1.Service, dests []Dest) ([]v1
 	external := false
 	var result []v1alpha3.HTTPRoute
 	autoscale := false
-	if service.Spec.MaxScale != nil && service.Spec.Concurrency != nil {
+	if service.Spec.MaxScale != nil && service.Spec.Concurrency != nil && service.Spec.MinScale != nil && *service.Spec.MaxScale != *service.Spec.MinScale {
 		autoscale = true
 	}
 	for _, port := range service.Spec.Ports {

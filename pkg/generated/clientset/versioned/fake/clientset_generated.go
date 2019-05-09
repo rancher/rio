@@ -79,9 +79,9 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 
 var _ clientset.Interface = &Clientset{}
 
-// RioV1 retrieves the RioV1Client
-func (c *Clientset) RioV1() riov1.RioV1Interface {
-	return &fakeriov1.FakeRioV1{Fake: &c.Fake}
+// ProjectV1 retrieves the ProjectV1Client
+func (c *Clientset) ProjectV1() projectv1.ProjectV1Interface {
+	return &fakeprojectv1.FakeProjectV1{Fake: &c.Fake}
 }
 
 // AutoscaleV1 retrieves the AutoscaleV1Client
@@ -99,7 +99,7 @@ func (c *Clientset) WebhookinatorV1() webhookinatorv1.WebhookinatorV1Interface {
 	return &fakewebhookinatorv1.FakeWebhookinatorV1{Fake: &c.Fake}
 }
 
-// ProjectV1 retrieves the ProjectV1Client
-func (c *Clientset) ProjectV1() projectv1.ProjectV1Interface {
-	return &fakeprojectv1.FakeProjectV1{Fake: &c.Fake}
+// RioV1 retrieves the RioV1Client
+func (c *Clientset) RioV1() riov1.RioV1Interface {
+	return &fakeriov1.FakeRioV1{Fake: &c.Fake}
 }

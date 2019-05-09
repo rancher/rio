@@ -106,7 +106,7 @@ func (c *CLIContext) DeleteResource(r types.Resource) (err error) {
 	case clitypes.ConfigType:
 		err = c.Core.ConfigMaps(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
 	case clitypes.RouterType:
-		err = c.Rio.Services(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
+		err = c.Rio.Routers(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
 	case clitypes.ExternalServiceType:
 		err = c.Rio.ExternalServices(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
 	case clitypes.PublicDomainType:

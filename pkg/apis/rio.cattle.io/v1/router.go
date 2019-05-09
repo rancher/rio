@@ -4,6 +4,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/knative/pkg/apis/istio/v1alpha3"
+
 	"github.com/rancher/mapper/convert"
 	"github.com/rancher/wrangler/pkg/genericcondition"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -54,7 +56,7 @@ type RouteSpec struct {
 	Rewrite *Rewrite `json:"rewrite,omitempty"`
 
 	//Header manipulation rules
-	AddHeaders []string `json:"addHeaders,omitempty"`
+	Headers v1alpha3.HeaderOperations `json:"addHeaders,omitempty"`
 
 	RouteTraffic
 }
