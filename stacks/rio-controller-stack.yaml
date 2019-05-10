@@ -51,7 +51,7 @@ kubernetes:
         spec:
           serviceAccountName: rio-controller-serviceaccount
           containers:
-          - image: daishan1992/rio-controller:dev
+          - image: strongmonkey1992/rio-controller:dev
             imagePullPolicy: Always
             name: rio-controller
             args:

@@ -37,9 +37,8 @@ func Register(ctx context.Context, rContext *types.Context) error {
 				},
 			},
 			Answers: map[string]string{
-				settings.RioWildcardType: settings.ProductionType,
-				// todo: self-signed only for testing
-				settings.PublicDomainType: settings.StagingType,
+				settings.RioWildcardType:  settings.ProductionType,
+				settings.PublicDomainType: settings.ProductionType,
 			},
 		},
 		FixedAnswers: map[string]string{

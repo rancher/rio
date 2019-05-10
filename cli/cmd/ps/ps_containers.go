@@ -1,6 +1,7 @@
 package ps
 
 import (
+	"fmt"
 	"strings"
 
 	services2 "github.com/rancher/rio/pkg/services"
@@ -59,6 +60,7 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 
 	for _, pod := range pods {
 		containerName, _ := lookup.ParseContainer(ctx.GetDefaultNamespace(), pod.LookupName)
+		fmt.Println(containerName)
 		pod := pod.Object.(*v1.Pod)
 		podData, ok := toPodData(ctx, all, pod, containerName.ContainerName)
 		if ok {
@@ -66,7 +68,7 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 		}
 	}
 
-	if len(pods) > 0 && len(services) == 0 {
+	if len(pods) > 0 && len(services) == 0 && len(apps) == 0 {
 		return result, nil
 	}
 
@@ -114,7 +116,7 @@ func toPodData(ctx *clicontext.CLIContext, all bool, pod *v1.Pod, containerName 
 		Managed: pod.Namespace == ctx.SystemNamespace,
 	}
 
-	lookupName := stackScoped.ResourceName + "-"
+	lookupName := stackScoped.ServiceName + "-"
 	if strings.HasPrefix(pod.Name, lookupName) {
 		podData.Name = strings.TrimPrefix(pod.Name, lookupName)
 	} else {
@@ -125,7 +127,7 @@ func toPodData(ctx *clicontext.CLIContext, all bool, pod *v1.Pod, containerName 
 		return podData, false
 	}
 
-	if podData.Managed && !ctx.CLI.Bool("system") {
+	if podData.Managed && !ctx.CLI.GlobalBool("system") {
 		return podData, false
 	}
 

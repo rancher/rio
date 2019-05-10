@@ -218,6 +218,9 @@ func logs(container string, t *throwing.TableView) {
 		args = append(args, "-c", container)
 	}
 	args = append(args, name)
+	if showSystem {
+		args = append([]string{"--system"}, args...)
+	}
 	cmd := exec.Command("rio", args...)
 
 	logbox := tview.NewTextView()
@@ -255,6 +258,9 @@ func execute(container string, t *throwing.TableView) {
 	args := []string{"exec", "-it"}
 	if container != "" {
 		args = append(args, "-c", container)
+	}
+	if showSystem {
+		args = append([]string{"--system"}, args...)
 	}
 	args = append(args, name)
 	cmd := exec.Command("rio", append(args, shellArgs...)...)

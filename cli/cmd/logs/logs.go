@@ -30,7 +30,7 @@ func (l *Logs) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("at least one argument is required: CONTAINER_OR_SERVICE")
 	}
 
-	pds, err := ps.ListPods(ctx, l.A_All, ctx.CLI.Args()...)
+	pds, err := ps.ListPods(ctx, true, ctx.CLI.Args()...)
 	if err != nil {
 		return err
 	}
@@ -48,12 +48,9 @@ func (l *Logs) Run(ctx *clicontext.CLIContext) error {
 			if l.C_Container != "" && container.Name != l.C_Container {
 				continue
 			}
-			if container.Name == "istio-proxy" || container.Name == "istio-init" {
-				if l.C_Container == "" {
-					continue
-				}
+			if !l.A_All && (container.Name == "istio-proxy" || container.Name == "istio-init") {
+				continue
 			}
-
 			go l.logContainer(pd.Pod, container, ctx.Core, factory)
 		}
 	}

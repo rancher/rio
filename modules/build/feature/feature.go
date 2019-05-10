@@ -6,7 +6,6 @@ import (
 	"github.com/rancher/rio/modules/build/controllers/build"
 	"github.com/rancher/rio/modules/build/controllers/gitmodule"
 
-	"github.com/rancher/rio/modules/build/controllers/execution"
 	"github.com/rancher/rio/modules/build/controllers/service"
 	"github.com/rancher/rio/modules/build/controllers/webhook"
 	v1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
@@ -28,7 +27,6 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		},
 		Controllers: []features.ControllerRegister{
 			webhook.Register,
-			execution.Register,
 			service.Register,
 			build.Register,
 			gitmodule.Register,

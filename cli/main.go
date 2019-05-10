@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/rancher/rio/cli/cmd/secrets"
+
 	"github.com/rancher/rio/cli/cmd/tui"
 
 	"github.com/rancher/rio/cli/cmd/render"
@@ -133,6 +135,7 @@ func main() {
 		publicdomain.PublicDomain(app),
 		externalservice.ExternalService(app),
 		feature.Feature(app),
+		secrets.Secrets(app),
 
 		builder.Command(&ps.Ps{},
 			"List services and containers",

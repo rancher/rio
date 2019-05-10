@@ -11,7 +11,7 @@ import (
 
 const (
 	dns1035                      string = "[a-z]([-a-z0-9]*[a-z0-9])?"
-	alphanumeric                 string = "[a-zA-Z0-9_]*"
+	alphanumeric                 string = "[a-zA-Z0-9_-]*"
 	FourPartsNameType                   = NameType("fourParts")
 	FullDomainNameTypeNameType          = NameType("domainName")
 	SingleNameNameType                  = NameType("singleName")
@@ -50,7 +50,7 @@ var (
 			lookup: resolvePod,
 		},
 		FourPartsNameType: {
-			Regexp: regexp.MustCompile("^" + dns1035 + "/" + dns1035 + "/" + dns1035 + "/" + dns1035 + "$"),
+			Regexp: regexp.MustCompile("^" + dns1035 + "/" + dns1035 + "/" + alphanumeric + "/" + dns1035 + "$"),
 			lookup: resolvePod,
 		},
 	}
@@ -122,7 +122,7 @@ func resolvePod(defaultStackName, name, typeName string) types.Resource {
 	container, _ := ParseContainer(defaultStackName, name)
 	return types.Resource{
 		Namespace: container.Service.StackName,
-		Name:      container.PodName,
+		Name:      container.Service.ServiceName + "-" + container.PodName,
 		Type:      typeName,
 	}
 }
