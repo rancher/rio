@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rancher/wrangler/pkg/generic"
-
 	certmanagerapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
 	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
@@ -13,9 +11,11 @@ import (
 	"github.com/rancher/rio/pkg/constructors"
 	v12 "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
+	name2 "github.com/rancher/rio/pkg/name"
 	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/apply"
+	"github.com/rancher/wrangler/pkg/generic"
 	"github.com/rancher/wrangler/pkg/objectset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -142,7 +142,9 @@ func certificateHttp(namespace string, domain *riov1.PublicDomain, issuerName st
 								domain.Spec.DomainName,
 							},
 							SolverConfig: certmanagerapi.SolverConfig{
-								HTTP01: &certmanagerapi.HTTP01SolverConfig{},
+								HTTP01: &certmanagerapi.HTTP01SolverConfig{
+									Ingress: name2.SafeConcatName(domain.Name, name2.Hex(domain.Spec.DomainName, 5)),
+								},
 							},
 						},
 					},

@@ -137,7 +137,7 @@ import:
 - package: github.com/prometheus/procfs
   version: 65c1f6f8f0fc1e2185eb9863a3bc751496404259
 - package: github.com/rancher/axe
-  version: b9f967daeb041845d8a3bf0a4937f762de166b74
+  version: 84566a81582b26b0195c5ccd194473f9d8296ee5
   repo: https://github.com/StrongMonkey/axe.git
 - package: github.com/rancher/mapper
   version: 48be2d1eadc0ffa5ce78de00e0417cc926508cac

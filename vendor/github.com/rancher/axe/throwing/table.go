@@ -51,7 +51,7 @@ func NewTableView(app *AppView, kind string, drawer types.Drawer) *TableView {
 
 func (t *TableView) NewNestTableView(kind types.ResourceKind, feeder datafeeder.DataSource, actions []types.Action, pageNav map[rune]string, embeddedHandler EventHandler) *TableView {
 	nt := &TableView{
-		Table: tview.NewTable(),
+		Table:  tview.NewTable(),
 		drawer: t.drawer,
 	}
 	nt.init(t.app, kind, feeder, actions, pageNav, embeddedHandler)
@@ -107,16 +107,23 @@ func (t *TableView) init(app *AppView, resource types.ResourceKind, dataFeeder d
 	if app.handler != nil {
 		t.SetInputCapture(app.handler(t))
 	}
+
+	go func() {
+		t.run(app.context)
+	}()
 }
 
 func (t *TableView) run(ctx context.Context) {
 	for {
 		select {
 		case <-t.sync:
+			if t.resourceKind.Kind != t.app.currentPage {
+				continue
+			}
 			if err := t.refresh(); err != nil {
 				t.UpdateStatus(err.Error(), true)
 			}
-			t.SwitchPage(t.app.currentPage, t)
+			t.SwitchPage(t.app.currentPage, t.app.tableViews[t.app.currentPage])
 		case <-ctx.Done():
 			return
 		}
@@ -258,6 +265,11 @@ func (t *TableView) GetApplication() *tview.Application {
 	return t.app.Application
 }
 
+func (t *TableView) UpdateFeeder(kind string, feeder datafeeder.DataSource) {
+	tableview := t.app.tableViews[kind]
+	tableview.dataSource = feeder
+}
+
 func (t *TableView) GetCurrentPrimitive() tview.Primitive {
 	if t.app.drawQueue.Empty() {
 		return t.app.tableViews[t.drawer.RootPage]
@@ -269,8 +281,19 @@ func (t *TableView) SwitchPage(page string, draw tview.Primitive) {
 	t.app.SwitchPage(page, draw)
 }
 
+func (t *TableView) SetCurrentPage(page string) {
+	t.app.currentPage = page
+}
+
 func (t *TableView) GetTable() *tview.Table {
 	return t.Table
+}
+
+func (t *TableView) GetTableView(kind string) *TableView {
+	if _, ok := t.app.tableViews[kind]; !ok {
+		t.app.tableViews[kind] = NewTableView(t.app, kind, t.drawer)
+	}
+	return t.app.tableViews[kind]
 }
 
 func (t *TableView) BackPage() {
@@ -283,6 +306,12 @@ func (t *TableView) Refresh() {
 	}()
 }
 
+func (t *TableView) RefreshManual() {
+	if err := t.refresh(); err != nil {
+		t.UpdateStatus(err.Error(), true)
+	}
+}
+
 func (t *TableView) UpdateWithSearch(search string) {
 	t.search = search
 }
@@ -291,7 +320,7 @@ func (t *TableView) ShowMenu() {
 	app := t.app
 	if !app.showMenu {
 		newpage := tview.NewPages().AddPage("menu", app.CurrentPage(), true, true).
-			AddPage("menu-decor", center(app.menuView, 60, 15), true, true)
+			AddPage("menu-decor", center(app.menuView, 60, 35), true, true)
 		app.SwitchPage(app.currentPage, newpage)
 		app.SetFocus(app.menuView)
 		app.showMenu = true

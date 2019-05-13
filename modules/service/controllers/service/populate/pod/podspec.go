@@ -25,6 +25,7 @@ func podSpec(service *riov1.Service) v1.PodSpec {
 		Containers:         containers(service, false),
 		InitContainers:     containers(service, true),
 		Volumes:            volumes(service),
+		Affinity:           service.Spec.Affinity,
 	}
 
 	if podSpec.ServiceAccountName == "" {

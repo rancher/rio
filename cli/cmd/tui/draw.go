@@ -1,19 +1,20 @@
 package tui
 
 import (
-"github.com/rancher/axe/throwing"
-"github.com/rancher/axe/throwing/datafeeder"
-"github.com/rancher/axe/throwing/types"
+	"github.com/gdamore/tcell"
+	"github.com/rancher/axe/throwing"
+	"github.com/rancher/axe/throwing/datafeeder"
+	"github.com/rancher/axe/throwing/types"
 )
 
 const (
-	serviceKind         = "services"
-	routeKind           = "routes"
-	podKind             = "pods"
-	externalServiceKind = "externalservices"
-
-	stackLabel   = "rio.cattle.io/stack"
-	serviceLabel = "rio.cattle.io/service"
+	serviceKind         = "service"
+	routeKind           = "router"
+	appKind             = "app"
+	podKind             = "pod"
+	configKind          = "config"
+	publicdomainKind    = "publicdomain"
+	externalServiceKind = "externalservice"
 )
 
 var (
@@ -21,25 +22,33 @@ var (
 
 	colorStyles []string
 
-	RootPage = serviceKind
+	RootPage = appKind
 
 	Shortcuts = [][]string{
+		// CRUD
+		{"Key c", "Create"},
 		{"Key i", "Inspect"},
 		{"Key e", "Edit"},
+		{"Key d", "Delete"},
+
+		// exec and log
 		{"Key l", "Logs"},
 		{"Key x", "Exec"},
-		{"Key n", "Create"},
-		{"Key d", "Delete"},
-		{"Key r", "Refresh"},
-		{"Key /", "Search"},
+
+		// view pods and revisions
 		{"Key p", "View Pods"},
-		{"Ket h", "Hit Endpoint"},
+		{"Key v", "View revision"},
+
+		{"Key /", "Search"},
+		{"Key Ctrl+h", "Hit Endpoint"},
+		{"Key Ctrl+r", "Refresh"},
+		{"Key Ctrl+s", "Show system resource"},
 	}
 
 	Footers = []types.ResourceView{
 		{
-			Title: "Services",
-			Kind:  serviceKind,
+			Title: "Apps",
+			Kind:  appKind,
 			Index: 1,
 		},
 		{
@@ -47,18 +56,52 @@ var (
 			Kind:  routeKind,
 			Index: 2,
 		},
+		{
+			Title: "ExternalService",
+			Kind:  externalServiceKind,
+			Index: 3,
+		},
+		{
+			Title: "PublicDomain",
+			Kind:  publicdomainKind,
+			Index: 4,
+		},
+		{
+			Title: "Config",
+			Kind:  configKind,
+			Index: 5,
+		},
 	}
 
 	PageNav = map[rune]string{
-		'1': serviceKind,
+		'1': appKind,
 		'2': routeKind,
+		'3': externalServiceKind,
+		'4': publicdomainKind,
+		'5': configKind,
 	}
 
 	tableEventHandler = func(t *throwing.TableView) func(event *tcell.EventKey) *tcell.EventKey {
 		return func(event *tcell.EventKey) *tcell.EventKey {
 			switch event.Key() {
+			case tcell.KeyEscape:
+				kind := t.GetResourceKind()
+				if kind == serviceKind || kind == podKind {
+					kind = appKind
+				}
+				t.GetTableView(kind).RefreshManual()
+				t.SwitchPage(kind, t.GetTableView(kind))
 			case tcell.KeyEnter:
-				actionView(t)
+				actionView(t, false)
+			case tcell.KeyCtrlR:
+				t.Refresh()
+			case tcell.KeyCtrlS:
+				showSystem = !showSystem
+				t.Refresh()
+			case tcell.KeyCtrlH:
+				hit(t)
+			case tcell.KeyCtrlP:
+				promote(t)
 			case tcell.KeyRune:
 				switch event.Rune() {
 				case 'i':
@@ -69,37 +112,57 @@ var (
 					execute("", t)
 				case 'd':
 					rm(t)
-				case 'r':
-					t.Refresh()
 				case '/':
 					t.ShowSearch()
-				case 'm':
+				case 'm', 'h', '?':
 					t.ShowMenu()
 				default:
 					t.Navigate(event.Rune())
 				case 'p':
 					viewPods(t)
-				case 'h':
-					hit(t)
+				case 'e':
+					edit(t)
+				case 'v':
+					revisions(t)
 				}
 			}
 			return event
 		}
 	}
 
+	App = types.ResourceKind{
+		Title: "Apps",
+		Kind:  appKind,
+	}
+
 	Route = types.ResourceKind{
-		Title: "Routes",
-		Kind:  "route",
+		Title: "Routers",
+		Kind:  routeKind,
+	}
+
+	Config = types.ResourceKind{
+		Title: "Configs",
+		Kind:  configKind,
+	}
+
+	PublicDomain = types.ResourceKind{
+		Title: "PublicDomains",
+		Kind:  publicdomainKind,
 	}
 
 	Service = types.ResourceKind{
 		Title: "Services",
-		Kind:  "service",
+		Kind:  serviceKind,
 	}
 
 	ExternalService = types.ResourceKind{
-		Kind:  "ExternalService",
-		Title: "externalservice",
+		Title: "ExternalServices",
+		Kind:  externalServiceKind,
+	}
+
+	Pod = types.ResourceKind{
+		Title: "Pods",
+		Kind:  podKind,
 	}
 
 	DefaultAction = []types.Action{
@@ -125,6 +188,22 @@ var (
 		},
 	}
 
+	podAction = []types.Action{
+		{
+			Name:        "pods",
+			Shortcut:    'p',
+			Description: "view pods of a service or app",
+		},
+	}
+
+	revisionAction = []types.Action{
+		{
+			Name:        "revisions",
+			Shortcut:    'v',
+			Description: "view revisions of a app",
+		},
+	}
+
 	execAndlog = []types.Action{
 		{
 			Name:        "exec",
@@ -143,20 +222,17 @@ var (
 		},
 	}
 
+	pods = append(DefaultAction, execAndlog...)
+
+	services = append(DefaultAction, append(execAndlog, podAction...)...)
+
+	apps = append(DefaultAction, append(execAndlog, append(podAction, revisionAction...)...)...)
+
 	ViewMap = map[string]types.View{
-		serviceKind: {
-			Actions: append(
-				DefaultAction,
-				append(
-					execAndlog,
-					types.Action{
-						Name:        "pods",
-						Shortcut:    'p',
-						Description: "view pods of a service",
-					})...,
-			),
-			Kind:   Service,
-			Feeder: datafeeder.NewDataFeeder(ServiceRefresher),
+		appKind: {
+			Actions: apps,
+			Kind:    App,
+			Feeder:  datafeeder.NewDataFeeder(AppRefresher),
 		},
 		routeKind: {
 			Actions: DefaultAction,
@@ -165,8 +241,28 @@ var (
 		},
 		externalServiceKind: {
 			Actions: DefaultAction,
-			Kind:    Route,
-			Feeder:  datafeeder.NewDataFeeder(RouteRefresher),
+			Kind:    ExternalService,
+			Feeder:  datafeeder.NewDataFeeder(ExternalRefresher),
+		},
+		configKind: {
+			Actions: DefaultAction,
+			Kind:    Config,
+			Feeder:  datafeeder.NewDataFeeder(ConfigRefresher),
+		},
+		publicdomainKind: {
+			Actions: DefaultAction,
+			Kind:    PublicDomain,
+			Feeder:  datafeeder.NewDataFeeder(PublicDomainRefresher),
+		},
+		serviceKind: {
+			Actions: services,
+			Kind:    Service,
+			Feeder:  datafeeder.NewDataFeeder(ServiceRefresher),
+		},
+		podKind: {
+			Actions: pods,
+			Kind:    Pod,
+			Feeder:  datafeeder.NewDataFeeder(PodRefresher),
 		},
 	}
 
@@ -177,3 +273,4 @@ var (
 		PageNav:   PageNav,
 		Footers:   Footers,
 	}
+)

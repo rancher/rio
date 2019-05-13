@@ -1,8 +1,6 @@
 package populate
 
 import (
-	"fmt"
-
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/rio/pkg/name"
@@ -34,7 +32,7 @@ func Ingress(systemNamespace string, publicdomain *riov1.PublicDomain, os *objec
 	}
 	ingress.Spec.TLS = append(ingress.Spec.TLS, v1beta1.IngressTLS{
 		Hosts:      []string{publicdomain.Spec.DomainName},
-		SecretName: fmt.Sprintf("%s-%s", publicdomain.Spec.SecretRef.Namespace, publicdomain.Spec.SecretRef.Name),
+		SecretName: publicdomain.Spec.SecretRef.Name,
 	})
 	os.Add(ingress)
 	return nil

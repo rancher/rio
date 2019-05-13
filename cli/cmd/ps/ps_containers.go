@@ -1,6 +1,7 @@
 package ps
 
 import (
+	"fmt"
 	"strings"
 
 	services2 "github.com/rancher/rio/pkg/services"
@@ -8,7 +9,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/tables"
-	"github.com/rancher/rio/cli/pkg/types"
+	clitypes "github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,24 +33,34 @@ func ListFirstPod(ctx *clicontext.CLIContext, all bool, podOrServices ...string)
 func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]tables.PodData, error) {
 	var result []tables.PodData
 
-	var pods []types.Resource
-	var services []types.Resource
+	var pods []clitypes.Resource
+	var services []clitypes.Resource
+	var apps []clitypes.Resource
 
 	for _, name := range podOrServices {
-		r, err := lookup.Lookup(ctx, name, types.PodType, types.ServiceType)
+		var types []string
+		if strings.Contains(name, ":") {
+			types = []string{clitypes.ServiceType}
+		} else {
+			types = []string{clitypes.PodType, clitypes.AppType}
+		}
+		r, err := lookup.Lookup(ctx, name, types...)
 		if err != nil {
 			return nil, err
 		}
 		switch r.Type {
-		case types.PodType:
+		case clitypes.PodType:
 			pods = append(pods, r)
-		case types.ServiceType:
+		case clitypes.ServiceType:
 			services = append(services, r)
+		case clitypes.AppType:
+			apps = append(apps, r)
 		}
 	}
 
 	for _, pod := range pods {
 		containerName, _ := lookup.ParseContainer(ctx.GetDefaultNamespace(), pod.LookupName)
+		fmt.Println(containerName)
 		pod := pod.Object.(*v1.Pod)
 		podData, ok := toPodData(ctx, all, pod, containerName.ContainerName)
 		if ok {
@@ -57,7 +68,7 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 		}
 	}
 
-	if len(pods) > 0 && len(services) == 0 {
+	if len(pods) > 0 && len(services) == 0 && len(apps) == 0 {
 		return result, nil
 	}
 
@@ -72,7 +83,7 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 			continue
 		}
 
-		if len(services) == 0 {
+		if len(services) == 0 && len(apps) == 0 {
 			result = append(result, podData)
 			continue
 		}
@@ -80,6 +91,13 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 		for _, service := range services {
 			appName, version := services2.AppAndVersion(service.Object.(*riov1.Service))
 			if appName == podData.Service.ServiceName && service.Namespace == podData.Service.StackName && podData.Service.Version == version {
+				result = append(result, podData)
+				break
+			}
+		}
+
+		for _, app := range apps {
+			if app.Name == podData.Service.ServiceName && app.Namespace == podData.Service.StackName {
 				result = append(result, podData)
 				break
 			}
@@ -98,7 +116,7 @@ func toPodData(ctx *clicontext.CLIContext, all bool, pod *v1.Pod, containerName 
 		Managed: pod.Namespace == ctx.SystemNamespace,
 	}
 
-	lookupName := stackScoped.ResourceName + "-"
+	lookupName := stackScoped.ServiceName + "-"
 	if strings.HasPrefix(pod.Name, lookupName) {
 		podData.Name = strings.TrimPrefix(pod.Name, lookupName)
 	} else {
@@ -109,7 +127,7 @@ func toPodData(ctx *clicontext.CLIContext, all bool, pod *v1.Pod, containerName 
 		return podData, false
 	}
 
-	if podData.Managed && !ctx.CLI.Bool("system") {
+	if podData.Managed && !ctx.CLI.GlobalBool("system") {
 		return podData, false
 	}
 

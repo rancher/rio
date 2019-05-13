@@ -104,12 +104,8 @@ func virtualServiceFromRoutesets(systemNamespace string, clusterDomain *projectv
 			}
 		}
 
-		if len(routeSpec.AddHeaders) > 0 {
-			httpRoute.Headers = &v1alpha3.Headers{
-				Request: &v1alpha3.HeaderOperations{
-					Add: convertEnvFromSliceToMap(routeSpec.AddHeaders),
-				},
-			}
+		httpRoute.Headers = &v1alpha3.Headers{
+			Request: &routeSpec.Headers,
 		}
 
 		if routeSpec.Redirect != nil {

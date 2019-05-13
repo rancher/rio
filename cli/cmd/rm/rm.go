@@ -1,7 +1,6 @@
 package rm
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
@@ -34,7 +33,6 @@ func Remove(ctx *clicontext.CLIContext, types ...string) error {
 				}
 			}
 		}
-		fmt.Println(types)
 		resource, err := lookup.Lookup(ctx, arg, types...)
 		if err != nil {
 			return err

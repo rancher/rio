@@ -9,7 +9,7 @@ services:
     - '* events'
     - '* services'
     - '* pods'
-    image: daishan1992/cert-manager:latest
+    image: strongmonkey1992/cert-manager:dev
     imagePullPolicy: Always
     args:
     - cert-manager

@@ -619,6 +619,11 @@ func (in *PodConfig) DeepCopyInto(out *PodConfig) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.Affinity != nil {
+		in, out := &in.Affinity, &out.Affinity
+		*out = new(corev1.Affinity)
+		(*in).DeepCopyInto(*out)
+	}
 	in.PodDNSConfig.DeepCopyInto(&out.PodDNSConfig)
 	in.Container.DeepCopyInto(&out.Container)
 	return
@@ -928,11 +933,7 @@ func (in *RouteSpec) DeepCopyInto(out *RouteSpec) {
 		*out = new(Rewrite)
 		**out = **in
 	}
-	if in.AddHeaders != nil {
-		in, out := &in.AddHeaders, &out.AddHeaders
-		*out = make([]string, len(*in))
-		copy(*out, *in)
-	}
+	in.Headers.DeepCopyInto(&out.Headers)
 	in.RouteTraffic.DeepCopyInto(&out.RouteTraffic)
 	return
 }

@@ -22,7 +22,7 @@ var (
 func ParseImagePullPolicy(policy string) (v1.PullPolicy, error) {
 	ret, ok := pullNames[strings.ToLower(policy)]
 	if !ok {
-		return ret, fmt.Errorf("%s is not a valid image pull policy, must be Always, Never, or IfNotPresent")
+		return ret, fmt.Errorf("%s is not a valid image pull policy, must be Always, Never, or IfNotPresent", policy)
 	}
 	return ret, nil
 }

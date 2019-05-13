@@ -2,6 +2,7 @@ package weight
 
 import (
 	"errors"
+	err2 "errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -56,7 +57,7 @@ func ScaleAndAllocate(ctx *clicontext.CLIContext, args []string, noRollout bool,
 
 		scaleStr = strings.TrimSuffix(scaleStr, "%")
 		if scaleStr == "" {
-			return fmt.Errorf("weight params must be in the format of SERVICE=PERCENTAGE, for example: myservice=10%")
+			return err2.New("weight params must be in the format of SERVICE=PERCENTAGE, for example: myservice=10%")
 		}
 		scale, err := strconv.Atoi(scaleStr)
 		if err != nil {

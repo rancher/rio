@@ -2,11 +2,12 @@ package webhook
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"net/url"
 	"os"
 	"strings"
+
+	"github.com/rancher/rio/modules/build/controllers/service"
 
 	"github.com/drone/go-scm/scm"
 	"github.com/drone/go-scm/scm/driver/github"
@@ -41,7 +42,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	wh := webhookHandler{
 		namespace:       rContext.Namespace,
 		secretsLister:   rContext.Core.Core().V1().Secret().Cache(),
-		serviceCache:    rContext.Rio.Rio().V1().Service().Cache(),
+		services:        rContext.Rio.Rio().V1().Service(),
 		webhookReceiver: rContext.Webhook.Webhookinator().V1().GitWebHookReceiver(),
 	}
 
@@ -64,7 +65,7 @@ type webhookHandler struct {
 	namespace       string
 	gitmodule       gitv1controller.GitModuleClient
 	secretsLister   v1.SecretCache
-	serviceCache    riov1controller.ServiceCache
+	services        riov1controller.ServiceController
 	webhookReceiver webhookcontrollerv1.GitWebHookReceiverController
 }
 
@@ -95,7 +96,7 @@ func (w webhookHandler) onChange(key string, obj *webhookv1.GitWebHookReceiver) 
 		return obj, nil
 	}
 
-	svc, err := w.serviceCache.Get(w.namespace, "webhook")
+	svc, err := w.services.Cache().Get(w.namespace, "webhook")
 	if err != nil {
 		return obj, err
 	}
@@ -104,25 +105,33 @@ func (w webhookHandler) onChange(key string, obj *webhookv1.GitWebHookReceiver) 
 		return obj, err
 	}
 
-	return obj, webhookv1.GitWebHookReceiverConditionRegistered.Do(func() (runtime.Object, error) {
-		return w.createGithubWebhook(svc, obj)
+	return obj, webhookv1.GitWebHookReceiverConditionRegistered.DoUntilTrue(obj, func() (runtime.Object, error) {
+		obj, err := w.createGithubWebhook(svc, obj)
+		if err != nil {
+			return obj, err
+		}
+		svc, err := w.services.Cache().Get(obj.Namespace, obj.Name)
+		if err != nil {
+			return obj, err
+		}
+		deepcopy := svc.DeepCopy()
+		firstCommit, err := service.FirstCommit(deepcopy.Spec.Build.Repo, deepcopy.Spec.Build.Branch)
+		deepcopy.Spec.Build.Revision = firstCommit
+		if _, err := w.services.Update(deepcopy); err != nil {
+			return obj, err
+		}
+		return obj, nil
 	})
 }
 
-//func (w webhookHandler) createGitModule(svc *riov1.Service, obj *webhookv1.GitWebHookReceiver) (*webhookv1.GitWebHookReceiver, error) {
-//	moduleName := name.SafeConcatName(svc.Namespace, svc.ServiceName, name.Hex(obj.Spec.RepositoryURL, 5))
-//	module := gitv1.NewGitModule(w.namespace)
-//}
-
 func (w webhookHandler) createGithubWebhook(svc *riov1.Service, obj *webhookv1.GitWebHookReceiver) (*webhookv1.GitWebHookReceiver, error) {
 	obj.Status.Token = uuid.New().String()
-	secret, err := w.secretsLister.Get(obj.Name, obj.Spec.RepositoryCredentialSecretName)
+	secret, err := w.secretsLister.Get(obj.Namespace, obj.Spec.RepositoryCredentialSecretName)
 	if err != nil {
 		return obj, err
 	}
 
-	token := base64.StdEncoding.EncodeToString(secret.Data["accessToken"])
-	client, err := newGithubClient(token)
+	client, err := newGithubClient(string(secret.Data["accessToken"]))
 	if err != nil {
 		return obj, err
 	}
@@ -178,7 +187,7 @@ func getHookEndpoint(receiver *webhookv1.GitWebHookReceiver, endpoint string) st
 	if os.Getenv("RIO_WEBHOOK_URL") != "" {
 		return hookUrl(os.Getenv("RIO_WEBHOOK_URL"), receiver)
 	}
-	return hookUrl(fmt.Sprintf("http://%s", endpoint), receiver)
+	return hookUrl(endpoint, receiver)
 }
 
 func hookUrl(base string, receiver *webhookv1.GitWebHookReceiver) string {

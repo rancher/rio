@@ -33,6 +33,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	h := handler{
 		services: rContext.Rio.Rio().V1().Service(),
 		routers:  rContext.Rio.Rio().V1().Router(),
+		apps:     rContext.Rio.Rio().V1().App(),
 	}
 
 	rContext.Rio.Rio().V1().PublicDomain().OnChange(ctx, servicePublicdomain, h.sync)
@@ -49,6 +50,7 @@ func (p populator) populate(obj runtime.Object, namespace *corev1.Namespace, os 
 
 type handler struct {
 	services riov1controller.ServiceController
+	apps     riov1controller.AppController
 	routers  riov1controller.RouterController
 }
 
@@ -57,7 +59,7 @@ func (h handler) sync(key string, pd *riov1.PublicDomain) (*riov1.PublicDomain, 
 		return nil, nil
 	}
 
-	svc, err := h.services.Cache().Get(pd.Namespace, pd.Spec.TargetServiceName)
+	svc, err := h.apps.Cache().Get(pd.Namespace, pd.Spec.TargetServiceName)
 	if err != nil && !errors.IsNotFound(err) {
 		return pd, err
 	}
@@ -68,7 +70,7 @@ func (h handler) sync(key string, pd *riov1.PublicDomain) (*riov1.PublicDomain, 
 			if !slice.ContainsString(deepcopy.Status.PublicDomains, pd.Spec.DomainName) {
 				deepcopy.Status.PublicDomains = append(deepcopy.Status.PublicDomains, pd.Spec.DomainName)
 				sort.Strings(deepcopy.Status.PublicDomains)
-				if _, err := h.services.Update(deepcopy); err != nil {
+				if _, err := h.apps.Update(deepcopy); err != nil {
 					return pd, err
 				}
 			}

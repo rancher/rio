@@ -98,7 +98,9 @@ func (s serviceHandler) populate(obj runtime.Object, namespace *corev1.Namespace
 		return nil
 	}
 
-	revVs := populate.VirtualServiceFromSpec(true, s.systemNamespace, app.Name, app.Namespace, clusterDomain, revision, dests...)
+	deepcopy := revision.DeepCopy()
+	deepcopy.Status.PublicDomains = app.Status.PublicDomains
+	revVs := populate.VirtualServiceFromSpec(true, s.systemNamespace, app.Name, app.Namespace, clusterDomain, deepcopy, dests...)
 	os.Add(revVs)
 
 	// generating ingress for whole service set

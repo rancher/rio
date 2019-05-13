@@ -4,10 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"text/tabwriter"
 	"text/template"
 	"time"
+
+	yaml2 "sigs.k8s.io/yaml"
 
 	"github.com/rancher/rio/pkg/apis/common"
 
@@ -54,8 +57,9 @@ type writer struct {
 	ValueFormat   string
 	err           error
 	headerPrinted bool
-	Writer        *tabwriter.Writer
-	funcMap       map[string]interface{}
+	Writer        io.Writer
+	//Writer        *tabwriter.Writer
+	funcMap map[string]interface{}
 }
 
 type FormatFunc interface{}
@@ -78,8 +82,13 @@ func NewWriter(values [][]string, config WriterConfig) Writer {
 	}
 
 	t := &writer{
-		Writer:  tabwriter.NewWriter(config.Writer(), 10, 1, 3, ' ', 0),
 		funcMap: funcMap,
+	}
+
+	if os.Getenv("TUI_HACK") == "true" {
+		t.Writer = config.Writer()
+	} else {
+		t.Writer = tabwriter.NewWriter(config.Writer(), 10, 1, 3, ' ', 0)
 	}
 
 	t.HeaderFormat, t.ValueFormat = SimpleFormat(values)
@@ -150,13 +159,18 @@ func (t *writer) Write(obj interface{}) {
 		}
 		_, t.err = t.Writer.Write([]byte(content))
 	} else if t.ValueFormat == "yaml" {
-		content, err := FormatYAML(obj)
+		content, err := FormatJSON(obj)
+		t.err = err
+		if t.err != nil {
+			return
+		}
+		converted, err := yaml2.JSONToYAML([]byte(content))
 		t.err = err
 		if t.err != nil {
 			return
 		}
 		t.Writer.Write([]byte("---\n"))
-		_, t.err = t.Writer.Write([]byte(content + "\n"))
+		_, t.err = t.Writer.Write(append(converted, []byte("\n")...))
 	} else {
 		t.err = t.printTemplate(t.Writer, t.ValueFormat, obj)
 	}
@@ -177,7 +191,10 @@ func (t *writer) Close() error {
 	if t.err != nil {
 		return t.err
 	}
-	return t.Writer.Flush()
+	if _, ok := t.Writer.(*tabwriter.Writer); ok {
+		return t.Writer.(*tabwriter.Writer).Flush()
+	}
+	return nil
 }
 
 func (t *writer) printTemplate(out io.Writer, templateContent string, obj interface{}) error {
