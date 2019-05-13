@@ -79,11 +79,10 @@ func run(c *cli.Context) error {
 	}
 
 	ctx := signals.SetupSignalHandler(context.Background())
-	if err := server.Startup(ctx, namespace, customRegistry, kubeconfig); err != nil {
+	if err := server.Startup(ctx, namespace, kubeconfig); err != nil {
 		return err
 	}
 
-	<-ctx.Done()
 	return nil
 }
 

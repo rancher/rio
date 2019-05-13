@@ -53,7 +53,6 @@ func Register(ctx context.Context, rContext *types.Context) error {
 
 	p := populator{
 		systemNamespace:    rContext.Namespace,
-		customRegistry:     rContext.CustomRegistry,
 		secretsCache:       rContext.Core.Core().V1().Secret().Cache(),
 		clusterDomainCache: rContext.Global.Project().V1().ClusterDomain().Cache(),
 	}

@@ -6,12 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rancher/rio/cli/cmd/secrets"
-
-	"github.com/rancher/rio/cli/cmd/tui"
-
-	"github.com/rancher/rio/cli/cmd/render"
-
+	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/rio/cli/cmd/apply"
 	"github.com/rancher/rio/cli/cmd/attach"
 	"github.com/rancher/rio/cli/cmd/config"
@@ -19,26 +14,25 @@ import (
 	"github.com/rancher/rio/cli/cmd/edit"
 	"github.com/rancher/rio/cli/cmd/exec"
 	"github.com/rancher/rio/cli/cmd/export"
-	"github.com/rancher/rio/cli/cmd/logs"
-
 	"github.com/rancher/rio/cli/cmd/externalservice"
 	"github.com/rancher/rio/cli/cmd/feature"
+	"github.com/rancher/rio/cli/cmd/info"
 	"github.com/rancher/rio/cli/cmd/inspect"
 	"github.com/rancher/rio/cli/cmd/install"
-	"github.com/rancher/rio/cli/cmd/publicdomain"
-	"github.com/rancher/rio/cli/cmd/revision"
-
-	"github.com/rancher/rio/cli/cmd/info"
+	"github.com/rancher/rio/cli/cmd/logs"
 	"github.com/rancher/rio/cli/cmd/promote"
+	"github.com/rancher/rio/cli/cmd/ps"
+	"github.com/rancher/rio/cli/cmd/publicdomain"
+	"github.com/rancher/rio/cli/cmd/render"
+	"github.com/rancher/rio/cli/cmd/revision"
 	"github.com/rancher/rio/cli/cmd/rm"
 	"github.com/rancher/rio/cli/cmd/route"
 	"github.com/rancher/rio/cli/cmd/run"
 	"github.com/rancher/rio/cli/cmd/scale"
+	"github.com/rancher/rio/cli/cmd/secrets"
 	"github.com/rancher/rio/cli/cmd/stage"
+	"github.com/rancher/rio/cli/cmd/tui"
 	"github.com/rancher/rio/cli/cmd/weight"
-
-	"github.com/docker/docker/pkg/reexec"
-	"github.com/rancher/rio/cli/cmd/ps"
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/version"

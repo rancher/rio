@@ -2,8 +2,6 @@ package kiali
 
 import (
 	"context"
-	"encoding/base64"
-	"fmt"
 
 	v1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/features"
@@ -19,8 +17,8 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			Description: "Kiali Dashboard",
 			Enabled:     true,
 			Answers: map[string]string{
-				"USERNAME": base64.StdEncoding.EncodeToString([]byte("admin")),
-				"PASSWORD": base64.StdEncoding.EncodeToString([]byte("admin")),
+				"USERNAME": "admin",
+				"PASSWORD": "admin",
 			},
 			Requires: []string{
 				"prometheus",
@@ -32,8 +30,8 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			systemstack.NewStack(apply, rContext.Namespace, "kiali", true),
 		},
 		FixedAnswers: map[string]string{
-			"PROMETHEUS_URL": fmt.Sprintf("http://prometheus.%s:9090", rContext.Namespace),
-			"GRAFANA_URL":    fmt.Sprintf("http://grafana.%s:3000", rContext.Namespace),
+			"PROMETHEUS_URL": "http://prometheus:9090",
+			"GRAFANA_URL":    "http://grafana:3000",
 			"NAMESPACE":      rContext.Namespace,
 		},
 	}

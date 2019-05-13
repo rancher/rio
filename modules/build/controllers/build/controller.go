@@ -14,7 +14,6 @@ import (
 
 func Register(ctx context.Context, rContext *types.Context) error {
 	h := handler{
-		registry:           rContext.CustomRegistry,
 		systemNamespace:    rContext.Namespace,
 		services:           rContext.Rio.Rio().V1().Service(),
 		clusterDomainCache: rContext.Global.Project().V1().ClusterDomain().Cache(),

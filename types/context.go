@@ -26,8 +26,7 @@ import (
 type contextKey struct{}
 
 type Context struct {
-	Namespace      string
-	CustomRegistry string
+	Namespace string
 
 	Apps        *apps.Factory
 	AutoScale   *autoscale.Factory
@@ -95,9 +94,8 @@ func (c *Context) Start(ctx context.Context) error {
 	)
 }
 
-func BuildContext(ctx context.Context, namespace string, registry string, config *rest.Config) (context.Context, *Context) {
+func BuildContext(ctx context.Context, namespace string, config *rest.Config) (context.Context, *Context) {
 	c := NewContext(namespace, config)
-	c.CustomRegistry = registry
 	return context.WithValue(ctx, contextKey{}, c), c
 }
 
