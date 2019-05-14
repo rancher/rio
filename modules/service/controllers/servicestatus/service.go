@@ -63,6 +63,9 @@ func (s *subServiceController) deploymentChanged(key string, dep *appsv1.Deploym
 	if dep == nil {
 		return nil, nil
 	}
+	if dep.DeletionTimestamp != nil {
+		return nil, nil
+	}
 	service, err := s.serviceLister.Get(dep.Namespace, dep.Name)
 	if errors.IsNotFound(err) {
 		return nil, nil

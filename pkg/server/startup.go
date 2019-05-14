@@ -17,7 +17,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-func Startup(ctx context.Context, systemNamespace, registry string, kubeConfig string) error {
+func Startup(ctx context.Context, systemNamespace, kubeConfig string) error {
 	restConfig, err := clientcmd.BuildConfigFromFlags("", kubeConfig)
 	if err != nil {
 		return err
@@ -27,7 +27,7 @@ func Startup(ctx context.Context, systemNamespace, registry string, kubeConfig s
 		return err
 	}
 
-	ctx, rioContext := types.BuildContext(ctx, systemNamespace, registry, restConfig)
+	ctx, rioContext := types.BuildContext(ctx, systemNamespace, restConfig)
 
 	namespaceClient := rioContext.Core.Core().V1().Namespace()
 	if _, err := namespaceClient.Get(systemNamespace, metav1.GetOptions{}); err != nil {

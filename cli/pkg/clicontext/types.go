@@ -319,6 +319,12 @@ func (c *CLIContext) listNamespace(namespace, typeName string) (ret []runtime.Ob
 			ret = append(ret, &objs.Items[i])
 		}
 		return ret, err
+	case clitypes.SecretType:
+		objs, err := c.Core.Secrets(namespace).List(opts)
+		for i := range objs.Items {
+			ret = append(ret, &objs.Items[i])
+		}
+		return ret, err
 	default:
 		return nil, fmt.Errorf("unknown list type %s", typeName)
 	}

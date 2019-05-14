@@ -4,11 +4,10 @@ import (
 	"context"
 	"sort"
 
-	"k8s.io/apimachinery/pkg/api/errors"
-
 	"github.com/rancher/rio/modules/service/controllers/service/populate/serviceports"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constructors"
+	corev1controller "github.com/rancher/rio/pkg/generated/controllers/core/v1"
 	v1 "github.com/rancher/rio/pkg/generated/controllers/core/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	services2 "github.com/rancher/rio/pkg/services"
@@ -19,6 +18,7 @@ import (
 	appv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v12 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -28,6 +28,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		namespace:      rContext.Namespace,
 		apply:          rContext.Apply.WithSetID("serviceset"),
 		apps:           rContext.Rio.Rio().V1().App(),
+		coreservice:    rContext.Core.Core().V1().Service(),
 		services:       rContext.Rio.Rio().V1().Service(),
 		serviceCache:   rContext.Rio.Rio().V1().Service().Cache(),
 		namespaceCache: rContext.Core.Core().V1().Namespace().Cache(),
@@ -39,6 +40,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 type handler struct {
 	namespace      string
 	apply          apply.Apply
+	coreservice    corev1controller.ServiceController
 	services       riov1controller.ServiceController
 	apps           riov1controller.AppController
 	serviceCache   riov1controller.ServiceCache
@@ -46,8 +48,17 @@ type handler struct {
 }
 
 func (h *handler) onChange(key string, service *riov1.Service) (*riov1.Service, error) {
-	if service == nil || service.DeletionTimestamp != nil {
+	os := objectset.NewObjectSet()
+	if service == nil {
 		return service, nil
+	}
+
+	appName, _ := services2.AppAndVersion(service)
+
+	if service.DeletionTimestamp != nil {
+		return service, h.apply.WithSetID(appName).
+			WithCacheTypes(h.apps).
+			WithCacheTypes(h.coreservice).Apply(os)
 	}
 
 	ns, err := h.namespaceCache.Get(service.Namespace)
@@ -63,17 +74,17 @@ func (h *handler) onChange(key string, service *riov1.Service) (*riov1.Service, 
 		return service, err
 	}
 
-	appName, _ := services2.AppAndVersion(service)
-
 	serviceSet, err := serviceset.CollectionServices(services)
 	if err != nil {
 		return service, err
 	}
 	filteredServices := serviceSet[appName]
 	if filteredServices == nil {
-		return service, nil
+		return service, h.apply.WithSetID(appName).
+			WithCacheTypes(h.apps).
+			WithCacheTypes(h.coreservice).Apply(os)
 	}
-	os := objectset.NewObjectSet()
+
 	svc := createService(ns.Name, appName, filteredServices.Revisions)
 	os.Add(svc)
 
@@ -136,7 +147,9 @@ func (h *handler) onChange(key string, service *riov1.Service) (*riov1.Service, 
 	})
 	app.Spec.Revisions = serviceWeight
 	os.Add(app)
-	return service, h.apply.WithSetID(appName).WithCacheTypes(h.apps).Apply(os)
+	return service, h.apply.WithSetID(appName).
+		WithCacheTypes(h.apps).
+		WithCacheTypes(h.coreservice).Apply(os)
 }
 
 func IsReady(status *appv1.DeploymentStatus) bool {

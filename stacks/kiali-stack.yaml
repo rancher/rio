@@ -13,15 +13,19 @@ services:
     - "get,list,watch networking.istio.io/destinationrules"
     - "get,list,watch networking.istio.io/serviceentries"
     - "get,list,watch networking.istio.io/gateways"
+    - "get,list,watch authentication.istio.io/policies"
     - "get,list,watch config.istio.io/*"
     - "get,list,watch /*"
     - "get,list,watch batch/*"
     - "get,list,watch apps/*"
     - "get,list,watch autoscaling/*"
-    image: docker.io/kiali/kiali:v0.19
+    image: docker.io/kiali/kiali:v0.14
     env:
     - ACTIVE_NAMESPACE=${NAMESPACE}
+    - SERVER_CREDENTIALS_USERNAME=${USERNAME}
+    - SERVER_CREDENTIALS_PASSWORD=${PASSWORD}
     - PROMETHEUS_SERVICE_URL=${PROMETHEUS_URL}
+    - GRAFANA_SERVICE_NAMESPACE=${NAMESPACE}
     args:
     - -config
     - /kiali-configuration/config.yaml
@@ -33,20 +37,6 @@ services:
     - kiali:/kiali-secret/
     ports:
     - 20001/http
-
-kubernetes:
-  manifest: |-
-    apiVersion: v1
-    kind: Secret
-    metadata:
-      name: kiali
-      namespace: ${NAMESPACE}
-      labels:
-        app: kiali
-    type: Opaque
-    data:
-      username: ${USERNAME}
-      passphrase: ${PASSWORD}
 
 templates:
   questions:

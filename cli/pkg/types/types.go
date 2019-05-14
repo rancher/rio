@@ -12,6 +12,7 @@ const (
 	ExternalServiceType = "externalservice"
 	FeatureType         = "feature"
 	PublicDomainType    = "publicdomain"
+	SecretType          = "secret"
 
 	ConfigTypeFull          = "configmaps"
 	AppTypeFull             = "apps.rio.cattle.io"
