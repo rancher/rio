@@ -9,8 +9,8 @@ import (
 
 	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
 	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
-	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/wrangler/pkg/objectset"
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -33,7 +33,7 @@ func Ingress(clusterDomain *projectv1.ClusterDomain, systemNamespace string, ns,
 						{
 							Path: "/",
 							Backend: v1beta1.IngressBackend{
-								ServiceName: settings.IstioGateway,
+								ServiceName: constants.IstioGateway,
 								ServicePort: intstr.FromInt(80),
 							},
 						},

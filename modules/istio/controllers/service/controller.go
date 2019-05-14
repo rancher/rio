@@ -11,12 +11,12 @@ import (
 	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
 	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	corev1controller "github.com/rancher/rio/pkg/generated/controllers/core/v1"
 	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	services2 "github.com/rancher/rio/pkg/services"
-	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/objectset"
@@ -70,7 +70,7 @@ func (s *serviceHandler) populate(obj runtime.Object, namespace *corev1.Namespac
 		return nil
 	}
 
-	clusterDomain, err := s.clusterDomainCache.Get(s.systemNamespace, settings.ClusterDomainName)
+	clusterDomain, err := s.clusterDomainCache.Get(s.systemNamespace, constants.ClusterDomainName)
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func (s *serviceHandler) syncDomain(key string, svc *riov1.Service) (*riov1.Serv
 		return svc, nil
 	}
 
-	clusterDomain, err := s.clusterDomainCache.Get(s.systemNamespace, settings.ClusterDomainName)
+	clusterDomain, err := s.clusterDomainCache.Get(s.systemNamespace, constants.ClusterDomainName)
 	if err != nil {
 		return svc, err
 	}
@@ -121,7 +121,7 @@ func (s *serviceHandler) syncAppDomain(key string, obj *riov1.App) (*riov1.App, 
 		return obj, nil
 	}
 
-	clusterDomain, err := s.clusterDomainCache.Get(s.systemNamespace, settings.ClusterDomainName)
+	clusterDomain, err := s.clusterDomainCache.Get(s.systemNamespace, constants.ClusterDomainName)
 	if err != nil {
 		return obj, err
 	}

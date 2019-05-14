@@ -5,10 +5,10 @@ import (
 
 	"github.com/rancher/rio/modules/istio/controllers/externalservice/populate"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	v12 "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/serviceset"
-	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/kv"
@@ -63,7 +63,7 @@ func (p populator) populate(obj runtime.Object, namespace *corev1.Namespace, os 
 		return err
 	}
 
-	clusterDomain, err := p.clusterDomainCache.Get(p.namespace, settings.ClusterDomainName)
+	clusterDomain, err := p.clusterDomainCache.Get(p.namespace, constants.ClusterDomainName)
 	if err != nil {
 		return err
 	}

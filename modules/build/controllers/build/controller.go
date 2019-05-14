@@ -5,10 +5,10 @@ import (
 
 	"github.com/knative/build/pkg/apis/build/v1alpha1"
 	"github.com/rancher/rio/modules/build/controllers/service"
+	"github.com/rancher/rio/pkg/constants"
 	v1alpha12 "github.com/rancher/rio/pkg/generated/controllers/build.knative.dev/v1alpha1"
 	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
 )
 
@@ -36,7 +36,7 @@ func (h handler) updateService(key string, build *v1alpha1.Build) (*v1alpha1.Bui
 		return build, nil
 	}
 
-	clusterDomain, err := h.clusterDomainCache.Get(h.systemNamespace, settings.ClusterDomainName)
+	clusterDomain, err := h.clusterDomainCache.Get(h.systemNamespace, constants.ClusterDomainName)
 	if err != nil {
 		return build, err
 	}

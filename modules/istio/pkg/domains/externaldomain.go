@@ -3,11 +3,11 @@ package domains
 import (
 	"fmt"
 
-	"github.com/rancher/rio/pkg/settings"
+	"github.com/rancher/rio/pkg/constants"
 )
 
 func GetPublicGateway(systemNamespace string) string {
-	return fmt.Sprintf("%s.%s.svc.cluster.local", settings.RioGateway, systemNamespace)
+	return fmt.Sprintf("%s.%s.svc.cluster.local", constants.RioGateway, systemNamespace)
 }
 
 func GetExternalDomain(name, namespace, clusterDomain string) string {

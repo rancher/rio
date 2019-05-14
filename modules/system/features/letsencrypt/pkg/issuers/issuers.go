@@ -1,11 +1,11 @@
 package issuers
 
-import "github.com/rancher/rio/pkg/settings"
+import "github.com/rancher/rio/pkg/constants"
 
 var IssuerTypeToName = map[string]string{
-	settings.StagingType:    settings.StagingIssuerName,
-	settings.ProductionType: settings.ProductionIssuerName,
-	settings.SelfSignedType: settings.SelfSignedIssuerName,
+	constants.StagingType:    constants.StagingIssuerName,
+	constants.ProductionType: constants.ProductionIssuerName,
+	constants.SelfSignedType: constants.SelfSignedIssuerName,
 }
 
 const (

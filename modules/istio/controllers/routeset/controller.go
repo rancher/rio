@@ -10,10 +10,10 @@ import (
 	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
 	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	corev1controller "github.com/rancher/rio/pkg/generated/controllers/core/v1"
 	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/generic"
@@ -83,7 +83,7 @@ func (r *routeSetHandler) populate(obj runtime.Object, ns *corev1.Namespace, os 
 	externalServiceMap := map[string]*riov1.ExternalService{}
 	routesetMap := map[string]*riov1.Router{}
 
-	clusterDomain, err := r.clusterDomainCache.Get(r.systemNamespace, settings.ClusterDomainName)
+	clusterDomain, err := r.clusterDomainCache.Get(r.systemNamespace, constants.ClusterDomainName)
 	if err != nil {
 		return err
 	}
@@ -128,7 +128,7 @@ func (r *routeSetHandler) syncDomain(key string, obj runtime.Object) (runtime.Ob
 		return nil, nil
 	}
 
-	clusterDomain, err := r.clusterDomainCache.Get(r.systemNamespace, settings.ClusterDomainName)
+	clusterDomain, err := r.clusterDomainCache.Get(r.systemNamespace, constants.ClusterDomainName)
 	if err != nil {
 		return obj, err
 	}

@@ -131,7 +131,7 @@ type PodDNSConfigOption struct {
 	Value *string `json:"value,omitempty"`
 }
 
-// ContainerSecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty. See type description for default values of each field.
+// ContainerSecurityContext holds pod-level security attributes and common container constants. Optional: Defaults to empty. See type description for default values of each field.
 type ContainerSecurityContext struct {
 	// The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in SecurityContext.
 	// If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container

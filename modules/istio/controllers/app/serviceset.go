@@ -7,10 +7,10 @@ import (
 	"github.com/rancher/rio/modules/istio/controllers/service/populate"
 	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	corev1controller "github.com/rancher/rio/pkg/generated/controllers/core/v1"
 	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/objectset"
@@ -50,7 +50,7 @@ func (s serviceHandler) populate(obj runtime.Object, namespace *corev1.Namespace
 		return nil
 	}
 
-	clusterDomain, err := s.clusterDomainCache.Get(s.systemNamespace, settings.ClusterDomainName)
+	clusterDomain, err := s.clusterDomainCache.Get(s.systemNamespace, constants.ClusterDomainName)
 	if err != nil {
 		return err
 	}

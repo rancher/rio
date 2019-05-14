@@ -7,10 +7,10 @@ import (
 	"github.com/rancher/rio/modules/istio/controllers/istio/populate"
 	"github.com/rancher/rio/modules/istio/pkg/istio/config"
 	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	corev1controller "github.com/rancher/rio/pkg/generated/controllers/core/v1"
 	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/apply/injectors"
@@ -154,7 +154,7 @@ func (i *istioDeployController) syncEndpoint(key string, endpoint *corev1.Endpoi
 	if endpoint == nil {
 		return nil, nil
 	}
-	if endpoint.Namespace != i.namespace || endpoint.Name != settings.IstioGatewayDeploy {
+	if endpoint.Namespace != i.namespace || endpoint.Name != constants.IstioGatewayDeploy {
 		return endpoint, nil
 	}
 
@@ -177,7 +177,7 @@ func (i *istioDeployController) syncEndpoint(key string, endpoint *corev1.Endpoi
 		}
 	}
 
-	clusterDomain, err := i.clusterDomain.Cache().Get(i.namespace, settings.ClusterDomainName)
+	clusterDomain, err := i.clusterDomain.Cache().Get(i.namespace, constants.ClusterDomainName)
 	if err != nil && !errors.IsNotFound(err) {
 		return endpoint, err
 	}
@@ -201,7 +201,7 @@ func (i *istioDeployController) syncEndpoint(key string, endpoint *corev1.Endpoi
 }
 
 func (i *istioDeployController) indexEPByNode(ep *corev1.Endpoints) ([]string, error) {
-	if ep.Namespace != i.namespace || ep.Name != settings.IstioGatewayDeploy {
+	if ep.Namespace != i.namespace || ep.Name != constants.IstioGatewayDeploy {
 		return nil, nil
 	}
 
@@ -222,7 +222,7 @@ func (i *istioDeployController) syncSubdomain(key string, service *corev1.Servic
 	if service == nil {
 		return service, nil
 	}
-	clusterDomain, err := i.clusterDomain.Cache().Get(i.namespace, settings.ClusterDomainName)
+	clusterDomain, err := i.clusterDomain.Cache().Get(i.namespace, constants.ClusterDomainName)
 	if err != nil {
 		return service, err
 	}
@@ -274,11 +274,11 @@ func getNodeIP(node *v1.Node) string {
 }
 
 func setupConfigmapAndInjectors(ctx context.Context, rContext *types.Context) error {
-	cm, err := rContext.Core.Core().V1().ConfigMap().Get(rContext.Namespace, settings.IstionConfigMapName, metav1.GetOptions{})
+	cm, err := rContext.Core.Core().V1().ConfigMap().Get(rContext.Namespace, constants.IstionConfigMapName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
-	meshConfig, template, err := config.DoConfigAndTemplate(cm.Data[settings.IstioMeshConfigKey], cm.Data[settings.IstioSidecarTemplateName])
+	meshConfig, template, err := config.DoConfigAndTemplate(cm.Data[constants.IstioMeshConfigKey], cm.Data[constants.IstioSidecarTemplateName])
 	if err != nil {
 		return err
 	}
@@ -289,13 +289,13 @@ func setupConfigmapAndInjectors(ctx context.Context, rContext *types.Context) er
 }
 
 func ensureClusterDomain(ns string, clusterDomain projectv1controller.ClusterDomainClient) error {
-	_, err := clusterDomain.Get(ns, settings.ClusterDomainName, metav1.GetOptions{})
+	_, err := clusterDomain.Get(ns, constants.ClusterDomainName, metav1.GetOptions{})
 	if errors.IsNotFound(err) {
-		_, err := clusterDomain.Create(projectv1.NewClusterDomain(ns, settings.ClusterDomainName, projectv1.ClusterDomain{
+		_, err := clusterDomain.Create(projectv1.NewClusterDomain(ns, constants.ClusterDomainName, projectv1.ClusterDomain{
 			Spec: projectv1.ClusterDomainSpec{
 				SecretRef: v1.SecretReference{
 					Namespace: ns,
-					Name:      settings.GatewaySecretName,
+					Name:      constants.GatewaySecretName,
 				},
 			},
 		}))

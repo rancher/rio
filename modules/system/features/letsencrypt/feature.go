@@ -7,8 +7,8 @@ import (
 	"github.com/rancher/rio/modules/system/features/letsencrypt/controllers/publicdomain"
 	v1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/features"
-	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/pkg/systemstack"
 	"github.com/rancher/rio/types"
 )
@@ -22,23 +22,23 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			Enabled:     true,
 			Questions: []riov1.Question{
 				{
-					Variable:    settings.RioWildcardType,
+					Variable:    constants.RioWildcardType,
 					Description: "Type of certificates for rio wildcards domain",
-					Default:     settings.StagingType,
-					Options:     []string{settings.StagingType, settings.ProductionType, settings.SelfSignedType},
+					Default:     constants.StagingType,
+					Options:     []string{constants.StagingType, constants.ProductionType, constants.SelfSignedType},
 					Type:        "enum",
 				},
 				{
-					Variable:    settings.PublicDomainType,
+					Variable:    constants.PublicDomainType,
 					Description: "Type of certificates for rio public domain",
-					Default:     settings.ProductionType,
-					Options:     []string{settings.StagingType, settings.ProductionType, settings.SelfSignedType},
+					Default:     constants.ProductionType,
+					Options:     []string{constants.StagingType, constants.ProductionType, constants.SelfSignedType},
 					Type:        "enum",
 				},
 			},
 			Answers: map[string]string{
-				settings.RioWildcardType:  settings.ProductionType,
-				settings.PublicDomainType: settings.ProductionType,
+				constants.RioWildcardType:  constants.ProductionType,
+				constants.PublicDomainType: constants.ProductionType,
 			},
 		},
 		FixedAnswers: map[string]string{
