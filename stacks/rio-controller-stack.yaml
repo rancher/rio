@@ -51,7 +51,7 @@ kubernetes:
         spec:
           serviceAccountName: rio-controller-serviceaccount
           containers:
-          - image: strongmonkey1992/rio-controller:dev
+          - image: ${IMAGE}
             imagePullPolicy: Always
             name: rio-controller
             args:
@@ -62,3 +62,11 @@ kubernetes:
             - name: RIO_DEBUG
               value: ${RIO_DEBUG}
 
+templates:
+  questions:
+  - variable: IMAGE
+    description: "rio-controller image"
+  - variable: NAMESPACE
+    description: "namespace to deploy to"
+  - variable: RIO_DEBUG
+    description: "set to true to enable debug logging"

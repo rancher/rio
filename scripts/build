@@ -7,5 +7,9 @@ cd $(dirname $0)/..
 
 mkdir -p bin
 [ "$(uname)" != "Darwin" ] && LINKFLAGS="-extldflags -static -s"
-CGO_ENABLED=0 go build -ldflags "-X github.com/rancher/rio/pkg/version.VERSION=$VERSION $LINKFLAGS" -o bin/rio ./cli
-CGO_ENABLED=0 go build -ldflags "-X github.com/rancher/rio/pkg/version.VERSION=$VERSION $LINKFLAGS" -o bin/rio-controller
+LINKFLAGS="-X github.com/rancher/rio/pkg/version.Version=$VERSION $LINKFLAGS"
+LINKFLAGS="-X github.com/rancher/rio/pkg/version.GitCommit=$COMMIT $LINKFLAGS"
+LINKFLAGS="-X github.com/rancher/rio/pkg/constants.ControllerImage=${REPO}/rio-controller $LINKFLAGS"
+LINKFLAGS="-X github.com/rancher/rio/pkg/constants.ControllerImageTag=${TAG} $LINKFLAGS"
+CGO_ENABLED=0 go build -ldflags "$LINKFLAGS" -o bin/rio ./cli
+CGO_ENABLED=0 go build -ldflags "$LINKFLAGS" -o bin/rio-controller

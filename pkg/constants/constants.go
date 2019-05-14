@@ -1,6 +1,8 @@
 package constants
 
-const (
+var (
+	ControllerImage                = "rancher/rio-controller"
+	ControllerImageTag             = "dev"
 	ClusterDomainName              = "cluster-domain"
 	DefaultHTTPOpenPort            = "80"
 	DefaultHTTPSOpenPort           = "443"

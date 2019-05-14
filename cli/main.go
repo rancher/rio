@@ -35,7 +35,7 @@ import (
 	"github.com/rancher/rio/cli/cmd/weight"
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/version"
+	"github.com/rancher/rio/pkg/version"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
@@ -73,7 +73,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = appName
 	app.Usage = "Containers made simple, as they should be"
-	app.Version = version.Version
+	app.Version = fmt.Sprintf("%s (%s)", version.Version, version.GitCommit)
 	cli.VersionPrinter = func(c *cli.Context) {
 		fmt.Printf("%s version %s\n", app.Name, app.Version)
 	}
