@@ -18,8 +18,10 @@ func (d Scale) FromInternal(data map[string]interface{}) {
 	if !minOk {
 		min = 0
 	}
-	if maxOk {
-		data["scale"] = fmt.Sprintf("%d-%d", min, max)
+	minValue, _ := convert.ToNumber(min)
+	maxValue, _ := convert.ToNumber(max)
+	if maxOk && max != min {
+		data["scale"] = fmt.Sprintf("%v-%v", minValue, maxValue)
 	}
 }
 

@@ -106,7 +106,11 @@ func EditLoop(prefix, input []byte, update updateFunc) (bool, error) {
 		buf.Write(input)
 		rawInput := buf.Bytes()
 
-		e := editor.NewDefaultEditor(os.Environ())
+		editors := []string{
+			"KUBE_EDITOR",
+			"EDITOR",
+		}
+		e := editor.NewDefaultEditor(editors)
 		content, path, err := e.LaunchTempFile("rio-", "-edit.yaml", buf)
 		if path != "" {
 			defer os.Remove(path)

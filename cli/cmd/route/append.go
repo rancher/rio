@@ -85,7 +85,11 @@ func insertRoute(ctx *clicontext.CLIContext, insert bool, a RouteAction) error {
 		return ctx.Create(routeSet)
 	}
 
-	return ctx.UpdateObject(routeSet)
+	if err := ctx.UpdateObject(routeSet); err != nil {
+		return err
+	}
+	fmt.Printf("%s/%s\n", routeSet.Namespace, routeSet.Name)
+	return nil
 }
 
 func (a *Add) validateServiceStack(ctx *clicontext.CLIContext, args []string) error {
