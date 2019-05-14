@@ -10,8 +10,6 @@ import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	_ "k8s.io/apimachinery/pkg/runtime/schema"
-	_ "k8s.io/client-go/dynamic"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 

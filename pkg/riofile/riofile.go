@@ -108,10 +108,6 @@ func Parse(reader io.Reader, answers template.AnswerCallback) (*Riofile, error) 
 		return nil, err
 	}
 
-	if err != nil {
-		return nil, err
-	}
-
 	rf := &riofile{}
 	if err := convert.ToObj(data, rf); err != nil {
 		return nil, err

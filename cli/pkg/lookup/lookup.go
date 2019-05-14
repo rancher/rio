@@ -25,7 +25,7 @@ func getValidNameTypes(name string) (ret []nameType) {
 }
 
 func Lookup(ctx ClientLookup, name string, typeNames ...string) (types.Resource, error) {
-	resources, err := LookupAll(ctx, name, typeNames...)
+	resources, err := All(ctx, name, typeNames...)
 	if err != nil {
 		return types.Resource{}, err
 	}
@@ -56,7 +56,7 @@ func Lookup(ctx ClientLookup, name string, typeNames ...string) (types.Resource,
 	return resources[num], nil
 }
 
-func LookupAll(ctx ClientLookup, name string, typeNames ...string) ([]types.Resource, error) {
+func All(ctx ClientLookup, name string, typeNames ...string) ([]types.Resource, error) {
 	var (
 		resources []types.Resource
 		nameTypes = getValidNameTypes(name)

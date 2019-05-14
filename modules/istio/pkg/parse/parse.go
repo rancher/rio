@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func ParseTargetURL(target string) (*url.URL, error) {
+func TargetURL(target string) (*url.URL, error) {
 	if !strings.HasPrefix(target, "https://") && !strings.HasPrefix(target, "http://") {
 		target = "http://" + target
 	}

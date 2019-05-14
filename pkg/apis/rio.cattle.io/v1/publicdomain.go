@@ -35,7 +35,7 @@ type PublicDomainSpec struct {
 
 type PublicDomainStatus struct {
 	// Whether HTTP is supported in the Domain
-	HttpsSupported bool `json:"httpsSupported,omitempty"`
+	HTTPSSupported bool `json:"httpsSupported,omitempty"`
 
 	// Endpoint to access this Domain
 	Endpoint string `json:"endpoint,omitempty"`

@@ -129,7 +129,7 @@ func virtualServiceFromRoutesets(systemNamespace string, clusterDomain *projectv
 					Percent:    routeSpec.Fault.Percentage,
 					FixedDelay: (time.Millisecond * time.Duration(routeSpec.Fault.DelayMillis)).String(),
 				},
-				Abort: populateHttpAbort(routeSpec.Fault),
+				Abort: populateHTTPAbort(routeSpec.Fault),
 			}
 		}
 
@@ -166,7 +166,7 @@ func virtualServiceFromRoutesets(systemNamespace string, clusterDomain *projectv
 	return vs
 }
 
-func populateHttpAbort(fault *v1.Fault) *v1alpha3.InjectAbort {
+func populateHTTPAbort(fault *v1.Fault) *v1alpha3.InjectAbort {
 	abort := &v1alpha3.InjectAbort{
 		Percent:    fault.Percentage,
 		HTTPStatus: fault.Abort.HTTPStatus,
@@ -242,7 +242,7 @@ func destWeightForExternalService(d v1.WeightedDestination, esvc *v1.ExternalSer
 	}
 	if esvc.Spec.FQDN != "" {
 		// ignore error as it should be validated somewhere else
-		u, _ := parse.ParseTargetURL(esvc.Spec.FQDN)
+		u, _ := parse.TargetURL(esvc.Spec.FQDN)
 		d.Service = u.Host
 	} else if esvc.Spec.Service != "" {
 		stackName, serviceName := kv.Split(esvc.Spec.Service, "/")

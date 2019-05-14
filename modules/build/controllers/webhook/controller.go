@@ -7,11 +7,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/rancher/rio/modules/build/controllers/service"
-
 	"github.com/drone/go-scm/scm"
 	"github.com/drone/go-scm/scm/driver/github"
 	"github.com/google/uuid"
+	"github.com/rancher/rio/modules/build/controllers/service"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	webhookv1 "github.com/rancher/rio/pkg/apis/webhookinator.rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/generated/controllers/core/v1"
@@ -33,7 +32,7 @@ var (
 
 const (
 	hookEnqueue         = "hook-enqueue"
-	githubUrl           = "https://api.github.com"
+	githubURL           = "https://api.github.com"
 	HooksEndpointPrefix = "hooks?gitwebhookId="
 	GitWebHookParam     = "gitwebhookId"
 )
@@ -116,6 +115,9 @@ func (w webhookHandler) onChange(key string, obj *webhookv1.GitWebHookReceiver) 
 		}
 		deepcopy := svc.DeepCopy()
 		firstCommit, err := service.FirstCommit(deepcopy.Spec.Build.Repo, deepcopy.Spec.Build.Branch)
+		if err != nil {
+			return obj, err
+		}
 		deepcopy.Spec.Build.Revision = firstCommit
 		if _, err := w.services.Update(deepcopy); err != nil {
 			return obj, err
@@ -161,7 +163,7 @@ func (w webhookHandler) createGithubWebhook(svc *riov1.Service, obj *webhookv1.G
 }
 
 func newGithubClient(token string) (*scm.Client, error) {
-	c, err := github.New(githubUrl)
+	c, err := github.New(githubURL)
 	if err != nil {
 		return nil, err
 	}
@@ -185,11 +187,11 @@ func getRepoNameFromURL(repoURL string) (string, error) {
 
 func getHookEndpoint(receiver *webhookv1.GitWebHookReceiver, endpoint string) string {
 	if os.Getenv("RIO_WEBHOOK_URL") != "" {
-		return hookUrl(os.Getenv("RIO_WEBHOOK_URL"), receiver)
+		return hookURL(os.Getenv("RIO_WEBHOOK_URL"), receiver)
 	}
-	return hookUrl(endpoint, receiver)
+	return hookURL(endpoint, receiver)
 }
 
-func hookUrl(base string, receiver *webhookv1.GitWebHookReceiver) string {
+func hookURL(base string, receiver *webhookv1.GitWebHookReceiver) string {
 	return fmt.Sprintf("%s/%s%s:%s", base, HooksEndpointPrefix, receiver.Namespace, receiver.Name)
 }

@@ -53,6 +53,9 @@ func (c *CLIContext) getResource(r types.Resource) (ret types.Resource, err erro
 				if rev.Version == version {
 					var svc *riov1.Service
 					svc, err = c.Rio.Services(r.Namespace).Get(rev.ServiceName, metav1.GetOptions{})
+					if err != nil {
+						return ret, err
+					}
 					svc.APIVersion = riov1.SchemeGroupVersion.String()
 					svc.Kind = "Service"
 					r.Object = svc
