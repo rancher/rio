@@ -189,7 +189,6 @@ func ImageName(customeRegistry, registryNamespace, rev, domain string, service *
 		registryAddr = domains.GetExternalDomain("registry", registryNamespace, domain)
 		return fmt.Sprintf("%s/%s:%s", registryAddr, service.Namespace+"/"+service.Name, rev)
 	}
-	registryAddr = customeRegistry
 	return fmt.Sprintf("%s/%s:%s", customeRegistry, service.Namespace+"-"+service.Name, rev)
 }
 

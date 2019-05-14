@@ -64,6 +64,9 @@ func (p populator) populate(obj runtime.Object, namespace *corev1.Namespace, os 
 	}
 
 	clusterDomain, err := p.clusterDomainCache.Get(p.namespace, settings.ClusterDomainName)
+	if err != nil {
+		return err
+	}
 
 	populate.VirtualServiceForExternalService(p.namespace, obj.(*riov1.ExternalService), serviceSet, clusterDomain, svc, os)
 	return nil

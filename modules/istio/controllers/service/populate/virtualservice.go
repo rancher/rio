@@ -47,8 +47,7 @@ func httpRoutes(systemNamespace string, service *v1.Service, dests []Dest) ([]v1
 
 	return result, external
 }
-
-func newRoute(systemNamespace, externalGW string, published bool, portBinding v1.ContainerPort, dests []Dest, appendHttps bool, autoscale bool, svc *v1.Service) (string, v1alpha3.HTTPRoute) {
+func newRoute(systemNamespace, externalGW string, published bool, portBinding v1.ContainerPort, dests []Dest, appendHTTPS bool, autoscale bool, svc *v1.Service) (string, v1alpha3.HTTPRoute) {
 	route := v1alpha3.HTTPRoute{}
 
 	if portBinding.Protocol == "" {
@@ -72,7 +71,7 @@ func newRoute(systemNamespace, externalGW string, published bool, portBinding v1
 			Gateways: gw,
 		},
 	}
-	if appendHttps {
+	if appendHTTPS {
 		matches = append(matches,
 			v1alpha3.HTTPMatchRequest{
 				Port:     uint32(httpsPort),

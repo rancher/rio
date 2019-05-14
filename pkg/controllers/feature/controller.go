@@ -127,6 +127,9 @@ func (f *featureHandler) checkDeps(obj *v1.Feature) error {
 	t := true
 	for _, depName := range obj.Spec.Requires {
 		dep, err := f.getDepFeature(depName, obj.Namespace)
+		if err != nil {
+			return err
+		}
 		if !isEnabled(dep) {
 			dep = dep.DeepCopy()
 			dep.Status.EnableOverride = &t

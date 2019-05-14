@@ -38,8 +38,8 @@ var (
 		"gateway": "external",
 	}
 
-	LetsEncryptStagingServerUrl    = "https://acme-staging-v02.api.letsencrypt.org/directory"
-	LetsEncryptProductionServerUrl = "https://acme-v02.api.letsencrypt.org/directory"
+	LetsEncryptStagingServerURL    = "https://acme-staging-v02.api.letsencrypt.org/directory"
+	LetsEncryptProductionServerURL = "https://acme-v02.api.letsencrypt.org/directory"
 	LetsEncryptAccountEmail        = "daishan@rancher.com"
 	CertManagerImage               = "daishan1992/cert-manager:latest"
 

@@ -92,7 +92,7 @@ func (p *publicDomainHandler) onChange(key string, obj runtime.Object) (runtime.
 	os := objectset.NewObjectSet()
 
 	if issuerName != "" {
-		os.Add(certificateHttp(p.namespace, domain, issuerName))
+		os.Add(certificateHTTP(p.namespace, domain, issuerName))
 	}
 	domain.Spec.SecretRef.Name = fmt.Sprintf("%s-%s", domain.Namespace, domain.Name)
 	domain.Spec.SecretRef.Namespace = domain.Namespace
@@ -112,7 +112,7 @@ func (p *publicDomainHandler) onRemove(key string, domain *riov1.PublicDomain) (
 	return domain, p.apply.WithOwner(domain).Apply(nil)
 }
 
-func certificateHttp(namespace string, domain *riov1.PublicDomain, issuerName string) runtime.Object {
+func certificateHTTP(namespace string, domain *riov1.PublicDomain, issuerName string) runtime.Object {
 	name := fmt.Sprintf("%s-%s", domain.Namespace, domain.Name)
 	cert := constructors.NewCertificate(namespace, name,
 		certmanagerapi.Certificate{

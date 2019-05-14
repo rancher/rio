@@ -45,7 +45,7 @@ type Add struct {
 	From            string            `desc:"Match traffic from specific service"`
 }
 
-type RouteAction interface {
+type Action interface {
 	validateServiceStack(ctx *clicontext.CLIContext, args []string) error
 	buildRouteSpec(ctx *clicontext.CLIContext, args []string) (*riov1.RouteSpec, error)
 	getRouteSet(ctx *clicontext.CLIContext, args []string) (*riov1.Router, bool, error)
@@ -55,7 +55,7 @@ func (a *Append) Run(ctx *clicontext.CLIContext) error {
 	return insertRoute(ctx, false, a)
 }
 
-func insertRoute(ctx *clicontext.CLIContext, insert bool, a RouteAction) error {
+func insertRoute(ctx *clicontext.CLIContext, insert bool, a Action) error {
 	args := ctx.CLI.Args()
 	if len(args) < 3 {
 		return fmt.Errorf("at least 3 arguements are required: HOST[/PATH] to|redirect|mirror TARGET")
@@ -93,12 +93,9 @@ func insertRoute(ctx *clicontext.CLIContext, insert bool, a RouteAction) error {
 }
 
 func (a *Add) validateServiceStack(ctx *clicontext.CLIContext, args []string) error {
-	_, service, namespace, _, _ := parseMatch(args[0])
+	_, service, _, _, _ := parseMatch(args[0])
 	if service == "" {
 		return fmt.Errorf("route host/path must be in the format service.stack[/path], for example myservice.mystack/login")
-	}
-	if namespace == "" {
-		namespace = ctx.GetDefaultNamespace()
 	}
 
 	return nil

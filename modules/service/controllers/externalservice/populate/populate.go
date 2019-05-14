@@ -22,7 +22,7 @@ func ServiceForExternalService(es *riov1.ExternalService, namespace *corev1.Name
 		},
 	})
 	if es.Spec.FQDN != "" {
-		u, err := parse.ParseTargetURL(es.Spec.FQDN)
+		u, err := parse.TargetURL(es.Spec.FQDN)
 		if err != nil {
 			return err
 		}
@@ -34,7 +34,7 @@ func ServiceForExternalService(es *riov1.ExternalService, namespace *corev1.Name
 		var hosts []string
 		var ports []int32
 		for _, ip := range es.Spec.IPAddresses {
-			u, err := parse.ParseTargetURL(ip)
+			u, err := parse.TargetURL(ip)
 			if err != nil {
 				return err
 			}

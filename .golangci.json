@@ -1,0 +1,28 @@
+{
+	"linters": {
+		"disable-all": true,
+		"enable": [
+			"govet",
+			"golint",
+			"goimports",
+			"misspell",
+			"ineffassign",
+			"gofmt"
+		]
+	},
+	"run": {
+		"skip-files": [
+			"/zz_generated_"
+		],
+		"deadline": "5m"
+	},
+    "issues": {
+        "exclude-rules": [
+            {
+                "path":"cli/cmd",
+                "text":"don't use underscores in Go names",
+                "linters":["golint"]
+            }
+        ]
+    }
+}

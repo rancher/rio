@@ -61,7 +61,7 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 				return err
 			}
 
-			update, err := edit.EditLoop(nil, []byte(str), func(content []byte) error {
+			update, err := edit.Loop(nil, []byte(str), func(content []byte) error {
 				var obj *riov1.Service
 				if err := json.Unmarshal(content, &obj); err != nil {
 					return err

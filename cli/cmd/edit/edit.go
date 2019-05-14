@@ -81,7 +81,7 @@ func (edit *Edit) Edit(ctx *clicontext.CLIContext, arg string) error {
 		return err
 	}
 
-	updated, err := EditLoop(nil, content, func(content []byte) error {
+	updated, err := Loop(nil, content, func(content []byte) error {
 		stack := systemstack.NewStack(ctx.Apply, r.Namespace, "edit-"+r.Name, true)
 		stack.WithContent(content)
 		return stack.Deploy(nil)
@@ -99,7 +99,7 @@ func (edit *Edit) Edit(ctx *clicontext.CLIContext, arg string) error {
 
 type updateFunc func(content []byte) error
 
-func EditLoop(prefix, input []byte, update updateFunc) (bool, error) {
+func Loop(prefix, input []byte, update updateFunc) (bool, error) {
 	for {
 		buf := &bytes.Buffer{}
 		buf.Write(prefix)

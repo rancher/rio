@@ -108,7 +108,7 @@ func (f *certsHandler) onChangeCert(key string, cert *v1alpha1.Certificate) (*v1
 				publicDomain, err := f.publicdomain.Cache().Get(ns, name)
 				if err == nil {
 					deepcopy := publicDomain.DeepCopy()
-					deepcopy.Status.HttpsSupported = true
+					deepcopy.Status.HTTPSSupported = true
 
 					_, err := f.publicdomain.Update(deepcopy)
 					return cert, err
@@ -166,9 +166,9 @@ func constructIssuer(issuerName, domain string) *certmanagerapi.ClusterIssuer {
 			},
 		}
 		if issuerName == settings.StagingIssuerName {
-			acme.Server = settings.LetsEncryptStagingServerUrl
+			acme.Server = settings.LetsEncryptStagingServerURL
 		} else {
-			acme.Server = settings.LetsEncryptProductionServerUrl
+			acme.Server = settings.LetsEncryptProductionServerURL
 		}
 		issuer.Spec.ACME = acme
 	case settings.SelfSignedIssuerName:

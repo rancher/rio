@@ -29,7 +29,7 @@ func ServiceEntry(svc *v1.ExternalService, os *objectset.ObjectSet) error {
 }
 
 func serviceEntryForFQDN(fqdn string, svc *v1.ExternalService) (*v1alpha3.ServiceEntry, error) {
-	u, err := parse.ParseTargetURL(fqdn)
+	u, err := parse.TargetURL(fqdn)
 	if err != nil {
 		return nil, err
 	}

@@ -25,9 +25,9 @@ type Create struct {
 	Concurrency            int               `desc:"The maximum concurrent request a container can handle(autoscaling)" default:"10"`
 	Config                 []string          `desc:"Configs to expose to the service (format: name:target)"`
 	Cpus                   string            `desc:"Number of CPUs"`
-	DnsOption              []string          `desc:"Set DNS options (format: key:value or key)"`
-	DnsSearch              []string          `desc:"Set custom DNS search domains"`
-	Dns                    []string          `desc:"Set custom DNS servers"`
+	DNSOption              []string          `desc:"Set DNS options (format: key:value or key)"`
+	DNSSearch              []string          `desc:"Set custom DNS search domains"`
+	DNS                    []string          `desc:"Set custom DNS servers"`
 	E_Env                  []string          `desc:"Set environment variables"`
 	EnvFile                []string          `desc:"Read in a file of environment variables"`
 	GlobalPermission       []string          `desc:"Permissions to grant to container's service account for all stacks"`
@@ -109,8 +109,8 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 	spec.TTY = c.T_Tty
 	spec.WorkingDir = c.W_Workdir
 	spec.Hostname = c.Hostname
-	spec.Nameservers = c.Dns
-	spec.Searches = c.DnsSearch
+	spec.Nameservers = c.DNS
+	spec.Searches = c.DNSSearch
 
 	min, max := 1, 10
 	spec.AutoscaleConfig.MinScale = &min
@@ -131,7 +131,7 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 		return nil, err
 	}
 
-	spec.Options = stringers.ParseDNSOptions(c.DnsOption...)
+	spec.Options = stringers.ParseDNSOptions(c.DNSOption...)
 
 	cpus, err := stringers.ParseQuantity(c.Cpus)
 	if err != nil {

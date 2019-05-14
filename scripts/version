@@ -14,5 +14,5 @@ else
 fi
 
 if [ -z "$ARCH" ]; then
-    ARCH=amd64
+    ARCH=$(go env GOHOSTARCH)
 fi
