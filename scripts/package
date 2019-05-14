@@ -6,7 +6,12 @@ source $(dirname $0)/version
 cd $(dirname $0)/..
 
 mkdir -p dist/artifacts
-cp bin/rio dist/artifacts/rio${SUFFIX}
+cp bin/rio dist/artifacts/rio-linux${SUFFIX}
+for i in darwin windows; do
+    if [ -e bin/rio-${i} ]; then
+        cp bin/rio-${i} dist/artifacts/rio-${i}${SUFFIX}
+    fi
+done
 
 IMAGE=${REPO}/rio-controller:${TAG}
 DOCKERFILE=package/Dockerfile
