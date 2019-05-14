@@ -3,14 +3,13 @@ package systemstack
 import (
 	"bytes"
 
-	"k8s.io/apimachinery/pkg/runtime"
-
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/riofile"
 	"github.com/rancher/rio/pkg/template"
 	"github.com/rancher/rio/stacks"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/objectset"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type SystemStack struct {

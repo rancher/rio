@@ -3,10 +3,9 @@ package stringers
 import (
 	"strings"
 
-	"github.com/rancher/wrangler/pkg/kv"
-
 	"github.com/rancher/mapper/mappers"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/wrangler/pkg/kv"
 )
 
 func NewVolume(field string) mappers.ObjectsToSlice {

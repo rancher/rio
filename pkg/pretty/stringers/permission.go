@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/rancher/mapper/mappers"
-
 	"github.com/rancher/mapper/slice"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/kv"

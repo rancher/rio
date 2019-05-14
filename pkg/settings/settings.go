@@ -1,16 +1,11 @@
 package settings
 
 const (
-	AutoScaleStack           = "rio-autoscaler"
-	BuildStackName           = "build"
-	CertManagerImageType     = "CERT_MANAGER_IMAGE"
 	ClusterDomainName        = "cluster-domain"
 	DefaultServiceVersion    = "v0"
 	GatewaySecretName        = "rio-certs"
-	Grafana                  = "grafana"
 	IstioGatewayDeploy       = "istio-gateway"
 	IstioGateway             = "istio-gateway"
-	IstioPilot               = "istio-pilot"
 	IstioStackName           = "istio"
 	IstioTelemetry           = "istio-telemetry"
 	IstioMeshConfigKey       = "meshConfig"
@@ -30,18 +25,8 @@ const (
 )
 
 var (
-	IstioExternalLBNamespace = IstioStackName
-	IstioTelemetryNamespace  = IstioTelemetry
-	PrometheusNamespace      = Prometheus
-	GrafanaNamespace         = Grafana
-	IstioGatewaySelector     = map[string]string{
-		"gateway": "external",
-	}
-
 	LetsEncryptStagingServerURL    = "https://acme-staging-v02.api.letsencrypt.org/directory"
 	LetsEncryptProductionServerURL = "https://acme-v02.api.letsencrypt.org/directory"
-	LetsEncryptAccountEmail        = "daishan@rancher.com"
-	CertManagerImage               = "daishan1992/cert-manager:latest"
 
 	DefaultHTTPOpenPort  = "80"
 	DefaultHTTPSOpenPort = "443"
