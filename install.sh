@@ -1,185 +1,213 @@
-#!/usr/bin/env bash
-
-APP_NAME="rio"
-REPO_URL="https://github.com/rancher/rio"
-
-: ${USE_SUDO:="true"}
-: ${RIO_INSTALL_DIR:="/usr/local/bin"}
-
-# initArch discovers the architecture for this system.
-initArch() {
-  ARCH=$(uname -m)
-  case $ARCH in
-    armv*) ARCH="arm";;
-    aarch64) ARCH="arm64";;
-    x86) ARCH="386";;
-    x86_64) ARCH="amd64";;
-    i686) ARCH="386";;
-    i386) ARCH="386";;
-  esac
-}
-
-# initOS discovers the operating system for this system.
-initOS() {
-  OS=$(echo `uname`|tr '[:upper:]' '[:lower:]')
-
-  case "$OS" in
-    # Minimalist GNU for Windows
-    mingw*) OS='windows';;
-  esac
-}
-
-# runs the given command as root (detects if we are root already)
-runAsRoot() {
-  local CMD="$*"
-
-  if [ $EUID -ne 0 -a $USE_SUDO = "true" ]; then
-    CMD="sudo $CMD"
-  fi
-
-  $CMD
-}
-
-# verifySupported checks that the os/arch combination is supported for
-# binary builds.
-verifySupported() {
-  local supported="darwin-amd64\nlinux-amd64\nlinux-arm\nlinux-arm64\nwindows-amd64"
-  if ! echo "${supported}" | grep -q "${OS}-${ARCH}"; then
-    echo "No prebuilt binary for ${OS}-${ARCH}."
-    echo "To build from source, go to $REPO_URL"
-    exit 1
-  fi
-
-  if ! type "curl" > /dev/null && ! type "wget" > /dev/null; then
-    echo "Either curl or wget is required"
-    exit 1
-  fi
-}
-
-# checkRioInstalledVersion checks which version of rio is installed and
-# if it needs to be changed.
-checkRioInstalledVersion() {
-  if [[ -f "${RIO_INSTALL_DIR}/${APP_NAME}" ]]; then
-    local version=$(rio --version | cut -d " " -f3)
-    if [[ "$version" == "$TAG" ]]; then
-      echo "rio ${version} is already ${DESIRED_VERSION:-latest}"
-      return 0
-    else
-      echo "rio ${TAG} is available. Changing from version ${version}."
-      return 1
-    fi
-  else
-    return 1
-  fi
-}
-
-# checkLatestVersion grabs the latest version string from the releases
-checkLatestVersion() {
-  local latest_release_url="$REPO_URL/releases/latest"
-  if type "curl" > /dev/null; then
-    TAG=$(curl -Ls -o /dev/null -w %{url_effective} $latest_release_url | grep -oE "[^/]+$" )
-  elif type "wget" > /dev/null; then
-    TAG=$(wget $latest_release_url --server-response -O /dev/null 2>&1 | awk '/^  Location: /{DEST=$2} END{ print DEST}' | grep -oE "[^/]+$")
-  fi
-}
-
-# downloadFile downloads the latest binary package and also the checksum
-# for that binary.
-downloadFile() {
-  RIO_DIST="rio-$OS-$ARCH"
-  DOWNLOAD_URL="$REPO_URL/releases/download/$TAG/$RIO_DIST"
-  RIO_TMP_ROOT="$(mktemp -dt rio-binary-XXXXXX)"
-  RIO_TMP_FILE="$RIO_TMP_ROOT/$RIO_DIST"
-  if type "curl" > /dev/null; then
-    curl -SsL "$DOWNLOAD_URL" -o "$RIO_TMP_FILE"
-  elif type "wget" > /dev/null; then
-    wget -q -O "$RIO_TMP_FILE" "$DOWNLOAD_URL"
-  fi
-}
-
-# installFile verifies the SHA256 for the file, then unpacks and
-# installs it.
-installFile() {
-  echo "Preparing to install $APP_NAME into ${RIO_INSTALL_DIR}"
-  runAsRoot chmod +x "$RIO_TMP_FILE"
-  runAsRoot cp "$RIO_TMP_FILE" "$RIO_INSTALL_DIR/$APP_NAME"
-  echo "$APP_NAME installed into $RIO_INSTALL_DIR/$APP_NAME"
-}
-
-# fail_trap is executed if an error occurs.
-fail_trap() {
-  result=$?
-  if [ "$result" != "0" ]; then
-    if [[ -n "$INPUT_ARGUMENTS" ]]; then
-      echo "Failed to install $APP_NAME with the arguments provided: $INPUT_ARGUMENTS"
-      help
-    else
-      echo "Failed to install $APP_NAME"
-    fi
-    echo -e "\tFor support, go to $REPO_URL."
-  fi
-  cleanup
-  exit $result
-}
-
-# testVersion tests the installed client to make sure it is working.
-testVersion() {
-  set +e
-  RIO="$(which $APP_NAME)"
-  if [ "$?" = "1" ]; then
-    echo "$APP_NAME not found. Is $RIO_INSTALL_DIR on your "'$PATH?'
-    exit 1
-  fi
-  set -e
-  echo "Run '$APP_NAME --help' to see what you can do with it."
-}
-
-# help provides possible cli installation arguments
-help () {
-  echo "Accepted cli arguments are:"
-  echo -e "\t[--help|-h ] ->> prints this help"
-  echo -e "\t[--no-sudo]  ->> install without sudo"
-}
-
-# cleanup temporary files
-cleanup() {
-  if [[ -d "${RIO_TMP_ROOT:-}" ]]; then
-    rm -rf "$RIO_TMP_ROOT"
-  fi
-}
-
-# Execution
-
-#Stop execution on any error
-trap "fail_trap" EXIT
+#!/bin/sh
 set -e
 
-# Parsing input arguments (if any)
-export INPUT_ARGUMENTS="${@}"
-set -u
-while [[ $# -gt 0 ]]; do
-  case $1 in
-    '--no-sudo')
-       USE_SUDO="false"
-       ;;
-    '--help'|-h)
-       help
-       exit 0
-       ;;
-    *) exit 1
-       ;;
-  esac
-  shift
-done
-set +u
+GITHUB_URL=https://github.com/rancher/rio/releases
+UNINSTALL_RIO_SH=rio-uninstall.sh
 
-initArch
-initOS
-verifySupported
-checkLatestVersion
-if ! checkRioInstalledVersion; then
-  downloadFile
-  installFile
-fi
-testVersion
-cleanup
+# --- helper functions for logs ---
+info()
+{
+    echo "[INFO] " "$@"
+}
+fatal()
+{
+    echo "[ERROR] " "$@"
+    exit 1
+}
+
+
+# --- define needed environment variables ---
+setup_env() {
+    # --- use sudo if we are not already root ---
+    SUDO=sudo
+    if [ `id -u` = 0 ]; then
+        SUDO=
+    fi
+
+    # --- use binary install directory if defined or create default ---
+    if [ -n "${INSTALL_RIO_BIN_DIR}" ]; then
+        BIN_DIR="${INSTALL_RIO_BIN_DIR}"
+    else
+        BIN_DIR="/usr/local/bin"
+    fi
+
+    # --- get hash of config & exec for currently installed rio ---
+    PRE_INSTALL_HASHES=`get_installed_hashes`
+}
+
+# --- set arch and suffix, fatal if architecture not supported ---
+setup_verify_arch() {
+    OS=$(echo `uname`|tr '[:upper:]' '[:lower:]')
+
+    case "$OS" in
+        # Minimalist GNU for Windows
+        mingw*) OS='windows';;
+        linux)
+            ;;
+        windows)
+            ;;
+        darwin)
+            ;;
+        *)
+            fatal "Unsupported OS $OS"
+    esac
+
+    if [ -z "$ARCH" ]; then
+        ARCH=`uname -m`
+    fi
+    case $ARCH in
+        amd64)
+            ARCH=amd64
+            ;;
+        x86_64)
+            ARCH=amd64
+            ;;
+        arm64)
+            ARCH=arm64
+            ;;
+        aarch64)
+            ARCH=arm64
+            ;;
+        arm*)
+            ARCH=arm
+            ;;
+        *)
+            fatal "Unsupported architecture $ARCH"
+    esac
+
+    SUFFIX=-${OS}-${ARCH}
+}
+
+# --- fatal if no curl ---
+verify_curl() {
+    if [ -z `which curl || true` ]; then
+        fatal "Can not find curl for downloading files"
+    fi
+}
+
+# --- create tempory directory and cleanup when done ---
+setup_tmp() {
+    TMP_DIR=`mktemp -d -t rio-install.XXXXXXXXXX`
+    TMP_HASH=${TMP_DIR}/rio.hash
+    TMP_BIN=${TMP_DIR}/rio.bin
+    cleanup() {
+        code=$?
+        set +e
+        trap - EXIT
+        rm -rf ${TMP_DIR}
+        exit $code
+    }
+    trap cleanup INT EXIT
+}
+
+# --- use desired rio version if defined or find latest ---
+get_release_version() {
+    if [ -n "${INSTALL_RIO_VERSION}" ]; then
+        VERSION_RIO="${INSTALL_RIO_VERSION}"
+    else
+        info "Finding latest release"
+        VERSION_RIO=`curl -w "%{url_effective}" -I -L -s -S ${GITHUB_URL}/latest -o /dev/null | sed -e 's|.*/||'`
+    fi
+    info "Using ${VERSION_RIO} as release"
+}
+
+# --- download hash from github url ---
+download_hash() {
+    HASH_URL=${GITHUB_URL}/download/${VERSION_RIO}/sha256sum-${ARCH}.txt
+    info "Downloading hash ${HASH_URL}"
+    curl -o ${TMP_HASH} -sfL ${HASH_URL} || fatal "Hash download failed"
+    HASH_EXPECTED=`grep " rio${SUFFIX}$" ${TMP_HASH} | awk '{print $1}'`
+}
+
+# --- check hash against installed version ---
+installed_hash_matches() {
+    if [ -x ${BIN_DIR}/rio ]; then
+        HASH_INSTALLED=`sha256sum ${BIN_DIR}/rio | awk '{print $1}'`
+        if [ "${HASH_EXPECTED}" = "${HASH_INSTALLED}" ]; then
+            return
+        fi
+    fi
+    return 1
+}
+
+# --- download binary from github url ---
+download_binary() {
+    BIN_URL=${GITHUB_URL}/download/${VERSION_RIO}/rio${SUFFIX}
+    info "Downloading binary ${BIN_URL}"
+    curl -o ${TMP_BIN} -sfL ${BIN_URL} || fatal "Binary download failed"
+}
+
+# --- verify downloaded binary hash ---
+verify_binary() {
+    info "Verifying binary download"
+    HASH_BIN=`sha256sum ${TMP_BIN} | awk '{print $1}'`
+    if [ "${HASH_EXPECTED}" != "${HASH_BIN}" ]; then
+        fatal "Download sha256 does not match ${HASH_EXPECTED}, got ${HASH_BIN}"
+    fi
+}
+
+# --- setup permissions and move binary to system directory ---
+setup_binary() {
+    chmod 755 ${TMP_BIN}
+    info "Installing rio to ${BIN_DIR}/rio"
+    $SUDO chown root:root ${TMP_BIN}
+    $SUDO mv -f ${TMP_BIN} ${BIN_DIR}/rio
+
+    if command -v getenforce > /dev/null 2>&1; then
+        if [ "Disabled" != `getenforce` ]; then
+            info "SeLinux is enabled, setting permissions"
+            if ! $SUDO semanage fcontext -l | grep "${BIN_DIR}/rio" > /dev/null 2>&1; then
+                $SUDO semanage fcontext -a -t bin_t "${BIN_DIR}/rio"
+            fi
+            $SUDO restorecon -v ${BIN_DIR}/rio > /dev/null
+        fi
+    fi
+}
+
+# --- download and verify rio ---
+download_and_verify() {
+    setup_verify_arch
+    verify_curl
+    setup_tmp
+    get_release_version
+    download_hash
+
+    if installed_hash_matches; then
+        info "Skipping binary downloaded, installed rio matches hash"
+        return
+    fi
+
+    download_binary
+    verify_binary
+    setup_binary
+}
+
+# --- create uninstall script ---
+create_uninstall() {
+    [ "${INSTALL_RIO_BIN_DIR_READ_ONLY}" = "true" ] && return
+    info "Creating uninstall script ${BIN_DIR}/${UNINSTALL_RIO_SH}"
+    $SUDO tee ${BIN_DIR}/${UNINSTALL_RIO_SH} >/dev/null << EOF
+#!/bin/sh
+set -x
+[ \`id -u\` = 0 ] || exec sudo \$0 \$@
+
+remove_uninstall() {
+    rm -f ${BIN_DIR}/${UNINSTALL_RIO_SH}
+}
+trap remove_uninstall EXIT
+EOF
+    $SUDO chmod 755 ${BIN_DIR}/${UNINSTALL_RIO_SH}
+    $SUDO chown root:root ${BIN_DIR}/${UNINSTALL_RIO_SH}
+}
+
+# --- get hashes of the current rio bin and service files
+get_installed_hashes() {
+    $SUDO sha256sum ${BIN_DIR}/rio 2>&1 || true
+}
+
+# --- run the install process --
+{
+    setup_env
+    download_and_verify
+    #create_uninstall
+}
