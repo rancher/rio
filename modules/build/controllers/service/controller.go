@@ -14,11 +14,11 @@ import (
 	gitv1 "github.com/rancher/rio/pkg/apis/git.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	webhookv1 "github.com/rancher/rio/pkg/apis/webhookinator.rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
 	corev1controller "github.com/rancher/rio/pkg/generated/controllers/core/v1"
 	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/name"
-	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/objectset"
@@ -75,7 +75,7 @@ func (p populator) populate(obj runtime.Object, ns *corev1.Namespace, os *object
 		return nil
 	}
 
-	clusterDomain, err := p.clusterDomainCache.Get(p.systemNamespace, settings.ClusterDomainName)
+	clusterDomain, err := p.clusterDomainCache.Get(p.systemNamespace, constants.ClusterDomainName)
 	if err != nil {
 		return err
 	}

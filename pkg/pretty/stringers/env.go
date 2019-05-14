@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/rancher/mapper/mappers"
-
 	"github.com/rancher/rio/cli/pkg/kvfile"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/kv"

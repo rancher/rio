@@ -6,14 +6,12 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/rancher/rio/cli/pkg/table"
-
-	"github.com/rancher/wrangler/pkg/crd"
-
 	"github.com/rancher/mapper"
 	"github.com/rancher/mapper/convert"
+	"github.com/rancher/rio/cli/pkg/table"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/template"
+	"github.com/rancher/wrangler/pkg/crd"
 	"github.com/rancher/wrangler/pkg/yaml"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"

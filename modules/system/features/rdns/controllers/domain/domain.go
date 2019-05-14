@@ -7,8 +7,8 @@ import (
 
 	approuter "github.com/rancher/rdns-server/client"
 	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	v1 "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/ticker"
 	"github.com/sirupsen/logrus"
@@ -27,7 +27,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	rdnsClient := approuter.NewClient(rContext.Core.Core().V1().Secret(),
 		rContext.Core.Core().V1().Secret().Cache(),
 		rContext.Namespace)
-	rdnsClient.SetBaseURL(settings.RDNSURL)
+	rdnsClient.SetBaseURL(constants.RDNSURL)
 
 	g := &Controller{
 		ctx:        ctx,
@@ -42,7 +42,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 }
 
 func (g *Controller) onChange(key string, obj *projectv1.ClusterDomain) (*projectv1.ClusterDomain, error) {
-	if obj == nil || key != g.namespace+"/"+settings.ClusterDomainName {
+	if obj == nil || key != g.namespace+"/"+constants.ClusterDomainName {
 		return nil, nil
 	}
 

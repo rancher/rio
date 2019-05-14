@@ -3,7 +3,7 @@ package lookup
 import (
 	"fmt"
 
-	"github.com/rancher/rio/pkg/settings"
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/wrangler/pkg/kv"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -54,7 +54,7 @@ func (p StackScoped) String() string {
 
 	result += p.ResourceName
 
-	if p.Version != "" && p.Version != settings.DefaultServiceVersion {
+	if p.Version != "" && p.Version != constants.DefaultServiceVersion {
 		result += ":" + p.Version
 	}
 

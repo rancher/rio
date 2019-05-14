@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/knative/pkg/apis/istio/v1alpha3"
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
-	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/wrangler/pkg/objectset"
 )
 
@@ -30,7 +30,7 @@ func populateGateway(systemNamespace string, output *objectset.ObjectSet) {
 	}
 
 	// http port
-	port, _ := strconv.ParseInt(settings.DefaultHTTPOpenPort, 10, 0)
+	port, _ := strconv.ParseInt(constants.DefaultHTTPOpenPort, 10, 0)
 	for _, protocol := range supportedProtocol {
 		gws.Servers = append(gws.Servers, v1alpha3.Server{
 			Port: v1alpha3.Port{
@@ -41,7 +41,7 @@ func populateGateway(systemNamespace string, output *objectset.ObjectSet) {
 			Hosts: []string{"*"},
 		})
 	}
-	gateway := constructors.NewGateway(systemNamespace, settings.RioGateway, v1alpha3.Gateway{
+	gateway := constructors.NewGateway(systemNamespace, constants.RioGateway, v1alpha3.Gateway{
 		Spec: gws,
 	})
 	output.Add(gateway)

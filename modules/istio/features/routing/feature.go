@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/rancher/rio/pkg/settings"
+	"github.com/rancher/rio/pkg/constants"
 
 	"github.com/rancher/rio/modules/istio/controllers/app"
 	"github.com/rancher/rio/modules/istio/controllers/externalservice"
@@ -21,8 +21,8 @@ import (
 func Register(ctx context.Context, rContext *types.Context) error {
 	apply := rContext.Apply.WithCacheTypes(rContext.Rio.Rio().V1().Service(), rContext.Core.Core().V1().ConfigMap())
 	ports := []string{
-		fmt.Sprintf("%v:%v,http2", settings.DefaultHTTPOpenPort, settings.DefaultHTTPOpenPort),
-		fmt.Sprintf("%v:%v,https", settings.DefaultHTTPSOpenPort, settings.DefaultHTTPSOpenPort),
+		fmt.Sprintf("%v:%v,http2", constants.DefaultHTTPOpenPort, constants.DefaultHTTPOpenPort),
+		fmt.Sprintf("%v:%v,https", constants.DefaultHTTPSOpenPort, constants.DefaultHTTPSOpenPort),
 	}
 
 	portStr, err := json.Marshal(&ports)
@@ -48,7 +48,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		},
 		FixedAnswers: map[string]string{
 			"PORTS":             string(portStr),
-			"TELEMETRY_ADDRESS": fmt.Sprintf("%s.%s.svc.cluster.local", settings.IstioTelemetry, rContext.Namespace),
+			"TELEMETRY_ADDRESS": fmt.Sprintf("%s.%s.svc.cluster.local", constants.IstioTelemetry, rContext.Namespace),
 			"NAMESPACE":         rContext.Namespace,
 		},
 	}

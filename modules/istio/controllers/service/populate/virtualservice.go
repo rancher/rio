@@ -9,10 +9,10 @@ import (
 	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/rio/pkg/services"
 	"github.com/rancher/rio/pkg/serviceset"
-	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/wrangler/pkg/objectset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -63,8 +63,8 @@ func newRoute(systemNamespace, externalGW string, published bool, portBinding v1
 		gw = append(gw, externalGW)
 	}
 
-	httpPort, _ := strconv.ParseUint(settings.DefaultHTTPOpenPort, 10, 64)
-	httpsPort, _ := strconv.ParseUint(settings.DefaultHTTPSOpenPort, 10, 64)
+	httpPort, _ := strconv.ParseUint(constants.DefaultHTTPOpenPort, 10, 64)
+	httpsPort, _ := strconv.ParseUint(constants.DefaultHTTPSOpenPort, 10, 64)
 	matches := []v1alpha3.HTTPMatchRequest{
 		{
 			Port:     uint32(httpPort),

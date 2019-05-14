@@ -8,11 +8,11 @@ import (
 	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
 	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
 	v12 "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	name2 "github.com/rancher/rio/pkg/name"
-	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/generic"
@@ -86,7 +86,7 @@ func (p *publicDomainHandler) onChange(key string, obj runtime.Object) (runtime.
 		return domain, err
 	}
 
-	publicdomainType := feature.Spec.Answers[settings.PublicDomainType]
+	publicdomainType := feature.Spec.Answers[constants.PublicDomainType]
 	issuerName := issuers.IssuerTypeToName[publicdomainType]
 
 	os := objectset.NewObjectSet()

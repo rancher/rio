@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/rancher/rio/pkg/constants"
 	projectv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/project.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -91,7 +91,7 @@ func (c *Config) Validate() error {
 }
 
 func (c *Config) Domain() (string, error) {
-	clusterDomain, err := c.Project.ClusterDomains(c.SystemNamespace).Get(settings.ClusterDomainName, metav1.GetOptions{})
+	clusterDomain, err := c.Project.ClusterDomains(c.SystemNamespace).Get(constants.ClusterDomainName, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

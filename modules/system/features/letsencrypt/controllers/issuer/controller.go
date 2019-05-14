@@ -9,10 +9,10 @@ import (
 	certmanagerapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
 	v1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
 	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
 	v12 "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/settings"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/kv"
@@ -76,7 +76,7 @@ func (f *certsHandler) onChangeClusterDomain(key string, clusterDomain *v1.Clust
 }
 
 func (f *certsHandler) onChangeCert(key string, cert *v1alpha1.Certificate) (*v1alpha1.Certificate, error) {
-	clusterDomain, err := f.clusterDomain.Cache().Get(f.namespace, settings.ClusterDomainName)
+	clusterDomain, err := f.clusterDomain.Cache().Get(f.namespace, constants.ClusterDomainName)
 	if errors.IsNotFound(err) {
 		return cert, nil
 	} else if err != nil {
@@ -139,7 +139,7 @@ func constructIssuer(issuerName, domain string) *certmanagerapi.ClusterIssuer {
 	issuer := constructors.NewClusterIssuer(issuerName, certmanagerapi.ClusterIssuer{})
 
 	switch issuerName {
-	case settings.StagingIssuerName, settings.ProductionIssuerName:
+	case constants.StagingIssuerName, constants.ProductionIssuerName:
 		acme := &certmanagerapi.ACMEIssuer{
 			Email: emailFromDomain(domain),
 			PrivateKey: certmanagerapi.SecretKeySelector{
@@ -153,7 +153,7 @@ func constructIssuer(issuerName, domain string) *certmanagerapi.ClusterIssuer {
 					{
 						Name: "rdns",
 						RDNS: &certmanagerapi.ACMEIssuerDNS01ProviderRDNS{
-							APIEndpoint: settings.RDNSURL,
+							APIEndpoint: constants.RDNSURL,
 							ClientToken: certmanagerapi.SecretKeySelector{
 								Key: "token",
 								LocalObjectReference: certmanagerapi.LocalObjectReference{
@@ -165,13 +165,13 @@ func constructIssuer(issuerName, domain string) *certmanagerapi.ClusterIssuer {
 				},
 			},
 		}
-		if issuerName == settings.StagingIssuerName {
-			acme.Server = settings.LetsEncryptStagingServerURL
+		if issuerName == constants.StagingIssuerName {
+			acme.Server = constants.LetsEncryptStagingServerURL
 		} else {
-			acme.Server = settings.LetsEncryptProductionServerURL
+			acme.Server = constants.LetsEncryptProductionServerURL
 		}
 		issuer.Spec.ACME = acme
-	case settings.SelfSignedIssuerName:
+	case constants.SelfSignedIssuerName:
 		issuer.Spec.SelfSigned = &certmanagerapi.SelfSignedIssuer{}
 	}
 
