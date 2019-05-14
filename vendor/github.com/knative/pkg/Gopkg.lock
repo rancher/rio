@@ -300,14 +300,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:f3c8dc03bb88bca90c59550e06b0f27a6ca489b1747ac8e5153686a6752e4d74"
+  digest = "1:d0d25d17a6ef5842ad4c0ea41af24bd3debd8f6c7f0f18cd49db690962a84a83"
   name = "github.com/knative/test-infra"
   packages = [
     "scripts",
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "3a09cd7f5428743509941d116fdee644041a3507"
+  revision = "03b0eab127a39bccf71c1eadc3446f7fb13f8669"
 
 [[projects]]
   digest = "1:56dbf15e091bf7926cb33a57cb6bdfc658fc6d3498d2f76f10a97ce7856f1fde"
@@ -348,6 +348,22 @@
   pruneopts = "NUT"
   revision = "4b7aa43c6742a2c18fdef89dd197aaae7dac7ccd"
   version = "1.0.1"
+
+[[projects]]
+  digest = "1:22d4043da943b919108e0d1b07983b8d29edeadfba9fb8f3213208d3e9798aae"
+  name = "github.com/openzipkin/zipkin-go"
+  packages = [
+    ".",
+    "idgenerator",
+    "model",
+    "propagation",
+    "reporter",
+    "reporter/http",
+    "reporter/recorder",
+  ]
+  pruneopts = "NUT"
+  revision = "1b5162aa314e6ccfcf83777bfb5218988c9e8283"
+  version = "v0.1.6"
 
 [[projects]]
   branch = "master"
@@ -446,11 +462,12 @@
   version = "v1.0.3"
 
 [[projects]]
-  digest = "1:69a97603fe8952de86ee1e74a065f7974ec7d7d1d2301d3f5da6d342156363f4"
+  digest = "1:b8baa7541ef444be218da02d3a7b607d33513263660e489d86d429afbffcdd86"
   name = "go.opencensus.io"
   packages = [
     ".",
     "exporter/prometheus",
+    "exporter/zipkin",
     "internal",
     "internal/tagencoding",
     "metric/metricdata",
@@ -1074,9 +1091,15 @@
     "github.com/knative/test-infra/tools/dep-collector",
     "github.com/markbates/inflect",
     "github.com/mattbaird/jsonpatch",
+    "github.com/openzipkin/zipkin-go",
+    "github.com/openzipkin/zipkin-go/model",
+    "github.com/openzipkin/zipkin-go/reporter",
+    "github.com/openzipkin/zipkin-go/reporter/http",
+    "github.com/openzipkin/zipkin-go/reporter/recorder",
     "github.com/pkg/errors",
     "github.com/rogpeppe/go-internal/semver",
     "go.opencensus.io/exporter/prometheus",
+    "go.opencensus.io/exporter/zipkin",
     "go.opencensus.io/plugin/ochttp",
     "go.opencensus.io/plugin/ochttp/propagation/b3",
     "go.opencensus.io/stats",
