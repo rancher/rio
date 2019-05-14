@@ -134,7 +134,7 @@ import:
 - package: github.com/rancher/rdns-server
   version: 2967d247de7e8be972d326fe394e331eb8ca8d2b
 - package: github.com/rancher/wrangler
-  version: 40fa298578b9264a0b6ffcd84fdcee27595704bc
+  version: 56b51c33a6d4297006b51c5cebd608ccbcef0297
 - package: github.com/rivo/tview
   version: 8d5eba0c2f51d8ae971c5a470e354bbc2aae6777
 - package: github.com/rivo/uniseg

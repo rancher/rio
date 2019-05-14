@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	cgargs "github.com/rancher/wrangler/pkg/controller-gen/args"
@@ -192,10 +193,20 @@ func generateClientset(groups map[string]bool, customArgs *cgargs.CustomArgs) er
 	args.OutputPackagePath = filepath.Join(customArgs.Package, "clientset")
 	args.GoHeaderFilePath = customArgs.Options.Boilerplate
 
-	for gv, names := range customArgs.TypesByGroup {
+	var order []schema.GroupVersion
+
+	for gv := range customArgs.TypesByGroup {
 		if !groups[gv.Group] {
 			continue
 		}
+		order = append(order, gv)
+	}
+	sort.Slice(order, func(i, j int) bool {
+		return order[i].Group < order[j].Group
+	})
+
+	for _, gv := range order {
+		names := customArgs.TypesByGroup[gv]
 		args.InputDirs = append(args.InputDirs, names[0].Package)
 		clientSetArgs.Groups = append(clientSetArgs.Groups, types2.GroupVersions{
 			PackageName: gv.Group,
