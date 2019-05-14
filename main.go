@@ -8,14 +8,14 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"strings"
 
-	_ "net/http/pprof"
-
 	"github.com/rancher/rio/pkg/server"
-	"github.com/rancher/rio/version"
+	"github.com/rancher/rio/pkg/version"
 	"github.com/rancher/wrangler/pkg/signals"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -32,7 +32,7 @@ var (
 func main() {
 	app := cli.NewApp()
 	app.Name = "rio-controller"
-	app.Version = version.Version
+	app.Version = fmt.Sprintf("%s (%s)", version.Version, version.GitCommit)
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:        "kubeconfig",

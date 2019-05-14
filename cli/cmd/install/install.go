@@ -4,15 +4,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/modules/service/controllers/serviceset"
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
+	"github.com/rancher/rio/pkg/systemstack"
+	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-
-	"github.com/rancher/rio/modules/service/controllers/serviceset"
-	"github.com/sirupsen/logrus"
-
-	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/pkg/systemstack"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -38,6 +37,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 	if err := controllerStack.Deploy(map[string]string{
 		"NAMESPACE": i.Namespace,
 		"DEBUG":     fmt.Sprint(i.Debug),
+		"IMAGE":     fmt.Sprintf("%s:%s", constants.ControllerImage, constants.ControllerImageTag),
 	}); err != nil {
 		return err
 	}

@@ -3,22 +3,12 @@ set -e
 
 source $(dirname $0)/version
 
-ARCH=${ARCH:-"amd64"}
-SUFFIX="-${ARCH}"
-
 cd $(dirname $0)/..
-
-TAG=${TAG:-${VERSION}${SUFFIX}}
-REPO=${REPO:-rancher}
-
-if echo $TAG | grep -q dirty; then
-    TAG=dev
-fi
 
 mkdir -p dist/artifacts
 cp bin/rio dist/artifacts/rio${SUFFIX}
 
-IMAGE=${REPO}/rio:${TAG}
+IMAGE=${REPO}/rio-controller:${TAG}
 DOCKERFILE=package/Dockerfile
 if [ -e ${DOCKERFILE}.${ARCH} ]; then
     DOCKERFILE=${DOCKERFILE}.${ARCH}
