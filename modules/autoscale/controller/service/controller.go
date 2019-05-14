@@ -36,7 +36,7 @@ func (p populator) populateServiceRecommendation(object runtime.Object, ns *core
 	service := object.(*v1.Service)
 	labels := map[string]string{}
 	autoscale := false
-	if service.Spec.MinScale != nil && service.Spec.MaxScale != nil && service.Spec.Concurrency != nil && service.Spec.MinScale != service.Spec.MinScale {
+	if service.Spec.MinScale != nil && service.Spec.MaxScale != nil && service.Spec.Concurrency != nil && *service.Spec.MinScale != *service.Spec.MinScale {
 		autoscale = true
 	}
 	app, version := services.AppAndVersion(service)

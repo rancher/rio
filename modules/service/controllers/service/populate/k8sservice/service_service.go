@@ -5,6 +5,7 @@ import (
 	"github.com/rancher/rio/modules/service/controllers/service/populate/serviceports"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constructors"
+	"github.com/rancher/rio/pkg/services"
 	"github.com/rancher/wrangler/pkg/objectset"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,7 +15,8 @@ import (
 func serviceSelector(service *riov1.Service, os *objectset.ObjectSet) {
 	labels := servicelabels.ServiceLabels(service)
 	selectorLabels := servicelabels.SelectorLabels(service)
-	svc := newServiceSelector(service.Name, service.Namespace, labels, selectorLabels)
+	app, version := services.AppAndVersion(service)
+	svc := newServiceSelector(app+"-"+version, service.Namespace, labels, selectorLabels)
 	if len(serviceports.ServiceNamedPorts(service)) > 0 {
 		svc.Spec.Ports = serviceports.ServiceNamedPorts(service)
 	}
