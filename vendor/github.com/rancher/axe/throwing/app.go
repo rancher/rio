@@ -103,7 +103,7 @@ func (app *AppView) Init() error {
 
 	app.setInputHandler()
 
-	// go app.watch()
+	//go app.watch()
 
 	main := tview.NewFlex()
 	{

@@ -95,7 +95,8 @@ func Run(opts cgargs.Options) {
 	}
 
 	if err := clientGen.GenerateMocks(); err != nil {
-		klog.Fatalf("mocks failed: %v", err)
+		klog.Errorf("mocks failed: %v", err)
+		return
 	}
 
 	if err := copyGoPathToModules(customArgs); err != nil {

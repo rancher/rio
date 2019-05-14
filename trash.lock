@@ -12,11 +12,6 @@ import:
   version: v1.0.1
 - package: github.com/beorn7/perks
   version: 3ac7bf7a47d159a033b107610db8a1b6575507a4
-- package: github.com/coreos/etcd
-  version: a7d7329fe0078ac4e461ce299524b874582ff354
-  repo: https://github.com/ibuildthecloud/etcd.git
-- package: github.com/coreos/go-semver
-  version: v0.2.0-9-ge214231b295a8e
 - package: github.com/davecgh/go-spew
   version: v1.1.0-1-g782f4967f2dc45
 - package: github.com/docker/docker
@@ -65,8 +60,6 @@ import:
   version: 0c5108395e2debce0d731cf0287ddf7242066aba
 - package: github.com/gorilla/mux
   version: v1.6.2
-- package: github.com/gorilla/websocket
-  version: v1.2.0
 - package: github.com/gregjones/httpcache
   version: 787624de3eb7bd915c329cba748687a3b22666a6
 - package: github.com/hashicorp/errwrap
@@ -93,8 +86,8 @@ import:
 - package: github.com/knative/build
   version: v0.5.0
 - package: github.com/knative/pkg
-  version: 58f21ce851a46d70e7a97e82e43dbfdf6acc6b80
-  repo: https://github.com/StrongMonkey/pkg.git
+  version: b30ab9de040eb4ba56fdb4108a29045ecac0c46a
+  repo: https://github.com/rancher/pkg.git
 - package: github.com/lucasb-eyer/go-colorful
   version: 12d3b2882a08d1abc9488e34f3e1ae35165f2d07
 - package: github.com/matryer/moq/pkg/moq
@@ -120,8 +113,6 @@ import:
   version: v1.2.0-95-g67b9df7f55fe11
 - package: github.com/openshift/api/apps/v1
   version: v3.9.0
-- package: github.com/patrickmn/go-cache
-  version: v2.1.0
 - package: github.com/peterbourgon/diskv
   version: v2.0.1
 - package: github.com/pkg/errors
@@ -138,14 +129,12 @@ import:
   version: 65c1f6f8f0fc1e2185eb9863a3bc751496404259
 - package: github.com/rancher/axe
   version: 84566a81582b26b0195c5ccd194473f9d8296ee5
-  repo: https://github.com/StrongMonkey/axe.git
 - package: github.com/rancher/mapper
   version: 48be2d1eadc0ffa5ce78de00e0417cc926508cac
 - package: github.com/rancher/rdns-server
   version: 2967d247de7e8be972d326fe394e331eb8ca8d2b
 - package: github.com/rancher/wrangler
-  version: d1ff29d245b296e6319b36a65b0fcf574a36c9e1
-  repo: https://github.com/StrongMonkey/wrangler.git
+  version: 40fa298578b9264a0b6ffcd84fdcee27595704bc
 - package: github.com/rivo/tview
   version: 8d5eba0c2f51d8ae971c5a470e354bbc2aae6777
 - package: github.com/rivo/uniseg
@@ -162,8 +151,6 @@ import:
   version: v1.0.1
 - package: github.com/stretchr/testify
   version: v1.2.1-14-gc679ae2cc0cb27
-- package: github.com/ugorji/go
-  version: bdcc60b419d136a85cdf2e7cbcac34b3f1cd6e57
 - package: github.com/urfave/cli
   version: 8e01ec4cd3e2d84ab2fe90d8210528ffbb06d8ff
 - package: go.uber.org/atomic
@@ -189,7 +176,7 @@ import:
 - package: golang.org/x/time
   version: f51c12702a4d776e4c1fa9b0fabab841babae631
 - package: golang.org/x/tools
-  version: 4ca4b55e2050cfa75f1a1f72ae10825e80b052a0
+  version: 7f7074d5bcfd282eb16bc382b0bb3da762461985
 - package: google.golang.org/genproto
   version: 09f6ed296fc66555a25fe4ce95173148778dfa85
 - package: google.golang.org/grpc
