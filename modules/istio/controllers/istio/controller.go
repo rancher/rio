@@ -230,7 +230,8 @@ func (i *istioDeployController) syncSubdomain(key string, service *corev1.Servic
 	if service.Labels["request-subdomain"] == "true" && service.Spec.ClusterIP != "" {
 		deepcopy := clusterDomain.DeepCopy()
 		found := false
-		subdomainName := fmt.Sprintf("%s-%s", service.Name, service.Namespace)
+		appName := service.Spec.Selector["app"]
+		subdomainName := fmt.Sprintf("%s-%s", appName, service.Namespace)
 		for i, sd := range deepcopy.Spec.Subdomains {
 			if sd.Name == subdomainName {
 				found = true
