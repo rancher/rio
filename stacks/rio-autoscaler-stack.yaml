@@ -22,7 +22,7 @@ services:
     - get,watch,list pods
     - get,list,watch,update endpoints
     - get,watch,list services
-    image: rancher/rio-autoscaler:v0.1.0
+    image: rancher/rio-autoscaler:v0.1.1
     imagePullPolicy: always
     ports:
     - 80/http,internal=true
