@@ -71,7 +71,7 @@ services:
     - '* configmaps'
     - '* events'
     - secrets
-    image: strongmonkey1992/webhookinator:dev
+    image: rancher/webhookinator:v0.1.0
     args:
     - webhookinator
     - --listen-address
