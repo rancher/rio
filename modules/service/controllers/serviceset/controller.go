@@ -55,12 +55,6 @@ func (h *handler) onChange(key string, service *riov1.Service) (*riov1.Service, 
 
 	appName, _ := services2.AppAndVersion(service)
 
-	if service.DeletionTimestamp != nil {
-		return service, h.apply.WithSetID(appName).
-			WithCacheTypes(h.apps).
-			WithCacheTypes(h.coreservice).Apply(os)
-	}
-
 	ns, err := h.namespaceCache.Get(service.Namespace)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -101,6 +95,9 @@ func (h *handler) onChange(key string, service *riov1.Service) (*riov1.Service, 
 	var totalweight int
 	var serviceWeight []riov1.Revision
 	for _, service := range filteredServices.Revisions {
+		if service.DeletionTimestamp != nil {
+			continue
+		}
 		_, version := services2.AppAndVersion(service)
 		public := false
 		for _, port := range service.Spec.Ports {
@@ -145,8 +142,10 @@ func (h *handler) onChange(key string, service *riov1.Service) (*riov1.Service, 
 	sort.Slice(serviceWeight, func(i, j int) bool {
 		return serviceWeight[i].Version < serviceWeight[j].Version
 	})
-	app.Spec.Revisions = serviceWeight
-	os.Add(app)
+	if len(serviceWeight) > 0 {
+		app.Spec.Revisions = serviceWeight
+		os.Add(app)
+	}
 	return service, h.apply.WithSetID(appName).
 		WithCacheTypes(h.apps).
 		WithCacheTypes(h.coreservice).Apply(os)
