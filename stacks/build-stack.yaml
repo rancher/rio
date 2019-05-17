@@ -66,14 +66,14 @@ services:
     - storage-registry:/var/lib/registry
   webhook:
     global_permissions:
-    - "* webhookinator.rio.cattle.io/gitwebhookreceivers"
-    - "* webhookinator.rio.cattle.io/gitwebhookexecutions"
+    - "* gitwatcher.cattle.io/gitwatchers"
+    - "* gitwatcher.cattle.io/gitcommits"
     - '* configmaps'
     - '* events'
     - secrets
-    image: rancher/webhookinator:v0.1.0
+    image: rancher/gitwatcher:v0.2.0
     args:
-    - webhookinator
+    - gitwatcher
     - --listen-address
     - :8090
     imagePullPolicy: always

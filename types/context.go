@@ -3,20 +3,19 @@ package types
 import (
 	"context"
 
-	apiextensions "github.com/rancher/rio/pkg/generated/controllers/apiextensions.k8s.io"
-	"github.com/rancher/rio/pkg/generated/controllers/apps"
+	webhookinator "github.com/rancher/gitwatcher/pkg/generated/controllers/gitwatcher.cattle.io"
 	autoscale "github.com/rancher/rio/pkg/generated/controllers/autoscale.rio.cattle.io"
-	build "github.com/rancher/rio/pkg/generated/controllers/build.knative.dev"
-	certmanager "github.com/rancher/rio/pkg/generated/controllers/certmanager.k8s.io"
-	"github.com/rancher/rio/pkg/generated/controllers/core"
-	"github.com/rancher/rio/pkg/generated/controllers/extensions"
-	git "github.com/rancher/rio/pkg/generated/controllers/git.rio.cattle.io"
-	networking "github.com/rancher/rio/pkg/generated/controllers/networking.istio.io"
 	project "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io"
-	"github.com/rancher/rio/pkg/generated/controllers/rbac"
 	rio "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io"
-	"github.com/rancher/rio/pkg/generated/controllers/storage"
-	webhookinator "github.com/rancher/rio/pkg/generated/controllers/webhookinator.rio.cattle.io"
+	apiextensions "github.com/rancher/wrangler-api/pkg/generated/controllers/apiextensions.k8s.io"
+	"github.com/rancher/wrangler-api/pkg/generated/controllers/apps"
+	build "github.com/rancher/wrangler-api/pkg/generated/controllers/build.knative.dev"
+	certmanager "github.com/rancher/wrangler-api/pkg/generated/controllers/certmanager.k8s.io"
+	"github.com/rancher/wrangler-api/pkg/generated/controllers/core"
+	"github.com/rancher/wrangler-api/pkg/generated/controllers/extensions"
+	networking "github.com/rancher/wrangler-api/pkg/generated/controllers/networking.istio.io"
+	"github.com/rancher/wrangler-api/pkg/generated/controllers/rbac"
+	"github.com/rancher/wrangler-api/pkg/generated/controllers/storage"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/start"
 	"k8s.io/client-go/kubernetes"
@@ -36,7 +35,6 @@ type Context struct {
 	Ext         *apiextensions.Factory
 	Extensions  *extensions.Factory
 	Global      *project.Factory
-	Git         *git.Factory
 	K8s         kubernetes.Interface
 	Networking  *networking.Factory
 	RBAC        *rbac.Factory
@@ -62,7 +60,6 @@ func NewContext(namespace string, config *rest.Config) *Context {
 		Ext:         apiextensions.NewFactoryFromConfigOrDie(config),
 		Extensions:  extensions.NewFactoryFromConfigOrDie(config),
 		Global:      project.NewFactoryFromConfigOrDie(config),
-		Git:         git.NewFactoryFromConfigOrDie(config),
 		Networking:  networking.NewFactoryFromConfigOrDie(config),
 		RBAC:        rbac.NewFactoryFromConfigOrDie(config),
 		Rio:         rio.NewFactoryFromConfigOrDie(config),
@@ -85,7 +82,6 @@ func (c *Context) Start(ctx context.Context) error {
 		c.Extensions,
 		c.Ext,
 		c.Global,
-		c.Git,
 		c.Networking,
 		c.RBAC,
 		c.Rio,
