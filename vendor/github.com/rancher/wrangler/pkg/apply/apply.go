@@ -29,6 +29,7 @@ type InformerGetter interface {
 
 type Apply interface {
 	Apply(set *objectset.ObjectSet) error
+	ApplyObjects(objs ...runtime.Object) error
 	WithCacheTypes(igs ...InformerGetter) Apply
 	WithSetID(id string) Apply
 	WithOwner(obj runtime.Object) Apply
@@ -38,6 +39,7 @@ type Apply interface {
 	WithStrictCaching() Apply
 	WithDefaultNamespace(ns string) Apply
 	WithRateLimiting(ratelimitingQps float32) Apply
+	WithNoDelete() Apply
 }
 
 func New(discovery discovery.DiscoveryInterface, cf ClientFactory, igs ...InformerGetter) Apply {
@@ -121,6 +123,12 @@ func (a *apply) Apply(set *objectset.ObjectSet) error {
 	return a.newDesiredSet().Apply(set)
 }
 
+func (a *apply) ApplyObjects(objs ...runtime.Object) error {
+	os := objectset.NewObjectSet()
+	os.Add(objs...)
+	return a.newDesiredSet().Apply(os)
+}
+
 func (a *apply) WithSetID(id string) Apply {
 	return a.newDesiredSet().WithSetID(id)
 }
@@ -155,4 +163,8 @@ func (a *apply) WithDefaultNamespace(ns string) Apply {
 
 func (a *apply) WithRateLimiting(ratelimitingQps float32) Apply {
 	return a.newDesiredSet().WithRateLimiting(ratelimitingQps)
+}
+
+func (a *apply) WithNoDelete() Apply {
+	return a.newDesiredSet().WithNoDelete()
 }

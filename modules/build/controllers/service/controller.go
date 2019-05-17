@@ -1,63 +1,55 @@
 package service
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"fmt"
-	"os/exec"
-	"strings"
 
 	"github.com/knative/build/pkg/apis/build/v1alpha1"
-	"github.com/pkg/errors"
+	webhookv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
 	"github.com/rancher/rio/modules/istio/pkg/domains"
-	gitv1 "github.com/rancher/rio/pkg/apis/git.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	webhookv1 "github.com/rancher/rio/pkg/apis/webhookinator.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
-	corev1controller "github.com/rancher/rio/pkg/generated/controllers/core/v1"
 	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/name"
+	v1 "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
+	corev1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/core/v1"
+	"github.com/rancher/wrangler/pkg/name"
 	"github.com/rancher/wrangler/pkg/objectset"
+	"github.com/rancher/wrangler/pkg/relatedresource"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-var registrySecretExample = `{
-        "auths": {
-                "https://index.docker.io/v1/": {
-                        "auth": ""
-                }
-        }
-}`
-
 const (
-	buildkitAddr       = "buildkit"
-	serviceAccountName = "build-sa"
-	dockerBuildSecret  = "build-secrets"
+	buildkitAddr = "buildkit"
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
 	c := stackobject.NewGeneratingController(ctx, rContext, "stack-service-build", rContext.Rio.Rio().V1().Service())
 	c.Apply = c.Apply.WithCacheTypes(
 		rContext.Build.Build().V1alpha1().Build(),
-		rContext.Webhook.Webhookinator().V1().GitWebHookReceiver(),
-		rContext.Git.Git().V1().GitModule(),
+		rContext.Webhook.Gitwatcher().V1().GitWatcher(),
 		rContext.Core.Core().V1().ServiceAccount(),
 		rContext.Core.Core().V1().Secret(),
-	)
+	).WithStrictCaching()
 
 	p := populator{
 		systemNamespace:    rContext.Namespace,
 		secretsCache:       rContext.Core.Core().V1().Secret().Cache(),
 		clusterDomainCache: rContext.Global.Project().V1().ClusterDomain().Cache(),
+		serviceCache:       rContext.Rio.Rio().V1().Service().Cache(),
 	}
 
 	c.Populator = p.populate
+
+	relatedresource.Watch(ctx, "webhook-service", p.resolve,
+		rContext.Rio.Rio().V1().Service(), rContext.Rio.Rio().V1().Service())
+
 	return nil
 }
 
@@ -65,10 +57,41 @@ type populator struct {
 	systemNamespace    string
 	customRegistry     string
 	secretsCache       corev1controller.SecretCache
+	serviceCache       v1.ServiceCache
 	clusterDomainCache projectv1controller.ClusterDomainCache
 }
 
-func (p populator) populate(obj runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) error {
+func (p *populator) isWebhook(obj runtime.Object) bool {
+	if s, ok := obj.(*riov1.Service); ok {
+		return s.Namespace == p.systemNamespace && s.Name == "webhook"
+	}
+	return false
+}
+
+func (p *populator) resolve(namespace, name string, obj runtime.Object) (result []relatedresource.Key, err error) {
+	if !p.isWebhook(obj) {
+		return nil, nil
+	}
+
+	svcs, err := p.serviceCache.List("", labels.Everything())
+	if err != nil {
+		return nil, err
+	}
+
+	for _, svc := range svcs {
+		if p.isWebhook(svc) {
+			continue
+		}
+		result = append(result, relatedresource.Key{
+			Namespace: svc.Namespace,
+			Name:      svc.Name,
+		})
+	}
+
+	return
+}
+
+func (p *populator) populate(obj runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) error {
 	service := obj.(*riov1.Service)
 
 	if service == nil || service.Spec.Build == nil || service.Spec.Build.Repo == "" {
@@ -80,19 +103,22 @@ func (p populator) populate(obj runtime.Object, ns *corev1.Namespace, os *object
 		return err
 	}
 
-	addSecrets := true
-	if _, err := p.secretsCache.Get(service.Namespace, dockerBuildSecret); err == nil {
-		addSecrets = false
-	}
-
-	if err := populateBuild(service, p.customRegistry, p.systemNamespace, clusterDomain.Status.ClusterDomain, addSecrets, os); err != nil {
+	if err := populateBuild(service, p.customRegistry, p.systemNamespace, clusterDomain.Status.ClusterDomain, os); err != nil {
 		return err
 	}
-	populateWebhookAndSecrets(ns.Name, service, os)
+
+	webhook, err := p.serviceCache.Get(p.systemNamespace, "webhook")
+	if errors.IsNotFound(err) {
+		webhook = nil
+	} else if err != nil {
+		return err
+	}
+
+	populateWebhookAndSecrets(webhook, service, os)
 	return nil
 }
 
-func populateBuild(service *riov1.Service, customRegistry, systemNamespace, domain string, addSecrets bool, os *objectset.ObjectSet) error {
+func populateBuild(service *riov1.Service, customRegistry, systemNamespace, domain string, os *objectset.ObjectSet) error {
 	// we only support setting imageBuild for primary container
 	rev := service.Spec.Build.Revision
 	if rev == "" {
@@ -130,57 +156,27 @@ func populateBuild(service *riov1.Service, customRegistry, systemNamespace, doma
 			},
 		},
 	})
-	sa := constructors.NewServiceAccount(service.Namespace, serviceAccountName, corev1.ServiceAccount{
-		Secrets: []corev1.ObjectReference{
-			{
-				Name: dockerBuildSecret,
-			},
-		},
-	})
-	if addSecrets {
-		secrets := constructors.NewSecret(service.Namespace, dockerBuildSecret, corev1.Secret{
-			Type: corev1.SecretTypeDockerConfigJson,
-			Data: map[string][]byte{
-				".dockerconfigjson": []byte(registrySecretExample),
-			},
-		})
-		os.Add(secrets)
-	}
-	os.Add(sa)
 	os.Add(build)
 	return nil
 }
 
-func populateWebhookAndSecrets(ns string, service *riov1.Service, os *objectset.ObjectSet) {
-	if service.Spec.Build.Branch == "" {
-		return
+func populateWebhookAndSecrets(webhookService *riov1.Service, service *riov1.Service, os *objectset.ObjectSet) {
+	webhookReceiver := webhookv1.NewGitWatcher(service.Namespace, service.Name, webhookv1.GitWatcher{
+		Spec: webhookv1.GitWatcherSpec{
+			RepositoryURL:                  service.Spec.Build.Repo,
+			Enabled:                        true,
+			Push:                           true,
+			Tag:                            true,
+			Branch:                         service.Spec.Build.Branch,
+			RepositoryCredentialSecretName: service.Spec.Build.Secret,
+		},
+	})
+
+	if webhookService != nil && len(webhookService.Status.Endpoints) > 0 {
+		webhookReceiver.Spec.ReceiverURL = webhookService.Status.Endpoints[0]
 	}
 
-	if service.Spec.Build.Secret != "" {
-		webhookReceiver := constructors.NewGitWebHookReceiver(service.Namespace, service.Name, webhookv1.GitWebHookReceiver{
-			Spec: webhookv1.GitWebHookReceiverSpec{
-				RepositoryURL:                  service.Spec.Build.Repo,
-				Enabled:                        true,
-				Push:                           true,
-				Tag:                            true,
-				RepositoryCredentialSecretName: service.Spec.Build.Secret,
-			},
-		})
-		os.Add(webhookReceiver)
-	} else {
-		moduleName := name.SafeConcatName(service.Namespace, service.Name, name.Hex(service.Spec.Build.Repo, 5), service.Spec.Build.Branch)
-		module := gitv1.NewGitModule(service.Namespace, moduleName, gitv1.GitModule{
-			Spec: gitv1.GitModuleSpec{
-				ServiceName:      service.Name,
-				ServiceNamespace: service.Namespace,
-				Repo:             service.Spec.Build.Repo,
-				Branch:           service.Spec.Build.Branch,
-			},
-		})
-		os.Add(module)
-	}
-
-	return
+	os.Add(webhookReceiver)
 }
 
 func ImageName(customeRegistry, registryNamespace, rev, domain string, service *riov1.Service) string {
@@ -190,31 +186,4 @@ func ImageName(customeRegistry, registryNamespace, rev, domain string, service *
 		return fmt.Sprintf("%s/%s:%s", registryAddr, service.Namespace+"/"+service.Name, rev)
 	}
 	return fmt.Sprintf("%s/%s:%s", customeRegistry, service.Namespace+"-"+service.Name, rev)
-}
-
-func revision(build *riov1.ImageBuild) (string, error) {
-	if build.Revision != "" {
-		return build.Revision, nil
-	} else if build.Branch != "" {
-		return FirstCommit(build.Repo, build.Branch)
-	}
-	return "", nil
-}
-
-// need git installed, also need auth
-func FirstCommit(repo, branch string) (string, error) {
-	args := []string{"ls-remote", repo, "refs/heads/" + branch}
-	buffer := &bytes.Buffer{}
-	errBuf := &strings.Builder{}
-	cmd := exec.Command("git", args...)
-	cmd.Stdout = buffer
-	cmd.Stderr = errBuf
-	if err := cmd.Run(); err != nil {
-		return "", errors.New(errBuf.String())
-	}
-	scanner := bufio.NewScanner(buffer)
-	for scanner.Scan() {
-		return strings.Fields(scanner.Text())[0], nil
-	}
-	return "", errors.New("can't find first commit by git ls-remote")
 }

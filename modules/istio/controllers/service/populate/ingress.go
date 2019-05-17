@@ -3,14 +3,12 @@ package populate
 import (
 	"fmt"
 
-	name2 "github.com/rancher/rio/pkg/name"
-
 	"github.com/rancher/rio/modules/istio/pkg/domains"
-
 	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
 	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
+	name2 "github.com/rancher/wrangler/pkg/name"
 	"github.com/rancher/wrangler/pkg/objectset"
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/util/intstr"

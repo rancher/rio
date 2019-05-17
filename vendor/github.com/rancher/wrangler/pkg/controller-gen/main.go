@@ -45,7 +45,6 @@ func Run(opts cgargs.Options) {
 		}
 
 		genericArgs.OutputBase = tempDir
-
 		defer os.RemoveAll(tempDir)
 	}
 	customArgs.OutputBase = genericArgs.OutputBase
@@ -67,12 +66,12 @@ func Run(opts cgargs.Options) {
 		}
 	}
 
-	if len(groups) == 0 {
-		return
-	}
-
 	if err := copyGoPathToModules(customArgs); err != nil {
 		klog.Fatalf("go modules copy failed: %v", err)
+	}
+
+	if len(groups) == 0 {
+		return
 	}
 
 	if err := generateDeepcopy(groups, customArgs); err != nil {
@@ -105,17 +104,25 @@ func Run(opts cgargs.Options) {
 	}
 }
 
+func sourcePackagePath(customArgs *cgargs.CustomArgs, pkgName string) string {
+	pkgSplit := strings.Split(pkgName, string(os.PathSeparator))
+	pkg := filepath.Join(customArgs.OutputBase, strings.Join(pkgSplit[:3], string(os.PathSeparator)))
+	return pkg
+}
+
 //until k8s code-gen supports gopath
 func copyGoPathToModules(customArgs *cgargs.CustomArgs) error {
 
 	pathsToCopy := map[string]bool{}
 	for _, types := range customArgs.TypesByGroup {
-		 for _, names := range types {
-		 	pkgSplit := strings.Split(names.Package, string(os.PathSeparator))
-		 	pkg := filepath.Join(customArgs.OutputBase, strings.Join(pkgSplit[:3], string(os.PathSeparator)))
+		for _, names := range types {
+			pkg := sourcePackagePath(customArgs, names.Package)
 			pathsToCopy[pkg] = true
 		}
 	}
+
+	pkg := sourcePackagePath(customArgs, customArgs.Package)
+	pathsToCopy[pkg] = true
 
 	for pkg, _ := range pathsToCopy {
 		if _, err := os.Stat(pkg); os.IsNotExist(err) {

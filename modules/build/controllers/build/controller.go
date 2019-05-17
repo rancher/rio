@@ -6,10 +6,10 @@ import (
 	"github.com/knative/build/pkg/apis/build/v1alpha1"
 	"github.com/rancher/rio/modules/build/controllers/service"
 	"github.com/rancher/rio/pkg/constants"
-	v1alpha12 "github.com/rancher/rio/pkg/generated/controllers/build.knative.dev/v1alpha1"
 	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
+	v1alpha12 "github.com/rancher/wrangler-api/pkg/generated/controllers/build.knative.dev/v1alpha1"
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
@@ -53,13 +53,18 @@ func (h handler) updateService(key string, build *v1alpha1.Build) (*v1alpha1.Bui
 		if err != nil {
 			return build, nil
 		}
-		deepcopy := svc.DeepCopy()
-		deepcopy.Spec.Image = service.ImageName(h.registry, h.systemNamespace, build.Spec.Source.Git.Revision, domain, deepcopy)
-		if build.Labels["sync-service"] != "true" {
+
+		if svc.Spec.Image != "" {
+			return build, nil
+		}
+
+		imageName := service.ImageName(h.registry, h.systemNamespace, build.Spec.Source.Git.Revision, domain, svc)
+		if svc.Spec.Image != imageName {
+			deepcopy := svc.DeepCopy()
+			deepcopy.Spec.Image = service.ImageName(h.registry, h.systemNamespace, build.Spec.Source.Git.Revision, domain, deepcopy)
 			if _, err := h.services.Update(deepcopy); err != nil {
 				return build, err
 			}
-			build.Labels["sync-service"] = "true"
 		}
 	}
 	return build, nil

@@ -22,14 +22,10 @@ import (
 	clientset "github.com/rancher/rio/pkg/generated/clientset/versioned"
 	autoscalev1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/autoscale.rio.cattle.io/v1"
 	fakeautoscalev1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/autoscale.rio.cattle.io/v1/fake"
-	gitv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/git.rio.cattle.io/v1"
-	fakegitv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/git.rio.cattle.io/v1/fake"
 	projectv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/project.rio.cattle.io/v1"
 	fakeprojectv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/project.rio.cattle.io/v1/fake"
 	riov1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/rio.cattle.io/v1"
 	fakeriov1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/rio.cattle.io/v1/fake"
-	webhookinatorv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/webhookinator.rio.cattle.io/v1"
-	fakewebhookinatorv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/webhookinator.rio.cattle.io/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -84,11 +80,6 @@ func (c *Clientset) AutoscaleV1() autoscalev1.AutoscaleV1Interface {
 	return &fakeautoscalev1.FakeAutoscaleV1{Fake: &c.Fake}
 }
 
-// GitV1 retrieves the GitV1Client
-func (c *Clientset) GitV1() gitv1.GitV1Interface {
-	return &fakegitv1.FakeGitV1{Fake: &c.Fake}
-}
-
 // ProjectV1 retrieves the ProjectV1Client
 func (c *Clientset) ProjectV1() projectv1.ProjectV1Interface {
 	return &fakeprojectv1.FakeProjectV1{Fake: &c.Fake}
@@ -97,9 +88,4 @@ func (c *Clientset) ProjectV1() projectv1.ProjectV1Interface {
 // RioV1 retrieves the RioV1Client
 func (c *Clientset) RioV1() riov1.RioV1Interface {
 	return &fakeriov1.FakeRioV1{Fake: &c.Fake}
-}
-
-// WebhookinatorV1 retrieves the WebhookinatorV1Client
-func (c *Clientset) WebhookinatorV1() webhookinatorv1.WebhookinatorV1Interface {
-	return &fakewebhookinatorv1.FakeWebhookinatorV1{Fake: &c.Fake}
 }

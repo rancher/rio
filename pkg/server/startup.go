@@ -65,8 +65,6 @@ func Types(ctx context.Context, config *rest.Config) error {
 		"BuildTemplate.build.knative.dev/v1alpha1",
 		"Image.caching.internal.knative.dev/v1alpha1",
 
-		"GitModule.git.rio.cattle.io/v1",
-
 		"ExternalService.rio.cattle.io/v1",
 		"Router.rio.cattle.io/v1",
 		"Service.rio.cattle.io/v1",
@@ -80,6 +78,8 @@ func Types(ctx context.Context, config *rest.Config) error {
 		"DestinationRule.networking.istio.io/v1alpha3",
 		"Gateway.networking.istio.io/v1alpha3",
 		"VirtualService.networking.istio.io/v1alpha3",
+		"ServiceEntry.networking.istio.io/v1alpha3",
+
 		"EgressRule.config.istio.io/v1alpha2",
 		"RouteRule.config.istio.io/v1alpha2",
 		"HTTPAPISpecBinding.config.istio.io/v1alpha2",
@@ -100,9 +100,8 @@ func Types(ctx context.Context, config *rest.Config) error {
 		"stdio.config.istio.io/v1alpha2",
 		"kubernetesenv.config.istio.io/v1alpha2",
 
-		"GitWebHookExecution.webhookinator.rio.cattle.io/v1",
-		"GitWebHookReceiver.webhookinator.rio.cattle.io/v1",
-		"ServiceEntry.networking.istio.io/v1alpha3",
+		"GitWatcher.gitwatcher.cattle.io/v1",
+		"GitCommit.gitwatcher.cattle.io/v1",
 
 		"ServiceScaleRecommendation.autoscale.rio.cattle.io/v1",
 

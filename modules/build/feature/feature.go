@@ -4,10 +4,8 @@ import (
 	"context"
 
 	"github.com/rancher/rio/modules/build/controllers/build"
-	"github.com/rancher/rio/modules/build/controllers/gitmodule"
-
+	"github.com/rancher/rio/modules/build/controllers/gitcommit"
 	"github.com/rancher/rio/modules/build/controllers/service"
-	"github.com/rancher/rio/modules/build/controllers/webhook"
 	v1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/features"
 	"github.com/rancher/rio/pkg/systemstack"
@@ -26,10 +24,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			systemstack.NewStack(apply, rContext.Namespace, "build", true),
 		},
 		Controllers: []features.ControllerRegister{
-			webhook.Register,
 			service.Register,
 			build.Register,
-			gitmodule.Register,
+			gitcommit.Register,
 		},
 		FixedAnswers: map[string]string{
 			"NAMESPACE": rContext.Namespace,
