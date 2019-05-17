@@ -15,7 +15,6 @@ import (
 	"strings"
 
 	"github.com/rancher/rio/pkg/constants"
-
 	"github.com/rancher/rio/pkg/server"
 	"github.com/rancher/rio/pkg/version"
 	"github.com/rancher/wrangler/pkg/signals"
@@ -53,14 +52,14 @@ func main() {
 			Destination: &debug,
 		},
 		cli.StringFlag{
-			Name:        "--http-listen-port",
+			Name:        "http-listen-port",
 			Usage:       "HTTP port gateway will be listening",
 			EnvVar:      "HTTP_PORT",
 			Value:       constants.DefaultHTTPOpenPort,
 			Destination: &constants.DefaultHTTPOpenPort,
 		},
 		cli.StringFlag{
-			Name:        "--https-listen-port",
+			Name:        "https-listen-port",
 			Usage:       "HTTPS port gateway will be listening",
 			EnvVar:      "HTTPS_PORT",
 			Value:       constants.DefaultHTTPSOpenPort,
@@ -105,8 +104,6 @@ func run(c *cli.Context) error {
 
 func setupDebugLogging() {
 	flag.Set("alsologtostderr", "true")
-	flag.Parse()
-
 	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
 	klog.InitFlags(klogFlags)
 }
