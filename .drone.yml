@@ -272,6 +272,29 @@ steps:
     event:
     - tag
 
+steps:
+- name: manifest-cert-checker
+  image: plugins/manifest:1.0.2
+  settings:
+    username:
+      from_secret: docker_username
+    password:
+      from_secret: docker_password
+    platforms:
+      - linux/amd64
+      - linux/arm64
+      - linux/arm
+    target: "rancher/rio-cert-checker:${DRONE_TAG}"
+    template: "rancher/rio-cert-checker:${DRONE_TAG}-ARCH"
+  when:
+    instance:
+    - drone-publish.rancher.io
+    ref:
+    - refs/head/master
+    - refs/tags/*
+    event:
+    - tag
+
 depends_on:
 - amd64
 - arm64

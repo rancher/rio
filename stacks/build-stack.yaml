@@ -67,7 +67,7 @@ services:
     containers:
     - name: cert-checker
       init: true
-      image: strongmonkey1992/cert-check:latest
+      image: rancher/rio-cert-checker:v0.1.0-rc6
       imagePullPolicy: Always
       secrets:
       - rio-wildcard:/etc/registry
@@ -78,7 +78,7 @@ services:
     - '* configmaps'
     - '* events'
     - secrets
-    image: rancher/gitwatcher:v0.2.0
+    image: rancher/gitwatcher:v0.2.1
     args:
     - gitwatcher
     - --listen-address

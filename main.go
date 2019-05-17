@@ -56,12 +56,14 @@ func main() {
 			Name:        "--http-listen-port",
 			Usage:       "HTTP port gateway will be listening",
 			EnvVar:      "HTTP_PORT",
+			Value:       constants.DefaultHTTPOpenPort,
 			Destination: &constants.DefaultHTTPOpenPort,
 		},
 		cli.StringFlag{
 			Name:        "--https-listen-port",
 			Usage:       "HTTPS port gateway will be listening",
 			EnvVar:      "HTTPS_PORT",
+			Value:       constants.DefaultHTTPSOpenPort,
 			Destination: &constants.DefaultHTTPSOpenPort,
 		},
 	}
