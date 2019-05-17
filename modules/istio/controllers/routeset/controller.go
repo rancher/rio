@@ -8,10 +8,10 @@ import (
 	populate2 "github.com/rancher/rio/modules/istio/controllers/service/populate"
 	"github.com/rancher/rio/modules/istio/pkg/domains"
 	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
-	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
+	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
-	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
+	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
@@ -42,7 +42,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		secretCache:          rContext.Core.Core().V1().Secret().Cache(),
 		externalServiceCache: rContext.Rio.Rio().V1().ExternalService().Cache(),
 		routesetCache:        rContext.Rio.Rio().V1().Router().Cache(),
-		clusterDomainCache:   rContext.Global.Project().V1().ClusterDomain().Cache(),
+		clusterDomainCache:   rContext.Global.Admin().V1().ClusterDomain().Cache(),
 	}
 
 	rContext.Rio.Rio().V1().Router().AddGenericHandler(ctx, routerDomainUpdate, generic.UpdateOnChange(rContext.Rio.Rio().V1().Router().Updater(), r.syncDomain))

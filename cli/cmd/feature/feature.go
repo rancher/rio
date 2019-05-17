@@ -11,7 +11,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/tables"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
 	"github.com/rancher/rio/cli/pkg/up/questions"
-	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
+	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/urfave/cli"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

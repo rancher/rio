@@ -8,10 +8,10 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	certmanagerapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
-	v1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
-	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
+	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	v12 "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/apply"
@@ -35,12 +35,12 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			WithStrictCaching().
 			WithCacheTypes(rContext.CertManager.Certmanager().V1alpha1().ClusterIssuer(),
 				rContext.CertManager.Certmanager().V1alpha1().Certificate()),
-		clusterDomain: rContext.Global.Project().V1().ClusterDomain(),
+		clusterDomain: rContext.Global.Admin().V1().ClusterDomain(),
 		publicdomain:  rContext.Rio.Rio().V1().PublicDomain(),
-		featureCache:  rContext.Global.Project().V1().Feature().Cache(),
+		featureCache:  rContext.Global.Admin().V1().Feature().Cache(),
 	}
 
-	rContext.Global.Project().V1().ClusterDomain().OnChange(ctx, "letsencrypt-clusterdomain-certs", fh.onChangeClusterDomain)
+	rContext.Global.Admin().V1().ClusterDomain().OnChange(ctx, "letsencrypt-clusterdomain-certs", fh.onChangeClusterDomain)
 	rContext.CertManager.Certmanager().V1alpha1().Certificate().OnChange(ctx, "letsencrypt-certificate", fh.onChangeCert)
 	return nil
 }

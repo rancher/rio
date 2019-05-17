@@ -5,7 +5,7 @@ import (
 
 	ntypes "github.com/rancher/mapper"
 	"github.com/rancher/mapper/slice"
-	v1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/systemstack"
 	"github.com/rancher/rio/types"
 )

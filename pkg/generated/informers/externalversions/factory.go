@@ -24,9 +24,9 @@ import (
 	time "time"
 
 	versioned "github.com/rancher/rio/pkg/generated/clientset/versioned"
+	adminriocattleio "github.com/rancher/rio/pkg/generated/informers/externalversions/admin.rio.cattle.io"
 	autoscaleriocattleio "github.com/rancher/rio/pkg/generated/informers/externalversions/autoscale.rio.cattle.io"
 	internalinterfaces "github.com/rancher/rio/pkg/generated/informers/externalversions/internalinterfaces"
-	projectriocattleio "github.com/rancher/rio/pkg/generated/informers/externalversions/project.rio.cattle.io"
 	riocattleio "github.com/rancher/rio/pkg/generated/informers/externalversions/rio.cattle.io"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -174,17 +174,17 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
+	Admin() adminriocattleio.Interface
 	Autoscale() autoscaleriocattleio.Interface
-	Project() projectriocattleio.Interface
 	Rio() riocattleio.Interface
+}
+
+func (f *sharedInformerFactory) Admin() adminriocattleio.Interface {
+	return adminriocattleio.New(f, f.namespace, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Autoscale() autoscaleriocattleio.Interface {
 	return autoscaleriocattleio.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Project() projectriocattleio.Interface {
-	return projectriocattleio.New(f, f.namespace, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Rio() riocattleio.Interface {

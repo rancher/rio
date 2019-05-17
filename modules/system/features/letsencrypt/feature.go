@@ -5,7 +5,7 @@ import (
 
 	"github.com/rancher/rio/modules/system/features/letsencrypt/controllers/issuer"
 	"github.com/rancher/rio/modules/system/features/letsencrypt/controllers/publicdomain"
-	v1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/features"

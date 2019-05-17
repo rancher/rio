@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/rancher/rio/modules/system/features/rdns/controllers/domain"
-	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
+	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/features"
 	"github.com/rancher/rio/types"
 )

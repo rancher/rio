@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	v1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/features"
-	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
+	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/objectset"
@@ -22,13 +22,13 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	f := &featureHandler{
 		ctx:            ctx,
 		namespace:      rContext.Namespace,
-		featuresClient: rContext.Global.Project().V1().Feature(),
-		featuresCache:  rContext.Global.Project().V1().Feature().Cache(),
+		featuresClient: rContext.Global.Admin().V1().Feature(),
+		featuresCache:  rContext.Global.Admin().V1().Feature().Cache(),
 		featureState:   map[string]func(){},
 		apply: rContext.Apply.
 			WithSetID("features").
 			WithStrictCaching().
-			WithCacheTypes(rContext.Global.Project().V1().Feature()),
+			WithCacheTypes(rContext.Global.Admin().V1().Feature()),
 	}
 
 	trigger := trigger2.New(f.featuresClient)

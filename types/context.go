@@ -4,8 +4,8 @@ import (
 	"context"
 
 	webhookinator "github.com/rancher/gitwatcher/pkg/generated/controllers/gitwatcher.cattle.io"
+	project "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io"
 	autoscale "github.com/rancher/rio/pkg/generated/controllers/autoscale.rio.cattle.io"
-	project "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io"
 	rio "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io"
 	apiextensions "github.com/rancher/wrangler-api/pkg/generated/controllers/apiextensions.k8s.io"
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/apps"
