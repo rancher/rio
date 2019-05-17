@@ -26,8 +26,8 @@ func deployment(service *riov1.Service, cp *controllerParams, os *objectset.Obje
 		},
 	})
 
-	if service.Spec.SystemSpec != nil && service.Spec.SystemSpec.DeploymentStrategy != "" {
-		dep.Spec.Strategy.Type = appsv1.DeploymentStrategyType(service.Spec.SystemSpec.DeploymentStrategy)
+	if service.SystemSpec != nil && service.SystemSpec.DeploymentStrategy != "" {
+		dep.Spec.Strategy.Type = appsv1.DeploymentStrategyType(service.SystemSpec.DeploymentStrategy)
 	} else {
 		if cp.Scale.Scale > 0 && cp.Scale.BatchSize > 0 {
 			dep.Spec.Strategy.RollingUpdate = &appsv1.RollingUpdateDeployment{
@@ -58,8 +58,8 @@ func daemonset(service *riov1.Service, cp *controllerParams, os *objectset.Objec
 		},
 	})
 
-	if service.Spec.SystemSpec != nil && service.Spec.SystemSpec.DeploymentStrategy != "" {
-		ds.Spec.Strategy.Type = appsv1.DeploymentStrategyType(service.Spec.SystemSpec.DeploymentStrategy)
+	if service.SystemSpec != nil && service.SystemSpec.DeploymentStrategy != "" {
+		ds.Spec.Strategy.Type = appsv1.DeploymentStrategyType(service.SystemSpec.DeploymentStrategy)
 	} else {
 		if cp.Scale.Scale > 0 && cp.Scale.BatchSize > 0 {
 			ds.Spec.Strategy.RollingUpdate = &appsv1.RollingUpdateDeployment{

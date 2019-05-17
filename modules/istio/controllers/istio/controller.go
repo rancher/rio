@@ -8,9 +8,8 @@ import (
 	"github.com/rancher/rio/modules/istio/controllers/istio/populate"
 	"github.com/rancher/rio/modules/istio/pkg/istio/config"
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
-	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
-	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
+	adminv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
 	appsv1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/apps/v1"
@@ -67,7 +66,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		serviceApply:      rContext.Apply.WithSetID(istioInjector).WithInjectorName(istioInjector),
 		apps:              rContext.Rio.Rio().V1().App(),
 		services:          rContext.Rio.Rio().V1().Service(),
-		publicDomainCache: rContext.Rio.Rio().V1().PublicDomain().Cache(),
+		publicDomainCache: rContext.Global.Admin().V1().PublicDomain().Cache(),
 		clusterDomain:     rContext.Global.Admin().V1().ClusterDomain(),
 		secretCache:       rContext.Core.Core().V1().Secret().Cache(),
 		nodeCache:         rContext.Core.Core().V1().Node().Cache(),
@@ -85,7 +84,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 
 	relatedresource.Watch(ctx, "cluster-domain-service", s.resolve,
 		rContext.Global.Admin().V1().ClusterDomain(),
-		rContext.Rio.Rio().V1().PublicDomain())
+		rContext.Global.Admin().V1().PublicDomain())
 
 	relatedresource.Watch(ctx, "node-enpoint", s.resolveEndpoint,
 		rContext.Core.Core().V1().Endpoints(),
@@ -113,8 +112,8 @@ type istioDeployController struct {
 	serviceApply      apply.Apply
 	apps              riov1controller.AppController
 	services          riov1controller.ServiceController
-	publicDomainCache riov1controller.PublicDomainCache
-	clusterDomain     projectv1controller.ClusterDomainController
+	publicDomainCache adminv1controller.PublicDomainCache
+	clusterDomain     adminv1controller.ClusterDomainController
 	secretCache       corev1controller.SecretCache
 	nodeCache         corev1controller.NodeCache
 	endpointCache     corev1controller.EndpointsCache
@@ -140,7 +139,7 @@ func (i *istioDeployController) updateDaemonSets() error {
 	}
 
 	deepcopy := svc.DeepCopy()
-	deepcopy.Spec.SystemSpec.PodSpec.NodeSelector = map[string]string{
+	deepcopy.SystemSpec.PodSpec.NodeSelector = map[string]string{
 		nodeSelectorLabel: "true",
 	}
 	if _, err := i.services.Update(deepcopy); err != nil {
@@ -215,7 +214,7 @@ func (i *istioDeployController) resolve(namespace, name string, obj runtime.Obje
 			})
 		}
 		return keys, nil
-	case *riov1.PublicDomain:
+	case *adminv1.PublicDomain:
 		return []relatedresource.Key{
 			{
 				Name:      constants.ClusterDomainName,
@@ -412,7 +411,7 @@ func setupConfigmapAndInjectors(ctx context.Context, rContext *types.Context) er
 	return nil
 }
 
-func ensureClusterDomain(ns string, clusterDomain projectv1controller.ClusterDomainClient) error {
+func ensureClusterDomain(ns string, clusterDomain adminv1controller.ClusterDomainClient) error {
 	_, err := clusterDomain.Get(ns, constants.ClusterDomainName, metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		_, err := clusterDomain.Create(adminv1.NewClusterDomain(ns, constants.ClusterDomainName, adminv1.ClusterDomain{

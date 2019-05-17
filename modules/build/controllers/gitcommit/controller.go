@@ -17,9 +17,10 @@ import (
 
 func Register(ctx context.Context, rContext *types.Context) error {
 	h := Handler{
-		ctx:       ctx,
-		appsCache: rContext.Rio.Rio().V1().App().Cache(),
-		services:  rContext.Rio.Rio().V1().Service(),
+		ctx:             ctx,
+		appsCache:       rContext.Rio.Rio().V1().App().Cache(),
+		services:        rContext.Rio.Rio().V1().Service(),
+		gitWatcherCache: rContext.Webhook.Gitwatcher().V1().GitWatcher().Cache(),
 	}
 
 	wupdator := webhookv1controller.UpdateGitCommitOnChange(rContext.Webhook.Gitwatcher().V1().GitCommit().Updater(), h.onChange)
@@ -29,9 +30,10 @@ func Register(ctx context.Context, rContext *types.Context) error {
 }
 
 type Handler struct {
-	ctx       context.Context
-	appsCache riov1controller.AppCache
-	services  riov1controller.ServiceController
+	ctx             context.Context
+	appsCache       riov1controller.AppCache
+	gitWatcherCache webhookv1controller.GitWatcherCache
+	services        riov1controller.ServiceController
 }
 
 func (h Handler) updateBaseRevision(commit string, svc *riov1.Service) error {
@@ -69,13 +71,29 @@ func (h Handler) onChange(key string, obj *webhookv1.GitCommit) (*webhookv1.GitC
 		return nil, nil
 	}
 
-	service, err := h.services.Cache().Get(obj.Namespace, obj.Spec.GitWebHookReceiverName)
+	gitWatcher, err := h.gitWatcherCache.Get(obj.Namespace, obj.Spec.GitWatcherName)
+	if err != nil {
+		return nil, err
+	}
+
+	service, err := h.services.Cache().Get(obj.Namespace, obj.Spec.GitWatcherName)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return obj, nil
 		}
 		return obj, err
 	}
+
+	if obj.Spec.Commit == gitWatcher.Status.FirstCommit {
+		if service.Status.FirstRevision == "" && service.Status.FirstRevision != gitWatcher.Status.FirstCommit {
+			service = service.DeepCopy()
+			service.Status.FirstRevision = gitWatcher.Status.FirstCommit
+			_, err := h.services.Update(service)
+			return obj, err
+		}
+		return obj, nil
+	}
+
 	return obj, webhookv1.GitWebHookExecutionConditionHandled.Once(obj, func() (runtime.Object, error) {
 		appName, _ := services.AppAndVersion(service)
 		specCopy := service.Spec.DeepCopy()

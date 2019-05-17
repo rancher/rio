@@ -70,7 +70,7 @@ func convertRuntime(t string) runtime.Object {
 	case types.ConfigType:
 		return &corev1.ConfigMap{}
 	case types.PublicDomainType:
-		return &riov1.PublicDomain{}
+		return &projectv1.PublicDomain{}
 	case types.RouterType:
 		return &riov1.Router{}
 	case types.FeatureType:

@@ -52,8 +52,6 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&AppList{},
 		&ExternalService{},
 		&ExternalServiceList{},
-		&PublicDomain{},
-		&PublicDomainList{},
 		&Router{},
 		&RouterList{},
 		&Service{},

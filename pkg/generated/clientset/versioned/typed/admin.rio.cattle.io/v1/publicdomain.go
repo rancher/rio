@@ -21,7 +21,7 @@ package v1
 import (
 	"time"
 
-	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	scheme "github.com/rancher/rio/pkg/generated/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -56,7 +56,7 @@ type publicDomains struct {
 }
 
 // newPublicDomains returns a PublicDomains
-func newPublicDomains(c *RioV1Client, namespace string) *publicDomains {
+func newPublicDomains(c *AdminV1Client, namespace string) *publicDomains {
 	return &publicDomains{
 		client: c.RESTClient(),
 		ns:     namespace,

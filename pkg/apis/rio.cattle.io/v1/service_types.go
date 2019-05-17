@@ -29,8 +29,9 @@ type Service struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ServiceSpec   `json:"spec,omitempty"`
-	Status ServiceStatus `json:"status,omitempty"`
+	Spec       ServiceSpec        `json:"spec,omitempty"`
+	SystemSpec *SystemServiceSpec `json:"systemSpec,omitempty"`
+	Status     ServiceStatus      `json:"status,omitempty"`
 }
 
 // ServiceRevision speficies the APP name, Version and Weight to uniquely identify each Revision
@@ -108,9 +109,6 @@ type ServiceSpec struct {
 
 	// GlobalPermissions to the Services. It will create corresponding ServiceAccounts, ClusterRoles and ClusterRoleBinding.
 	GlobalPermissions []Permission `json:"globalPermissions,omitempty"`
-
-	// System Field Spec
-	SystemSpec *SystemServiceSpec `json:"systemSpec,omitempty"`
 }
 
 // PodDNSConfig Specifies the DNS parameters of a pod. Parameters specified here will be merged to the generated DNS configuration based on DNSPolicy.
@@ -308,6 +306,9 @@ func (c ContainerPort) MaybeString() interface{} {
 type ServiceStatus struct {
 	// Most recently observed status of the Deployment.
 	DeploymentStatus *appsv1.DeploymentStatus `json:"deploymentStatus,omitempty"`
+
+	// The first observed commit for the build
+	FirstRevision string `json:"firstRevision,omitempty"`
 
 	// ScaleStatus for the Service
 	ScaleStatus *ScaleStatus `json:"scaleStatus,omitempty"`

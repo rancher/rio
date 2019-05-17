@@ -9,10 +9,10 @@ import (
 )
 
 func Populate(service *riov1.Service, os *objectset.ObjectSet) error {
-	if service.Spec.SystemSpec != nil {
-		pod.Roles(service, &service.Spec.SystemSpec.PodSpec, os)
-		cp := newControllerParams(service, v1.PodTemplateSpec{Spec: service.Spec.SystemSpec.PodSpec})
-		if service.Spec.SystemSpec.Global {
+	if service.SystemSpec != nil {
+		pod.Roles(service, &service.SystemSpec.PodSpec, os)
+		cp := newControllerParams(service, v1.PodTemplateSpec{Spec: service.SystemSpec.PodSpec})
+		if service.SystemSpec.Global {
 			daemonset(service, cp, os)
 		} else {
 			deployment(service, cp, os)

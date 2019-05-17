@@ -48,19 +48,19 @@ type GitCommit struct {
 }
 
 type GitCommitSpec struct {
-	Payload                string `json:"payload,omitempty"`
-	GitWebHookReceiverName string `json:"gitWebHookReceiverName,omitempty"`
-	Commit                 string `json:"commit,omitempty"`
-	Branch                 string `json:"branch,omitempty"`
-	Tag                    string `json:"tag,omitempty"`
-	PR                     string `json:"pr,omitempty"`
-	SourceLink             string `json:"sourceLink,omitempty"`
-	RepositoryURL          string `json:"repositoryUrl,omitempty"`
-	Title                  string `json:"title,omitempty"`
-	Message                string `json:"message,omitempty"`
-	Author                 string `json:"author,omitempty"`
-	AuthorEmail            string `json:"authorEmail,omitempty"`
-	AuthorAvatar           string `json:"authorAvatar,omitempty"`
+	Payload        string `json:"payload,omitempty"`
+	GitWatcherName string `json:"gitWatcherName,omitempty"`
+	Commit         string `json:"commit,omitempty"`
+	Branch         string `json:"branch,omitempty"`
+	Tag            string `json:"tag,omitempty"`
+	PR             string `json:"pr,omitempty"`
+	SourceLink     string `json:"sourceLink,omitempty"`
+	RepositoryURL  string `json:"repositoryUrl,omitempty"`
+	Title          string `json:"title,omitempty"`
+	Message        string `json:"message,omitempty"`
+	Author         string `json:"author,omitempty"`
+	AuthorEmail    string `json:"authorEmail,omitempty"`
+	AuthorAvatar   string `json:"authorAvatar,omitempty"`
 }
 
 type GitWatcherStatus struct {

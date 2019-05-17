@@ -1,7 +1,7 @@
 package main
 
 import (
-	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
+	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	autoscalev1 "github.com/rancher/rio/pkg/apis/autoscale.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	controllergen "github.com/rancher/wrangler/pkg/controller-gen"
@@ -19,8 +19,10 @@ func main() {
 		Groups: map[string]args.Group{
 			"admin.rio.cattle.io": {
 				Types: []interface{}{
-					projectv1.ClusterDomain{},
-					projectv1.Feature{},
+					adminv1.ClusterDomain{},
+					adminv1.Feature{},
+					adminv1.RioInfo{},
+					adminv1.PublicDomain{},
 				},
 				GenerateTypes: true,
 			},
@@ -35,7 +37,6 @@ func main() {
 					riov1.ExternalService{},
 					riov1.Router{},
 					riov1.Service{},
-					riov1.PublicDomain{},
 					riov1.App{},
 				},
 				GenerateTypes: true,

@@ -36,6 +36,14 @@ func (c *FakeAdminV1) Features(namespace string) v1.FeatureInterface {
 	return &FakeFeatures{c, namespace}
 }
 
+func (c *FakeAdminV1) PublicDomains(namespace string) v1.PublicDomainInterface {
+	return &FakePublicDomains{c, namespace}
+}
+
+func (c *FakeAdminV1) RioInfos() v1.RioInfoInterface {
+	return &FakeRioInfos{c}
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeAdminV1) RESTClient() rest.Interface {

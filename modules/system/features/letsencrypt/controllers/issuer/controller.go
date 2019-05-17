@@ -11,8 +11,7 @@ import (
 	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
-	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
-	v12 "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
+	adminv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/kv"
@@ -36,7 +35,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			WithCacheTypes(rContext.CertManager.Certmanager().V1alpha1().ClusterIssuer(),
 				rContext.CertManager.Certmanager().V1alpha1().Certificate()),
 		clusterDomain: rContext.Global.Admin().V1().ClusterDomain(),
-		publicdomain:  rContext.Rio.Rio().V1().PublicDomain(),
+		publicdomain:  rContext.Global.Admin().V1().PublicDomain(),
 		featureCache:  rContext.Global.Admin().V1().Feature().Cache(),
 	}
 
@@ -48,9 +47,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 type certsHandler struct {
 	namespace     string
 	apply         apply.Apply
-	clusterDomain projectv1controller.ClusterDomainController
-	publicdomain  v12.PublicDomainController
-	featureCache  projectv1controller.FeatureCache
+	clusterDomain adminv1controller.ClusterDomainController
+	publicdomain  adminv1controller.PublicDomainController
+	featureCache  adminv1controller.FeatureCache
 }
 
 func (f *certsHandler) onChangeClusterDomain(key string, clusterDomain *v1.ClusterDomain) (*v1.ClusterDomain, error) {

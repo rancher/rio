@@ -49,5 +49,9 @@ type serviceHandler struct {
 
 func (s *serviceHandler) populate(obj runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) error {
 	service := obj.(*riov1.Service)
+	if service.Namespace != s.namespace && service.SystemSpec != nil {
+		service = service.DeepCopy()
+		service.SystemSpec = nil
+	}
 	return populate.Service(service, s.namespace, os)
 }

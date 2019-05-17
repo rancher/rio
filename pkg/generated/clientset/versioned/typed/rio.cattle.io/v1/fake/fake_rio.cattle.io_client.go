@@ -36,10 +36,6 @@ func (c *FakeRioV1) ExternalServices(namespace string) v1.ExternalServiceInterfa
 	return &FakeExternalServices{c, namespace}
 }
 
-func (c *FakeRioV1) PublicDomains(namespace string) v1.PublicDomainInterface {
-	return &FakePublicDomains{c, namespace}
-}
-
 func (c *FakeRioV1) Routers(namespace string) v1.RouterInterface {
 	return &FakeRouters{c, namespace}
 }

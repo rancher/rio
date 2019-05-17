@@ -7,11 +7,10 @@ import (
 	certmanagerapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
 	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
-	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
+	adminv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	v12 "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
-	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/generic"
@@ -29,12 +28,12 @@ func Register(ctx context.Context, rContexts *types.Context) error {
 			WithStrictCaching().
 			WithCacheTypes(rContexts.CertManager.Certmanager().V1alpha1().Certificate()),
 		featureClientCache: rContexts.Global.Admin().V1().Feature().Cache(),
-		publicDomains:      rContexts.Rio.Rio().V1().PublicDomain(),
-		publicDomainCache:  rContexts.Rio.Rio().V1().PublicDomain().Cache(),
+		publicDomains:      rContexts.Global.Admin().V1().PublicDomain(),
+		publicDomainCache:  rContexts.Global.Admin().V1().PublicDomain().Cache(),
 	}
 
-	rContexts.Rio.Rio().V1().PublicDomain().AddGenericHandler(ctx, "letsencrypt-handler", generic.UpdateOnChange(rContexts.Rio.Rio().V1().PublicDomain().Updater(), p.onChange))
-	rContexts.Rio.Rio().V1().PublicDomain().OnRemove(ctx, "letsencrypt-handler", p.onRemove)
+	rContexts.Global.Admin().V1().PublicDomain().AddGenericHandler(ctx, "letsencrypt-handler", generic.UpdateOnChange(rContexts.Global.Admin().V1().PublicDomain().Updater(), p.onChange))
+	rContexts.Global.Admin().V1().PublicDomain().OnRemove(ctx, "letsencrypt-handler", p.onRemove)
 	rContexts.Global.Admin().V1().Feature().OnChange(ctx, "letsencrypt-handler", p.featureChanged)
 
 	return nil
@@ -43,8 +42,8 @@ func Register(ctx context.Context, rContexts *types.Context) error {
 type publicDomainHandler struct {
 	namespace          string
 	apply              apply.Apply
-	publicDomains      riov1controller.PublicDomainController
-	publicDomainCache  riov1controller.PublicDomainCache
+	publicDomains      adminv1controller.PublicDomainController
+	publicDomainCache  adminv1controller.PublicDomainCache
 	featureClientCache v12.FeatureCache
 }
 
@@ -73,7 +72,7 @@ func (p *publicDomainHandler) onChange(key string, obj runtime.Object) (runtime.
 	if obj == nil {
 		return nil, nil
 	}
-	domain := obj.(*riov1.PublicDomain)
+	domain := obj.(*projectv1.PublicDomain)
 
 	if domain.Spec.DisableLetsencrypt {
 		return domain, nil
@@ -100,7 +99,7 @@ func (p *publicDomainHandler) onChange(key string, obj runtime.Object) (runtime.
 	return domain, p.apply.WithOwner(domain).Apply(os)
 }
 
-func (p *publicDomainHandler) onRemove(key string, domain *riov1.PublicDomain) (*riov1.PublicDomain, error) {
+func (p *publicDomainHandler) onRemove(key string, domain *projectv1.PublicDomain) (*projectv1.PublicDomain, error) {
 	if domain == nil {
 		return domain, nil
 	}
@@ -112,7 +111,7 @@ func (p *publicDomainHandler) onRemove(key string, domain *riov1.PublicDomain) (
 	return domain, p.apply.WithOwner(domain).Apply(nil)
 }
 
-func certificateHTTP(namespace string, domain *riov1.PublicDomain, issuerName string) runtime.Object {
+func certificateHTTP(namespace string, domain *projectv1.PublicDomain, issuerName string) runtime.Object {
 	name := fmt.Sprintf("%s-%s", domain.Namespace, domain.Name)
 	cert := constructors.NewCertificate(namespace, name,
 		certmanagerapi.Certificate{

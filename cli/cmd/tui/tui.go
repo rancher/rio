@@ -5,6 +5,7 @@ import (
 
 	"github.com/rancher/axe/throwing"
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/leader"
@@ -50,7 +51,7 @@ func register(ctx context.Context, rioContext *types.Context, h *handler) {
 	rioContext.Rio.Rio().V1().App().AddGenericHandler(ctx, "rio-app-tui", h.syncObject)
 	rioContext.Rio.Rio().V1().Service().AddGenericHandler(ctx, "rio-service-tui", h.syncObject)
 	rioContext.Rio.Rio().V1().Router().AddGenericHandler(ctx, "rio-router-tui", h.syncObject)
-	rioContext.Rio.Rio().V1().PublicDomain().AddGenericHandler(ctx, "rio-domain-tui", h.syncObject)
+	rioContext.Global.Admin().V1().PublicDomain().AddGenericHandler(ctx, "rio-domain-tui", h.syncObject)
 	rioContext.Rio.Rio().V1().ExternalService().AddGenericHandler(ctx, "rio-external-tui", h.syncObject)
 }
 
@@ -80,7 +81,7 @@ func (h handler) syncObject(k string, object runtime.Object) (runtime.Object, er
 		go func() {
 			s <- struct{}{}
 		}()
-	case *riov1.PublicDomain:
+	case *adminv1.PublicDomain:
 		s := h.signals[publicdomainKind]
 		go func() {
 			s <- struct{}{}

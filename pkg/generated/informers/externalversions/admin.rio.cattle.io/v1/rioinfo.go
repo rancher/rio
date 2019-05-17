@@ -21,69 +21,68 @@ package v1
 import (
 	time "time"
 
-	riocattleiov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	adminriocattleiov1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	versioned "github.com/rancher/rio/pkg/generated/clientset/versioned"
 	internalinterfaces "github.com/rancher/rio/pkg/generated/informers/externalversions/internalinterfaces"
-	v1 "github.com/rancher/rio/pkg/generated/listers/rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/pkg/generated/listers/admin.rio.cattle.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// PublicDomainInformer provides access to a shared informer and lister for
-// PublicDomains.
-type PublicDomainInformer interface {
+// RioInfoInformer provides access to a shared informer and lister for
+// RioInfos.
+type RioInfoInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1.PublicDomainLister
+	Lister() v1.RioInfoLister
 }
 
-type publicDomainInformer struct {
+type rioInfoInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
-	namespace        string
 }
 
-// NewPublicDomainInformer constructs a new informer for PublicDomain type.
+// NewRioInfoInformer constructs a new informer for RioInfo type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewPublicDomainInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredPublicDomainInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewRioInfoInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredRioInfoInformer(client, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredPublicDomainInformer constructs a new informer for PublicDomain type.
+// NewFilteredRioInfoInformer constructs a new informer for RioInfo type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredPublicDomainInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredRioInfoInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.RioV1().PublicDomains(namespace).List(options)
+				return client.AdminV1().RioInfos().List(options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.RioV1().PublicDomains(namespace).Watch(options)
+				return client.AdminV1().RioInfos().Watch(options)
 			},
 		},
-		&riocattleiov1.PublicDomain{},
+		&adminriocattleiov1.RioInfo{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *publicDomainInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredPublicDomainInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *rioInfoInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredRioInfoInformer(client, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *publicDomainInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&riocattleiov1.PublicDomain{}, f.defaultInformer)
+func (f *rioInfoInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&adminriocattleiov1.RioInfo{}, f.defaultInformer)
 }
 
-func (f *publicDomainInformer) Lister() v1.PublicDomainLister {
-	return v1.NewPublicDomainLister(f.Informer().GetIndexer())
+func (f *rioInfoInformer) Lister() v1.RioInfoLister {
+	return v1.NewRioInfoLister(f.Informer().GetIndexer())
 }

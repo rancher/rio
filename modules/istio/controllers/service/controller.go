@@ -9,7 +9,7 @@ import (
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
-	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
+	adminv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	services2 "github.com/rancher/rio/pkg/services"
@@ -40,7 +40,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		secretCache:          rContext.Core.Core().V1().Secret().Cache(),
 		externalServiceCache: rContext.Rio.Rio().V1().ExternalService().Cache(),
 		clusterDomainCache:   rContext.Global.Admin().V1().ClusterDomain().Cache(),
-		publicDomainCache:    rContext.Rio.Rio().V1().PublicDomain().Cache(),
+		publicDomainCache:    rContext.Global.Admin().V1().PublicDomain().Cache(),
 	}
 
 	rContext.Rio.Rio().V1().Service().OnChange(ctx, serviceDomainUpdate, riov1controller.UpdateServiceOnChange(rContext.Rio.Rio().V1().Service().Updater(), sh.syncDomain))
@@ -56,8 +56,8 @@ type serviceHandler struct {
 	serviceCache         v1.ServiceCache
 	secretCache          corev1controller.SecretCache
 	externalServiceCache v1.ExternalServiceCache
-	clusterDomainCache   projectv1controller.ClusterDomainCache
-	publicDomainCache    riov1controller.PublicDomainCache
+	clusterDomainCache   adminv1controller.ClusterDomainCache
+	publicDomainCache    adminv1controller.PublicDomainCache
 }
 
 func (s *serviceHandler) populate(obj runtime.Object, namespace *corev1.Namespace, os *objectset.ObjectSet) error {

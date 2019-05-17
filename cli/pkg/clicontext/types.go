@@ -9,20 +9,17 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/apimachinery/pkg/api/errors"
-
-	multierror "github.com/hashicorp/go-multierror"
-
-	"github.com/rancher/wrangler/pkg/kv"
-
 	"github.com/docker/docker/pkg/namesgenerator"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/types"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
 	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/wrangler/pkg/kv"
+	"github.com/rancher/wrangler/pkg/merr"
 	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -88,7 +85,7 @@ func (c *CLIContext) getResource(r types.Resource) (ret types.Resource, err erro
 	case clitypes.ExternalServiceType:
 		r.Object, err = c.Rio.ExternalServices(r.Namespace).Get(r.Name, metav1.GetOptions{})
 	case clitypes.PublicDomainType:
-		r.Object, err = c.Rio.PublicDomains(r.Namespace).Get(r.Name, metav1.GetOptions{})
+		r.Object, err = c.Project.PublicDomains(r.Namespace).Get(r.Name, metav1.GetOptions{})
 	case clitypes.NamespaceType:
 		r.Object, err = c.Core.Namespaces().Get(r.Name, metav1.GetOptions{})
 	case clitypes.FeatureType:
@@ -115,23 +112,23 @@ func (c *CLIContext) DeleteResource(r types.Resource) (err error) {
 	case clitypes.ExternalServiceType:
 		err = c.Rio.ExternalServices(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
 	case clitypes.PublicDomainType:
-		err = c.Rio.PublicDomains(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
+		err = c.Project.PublicDomains(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
 	case clitypes.BuildType:
 		err = c.Build.Builds(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
 	case clitypes.AppType:
 		app := r.Object.(*riov1.App)
-		var errs multierror.Error
+		var errs []error
 		for _, rev := range app.Spec.Revisions {
 			newerr := c.Rio.Services(r.Namespace).Delete(rev.ServiceName, &metav1.DeleteOptions{})
 			if newerr != nil && !errors.IsNotFound(err) {
-				errs.Errors = append(errs.Errors, newerr)
+				errs = append(errs, newerr)
 			}
 		}
 		newerr := c.Rio.Apps(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
 		if newerr != nil {
-			errs.Errors = append(errs.Errors, newerr)
+			errs = append(errs, newerr)
 		}
-		err = errs.ErrorOrNil()
+		err = merr.NewErrors(errs...)
 	default:
 		return fmt.Errorf("unknown delete type %s", r.Type)
 	}
@@ -160,8 +157,8 @@ func (c *CLIContext) Create(obj runtime.Object) (err error) {
 		_, err = c.Rio.Routers(o.Namespace).Create(o)
 	case *riov1.ExternalService:
 		_, err = c.Rio.ExternalServices(o.Namespace).Create(o)
-	case *riov1.PublicDomain:
-		_, err = c.Rio.PublicDomains(o.Namespace).Create(o)
+	case *projectv1.PublicDomain:
+		_, err = c.Project.PublicDomains(o.Namespace).Create(o)
 	default:
 		return fmt.Errorf("unknown delete type %v", reflect.TypeOf(obj))
 	}
@@ -182,8 +179,8 @@ func (c *CLIContext) UpdateObject(obj runtime.Object) (err error) {
 		_, err = c.Rio.ExternalServices(o.Namespace).Update(o)
 	case *projectv1.Feature:
 		_, err = c.Project.Features(o.Namespace).Update(o)
-	case *riov1.PublicDomain:
-		_, err = c.Rio.PublicDomains(o.Namespace).Update(o)
+	case *projectv1.PublicDomain:
+		_, err = c.Project.PublicDomains(o.Namespace).Update(o)
 	default:
 		return fmt.Errorf("unknown delete type %v", reflect.TypeOf(obj))
 	}
@@ -322,7 +319,7 @@ func (c *CLIContext) listNamespace(namespace, typeName string) (ret []runtime.Ob
 		}
 		return ret, err
 	case clitypes.PublicDomainType:
-		objs, err := c.Rio.PublicDomains(namespace).List(opts)
+		objs, err := c.Project.PublicDomains(namespace).List(opts)
 		for i := range objs.Items {
 			ret = append(ret, &objs.Items[i])
 		}

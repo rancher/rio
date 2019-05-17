@@ -91,10 +91,14 @@ github.com/rancher/wrangler v0.0.0-20190516065845-c1b3a51a1fac h1:7cLgBAOmh8FQSa
 github.com/rancher/wrangler v0.0.0-20190516065845-c1b3a51a1fac/go.mod h1:HM0BuhAugqM5cGtQn2hrMwpbExuLQe7NCUTD+crAxV0=
 github.com/rancher/wrangler v0.0.0-20190516181950-a7cf48fa83ef h1:7oP1PQw+BXenm/UqZXPPdZiNvRjnYmzO3JSb4TJd6zU=
 github.com/rancher/wrangler v0.0.0-20190516181950-a7cf48fa83ef/go.mod h1:EYP7cqpg42YqElaCm+U9ieSrGQKAXxUH5xsr+XGpWyE=
+github.com/rancher/wrangler v0.1.0 h1:AIvfe1KLVbj7vsp/pWXeBrjxqP7hHZHHECxsniTC78M=
+github.com/rancher/wrangler v0.1.0/go.mod h1:EYP7cqpg42YqElaCm+U9ieSrGQKAXxUH5xsr+XGpWyE=
 github.com/rancher/wrangler-api v0.0.0-20190516180046-63ff3fdb07f5 h1:ZjxFLvvg8usi7tHv8y1VtkSxbq6SUUGKWsyAMSxaFLc=
 github.com/rancher/wrangler-api v0.0.0-20190516180046-63ff3fdb07f5/go.mod h1:Mur7JY+P/ZTAcxMi7aUOZsywecRrk8vsc/9vpn8j/Kg=
 github.com/rancher/wrangler-api v0.0.0-20190516182105-c5ea888bdf54 h1:DD6LweGfLYtnHX3pkr3x/azh1ax2sbRbZhn6XVSQ6VE=
 github.com/rancher/wrangler-api v0.0.0-20190516182105-c5ea888bdf54/go.mod h1:dUci1AIbRyiufT6HIr9PUcZB8AD4JRXDpHrjgRvqRnU=
+github.com/rancher/wrangler-api v0.1.1 h1:qzIgDnURHTlJ31jMTy917L3y0tAjYRaHhMdmT+Z393s=
+github.com/rancher/wrangler-api v0.1.1/go.mod h1:vholckBg588JqP3M3vyEDUz/ERaB1M3ilnCuV5XxPHM=
 github.com/remyoudompheng/bigfft v0.0.0-20170806203942-52369c62f446/go.mod h1:uYEyJGbgTkfkS4+E/PavXkNJcbFIpEtjt2B0KDQ5+9M=
 github.com/sirupsen/logrus v1.4.1 h1:GL2rEmy6nsikmW0r8opw9JIRScdMF5hA8cOYLH7In1k=
 github.com/sirupsen/logrus v1.4.1/go.mod h1:ni0Sbl8bgC9z8RoU9G6nDWqqs/fq4eDPysMBDgk/93Q=

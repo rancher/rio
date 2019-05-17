@@ -122,6 +122,9 @@ func populateBuild(service *riov1.Service, customRegistry, systemNamespace, doma
 	// we only support setting imageBuild for primary container
 	rev := service.Spec.Build.Revision
 	if rev == "" {
+		rev = service.Status.FirstRevision
+	}
+	if rev == "" {
 		return nil
 	}
 
@@ -163,11 +166,11 @@ func populateBuild(service *riov1.Service, customRegistry, systemNamespace, doma
 func populateWebhookAndSecrets(webhookService *riov1.Service, service *riov1.Service, os *objectset.ObjectSet) {
 	webhookReceiver := webhookv1.NewGitWatcher(service.Namespace, service.Name, webhookv1.GitWatcher{
 		Spec: webhookv1.GitWatcherSpec{
-			RepositoryURL:                  service.Spec.Build.Repo,
-			Enabled:                        true,
-			Push:                           true,
-			Tag:                            true,
-			Branch:                         service.Spec.Build.Branch,
+			RepositoryURL: service.Spec.Build.Repo,
+			Enabled:       true,
+			Push:          true,
+			Tag:           true,
+			Branch:        service.Spec.Build.Branch,
 			RepositoryCredentialSecretName: service.Spec.Build.Secret,
 		},
 	})
