@@ -26,16 +26,47 @@ func deployment(service *riov1.Service, cp *controllerParams, os *objectset.Obje
 		},
 	})
 
-	if cp.Scale.Scale > 0 && cp.Scale.BatchSize > 0 {
-		dep.Spec.Strategy.RollingUpdate = &appsv1.RollingUpdateDeployment{
-			MaxSurge:       cp.Scale.MaxSurge,
-			MaxUnavailable: cp.Scale.MaxUnavailable,
+	if service.Spec.SystemSpec != nil && service.Spec.SystemSpec.DeploymentStrategy != "" {
+		dep.Spec.Strategy.Type = appsv1.DeploymentStrategyType(service.Spec.SystemSpec.DeploymentStrategy)
+	} else {
+		if cp.Scale.Scale > 0 && cp.Scale.BatchSize > 0 {
+			dep.Spec.Strategy.RollingUpdate = &appsv1.RollingUpdateDeployment{
+				MaxSurge:       cp.Scale.MaxSurge,
+				MaxUnavailable: cp.Scale.MaxUnavailable,
+			}
 		}
 	}
 
 	os.Add(dep)
 }
 
-func deploymentForSystem(service *riov1.Service, cp *controllerParams, os *objectset.ObjectSet) {
+func daemonset(service *riov1.Service, cp *controllerParams, os *objectset.ObjectSet) {
+	ds := constructors.NewDaemonset(service.Namespace, service.Name, appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels:      cp.Labels,
+			Annotations: map[string]string{},
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: &cp.Scale.Scale,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: cp.SelectorLabels,
+			},
+			Template: cp.PodTemplateSpec,
+			Strategy: appsv1.DeploymentStrategy{
+				Type: appsv1.RollingUpdateDeploymentStrategyType,
+			},
+		},
+	})
 
+	if service.Spec.SystemSpec != nil && service.Spec.SystemSpec.DeploymentStrategy != "" {
+		ds.Spec.Strategy.Type = appsv1.DeploymentStrategyType(service.Spec.SystemSpec.DeploymentStrategy)
+	} else {
+		if cp.Scale.Scale > 0 && cp.Scale.BatchSize > 0 {
+			ds.Spec.Strategy.RollingUpdate = &appsv1.RollingUpdateDeployment{
+				MaxSurge:       cp.Scale.MaxSurge,
+				MaxUnavailable: cp.Scale.MaxUnavailable,
+			}
+		}
+	}
+	os.Add(ds)
 }

@@ -13,7 +13,7 @@ func NewExternalService(cfg Config) TableWriter {
 		{"CREATED", "{{.Obj.CreationTimestamp | ago}}"},
 		{"TARGET", "{{.Obj | formatTarget}}"},
 	}, cfg)
-	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cfg.GetDefaultNamespace()))
+	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cfg.GetSetNamespace()))
 	writer.AddFormatFunc("formatTarget", FormatTarget)
 
 	return &tableWriter{

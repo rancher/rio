@@ -5,10 +5,8 @@ import (
 	"fmt"
 
 	"github.com/rancher/rio/modules/istio/controllers/routeset/populate"
-	populate2 "github.com/rancher/rio/modules/istio/controllers/service/populate"
 	"github.com/rancher/rio/modules/istio/pkg/domains"
-	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
-	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
+	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
@@ -20,7 +18,6 @@ import (
 	"github.com/rancher/wrangler/pkg/objectset"
 	"github.com/rancher/wrangler/pkg/relatedresource"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -108,18 +105,6 @@ func (r *routeSetHandler) populate(obj runtime.Object, ns *corev1.Namespace, os 
 		return err
 	}
 
-	tls := true
-	_, err = r.secretCache.Get(r.systemNamespace, issuers.RioWildcardCerts)
-	if err != nil && !errors.IsNotFound(err) {
-		tls = false
-	} else if errors.IsNotFound(err) {
-		return nil
-	}
-
-	if err := populate2.Ingress(clusterDomain, r.systemNamespace, obj.(*riov1.Router).Namespace, obj.(*riov1.Router).Name, tls, os); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -138,7 +123,7 @@ func (r *routeSetHandler) syncDomain(key string, obj runtime.Object) (runtime.Ob
 	return obj, nil
 }
 
-func updateDomain(router *riov1.Router, clusterDomain *projectv1.ClusterDomain) {
+func updateDomain(router *riov1.Router, clusterDomain *adminv1.ClusterDomain) {
 	protocol := "http"
 	if clusterDomain.Status.HTTPSSupported {
 		protocol = "https"

@@ -39,7 +39,7 @@ func Populate(service *riov1.Service, os *objectset.ObjectSet) (v1.PodTemplateSp
 	}
 
 	podSpec := podSpec(service)
-	roles(service, &podSpec, os)
+	Roles(service, &podSpec, os)
 	if err := images(service, &podSpec); err != nil {
 		return pts, err
 	}
@@ -48,7 +48,7 @@ func Populate(service *riov1.Service, os *objectset.ObjectSet) (v1.PodTemplateSp
 	return pts, nil
 }
 
-func roles(service *riov1.Service, podSpec *v1.PodSpec, os *objectset.ObjectSet) {
+func Roles(service *riov1.Service, podSpec *v1.PodSpec, os *objectset.ObjectSet) {
 	if err := rbac.Populate(service, os); err != nil {
 		os.AddErr(err)
 		return

@@ -6,14 +6,17 @@ import (
 
 	"github.com/rancher/rio/modules/istio/controllers/istio/populate"
 	"github.com/rancher/rio/modules/istio/pkg/istio/config"
-	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
+	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
+	appsv1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/apps/v1"
 	corev1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/apply/injectors"
+	"github.com/rancher/wrangler/pkg/objectset"
 	"github.com/rancher/wrangler/pkg/relatedresource"
 	"github.com/rancher/wrangler/pkg/trigger"
 	corev1 "k8s.io/api/core/v1"
@@ -28,7 +31,8 @@ const (
 	istioInjector = "istio-injecter"
 	istioStack    = "istio-stack"
 
-	indexName = "nodeEndpointIndexer"
+	nodeSelectorLabel = "rio.cattle.io/gateway"
+	indexName         = "nodeEndpointIndexer"
 )
 
 var (
@@ -59,22 +63,28 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		gatewayApply: rContext.Apply.WithSetID(istioStack).
 			WithCacheTypes(rContext.Networking.Networking().V1alpha3().Gateway()),
 		serviceApply:      rContext.Apply.WithSetID(istioInjector).WithInjectorName(istioInjector),
+		apps:              rContext.Rio.Rio().V1().App(),
 		services:          rContext.Rio.Rio().V1().Service(),
 		publicDomainCache: rContext.Rio.Rio().V1().PublicDomain().Cache(),
 		clusterDomain:     rContext.Global.Admin().V1().ClusterDomain(),
 		secretCache:       rContext.Core.Core().V1().Secret().Cache(),
 		nodeCache:         rContext.Core.Core().V1().Node().Cache(),
 		endpointCache:     rContext.Core.Core().V1().Endpoints().Cache(),
+		daemonsets:        rContext.Apps.Apps().V1().DaemonSet(),
 	}
 
-	if err := s.gatewayApply.Apply(populate.Istio(s.namespace)); err != nil {
-		return err
-	}
+	relatedresource.Watch(ctx, "app-clusterdomain", s.resolveApp,
+		rContext.Rio.Rio().V1().App(),
+		rContext.Global.Admin().V1().ClusterDomain())
+
+	relatedresource.Watch(ctx, "publicdomain-clusterdomain", s.resolve,
+		rContext.Rio.Rio().V1().Service(),
+		rContext.Global.Admin().V1().ClusterDomain())
 
 	relatedresource.Watch(ctx, "cluster-domain-service", s.resolve,
-		rContext.Rio.Rio().V1().Service(),
 		rContext.Global.Admin().V1().ClusterDomain(),
-	)
+		rContext.Rio.Rio().V1().PublicDomain())
+
 	relatedresource.Watch(ctx, "node-enpoint", s.resolveEndpoint,
 		rContext.Core.Core().V1().Endpoints(),
 		rContext.Core.Core().V1().Node())
@@ -83,6 +93,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	rContext.Core.Core().V1().Endpoints().OnChange(ctx, "istio-endpoints", s.syncEndpoint)
 
 	rContext.Core.Core().V1().Service().OnChange(ctx, "rdns-subdomain", s.syncSubdomain)
+	rContext.Global.Admin().V1().ClusterDomain().OnChange(ctx, "clusterdomain-gateway", s.syncGateway)
+
+	rContext.Core.Core().V1().Node().OnChange(ctx, "gateway-daemonset-update", s.onChangeNode)
 
 	return nil
 }
@@ -92,12 +105,61 @@ type istioDeployController struct {
 	apply             apply.Apply
 	gatewayApply      apply.Apply
 	serviceApply      apply.Apply
+	apps              riov1controller.AppController
 	services          riov1controller.ServiceController
 	publicDomainCache riov1controller.PublicDomainCache
 	clusterDomain     projectv1controller.ClusterDomainController
 	secretCache       corev1controller.SecretCache
 	nodeCache         corev1controller.NodeCache
 	endpointCache     corev1controller.EndpointsCache
+	daemonsets        appsv1controller.DaemonSetController
+}
+
+func (i *istioDeployController) onChangeNode(key string, node *corev1.Node) (*corev1.Node, error) {
+	if _, ok := node.Labels[nodeSelectorLabel]; !ok {
+		return node, nil
+	}
+
+	if err := i.updateDaemonSets(); err != nil {
+		return node, err
+	}
+
+	return node, nil
+}
+
+func (i *istioDeployController) updateDaemonSets() error {
+	svc, err := i.services.Cache().Get(i.namespace, constants.IstioGateway)
+	if err != nil {
+		return err
+	}
+
+	deepcopy := svc.DeepCopy()
+	deepcopy.Spec.SystemSpec.PodSpec.NodeSelector = map[string]string{
+		nodeSelectorLabel: "true",
+	}
+	if _, err := i.services.Update(deepcopy); err != nil {
+		return err
+	}
+	return err
+}
+
+func (i istioDeployController) syncGateway(key string, obj *adminv1.ClusterDomain) (*adminv1.ClusterDomain, error) {
+	if obj == nil || obj.DeletionTimestamp != nil || obj.Name != constants.ClusterDomainName {
+		return obj, nil
+	}
+
+	os := objectset.NewObjectSet()
+	domain := ""
+	if obj.Status.ClusterDomain != "" {
+		domain = fmt.Sprintf("*.%s", obj.Status.ClusterDomain)
+	}
+
+	publicdomains, err := i.publicDomainCache.List("", labels.NewSelector())
+	if err != nil {
+		return obj, err
+	}
+	populate.Gateway(i.namespace, domain, publicdomains, os)
+	return obj, i.apply.WithSetID("istio-gateway").Apply(os)
 }
 
 func enqueueServicesForInject(controller riov1controller.ServiceController) error {
@@ -114,7 +176,7 @@ func enqueueServicesForInject(controller riov1controller.ServiceController) erro
 
 func (i *istioDeployController) resolve(namespace, name string, obj runtime.Object) ([]relatedresource.Key, error) {
 	switch obj.(type) {
-	case *projectv1.ClusterDomain:
+	case *adminv1.ClusterDomain:
 		svcs, err := i.services.Cache().List("", labels.NewSelector())
 		if err != nil {
 			return nil, err
@@ -127,8 +189,34 @@ func (i *istioDeployController) resolve(namespace, name string, obj runtime.Obje
 			})
 		}
 		return keys, nil
+	case *riov1.PublicDomain:
+		return []relatedresource.Key{
+			{
+				Name:      constants.ClusterDomainName,
+				Namespace: i.namespace,
+			},
+		}, nil
 	}
 
+	return nil, nil
+}
+
+func (i *istioDeployController) resolveApp(namespace, name string, obj runtime.Object) ([]relatedresource.Key, error) {
+	switch obj.(type) {
+	case *adminv1.ClusterDomain:
+		apps, err := i.apps.Cache().List("", labels.NewSelector())
+		if err != nil {
+			return nil, err
+		}
+		var keys []relatedresource.Key
+		for _, app := range apps {
+			keys = append(keys, relatedresource.Key{
+				Name:      app.Name,
+				Namespace: app.Namespace,
+			})
+		}
+		return keys, nil
+	}
 	return nil, nil
 }
 
@@ -187,9 +275,9 @@ func (i *istioDeployController) syncEndpoint(key string, endpoint *corev1.Endpoi
 	}
 
 	deepcopy := clusterDomain.DeepCopy()
-	var address []projectv1.Address
+	var address []adminv1.Address
 	for _, ip := range ips {
-		address = append(address, projectv1.Address{IP: ip})
+		address = append(address, adminv1.Address{IP: ip})
 	}
 	deepcopy.Spec.Addresses = address
 
@@ -235,7 +323,7 @@ func (i *istioDeployController) syncSubdomain(key string, service *corev1.Servic
 		for i, sd := range deepcopy.Spec.Subdomains {
 			if sd.Name == subdomainName {
 				found = true
-				deepcopy.Spec.Subdomains[i].Addresses = []projectv1.Address{
+				deepcopy.Spec.Subdomains[i].Addresses = []adminv1.Address{
 					{
 						IP: service.Spec.ClusterIP,
 					},
@@ -244,9 +332,9 @@ func (i *istioDeployController) syncSubdomain(key string, service *corev1.Servic
 		}
 
 		if !found {
-			deepcopy.Spec.Subdomains = append(deepcopy.Spec.Subdomains, projectv1.Subdomain{
+			deepcopy.Spec.Subdomains = append(deepcopy.Spec.Subdomains, adminv1.Subdomain{
 				Name: subdomainName,
-				Addresses: []projectv1.Address{
+				Addresses: []adminv1.Address{
 					{
 						IP: service.Spec.ClusterIP,
 					},
@@ -292,8 +380,8 @@ func setupConfigmapAndInjectors(ctx context.Context, rContext *types.Context) er
 func ensureClusterDomain(ns string, clusterDomain projectv1controller.ClusterDomainClient) error {
 	_, err := clusterDomain.Get(ns, constants.ClusterDomainName, metav1.GetOptions{})
 	if errors.IsNotFound(err) {
-		_, err := clusterDomain.Create(projectv1.NewClusterDomain(ns, constants.ClusterDomainName, projectv1.ClusterDomain{
-			Spec: projectv1.ClusterDomainSpec{
+		_, err := clusterDomain.Create(adminv1.NewClusterDomain(ns, constants.ClusterDomainName, adminv1.ClusterDomain{
+			Spec: adminv1.ClusterDomainSpec{
 				SecretRef: v1.SecretReference{
 					Namespace: ns,
 					Name:      constants.GatewaySecretName,

@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/knative/pkg/apis/istio/v1alpha3"
+	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/wrangler/pkg/objectset"
@@ -14,18 +16,17 @@ import (
 var (
 	supportedProtocol = []v1alpha3.PortProtocol{
 		v1alpha3.ProtocolHTTP,
-		//v1alpha3.ProtocolHTTPS,
 		//v1alpha3.ProtocolTCP,
 		//v1alpha3.ProtocolGRPC,
 		//v1alpha3.ProtocolHTTP2,
 	}
 )
 
-func populateGateway(systemNamespace string, output *objectset.ObjectSet) {
+func Gateway(systemNamespace string, clusterDomain string, publicdomains []*riov1.PublicDomain, output *objectset.ObjectSet) {
 	// Istio Gateway
 	gws := v1alpha3.GatewaySpec{
 		Selector: map[string]string{
-			"gateway": "external",
+			"app": "istio-gateway",
 		},
 	}
 
@@ -41,6 +42,40 @@ func populateGateway(systemNamespace string, output *objectset.ObjectSet) {
 			Hosts: []string{"*"},
 		})
 	}
+
+	// https port
+	if clusterDomain != "" {
+		httpsPort, _ := strconv.ParseInt(constants.DefaultHTTPSOpenPort, 10, 0)
+		gws.Servers = append(gws.Servers, v1alpha3.Server{
+			Port: v1alpha3.Port{
+				Protocol: v1alpha3.ProtocolHTTPS,
+				Number:   int(httpsPort),
+				Name:     fmt.Sprintf("%v-%v", strings.ToLower(string(v1alpha3.ProtocolHTTPS)), httpsPort),
+			},
+			Hosts: []string{clusterDomain},
+			TLS: &v1alpha3.TLSOptions{
+				Mode:           v1alpha3.TLSModeSimple,
+				CredentialName: issuers.RioWildcardCerts,
+			},
+		})
+	}
+
+	for _, pd := range publicdomains {
+		httpsPort, _ := strconv.ParseInt(constants.DefaultHTTPSOpenPort, 10, 0)
+		gws.Servers = append(gws.Servers, v1alpha3.Server{
+			Port: v1alpha3.Port{
+				Protocol: v1alpha3.ProtocolHTTPS,
+				Number:   int(httpsPort),
+				Name:     fmt.Sprintf("%v-%v", strings.ToLower(string(v1alpha3.ProtocolHTTPS)), httpsPort),
+			},
+			Hosts: []string{pd.Spec.DomainName},
+			TLS: &v1alpha3.TLSOptions{
+				Mode:           v1alpha3.TLSModeSimple,
+				CredentialName: pd.Spec.SecretRef.Name,
+			},
+		})
+	}
+
 	gateway := constructors.NewGateway(systemNamespace, constants.RioGateway, v1alpha3.Gateway{
 		Spec: gws,
 	})

@@ -102,7 +102,7 @@ func NewRouter(cfg Config) TableWriter {
 	writer.AddFormatFunc("formatURL", FormatURL())
 	writer.AddFormatFunc("formatAction", FormatAction)
 	writer.AddFormatFunc("formatTarget", FormatRouteTarget)
-	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cfg.GetDefaultNamespace()))
+	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cfg.GetSetNamespace()))
 
 	domain, _ := cfg.Domain()
 

@@ -14,6 +14,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/rancher/rio/pkg/constants"
+
 	"github.com/rancher/rio/pkg/server"
 	"github.com/rancher/rio/pkg/version"
 	"github.com/rancher/wrangler/pkg/signals"
@@ -49,6 +51,18 @@ func main() {
 			Name:        "debug",
 			EnvVar:      "RIO_DEBUG",
 			Destination: &debug,
+		},
+		cli.StringFlag{
+			Name:        "--http-listen-port",
+			Usage:       "HTTP port gateway will be listening",
+			EnvVar:      "HTTP_PORT",
+			Destination: &constants.DefaultHTTPOpenPort,
+		},
+		cli.StringFlag{
+			Name:        "--https-listen-port",
+			Usage:       "HTTPS port gateway will be listening",
+			EnvVar:      "HTTPS_PORT",
+			Destination: &constants.DefaultHTTPSOpenPort,
 		},
 	}
 	app.Action = run

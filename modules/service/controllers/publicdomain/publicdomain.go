@@ -2,17 +2,13 @@ package publicdomain
 
 import (
 	"context"
-	"sort"
 
-	"github.com/rancher/mapper/slice"
-	"github.com/rancher/rio/modules/service/controllers/publicdomain/populate"
+	"k8s.io/apimachinery/pkg/labels"
+
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
-	"github.com/rancher/wrangler/pkg/objectset"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	"github.com/rancher/wrangler/pkg/relatedresource"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -21,79 +17,89 @@ const (
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
-	c := stackobject.NewGeneratingController(ctx, rContext, "stack-public-domain", rContext.Rio.Rio().V1().PublicDomain())
-	c.Apply = c.Apply.WithCacheTypes(rContext.Extensions.Extensions().V1beta1().Ingress())
-
-	p := populator{
-		systemNamespace: rContext.Namespace,
-	}
-
-	c.Populator = p.populate
-
 	h := handler{
 		services: rContext.Rio.Rio().V1().Service(),
 		routers:  rContext.Rio.Rio().V1().Router(),
 		apps:     rContext.Rio.Rio().V1().App(),
+		domains:  rContext.Rio.Rio().V1().PublicDomain().Cache(),
 	}
 
-	rContext.Rio.Rio().V1().PublicDomain().OnChange(ctx, servicePublicdomain, h.sync)
+	svcUpdator := riov1controller.UpdateAppOnChange(rContext.Rio.Rio().V1().App().Updater(), h.syncApp)
+	rContext.Rio.Rio().V1().App().OnChange(ctx, servicePublicdomain, svcUpdator)
+
+	routerUpdator := riov1controller.UpdateRouterOnChange(rContext.Rio.Rio().V1().Router().Updater(), h.syncRouter)
+	rContext.Rio.Rio().V1().Router().OnChange(ctx, servicePublicdomain, routerUpdator)
+
+	relatedresource.Watch(ctx, "publicdomain-app", h.resolve,
+		rContext.Rio.Rio().V1().App(),
+		rContext.Rio.Rio().V1().PublicDomain())
+
+	relatedresource.Watch(ctx, "publicdomain-router", h.resolve,
+		rContext.Rio.Rio().V1().Router(),
+		rContext.Rio.Rio().V1().PublicDomain())
+
 	return nil
-}
-
-type populator struct {
-	systemNamespace string
-}
-
-func (p populator) populate(obj runtime.Object, namespace *corev1.Namespace, os *objectset.ObjectSet) error {
-	return populate.Ingress(p.systemNamespace, obj.(*riov1.PublicDomain), os)
 }
 
 type handler struct {
 	services riov1controller.ServiceController
 	apps     riov1controller.AppController
 	routers  riov1controller.RouterController
+	domains  riov1controller.PublicDomainCache
 }
 
-func (h handler) sync(key string, pd *riov1.PublicDomain) (*riov1.PublicDomain, error) {
-	if pd == nil {
-		return nil, nil
+func (h handler) resolve(namespace, name string, obj runtime.Object) ([]relatedresource.Key, error) {
+	switch obj.(type) {
+	case *riov1.PublicDomain:
+		pd := obj.(*riov1.PublicDomain)
+		return []relatedresource.Key{
+			{
+				Name:      pd.Spec.TargetServiceName,
+				Namespace: pd.Namespace,
+			},
+		}, nil
+	}
+	return nil, nil
+}
+
+func (h handler) syncApp(key string, obj *riov1.App) (*riov1.App, error) {
+	if obj == nil || obj.DeletionTimestamp != nil {
+		return obj, nil
 	}
 
-	svc, err := h.apps.Cache().Get(pd.Namespace, pd.Spec.TargetServiceName)
-	if err != nil && !errors.IsNotFound(err) {
-		return pd, err
+	pds, err := h.domains.List(obj.Namespace, labels.NewSelector())
+	if err != nil {
+		return obj, err
 	}
 
-	if err == nil {
-		deepcopy := svc.DeepCopy()
-		if !slice.ContainsString(deepcopy.Status.PublicDomains, pd.Spec.DomainName) {
-			if !slice.ContainsString(deepcopy.Status.PublicDomains, pd.Spec.DomainName) {
-				deepcopy.Status.PublicDomains = append(deepcopy.Status.PublicDomains, pd.Spec.DomainName)
-				sort.Strings(deepcopy.Status.PublicDomains)
-				if _, err := h.apps.Update(deepcopy); err != nil {
-					return pd, err
-				}
-			}
+	var publicdomains []string
+	for _, pd := range pds {
+		if pd.Spec.TargetServiceName == obj.Name {
+			publicdomains = append(publicdomains, pd.Spec.DomainName)
 		}
-		return pd, nil
 	}
 
-	router, err := h.routers.Cache().Get(pd.Namespace, pd.Spec.TargetServiceName)
-	if err != nil && !errors.IsNotFound(err) {
-		return pd, err
+	obj.Status.PublicDomains = publicdomains
+	return obj, nil
+}
+
+func (h handler) syncRouter(key string, obj *riov1.Router) (*riov1.Router, error) {
+	if obj == nil || obj.DeletionTimestamp != nil {
+		return obj, nil
 	}
 
-	if err == nil {
-		deepcopy := router.DeepCopy()
-		if !slice.ContainsString(deepcopy.Status.PublicDomains, pd.Spec.DomainName) {
-			deepcopy.Status.PublicDomains = append(deepcopy.Status.PublicDomains, pd.Spec.DomainName)
-			sort.Strings(deepcopy.Status.PublicDomains)
+	pds, err := h.domains.List(obj.Namespace, labels.NewSelector())
+	if err != nil {
+		return obj, err
+	}
+
+	var publicdomains []string
+	for _, pd := range pds {
+		if pd.Spec.TargetServiceName == obj.Name {
+			publicdomains = append(publicdomains, pd.Spec.DomainName)
 		}
-		if _, err := h.routers.Update(deepcopy); err != nil {
-			return pd, err
-		}
-		return pd, nil
 	}
 
-	return pd, nil
+	obj.Status.PublicDomains = publicdomains
+	return obj, nil
 }

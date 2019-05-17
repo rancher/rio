@@ -136,7 +136,8 @@ import:
 - package: github.com/rancher/wrangler
   version: a7cf48fa83ef5cc872170f850aa771ef818a196b
 - package: github.com/rancher/wrangler-api
-  version: c5ea888bdf543205ed7dddfffdd8b07f0a65798d
+  version: 347e75e8ad4cfe3d411ac07abc7626ea3e34a4be
+  repo: https://github.com/StrongMonkey/wrangler-api.git
 - package: github.com/rivo/tview
   version: 8d5eba0c2f51d8ae971c5a470e354bbc2aae6777
 - package: github.com/rivo/uniseg

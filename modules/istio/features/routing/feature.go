@@ -2,7 +2,6 @@ package routing
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/rancher/rio/pkg/constants"
@@ -20,15 +19,6 @@ import (
 
 func Register(ctx context.Context, rContext *types.Context) error {
 	apply := rContext.Apply.WithCacheTypes(rContext.Rio.Rio().V1().Service(), rContext.Core.Core().V1().ConfigMap())
-	ports := []string{
-		fmt.Sprintf("%v:%v,http2", constants.DefaultHTTPOpenPort, constants.DefaultHTTPOpenPort),
-		fmt.Sprintf("%v:%v,https", constants.DefaultHTTPSOpenPort, constants.DefaultHTTPSOpenPort),
-	}
-
-	portStr, err := json.Marshal(&ports)
-	if err != nil {
-		return err
-	}
 	feature := &features.FeatureController{
 		FeatureName: "istio",
 		FeatureSpec: projectv1.FeatureSpec{
@@ -47,9 +37,11 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			app.Register,
 		},
 		FixedAnswers: map[string]string{
-			"PORTS":             string(portStr),
+			"HTTP_PORT":         constants.DefaultHTTPOpenPort,
+			"HTTPS_PORT":        constants.DefaultHTTPSOpenPort,
 			"TELEMETRY_ADDRESS": fmt.Sprintf("%s.%s.svc.cluster.local", constants.IstioTelemetry, rContext.Namespace),
 			"NAMESPACE":         rContext.Namespace,
+			"TAG":               "1.1.3",
 		},
 	}
 

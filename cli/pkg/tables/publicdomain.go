@@ -10,7 +10,7 @@ func NewPublicDomain(cfg Config) TableWriter {
 		{"TARGET", "{{stackScopedName .Obj.Namespace .Obj.Spec.TargetServiceName ``}}"},
 	}, cfg)
 
-	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cfg.GetDefaultNamespace()))
+	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cfg.GetSetNamespace()))
 	return &tableWriter{
 		writer: writer,
 	}

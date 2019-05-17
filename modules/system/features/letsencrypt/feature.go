@@ -42,6 +42,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			},
 		},
 		FixedAnswers: map[string]string{
+			"TAG":       "v0.7.2-rio.1",
 			"NAMESPACE": rContext.Namespace,
 		},
 		SystemStacks: []*systemstack.SystemStack{

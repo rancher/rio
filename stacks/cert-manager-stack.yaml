@@ -9,7 +9,7 @@ services:
     - '* events'
     - '* services'
     - '* pods'
-    image: rancher/cert-manager-controller:v0.7.2-rio.1
+    image: "rancher/cert-manager-controller:${TAG}"
     imagePullPolicy: Always
     args:
     - cert-manager
@@ -17,6 +17,8 @@ services:
     - ${NAMESPACE}
     - --cluster-resource-namespace
     - ${NAMESPACE}
+    - --acme-http01-solver-image
+    - "rancher/cert-manager-acmesolver:${TAG}"
     - --logtostderr
     - "true"
 
