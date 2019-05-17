@@ -6,9 +6,9 @@ var (
 	ClusterDomainName              = "cluster-domain"
 	DefaultHTTPOpenPort            = "9080"
 	DefaultHTTPSOpenPort           = "9443"
+	UseHostPort                    = false
 	DefaultServiceVersion          = "v0"
 	GatewaySecretName              = "rio-certs"
-	IstioGatewayDeploy             = "istio-gateway"
 	IstioGateway                   = "istio-gateway"
 	IstioMeshConfigKey             = "meshConfig"
 	IstionConfigMapName            = "mesh"

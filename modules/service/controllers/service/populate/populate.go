@@ -7,7 +7,7 @@ import (
 	"github.com/rancher/wrangler/pkg/objectset"
 )
 
-func Service(service *v1.Service, os *objectset.ObjectSet) error {
-	k8sservice.Populate(service, os)
+func Service(service *v1.Service, systemNamespace string, os *objectset.ObjectSet) error {
+	k8sservice.Populate(service, systemNamespace, os)
 	return podcontrollers.Populate(service, os)
 }

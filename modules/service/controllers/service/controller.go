@@ -49,5 +49,5 @@ type serviceHandler struct {
 
 func (s *serviceHandler) populate(obj runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) error {
 	service := obj.(*riov1.Service)
-	return populate.Service(service, os)
+	return populate.Service(service, s.namespace, os)
 }

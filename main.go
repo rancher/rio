@@ -53,18 +53,24 @@ func main() {
 			Destination: &debug,
 		},
 		cli.StringFlag{
-			Name:        "--http-listen-port",
+			Name:        "http-listen-port",
 			Usage:       "HTTP port gateway will be listening",
 			EnvVar:      "HTTP_PORT",
 			Value:       constants.DefaultHTTPOpenPort,
 			Destination: &constants.DefaultHTTPOpenPort,
 		},
 		cli.StringFlag{
-			Name:        "--https-listen-port",
+			Name:        "https-listen-port",
 			Usage:       "HTTPS port gateway will be listening",
 			EnvVar:      "HTTPS_PORT",
 			Value:       constants.DefaultHTTPSOpenPort,
 			Destination: &constants.DefaultHTTPSOpenPort,
+		},
+		cli.BoolFlag{
+			Name:        "use-host-ports",
+			Usage:       "Whether to use hostPort to export servicemesh gateway",
+			EnvVar:      "USE_HOSTPORT",
+			Destination: &constants.UseHostPort,
 		},
 	}
 	app.Action = run

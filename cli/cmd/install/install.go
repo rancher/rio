@@ -20,6 +20,7 @@ type Install struct {
 	Namespace string `desc:"namespace to install system resources" default:"rio-system"`
 	HTTPPort  string `desc:"http port service mesh gateway will listen to" default:"9080"`
 	HTTPSPort string `desc:"https port service mesh gateway will listen to" default:"9443"`
+	HostPort  bool   `desc:"whether to use hostPort to export servicemesh gateway"`
 }
 
 func (i *Install) Run(ctx *clicontext.CLIContext) error {
@@ -37,11 +38,12 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 	}
 
 	if err := controllerStack.Deploy(map[string]string{
-		"NAMESPACE":  i.Namespace,
-		"DEBUG":      fmt.Sprint(i.Debug),
-		"IMAGE":      fmt.Sprintf("%s:%s", constants.ControllerImage, constants.ControllerImageTag),
-		"HTTPS_PORT": i.HTTPSPort,
-		"HTTP_PORT":  i.HTTPPort,
+		"NAMESPACE":    i.Namespace,
+		"DEBUG":        fmt.Sprint(i.Debug),
+		"IMAGE":        fmt.Sprintf("%s:%s", constants.ControllerImage, constants.ControllerImageTag),
+		"HTTPS_PORT":   i.HTTPSPort,
+		"HTTP_PORT":    i.HTTPPort,
+		"USE_HOSTPORT": fmt.Sprint(i.HostPort),
 	}); err != nil {
 		return err
 	}
