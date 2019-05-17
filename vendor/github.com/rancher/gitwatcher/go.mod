@@ -9,8 +9,8 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/mux v1.7.1
 	github.com/pkg/errors v0.8.1
-	github.com/rancher/wrangler v0.0.0-20190516181950-a7cf48fa83ef
-	github.com/rancher/wrangler-api v0.0.0-20190516182105-c5ea888bdf54
+	github.com/rancher/wrangler v0.1.0
+	github.com/rancher/wrangler-api v0.1.1
 	github.com/sirupsen/logrus v1.4.1
 	github.com/spf13/pflag v1.0.3 // indirect
 	github.com/urfave/cli v1.20.0

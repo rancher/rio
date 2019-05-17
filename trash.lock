@@ -128,7 +128,7 @@ import:
 - package: github.com/rancher/axe
   version: 84566a81582b26b0195c5ccd194473f9d8296ee5
 - package: github.com/rancher/gitwatcher
-  version: bcb7b44baef4cc5a776813c5c9c1c98493a9120a
+  version: v0.2.2
 - package: github.com/rancher/mapper
   version: 84da984f31461af0a2f39f3079bbbd8efe4bc4bb
 - package: github.com/rancher/rdns-server
