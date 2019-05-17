@@ -21,8 +21,8 @@ package externalversions
 import (
 	"fmt"
 
-	v1 "github.com/rancher/rio/pkg/apis/autoscale.rio.cattle.io/v1"
-	projectriocattleiov1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
+	autoscaleriocattleiov1 "github.com/rancher/rio/pkg/apis/autoscale.rio.cattle.io/v1"
 	riocattleiov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
@@ -54,15 +54,15 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=autoscale.rio.cattle.io, Version=v1
-	case v1.SchemeGroupVersion.WithResource("servicescalerecommendations"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Autoscale().V1().ServiceScaleRecommendations().Informer()}, nil
+	// Group=admin.rio.cattle.io, Version=v1
+	case v1.SchemeGroupVersion.WithResource("clusterdomains"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Admin().V1().ClusterDomains().Informer()}, nil
+	case v1.SchemeGroupVersion.WithResource("features"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Admin().V1().Features().Informer()}, nil
 
-		// Group=project.rio.cattle.io, Version=v1
-	case projectriocattleiov1.SchemeGroupVersion.WithResource("clusterdomains"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Project().V1().ClusterDomains().Informer()}, nil
-	case projectriocattleiov1.SchemeGroupVersion.WithResource("features"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Project().V1().Features().Informer()}, nil
+		// Group=autoscale.rio.cattle.io, Version=v1
+	case autoscaleriocattleiov1.SchemeGroupVersion.WithResource("servicescalerecommendations"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Autoscale().V1().ServiceScaleRecommendations().Informer()}, nil
 
 		// Group=rio.cattle.io, Version=v1
 	case riocattleiov1.SchemeGroupVersion.WithResource("apps"):

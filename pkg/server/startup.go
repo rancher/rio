@@ -71,9 +71,9 @@ func Types(ctx context.Context, config *rest.Config) error {
 		"PublicDomain.rio.cattle.io/v1",
 		"App.rio.cattle.io/v1",
 
-		"ClusterDomain.project.rio.cattle.io/v1",
-		"Feature.project.rio.cattle.io/v1",
-		"ListenConfig.project.rio.cattle.io/v1",
+		"ClusterDomain.admin.rio.cattle.io/v1",
+		"Feature.admin.rio.cattle.io/v1",
+		"ListenConfig.admin.rio.cattle.io/v1",
 
 		"DestinationRule.networking.istio.io/v1alpha3",
 		"Gateway.networking.istio.io/v1alpha3",

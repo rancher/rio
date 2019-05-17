@@ -6,7 +6,7 @@ import (
 	"github.com/rancher/rio/modules/build/controllers/build"
 	"github.com/rancher/rio/modules/build/controllers/gitcommit"
 	"github.com/rancher/rio/modules/build/controllers/service"
-	v1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/features"
 	"github.com/rancher/rio/pkg/systemstack"
 	"github.com/rancher/rio/types"

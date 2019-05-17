@@ -6,9 +6,9 @@ import (
 	"time"
 
 	approuter "github.com/rancher/rdns-server/client"
-	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
+	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
-	v1 "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/ticker"
 	"github.com/sirupsen/logrus"
@@ -35,9 +35,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		rdnsClient: rdnsClient,
 	}
 
-	handler := v1.UpdateClusterDomainOnChange(rContext.Global.Project().V1().ClusterDomain().Updater(),
+	handler := v1.UpdateClusterDomainOnChange(rContext.Global.Admin().V1().ClusterDomain().Updater(),
 		g.onChange)
-	rContext.Global.Project().V1().ClusterDomain().OnChange(ctx, "rdns", handler)
+	rContext.Global.Admin().V1().ClusterDomain().OnChange(ctx, "rdns", handler)
 	return nil
 }
 

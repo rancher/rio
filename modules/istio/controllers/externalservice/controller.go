@@ -6,7 +6,7 @@ import (
 	"github.com/rancher/rio/modules/istio/controllers/externalservice/populate"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
-	v12 "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
+	v12 "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/serviceset"
 	"github.com/rancher/rio/pkg/stackobject"
@@ -25,7 +25,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	p := populator{
 		namespace:          rContext.Namespace,
 		serviceCache:       rContext.Rio.Rio().V1().Service().Cache(),
-		clusterDomainCache: rContext.Global.Project().V1().ClusterDomain().Cache(),
+		clusterDomainCache: rContext.Global.Admin().V1().ClusterDomain().Cache(),
 	}
 
 	c.Populator = p.populate

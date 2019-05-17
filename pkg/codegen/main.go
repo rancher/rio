@@ -1,8 +1,8 @@
 package main
 
 import (
+	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	autoscalev1 "github.com/rancher/rio/pkg/apis/autoscale.rio.cattle.io/v1"
-	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	controllergen "github.com/rancher/wrangler/pkg/controller-gen"
 	"github.com/rancher/wrangler/pkg/controller-gen/args"
@@ -17,7 +17,7 @@ func main() {
 		OutputPackage: "github.com/rancher/rio/pkg/generated",
 		Boilerplate:   "scripts/boilerplate.go.txt",
 		Groups: map[string]args.Group{
-			"project.rio.cattle.io": {
+			"admin.rio.cattle.io": {
 				Types: []interface{}{
 					projectv1.ClusterDomain{},
 					projectv1.Feature{},

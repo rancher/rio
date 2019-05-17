@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rancher/rio/pkg/constants"
-	projectv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/project.rio.cattle.io/v1"
+	projectv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/sirupsen/logrus"
@@ -35,7 +35,7 @@ type Config struct {
 
 	Core    corev1.CoreV1Interface
 	Rio     riov1.RioV1Interface
-	Project projectv1.ProjectV1Interface
+	Project projectv1.AdminV1Interface
 }
 
 func (c *Config) Validate() error {

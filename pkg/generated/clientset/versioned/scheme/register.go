@@ -19,8 +19,8 @@ limitations under the License.
 package scheme
 
 import (
+	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	autoscalev1 "github.com/rancher/rio/pkg/apis/autoscale.rio.cattle.io/v1"
-	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -33,8 +33,8 @@ var Scheme = runtime.NewScheme()
 var Codecs = serializer.NewCodecFactory(Scheme)
 var ParameterCodec = runtime.NewParameterCodec(Scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
+	adminv1.AddToScheme,
 	autoscalev1.AddToScheme,
-	projectv1.AddToScheme,
 	riov1.AddToScheme,
 }
 

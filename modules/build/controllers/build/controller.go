@@ -6,7 +6,7 @@ import (
 	"github.com/knative/build/pkg/apis/build/v1alpha1"
 	"github.com/rancher/rio/modules/build/controllers/service"
 	"github.com/rancher/rio/pkg/constants"
-	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
+	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
 	v1alpha12 "github.com/rancher/wrangler-api/pkg/generated/controllers/build.knative.dev/v1alpha1"
@@ -16,7 +16,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	h := handler{
 		systemNamespace:    rContext.Namespace,
 		services:           rContext.Rio.Rio().V1().Service(),
-		clusterDomainCache: rContext.Global.Project().V1().ClusterDomain().Cache(),
+		clusterDomainCache: rContext.Global.Admin().V1().ClusterDomain().Cache(),
 	}
 
 	rContext.Build.Build().V1alpha1().Build().OnChange(ctx, "build-service-update", v1alpha12.UpdateBuildOnChange(rContext.Build.Build().V1alpha1().Build().Updater(), h.updateService))

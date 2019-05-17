@@ -2,7 +2,7 @@ package populate
 
 import (
 	"github.com/rancher/rio/modules/istio/controllers/service/populate"
-	v1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/serviceset"
 	"github.com/rancher/wrangler/pkg/objectset"

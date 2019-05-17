@@ -6,9 +6,9 @@ import (
 
 	"github.com/rancher/rio/modules/istio/controllers/istio/populate"
 	"github.com/rancher/rio/modules/istio/pkg/istio/config"
-	projectv1 "github.com/rancher/rio/pkg/apis/project.rio.cattle.io/v1"
+	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
-	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
+	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
 	corev1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/core/v1"
@@ -41,7 +41,7 @@ var (
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
-	if err := ensureClusterDomain(rContext.Namespace, rContext.Global.Project().V1().ClusterDomain()); err != nil {
+	if err := ensureClusterDomain(rContext.Namespace, rContext.Global.Admin().V1().ClusterDomain()); err != nil {
 		return err
 	}
 
@@ -61,7 +61,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		serviceApply:      rContext.Apply.WithSetID(istioInjector).WithInjectorName(istioInjector),
 		services:          rContext.Rio.Rio().V1().Service(),
 		publicDomainCache: rContext.Rio.Rio().V1().PublicDomain().Cache(),
-		clusterDomain:     rContext.Global.Project().V1().ClusterDomain(),
+		clusterDomain:     rContext.Global.Admin().V1().ClusterDomain(),
 		secretCache:       rContext.Core.Core().V1().Secret().Cache(),
 		nodeCache:         rContext.Core.Core().V1().Node().Cache(),
 		endpointCache:     rContext.Core.Core().V1().Endpoints().Cache(),
@@ -73,7 +73,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 
 	relatedresource.Watch(ctx, "cluster-domain-service", s.resolve,
 		rContext.Rio.Rio().V1().Service(),
-		rContext.Global.Project().V1().ClusterDomain(),
+		rContext.Global.Admin().V1().ClusterDomain(),
 	)
 	relatedresource.Watch(ctx, "node-enpoint", s.resolveEndpoint,
 		rContext.Core.Core().V1().Endpoints(),

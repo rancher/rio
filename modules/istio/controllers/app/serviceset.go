@@ -8,7 +8,7 @@ import (
 	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
-	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/project.rio.cattle.io/v1"
+	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
@@ -30,7 +30,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		systemNamespace:    rContext.Namespace,
 		serviceCache:       rContext.Rio.Rio().V1().Service().Cache(),
 		secretCache:        rContext.Core.Core().V1().Secret().Cache(),
-		clusterDomainCache: rContext.Global.Project().V1().ClusterDomain().Cache(),
+		clusterDomainCache: rContext.Global.Admin().V1().ClusterDomain().Cache(),
 	}
 
 	c.Populator = sh.populate
