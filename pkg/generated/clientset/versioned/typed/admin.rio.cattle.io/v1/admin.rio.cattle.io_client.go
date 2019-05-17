@@ -29,6 +29,8 @@ type AdminV1Interface interface {
 	RESTClient() rest.Interface
 	ClusterDomainsGetter
 	FeaturesGetter
+	PublicDomainsGetter
+	RioInfosGetter
 }
 
 // AdminV1Client is used to interact with features provided by the admin.rio.cattle.io group.
@@ -42,6 +44,14 @@ func (c *AdminV1Client) ClusterDomains(namespace string) ClusterDomainInterface 
 
 func (c *AdminV1Client) Features(namespace string) FeatureInterface {
 	return newFeatures(c, namespace)
+}
+
+func (c *AdminV1Client) PublicDomains(namespace string) PublicDomainInterface {
+	return newPublicDomains(c, namespace)
+}
+
+func (c *AdminV1Client) RioInfos() RioInfoInterface {
+	return newRioInfos(c)
 }
 
 // NewForConfig creates a new AdminV1Client for the given config.

@@ -5,9 +5,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
+
 	"github.com/knative/pkg/apis/istio/v1alpha3"
 	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
-	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/wrangler/pkg/objectset"
@@ -22,7 +23,7 @@ var (
 	}
 )
 
-func Gateway(systemNamespace string, clusterDomain string, publicdomains []*riov1.PublicDomain, output *objectset.ObjectSet) {
+func Gateway(systemNamespace string, clusterDomain string, publicdomains []*v1.PublicDomain, output *objectset.ObjectSet) {
 	// Istio Gateway
 	gws := v1alpha3.GatewaySpec{
 		Selector: map[string]string{

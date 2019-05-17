@@ -29,7 +29,6 @@ type RioV1Interface interface {
 	RESTClient() rest.Interface
 	AppsGetter
 	ExternalServicesGetter
-	PublicDomainsGetter
 	RoutersGetter
 	ServicesGetter
 }
@@ -45,10 +44,6 @@ func (c *RioV1Client) Apps(namespace string) AppInterface {
 
 func (c *RioV1Client) ExternalServices(namespace string) ExternalServiceInterface {
 	return newExternalServices(c, namespace)
-}
-
-func (c *RioV1Client) PublicDomains(namespace string) PublicDomainInterface {
-	return newPublicDomains(c, namespace)
 }
 
 func (c *RioV1Client) Routers(namespace string) RouterInterface {

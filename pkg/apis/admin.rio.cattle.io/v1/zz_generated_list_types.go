@@ -57,3 +57,37 @@ func NewFeature(namespace, name string, obj Feature) *Feature {
 	obj.Namespace = namespace
 	return &obj
 }
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// RioInfoList is a list of RioInfo resources
+type RioInfoList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []RioInfo `json:"items"`
+}
+
+func NewRioInfo(namespace, name string, obj RioInfo) *RioInfo {
+	obj.APIVersion, obj.Kind = SchemeGroupVersion.WithKind("RioInfo").ToAPIVersionAndKind()
+	obj.Name = name
+	obj.Namespace = namespace
+	return &obj
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// PublicDomainList is a list of PublicDomain resources
+type PublicDomainList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []PublicDomain `json:"items"`
+}
+
+func NewPublicDomain(namespace, name string, obj PublicDomain) *PublicDomain {
+	obj.APIVersion, obj.Kind = SchemeGroupVersion.WithKind("PublicDomain").ToAPIVersionAndKind()
+	obj.Name = name
+	obj.Namespace = namespace
+	return &obj
+}

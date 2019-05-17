@@ -7,8 +7,8 @@ import (
 	context "context"
 	sync "sync"
 
-	v1a "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	v1 "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
+	v1a "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	generic "github.com/rancher/wrangler/pkg/generic"
 	v1b "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"

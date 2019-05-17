@@ -28,6 +28,10 @@ type Interface interface {
 	ClusterDomains() ClusterDomainInformer
 	// Features returns a FeatureInformer.
 	Features() FeatureInformer
+	// PublicDomains returns a PublicDomainInformer.
+	PublicDomains() PublicDomainInformer
+	// RioInfos returns a RioInfoInformer.
+	RioInfos() RioInfoInformer
 }
 
 type version struct {
@@ -49,4 +53,14 @@ func (v *version) ClusterDomains() ClusterDomainInformer {
 // Features returns a FeatureInformer.
 func (v *version) Features() FeatureInformer {
 	return &featureInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// PublicDomains returns a PublicDomainInformer.
+func (v *version) PublicDomains() PublicDomainInformer {
+	return &publicDomainInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// RioInfos returns a RioInfoInformer.
+func (v *version) RioInfos() RioInfoInformer {
+	return &rioInfoInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }

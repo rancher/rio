@@ -22,8 +22,6 @@ type AppExpansion interface{}
 
 type ExternalServiceExpansion interface{}
 
-type PublicDomainExpansion interface{}
-
 type RouterExpansion interface{}
 
 type ServiceExpansion interface{}

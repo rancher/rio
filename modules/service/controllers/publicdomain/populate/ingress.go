@@ -1,7 +1,7 @@
 package populate
 
 import (
-	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/wrangler/pkg/name"
@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func Ingress(systemNamespace string, publicdomain *riov1.PublicDomain, os *objectset.ObjectSet) error {
+func Ingress(systemNamespace string, publicdomain *v1.PublicDomain, os *objectset.ObjectSet) error {
 	ingress := constructors.NewIngress(systemNamespace, name.SafeConcatName(publicdomain.Name, name.Hex(publicdomain.Spec.DomainName, 5)), v1beta1.Ingress{})
 
 	ingress.Spec.Rules = []v1beta1.IngressRule{

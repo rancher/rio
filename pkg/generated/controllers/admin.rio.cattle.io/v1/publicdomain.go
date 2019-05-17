@@ -21,10 +21,10 @@ package v1
 import (
 	"context"
 
-	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	clientset "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/rio.cattle.io/v1"
-	informers "github.com/rancher/rio/pkg/generated/informers/externalversions/rio.cattle.io/v1"
-	listers "github.com/rancher/rio/pkg/generated/listers/rio.cattle.io/v1"
+	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
+	clientset "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/admin.rio.cattle.io/v1"
+	informers "github.com/rancher/rio/pkg/generated/informers/externalversions/admin.rio.cattle.io/v1"
+	listers "github.com/rancher/rio/pkg/generated/listers/admin.rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/generic"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -3,7 +3,9 @@ package publicdomain
 import (
 	"context"
 
+	"github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	adminv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/relatedresource"
@@ -20,7 +22,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		services: rContext.Rio.Rio().V1().Service(),
 		routers:  rContext.Rio.Rio().V1().Router(),
 		apps:     rContext.Rio.Rio().V1().App(),
-		domains:  rContext.Rio.Rio().V1().PublicDomain().Cache(),
+		domains:  rContext.Global.Admin().V1().PublicDomain().Cache(),
 	}
 
 	svcUpdator := riov1controller.UpdateAppOnChange(rContext.Rio.Rio().V1().App().Updater(), h.syncApp)
@@ -31,11 +33,11 @@ func Register(ctx context.Context, rContext *types.Context) error {
 
 	relatedresource.Watch(ctx, "publicdomain-app", h.resolve,
 		rContext.Rio.Rio().V1().App(),
-		rContext.Rio.Rio().V1().PublicDomain())
+		rContext.Global.Admin().V1().PublicDomain())
 
 	relatedresource.Watch(ctx, "publicdomain-router", h.resolve,
 		rContext.Rio.Rio().V1().Router(),
-		rContext.Rio.Rio().V1().PublicDomain())
+		rContext.Global.Admin().V1().PublicDomain())
 
 	return nil
 }
@@ -44,13 +46,13 @@ type handler struct {
 	services riov1controller.ServiceController
 	apps     riov1controller.AppController
 	routers  riov1controller.RouterController
-	domains  riov1controller.PublicDomainCache
+	domains  adminv1controller.PublicDomainCache
 }
 
 func (h handler) resolve(namespace, name string, obj runtime.Object) ([]relatedresource.Key, error) {
 	switch obj.(type) {
-	case *riov1.PublicDomain:
-		pd := obj.(*riov1.PublicDomain)
+	case *v1.PublicDomain:
+		pd := obj.(*v1.PublicDomain)
 		return []relatedresource.Key{
 			{
 				Name:      pd.Spec.TargetServiceName,

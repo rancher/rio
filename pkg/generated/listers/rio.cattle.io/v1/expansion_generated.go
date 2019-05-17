@@ -34,14 +34,6 @@ type ExternalServiceListerExpansion interface{}
 // ExternalServiceNamespaceLister.
 type ExternalServiceNamespaceListerExpansion interface{}
 
-// PublicDomainListerExpansion allows custom methods to be added to
-// PublicDomainLister.
-type PublicDomainListerExpansion interface{}
-
-// PublicDomainNamespaceListerExpansion allows custom methods to be added to
-// PublicDomainNamespaceLister.
-type PublicDomainNamespaceListerExpansion interface{}
-
 // RouterListerExpansion allows custom methods to be added to
 // RouterLister.
 type RouterListerExpansion interface{}
