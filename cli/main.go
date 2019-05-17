@@ -120,7 +120,7 @@ func main() {
 			Destination: &cfg.Kubeconfig,
 		},
 		cli.BoolFlag{
-			Name:  "system",
+			Name:  "system,s",
 			Usage: "Only show system resources",
 		},
 	}
