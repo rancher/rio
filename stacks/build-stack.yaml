@@ -67,7 +67,7 @@ services:
     containers:
     - name: cert-checker
       init: true
-      image: rancher/rio-cert-checker:v0.1.0-rc6
+      image: rancher/rio-cert-checker:v0.1.0-rc7
       imagePullPolicy: Always
       secrets:
       - rio-wildcard:/etc/registry
