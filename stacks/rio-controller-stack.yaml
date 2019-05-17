@@ -66,7 +66,7 @@ kubernetes:
             - name: HTTP_PORT
               value: "${HTTP_PORT}"
             - name: USE_HOSTPORT
-              value: ${USE_HOSTPORT}
+              value: "${USE_HOSTPORT}"
 
 templates:
   questions:
