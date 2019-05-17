@@ -3,7 +3,7 @@ services:
     disableServiceMesh: true
     global_permissions:
     - role=cluster-admin
-    image: istio/mixer:1.1.3
+    image: "istio/mixer:${TAG}"
     imagePullPolicy: always
     args:
     - --monitoringPort=9093
@@ -23,7 +23,7 @@ services:
       ports:
       - 15004/tcp
       - 9091/tcp,grpc
-      image: istio/proxyv2:1.1.3
+      image: "istio/proxyv2:${TAG}"
       args:
       - proxy
       - --serviceCluster

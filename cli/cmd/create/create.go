@@ -55,7 +55,7 @@ type Create struct {
 	Secret                 []string          `desc:"Secrets to inject to the service (format: name:target)"`
 	StageOnly              bool              `desc:"Whether to stage new created revision for build"`
 	T_Tty                  bool              `desc:"Allocate a pseudo-TTY"`
-	Version                string            `desc:"Specify the revision "`
+	Version                string            `desc:"Specify the revision"`
 	U_User                 string            `desc:"UID[:GID] Sets the UID used and optionally GID for entrypoint process (format: <uid>[:<gid>])"`
 	Weight                 int               `desc:"Specify the weight for the revision" default:"100"`
 	W_Workdir              string            `desc:"Working directory inside the container"`

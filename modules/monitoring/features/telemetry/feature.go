@@ -29,6 +29,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		},
 		FixedAnswers: map[string]string{
 			"NAMESPACE": rContext.Namespace,
+			"TAG":       "1.1.3",
 		},
 	}
 

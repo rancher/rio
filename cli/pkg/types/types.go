@@ -13,6 +13,7 @@ const (
 	FeatureType         = "feature"
 	PublicDomainType    = "publicdomain"
 	SecretType          = "secret"
+	BuildType           = "build"
 
 	ConfigTypeFull          = "configmaps"
 	AppTypeFull             = "apps.rio.cattle.io"

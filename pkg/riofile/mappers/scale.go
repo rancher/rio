@@ -2,6 +2,7 @@ package mappers
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/rancher/mapper/convert"
@@ -35,8 +36,21 @@ func (d Scale) ToInternal(data map[string]interface{}) error {
 	if strings.Contains(scale, "-") {
 		parts := strings.Split(scale, "-")
 		if len(parts) == 2 {
-			data["minScale"] = parts[0]
-			data["maxScale"] = parts[1]
+			min, err := strconv.Atoi(parts[0])
+			if err != nil {
+				return err
+			}
+			max, err := strconv.Atoi(parts[1])
+			if err != nil {
+				return err
+			}
+			data["minScale"] = min
+			data["maxScale"] = max
+			if min == max {
+				data["scale"] = min
+			} else {
+				data["scale"] = 0
+			}
 		}
 	}
 

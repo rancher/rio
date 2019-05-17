@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sort"
 
+	"sigs.k8s.io/yaml"
+
 	"github.com/rancher/rio/cli/cmd/edit"
 
 	"github.com/rancher/rio/cli/pkg/types"
@@ -12,7 +14,6 @@ import (
 	"github.com/aokoli/goutils"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/stack"
-	"github.com/rancher/rio/cli/pkg/table"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/kv"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -56,12 +57,17 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 				return err
 			}
 
-			str, err := table.FormatJSON(r.Object)
+			bytes, err := json.Marshal(r.Object)
 			if err != nil {
 				return err
 			}
+			yamlBytes, err := yaml.JSONToYAML(bytes)
+			if err != nil {
+				return err
+			}
+			yamlBytes = append(yamlBytes, []byte("/n")...)
 
-			update, err := edit.Loop(nil, []byte(str), func(content []byte) error {
+			update, err := edit.Loop(nil, yamlBytes, func(content []byte) error {
 				var obj *riov1.Service
 				if err := json.Unmarshal(content, &obj); err != nil {
 					return err

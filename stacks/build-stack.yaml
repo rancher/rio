@@ -64,6 +64,13 @@ services:
     - 443:443/tcp,registry
     volumes:
     - storage-registry:/var/lib/registry
+    containers:
+    - name: cert-checker
+      init: true
+      image: strongmonkey1992/cert-check:latest
+      imagePullPolicy: Always
+      secrets:
+      - rio-wildcard:/etc/registry
   webhook:
     global_permissions:
     - "* gitwatcher.cattle.io/gitwatchers"

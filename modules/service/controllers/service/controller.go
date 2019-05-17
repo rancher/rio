@@ -22,6 +22,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		rContext.RBAC.Rbac().V1().ClusterRole(),
 		rContext.RBAC.Rbac().V1().ClusterRoleBinding(),
 		rContext.Apps.Apps().V1().Deployment(),
+		rContext.Apps.Apps().V1().DaemonSet(),
 		rContext.Core.Core().V1().ServiceAccount(),
 		rContext.Core.Core().V1().Service(),
 		rContext.Core.Core().V1().Secret(),

@@ -26,6 +26,7 @@ import (
 )
 
 type Interface interface {
+	DaemonSet() DaemonSetController
 	Deployment() DeploymentController
 }
 
@@ -44,6 +45,9 @@ type version struct {
 	client            clientset.AppsV1Interface
 }
 
+func (c *version) DaemonSet() DaemonSetController {
+	return NewDaemonSetController(v1.SchemeGroupVersion.WithKind("DaemonSet"), c.controllerManager, c.client, c.informers.DaemonSets())
+}
 func (c *version) Deployment() DeploymentController {
 	return NewDeploymentController(v1.SchemeGroupVersion.WithKind("Deployment"), c.controllerManager, c.client, c.informers.Deployments())
 }

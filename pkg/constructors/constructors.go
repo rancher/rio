@@ -88,6 +88,14 @@ func NewDeployment(namespace, name string, obj appsv1.Deployment) *appsv1.Deploy
 	return &obj
 }
 
+func NewDaemonset(namespace, name string, obj appsv1.Deployment) *appsv1.Deployment {
+	obj.APIVersion = "apps/v1"
+	obj.Kind = "DaemonSet"
+	obj.Name = name
+	obj.Namespace = namespace
+	return &obj
+}
+
 func NewService(namespace, name string, obj v1.Service) *v1.Service {
 	obj.APIVersion = "v1"
 	obj.Kind = "Service"

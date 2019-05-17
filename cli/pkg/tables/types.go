@@ -16,6 +16,7 @@ type TableWriter interface {
 type Config interface {
 	table.WriterConfig
 	GetDefaultNamespace() string
+	GetSetNamespace() string
 	Domain() (string, error)
 }
 

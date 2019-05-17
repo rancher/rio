@@ -5,7 +5,6 @@ import (
 	"sort"
 
 	"github.com/rancher/rio/modules/istio/controllers/service/populate"
-	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
@@ -102,18 +101,6 @@ func (s serviceHandler) populate(obj runtime.Object, namespace *corev1.Namespace
 	deepcopy.Status.PublicDomains = app.Status.PublicDomains
 	revVs := populate.VirtualServiceFromSpec(true, s.systemNamespace, app.Name, app.Namespace, clusterDomain, deepcopy, dests...)
 	os.Add(revVs)
-
-	// generating ingress for whole service set
-	tls := true
-	_, err = s.secretCache.Get(s.systemNamespace, issuers.RioWildcardCerts)
-	if err != nil && !errors.IsNotFound(err) {
-		tls = false
-	} else if errors.IsNotFound(err) {
-		return nil
-	}
-	if err := populate.Ingress(clusterDomain, s.systemNamespace, app.Namespace, app.Name, tls, os); err != nil {
-		return err
-	}
 
 	return nil
 }

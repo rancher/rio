@@ -26,7 +26,7 @@ func (c *CLIContext) GetSetNamespace() string {
 }
 
 func (c *CLIContext) GetDefaultNamespace() string {
-	return c.CLI.GlobalString("namespace")
+	return "default"
 }
 
 func (c *CLIContext) GetSystemNamespace() string {

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	webhookinator "github.com/rancher/gitwatcher/pkg/generated/controllers/gitwatcher.cattle.io"
-	project "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io"
+	admin "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io"
 	autoscale "github.com/rancher/rio/pkg/generated/controllers/autoscale.rio.cattle.io"
 	rio "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io"
 	apiextensions "github.com/rancher/wrangler-api/pkg/generated/controllers/apiextensions.k8s.io"
@@ -34,7 +34,7 @@ type Context struct {
 	Core        *core.Factory
 	Ext         *apiextensions.Factory
 	Extensions  *extensions.Factory
-	Global      *project.Factory
+	Global      *admin.Factory
 	K8s         kubernetes.Interface
 	Networking  *networking.Factory
 	RBAC        *rbac.Factory
@@ -59,7 +59,7 @@ func NewContext(namespace string, config *rest.Config) *Context {
 		Core:        core.NewFactoryFromConfigOrDie(config),
 		Ext:         apiextensions.NewFactoryFromConfigOrDie(config),
 		Extensions:  extensions.NewFactoryFromConfigOrDie(config),
-		Global:      project.NewFactoryFromConfigOrDie(config),
+		Global:      admin.NewFactoryFromConfigOrDie(config),
 		Networking:  networking.NewFactoryFromConfigOrDie(config),
 		RBAC:        rbac.NewFactoryFromConfigOrDie(config),
 		Rio:         rio.NewFactoryFromConfigOrDie(config),

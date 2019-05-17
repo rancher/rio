@@ -61,6 +61,10 @@ kubernetes:
               value: ${NAMESPACE}
             - name: RIO_DEBUG
               value: ${RIO_DEBUG}
+            - name: HTTPS_PORT
+              value: "${HTTPS_PORT}"
+            - name: HTTP_PORT
+              value: "${HTTP_PORT}"
 
 templates:
   questions:
@@ -70,3 +74,7 @@ templates:
     description: "namespace to deploy to"
   - variable: RIO_DEBUG
     description: "set to true to enable debug logging"
+  - variable: HTTPS_PORT
+    description: "https port gateway will listen to"
+  - variable: HTTP_PORT
+    description: "http port gateway will listen to"

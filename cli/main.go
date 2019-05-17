@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/rancher/rio/cli/cmd/builds"
+
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/rio/cli/cmd/apply"
 	"github.com/rancher/rio/cli/cmd/attach"
@@ -130,6 +132,7 @@ func main() {
 		externalservice.ExternalService(app),
 		feature.Feature(app),
 		secrets.Secrets(app),
+		builds.Builds(app),
 
 		builder.Command(&ps.Ps{},
 			"List services and containers",

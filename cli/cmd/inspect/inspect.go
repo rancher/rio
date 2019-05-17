@@ -21,6 +21,7 @@ var (
 		clitypes.PodType,
 		clitypes.FeatureType,
 		clitypes.PublicDomainType,
+		clitypes.BuildType,
 	}
 )
 

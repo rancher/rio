@@ -6,8 +6,7 @@ import (
 
 	"github.com/rancher/rio/modules/istio/controllers/service/populate"
 	"github.com/rancher/rio/modules/istio/pkg/domains"
-	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
-	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
+	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
@@ -17,10 +16,8 @@ import (
 	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
 	corev1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/core/v1"
-	"github.com/rancher/wrangler/pkg/name"
 	"github.com/rancher/wrangler/pkg/objectset"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -78,20 +75,6 @@ func (s *serviceHandler) populate(obj runtime.Object, namespace *corev1.Namespac
 		return err
 	}
 
-	tls := true
-	_, err = s.secretCache.Get(s.systemNamespace, issuers.RioWildcardCerts)
-	if err != nil && !errors.IsNotFound(err) {
-		tls = false
-	} else if errors.IsNotFound(err) {
-		return nil
-	}
-
-	// generating ingress for revision
-	app, version := services2.AppAndVersion(service)
-	if err := populate.Ingress(clusterDomain, s.systemNamespace, service.Namespace, name.SafeConcatName(app, version), tls, os); err != nil {
-		return err
-	}
-
 	return err
 }
 
@@ -129,7 +112,7 @@ func (s *serviceHandler) syncAppDomain(key string, obj *riov1.App) (*riov1.App, 
 	return obj, nil
 }
 
-func updateAppDomain(app *riov1.App, clusterDomain *projectv1.ClusterDomain) {
+func updateAppDomain(app *riov1.App, clusterDomain *adminv1.ClusterDomain) {
 	public := true
 	for _, svc := range app.Spec.Revisions {
 		if !svc.Public {
@@ -149,10 +132,20 @@ func updateAppDomain(app *riov1.App, clusterDomain *projectv1.ClusterDomain) {
 	for _, pd := range app.Status.PublicDomains {
 		endpoints = append(endpoints, fmt.Sprintf("%s://%s", protocol, pd))
 	}
+
+	for i, endpoint := range endpoints {
+		if protocol == "http" && constants.DefaultHTTPOpenPort != "80" {
+			endpoints[i] = fmt.Sprintf("%s:%s", endpoint, constants.DefaultHTTPOpenPort)
+		}
+
+		if protocol == "https" && constants.DefaultHTTPOpenPort != "443" {
+			endpoints[i] = fmt.Sprintf("%s:%s", endpoint, constants.DefaultHTTPSOpenPort)
+		}
+	}
 	app.Status.Endpoints = endpoints
 }
 
-func updateDomain(service *riov1.Service, clusterDomain *projectv1.ClusterDomain) {
+func updateDomain(service *riov1.Service, clusterDomain *adminv1.ClusterDomain) {
 	public := false
 	for _, port := range service.Spec.Ports {
 		if !port.InternalOnly {
@@ -174,6 +167,16 @@ func updateDomain(service *riov1.Service, clusterDomain *projectv1.ClusterDomain
 
 	for _, pd := range service.Status.PublicDomains {
 		endpoints = append(endpoints, fmt.Sprintf("%s://%s", protocol, pd))
+	}
+
+	for i, endpoint := range endpoints {
+		if protocol == "http" && constants.DefaultHTTPOpenPort != "80" {
+			endpoints[i] = fmt.Sprintf("%s:%s", endpoint, constants.DefaultHTTPOpenPort)
+		}
+
+		if protocol == "https" && constants.DefaultHTTPOpenPort != "443" {
+			endpoints[i] = fmt.Sprintf("%s:%s", endpoint, constants.DefaultHTTPSOpenPort)
+		}
 	}
 	service.Status.Endpoints = endpoints
 }

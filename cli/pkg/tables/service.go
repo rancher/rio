@@ -76,7 +76,7 @@ func FormatServiceName(cfg Config) func(data, data2 interface{}) (string, error)
 
 		app, version := services.AppAndVersion(service)
 
-		return table.FormatStackScopedName(cfg.GetDefaultNamespace())(ns, app, version)
+		return table.FormatStackScopedName(cfg.GetSetNamespace())(ns, app, version)
 	}
 }
 

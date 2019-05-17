@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 
+	buildv1alpha1 "github.com/knative/build/pkg/client/clientset/versioned/typed/build/v1alpha1"
 	"github.com/pkg/errors"
 	"github.com/rancher/rio/pkg/constants"
 	projectv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/admin.rio.cattle.io/v1"
@@ -34,6 +35,7 @@ type Config struct {
 	K8s        *kubernetes.Clientset
 
 	Core    corev1.CoreV1Interface
+	Build   buildv1alpha1.BuildV1alpha1Interface
 	Rio     riov1.RioV1Interface
 	Project projectv1.AdminV1Interface
 }
@@ -79,6 +81,11 @@ func (c *Config) Validate() error {
 		return err
 	}
 
+	build, err := buildv1alpha1.NewForConfig(restConfig)
+	if err != nil {
+		return err
+	}
+
 	k8s := kubernetes.NewForConfigOrDie(restConfig)
 
 	c.Apply = apply.New(k8s.Discovery(), apply.NewClientFactory(restConfig))
@@ -87,6 +94,7 @@ func (c *Config) Validate() error {
 	c.Rio = rio
 	c.Project = project
 	c.Core = core
+	c.Build = build
 	return nil
 }
 

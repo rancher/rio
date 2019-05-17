@@ -2,10 +2,12 @@ package clicontext
 
 import (
 	"fmt"
+	"math/rand"
 	"reflect"
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 
@@ -38,6 +40,7 @@ func init() {
 	lookup.RegisterType(types.NamespaceType, lookup.SingleNameNameType)
 	lookup.RegisterType(types.FeatureType, lookup.SingleNameNameType)
 	lookup.RegisterType(types.PublicDomainType, lookup.FullDomainNameTypeNameType)
+	lookup.RegisterType(types.BuildType, lookup.StackScopedNameType)
 }
 
 func (c *CLIContext) getResource(r types.Resource) (ret types.Resource, err error) {
@@ -79,20 +82,19 @@ func (c *CLIContext) getResource(r types.Resource) (ret types.Resource, err erro
 		r.FullType = clitypes.PodType
 	case clitypes.ConfigType:
 		r.Object, err = c.Core.ConfigMaps(r.Namespace).Get(r.Name, metav1.GetOptions{})
-		r.FullType = clitypes.ConfigTypeFull
 	case clitypes.RouterType:
 		r.Object, err = c.Rio.Routers(r.Namespace).Get(r.Name, metav1.GetOptions{})
 		r.FullType = clitypes.RouterTypeFull
 	case clitypes.ExternalServiceType:
 		r.Object, err = c.Rio.ExternalServices(r.Namespace).Get(r.Name, metav1.GetOptions{})
-		r.FullType = clitypes.ExternalServiceTypeFull
 	case clitypes.PublicDomainType:
 		r.Object, err = c.Rio.PublicDomains(r.Namespace).Get(r.Name, metav1.GetOptions{})
-		r.FullType = clitypes.PublicDomainTypeFull
 	case clitypes.NamespaceType:
 		r.Object, err = c.Core.Namespaces().Get(r.Name, metav1.GetOptions{})
 	case clitypes.FeatureType:
 		r.Object, err = c.Project.Features(c.SystemNamespace).Get(r.Name, metav1.GetOptions{})
+	case clitypes.BuildType:
+		r.Object, err = c.Build.Builds(r.Namespace).Get(r.Name, metav1.GetOptions{})
 	default:
 		return r, fmt.Errorf("unknown by id type %s", r.Type)
 	}
@@ -114,6 +116,8 @@ func (c *CLIContext) DeleteResource(r types.Resource) (err error) {
 		err = c.Rio.ExternalServices(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
 	case clitypes.PublicDomainType:
 		err = c.Rio.PublicDomains(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
+	case clitypes.BuildType:
+		err = c.Build.Builds(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
 	case clitypes.AppType:
 		app := r.Object.(*riov1.App)
 		var errs multierror.Error
@@ -140,8 +144,9 @@ func (c *CLIContext) Create(obj runtime.Object) (err error) {
 		return err
 	}
 
+	rand.Seed(time.Now().UnixNano())
 	if metadata.GetName() == "" {
-		metadata.SetName(strings.Replace(namesgenerator.GetRandomName(0), "_", "-", -1))
+		metadata.SetName(strings.Replace(namesgenerator.GetRandomName(2), "_", "-", -1))
 	}
 
 	switch o := obj.(type) {
@@ -324,6 +329,12 @@ func (c *CLIContext) listNamespace(namespace, typeName string) (ret []runtime.Ob
 		return ret, err
 	case clitypes.SecretType:
 		objs, err := c.Core.Secrets(namespace).List(opts)
+		for i := range objs.Items {
+			ret = append(ret, &objs.Items[i])
+		}
+		return ret, err
+	case clitypes.BuildType:
+		objs, err := c.Build.Builds(namespace).List(opts)
 		for i := range objs.Items {
 			ret = append(ret, &objs.Items[i])
 		}

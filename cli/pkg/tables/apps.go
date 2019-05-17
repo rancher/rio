@@ -19,7 +19,7 @@ func NewApp(cfg Config) TableWriter {
 
 	writer.AddFormatFunc("appScale", formatAppScale)
 	writer.AddFormatFunc("weightVersioned", formatWeightGraph)
-	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cfg.GetDefaultNamespace()))
+	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cfg.GetSetNamespace()))
 
 	return &tableWriter{
 		writer: writer,
