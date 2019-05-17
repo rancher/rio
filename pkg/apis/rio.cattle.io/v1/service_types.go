@@ -307,6 +307,9 @@ type ServiceStatus struct {
 	// Most recently observed status of the Deployment.
 	DeploymentStatus *appsv1.DeploymentStatus `json:"deploymentStatus,omitempty"`
 
+	// The first observed commit for the build
+	FirstRevision string `json:"firstRevision,omitempty"`
+
 	// ScaleStatus for the Service
 	ScaleStatus *ScaleStatus `json:"scaleStatus,omitempty"`
 
