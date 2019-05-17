@@ -65,6 +65,12 @@ func main() {
 			Value:       constants.DefaultHTTPSOpenPort,
 			Destination: &constants.DefaultHTTPSOpenPort,
 		},
+		cli.BoolFlag{
+			Name:        "use-host-ports",
+			Usage:       "Whether to use hostPort to export servicemesh gateway",
+			EnvVar:      "USE_HOSTPORT",
+			Destination: &constants.UseHostPort,
+		},
 	}
 	app.Action = run
 

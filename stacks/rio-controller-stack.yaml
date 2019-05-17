@@ -65,6 +65,8 @@ kubernetes:
               value: "${HTTPS_PORT}"
             - name: HTTP_PORT
               value: "${HTTP_PORT}"
+            - name: USE_HOSTPORT
+              value: ${USE_HOSTPORT}
 
 templates:
   questions:
@@ -78,3 +80,5 @@ templates:
     description: "https port gateway will listen to"
   - variable: HTTP_PORT
     description: "http port gateway will listen to"
+  - variable: USE_HOSTPORT
+    description: "whether to use hostPort"

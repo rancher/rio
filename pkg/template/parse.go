@@ -13,7 +13,12 @@ type templateFile struct {
 }
 
 func (t *Template) Questions() ([]v1.Question, error) {
-	tf, err := t.readTemplateFile(t.Content)
+	content, err := t.parseContent(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	tf, err := t.readTemplateFile(content)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +64,6 @@ func (t *Template) readTemplateFile(content []byte) (*templateFile, error) {
 
 func (t *Template) Parse(answers AnswerCallback) ([]byte, error) {
 	return t.parseContent(answers)
-
 }
 
 func (t *Template) Validate() error {
@@ -73,7 +77,12 @@ func (t *Template) Validate() error {
 }
 
 func (t *Template) parseContent(answersCB AnswerCallback) ([]byte, error) {
-	template, err := t.readTemplateFile(t.Content)
+	content, err := gotemplate.Apply(t.Content, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	template, err := t.readTemplateFile(content)
 	if err != nil {
 		return nil, err
 	}

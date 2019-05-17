@@ -79,7 +79,6 @@ func (g *Controller) getDomain(obj *projectv1.ClusterDomain) (string, error) {
 			if addr.IP == "" {
 				continue
 			}
-
 			subDomains[subDomain.Name] = append(subDomains[subDomain.Name], addr.IP)
 		}
 	}

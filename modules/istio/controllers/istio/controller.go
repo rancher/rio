@@ -3,6 +3,7 @@ package istio
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/rancher/rio/modules/istio/controllers/istio/populate"
 	"github.com/rancher/rio/modules/istio/pkg/istio/config"
@@ -19,6 +20,7 @@ import (
 	"github.com/rancher/wrangler/pkg/objectset"
 	"github.com/rancher/wrangler/pkg/relatedresource"
 	"github.com/rancher/wrangler/pkg/trigger"
+	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -90,7 +92,11 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		rContext.Core.Core().V1().Node())
 
 	rContext.Core.Core().V1().Endpoints().Cache().AddIndexer(indexName, s.indexEPByNode)
-	rContext.Core.Core().V1().Endpoints().OnChange(ctx, "istio-endpoints", s.syncEndpoint)
+	if !constants.UseHostPort {
+		rContext.Core.Core().V1().Service().OnChange(ctx, "istio-endpoints-serviceloadbalancer", s.syncServiceLoadbalancer)
+	} else {
+		rContext.Core.Core().V1().Endpoints().OnChange(ctx, "istio-endpoints", s.syncEndpoint)
+	}
 
 	rContext.Core.Core().V1().Service().OnChange(ctx, "rdns-subdomain", s.syncSubdomain)
 	rContext.Global.Admin().V1().ClusterDomain().OnChange(ctx, "clusterdomain-gateway", s.syncGateway)
@@ -141,6 +147,26 @@ func (i *istioDeployController) updateDaemonSets() error {
 		return err
 	}
 	return err
+}
+
+func (i istioDeployController) syncServiceLoadbalancer(key string, obj *v1.Service) (*v1.Service, error) {
+	if obj == nil {
+		return obj, nil
+	}
+
+	if obj.Spec.Selector["app"] != constants.IstioGateway || obj.Namespace != i.namespace || obj.Spec.Type != v1.ServiceTypeLoadBalancer {
+		return obj, nil
+	}
+
+	var address []string
+	for _, ingress := range obj.Status.LoadBalancer.Ingress {
+		address = append(address, ingress.IP)
+	}
+
+	if err := i.updateClusterDomain(address); err != nil {
+		return obj, err
+	}
+	return obj, nil
 }
 
 func (i istioDeployController) syncGateway(key string, obj *adminv1.ClusterDomain) (*adminv1.ClusterDomain, error) {
@@ -242,7 +268,7 @@ func (i *istioDeployController) syncEndpoint(key string, endpoint *corev1.Endpoi
 	if endpoint == nil {
 		return nil, nil
 	}
-	if endpoint.Namespace != i.namespace || endpoint.Name != constants.IstioGatewayDeploy {
+	if endpoint.Namespace != i.namespace || endpoint.Name != constants.IstioGateway {
 		return endpoint, nil
 	}
 
@@ -264,32 +290,41 @@ func (i *istioDeployController) syncEndpoint(key string, endpoint *corev1.Endpoi
 			}
 		}
 	}
+	if err := i.updateClusterDomain(ips); err != nil {
+		return endpoint, err
+	}
+	return endpoint, nil
+}
 
+func (i istioDeployController) updateClusterDomain(addresses []string) error {
 	clusterDomain, err := i.clusterDomain.Cache().Get(i.namespace, constants.ClusterDomainName)
 	if err != nil && !errors.IsNotFound(err) {
-		return endpoint, err
+		return err
 	}
 
 	if clusterDomain == nil {
-		return endpoint, nil
+		return err
 	}
 
 	deepcopy := clusterDomain.DeepCopy()
 	var address []adminv1.Address
-	for _, ip := range ips {
+	for _, ip := range addresses {
 		address = append(address, adminv1.Address{IP: ip})
+	}
+	if !reflect.DeepEqual(deepcopy.Spec.Addresses, address) {
+		logrus.Infof("Updating cluster domain to address %v", addresses)
 	}
 	deepcopy.Spec.Addresses = address
 
 	if _, err := i.clusterDomain.Update(deepcopy); err != nil {
-		return endpoint, err
+		return err
 	}
 
-	return endpoint, nil
+	return err
 }
 
 func (i *istioDeployController) indexEPByNode(ep *corev1.Endpoints) ([]string, error) {
-	if ep.Namespace != i.namespace || ep.Name != constants.IstioGatewayDeploy {
+	if ep.Namespace != i.namespace || ep.Name != constants.IstioGateway {
 		return nil, nil
 	}
 

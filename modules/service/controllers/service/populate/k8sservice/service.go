@@ -5,6 +5,6 @@ import (
 	"github.com/rancher/wrangler/pkg/objectset"
 )
 
-func Populate(service *riov1.Service, os *objectset.ObjectSet) {
-	serviceSelector(service, os)
+func Populate(service *riov1.Service, systemNamespace string, os *objectset.ObjectSet) {
+	serviceSelector(service, systemNamespace, os)
 }

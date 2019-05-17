@@ -68,5 +68,6 @@ func daemonset(service *riov1.Service, cp *controllerParams, os *objectset.Objec
 			}
 		}
 	}
+
 	os.Add(ds)
 }

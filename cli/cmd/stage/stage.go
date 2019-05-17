@@ -5,18 +5,15 @@ import (
 	"fmt"
 	"sort"
 
-	"sigs.k8s.io/yaml"
-
-	"github.com/rancher/rio/cli/cmd/edit"
-
-	"github.com/rancher/rio/cli/pkg/types"
-
 	"github.com/aokoli/goutils"
+	"github.com/rancher/rio/cli/cmd/edit"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/stack"
+	"github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/kv"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 )
 
 type Stage struct {

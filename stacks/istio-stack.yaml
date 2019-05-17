@@ -144,11 +144,15 @@ services:
         - name: istio-proxy
           ports:
           - name: http2
+            {{- if eq "${USE_HOSTPORT}" "true" }}
             hostPort: ${HTTP_PORT}
+            {{- end}}
             containerPort: ${HTTP_PORT}
             protocol: TCP
           - name: https
+            {{- if eq "${USE_HOSTPORT}" "true" }}
             hostPort: ${HTTPS_PORT}
+            {{- end}}
             containerPort: ${HTTPS_PORT}
             protocol: TCP
           image: "istio/proxyv2:${TAG}"
@@ -228,4 +232,9 @@ services:
             periodSeconds: 2
             successThreshold: 1
             timeoutSeconds: 1
+
+templates:
+  questions:
+    - variable: USE_HOSTPORT
+      description: "whether to use hostPort"
 
