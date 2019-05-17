@@ -24,8 +24,6 @@ import:
   version: 449fdfce4d962303d702fec724ef0ad181c92528
 - package: github.com/drone/envsubst
   version: f4d1a8ef8670afc9eea1fb95ee09a979fd2763a3
-- package: github.com/drone/go-scm
-  version: 67e85b16fa2fc3734fb39873949d45e5977287ac
 - package: github.com/envoyproxy/go-control-plane
   version: v0.7.0
 - package: github.com/envoyproxy/protoc-gen-validate
@@ -129,12 +127,16 @@ import:
   version: 65c1f6f8f0fc1e2185eb9863a3bc751496404259
 - package: github.com/rancher/axe
   version: 84566a81582b26b0195c5ccd194473f9d8296ee5
+- package: github.com/rancher/gitwatcher
+  version: bcb7b44baef4cc5a776813c5c9c1c98493a9120a
 - package: github.com/rancher/mapper
-  version: 48be2d1eadc0ffa5ce78de00e0417cc926508cac
+  version: 84da984f31461af0a2f39f3079bbbd8efe4bc4bb
 - package: github.com/rancher/rdns-server
   version: 2967d247de7e8be972d326fe394e331eb8ca8d2b
 - package: github.com/rancher/wrangler
-  version: 56b51c33a6d4297006b51c5cebd608ccbcef0297
+  version: a7cf48fa83ef5cc872170f850aa771ef818a196b
+- package: github.com/rancher/wrangler-api
+  version: c5ea888bdf543205ed7dddfffdd8b07f0a65798d
 - package: github.com/rivo/tview
   version: 8d5eba0c2f51d8ae971c5a470e354bbc2aae6777
 - package: github.com/rivo/uniseg

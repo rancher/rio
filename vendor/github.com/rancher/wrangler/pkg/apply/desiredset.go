@@ -16,6 +16,7 @@ type desiredSet struct {
 	pruneTypes       map[schema.GroupVersionKind]cache.SharedIndexInformer
 	patchers         map[schema.GroupVersionKind]Patcher
 	remove           bool
+	noDelete         bool
 	setID            string
 	objs             *objectset.ObjectSet
 	codeVersion      string
@@ -41,6 +42,12 @@ func (o desiredSet) Apply(set *objectset.ObjectSet) error {
 	}
 	o.objs = set
 	return o.apply()
+}
+
+func (o desiredSet) ApplyObjects(objs ...runtime.Object) error {
+	os := objectset.NewObjectSet()
+	os.Add(objs...)
+	return o.Apply(os)
 }
 
 func (o desiredSet) WithSetID(id string) Apply {
@@ -99,5 +106,10 @@ func (o desiredSet) WithDefaultNamespace(ns string) Apply {
 
 func (o desiredSet) WithRateLimiting(ratelimitingQps float32) Apply {
 	o.ratelimitingQps = ratelimitingQps
+	return o
+}
+
+func (o desiredSet) WithNoDelete() Apply {
+	o.noDelete = true
 	return o
 }

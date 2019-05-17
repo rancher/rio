@@ -52,6 +52,9 @@ func (o *desiredSet) get(nsed bool, namespace, name string, client dynamic.Names
 }
 
 func (o *desiredSet) delete(nsed bool, namespace, name string, client dynamic.NamespaceableResourceInterface) error {
+	if o.noDelete {
+		return nil
+	}
 	opts := &v1.DeleteOptions{
 		PropagationPolicy: &deletePolicy,
 	}

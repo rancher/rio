@@ -1,9 +1,0 @@
-1. Install go 1.9 or later
-2. Install dependencies:
-
-    go get github.com/google/go-cmp
-
-3. Compile and test:
-
-    go install ./...
-    go test ./...
