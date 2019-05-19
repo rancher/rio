@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/rancher/rio/cli/cmd/systemlogs"
+
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/rio/cli/cmd/apply"
 	"github.com/rancher/rio/cli/cmd/attach"
@@ -215,11 +217,17 @@ func main() {
 			"Terminal interactive UI",
 			" tui",
 			""),
+		builder.Command(&systemlogs.SystemLog{},
+			"View system log for Rio management plane",
+			" systemlog",
+			""),
 		route.Route(app),
 	}
 	app.Before = func(ctx *cli.Context) error {
 		if err := cfg.Validate(); err != nil {
-			return err
+			if len(ctx.Args()) > 0 && ctx.Args()[0] != "install" {
+				return err
+			}
 		}
 		cc := clicontext.CLIContext{
 			Config: &cfg,
@@ -244,11 +252,18 @@ func main() {
 
 func printConfigUsage() {
 	fmt.Print(`
-No configuration found to contact server.  If you already have a Rio cluster running then run
+No configuration found to contact server.  If you already have a Kubernetes cluster running then you should point your Kubernetes cluster using
 
-    rio login
 
-If you don't have an existing server you should run "rio server" on a Linux server.
+	export KUBECONFIG=/path/to/config
+
+
+If you don't have rio installed then you should run the following command to install Rio into your current cluster.
+
+
+	rio install 
+
+
 If you are just looking for general "rio" CLI usage then run
 
     rio --help

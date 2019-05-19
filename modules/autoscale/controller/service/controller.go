@@ -7,6 +7,7 @@ import (
 
 	autoscalev1 "github.com/rancher/rio/pkg/apis/autoscale.rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	autoscalev1controller "github.com/rancher/rio/pkg/generated/controllers/autoscale.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/services"
 	"github.com/rancher/rio/pkg/stackobject"
@@ -14,7 +15,6 @@ import (
 	"github.com/rancher/wrangler/pkg/objectset"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -75,26 +75,28 @@ func (p populator) populateServiceRecommendation(object runtime.Object, ns *core
 
 type handler struct {
 	services riov1controller.ServiceController
+	ssrs     autoscalev1controller.ServiceScaleRecommendationController
 }
 
 func (h handler) sync(key string, obj *autoscalev1.ServiceScaleRecommendation) (*autoscalev1.ServiceScaleRecommendation, error) {
 	if obj == nil || obj.DeletionTimestamp != nil {
 		return obj, nil
 	}
-	return obj, setServiceScale(h.services, obj)
+	return obj, h.setServiceScale(obj)
 }
 
-func setServiceScale(rioServices riov1controller.ServiceController, ssr *autoscalev1.ServiceScaleRecommendation) error {
-	svc, err := rioServices.Cache().Get(ssr.Namespace, ssr.Name)
+func (h handler) setServiceScale(ssr *autoscalev1.ServiceScaleRecommendation) error {
+	svc, err := h.services.Cache().Get(ssr.Namespace, ssr.Name)
 	if err != nil {
-		if errors.IsNotFound(err) {
-			return nil
-		}
 		return err
 	}
 	// wait for a minute after scale from zero
 	if svc.Status.ScaleFromZeroTimestamp != nil && svc.Status.ScaleFromZeroTimestamp.Add(time.Minute).After(time.Now()) {
 		logrus.Infof("skipping setting scale because service  %s/%s is scaled from zero within a minute", svc.Namespace, svc.Name)
+		go func() {
+			time.Sleep(time.Second * 60)
+			h.ssrs.Enqueue(ssr.Namespace, ssr.Name)
+		}()
 		return nil
 	}
 
@@ -108,7 +110,7 @@ func setServiceScale(rioServices riov1controller.ServiceController, ssr *autosca
 	logrus.Infof("Setting desired scale %v for %v/%v", *ssr.Status.DesiredScale, svc.Namespace, svc.Name)
 
 	svc.Status.ObservedScale = &observedScale
-	if _, err := rioServices.Update(svc); err != nil {
+	if _, err := h.services.Update(svc); err != nil {
 		return err
 	}
 	return nil

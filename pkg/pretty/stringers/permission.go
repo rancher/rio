@@ -76,6 +76,7 @@ func (p PermissionStringer) MaybeString() interface{} {
 
 	if groups != "" || strings.Contains(resources, "/") {
 		buf.WriteString(groups)
+		buf.WriteString("/")
 	}
 
 	buf.WriteString(resources)

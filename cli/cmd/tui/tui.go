@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"time"
 
 	"github.com/rancher/axe/throwing"
 	"github.com/rancher/rio/cli/pkg/clicontext"
@@ -14,6 +15,7 @@ import (
 )
 
 type Tui struct {
+	Refresh string `desc:"refresh based on polling or controller (polling|controller)" default:"polling"`
 }
 
 func (t *Tui) Run(ctx *clicontext.CLIContext) error {
@@ -31,14 +33,30 @@ func (t *Tui) Run(ctx *clicontext.CLIContext) error {
 		signals: ss,
 	}
 
-	rioContext := types.NewContext(ctx.SystemNamespace, ctx.RestConfig)
-	go func() {
-		leader.RunOrDie(ctx.Ctx, ctx.SystemNamespace, "rio-cli", rioContext.K8s, func(context context.Context) {
-			register(context, rioContext, h)
-			runtime2.Must(rioContext.Start(context))
-			<-context.Done()
-		})
-	}()
+	if t.Refresh == "controller" {
+		rioContext := types.NewContext(ctx.SystemNamespace, ctx.RestConfig)
+		go func() {
+			leader.RunOrDie(ctx.Ctx, ctx.SystemNamespace, "rio-cli", rioContext.K8s, func(context context.Context) {
+				register(context, rioContext, h)
+				runtime2.Must(rioContext.Start(context))
+				<-context.Done()
+			})
+		}()
+	} else {
+		go func() {
+			for {
+				select {
+				case <-time.Tick(time.Second * 2):
+					for _, s := range ss {
+						signal := s
+						go func() {
+							signal <- struct{}{}
+						}()
+					}
+				}
+			}
+		}()
+	}
 
 	tui := throwing.NewAppView(ctx.K8s, drawer, tableEventHandler, ss)
 	if err := tui.Init(); err != nil {

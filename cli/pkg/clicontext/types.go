@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rancher/rio/pkg/services"
+
 	"github.com/docker/docker/pkg/namesgenerator"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/types"
@@ -149,6 +151,12 @@ func (c *CLIContext) Create(obj runtime.Object) (err error) {
 	switch o := obj.(type) {
 	case *riov1.Service:
 		_, err = c.Rio.Services(o.Namespace).Create(o)
+		if err != nil {
+			return err
+		}
+		app, version := services.AppAndVersion(o)
+		fmt.Printf("%s/%s:%s\n", o.Namespace, app, version)
+		return nil
 	case *corev1.Pod:
 		_, err = c.Core.Pods(o.Namespace).Create(o)
 	case *corev1.ConfigMap:
@@ -162,7 +170,11 @@ func (c *CLIContext) Create(obj runtime.Object) (err error) {
 	default:
 		return fmt.Errorf("unknown delete type %v", reflect.TypeOf(obj))
 	}
-	return
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%s/%s\n", metadata.GetNamespace(), metadata.GetName())
+	return nil
 }
 
 func (c *CLIContext) UpdateObject(obj runtime.Object) (err error) {

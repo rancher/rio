@@ -55,7 +55,6 @@ func (r *Run) Run(ctx *clicontext.CLIContext) error {
 		fmt.Println("Attaching...")
 		return attach.RunAttach(ctx, time.Minute, true, true, service.Name)
 	}
-	fmt.Printf("%s/%s\n", service.Namespace, service.Name)
 
 	return nil
 }

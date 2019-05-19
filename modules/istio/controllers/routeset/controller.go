@@ -134,4 +134,14 @@ func updateDomain(router *riov1.Router, clusterDomain *adminv1.ClusterDomain) {
 	for _, pd := range router.Status.PublicDomains {
 		router.Status.Endpoints = append(router.Status.Endpoints, fmt.Sprintf("%s://%s", protocol, pd))
 	}
+
+	for i, endpoint := range router.Status.Endpoints {
+		if protocol == "http" && constants.DefaultHTTPOpenPort != "80" {
+			router.Status.Endpoints[i] = fmt.Sprintf("%s:%s", endpoint, constants.DefaultHTTPOpenPort)
+		}
+
+		if protocol == "https" && constants.DefaultHTTPOpenPort != "443" {
+			router.Status.Endpoints[i] = fmt.Sprintf("%s:%s", endpoint, constants.DefaultHTTPSOpenPort)
+		}
+	}
 }

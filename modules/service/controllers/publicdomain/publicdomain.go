@@ -3,7 +3,7 @@ package publicdomain
 import (
 	"context"
 
-	"github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
+	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	adminv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
@@ -51,8 +51,8 @@ type handler struct {
 
 func (h handler) resolve(namespace, name string, obj runtime.Object) ([]relatedresource.Key, error) {
 	switch obj.(type) {
-	case *v1.PublicDomain:
-		pd := obj.(*v1.PublicDomain)
+	case *adminv1.PublicDomain:
+		pd := obj.(*adminv1.PublicDomain)
 		return []relatedresource.Key{
 			{
 				Name:      pd.Spec.TargetServiceName,

@@ -24,6 +24,9 @@ type Install struct {
 }
 
 func (i *Install) Run(ctx *clicontext.CLIContext) error {
+	if ctx.K8s == nil {
+		return fmt.Errorf("can't contact Kubernetes cluster. Please make sure your cluster is accessable")
+	}
 	controllerStack := systemstack.NewStack(ctx.Apply, i.Namespace, "rio-controller", true)
 	if _, err := ctx.Core.Namespaces().Get(i.Namespace, metav1.GetOptions{}); err != nil {
 		if errors.IsNotFound(err) {
