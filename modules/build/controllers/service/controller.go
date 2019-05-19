@@ -40,6 +40,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 
 	p := populator{
 		systemNamespace:    rContext.Namespace,
+		appCache:           rContext.Rio.Rio().V1().App().Cache(),
 		secretsCache:       rContext.Core.Core().V1().Secret().Cache(),
 		clusterDomainCache: rContext.Global.Admin().V1().ClusterDomain().Cache(),
 		serviceCache:       rContext.Rio.Rio().V1().Service().Cache(),
@@ -56,6 +57,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 type populator struct {
 	systemNamespace    string
 	customRegistry     string
+	appCache           v1.AppCache
 	secretsCache       corev1controller.SecretCache
 	serviceCache       v1.ServiceCache
 	clusterDomainCache projectv1controller.ClusterDomainCache
@@ -107,7 +109,7 @@ func (p *populator) populate(obj runtime.Object, ns *corev1.Namespace, os *objec
 		return err
 	}
 
-	webhook, err := p.serviceCache.Get(p.systemNamespace, "webhook")
+	webhook, err := p.appCache.Get(p.systemNamespace, "webhook")
 	if errors.IsNotFound(err) {
 		webhook = nil
 	} else if err != nil {
@@ -163,14 +165,14 @@ func populateBuild(service *riov1.Service, customRegistry, systemNamespace, doma
 	return nil
 }
 
-func populateWebhookAndSecrets(webhookService *riov1.Service, service *riov1.Service, os *objectset.ObjectSet) {
+func populateWebhookAndSecrets(webhookService *riov1.App, service *riov1.Service, os *objectset.ObjectSet) {
 	webhookReceiver := webhookv1.NewGitWatcher(service.Namespace, service.Name, webhookv1.GitWatcher{
 		Spec: webhookv1.GitWatcherSpec{
-			RepositoryURL: service.Spec.Build.Repo,
-			Enabled:       true,
-			Push:          true,
-			Tag:           true,
-			Branch:        service.Spec.Build.Branch,
+			RepositoryURL:                  service.Spec.Build.Repo,
+			Enabled:                        true,
+			Push:                           true,
+			Tag:                            true,
+			Branch:                         service.Spec.Build.Branch,
 			RepositoryCredentialSecretName: service.Spec.Build.Secret,
 		},
 	})

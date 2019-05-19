@@ -101,10 +101,7 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 			}
 
 			stagedService.Spec = *spec
-			if err := ctx.Create(stagedService); err != nil {
-				return err
-			}
-			fmt.Printf("%s/%s:%s\n", stagedService.Namespace, app.Name, version)
+			return ctx.Create(stagedService)
 		}
 	}
 

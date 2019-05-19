@@ -63,7 +63,7 @@ func (c *Config) Validate() error {
 
 	restConfig, err := loader.ClientConfig()
 	if err != nil {
-		return err
+		return ErrNoConfig
 	}
 
 	project, err := projectv1.NewForConfig(restConfig)
@@ -95,6 +95,10 @@ func (c *Config) Validate() error {
 	c.Project = project
 	c.Core = core
 	c.Build = build
+
+	if _, err := project.RioInfos().Get("rio", metav1.GetOptions{}); err != nil {
+		return ErrNoConfig
+	}
 	return nil
 }
 

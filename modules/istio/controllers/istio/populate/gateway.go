@@ -5,10 +5,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
-
 	"github.com/knative/pkg/apis/istio/v1alpha3"
 	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
+	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/wrangler/pkg/objectset"
