@@ -166,6 +166,9 @@ func (i istioDeployController) syncServiceLoadbalancer(key string, obj *v1.Servi
 
 	var address []string
 	for _, ingress := range obj.Status.LoadBalancer.Ingress {
+		if ingress.Hostname == "localhost" {
+			ingress.IP = "127.0.0.1"
+		}
 		address = append(address, ingress.IP)
 	}
 
