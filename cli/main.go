@@ -129,7 +129,6 @@ func main() {
 	}
 
 	app.Commands = []cli.Command{
-		info.Info(app),
 		config.Config(app),
 		publicdomain.PublicDomain(app),
 		externalservice.ExternalService(app),
@@ -228,6 +227,7 @@ func main() {
 			appName+" systemlogs",
 			""),
 		route.Route(app),
+		info.Info(app),
 	}
 	app.Before = func(ctx *cli.Context) error {
 		if err := cfg.Validate(); err != nil {
