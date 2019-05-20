@@ -12,6 +12,8 @@ import:
   version: v1.0.1
 - package: github.com/beorn7/perks
   version: 3ac7bf7a47d159a033b107610db8a1b6575507a4
+- package: github.com/chai2010/gettext-go
+  version: c6fed771bfd517099caf0f7a961671fa8ed08723
 - package: github.com/davecgh/go-spew
   version: v1.1.0-1-g782f4967f2dc45
 - package: github.com/docker/docker
@@ -126,7 +128,7 @@ import:
 - package: github.com/prometheus/procfs
   version: 65c1f6f8f0fc1e2185eb9863a3bc751496404259
 - package: github.com/rancher/axe
-  version: 5c0393bc7018aa9500e21f01eef95b4172fd4543
+  version: 143d2a1db3cff727b9f1453af54bbb6d03415a6f
 - package: github.com/rancher/gitwatcher
   version: v0.2.2
 - package: github.com/rancher/mapper
@@ -136,8 +138,7 @@ import:
 - package: github.com/rancher/wrangler
   version: a7cf48fa83ef5cc872170f850aa771ef818a196b
 - package: github.com/rancher/wrangler-api
-  version: 347e75e8ad4cfe3d411ac07abc7626ea3e34a4be
-  repo: https://github.com/StrongMonkey/wrangler-api.git
+  version: 4a2cddbf6ec1bfd2f9a7b7665e04f4dd77bf23ef
 - package: github.com/rivo/tview
   version: 8d5eba0c2f51d8ae971c5a470e354bbc2aae6777
 - package: github.com/rivo/uniseg

@@ -131,4 +131,17 @@ var (
 		}
 		return nil
 	}
+
+	BuildRefresher = func(b *bytes.Buffer) error {
+		args := []string{"build"}
+		cmd := exec.Command("rio", args...)
+		errBuffer := &strings.Builder{}
+		cmd.Env = append(os.Environ(), "TUI_HACK=true")
+		cmd.Stdout = b
+		cmd.Stderr = errBuffer
+		if err := cmd.Run(); err != nil {
+			return errors.New(errBuffer.String())
+		}
+		return nil
+	}
 )

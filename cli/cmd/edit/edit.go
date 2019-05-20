@@ -6,13 +6,7 @@ import (
 	"os"
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/lookup"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
-	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/riofile"
-	"github.com/rancher/rio/pkg/systemstack"
-	"github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/kubectl/cmd/util/editor"
 )
 
@@ -42,59 +36,7 @@ func (edit *Edit) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("at least one parameter is required")
 	}
 
-	if edit.Raw {
-		return edit.rawEdit(ctx)
-	}
-
-	return edit.Edit(ctx, ctx.CLI.Args()[0])
-}
-
-func (edit *Edit) Edit(ctx *clicontext.CLIContext, arg string) error {
-	if len(ctx.CLI.Args()) != 1 {
-		return fmt.Errorf("exactly one ID (not name) arguement is required for raw edit")
-	}
-
-	r, err := lookup.Lookup(ctx, arg, clitypes.ServiceType)
-	if err != nil {
-		return err
-	}
-
-	r, err = ctx.ByID(r.Namespace, r.Name, clitypes.ServiceType)
-	if err != nil {
-		return err
-	}
-
-	services := make(map[string]riov1.Service)
-	configs := make(map[string]corev1.ConfigMap)
-	obj := r.Object
-	switch obj.(type) {
-	case *riov1.Service:
-		newSvc := riov1.Service{}
-		newSvc.Spec = obj.(*riov1.Service).Spec
-		services[r.Name] = newSvc
-	case *corev1.ConfigMap:
-		configs[r.Name] = *obj.(*corev1.ConfigMap)
-	}
-
-	content, err := riofile.ParseFrom(services, configs)
-	if err != nil {
-		return err
-	}
-
-	updated, err := Loop(nil, content, func(content []byte) error {
-		stack := systemstack.NewStack(ctx.Apply, r.Namespace, "edit-"+r.Name, true)
-		stack.WithContent(content)
-		return stack.Deploy(nil)
-	})
-	if err != nil {
-		return err
-	}
-
-	if !updated {
-		logrus.Infof("No change for %s/%s", r.Namespace, r.Name)
-	}
-
-	return nil
+	return edit.rawEdit(ctx)
 }
 
 type updateFunc func(content []byte) error

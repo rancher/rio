@@ -211,7 +211,7 @@ func (m *menuView) init() {
 		SetTextAlign(tview.AlignRight).
 		SetWrap(false).SetBackgroundColor(tcell.ColorGray)
 	for _, action := range m.Menu {
-		fmt.Fprintf(m.TextView, "%v[black] %s[blue] ", string(action.Shortcut), action.Name)
+		fmt.Fprintf(m.TextView, "[blue]%v[black] %s ", string(action.Shortcut), action.Name)
 	}
 }
 

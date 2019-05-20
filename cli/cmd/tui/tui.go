@@ -14,11 +14,11 @@ import (
 	runtime2 "k8s.io/apimachinery/pkg/util/runtime"
 )
 
-type Tui struct {
+type Console struct {
 	Refresh string `desc:"refresh based on polling or controller (polling|controller)"`
 }
 
-func (t *Tui) Run(ctx *clicontext.CLIContext) error {
+func (t *Console) Run(ctx *clicontext.CLIContext) error {
 	ss := map[string]chan struct{}{
 		appKind:             make(chan struct{}, 0),
 		serviceKind:         make(chan struct{}, 0),

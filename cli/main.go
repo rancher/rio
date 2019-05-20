@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 
 	"github.com/docker/docker/pkg/reexec"
-	"github.com/rancher/rio/cli/cmd/apply"
 	"github.com/rancher/rio/cli/cmd/attach"
 	"github.com/rancher/rio/cli/cmd/builds"
 	"github.com/rancher/rio/cli/cmd/config"
@@ -24,7 +23,6 @@ import (
 	"github.com/rancher/rio/cli/cmd/promote"
 	"github.com/rancher/rio/cli/cmd/ps"
 	"github.com/rancher/rio/cli/cmd/publicdomain"
-	"github.com/rancher/rio/cli/cmd/render"
 	"github.com/rancher/rio/cli/cmd/revision"
 	"github.com/rancher/rio/cli/cmd/rm"
 	"github.com/rancher/rio/cli/cmd/route"
@@ -164,14 +162,6 @@ func main() {
 			"Edit a service or stack",
 			appName+" edit ID_OR_NAME",
 			""),
-		builder.Command(&render.Render{},
-			"Render rio file to k8s manifests",
-			appName+" render FILENAME",
-			""),
-		builder.Command(&apply.Apply{},
-			"Bring up a stack",
-			appName+" up [OPTIONS] [[STACK_NAME] FILE|-]",
-			""),
 		builder.Command(&export.Export{},
 			"Export a stack",
 			appName+" export STACK_ID_OR_NAME",
@@ -216,7 +206,7 @@ func main() {
 			"Weight a percentage of traffic to a staged service",
 			appName+" weight [OPTIONS] [SERVICE_REVISION=PERCENTAGE...]",
 			""),
-		builder.Command(&tui.Tui{},
+		builder.Command(&tui.Console{},
 			"Terminal interactive UI",
 			appName+" tui",
 			""),
