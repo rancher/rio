@@ -5,13 +5,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rancher/rio/modules/istio/pkg/parse"
-
 	"github.com/knative/pkg/apis/istio/common/v1alpha1"
 	"github.com/knative/pkg/apis/istio/v1alpha3"
 	"github.com/rancher/rio/modules/istio/pkg/domains"
+	"github.com/rancher/rio/modules/istio/pkg/parse"
 	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/wrangler/pkg/kv"
 	"github.com/rancher/wrangler/pkg/objectset"
@@ -213,7 +213,7 @@ func newVirtualServiceGeneric(name, namespace string) *v1alpha3.VirtualService {
 
 func destWeightForService(d v1.WeightedDestination, defaultNamespace string) v1alpha3.HTTPRouteDestination {
 	if d.Revision == "" {
-		d.Revision = "v0"
+		d.Revision = constants.DefaultServiceVersion
 	}
 	if d.Port == nil {
 		d.Port = &[]uint32{80}[0]

@@ -13,10 +13,12 @@ func NewApp(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
 		{"NAME", "{{stackScopedName .Obj.Namespace .Obj.Name ``}}"},
 		{"ENDPOINT", "{{.Obj.Status.Endpoints | array}}"},
+		{"REVISIONS", "{{revisions .Obj.Spec.Revisions}}"},
 		{"SCALE", "{{appScale .Obj.Spec.Revisions}}"},
 		{"WEIGHT", "{{weightVersioned .Obj}}"},
 	}, cfg)
 
+	writer.AddFormatFunc("revisions", formatRevisions)
 	writer.AddFormatFunc("appScale", formatAppScale)
 	writer.AddFormatFunc("weightVersioned", formatWeightGraph)
 	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cfg.GetSetNamespace()))
@@ -26,38 +28,57 @@ func NewApp(cfg Config) TableWriter {
 	}
 }
 
+func revisions(obj interface{}) (result []string) {
+	revs := obj.([]riov1.Revision)
+	for _, rev := range revs {
+		if rev.AdjustedWeight == 0 && rev.Scale == 0 {
+			continue
+		}
+		result = append(result, rev.Version)
+	}
+	sort.Strings(result)
+	return
+}
+
+func revisionsByVersion(obj interface{}) map[string]riov1.Revision {
+	result := map[string]riov1.Revision{}
+	for _, rev := range obj.([]riov1.Revision) {
+		result[rev.Version] = rev
+	}
+	return result
+}
+
+func formatRevisions(obj interface{}) (string, error) {
+	revs := revisions(obj)
+	return strings.Join(revs, ","), nil
+}
+
 func formatAppScale(obj interface{}) (string, error) {
-	revisions := obj.([]riov1.Revision)
-	builder := &strings.Builder{}
-	for _, rev := range revisions {
+	var (
+		revMap = revisionsByVersion(obj)
+		result []string
+	)
+	for _, version := range revisions(obj) {
+		rev := revMap[version]
 		scale, err := FormatScale(rev.Scale, rev.ScaleStatus, nil)
 		if err != nil {
 			return "", nil
 		}
-		builder.WriteString(fmt.Sprintf("%v/%v; ", rev.Version, scale))
+		result = append(result, scale)
 	}
-	return strings.Trim(builder.String(), "; "), nil
+	return strings.Join(result, ","), nil
 }
 
 func formatWeightGraph(obj interface{}) (string, error) {
-	app := obj.(*riov1.App)
-	builder := &strings.Builder{}
-	var versions []string
-	versionMap := make(map[string]int)
-	for _, rev := range app.Spec.Revisions {
-		versions = append(versions, rev.Version)
-		versionMap[rev.Version] = rev.AdjustedWeight
-	}
-	sort.Strings(versions)
-	for _, version := range versions {
+	var (
+		app    = obj.(*riov1.App)
+		result []string
+	)
+
+	for _, version := range revisions(app.Spec.Revisions) {
 		weight := app.Status.RevisionWeight[version].Weight
-		desiredWeight := versionMap[version]
-		ret := fmt.Sprintf("%v/%v%s", version, weight, "%")
-		if weight != desiredWeight {
-			ret += fmt.Sprintf("(%v%s)", desiredWeight, "%")
-		}
-		builder.WriteString(ret)
-		builder.WriteString("; ")
+		ret := fmt.Sprintf("%v%%", weight)
+		result = append(result, ret)
 	}
-	return strings.Trim(builder.String(), "; "), nil
+	return strings.Join(result, ","), nil
 }

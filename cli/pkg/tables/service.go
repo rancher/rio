@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/rancher/rio/pkg/services"
-
 	"github.com/rancher/rio/cli/pkg/table"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/services"
 )
 
 func NewService(cfg Config) TableWriter {
@@ -59,7 +58,13 @@ func FormatScale(data, data2, data3 interface{}) (string, error) {
 		percentage = fmt.Sprintf(" %d%%", (scaleStatus.Updated*100)/scale)
 	}
 
-	return fmt.Sprintf("(%d/%d/%d)/%d%s", scaleStatus.Unavailable, scaleStatus.Available, scaleStatus.Ready, scale, percentage), nil
+	prefix := ""
+	if scale > 0 && scaleStatus.Ready != scale {
+		prefix = fmt.Sprintf("%d/", scaleStatus.Ready)
+	}
+
+	//return fmt.Sprintf("(%d/%d/%d)/%d%s", scaleStatus.Unavailable, scaleStatus.Available, scaleStatus.Ready, scale, percentage), nil
+	return fmt.Sprintf("%s%d%s", prefix, scale, percentage), nil
 }
 
 func FormatServiceName(cfg Config) func(data, data2 interface{}) (string, error) {

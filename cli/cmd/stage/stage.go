@@ -37,6 +37,7 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 		if err != nil {
 			return fmt.Errorf("failed to generate random version, err: %v", err)
 		}
+		version = "v" + version
 	}
 	namespace, name := stack.NamespaceAndName(ctx, appName)
 	app, err := ctx.Rio.Apps(namespace).Get(name, metav1.GetOptions{})

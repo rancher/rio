@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/pkg/constants"
+	"github.com/rancher/rio/pkg/version"
 	"github.com/urfave/cli"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -25,14 +27,22 @@ func info(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	domain, err := ctx.Domain()
+	clusterDomain, err := ctx.Project.ClusterDomains(ctx.SystemNamespace).Get(constants.ClusterDomainName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
-	builder.WriteString(fmt.Sprintf("Rio CLI Version: %s (%s)\n", info.Status.Version, info.Status.GitCommit))
-	builder.WriteString(fmt.Sprintf("Cluster Domain: %s\n", domain))
+	var addresses []string
+	for _, d := range clusterDomain.Spec.Addresses {
+		addresses = append(addresses, d.IP)
+	}
+
+	builder.WriteString(fmt.Sprintf("Rio Version: %s (%s)\n", info.Status.Version, info.Status.GitCommit))
+	builder.WriteString(fmt.Sprintf("Rio CLI Version: %s (%s)\n", version.Version, version.GitCommit))
+	builder.WriteString(fmt.Sprintf("Cluster Domain: %s\n", clusterDomain.Status.ClusterDomain))
+	builder.WriteString(fmt.Sprintf("Cluster Domain IPs: %s\n", strings.Join(addresses, ",")))
 	builder.WriteString(fmt.Sprintf("System Namespace: %s", info.Status.SystemNamespace))
 	fmt.Println(builder.String())
+
 	return nil
 }

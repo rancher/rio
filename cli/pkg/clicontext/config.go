@@ -2,6 +2,7 @@ package clicontext
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 
 	buildv1alpha1 "github.com/knative/build/pkg/client/clientset/versioned/typed/build/v1alpha1"
@@ -22,6 +23,7 @@ import (
 var ErrNoConfig = errors.New("no config found")
 
 type Config struct {
+	ShowSystem       bool
 	SystemNamespace  string
 	DefaultNamespace string
 	Kubeconfig       string
@@ -40,17 +42,42 @@ type Config struct {
 	Project projectv1.AdminV1Interface
 }
 
+func (c *Config) findKubeConfig() {
+	homeDir, err := os.UserHomeDir()
+	if err == nil {
+		c.Kubeconfig = strings.Replace(c.Kubeconfig, "${HOME}", homeDir, -1)
+		c.Kubeconfig = strings.Replace(c.Kubeconfig, "$HOME", homeDir, -1)
+	}
+
+	if c.Kubeconfig != "" {
+		return
+	}
+
+	homeConfig := filepath.Join(homeDir, ".kube", "config")
+	if _, err := os.Stat(homeConfig); err == nil {
+		c.Kubeconfig = homeConfig
+		return
+	}
+
+	k3sConfig := "/etc/rancher/k3s/k3s.yaml"
+	if _, err := os.Stat(k3sConfig); err == nil {
+		c.Kubeconfig = k3sConfig
+		return
+	}
+
+	k3sConfig = filepath.Join(homeDir, ".kube", "k3s.yaml")
+	if _, err := os.Stat(k3sConfig); err == nil {
+		c.Kubeconfig = k3sConfig
+		return
+	}
+}
+
 func (c *Config) Validate() error {
 	if c.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return err
-	}
-	c.Kubeconfig = strings.Replace(c.Kubeconfig, "${HOME}", homeDir, -1)
-	c.Kubeconfig = strings.Replace(c.Kubeconfig, "$HOME", homeDir, -1)
+	c.findKubeConfig()
 
 	loader := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 		&clientcmd.ClientConfigLoadingRules{ExplicitPath: c.Kubeconfig},
@@ -96,9 +123,16 @@ func (c *Config) Validate() error {
 	c.Core = core
 	c.Build = build
 
-	if _, err := project.RioInfos().Get("rio", metav1.GetOptions{}); err != nil {
+	if info, err := project.RioInfos().Get("rio", metav1.GetOptions{}); err != nil {
 		return ErrNoConfig
+	} else if c.SystemNamespace == "" {
+		c.SystemNamespace = info.Status.SystemNamespace
 	}
+
+	if c.DefaultNamespace == c.SystemNamespace {
+		c.ShowSystem = true
+	}
+
 	return nil
 }
 

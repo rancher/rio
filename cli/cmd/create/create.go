@@ -48,7 +48,7 @@ type Create struct {
 	M_Memory               string            `desc:"Memory reservation (format: <number>[<unit>], where unit = b, k, m or g)"`
 	N_Name                 string            `desc:"Assign a name to the container"`
 	Permission             []string          `desc:"Permissions to grant to container's service account in current stack"`
-	P_Ports                []string          `desc:"Publish a container's port(s) externally"`
+	P_Ports                []string          `desc:"Publish a container's port(s) externally (default: \"80:8080/http\")"`
 	ReadOnly               bool              `desc:"Mount the container's root filesystem as read only"`
 	RolloutInterval        int               `desc:"Rollout interval in seconds"`
 	RolloutIncrement       int               `desc:"Rollout increment value"`
@@ -201,6 +201,9 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 		return nil, err
 	}
 
+	if len(c.P_Ports) == 0 {
+		c.P_Ports = []string{"80:8080/http"}
+	}
 	service.Spec.Ports, err = stringers.ParsePorts(c.P_Ports...)
 	if err != nil {
 		return nil, err
