@@ -6,10 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rancher/rio/cli/cmd/uninstall"
-
-	"github.com/rancher/rio/cli/cmd/systemlogs"
-
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/rio/cli/cmd/apply"
 	"github.com/rancher/rio/cli/cmd/attach"
@@ -36,7 +32,9 @@ import (
 	"github.com/rancher/rio/cli/cmd/scale"
 	"github.com/rancher/rio/cli/cmd/secrets"
 	"github.com/rancher/rio/cli/cmd/stage"
+	"github.com/rancher/rio/cli/cmd/systemlogs"
 	"github.com/rancher/rio/cli/cmd/tui"
+	"github.com/rancher/rio/cli/cmd/uninstall"
 	"github.com/rancher/rio/cli/cmd/weight"
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
@@ -88,25 +86,25 @@ func main() {
 			Usage:       "Turn on debug logs",
 			Destination: &cfg.Debug,
 		},
-		cli.BoolFlag{
-			Name:        "wait,w",
-			Usage:       "Wait for resource to reach resting state",
-			Destination: &cfg.Wait,
-		},
-		cli.IntFlag{
-			Name:        "wait-timeout",
-			Usage:       "Timeout in seconds to wait",
-			Value:       600,
-			Destination: &cfg.WaitTimeout,
-		},
-		cli.StringFlag{
-			Name:        "wait-state",
-			Usage:       "State to wait for (active, healthy, etc)",
-			Destination: &cfg.WaitState,
-		},
+		//cli.BoolFlag{
+		//	Name:        "wait,w",
+		//	Usage:       "Wait for resource to reach resting state",
+		//	Destination: &cfg.Wait,
+		//},
+		//cli.IntFlag{
+		//	Name:        "wait-timeout",
+		//	Usage:       "Timeout in seconds to wait",
+		//	Value:       600,
+		//	Destination: &cfg.WaitTimeout,
+		//},
+		//cli.StringFlag{
+		//	Name:        "wait-state",
+		//	Usage:       "State to wait for (active, healthy, etc)",
+		//	Destination: &cfg.WaitState,
+		//},
 		cli.StringFlag{
 			Name:        "system-namespace",
-			Value:       "rio-system",
+			Value:       "",
 			Destination: &cfg.SystemNamespace,
 		},
 		cli.StringFlag{
@@ -119,12 +117,12 @@ func main() {
 			Name:        "kubeconfig",
 			Usage:       "Kubeconfig file to use",
 			EnvVar:      "KUBECONFIG",
-			Value:       "${HOME}/.kube/config",
 			Destination: &cfg.Kubeconfig,
 		},
 		cli.BoolFlag{
-			Name:  "system,s",
-			Usage: "Only show system resources",
+			Name:        "system,s",
+			Usage:       "Only show system resources",
+			Destination: &cfg.ShowSystem,
 		},
 	}
 

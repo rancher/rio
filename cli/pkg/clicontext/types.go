@@ -221,10 +221,10 @@ func (c *CLIContext) List(typeName string) (ret []runtime.Object, err error) {
 			if c.CLI.GlobalString("namespace") != "" && meta.GetName() != c.CLI.GlobalString("namespace") {
 				continue
 			}
-			if !c.CLI.GlobalBool("system") && meta.GetName() == c.SystemNamespace {
+			if !c.ShowSystem && meta.GetName() == c.SystemNamespace {
 				continue
 			}
-			if c.CLI.GlobalBool("system") && meta.GetName() != c.SystemNamespace {
+			if c.ShowSystem && meta.GetName() != c.SystemNamespace {
 				continue
 			}
 			eg.Go(func() error {

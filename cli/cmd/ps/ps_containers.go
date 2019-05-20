@@ -125,7 +125,7 @@ func toPodData(ctx *clicontext.CLIContext, all bool, pod *v1.Pod, containerName 
 		return podData, false
 	}
 
-	if podData.Managed && !ctx.CLI.GlobalBool("system") {
+	if podData.Managed && !ctx.ShowSystem {
 		return podData, false
 	}
 
