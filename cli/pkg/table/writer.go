@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"text/tabwriter"
 	"text/template"
@@ -16,9 +15,9 @@ import (
 
 	"github.com/Masterminds/sprig"
 	"github.com/davecgh/go-spew/spew"
-	units "github.com/docker/go-units"
+	"github.com/docker/go-units"
 	"github.com/rancher/mapper/convert"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -85,7 +84,7 @@ func NewWriter(values [][]string, config WriterConfig) Writer {
 		funcMap: funcMap,
 	}
 
-	if os.Getenv("TUI_HACK") == "true" {
+	if config.Format() == "raw" {
 		t.Writer = config.Writer()
 	} else {
 		t.Writer = tabwriter.NewWriter(config.Writer(), 10, 1, 3, ' ', 0)
@@ -108,6 +107,7 @@ func NewWriter(values [][]string, config WriterConfig) Writer {
 	} else if customFormat == "yaml" {
 		t.HeaderFormat = ""
 		t.ValueFormat = "yaml"
+	} else if customFormat == "raw" {
 	} else if customFormat != "" {
 		t.ValueFormat = customFormat + "\n"
 		t.HeaderFormat = ""

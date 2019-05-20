@@ -3,9 +3,9 @@ package tui
 import (
 	"bytes"
 	"os"
-	"os/exec"
 	"strings"
 
+	"github.com/docker/docker/pkg/reexec"
 	"github.com/pkg/errors"
 )
 
@@ -19,9 +19,9 @@ var (
 		if showSystem {
 			args = append([]string{"--system"}, args...)
 		}
-		cmd := exec.Command("rio", args...)
+		cmd := reexec.Command(append([]string{"rio"}, args...)...)
 		errBuffer := &strings.Builder{}
-		cmd.Env = append(os.Environ(), "TUI_HACK=true")
+		cmd.Env = append(os.Environ(), "FORMAT=raw")
 		cmd.Stdout = b
 		cmd.Stderr = errBuffer
 		if err := cmd.Run(); err != nil {
@@ -35,9 +35,9 @@ var (
 		if showSystem {
 			args = append([]string{"--system"}, args...)
 		}
-		cmd := exec.Command("rio", args...)
+		cmd := reexec.Command(append([]string{"rio"}, args...)...)
 		errBuffer := &strings.Builder{}
-		cmd.Env = append(os.Environ(), "TUI_HACK=true")
+		cmd.Env = append(os.Environ(), "FORMAT=raw")
 		cmd.Stdout = b
 		cmd.Stderr = errBuffer
 		if err := cmd.Run(); err != nil {
@@ -51,9 +51,9 @@ var (
 		if showSystem {
 			args = append([]string{"--system"}, args...)
 		}
-		cmd := exec.Command("rio", args...)
+		cmd := reexec.Command(append([]string{"rio"}, args...)...)
 		errBuffer := &strings.Builder{}
-		cmd.Env = append(os.Environ(), "TUI_HACK=true")
+		cmd.Env = append(os.Environ(), "FORMAT=raw")
 		cmd.Stdout = b
 		cmd.Stderr = errBuffer
 		if err := cmd.Run(); err != nil {
@@ -67,9 +67,9 @@ var (
 		if showSystem {
 			args = append([]string{"--system"}, args...)
 		}
-		cmd := exec.Command("rio", args...)
+		cmd := reexec.Command(append([]string{"rio"}, args...)...)
 		errBuffer := &strings.Builder{}
-		cmd.Env = append(os.Environ(), "TUI_HACK=true")
+		cmd.Env = append(os.Environ(), "FORMAT=raw")
 		cmd.Stdout = b
 		cmd.Stderr = errBuffer
 		if err := cmd.Run(); err != nil {
@@ -83,9 +83,9 @@ var (
 		if showSystem {
 			args = append([]string{"--system"}, args...)
 		}
-		cmd := exec.Command("rio", args...)
+		cmd := reexec.Command(append([]string{"rio"}, args...)...)
 		errBuffer := &strings.Builder{}
-		cmd.Env = append(os.Environ(), "TUI_HACK=true")
+		cmd.Env = append(os.Environ(), "FORMAT=raw")
 		cmd.Stdout = b
 		cmd.Stderr = errBuffer
 		if err := cmd.Run(); err != nil {
@@ -102,9 +102,9 @@ var (
 		if showSystem {
 			args = append([]string{"--system"}, args...)
 		}
-		cmd := exec.Command("rio", args...)
+		cmd := reexec.Command(append([]string{"rio"}, args...)...)
 		errBuffer := &strings.Builder{}
-		cmd.Env = append(os.Environ(), "TUI_HACK=true")
+		cmd.Env = append(os.Environ(), "FORMAT=raw")
 		cmd.Stdout = b
 		cmd.Stderr = errBuffer
 		if err := cmd.Run(); err != nil {
@@ -121,9 +121,9 @@ var (
 		if showSystem {
 			args = append([]string{"--system"}, args...)
 		}
-		cmd := exec.Command("rio", args...)
+		cmd := reexec.Command(append([]string{"rio"}, args...)...)
 		errBuffer := &strings.Builder{}
-		cmd.Env = append(os.Environ(), "TUI_HACK=true")
+		cmd.Env = append(os.Environ(), "FORMAT=raw")
 		cmd.Stdout = b
 		cmd.Stderr = errBuffer
 		if err := cmd.Run(); err != nil {
@@ -134,9 +134,9 @@ var (
 
 	BuildRefresher = func(b *bytes.Buffer) error {
 		args := []string{"build"}
-		cmd := exec.Command("rio", args...)
+		cmd := reexec.Command(append([]string{"rio"}, args...)...)
 		errBuffer := &strings.Builder{}
-		cmd.Env = append(os.Environ(), "TUI_HACK=true")
+		cmd.Env = append(os.Environ(), "FORMAT=raw")
 		cmd.Stdout = b
 		cmd.Stderr = errBuffer
 		if err := cmd.Run(); err != nil {
