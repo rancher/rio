@@ -17,7 +17,7 @@ import (
 
 type Run struct {
 	create.Create
-	Scale string `desc:"scale" default:"1"`
+	Scale string `desc:"scale" default:"1-10"`
 }
 
 func (r *Run) Run(ctx *clicontext.CLIContext) error {
