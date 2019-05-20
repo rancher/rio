@@ -87,7 +87,7 @@ func newRoute(systemNamespace, externalGW string, published bool, portBinding v1
 					Add: map[string]string{
 						RioNameHeader:      svc.Name,
 						RioNamespaceHeader: svc.Namespace,
-						RioPortHeader:      strconv.Itoa(int(portBinding.TargetPort)),
+						RioPortHeader:      strconv.Itoa(int(portBinding.Port)),
 					},
 				},
 			}
