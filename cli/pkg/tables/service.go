@@ -45,8 +45,12 @@ func FormatScale(data, data2, data3 interface{}) (string, error) {
 	scaleStr := strconv.Itoa(scale)
 
 	scaleStatus, ok := data2.(*v1.ScaleStatus)
-	if !ok || scaleStatus == nil {
+	if !ok {
 		return scaleStr, nil
+	}
+
+	if scaleStatus == nil {
+		scaleStatus = &v1.ScaleStatus{}
 	}
 
 	if scaleStatus.Available == 0 && scaleStatus.Unavailable == 0 && scaleStatus.Ready == scale {
