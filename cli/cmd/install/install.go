@@ -2,6 +2,8 @@ package install
 
 import (
 	"fmt"
+	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
@@ -15,9 +17,10 @@ import (
 )
 
 type Install struct {
-	HTTPPort  string `desc:"http port service mesh gateway will listen to" default:"9080"`
-	HTTPSPort string `desc:"https port service mesh gateway will listen to" default:"9443"`
-	HostPorts bool   `desc:"whether to use hostPorts to expose service mesh gateway"`
+	HTTPPort  string   `desc:"http port service mesh gateway will listen to" default:"9080"`
+	HTTPSPort string   `desc:"https port service mesh gateway will listen to" default:"9443"`
+	HostPorts bool     `desc:"whether to use hostPorts to expose service mesh gateway"`
+	IPAddress []string `desc:"Manually specify IP addresses to generate rdns domain"`
 }
 
 func (i *Install) Run(ctx *clicontext.CLIContext) error {
@@ -43,6 +46,28 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		}
 	}
 
+	// hack for detecting minikube cluster
+	nodes, err := ctx.Core.Nodes().List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+
+	if len(nodes.Items) == 1 && nodes.Items[0].Name == "minikube" {
+		fmt.Println("Detecting that you are using minikube cluster")
+		cmd := exec.Command("minikube", "ip")
+		stdout := &strings.Builder{}
+		stderr := &strings.Builder{}
+		cmd.Stdout = stdout
+		cmd.Stderr = stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("$(minikube ip) failed with error: (%v). Do you have minikube in your PATH", stderr.String())
+		}
+		ip := strings.Trim(stdout.String(), " ")
+		fmt.Printf("Manually setting minikube IP to %s\n", ip)
+		i.IPAddress = []string{ip}
+		i.HostPorts = true
+	}
+
 	if err := controllerStack.Deploy(map[string]string{
 		"NAMESPACE":    namespace,
 		"DEBUG":        fmt.Sprint(ctx.Debug),
@@ -50,6 +75,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		"HTTPS_PORT":   i.HTTPSPort,
 		"HTTP_PORT":    i.HTTPPort,
 		"USE_HOSTPORT": fmt.Sprint(i.HostPorts),
+		"IP_ADDRESSES": strings.Join(i.IPAddress, ","),
 	}); err != nil {
 		return err
 	}

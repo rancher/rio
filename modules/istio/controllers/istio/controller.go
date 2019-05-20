@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/rancher/rio/modules/istio/controllers/istio/populate"
 	"github.com/rancher/rio/modules/istio/pkg/istio/config"
@@ -91,7 +92,13 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		rContext.Core.Core().V1().Node())
 
 	rContext.Core.Core().V1().Endpoints().Cache().AddIndexer(indexName, s.indexEPByNode)
-	if !constants.UseHostPort {
+
+	if constants.UseIPAddress != "" {
+		addresses := strings.Split(constants.UseIPAddress, ",")
+		if err := s.updateClusterDomain(addresses); err != nil {
+			return err
+		}
+	} else if !constants.UseHostPort {
 		rContext.Core.Core().V1().Service().OnChange(ctx, "istio-endpoints-serviceloadbalancer", s.syncServiceLoadbalancer)
 	} else {
 		rContext.Core.Core().V1().Endpoints().OnChange(ctx, "istio-endpoints", s.syncEndpoint)

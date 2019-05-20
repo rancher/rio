@@ -7,6 +7,7 @@ var (
 	DefaultHTTPOpenPort            = "9080"
 	DefaultHTTPSOpenPort           = "9443"
 	UseHostPort                    = false
+	UseIPAddress                   = ""
 	DefaultServiceVersion          = "v0"
 	GatewaySecretName              = "rio-certs"
 	IstioGateway                   = "istio-gateway"
