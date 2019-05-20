@@ -61,7 +61,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 			logrus.Debug("rio Controller is not ready yet...")
 			continue
 		}
-		fmt.Printf("Rio control plane is deployed. Run `kubectl -n %s describe deploy rio-controller` to get more detail.\n", ctx.SystemNamespace)
+		fmt.Printf("Rio control plane is deployed. Run `kubectl get po -n %s` to get more detail.\n", ctx.SystemNamespace)
 		fmt.Println("Welcome to Rio!")
 		break
 	}

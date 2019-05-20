@@ -1,7 +1,6 @@
 package ps
 
 import (
-	"fmt"
 	"strings"
 
 	services2 "github.com/rancher/rio/pkg/services"
@@ -60,7 +59,6 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 
 	for _, pod := range pods {
 		containerName, _ := lookup.ParseContainer(ctx.GetDefaultNamespace(), pod.LookupName)
-		fmt.Println(containerName)
 		pod := pod.Object.(*v1.Pod)
 		podData, ok := toPodData(ctx, all, pod, containerName.ContainerName)
 		if ok {

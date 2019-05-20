@@ -85,44 +85,46 @@ var (
 		return func(event *tcell.EventKey) *tcell.EventKey {
 			switch event.Key() {
 			case tcell.KeyEscape:
-				kind := t.GetResourceKind()
-				if kind == serviceKind || kind == podKind {
-					kind = appKind
-				}
-				t.GetTableView(kind).RefreshManual()
-				t.SwitchPage(kind, t.GetTableView(kind))
+				escape(t)
 			case tcell.KeyEnter:
-				actionView(t, false)
-			case tcell.KeyCtrlR:
-				t.Refresh()
-			case tcell.KeyCtrlS:
-				showSystem = !showSystem
-				t.Refresh()
+				switch t.GetResourceKind() {
+				case appKind:
+					revisions(t)
+				case podKind:
+					logs("", t)
+				case serviceKind:
+					viewPods(t)
+				}
 			case tcell.KeyCtrlH:
 				hit(t)
 			case tcell.KeyCtrlP:
 				promote(t)
+			case tcell.KeyDEL:
+				rm(t)
+			case tcell.KeyCtrlR, tcell.KeyF5:
+				t.Refresh()
 			case tcell.KeyRune:
 				switch event.Rune() {
+				case 'q':
+					escape(t)
+				case 's':
+					showSystem = !showSystem
+					t.Refresh()
 				case 'i':
 					inspect("yaml", t)
 				case 'l':
 					logs("", t)
 				case 'x':
 					execute("", t)
-				case 'd':
-					rm(t)
 				case '/':
 					t.ShowSearch()
-				case 'm', 'h', '?':
-					t.ShowMenu()
 				default:
 					t.Navigate(event.Rune())
 				case 'p':
 					viewPods(t)
 				case 'e':
 					edit(t)
-				case 'v':
+				case 'r':
 					revisions(t)
 				}
 			}
@@ -167,70 +169,65 @@ var (
 
 	DefaultAction = []types.Action{
 		{
-			Name:        "inspect",
-			Shortcut:    'i',
+			Name:        "Inspect",
+			Shortcut:    "I",
 			Description: "inspect a resource",
 		},
 		{
-			Name:        "edit",
-			Shortcut:    'e',
+			Name:        "Edit",
+			Shortcut:    "E",
 			Description: "edit a resource",
 		},
+		//{
+		//	Name:        "Create",
+		//	Shortcut:    "c",
+		//	Description: "create a resource",
+		//},
 		{
-			Name:        "create",
-			Shortcut:    'c',
-			Description: "create a resource",
-		},
-		{
-			Name:        "delete",
-			Shortcut:    'd',
+			Name:        "Delete",
+			Shortcut:    "Del",
 			Description: "delete a resource",
 		},
-	}
-
-	podAction = []types.Action{
 		{
-			Name:        "pods",
-			Shortcut:    'p',
-			Description: "view pods of a service or app",
-		},
-	}
-
-	revisionAction = []types.Action{
-		{
-			Name:        "revisions",
-			Shortcut:    'v',
-			Description: "view revisions of a app",
-		},
-	}
-
-	execAndlog = []types.Action{
-		{
-			Name:        "exec",
-			Shortcut:    'x',
+			Name:        "Exec",
+			Shortcut:    "X",
 			Description: "exec into a container or service",
 		},
 		{
-			Name:        "log",
-			Shortcut:    'l',
+			Name:        "Revisions",
+			Shortcut:    "R",
+			Description: "view revisions of a app",
+		},
+		{
+			Name:        "Log",
+			Shortcut:    "L",
 			Description: "view logs of a service",
 		},
 		{
-			Name:        "hit",
-			Shortcut:    'h',
+			Name:        "Pods",
+			Shortcut:    "P",
+			Description: "view pods of a service or app",
+		},
+		{
+			Name:        "Hit",
+			Shortcut:    "Ctrl+H",
 			Description: "hit endpoint of a service(need jq and curl)",
+		},
+		{
+			Name:        "Refresh",
+			Shortcut:    "Ctrl+R",
+			Description: "Refresh Page",
+		},
+		{
+			Name:        "ShowSystem",
+			Shortcut:    "S",
+			Description: "Show system resource",
 		},
 	}
 
-	pods = append(DefaultAction, execAndlog...)
-
-	services = append(DefaultAction, append(execAndlog, podAction...)...)
-
-	apps = append(DefaultAction, append(execAndlog, append(podAction, revisionAction...)...)...)
-
 	ViewMap = map[string]types.View{
 		appKind: {
-			Actions: apps,
+			Actions: DefaultAction,
 			Kind:    App,
 			Feeder:  datafeeder.NewDataFeeder(AppRefresher),
 		},
@@ -255,12 +252,12 @@ var (
 			Feeder:  datafeeder.NewDataFeeder(PublicDomainRefresher),
 		},
 		serviceKind: {
-			Actions: services,
+			Actions: DefaultAction,
 			Kind:    Service,
 			Feeder:  datafeeder.NewDataFeeder(ServiceRefresher),
 		},
 		podKind: {
-			Actions: pods,
+			Actions: DefaultAction,
 			Kind:    Pod,
 			Feeder:  datafeeder.NewDataFeeder(PodRefresher),
 		},
@@ -272,5 +269,6 @@ var (
 		ViewMap:   ViewMap,
 		PageNav:   PageNav,
 		Footers:   Footers,
+		Menu:      DefaultAction,
 	}
 )

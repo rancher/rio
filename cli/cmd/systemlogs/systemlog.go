@@ -10,10 +10,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type SystemLog struct {
+type SystemLogs struct {
 }
 
-func (s SystemLog) Run(ctx *clicontext.CLIContext) error {
+func (s SystemLogs) Run(ctx *clicontext.CLIContext) error {
 	pods, err := ctx.Core.Pods(ctx.SystemNamespace).List(metav1.ListOptions{
 		LabelSelector: "rio-controller=true",
 	})

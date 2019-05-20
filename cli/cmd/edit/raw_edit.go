@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"sigs.k8s.io/yaml"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/rancher/rio/cli/pkg/types"
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
-	"github.com/rancher/rio/cli/pkg/table"
 	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/sirupsen/logrus"
@@ -37,14 +38,19 @@ func (edit *Edit) rawEdit(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	str, err := table.FormatJSON(r.Object)
+	data, err := json.Marshal(r.Object)
 	if err != nil {
 		return err
 	}
 
-	updated, err := Loop(nil, []byte(str), func(content []byte) error {
+	str, err := yaml.JSONToYAML(data)
+	if err != nil {
+		return err
+	}
+
+	updated, err := Loop(nil, str, func(content []byte) error {
 		return ctx.UpdateResource(r, func(obj runtime.Object) error {
-			if err := json.Unmarshal(content, &obj); err != nil {
+			if err := yaml.Unmarshal(content, &obj); err != nil {
 				return err
 			}
 			return nil

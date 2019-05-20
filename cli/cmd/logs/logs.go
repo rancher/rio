@@ -3,6 +3,7 @@ package logs
 import (
 	"bufio"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/docker/libcompose/cli/logger"
@@ -28,6 +29,13 @@ func (l *Logs) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("at least one argument is required: CONTAINER_OR_SERVICE")
 	}
 
+	logPods := false
+	for _, arg := range ctx.CLI.Args() {
+		if strings.Count(arg, "/") == 3 {
+			logPods = true
+		}
+	}
+
 	pds, err := ps.ListPods(ctx, true, ctx.CLI.Args()...)
 	if err != nil {
 		return err
@@ -47,7 +55,7 @@ func (l *Logs) Run(ctx *clicontext.CLIContext) error {
 				continue
 			}
 			if !l.A_All && (container.Name == "istio-proxy" || container.Name == "istio-init") {
-				if len(pds) > 1 {
+				if l.C_Container == "" && !logPods {
 					continue
 				}
 			}

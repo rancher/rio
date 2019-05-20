@@ -20,59 +20,6 @@ var (
 	podPrefix     = &[]string{""}[0]
 )
 
-func actionView(t *throwing.TableView, pod bool) {
-	list := newSelectionList()
-	list.SetSelectedFunc(func(i int, s string, s2 string, r rune) {
-		switch s {
-		case "inspect":
-			formatList := newSelectionList()
-			formatList.SetSelectedFunc(func(i int, s string, s2 string, r rune) {
-				inspect(s, t)
-			})
-			formatList.AddItem("yaml", "yaml format", 'y', nil)
-			formatList.AddItem("json", "json format", 'j', nil)
-			t.InsertDialog("inspect-format", t.GetCurrentPrimitive(), formatList)
-		case "log":
-			if pod {
-				logs("", t)
-				return
-			}
-			list := newContainerSelectionList(t)
-			list.SetSelectedFunc(func(i int, s string, s2 string, r rune) {
-				logs(s, t)
-			})
-			t.InsertDialog("logs-containers", t.GetCurrentPrimitive(), list)
-		case "exec":
-			if pod {
-				execute("", t)
-				return
-			}
-			list := newContainerSelectionList(t)
-			list.SetSelectedFunc(func(i int, s string, s2 string, r rune) {
-				execute(s, t)
-			})
-			t.InsertDialog("exec-containers", t.GetCurrentPrimitive(), list)
-		case "pods":
-			viewPods(t)
-		case "delete":
-			rm(t)
-		case "hit":
-			hit(t)
-		case "edit":
-			edit(t)
-		case "revisions":
-			revisions(t)
-		case "promote":
-			promote(t)
-		}
-	})
-
-	for _, a := range t.GetAction() {
-		list.AddItem(a.Name, a.Description, a.Shortcut, nil)
-	}
-	t.InsertDialog("option", t.GetCurrentPrimitive(), list)
-}
-
 func newSelectionList() *tview.List {
 	list := tview.NewList()
 	list.SetBackgroundColor(tcell.ColorGray)
@@ -310,6 +257,18 @@ func revisions(t *throwing.TableView) {
 	servicePrefix = &name
 	t.GetTableView(serviceKind).RefreshManual()
 	t.SwitchPage(serviceKind, t.GetTableView(serviceKind))
+}
+
+func escape(t *throwing.TableView) {
+	kind := t.GetResourceKind()
+	switch kind {
+	case serviceKind:
+		kind = appKind
+	case podKind:
+		kind = serviceKind
+	}
+	t.GetTableView(kind).RefreshManual()
+	t.SwitchPage(kind, t.GetTableView(kind))
 }
 
 func clearScreen() {
