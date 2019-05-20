@@ -35,10 +35,11 @@ type Drawer struct {
 	PageNav   map[rune]string
 	Shortcuts [][]string
 	Footers   []ResourceView
+	Menu      []Action
 }
 
 type Action struct {
 	Name        string
 	Description string
-	Shortcut    rune
+	Shortcut    string
 }

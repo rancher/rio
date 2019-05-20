@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/rancher/rio/cli/cmd/uninstall"
+
 	"github.com/rancher/rio/cli/cmd/systemlogs"
 
 	"github.com/docker/docker/pkg/reexec"
@@ -197,6 +199,10 @@ func main() {
 			"Install rio management plane",
 			appName+" install [OPTIONS]",
 			""),
+		builder.Command(&uninstall.Uninstall{},
+			"Uninstall rio",
+			appName+" uninstall [OPTIONS]",
+			""),
 		builder.Command(&revision.Revision{},
 			"List service revisions",
 			appName+" revision [OPTIONS] [APP...]",
@@ -215,17 +221,17 @@ func main() {
 			""),
 		builder.Command(&tui.Tui{},
 			"Terminal interactive UI",
-			" tui",
+			appName+" tui",
 			""),
-		builder.Command(&systemlogs.SystemLog{},
+		builder.Command(&systemlogs.SystemLogs{},
 			"View system log for Rio management plane",
-			" systemlog",
+			appName+" systemlogs",
 			""),
 		route.Route(app),
 	}
 	app.Before = func(ctx *cli.Context) error {
 		if err := cfg.Validate(); err != nil {
-			if len(ctx.Args()) > 0 && ctx.Args()[0] != "install" {
+			if len(ctx.Args()) > 0 && ctx.Args()[0] != "install" && ctx.Args()[0] != "uninstall" {
 				return err
 			}
 		}

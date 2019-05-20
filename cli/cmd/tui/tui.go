@@ -15,7 +15,7 @@ import (
 )
 
 type Tui struct {
-	Refresh string `desc:"refresh based on polling or controller (polling|controller)" default:"polling"`
+	Refresh string `desc:"refresh based on polling or controller (polling|controller)"`
 }
 
 func (t *Tui) Run(ctx *clicontext.CLIContext) error {
@@ -42,7 +42,7 @@ func (t *Tui) Run(ctx *clicontext.CLIContext) error {
 				<-context.Done()
 			})
 		}()
-	} else {
+	} else if t.Refresh == "polling" {
 		go func() {
 			for {
 				select {
