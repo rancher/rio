@@ -15,6 +15,7 @@ const (
 	configKind          = "config"
 	publicdomainKind    = "publicdomain"
 	externalServiceKind = "externalservice"
+	buildKind           = "build"
 )
 
 var (
@@ -71,6 +72,11 @@ var (
 			Kind:  configKind,
 			Index: 5,
 		},
+		{
+			Title: "Build",
+			Kind:  buildKind,
+			Index: 6,
+		},
 	}
 
 	PageNav = map[rune]string{
@@ -79,6 +85,7 @@ var (
 		'3': externalServiceKind,
 		'4': publicdomainKind,
 		'5': configKind,
+		'6': buildKind,
 	}
 
 	tableEventHandler = func(t *throwing.TableView) func(event *tcell.EventKey) *tcell.EventKey {
@@ -106,14 +113,18 @@ var (
 			case tcell.KeyRune:
 				switch event.Rune() {
 				case 'q':
-					escape(t)
+					t.GetApplication().Stop()
 				case 's':
 					showSystem = !showSystem
 					t.Refresh()
 				case 'i':
 					inspect("yaml", t)
 				case 'l':
-					logs("", t)
+					if t.GetResourceKind() == buildKind {
+						logBuilds(t)
+					} else {
+						logs("", t)
+					}
 				case 'x':
 					execute("", t)
 				case '/':
@@ -167,6 +178,11 @@ var (
 		Kind:  podKind,
 	}
 
+	Build = types.ResourceKind{
+		Title: "Builds",
+		Kind:  buildKind,
+	}
+
 	DefaultAction = []types.Action{
 		{
 			Name:        "Inspect",
@@ -178,11 +194,6 @@ var (
 			Shortcut:    "E",
 			Description: "edit a resource",
 		},
-		//{
-		//	Name:        "Create",
-		//	Shortcut:    "c",
-		//	Description: "create a resource",
-		//},
 		{
 			Name:        "Delete",
 			Shortcut:    "Del",
@@ -223,6 +234,16 @@ var (
 			Shortcut:    "S",
 			Description: "Show system resource",
 		},
+		{
+			Name:        "Escape",
+			Shortcut:    "Esc",
+			Description: "Go to the previous level",
+		},
+		{
+			Name:        "Quit",
+			Shortcut:    "Q",
+			Description: "Quit console",
+		},
 	}
 
 	ViewMap = map[string]types.View{
@@ -260,6 +281,11 @@ var (
 			Actions: DefaultAction,
 			Kind:    Pod,
 			Feeder:  datafeeder.NewDataFeeder(PodRefresher),
+		},
+		buildKind: {
+			Actions: DefaultAction,
+			Kind:    Build,
+			Feeder:  datafeeder.NewDataFeeder(BuildRefresher),
 		},
 	}
 

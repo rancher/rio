@@ -199,6 +199,44 @@ func logs(container string, t *throwing.TableView) {
 	t.SwitchPage(t.GetCurrentPage(), newpage)
 }
 
+func logBuilds(t *throwing.TableView) {
+	name := t.GetSelectionName()
+	args := []string{"build", "logs"}
+	args = append(args, name)
+	if showSystem {
+		args = append([]string{"--system"}, args...)
+	}
+	cmd := exec.Command("rio", args...)
+
+	logbox := tview.NewTextView()
+	{
+		logbox.SetTitle(fmt.Sprintf("Build Logs (%s)", name))
+		logbox.SetBorder(true)
+		logbox.SetTitleColor(tcell.ColorPurple)
+		logbox.SetDynamicColors(true)
+		logbox.SetBackgroundColor(tcell.ColorBlack)
+		logbox.SetChangedFunc(func() {
+			logbox.ScrollToEnd()
+			t.GetApplication().Draw()
+		})
+		logbox.SetDoneFunc(func(key tcell.Key) {
+			if key == tcell.KeyEscape {
+				cmd.Process.Kill()
+			}
+		})
+	}
+
+	cmd.Stdout = tview.ANSIWriter(logbox)
+	go func() {
+		if err := cmd.Run(); err != nil {
+			return
+		}
+	}()
+
+	newpage := tview.NewPages().AddPage("logs", logbox, true, true)
+	t.SwitchPage(t.GetCurrentPage(), newpage)
+}
+
 func execute(container string, t *throwing.TableView) {
 	name := t.GetSelectionName()
 	shellArgs := []string{"/bin/sh", "-c", "TERM=xterm-256color; export TERM; [ -x /bin/bash ] && ([ -x /usr/bin/script ] && /usr/bin/script -q -c /bin/bash /dev/null || exec /bin/bash) || exec /bin/sh"}

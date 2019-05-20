@@ -115,7 +115,7 @@ func newRoute(systemNamespace, externalGW string, published bool, portBinding v1
 					Host:   fmt.Sprintf("%s.%s.svc.cluster.local", dest.Host, svc.Namespace),
 					Subset: dest.Subset,
 					Port: v1alpha3.PortSelector{
-						Number: uint32(portBinding.TargetPort),
+						Number: uint32(portBinding.Port),
 					},
 				},
 				Weight: dest.Weight,

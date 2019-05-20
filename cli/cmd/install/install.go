@@ -64,7 +64,8 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 			fmt.Printf("Waiting for deployment %s/%s to become ready\n", dep.Namespace, dep.Name)
 			continue
 		}
-		if info, err := ctx.Project.RioInfos().Get("rio", metav1.GetOptions{}); err != nil {
+		info, err := ctx.Project.RioInfos().Get("rio", metav1.GetOptions{})
+		if err != nil {
 			fmt.Println("Waiting for rio controller to initialize")
 			continue
 		} else if info.Status.Version == "" {
@@ -73,7 +74,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		} else {
 			fmt.Printf("rio controller version %s (%s) installed into namespace %s\n", info.Status.Version, info.Status.GitCommit, info.Status.SystemNamespace)
 		}
-		fmt.Printf("Rio control plane is deployed. Run `kubectl get po -n %s` to get more detail.\n", ctx.SystemNamespace)
+		fmt.Printf("Rio control plane is deployed. Run `kubectl get po -n %s` to get more detail.\n", info.Status.SystemNamespace)
 		fmt.Println("Controller logs are available from `rio systemlogs`")
 		fmt.Println("")
 		fmt.Println("Welcome to Rio!")
