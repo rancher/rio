@@ -50,8 +50,8 @@ type Create struct {
 	Permission             []string          `desc:"Permissions to grant to container's service account in current stack"`
 	P_Ports                []string          `desc:"Publish a container's port(s) externally (default: \"80:8080/http\")"`
 	ReadOnly               bool              `desc:"Mount the container's root filesystem as read only"`
-	RolloutInterval        int               `desc:"Rollout interval in seconds"`
-	RolloutIncrement       int               `desc:"Rollout increment value"`
+	RolloutInterval        int               `desc:"Rollout interval in seconds" default:"5"`
+	RolloutIncrement       int               `desc:"Rollout increment value" default:"5"`
 	Secret                 []string          `desc:"Secrets to inject to the service (format: name:target)"`
 	StageOnly              bool              `desc:"Whether to stage new created revision for build"`
 	T_Tty                  bool              `desc:"Allocate a pseudo-TTY"`

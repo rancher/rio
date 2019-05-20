@@ -2,6 +2,8 @@ package install
 
 import (
 	"fmt"
+	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
@@ -15,9 +17,10 @@ import (
 )
 
 type Install struct {
-	HTTPPort  string `desc:"http port service mesh gateway will listen to" default:"9080"`
-	HTTPSPort string `desc:"https port service mesh gateway will listen to" default:"9443"`
-	HostPorts bool   `desc:"whether to use hostPorts to expose service mesh gateway"`
+	HTTPPort  string   `desc:"http port service mesh gateway will listen to" default:"9080"`
+	HTTPSPort string   `desc:"https port service mesh gateway will listen to" default:"9443"`
+	HostPorts bool     `desc:"whether to use hostPorts to expose service mesh gateway"`
+	IPAddress []string `desc:"Manually specify IP addresses to generate rdns domain"`
 }
 
 func (i *Install) Run(ctx *clicontext.CLIContext) error {
@@ -43,6 +46,47 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		}
 	}
 
+	// hack for detecting minikube cluster
+	nodes, err := ctx.Core.Nodes().List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+
+	memoryWarning := false
+	var totalMemory int64
+	for _, node := range nodes.Items {
+		totalMemory += node.Status.Capacity.Memory().Value()
+	}
+	if totalMemory < 2147000000 {
+		memoryWarning = true
+	}
+
+	if isMinikubeCluster(nodes) {
+		fmt.Println("Detecting that you are using minikube cluster")
+		cmd := exec.Command("minikube", "ip")
+		stdout := &strings.Builder{}
+		stderr := &strings.Builder{}
+		cmd.Stdout = stdout
+		cmd.Stderr = stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("$(minikube ip) failed with error: (%v). Do you have minikube in your PATH", stderr.String())
+		}
+		ip := strings.Trim(stdout.String(), " ")
+		fmt.Printf("Manually setting minikube IP to %s\n", ip)
+		i.IPAddress = []string{ip}
+		i.HostPorts = true
+	}
+
+	if memoryWarning {
+		if isMinikubeCluster(nodes) {
+			fmt.Println("Warning: detecting that your minikube cluster doesn't have at least 3 GB of memory. Please try to increase memory by running `minikube start --memory 4098`")
+		} else if isDockerForMac(nodes) {
+			fmt.Println("Warning: detecting that your Docker For Mac cluster doesn't have at least 3 GB of memory. Please try to increase memory by following the doc https://docs.docker.com/v17.12/docker-for-mac.")
+		} else {
+			fmt.Println("Warning: detecting that your cluster doesn't have at least 3 GB of memory in total. Please try to increase memory for your nodes")
+		}
+	}
+
 	if err := controllerStack.Deploy(map[string]string{
 		"NAMESPACE":    namespace,
 		"DEBUG":        fmt.Sprint(ctx.Debug),
@@ -50,6 +94,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		"HTTPS_PORT":   i.HTTPSPort,
 		"HTTP_PORT":    i.HTTPPort,
 		"USE_HOSTPORT": fmt.Sprint(i.HostPorts),
+		"IP_ADDRESSES": strings.Join(i.IPAddress, ","),
 	}); err != nil {
 		return err
 	}
@@ -81,4 +126,12 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		break
 	}
 	return nil
+}
+
+func isMinikubeCluster(nodes *v1.NodeList) bool {
+	return len(nodes.Items) == 1 && nodes.Items[0].Name == "minikube"
+}
+
+func isDockerForMac(nodes *v1.NodeList) bool {
+	return len(nodes.Items) == 1 && nodes.Items[0].Name == "docker-for-desktop"
 }

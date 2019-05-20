@@ -71,6 +71,12 @@ func main() {
 			EnvVar:      "USE_HOSTPORT",
 			Destination: &constants.UseHostPort,
 		},
+		cli.StringFlag{
+			Name:        "use-ipaddresses",
+			Usage:       "Manually specify IP addresses to generate rdns domain",
+			EnvVar:      "IP_ADDRESSES",
+			Destination: &constants.UseIPAddress,
+		},
 	}
 	app.Action = run
 
