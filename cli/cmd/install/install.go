@@ -57,7 +57,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 	for _, node := range nodes.Items {
 		totalMemory += node.Status.Capacity.Memory().Value()
 	}
-	if totalMemory < 24576000000 {
+	if totalMemory < 2147000000 {
 		memoryWarning = true
 	}
 
@@ -83,7 +83,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		} else if isDockerForMac(nodes) {
 			fmt.Println("Warning: detecting that your Docker For Mac cluster doesn't have at least 3 GB of memory. Please try to increase memory by following the doc https://docs.docker.com/v17.12/docker-for-mac.")
 		} else {
-			fmt.Println("Warning: dDetecting that your cluster doesn't have at least 3 GB of memory in total. Please try to increase memory for your nodes")
+			fmt.Println("Warning: detecting that your cluster doesn't have at least 3 GB of memory in total. Please try to increase memory for your nodes")
 		}
 	}
 
