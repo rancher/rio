@@ -86,7 +86,7 @@ func (t *TableView) init(app *AppView, resource types.ResourceKind, dataFeeder d
 		t.Table.Select(p.row, p.column)
 	}
 
-	actionMap := map[rune]types.Action{}
+	actionMap := map[string]types.Action{}
 	for _, a := range t.actions {
 		actionMap[a.Shortcut] = a
 	}

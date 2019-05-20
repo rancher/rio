@@ -7,7 +7,7 @@ import (
 var (
 	EscapeEventHandler = func(app *AppView) func(event *tcell.EventKey) *tcell.EventKey {
 		return func(event *tcell.EventKey) *tcell.EventKey {
-			if event.Key() == tcell.KeyEscape {
+			if event.Key() == tcell.KeyEscape || event.Rune() == 'q' {
 				app.showMenu = false
 				app.SwitchPage(app.currentPage, app.tableViews[app.currentPage])
 			}

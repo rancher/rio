@@ -60,7 +60,7 @@ func NewAppView(clientset *kubernetes.Clientset, dr types.Drawer, handler EventH
 	{
 		v.Flex = tview.NewFlex()
 		v.drawQueue = &PrimitiveQueue{AppView: v}
-		v.menuView = menuView{AppView: v, Flex: tview.NewFlex()}
+		v.menuView = menuView{AppView: v, TextView: tview.NewTextView()}
 		v.content = contentView{AppView: v, Pages: tview.NewPages()}
 		v.footerView = footerView{AppView: v, TextView: tview.NewTextView()}
 		v.searchView = cmdView{AppView: v, InputField: tview.NewInputField()}
@@ -110,11 +110,15 @@ func (app *AppView) Init() error {
 		main.SetDirection(tview.FlexRow)
 		main.AddItem(app.content, 0, 15, true)
 
-		footer := tview.NewFlex().SetDirection(tview.FlexRow)
-		footer.AddItem(app.searchView.InputField, 0, 1, true)
-		footer.AddItem(app.footerView, 0, 1, false)
+		search := tview.NewFlex().SetDirection(tview.FlexRow)
+		search.AddItem(app.searchView.InputField, 0, 1, true)
 
-		main.AddItem(footer, 2, 2, false)
+		footer := tview.NewFlex().SetDirection(tview.FlexColumn)
+		footer.AddItem(app.footerView, 0, 1, false)
+		footer.AddItem(app.menuView, 0, 1, false)
+
+		main.AddItem(search, 1, 1, false)
+		main.AddItem(footer, 1, 1, false)
 	}
 
 	app.Application.SetRoot(main, true)
@@ -197,23 +201,17 @@ func (app *AppView) LastPage() {
 }
 
 type menuView struct {
-	*tview.Flex
+	*tview.TextView
 	*AppView
 }
 
 func (m *menuView) init() {
-	{
-		m.Flex.SetDirection(tview.FlexRow)
-		m.Flex.SetBackgroundColor(tcell.ColorGray)
-		m.Flex.AddItem(m.logoView(), 6, 1, false)
-		m.Flex.AddItem(m.versionView(), 4, 1, false)
-		m.Flex.AddItem(m.tipsView(), 20, 1, false)
-		m.Flex.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-			if event.Rune() == 'm' {
-				m.AppView.SwitchToRootPage()
-			}
-			return event
-		})
+	m.TextView.
+		SetDynamicColors(true).
+		SetTextAlign(tview.AlignRight).
+		SetWrap(false).SetBackgroundColor(tcell.ColorGray)
+	for _, action := range m.Menu {
+		fmt.Fprintf(m.TextView, "%v[black] %s[blue] ", string(action.Shortcut), action.Name)
 	}
 }
 
