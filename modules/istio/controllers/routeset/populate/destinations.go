@@ -5,6 +5,7 @@ import (
 
 	"github.com/knative/pkg/apis/istio/v1alpha3"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/wrangler/pkg/objectset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -63,7 +64,7 @@ func populateDestinationFromRouteSet(routes *v1.Router) map[string]destinationSe
 				}
 			}
 			if dest.Revision == "" {
-				dest.Revision = "v0"
+				dest.Revision = constants.DefaultServiceVersion
 			}
 			result[key].revision[dest.Revision] = struct{}{}
 		}

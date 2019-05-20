@@ -102,7 +102,7 @@ func (h Handler) onChange(key string, obj *webhookv1.GitCommit) (*webhookv1.GitC
 		specCopy.Build.Branch = ""
 		specCopy.Image = ""
 		specCopy.App = appName
-		specCopy.Version = obj.Spec.Commit[0:5]
+		specCopy.Version = "v" + obj.Spec.Commit[0:5]
 		if !specCopy.Build.StageOnly {
 			if err := h.scaleDownRevisions(obj.Namespace, appName); err != nil {
 				return obj, err
