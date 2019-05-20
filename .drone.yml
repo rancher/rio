@@ -272,7 +272,6 @@ steps:
     event:
     - tag
 
-steps:
 - name: manifest-cert-checker
   image: plugins/manifest:1.0.2
   settings:
