@@ -2,9 +2,11 @@ package build
 
 import (
 	"context"
+	"errors"
 
 	"github.com/knative/build/pkg/apis/build/v1alpha1"
 	"github.com/rancher/rio/modules/build/controllers/service"
+	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
@@ -46,27 +48,38 @@ func (h handler) updateService(key string, build *v1alpha1.Build) (*v1alpha1.Bui
 	}
 
 	con := build.Status.GetCondition(v1alpha1.BuildSucceeded)
-	if con != nil && con.IsTrue() {
-		namespace := build.Labels["service-namespace"]
-		name := build.Labels["service-name"]
-		svc, err := h.services.Cache().Get(namespace, name)
-		if err != nil {
-			return build, nil
-		}
+	if con == nil {
+		return build, nil
+	}
 
-		if svc.Spec.Image != "" {
-			return build, nil
-		}
+	namespace := build.Labels["service-namespace"]
+	name := build.Labels["service-name"]
+	svc, err := h.services.Cache().Get(namespace, name)
+	if err != nil {
+		return build, nil
+	}
 
+	if svc.Spec.Image != "" {
+		return build, nil
+	}
+
+	if con.IsTrue() {
 		imageName := service.ImageName(h.registry, h.systemNamespace, build.Spec.Source.Git.Revision, domain, svc)
 		if svc.Spec.Image != imageName {
-			deepcopy := svc.DeepCopy()
-			deepcopy.Spec.Image = service.ImageName(h.registry, h.systemNamespace, build.Spec.Source.Git.Revision, domain, deepcopy)
-			if _, err := h.services.Update(deepcopy); err != nil {
+			deepCopy := svc.DeepCopy()
+			v1.ServiceConditionImageReady.SetError(deepCopy, "", nil)
+			deepCopy.Spec.Image = service.ImageName(h.registry, h.systemNamespace, build.Spec.Source.Git.Revision, domain, deepCopy)
+			if _, err := h.services.Update(deepCopy); err != nil {
 				return build, err
 			}
 		}
+	} else if con.IsFalse() {
+		deepCopy := svc.DeepCopy()
+		v1.ServiceConditionImageReady.SetError(deepCopy, con.Reason, errors.New(con.Message))
+		_, err := h.services.Update(deepCopy)
+		return build, err
 	}
+
 	return build, nil
 }
 

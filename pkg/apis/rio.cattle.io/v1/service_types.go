@@ -14,10 +14,7 @@ import (
 )
 
 var (
-	ServiceConditionCurrentRevision  = condition.Cond("CurrentRevision")
-	ServiceConditionImageReady       = condition.Cond("ImageReady")
-	ServiceConditionDeploymentStable = condition.Cond("DeploymentStable")
-	ServiceConditionPromoted         = condition.Cond("Promoted")
+	ServiceConditionImageReady = condition.Cond("ImageReady")
 )
 
 // +genclient

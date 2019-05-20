@@ -8,8 +8,9 @@ var stackLsFlags = []cli.Flag{
 		Usage: "Only display IDs",
 	},
 	cli.StringFlag{
-		Name:  "format",
-		Usage: "'json' or 'yaml' or Custom format: '{{.ID}} {{.Stack.ServiceName}}'",
+		Name:   "format",
+		EnvVar: "FORMAT",
+		Usage:  "'json' or 'yaml' or Custom format: '{{.ID}} {{.Stack.ServiceName}}'",
 	},
 }
 

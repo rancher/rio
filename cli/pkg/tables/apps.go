@@ -5,22 +5,51 @@ import (
 	"sort"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/runtime"
+
 	"github.com/rancher/rio/cli/pkg/table"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+type AppData struct {
+	metav1.TypeMeta
+	metav1.ObjectMeta
+
+	App       *riov1.App
+	Revisions map[string]*riov1.Service
+}
+
+func (a *AppData) DeepCopyObject() runtime.Object {
+	ad := &AppData{
+		TypeMeta:   a.TypeMeta,
+		ObjectMeta: *a.ObjectMeta.DeepCopy(),
+		App:        a.App.DeepCopy(),
+		Revisions:  map[string]*riov1.Service{},
+	}
+
+	for k, v := range a.Revisions {
+		ad.Revisions[k] = v.DeepCopy()
+	}
+
+	return ad
+}
 
 func NewApp(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
-		{"NAME", "{{stackScopedName .Obj.Namespace .Obj.Name ``}}"},
-		{"ENDPOINT", "{{.Obj.Status.Endpoints | array}}"},
-		{"REVISIONS", "{{revisions .Obj.Spec.Revisions}}"},
-		{"SCALE", "{{appScale .Obj.Spec.Revisions}}"},
-		{"WEIGHT", "{{weightVersioned .Obj}}"},
+		{"NAME", "{{stackScopedName .Obj.App.Namespace .Obj.App.Name ``}}"},
+		{"CREATED", "{{.Obj.App.CreationTimestamp | ago}}"},
+		{"ENDPOINT", "{{.Obj.App.Status.Endpoints | array}}"},
+		{"REVISIONS", "{{revisions .Obj.App.Spec.Revisions}}"},
+		{"SCALE", "{{appScale .Obj.App.Spec.Revisions}}"},
+		{"WEIGHT", "{{weightVersioned .Obj.App}}"},
+		{"DETAIL", "{{detail .Obj}}"},
 	}, cfg)
 
 	writer.AddFormatFunc("revisions", formatRevisions)
 	writer.AddFormatFunc("appScale", formatAppScale)
 	writer.AddFormatFunc("weightVersioned", formatWeightGraph)
+	writer.AddFormatFunc("detail", formatAppDetail)
 	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cfg.GetSetNamespace()))
 
 	return &tableWriter{
@@ -81,4 +110,40 @@ func formatWeightGraph(obj interface{}) (string, error) {
 		result = append(result, ret)
 	}
 	return strings.Join(result, ","), nil
+}
+
+func formatAppDetail(obj interface{}) (string, error) {
+	appData := obj.(*AppData)
+	buffer := strings.Builder{}
+
+	versions := revisionsByVersion(appData.App.Spec.Revisions)
+	for _, name := range revisions(appData.App.Spec.Revisions) {
+		rev := versions[name]
+		if !rev.DeploymentReady {
+			if buffer.Len() > 0 {
+				buffer.WriteString("; ")
+			}
+			buffer.WriteString(name)
+			buffer.WriteString(" NotReady")
+		}
+
+		svc, ok := appData.Revisions[name]
+		if ok && svc.Spec.Image == "" {
+			if riov1.ServiceConditionImageReady.IsFalse(svc) {
+				if buffer.Len() > 0 {
+					buffer.WriteString("; ")
+				}
+				buffer.WriteString(name)
+				buffer.WriteString(" build failed: ")
+				buffer.WriteString(riov1.ServiceConditionImageReady.GetMessage(svc))
+			} else if !riov1.ServiceConditionImageReady.IsTrue(svc) {
+				if buffer.Len() > 0 {
+					buffer.WriteString("; ")
+				}
+				buffer.WriteString(name)
+				buffer.WriteString(" waiting on build")
+			}
+		}
+	}
+	return buffer.String(), nil
 }
