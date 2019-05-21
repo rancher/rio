@@ -5,31 +5,24 @@ Rio is a MicroPaaS that can be layered on top of any standard Kubernetes cluster
 
 ## Quick Start
 
-1. Have a Kubernetes cluster running. 
+1. Have a Kubernetes 1.13 or newer cluster running. 
 
-    [k3s](https://k3s.io/)
-    
-    [RKE](https://github.com/rancher/rke)
-    
-    [Minikube](https://kubernetes.io/docs/setup/minikube/) 
-    
-    [Docker For Mac](https://docs.docker.com/v17.12/docker-for-mac/#kubernetes-tab)
-    
-    [GKE](https://cloud.google.com/kubernetes-engine/)
-    
-    [AKS](https://docs.microsoft.com/en-us/azure/aks/)
-    
-    [EKS](https://aws.amazon.com/eks/)
-  
+    [k3s](https://k3s.io/), [RKE](https://github.com/rancher/rke), [Minikube](https://kubernetes.io/docs/setup/minikube/), [Docker For Mac](https://docs.docker.com/v17.12/docker-for-mac/#kubernetes-tab), [GKE](https://cloud.google.com/kubernetes-engine/), [AKS](https://docs.microsoft.com/en-us/azure/aks/), [EKS](https://aws.amazon.com/eks/),
+
+    Please ensure you have at least 3GB of memory free in your cluster.  We will attempt to reduce the memory footprint in a future release. Some of the components we are currently depending on are quite large.
+
 2. Run 
 
 ```bash
 # Download the CLI (available for macOS, Windows, Linux)
 curl -sfL https://get.rio.io | sh -   # or manually from https://github.com/rancher/rio/releases
+
 # Setup your cluster for Rio
 rio install
+
 # Run a sample service
 rio run https://github.com/rancher/rio-demo
+
 # Check the status
 rio ps 
 rio console
