@@ -107,7 +107,7 @@ func (u Uninstall) Run(ctx *clicontext.CLIContext) error {
 		}
 	}
 
-	fmt.Println("Cleaning up finalizers for resource Router, group rio.cattle.io...")
+	fmt.Println("Cleaning up finalizers for resource ExternalService, group rio.cattle.io...")
 	ess, err := ctx.Rio.ExternalServices("").List(metav1.ListOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		return err
@@ -115,6 +115,30 @@ func (u Uninstall) Run(ctx *clicontext.CLIContext) error {
 	for _, es := range ess.Items {
 		es.Finalizers = nil
 		if _, err := ctx.Rio.ExternalServices(es.Namespace).Update(&es); err != nil && !errors.IsNotFound(err) {
+			return err
+		}
+	}
+
+	fmt.Println("Cleaning up finalizers for resource Build, group build.knative.dev...")
+	builds, err := ctx.Build.Builds("").List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	for _, build := range builds.Items {
+		build.Finalizers = nil
+		if _, err := ctx.Build.Builds(build.Namespace).Update(&build); err != nil && !errors.IsNotFound(err) {
+			return err
+		}
+	}
+
+	fmt.Println("Cleaning up finalizers for resource ServiceRecommendations, group autoscale.rio.cattle.io...")
+	autoscales, err := ctx.Autoscale.ServiceScaleRecommendations("").List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	for _, ssr := range autoscales.Items {
+		ssr.Finalizers = nil
+		if _, err := ctx.Autoscale.ServiceScaleRecommendations(ssr.Namespace).Update(&ssr); err != nil && !errors.IsNotFound(err) {
 			return err
 		}
 	}

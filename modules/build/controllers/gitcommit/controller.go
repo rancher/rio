@@ -2,6 +2,7 @@ package gitcommit
 
 import (
 	"context"
+	"fmt"
 
 	webhookv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
 	webhookv1controller "github.com/rancher/gitwatcher/pkg/generated/controllers/gitwatcher.cattle.io/v1"
@@ -12,15 +13,17 @@ import (
 	"github.com/rancher/wrangler/pkg/name"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
 	h := Handler{
-		ctx:             ctx,
-		appsCache:       rContext.Rio.Rio().V1().App().Cache(),
-		services:        rContext.Rio.Rio().V1().Service(),
-		gitWatcherCache: rContext.Webhook.Gitwatcher().V1().GitWatcher().Cache(),
+		ctx:              ctx,
+		appsCache:        rContext.Rio.Rio().V1().App().Cache(),
+		services:         rContext.Rio.Rio().V1().Service(),
+		gitWatcherCache:  rContext.Webhook.Gitwatcher().V1().GitWatcher().Cache(),
+		gitWatcherClient: rContext.Webhook.Gitwatcher().V1().GitWatcher(),
 	}
 
 	wupdator := webhookv1controller.UpdateGitCommitOnChange(rContext.Webhook.Gitwatcher().V1().GitCommit().Updater(), h.onChange)
@@ -30,10 +33,11 @@ func Register(ctx context.Context, rContext *types.Context) error {
 }
 
 type Handler struct {
-	ctx             context.Context
-	appsCache       riov1controller.AppCache
-	gitWatcherCache webhookv1controller.GitWatcherCache
-	services        riov1controller.ServiceController
+	ctx              context.Context
+	appsCache        riov1controller.AppCache
+	gitWatcherCache  webhookv1controller.GitWatcherCache
+	gitWatcherClient webhookv1controller.GitWatcherClient
+	services         riov1controller.ServiceController
 }
 
 func (h Handler) updateBaseRevision(commit string, svc *riov1.Service) error {
@@ -74,6 +78,16 @@ func (h Handler) onChange(key string, obj *webhookv1.GitCommit) (*webhookv1.GitC
 	gitWatcher, err := h.gitWatcherCache.Get(obj.Namespace, obj.Spec.GitWatcherName)
 	if err != nil {
 		return nil, err
+	}
+
+	if gitWatcher.Status.FirstCommit == "" {
+		gitWatcher, err = h.gitWatcherClient.Get(gitWatcher.Namespace, gitWatcher.Name, v1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+		if gitWatcher.Status.FirstCommit == "" {
+			return obj, fmt.Errorf("waiting for gitWatcher first commit on %s/%s", gitWatcher.Namespace, gitWatcher.Name)
+		}
 	}
 
 	service, err := h.services.Cache().Get(obj.Namespace, obj.Spec.GitWatcherName)

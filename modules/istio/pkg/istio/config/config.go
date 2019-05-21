@@ -5,6 +5,7 @@ import (
 	"os"
 	"text/template"
 
+	"github.com/rancher/rio/pkg/constants"
 	"istio.io/api/mesh/v1alpha1"
 	"istio.io/istio/pilot/pkg/kube/inject"
 	"istio.io/istio/pilot/pkg/model"
@@ -26,7 +27,7 @@ func InjectParams(meshConfig *v1alpha1.MeshConfig) *inject.Params {
 		EnableCoreDump:      debug,
 		Mesh:                meshConfig,
 		ImagePullPolicy:     string(v1.PullAlways),
-		IncludeIPRanges:     "10.43.0.0/16",
+		IncludeIPRanges:     constants.ServiceCidr,
 		ExcludeIPRanges:     "10.43.0.0/31",
 		IncludeInboundPorts: "*",
 		ExcludeInboundPorts: "",
