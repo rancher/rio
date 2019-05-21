@@ -155,7 +155,7 @@ verify_binary() {
 setup_binary() {
     chmod 755 ${TMP_BIN}
     info "Installing rio to ${BIN_DIR}/rio"
-    $SUDO chown root:root ${TMP_BIN}
+    $SUDO chown 0:0 ${TMP_BIN}
     $SUDO mv -f ${TMP_BIN} ${BIN_DIR}/rio
 
     if command -v getenforce > /dev/null 2>&1; then
@@ -202,7 +202,7 @@ remove_uninstall() {
 trap remove_uninstall EXIT
 EOF
     $SUDO chmod 755 ${BIN_DIR}/${UNINSTALL_RIO_SH}
-    $SUDO chown root:root ${BIN_DIR}/${UNINSTALL_RIO_SH}
+    $SUDO chown 0:0 ${BIN_DIR}/${UNINSTALL_RIO_SH}
 }
 
 # --- get hashes of the current rio bin and service files
