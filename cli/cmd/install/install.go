@@ -8,12 +8,43 @@ import (
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/modules/service/controllers/serviceset"
+	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/rio/pkg/systemstack"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+var (
+	SystemComponents = []string{
+		Autoscaler,
+		BuildController,
+		Buildkit,
+		CertManager,
+		Grafana,
+		IstioCitadel,
+		IstioPilot,
+		IstioTelemetry,
+		Kiali,
+		Prometheus,
+		Registry,
+		Webhook,
+	}
+
+	Autoscaler      = "autoscaler"
+	BuildController = "build-controller"
+	Buildkit        = "buildkit"
+	CertManager     = "cert-manager"
+	Grafana         = "grafana"
+	IstioCitadel    = "istio-citadel"
+	IstioPilot      = "istio-pilot"
+	IstioTelemetry  = "istio-telemetry"
+	Kiali           = "kiali"
+	Prometheus      = "prometheus"
+	Registry        = "registry"
+	Webhook         = "webhook"
 )
 
 type Install struct {
@@ -128,6 +159,9 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		} else if info.Status.Version == "" {
 			fmt.Println("Waiting for rio controller to initialize")
 			continue
+		} else if notReadyList, ok := allReady(info); !ok {
+			fmt.Printf("Waiting for all the system components to be up. Please run `rio info` to get more infomation. Not ready component: %v\n", notReadyList)
+			continue
 		} else {
 			fmt.Printf("rio controller version %s (%s) installed into namespace %s\n", info.Status.Version, info.Status.GitCommit, info.Status.SystemNamespace)
 		}
@@ -148,4 +182,16 @@ func isMinikubeCluster(nodes *v1.NodeList) bool {
 
 func isDockerForMac(nodes *v1.NodeList) bool {
 	return len(nodes.Items) == 1 && nodes.Items[0].Name == "docker-for-desktop"
+}
+
+func allReady(info *adminv1.RioInfo) ([]string, bool) {
+	var notReadyList []string
+	ready := true
+	for _, c := range SystemComponents {
+		if !info.Status.SystemComponentReadyMap[c] {
+			notReadyList = append(notReadyList, c)
+			ready = false
+		}
+	}
+	return notReadyList, ready
 }

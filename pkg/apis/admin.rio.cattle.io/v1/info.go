@@ -22,8 +22,9 @@ type RioInfo struct {
 }
 
 type RioInfoStatus struct {
-	Version         string                              `json:"version,omitempty"`
-	GitCommit       string                              `json:"gitCommit,omitempty"`
-	SystemNamespace string                              `json:"systemNamespace,omitempty"`
-	Conditions      []genericcondition.GenericCondition `json:"conditions,omitempty"`
+	Version                 string                              `json:"version,omitempty"`
+	GitCommit               string                              `json:"gitCommit,omitempty"`
+	SystemNamespace         string                              `json:"systemNamespace,omitempty"`
+	Conditions              []genericcondition.GenericCondition `json:"conditions,omitempty"`
+	SystemComponentReadyMap map[string]bool                     `json:"systemComponentReadyMap,omitempty"`
 }
