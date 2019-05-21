@@ -161,7 +161,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 			continue
 		} else if notReadyList, ok := allReady(info); !ok {
 			fmt.Printf("Waiting for all the system components to be up. Not ready component: %v\n", notReadyList)
-			time.Sleep(1 * time.Second)
+			time.Sleep(15 * time.Second)
 			continue
 		} else {
 			fmt.Printf("rio controller version %s (%s) installed into namespace %s\n", info.Status.Version, info.Status.GitCommit, info.Status.SystemNamespace)

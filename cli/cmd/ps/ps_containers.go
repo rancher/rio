@@ -3,6 +3,8 @@ package ps
 import (
 	"strings"
 
+	"github.com/knative/build/pkg/apis/build/v1alpha1"
+
 	services2 "github.com/rancher/rio/pkg/services"
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
@@ -35,13 +37,14 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 	var pods []clitypes.Resource
 	var services []clitypes.Resource
 	var apps []clitypes.Resource
+	var builds []clitypes.Resource
 
 	for _, name := range podOrServices {
 		var types []string
 		if strings.Contains(name, ":") {
 			types = []string{clitypes.ServiceType}
 		} else {
-			types = []string{clitypes.PodType, clitypes.AppType}
+			types = []string{clitypes.PodType, clitypes.AppType, clitypes.BuildType}
 		}
 		r, err := lookup.Lookup(ctx, name, types...)
 		if err != nil {
@@ -54,6 +57,8 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 			services = append(services, r)
 		case clitypes.AppType:
 			apps = append(apps, r)
+		case clitypes.BuildType:
+			builds = append(builds, r)
 		}
 	}
 
@@ -66,7 +71,7 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 		}
 	}
 
-	if len(pods) > 0 && len(services) == 0 && len(apps) == 0 {
+	if len(pods) > 0 && len(services) == 0 && len(apps) == 0 && len(builds) == 0 {
 		return result, nil
 	}
 
@@ -81,7 +86,7 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 			continue
 		}
 
-		if len(services) == 0 && len(apps) == 0 {
+		if len(services) == 0 && len(apps) == 0 && len(builds) == 0 {
 			result = append(result, podData)
 			continue
 		}
@@ -96,6 +101,14 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 
 		for _, app := range apps {
 			if app.Name == podData.Service.ServiceName && app.Namespace == podData.Service.StackName {
+				result = append(result, podData)
+				break
+			}
+		}
+
+		for _, build := range builds {
+			b := build.Object.(*v1alpha1.Build)
+			if podData.Pod.Labels["build.knative.dev/buildName"] == b.Name {
 				result = append(result, podData)
 				break
 			}
@@ -129,7 +142,7 @@ func toPodData(ctx *clicontext.CLIContext, all bool, pod *v1.Pod, containerName 
 		return podData, false
 	}
 
-	containers := append(pod.Spec.Containers, pod.Spec.InitContainers...)
+	containers := append(pod.Spec.InitContainers, pod.Spec.Containers...)
 	for _, container := range containers {
 		if containerName == "" || container.Name == containerName {
 			podData.Containers = append(podData.Containers, container)
