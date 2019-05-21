@@ -131,18 +131,6 @@ func (u Uninstall) Run(ctx *clicontext.CLIContext) error {
 		}
 	}
 
-	fmt.Println("Cleaning up finalizers for resource ServiceRecommendations, group autoscale.rio.cattle.io...")
-	autoscales, err := ctx.Autoscale.ServiceScaleRecommendations("").List(metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-	for _, ssr := range autoscales.Items {
-		ssr.Finalizers = nil
-		if _, err := ctx.Autoscale.ServiceScaleRecommendations(ssr.Namespace).Update(&ssr); err != nil && !errors.IsNotFound(err) {
-			return err
-		}
-	}
-
 	crdclient, err := clientset.NewForConfig(ctx.RestConfig)
 	if err != nil {
 		return err
