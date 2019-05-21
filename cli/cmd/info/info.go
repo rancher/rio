@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/rancher/rio/cli/cmd/install"
-
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/version"

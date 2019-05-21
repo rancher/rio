@@ -2,11 +2,14 @@ package install
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
 
+	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/cli/pkg/up/questions"
 	"github.com/rancher/rio/modules/service/controllers/serviceset"
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
@@ -142,6 +145,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 	fmt.Println("Deploying Rio control plane....")
+	start := time.Now()
 	for {
 		time.Sleep(time.Second * 2)
 		dep, err := ctx.K8s.AppsV1().Deployments(namespace).Get("rio-controller", metav1.GetOptions{})
@@ -164,6 +168,13 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 			time.Sleep(15 * time.Second)
 			continue
 		} else {
+			ok, err := i.delectingServiceLoadbalancer(ctx, info, start)
+			if err != nil {
+				return err
+			} else if !ok {
+				fmt.Println("Waiting for service loadbalancer to be up")
+				continue
+			}
 			fmt.Printf("rio controller version %s (%s) installed into namespace %s\n", info.Status.Version, info.Status.GitCommit, info.Status.SystemNamespace)
 		}
 		fmt.Printf("Please make sure all the system pods are actually running. Run `kubectl get po -n %s` to get more detail.\n", info.Status.SystemNamespace)
@@ -195,4 +206,40 @@ func allReady(info *adminv1.RioInfo) ([]string, bool) {
 		}
 	}
 	return notReadyList, ready
+}
+
+func (i *Install) delectingServiceLoadbalancer(ctx *clicontext.CLIContext, info *adminv1.RioInfo, startTime time.Time) (bool, error) {
+	svc, err := ctx.Core.Services(info.Status.SystemNamespace).Get(fmt.Sprintf("%s-%s", constants.IstioGateway, constants.DefaultServiceVersion), metav1.GetOptions{})
+	if err != nil {
+		return false, err
+	}
+
+	if svc.Spec.Type == v1.ServiceTypeLoadBalancer && !i.HostPorts {
+		if len(svc.Status.LoadBalancer.Ingress) == 0 {
+			if time.Now().After(startTime.Add(time.Minute * 2)) {
+				msg := fmt.Sprintln("Detecting that your service loadbalancer for service mesh gateway is still pending. Do you want to:")
+				options := []string{
+					"[1] Use HostPorts\n",
+					"[2] Wait for service loadbalancer\n",
+				}
+
+				num, err := questions.PromptOptions(msg, -1, options...)
+				if err != nil {
+					return false, nil
+				}
+
+				if num == 0 {
+					fmt.Println("Reinstall Rio using --host-ports")
+					cmd := reexec.Command("rio", "install", "--host-ports")
+					cmd.Stdout = os.Stdout
+					cmd.Stderr = os.Stderr
+					cmd.Env = os.Environ()
+					return true, cmd.Run()
+				}
+				return true, nil
+			}
+			return false, nil
+		}
+	}
+	return true, nil
 }
