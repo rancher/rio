@@ -15,18 +15,21 @@ Rio is a MicroPaaS that can be layered on top of any standard Kubernetes cluster
 
 ```bash
 # Download the CLI (available for macOS, Windows, Linux)
-curl -sfL https://get.rio.io | sh -   # or manually from https://github.com/rancher/rio/releases
+$ curl -sfL https://get.rio.io | sh -   # or manually from https://github.com/rancher/rio/releases
 
 # Setup your cluster for Rio
-rio install
+$ rio install
+
+# Make sure all the pods are up and running. These takes several minutes.
+$ kubectl get po -n rio-system
 
 # Run a sample service
-rio run https://github.com/rancher/rio-demo
+$ rio run https://github.com/rancher/rio-demo
 
 # Check the status
-rio ps 
-rio console
-rio info
+$ rio ps 
+$ rio console
+$ rio info
 ```
 
 Note: Rio will use a [service loadbalancer](https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer) to expose the service mesh gateway.
