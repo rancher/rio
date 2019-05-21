@@ -113,13 +113,26 @@ func (h *handler) onChange(key string, service *riov1.Service) (*riov1.Service, 
 		if service.Status.ObservedScale != nil && *service.Status.ObservedScale != 0 {
 			scale = *service.Status.ObservedScale
 		}
+
+		scaleStatus := service.Status.ScaleStatus
+		weight := service.Spec.Weight
+
+		// hack for daemonsets
+		if scaleStatus == nil && service.SystemSpec != nil && service.SystemSpec.Global {
+			scaleStatus = &riov1.ScaleStatus{
+				Available: scale,
+				Ready:     scale,
+			}
+			weight = 100
+		}
+
 		serviceWeight = append(serviceWeight, riov1.Revision{
 			Public:          public,
-			Weight:          service.Spec.Weight,
+			Weight:          weight,
 			ServiceName:     service.Name,
 			Version:         version,
 			Scale:           scale,
-			ScaleStatus:     service.Status.ScaleStatus,
+			ScaleStatus:     scaleStatus,
 			RolloutConfig:   service.Spec.RolloutConfig,
 			DeploymentReady: IsReady(service.Status.DeploymentStatus),
 		})
