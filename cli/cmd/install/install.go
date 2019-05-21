@@ -62,7 +62,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 	}
 
 	if isMinikubeCluster(nodes) && len(i.IPAddress) == 0 {
-		fmt.Println("Detecting that you are using minikube cluster")
+		fmt.Println("Detected minikube cluster")
 		cmd := exec.Command("minikube", "ip")
 		stdout := &strings.Builder{}
 		stderr := &strings.Builder{}
@@ -72,7 +72,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 			return fmt.Errorf("$(minikube ip) failed with error: (%v). Do you have minikube in your PATH", stderr.String())
 		}
 		ip := strings.Trim(stdout.String(), " ")
-		fmt.Printf("Manually setting minikube IP to %s\n", ip)
+		fmt.Printf("Manually setting cluster IP to %s\n", ip)
 		i.IPAddress = []string{ip}
 		i.HostPorts = true
 	}
@@ -123,6 +123,8 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		fmt.Println("Controller logs are available from `rio systemlogs`")
 		fmt.Println("")
 		fmt.Println("Welcome to Rio!")
+		fmt.Println("")
+		fmt.Println("Run `rio run https://github.com/rancher/rio-demo` as an example")
 		break
 	}
 	return nil

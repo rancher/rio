@@ -25,7 +25,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			systemstack.NewStack(apply, rContext.Namespace, "rio-autoscaler", true),
 		},
 		FixedAnswers: map[string]string{
-			"TAG": "v0.1.1",
+			"TAG": "v0.1.2",
 		},
 		Controllers: []features.ControllerRegister{
 			service.Register,
