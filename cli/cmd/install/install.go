@@ -61,7 +61,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		memoryWarning = true
 	}
 
-	if isMinikubeCluster(nodes) {
+	if isMinikubeCluster(nodes) && len(i.IPAddress) == 0 {
 		fmt.Println("Detected minikube cluster")
 		cmd := exec.Command("minikube", "ip")
 		stdout := &strings.Builder{}
