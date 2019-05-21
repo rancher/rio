@@ -14,10 +14,9 @@ func NewService(cfg Config) TableWriter {
 		{"NAME", "{{serviceName .Obj.Namespace .Obj}}"},
 		{"IMAGE", "{{.Obj | image}}"},
 		{"CREATED", "{{.Obj.CreationTimestamp | ago}}"},
-		{"STATE", "{{.Obj | state}}"},
 		{"SCALE", "{{scale .Obj.Spec.Scale .Obj.Status.ScaleStatus .Obj.Status.ObservedScale}}"},
 		{"ENDPOINT", "{{.Obj.Status.Endpoints | array}}"},
-		{"WEIGHT", "{{.Obj.Spec.Weight | graph}}"},
+		{"WEIGHT", "{{.Obj.Spec.Weight}}"},
 		{"DETAIL", "{{first (.Obj |  transitioning) (.Obj | transitioning)}}"},
 	}, cfg)
 

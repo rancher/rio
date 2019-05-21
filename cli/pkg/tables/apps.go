@@ -132,8 +132,13 @@ func formatAppDetail(obj interface{}) (string, error) {
 
 	versions := revisionsByVersion(appData.App.Spec.Revisions)
 	for _, name := range revisions(appData.App.Spec.Revisions) {
+		svc, ok := appData.Revisions[name]
+		if !ok {
+			continue
+		}
+
 		rev := versions[name]
-		if !rev.DeploymentReady {
+		if !rev.DeploymentReady && (svc.SystemSpec == nil || !svc.SystemSpec.Global) {
 			if buffer.Len() > 0 {
 				buffer.WriteString("; ")
 			}
@@ -141,8 +146,7 @@ func formatAppDetail(obj interface{}) (string, error) {
 			buffer.WriteString(" NotReady")
 		}
 
-		svc, ok := appData.Revisions[name]
-		if ok && waitingOnBuild(svc) {
+		if waitingOnBuild(svc) {
 			if riov1.ServiceConditionImageReady.IsFalse(svc) {
 				if buffer.Len() > 0 {
 					buffer.WriteString("; ")
