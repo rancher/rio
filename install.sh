@@ -4,6 +4,11 @@ set -e
 GITHUB_URL=https://github.com/rancher/rio/releases
 UNINSTALL_RIO_SH=rio-uninstall.sh
 
+SHA="sha256sum"
+if [ $(uname) = "Darwin" ]; then
+    SHA="shasum -a 256"
+fi
+
 # --- helper functions for logs ---
 info()
 {
@@ -122,7 +127,7 @@ download_hash() {
 # --- check hash against installed version ---
 installed_hash_matches() {
     if [ -x ${BIN_DIR}/rio ]; then
-        HASH_INSTALLED=`sha256sum ${BIN_DIR}/rio | awk '{print $1}'`
+        HASH_INSTALLED=`$SHA ${BIN_DIR}/rio | awk '{print $1}'`
         if [ "${HASH_EXPECTED}" = "${HASH_INSTALLED}" ]; then
             return
         fi
@@ -140,7 +145,7 @@ download_binary() {
 # --- verify downloaded binary hash ---
 verify_binary() {
     info "Verifying binary download"
-    HASH_BIN=`sha256sum ${TMP_BIN} | awk '{print $1}'`
+    HASH_BIN=`$SHA ${TMP_BIN} | awk '{print $1}'`
     if [ "${HASH_EXPECTED}" != "${HASH_BIN}" ]; then
         fatal "Download sha256 does not match ${HASH_EXPECTED}, got ${HASH_BIN}"
     fi
@@ -202,7 +207,7 @@ EOF
 
 # --- get hashes of the current rio bin and service files
 get_installed_hashes() {
-    $SUDO sha256sum ${BIN_DIR}/rio 2>&1 || true
+    $SUDO $SHA ${BIN_DIR}/rio 2>&1 || true
 }
 
 # --- run the install process --
