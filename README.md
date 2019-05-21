@@ -1,37 +1,13 @@
 Rio
 ===
 
-1. Simple, fun, end-to-end container experience
-2. Cloud Native Container Distribution
-
-Rio is a user oriented end-to-end container solution with a focus on keeping containers simple and
-combating the current trend of complexity. It's kept fun and simple through it's familiar and
-opinionated user experience.  Additionally, Rio is a "Cloud Native Container Distribution"
-meaning it includes builtin Cloud Native technologies such as Kubernetes, Istio, Containerd, etc.
-so that the user need not be an expert in installing, using, and maintaining these systems.
-
-## Current Status: Early Preview
-
-This is an early preview, features may be broken, not work as described, and has been known to be irresistibly drawn
-to large cities, where it will back up sewers, reverse street signs, and steal everyone's left shoe.
-Please try it out and file bugs.
-
-### Goals
-
-1. Fun. Containers should be fun.
-1. Simple. Simple can only be achieved by applying some opinion and as such Rio is an opinionated tool.
-1. Portable. Each Rio cluster should have the same functionality available to it.  The differences between clusters
-are only speed, reliability, and permissions.  Running in production should be just as simple as your laptop (and vice versa)
-1. Secure. Rio will by default use the best security settings and encryption and such will be enabled by default.
-1. Product Grade. Running Rio should give you a production worthy system and not need you to bolt on infinite more ops tools.
-1. Cloud Native Distribution.  Rio will include all the the key cloud native technologies by default such that each user does not
-need to be an expert in the details.
+Rio is a MicroPaaS that can be layered on top of any standard Kubernetes cluster.  Consisting of a few Kubernetes custom resources and a CLI to enhance the user experience, users can easily deploy services to Kubernetes and automatically get continuous delivery, DNS, HTTPS, routing, monitoring, autoscaling, canary deployments, git-triggered builds, and much more.  All it takes to get going is an existing Kubernetes cluster and the rio CLI.
 
 ## Quick Start
 
 1. Have a Kubernetes cluster running. 
 
-    [K3S](https://k3s.io/)
+    [k3s](https://k3s.io/)
     
     [RKE](https://github.com/rancher/rke)
     
@@ -48,7 +24,7 @@ need to be an expert in the details.
 2. Run 
 
 ```bash
-# Download to CLI (available for macOS, Windows, Linux)
+# Download the CLI (available for macOS, Windows, Linux)
 curl -sfL https://get.rio.io | sh -   # or manually from https://github.com/rancher/rio/releases
 # Setup your cluster for Rio
 rio install
@@ -60,8 +36,8 @@ rio console
 rio info
 ```
 
-Note: Rio needs your kubernetes cluster supports [service loadbalancer](https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer) to expose service mesh gateway.
-If your cluster doesn't support it, simply run `rio install --host-ports` to use host ports to expose gateway.
+Note: Rio will use a [service loadbalancer](https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer) to expose the service mesh gateway.
+If your cluster doesn't support service load balancers, simply run `rio install --host-ports` to use host ports to expose gateway.
 
 Using Rio
 =========
@@ -70,41 +46,43 @@ Using Rio
 
 ### Service
 
-The main unit that is being dealt with in Rio are services.  Services are just a collection of containers that provide a
-similar function.  When you run containers in Rio you are really creating a Scalable Service.  `rio run` and `rio create` will
+The main unit that is being dealt with in Rio are services.  Services are just a scalable set of containers that provide a
+similar function.  When you run containers in Rio you are really creating a Service.  `rio run` and `rio create` will
 create a service.  You can later scale that service with `rio scale`.  Services are assigned a DNS name so that group
 of containers can be accessed from other services.
 
 ### Apps
 
-App contains multiple service revisions. Each service is rio can uniquely be identified as a revision, group by app and version.
-App aggregates all the revisions by app name, provides an entry to access all the revisions. What percentage of traffic goes to which 
-revision depends on how much weight is set on each revision.
+An App contains multiple service revisions. Each service in rio is assigned an app and version.  Services that have the same app but
+different versions are reference to as revisions.  The group of all revision for an app is what is called an App or application in Rio.
+An application named `foo` will be given a DNS name like `foo.clusterdomain.on-rio.io` and each version is assigned it's own DNS name.  If the app was
+`foo` and the version is `v2` the assigned DNS name for that revision would be similar to `foo-v2.clusterdomain.on-rio.io`.  `rio ps` and `rio revision` will
+list the assigned DNS names.
 
 ### Router
 
-Router is an abstract layer sitting on top of services, it provides a configuration to different services. It can define various 
-routing rules to match different backends. Router also provides an entry to access and a Dns name in the cluster.
+Router is an virtual service that load balances and routes traffic to other services.  Routing rules can route based
+on hostname, path, HTTP headers, protocol, and source.
 
-### ExternalService
+### External Service
 
-ExternalService provides a way to create dns record for services that are outside of mesh. It can be IP addresses and FQDN.
+External Service provides a way to register external IPs or hostnames in the service mesh so they can be accessed by Rio services.
 
-### PublicDomain
+### Public Domain
 
-PublicDomain can be configured to give service or router a different public domain to access the workload.
+Public Domain can be configured to assign a service or router a vanity domain like www.myproductionsite.com.
 
 ## Service Mesh
 
 Rio has a built in service mesh, powered by Istio and Envoy.  The service mesh provides all of the core communication
 abilities for services to talk to each other, inbound traffic and outbound traffic.  All traffic can be encrypted,
 validated, and routed dynamically according to the configuration.  Rio specifically does not require the user to
-understand much about the underlying service mesh.  Just know that all communication is going through the service mesh.
+understand much about the underlying service mesh.
 
 ## Cluster Domain and TLS
 
-By default Rio will create a DNS record pointing to your ingress IPs. Rio also uses Letsencrypt to create
-a wildcard certificate for the cluster domain so that all the traffic to access your application can be encrypted.
+By default Rio will create a DNS record pointing to your cluster. Rio also uses Let's Encrypt to create
+a certificate for the cluster domain so that all services support HTTPS by default.
 For example, When you deploy your workload, you can access your workload in HTTPS. The domain always follow the format
 of ${app}-${namespace}.${cluster-domain}. You can see your cluster domain by running `rio info`.
 
@@ -128,13 +106,12 @@ Hello World
 
 ### Staging Versions
 
-Service mesh will route traffic to given services.  Services can have multiple versions of
-the service deployed at once and then the you can control how much traffic, or which traffic
-is routed to each version.
+Services can have multiple versions deployed at once.  The service mesh can then decide how much traffic
+to route to each revision.
 
-### rio stage [OPTIONS] SERVICE_ID_NAME
+### rio stage [--image=IMAGE] [--edit] SERVICE
 
-The `rio stage` command takes all the same options as `rio create` but instead of updating
+The `rio stage` command will stage a new revision of an existing service.
 the existing service, it will stage a new version of the service.  For example, below is
 scenario to do a canary deployment.
 
@@ -409,24 +386,6 @@ rio-system/webhook            https://webhook-rio-system.iazlia.on-rio.io:9443  
 ```
 
 ![Grafana](https://raw.githubusercontent.com/StrongMonkey/rio/refactor/grafana-example.png)
-
-## Roadmap
-
-| Function | Implementation | Status |
-|----------|----------------|--------|
-| Container Runtime | containerd | included
-| Orchestration | Kubernetes | included
-| Networking | Flannel | included
-| Service Mesh | Istio | included
-| Monitoring | Prometheus | included
-| Logging | Fluentd
-| Storage | Longhorn |
-| CI | Drone
-| Registry | Docker Registry 2 | included
-| Builder | Moby BuildKit | included
-| TLS | Let's Encrypt | included
-| Image Scanning | Clair
-| Autoscaling | Knative | included
 
 ## License
 Copyright (c) 2014 - 2019 [Rancher Labs, Inc.](http://rancher.com)
