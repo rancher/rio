@@ -160,7 +160,8 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 			fmt.Println("Waiting for rio controller to initialize")
 			continue
 		} else if notReadyList, ok := allReady(info); !ok {
-			fmt.Printf("Waiting for all the system components to be up. Please run `rio info` to get more infomation. Not ready component: %v\n", notReadyList)
+			fmt.Printf("Waiting for all the system components to be up. Not ready component: %v\n", notReadyList)
+			time.Sleep(1 * time.Second)
 			continue
 		} else {
 			fmt.Printf("rio controller version %s (%s) installed into namespace %s\n", info.Status.Version, info.Status.GitCommit, info.Status.SystemNamespace)
@@ -188,7 +189,7 @@ func allReady(info *adminv1.RioInfo) ([]string, bool) {
 	var notReadyList []string
 	ready := true
 	for _, c := range SystemComponents {
-		if !info.Status.SystemComponentReadyMap[c] {
+		if info.Status.SystemComponentReadyMap[c] != "running" {
 			notReadyList = append(notReadyList, c)
 			ready = false
 		}

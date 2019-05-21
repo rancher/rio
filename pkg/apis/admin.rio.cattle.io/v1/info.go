@@ -26,5 +26,5 @@ type RioInfoStatus struct {
 	GitCommit               string                              `json:"gitCommit,omitempty"`
 	SystemNamespace         string                              `json:"systemNamespace,omitempty"`
 	Conditions              []genericcondition.GenericCondition `json:"conditions,omitempty"`
-	SystemComponentReadyMap map[string]bool                     `json:"systemComponentReadyMap,omitempty"`
+	SystemComponentReadyMap map[string]string                   `json:"systemComponentReadyMap,omitempty"`
 }

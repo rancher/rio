@@ -7,7 +7,7 @@ Rio is a MicroPaaS that can be layered on top of any standard Kubernetes cluster
 
 1. Have a Kubernetes 1.13 or newer cluster running. 
 
-    [k3s](https://k3s.io/), [RKE](https://github.com/rancher/rke), [Minikube](https://kubernetes.io/docs/setup/minikube/), [Docker For Mac](https://docs.docker.com/v17.12/docker-for-mac/#kubernetes-tab), [GKE](https://cloud.google.com/kubernetes-engine/), [AKS](https://docs.microsoft.com/en-us/azure/aks/), [EKS](https://aws.amazon.com/eks/),
+    [k3s](https://k3s.io/), [RKE](https://github.com/rancher/rke), [Minikube](https://kubernetes.io/docs/setup/minikube/), [Docker For Mac Edge](https://docs.docker.com/docker-for-mac/edge-release-notes/), [GKE](https://cloud.google.com/kubernetes-engine/), [AKS](https://docs.microsoft.com/en-us/azure/aks/), [EKS](https://aws.amazon.com/eks/),
 
     Please ensure you have at least 3GB of memory free in your cluster.  We will attempt to reduce the memory footprint in a future release. Some of the components we are currently depending on are quite large.
 

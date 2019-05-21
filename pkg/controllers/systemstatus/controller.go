@@ -45,9 +45,12 @@ func (h handler) sync(key string, obj *riov1.Service) (*riov1.Service, error) {
 	info := infoObj.DeepCopy()
 	readyMap := info.Status.SystemComponentReadyMap
 	if readyMap == nil {
-		readyMap = make(map[string]bool)
+		readyMap = make(map[string]string)
 	}
-	readyMap[obj.Name] = serviceset.IsReady(obj.Status.DeploymentStatus)
+	if serviceset.IsReady(obj.Status.DeploymentStatus) {
+		readyMap[obj.Name] = "running"
+	}
+
 	info.Status.SystemComponentReadyMap = readyMap
 	if _, err := h.rioinfos.Update(info); err != nil {
 		return obj, err
