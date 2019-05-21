@@ -17,10 +17,11 @@ import (
 )
 
 type Install struct {
-	HTTPPort  string   `desc:"http port service mesh gateway will listen to" default:"9080"`
-	HTTPSPort string   `desc:"https port service mesh gateway will listen to" default:"9443"`
-	HostPorts bool     `desc:"whether to use hostPorts to expose service mesh gateway"`
-	IPAddress []string `desc:"Manually specify IP addresses to generate rdns domain"`
+	HTTPPort    string   `desc:"http port service mesh gateway will listen to" default:"9080"`
+	HTTPSPort   string   `desc:"https port service mesh gateway will listen to" default:"9443"`
+	HostPorts   bool     `desc:"whether to use hostPorts to expose service mesh gateway"`
+	IPAddress   []string `desc:"Manually specify IP addresses to generate rdns domain"`
+	ServiceCidr string   `desc:"Manually specify service CIDR for service mesh to intercept"`
 }
 
 func (i *Install) Run(ctx *clicontext.CLIContext) error {
@@ -87,6 +88,16 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		}
 	}
 
+	if i.ServiceCidr == "" {
+		svc, err := ctx.Core.Services("default").Get("kubernetes", metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		clusterCIDR := svc.Spec.ClusterIP + "/16"
+		fmt.Printf("Defaulting cluster CIDR to %s\n", clusterCIDR)
+		i.ServiceCidr = clusterCIDR
+	}
+
 	if err := controllerStack.Deploy(map[string]string{
 		"NAMESPACE":    namespace,
 		"DEBUG":        fmt.Sprint(ctx.Debug),
@@ -95,6 +106,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		"HTTP_PORT":    i.HTTPPort,
 		"USE_HOSTPORT": fmt.Sprint(i.HostPorts),
 		"IP_ADDRESSES": strings.Join(i.IPAddress, ","),
+		"SERVICE_CIDR": i.ServiceCidr,
 	}); err != nil {
 		return err
 	}
@@ -119,7 +131,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		} else {
 			fmt.Printf("rio controller version %s (%s) installed into namespace %s\n", info.Status.Version, info.Status.GitCommit, info.Status.SystemNamespace)
 		}
-		fmt.Printf("Rio control plane is deployed. Run `kubectl get po -n %s` to get more detail.\n", info.Status.SystemNamespace)
+		fmt.Printf("Please make sure all the system pods are actually running. Run `kubectl get po -n %s` to get more detail.\n", info.Status.SystemNamespace)
 		fmt.Println("Controller logs are available from `rio systemlogs`")
 		fmt.Println("")
 		fmt.Println("Welcome to Rio!")

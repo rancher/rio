@@ -69,6 +69,8 @@ kubernetes:
               value: "${USE_HOSTPORT}"
             - name: IP_ADDRESSES
               value: ${IP_ADDRESSES}
+            - name: SERVICE_CIDR
+              value: ${SERVICE_CIDR}
 
 templates:
   questions:
@@ -86,3 +88,5 @@ templates:
     description: "whether to use hostPort"
   - variable: IP_ADDRESSES
     description: "whether to manually specify ip addresses to generate"
+  - variable: SERVICE_CIDR
+    description: "manually specify service CIDR for service mesh to intercept"

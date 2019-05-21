@@ -77,6 +77,12 @@ func main() {
 			EnvVar:      "IP_ADDRESSES",
 			Destination: &constants.UseIPAddress,
 		},
+		cli.StringFlag{
+			Name:        "service-cidr",
+			Usage:       "Manually specify cluster IP CIDR for envoy",
+			EnvVar:      "SERVICE_CIDR",
+			Destination: &constants.ServiceCidr,
+		},
 	}
 	app.Action = run
 
