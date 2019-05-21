@@ -6,7 +6,6 @@ import (
 
 	"github.com/knative/build/pkg/apis/build/v1alpha1"
 	webhookv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
-	"github.com/rancher/rio/modules/istio/pkg/domains"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
@@ -184,11 +183,16 @@ func populateWebhookAndSecrets(webhookService *riov1.App, service *riov1.Service
 	os.Add(webhookReceiver)
 }
 
-func ImageName(customeRegistry, registryNamespace, rev, domain string, service *riov1.Service) string {
-	var registryAddr string
+func ImageName(customRegistry, registryNamespace, rev, domain string, service *riov1.Service) string {
+	if customRegistry == "" {
+		return fmt.Sprintf("registry.%s/%s:%s", registryNamespace, service.Namespace+"/"+service.Name, rev)
+	}
+	return fmt.Sprintf("%s/%s:%s", customRegistry, service.Namespace+"-"+service.Name, rev)
+}
+
+func PullImageName(customeRegistry, registryNamespace, rev, domain string, service *riov1.Service) string {
 	if customeRegistry == "" {
-		registryAddr = domains.GetExternalDomain("registry", registryNamespace, domain)
-		return fmt.Sprintf("%s/%s:%s", registryAddr, service.Namespace+"/"+service.Name, rev)
+		return fmt.Sprintf("localhost:5442/%s:%s", service.Namespace+"/"+service.Name, rev)
 	}
 	return fmt.Sprintf("%s/%s:%s", customeRegistry, service.Namespace+"-"+service.Name, rev)
 }

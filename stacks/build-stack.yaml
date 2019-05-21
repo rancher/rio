@@ -52,25 +52,12 @@ services:
             privileged: true
   registry:
     image: registry:2
-    labels:
-      request-subdomain: 'true'
-    secrets:
-    - rio-wildcard:/etc/registry
     env:
-    - REGISTRY_HTTP_ADDR=0.0.0.0:443
-    - REGISTRY_HTTP_TLS_CERTIFICATE=/etc/registry/tls.crt
-    - REGISTRY_HTTP_TLS_KEY=/etc/registry/tls.key
+    - REGISTRY_HTTP_ADDR=0.0.0.0:80
     ports:
-    - 443:443/tcp,registry
+    - 80:80/tcp,registry
     volumes:
     - storage-registry:/var/lib/registry
-    containers:
-    - name: cert-checker
-      init: true
-      image: rancher/rio-cert-checker:v0.1.0-rc7
-      imagePullPolicy: Always
-      secrets:
-      - rio-wildcard:/etc/registry
   webhook:
     global_permissions:
     - "* gitwatcher.cattle.io/gitwatchers"
@@ -213,6 +200,7 @@ kubernetes:
         workingDir: $${DIRECTORY}
         command: ["buildctl", "--addr=$${BUILDKIT_DAEMON_ADDRESS}", "build",
                   "--progress=plain",
+                  "--exporter-opt=registry.insecure=true",
                   "--frontend=dockerfile.v0",
                   "--frontend-opt", "filename=$${DOCKERFILE}",
                   "--local", "context=.", "--local", "dockerfile=.",
