@@ -64,11 +64,11 @@ func (h handler) updateService(key string, build *v1alpha1.Build) (*v1alpha1.Bui
 	}
 
 	if con.IsTrue() {
-		imageName := service.ImageName(h.registry, h.systemNamespace, build.Spec.Source.Git.Revision, domain, svc)
+		imageName := service.PullImageName(h.registry, h.systemNamespace, build.Spec.Source.Git.Revision, domain, svc)
 		if svc.Spec.Image != imageName {
 			deepCopy := svc.DeepCopy()
 			v1.ServiceConditionImageReady.SetError(deepCopy, "", nil)
-			deepCopy.Spec.Image = service.ImageName(h.registry, h.systemNamespace, build.Spec.Source.Git.Revision, domain, deepCopy)
+			deepCopy.Spec.Image = service.PullImageName(h.registry, h.systemNamespace, build.Spec.Source.Git.Revision, domain, deepCopy)
 			if _, err := h.services.Update(deepCopy); err != nil {
 				return build, err
 			}

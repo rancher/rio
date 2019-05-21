@@ -3,6 +3,8 @@ package feature
 import (
 	"context"
 
+	"github.com/rancher/rio/modules/build/controllers/proxy"
+
 	"github.com/rancher/rio/modules/build/controllers/build"
 	"github.com/rancher/rio/modules/build/controllers/gitcommit"
 	"github.com/rancher/rio/modules/build/controllers/service"
@@ -27,6 +29,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			service.Register,
 			build.Register,
 			gitcommit.Register,
+			proxy.Register,
 		},
 		FixedAnswers: map[string]string{
 			"NAMESPACE": rContext.Namespace,
