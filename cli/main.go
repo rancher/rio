@@ -208,7 +208,7 @@ func main() {
 			""),
 		builder.Command(&tui.Console{},
 			"Terminal interactive UI",
-			appName+" tui",
+			appName+" console",
 			""),
 		builder.Command(&systemlogs.SystemLogs{},
 			"View system log for Rio management plane",

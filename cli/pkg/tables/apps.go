@@ -112,6 +112,20 @@ func formatWeightGraph(obj interface{}) (string, error) {
 	return strings.Join(result, ","), nil
 }
 
+func waitingOnBuild(svc *riov1.Service) bool {
+	if svc.Spec.Image == "" && svc.Spec.Build != nil && svc.Spec.Build.Repo != "" {
+		return true
+	}
+
+	for _, container := range svc.Spec.Sidecars {
+		if container.Image == "" && container.Build != nil && container.Build.Repo != "" {
+			return true
+		}
+	}
+
+	return false
+}
+
 func formatAppDetail(obj interface{}) (string, error) {
 	appData := obj.(*AppData)
 	buffer := strings.Builder{}
@@ -128,7 +142,7 @@ func formatAppDetail(obj interface{}) (string, error) {
 		}
 
 		svc, ok := appData.Revisions[name]
-		if ok && svc.Spec.Image == "" {
+		if ok && waitingOnBuild(svc) {
 			if riov1.ServiceConditionImageReady.IsFalse(svc) {
 				if buffer.Len() > 0 {
 					buffer.WriteString("; ")
