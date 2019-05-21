@@ -81,6 +81,7 @@ func main() {
 			Name:        "service-cidr",
 			Usage:       "Manually specify cluster IP CIDR for envoy",
 			EnvVar:      "SERVICE_CIDR",
+			Value:       "10.43.0.0/16",
 			Destination: &constants.ServiceCidr,
 		},
 	}
