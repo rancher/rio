@@ -1,5 +1,7 @@
 package: package=github.com/rancher/rio
 import:
+- package: cloud.google.com/go
+  version: v0.1.0-115-g3b1ae45394a234
 - package: github.com/Azure/go-ansiterm
   version: d6e3b3328b783f23731bc4d058875b0371ff8109
 - package: github.com/MakeNowJust/heredoc
@@ -12,8 +14,6 @@ import:
   version: v1.0.1
 - package: github.com/beorn7/perks
   version: 3ac7bf7a47d159a033b107610db8a1b6575507a4
-- package: github.com/chai2010/gettext-go
-  version: c6fed771bfd517099caf0f7a961671fa8ed08723
 - package: github.com/davecgh/go-spew
   version: v1.1.0-1-g782f4967f2dc45
 - package: github.com/docker/docker
