@@ -57,7 +57,7 @@ list the assigned DNS names.
 
 ### Router
 
-Router is an virtual service that load balances and routes traffic to other services.  Routing rules can route based
+Router is a virtual service that load balances and routes traffic to other services.  Routing rules can route based
 on hostname, path, HTTP headers, protocol, and source.
 
 ### External Service
