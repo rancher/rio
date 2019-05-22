@@ -9,14 +9,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rancher/rio/pkg/services"
-
 	"github.com/docker/docker/pkg/namesgenerator"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/types"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
 	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constructors"
+	"github.com/rancher/rio/pkg/services"
 	"github.com/rancher/wrangler/pkg/kv"
 	"github.com/rancher/wrangler/pkg/merr"
 	"golang.org/x/sync/errgroup"
@@ -146,6 +146,17 @@ func (c *CLIContext) Create(obj runtime.Object) (err error) {
 	rand.Seed(time.Now().UnixNano())
 	if metadata.GetName() == "" {
 		metadata.SetName(strings.Replace(namesgenerator.GetRandomName(2), "_", "-", -1))
+	}
+
+	_, err = c.Core.Namespaces().Get(metadata.GetNamespace(), metav1.GetOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			if _, err := c.Core.Namespaces().Create(constructors.NewNamespace(metadata.GetNamespace(), corev1.Namespace{})); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
 	}
 
 	switch o := obj.(type) {
