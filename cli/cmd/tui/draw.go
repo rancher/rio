@@ -120,11 +120,7 @@ var (
 				case 'i':
 					inspect("yaml", t)
 				case 'l':
-					if t.GetResourceKind() == buildKind {
-						logBuilds(t)
-					} else {
-						logs("", t)
-					}
+					logs("", t)
 				case 'x':
 					execute("", t)
 				case '/':

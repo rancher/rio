@@ -10,14 +10,17 @@ import (
 
 func NewBuild(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
+		{"NAME", "{{stackScopedName .Obj.Namespace .Obj.Name ``}}"},
 		{"SERVICE", "{{.Obj | findService}}"},
+		{"REVISION", "{{.Obj | findRevision}}"},
 		{"CREATED", "{{.Obj.CreationTimestamp | ago}}"},
-		{"Succeed", "{{ .Obj | succeed }}"},
-		{"Reason", "{{ .Obj | reason }}"},
+		{"SUCCEED", "{{ .Obj | succeed }}"},
+		{"REASON", "{{ .Obj | reason }}"},
 	}, cfg)
 
 	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cfg.GetSetNamespace()))
 	writer.AddFormatFunc("findService", findService)
+	writer.AddFormatFunc("findRevision", findRevision)
 	writer.AddFormatFunc("succeed", findSucceed)
 	writer.AddFormatFunc("reason", findReason)
 	return &tableWriter{
@@ -56,5 +59,13 @@ func findService(data interface{}) (string, error) {
 	}
 	name := m.Labels["service-name"]
 	namespace := m.Labels["service-namespace"]
-	return fmt.Sprintf("%s/%s:%s", namespace, name, m.Spec.Source.Git.Revision), nil
+	return fmt.Sprintf("%s/%s", namespace, name), nil
+}
+
+func findRevision(data interface{}) (string, error) {
+	m, ok := data.(*v1alpha1.Build)
+	if !ok {
+		return "", nil
+	}
+	return m.Spec.Source.Git.Revision, nil
 }

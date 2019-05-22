@@ -39,6 +39,9 @@ func (s *Scale) Run(ctx *clicontext.CLIContext) error {
 					return fmt.Errorf("failed to parse %s: %v", arg, err)
 				}
 				service.Spec.Scale = scale
+				service.Spec.MinScale = nil
+				service.Spec.MaxScale = nil
+				service.Status.ObservedScale = nil
 			}
 
 			return nil

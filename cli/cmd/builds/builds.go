@@ -11,10 +11,6 @@ func Builds(app *cli.App) cli.Command {
 		"List Builds",
 		app.Name+" builds ls [OPTIONS] $Name",
 		"")
-	logs := builder.Command(&Logs{},
-		"Logs builds",
-		app.Name+" logs $NAMESPACE/$NAME:$revision",
-		"")
 	restart := builder.Command(&Restart{},
 		"Restart builds",
 		app.Name+" restart $NAMESPACE/$NAME:$revision",
@@ -28,7 +24,6 @@ func Builds(app *cli.App) cli.Command {
 		Category:  "SUB COMMANDS",
 		Subcommands: []cli.Command{
 			ls,
-			logs,
 			restart,
 		},
 	}
