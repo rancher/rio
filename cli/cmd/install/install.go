@@ -173,6 +173,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 				return err
 			} else if !ok {
 				fmt.Println("Waiting for service loadbalancer to be up")
+				time.Sleep(5 * time.Second)
 				continue
 			}
 			fmt.Printf("rio controller version %s (%s) installed into namespace %s\n", info.Status.Version, info.Status.GitCommit, info.Status.SystemNamespace)
@@ -215,12 +216,18 @@ func (i *Install) delectingServiceLoadbalancer(ctx *clicontext.CLIContext, info 
 	}
 
 	if svc.Spec.Type == v1.ServiceTypeLoadBalancer && !i.HostPorts {
-		if len(svc.Status.LoadBalancer.Ingress) == 0 {
+		if len(svc.Status.LoadBalancer.Ingress) == 0 || (svc.Status.LoadBalancer.Ingress[0].Hostname != "" && svc.Status.LoadBalancer.Ingress[0].Hostname != "localhost") {
 			if time.Now().After(startTime.Add(time.Minute * 2)) {
-				msg := fmt.Sprintln("Detecting that your service loadbalancer for service mesh gateway is still pending. Do you want to:")
+				msg := ""
+				if len(svc.Status.LoadBalancer.Ingress) > 0 {
+					msg = fmt.Sprintln("Detecting that your service loadbalancer generates a DNS endpoint(usually AWS provider). Rio doesn't support it right now. Do you want to:")
+				} else {
+					msg = fmt.Sprintln("Detecting that your service loadbalancer for service mesh gateway is still pending. Do you want to:")
+				}
+
 				options := []string{
-					"[1] Use HostPorts\n",
-					"[2] Wait for service loadbalancer\n",
+					fmt.Sprintf("[1] Use HostPorts(Please make sure port %v and %v are open for your nodes)\n", i.HTTPPort, i.HTTPSPort),
+					"[2] Wait for Service Load Balancer\n",
 				}
 
 				num, err := questions.PromptOptions(msg, -1, options...)
@@ -230,7 +237,7 @@ func (i *Install) delectingServiceLoadbalancer(ctx *clicontext.CLIContext, info 
 
 				if num == 0 {
 					fmt.Println("Reinstall Rio using --host-ports")
-					cmd := reexec.Command("rio", "install", "--host-ports")
+					cmd := reexec.Command("rio", "install", "--host-ports", "--httpport", i.HTTPPort, "--httpsport", i.HTTPSPort)
 					cmd.Stdout = os.Stdout
 					cmd.Stderr = os.Stderr
 					cmd.Env = os.Environ()
