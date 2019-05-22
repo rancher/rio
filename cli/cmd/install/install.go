@@ -2,18 +2,52 @@ package install
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
 
+	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/cli/pkg/up/questions"
 	"github.com/rancher/rio/modules/service/controllers/serviceset"
+	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/rio/pkg/systemstack"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+var (
+	SystemComponents = []string{
+		Autoscaler,
+		BuildController,
+		Buildkit,
+		CertManager,
+		Grafana,
+		IstioCitadel,
+		IstioPilot,
+		IstioTelemetry,
+		Kiali,
+		Prometheus,
+		Registry,
+		Webhook,
+	}
+
+	Autoscaler      = "autoscaler"
+	BuildController = "build-controller"
+	Buildkit        = "buildkit"
+	CertManager     = "cert-manager"
+	Grafana         = "grafana"
+	IstioCitadel    = "istio-citadel"
+	IstioPilot      = "istio-pilot"
+	IstioTelemetry  = "istio-telemetry"
+	Kiali           = "kiali"
+	Prometheus      = "prometheus"
+	Registry        = "registry"
+	Webhook         = "webhook"
 )
 
 type Install struct {
@@ -111,6 +145,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 	fmt.Println("Deploying Rio control plane....")
+	start := time.Now()
 	for {
 		time.Sleep(time.Second * 2)
 		dep, err := ctx.K8s.AppsV1().Deployments(namespace).Get("rio-controller", metav1.GetOptions{})
@@ -128,7 +163,19 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		} else if info.Status.Version == "" {
 			fmt.Println("Waiting for rio controller to initialize")
 			continue
+		} else if notReadyList, ok := allReady(info); !ok {
+			fmt.Printf("Waiting for all the system components to be up. Not ready component: %v\n", notReadyList)
+			time.Sleep(15 * time.Second)
+			continue
 		} else {
+			ok, err := i.delectingServiceLoadbalancer(ctx, info, start)
+			if err != nil {
+				return err
+			} else if !ok {
+				fmt.Println("Waiting for service loadbalancer to be up")
+				time.Sleep(5 * time.Second)
+				continue
+			}
 			fmt.Printf("rio controller version %s (%s) installed into namespace %s\n", info.Status.Version, info.Status.GitCommit, info.Status.SystemNamespace)
 		}
 		fmt.Printf("Please make sure all the system pods are actually running. Run `kubectl get po -n %s` to get more detail.\n", info.Status.SystemNamespace)
@@ -148,4 +195,58 @@ func isMinikubeCluster(nodes *v1.NodeList) bool {
 
 func isDockerForMac(nodes *v1.NodeList) bool {
 	return len(nodes.Items) == 1 && nodes.Items[0].Name == "docker-for-desktop"
+}
+
+func allReady(info *adminv1.RioInfo) ([]string, bool) {
+	var notReadyList []string
+	ready := true
+	for _, c := range SystemComponents {
+		if info.Status.SystemComponentReadyMap[c] != "running" {
+			notReadyList = append(notReadyList, c)
+			ready = false
+		}
+	}
+	return notReadyList, ready
+}
+
+func (i *Install) delectingServiceLoadbalancer(ctx *clicontext.CLIContext, info *adminv1.RioInfo, startTime time.Time) (bool, error) {
+	svc, err := ctx.Core.Services(info.Status.SystemNamespace).Get(fmt.Sprintf("%s-%s", constants.IstioGateway, constants.DefaultServiceVersion), metav1.GetOptions{})
+	if err != nil {
+		return false, err
+	}
+
+	if svc.Spec.Type == v1.ServiceTypeLoadBalancer && !i.HostPorts {
+		if len(svc.Status.LoadBalancer.Ingress) == 0 || (svc.Status.LoadBalancer.Ingress[0].Hostname != "" && svc.Status.LoadBalancer.Ingress[0].Hostname != "localhost") {
+			if time.Now().After(startTime.Add(time.Minute * 2)) {
+				msg := ""
+				if len(svc.Status.LoadBalancer.Ingress) > 0 {
+					msg = fmt.Sprintln("Detecting that your service loadbalancer generates a DNS endpoint(usually AWS provider). Rio doesn't support it right now. Do you want to:")
+				} else {
+					msg = fmt.Sprintln("Detecting that your service loadbalancer for service mesh gateway is still pending. Do you want to:")
+				}
+
+				options := []string{
+					fmt.Sprintf("[1] Use HostPorts(Please make sure port %v and %v are open for your nodes)\n", i.HTTPPort, i.HTTPSPort),
+					"[2] Wait for Service Load Balancer\n",
+				}
+
+				num, err := questions.PromptOptions(msg, -1, options...)
+				if err != nil {
+					return false, nil
+				}
+
+				if num == 0 {
+					fmt.Println("Reinstall Rio using --host-ports")
+					cmd := reexec.Command("rio", "install", "--host-ports", "--httpport", i.HTTPPort, "--httpsport", i.HTTPSPort)
+					cmd.Stdout = os.Stdout
+					cmd.Stderr = os.Stderr
+					cmd.Env = os.Environ()
+					return true, cmd.Run()
+				}
+				return true, nil
+			}
+			return false, nil
+		}
+	}
+	return true, nil
 }

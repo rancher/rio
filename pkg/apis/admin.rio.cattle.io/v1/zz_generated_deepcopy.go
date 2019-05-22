@@ -447,6 +447,13 @@ func (in *RioInfoStatus) DeepCopyInto(out *RioInfoStatus) {
 		*out = make([]genericcondition.GenericCondition, len(*in))
 		copy(*out, *in)
 	}
+	if in.SystemComponentReadyMap != nil {
+		in, out := &in.SystemComponentReadyMap, &out.SystemComponentReadyMap
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	return
 }
 
