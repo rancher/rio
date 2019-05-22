@@ -79,7 +79,7 @@ understand much about the underlying service mesh.
 
 By default Rio will create a DNS record pointing to your cluster. Rio also uses Let's Encrypt to create
 a certificate for the cluster domain so that all services support HTTPS by default.
-For example, When you deploy your workload, you can access your workload in HTTPS. The domain always follow the format
+For example, when you deploy your workload, you can access your workload in HTTPS. The domain always follows the format
 of ${app}-${namespace}.${cluster-domain}. You can see your cluster domain by running `rio info`.
 
 
@@ -117,17 +117,17 @@ scenario to do a canary deployment.
 $ rio run -p 80/http --name svc --scale=3 ibuildthecloud/demo:v1
 default/svc:v0
 
-# Ensure service is running and determine public URL
+# Ensure the service is running and determine its public URL
 $ rio revision default/svc
 NAME             IMAGE                    CREATED          STATE     SCALE     ENDPOINT                                       WEIGHT                               DETAIL
 default/svc:v0   ibuildthecloud/demo:v1   14 seconds ago   active    3         https://svc-v0-default.iazlia.on-rio.io:9443   =============================> 100   
 
 
-# Stage new version, updating just the docker image and assigning it to "v3" version.
+# Stage a new version, updating just the docker image and assigning it to "v3" version.
 $ rio stage --image=ibuildthecloud/demo:v3 default/svc:v3
 default/svc:v3
 
-# To change the spec of new service
+# Change the spec of the new service
 $ rio stage --edit default/svc:v3 
 
 # Notice a new URL was created for your staged service
@@ -136,15 +136,15 @@ NAME             IMAGE                    CREATED              STATE     SCALE  
 default/svc:v0   ibuildthecloud/demo:v1   About a minute ago   active    3         https://svc-v0-default.iazlia.on-rio.io:9443   =============================> 100   
 default/svc:v3   ibuildthecloud/demo:v3   49 seconds ago       active    3         https://svc-v3-default.iazlia.on-rio.io:9443                                       
 
-# Access current revision
+# Access the current revision
 $ curl -s https://svc-v0-default.iazlia.on-rio.io:9443
 Hello World
 
-# Access staged service under new URL
+# Access the staged service under the new URL
 $ curl -s https://svc-v3-default.iazlia.on-rio.io:9443
 Hello World v3
 
-# Show access url for all the revision
+# Show the access url for all the revisions
 $ rio ps
 NAME          ENDPOINT                                    REVISIONS   SCALE     WEIGHT
 default/svc   https://svc-default.iazlia.on-rio.io:9443   v0,v3       3,3       100%,0%
@@ -153,8 +153,8 @@ default/svc   https://svc-default.iazlia.on-rio.io:9443   v0,v3       3,3       
 $ curl https://svc-default.iazlia.on-rio.io:9443 
 Hello World
 
-# Promote v3 service. The traffic will be shifted to v3 gradually. By default we apply 5% shift every 5 seconds, but it can be configred
-# using flags `--rollout-increment` and `--rollout-interval`. To turn off rollout(traffic percentage will be changed to
+# Promote v3 service. The traffic will be shifted to v3 gradually. By default we apply a 5% shift every 5 seconds, but it can be configured
+# using the flags `--rollout-increment` and `--rollout-interval`. To turn off rollout(the traffic percentage will be changed to
 # the desired value immediately), run `--no-rollout`.
 $ rio promote default/svc:v3
 
@@ -189,7 +189,7 @@ default/svc   https://svc-default.iazlia.on-rio.io:9443   v0,v3       3,3       
 
 ### rio route
 
-`rio route` allows you to create router which contains routing rule to different workloads.
+`rio route` allows you to create a router that contains routing rules to different workloads.
 
 ```base
 # Create a route to point to svc:v0 and svc:v3
@@ -211,13 +211,13 @@ Hello World v3
 
 ### rio externalservice
 
-`rio externalservice` allows you to create dns record for external services that are outside service mesh
+`rio externalservice` allows you to create dns record for external services that are outside the service mesh
 
 ```bash
-# Create a externalservice pointing to an IP
+# Create an external service pointing to an IP
 $ rio externalservice create external 1.1.1.1
 
-#  Create a externalservice pointing to an FQDN
+#  Create an external service pointing to an FQDN
 $ rio externalservice create external-fqdn my.app.com
 
 $ rio external
@@ -228,10 +228,10 @@ default/external-fqdn   3 seconds ago   my.app.com
 
 ### rio domain
 
-`rio domain` allows you to create your own domain and pointing to a specific service or route
+`rio domain` allows you to create your own domain pointing to a specific service or route
 
 ```bash
-# Create a domain that 
+# Create a domain that points to route1
 $ rio domain add foo.bar default/route1 
 default/foo-bar
 
@@ -242,18 +242,18 @@ foo.bar   default/route1
 
 ## Autoscaling
 
-By default rio will enable autoscaling for workloads. Depends on Qps and Current active requests on your workload,
-Rio will scale the workload to the proper scale.
+By default, Rio enables autoscaling for workloads. Depends on QPS and current active requests on your workload,
+Rio scales the workload to the proper scale.
 
 ```bash
-# Run a workload, set minimal scale and maximum scale
+# Run a workload, set the minimal and maximum scale
 $ rio run -p 8080/http --name autoscale --scale=1-20 strongmonkey1992/autoscale:v0 
 default/autoscale:v0
 
-# Put some load to the workload. We use tool [hey](https://github.com/rakyll/hey) to put loads.
+# Put some load to the workload. We use [hey](https://github.com/rakyll/hey) to create traffic
 $ hey -z 600s -c 60 http://autoscale-default.iazlia.on-rio.io:9080
 
-# Noted that service has been scaled to 6
+# Note that the service has been scaled to 6 instances
 $ rio revision default/autoscale
 NAME                   IMAGE                           CREATED          STATE     SCALE     ENDPOINT                                             WEIGHT                               DETAIL
 default/autoscale:v0   strongmonkey1992/autoscale:v0   40 seconds ago   active    6         https://autoscale-v0-default.iazlia.on-rio.io:9443   =============================> 100   
@@ -263,12 +263,12 @@ default/autoscale:v0   strongmonkey1992/autoscale:v0   40 seconds ago   active  
 $ rio run -p 8080/http --name autoscale-zero --scale=0-20 strongmonkey1992/autoscale:v0
 default/autoscale-zero:v0
 
-# Wait for a couple of minutes. The workload is scaled to zero.
+# Wait a couple of minutes for the workload to scale to zero
 $ rio revision default/autoscale-zero
 NAME                        IMAGE                           CREATED              STATE     SCALE     ENDPOINT                                                  WEIGHT                               DETAIL
 default/autoscale-zero:v0   strongmonkey1992/autoscale:v0   About a minute ago   active    0         https://autoscale-zero-v0-default.iazlia.on-rio.io:9443   =============================> 100   
 
-# Access the workload. Once there is an active request, workload can be re-scaled to active.
+# Access the workload. Once there is an active request, the workload will be re-scaled to active.
 $ rio ps 
 NAME                     ENDPOINT                                               REVISIONS   SCALE     WEIGHT
 default/autoscale-zero   https://autoscale-zero-default.iazlia.on-rio.io:9443   v0          0/1       100%
@@ -276,17 +276,16 @@ default/autoscale-zero   https://autoscale-zero-default.iazlia.on-rio.io:9443   
 $ curl -s https://autoscale-zero-default.iazlia.on-rio.io:9443
 Hi there, I am StrongMonkey:v13
 
-# Workload is re-scaled to 1
+# Verify that the workload has been re-scaled to 1
 $ rio revision default/autoscale-zero
 NAME                     ENDPOINT                                               REVISIONS   SCALE     WEIGHT
 default/autoscale-zero   https://autoscale-zero-default.iazlia.on-rio.io:9443   v0          1         100%
-
 ```
 
 ## Source code to Deployment
 
-Rio supports configure a git-based source code repository to deploy the actual workload. It can be as easy
-as giving Rio a valid git repository repo. 
+Rio supports configuration of a Git-based source code repository to deploy the actual workload. It can be as easy
+as giving Rio a valid Git repository repo URL. 
 
 ```bash
 # Run a workload from a git repo. We assume the repo has a Dockerfile at root directory to build the image
@@ -298,7 +297,7 @@ $ rio revision
 NAME               IMAGE     CREATED          STATE      SCALE     ENDPOINT                                         WEIGHT                               DETAIL
 default/build:v0             29 seconds ago   inactive   1         https://build-v0-default.iazlia.on-rio.io:9443   =============================> 100   
 
-# Image is ready. Noted that we deploy the default docker registry into the cluster. 
+# The image is ready. Note that we deploy from the default docker registry into the cluster. 
 # The image name has the format of ${registry-domain}/${namespace}/${name}:${commit} 
 $ rio revision
 NAME               IMAGE                                                                                         CREATED              STATE     SCALE     ENDPOINT                                         WEIGHT                               DETAIL
@@ -316,15 +315,15 @@ Hi there, I am StrongMonkey:v1
 ```
 
 When you point your workload to a git repo, Rio will automatically watch any commit or tag pushed to
-a specific branch(default is master). By default Rio will pull and check the branch at a certain interval, but this
-can be configured to use a webhook.
+a specific branch (default is master). By default, Rio will pull and check the branch at a certain interval, but
+can be configured to use a webhook instead.
 
 ```bash
 # edit the code, change v1 to v3, push the code
 $ vim main.go | git add -u | git commit -m "change to v3" | git push $remote
 
 # A new revision has been automatically created. Noticed that once the new revision is created, the traffic will
-# automatically shifted from old revision to new revision.
+# be automatically shifted from the old revision to the new revision.
 $ rio revision default/build
 NAME                   IMAGE                                                                                                       CREATED          STATE     SCALE     ENDPOINT                                             WEIGHT                               DETAIL
 default/build:v0       registry-rio-system.iazlia.on-rio.io/default/build:32a4e453ca3bf0672ece9abf6901fa307d951add                 11 minutes ago   active    1         https://build-v0-default.iazlia.on-rio.io:9443                                            
@@ -336,13 +335,13 @@ Hi there, I am StrongMonkey:v1
 $ curl https://build-default.8axlxl.on-rio.io
 Hi there, I am StrongMonkey:v3
 
-# Wait for all the traffic are shifted to the new revision, 
+# Wait until all traffic has been shifted to the new revision
 $ rio revision default/build
 NAME                  IMAGE                                                                                                       CREATED          STATE     SCALE     ENDPOINT                                       WEIGHT                               DETAIL
 default/build:v0      registry-rio-system.8axlxl.on-rio.io/default/build:34512dddba18781fb6909c303eb206a73d41d9ba                 24 minutes ago   active    1         https://build-v0-default.8axlxl.on-rio.io                                           
 default/build:25a0a   registry-rio-system.8axlxl.on-rio.io/default/build-e46cfb4-08a3b:25a0acda54812619f8063c121f6ed5ed2bfb968f   4 minutes ago    active    1         https://build-25a0a-default.8axlxl.on-rio.io   =============================> 100
 
-# Access the workload. Noted that all the traffic are routed to the new revision
+# Access the workload. Note that all the traffic is routed to the new revision
 $ curl https://build-default.8axlxl.on-rio.io
 Hi there, I am StrongMonkey:v3
 ```
@@ -359,7 +358,7 @@ default/build-webhook
 
 ## Monitoring
 
-By default Rio will deploy [grafana](https://grafana.com/) and [kiali](https://www.kiali.io/) to give user abilities to watch all metrics corresponding to service mesh.
+By default, Rio will deploy [Grafana](https://grafana.com/) and [Kiali](https://www.kiali.io/) to give users the ability to watch all metrics of the service mesh.
 
 ```bash
 # Monitoring services are deployed into rio-system namespace
@@ -378,7 +377,6 @@ rio-system/kiali              https://kiali-rio-system.iazlia.on-rio.io:9443    
 rio-system/prometheus                                                             v0          1         100%
 rio-system/registry           https://registry-rio-system.iazlia.on-rio.io:9443   v0          1         100%
 rio-system/webhook            https://webhook-rio-system.iazlia.on-rio.io:9443    v0          1         100%
-
 ```
 
 ![Grafana](https://raw.githubusercontent.com/StrongMonkey/rio/refactor/grafana-example.png)
