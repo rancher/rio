@@ -49,7 +49,7 @@ of containers can be accessed from other services.
 
 ### Apps
 
-An App contains multiple service revisions. Each service in rio is assigned an app and version.  Services that have the same app but
+An App contains multiple service revisions. Each service in Rio is assigned an app and version.  Services that have the same app but
 different versions are reference to as revisions.  The group of all revision for an app is what is called an App or application in Rio.
 An application named `foo` will be given a DNS name like `foo.clusterdomain.on-rio.io` and each version is assigned it's own DNS name.  If the app was
 `foo` and the version is `v2` the assigned DNS name for that revision would be similar to `foo-v2.clusterdomain.on-rio.io`.  `rio ps` and `rio revision` will
