@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	proxyImage = "rancher/klipper-lb:v0.1.1"
+	proxyImage = "rancher/klipper-lb:v0.1.2"
 	T          = true
 )
 
