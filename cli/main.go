@@ -39,7 +39,7 @@ import (
 	"github.com/rancher/rio/pkg/version"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 const (
