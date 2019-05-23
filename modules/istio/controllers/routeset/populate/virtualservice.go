@@ -179,13 +179,14 @@ func populateStringMatch(match *v1.StringMatch) *v1alpha1.StringMatch {
 		return nil
 	}
 	m := &v1alpha1.StringMatch{}
-	if match.Exact != "" {
+	switch {
+	case match.Exact != "":
 		m.Exact = match.Exact
-	} else if match.Prefix != "" {
+	case match.Prefix != "":
 		m.Prefix = match.Prefix
-	} else if match.Regexp != "" {
+	case match.Regexp != "":
 		m.Regex = match.Regexp
-	} else {
+	default:
 		return nil
 	}
 	return m
@@ -240,14 +241,15 @@ func destWeightForExternalService(d v1.WeightedDestination, esvc *v1.ExternalSer
 	if d.Port == nil {
 		d.Port = &[]uint32{80}[0]
 	}
-	if esvc.Spec.FQDN != "" {
+	switch {
+	case esvc.Spec.FQDN != "":
 		// ignore error as it should be validated somewhere else
 		u, _ := parse.TargetURL(esvc.Spec.FQDN)
 		d.Service = u.Host
-	} else if esvc.Spec.Service != "" {
+	case esvc.Spec.Service != "":
 		stackName, serviceName := kv.Split(esvc.Spec.Service, "/")
 		d.Service = fmt.Sprintf("%s.%s.svc.cluster.local", serviceName, stackName)
-	} else if len(esvc.Spec.IPAddresses) > 0 {
+	case len(esvc.Spec.IPAddresses) > 0:
 		d.Service = fmt.Sprintf("%s.%s.svc.cluster.local", esvc.Name, esvc.Namespace)
 	}
 	return v1alpha3.HTTPRouteDestination{

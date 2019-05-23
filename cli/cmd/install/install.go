@@ -113,11 +113,12 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 	}
 
 	if memoryWarning {
-		if isMinikubeCluster(nodes) {
+		switch {
+		case isMinikubeCluster(nodes):
 			fmt.Println("Warning: detecting that your minikube cluster doesn't have at least 3 GB of memory. Please try to increase memory by running `minikube start --memory 4098`")
-		} else if isDockerForMac(nodes) {
+		case isDockerForMac(nodes):
 			fmt.Println("Warning: detecting that your Docker For Mac cluster doesn't have at least 3 GB of memory. Please try to increase memory by following the doc https://docs.docker.com/v17.12/docker-for-mac.")
-		} else {
+		default:
 			fmt.Println("Warning: detecting that your cluster doesn't have at least 3 GB of memory in total. Please try to increase memory for your nodes")
 		}
 	}

@@ -177,9 +177,8 @@ func FormatRouteTarget(obj interface{}) (string, error) {
 		return "", fmt.Errorf("invalid data")
 	}
 
-	target := targetType(data)
-
-	if target == "to" {
+	switch target := targetType(data); {
+	case target == "to":
 		for _, to := range data.RouteSpec.To {
 			if to.Port == nil {
 				port := uint32(80)
@@ -187,13 +186,13 @@ func FormatRouteTarget(obj interface{}) (string, error) {
 			}
 			writeDest(buf, data.RouteSet.Namespace, to.Namespace, to.Service, to.Revision, int(*to.Port), to.Weight)
 		}
-	} else if target == "redirect" && data.RouteSpec.Redirect != nil {
+	case target == "redirect" && data.RouteSpec.Redirect != nil:
 		writeHostPath(buf, data.RouteSpec.Redirect.Host, data.RouteSpec.Redirect.Path)
-	} else if target == "mirror" && data.RouteSpec.Mirror != nil && data.RouteSpec.Mirror.Port != nil {
+	case target == "mirror" && data.RouteSpec.Mirror != nil && data.RouteSpec.Mirror.Port != nil:
 		writeDest(buf, data.RouteSet.Namespace, data.RouteSpec.Mirror.Namespace, data.RouteSpec.Mirror.Service,
 			data.RouteSpec.Mirror.Revision,
 			int(*data.RouteSpec.Mirror.Port), 0)
-	} else if target == "rewrite" && data.RouteSpec.Rewrite != nil {
+	case target == "rewrite" && data.RouteSpec.Rewrite != nil:
 		writeHostPath(buf, data.RouteSpec.Rewrite.Host, data.RouteSpec.Rewrite.Path)
 	}
 
