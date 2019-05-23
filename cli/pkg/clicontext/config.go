@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rancher/rio/pkg/constants"
 	projectv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/admin.rio.cattle.io/v1"
+	autoscalev1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/autoscale.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/sirupsen/logrus"
@@ -36,10 +37,11 @@ type Config struct {
 	RestConfig *rest.Config
 	K8s        *kubernetes.Clientset
 
-	Core    corev1.CoreV1Interface
-	Build   buildv1alpha1.BuildV1alpha1Interface
-	Rio     riov1.RioV1Interface
-	Project projectv1.AdminV1Interface
+	Core      corev1.CoreV1Interface
+	Build     buildv1alpha1.BuildV1alpha1Interface
+	Rio       riov1.RioV1Interface
+	Project   projectv1.AdminV1Interface
+	Autoscale autoscalev1.AutoscaleV1Interface
 }
 
 func (c *Config) findKubeConfig() {
@@ -113,6 +115,11 @@ func (c *Config) Validate() error {
 		return err
 	}
 
+	autoscale, err := autoscalev1.NewForConfig(restConfig)
+	if err != nil {
+		return err
+	}
+
 	k8s := kubernetes.NewForConfigOrDie(restConfig)
 
 	c.Apply = apply.New(k8s.Discovery(), apply.NewClientFactory(restConfig))
@@ -122,6 +129,7 @@ func (c *Config) Validate() error {
 	c.Project = project
 	c.Core = core
 	c.Build = build
+	c.Autoscale = autoscale
 
 	if info, err := project.RioInfos().Get("rio", metav1.GetOptions{}); err != nil {
 		return ErrNoConfig

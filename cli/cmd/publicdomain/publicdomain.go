@@ -13,11 +13,11 @@ func PublicDomain(app *cli.App) cli.Command {
 		"")
 	add := builder.Command(&Add{},
 		"Add public domains",
-		app.Name+" domain add $Name",
+		app.Name+" domain add $NAME $NAMESPACE/$SERVICE",
 		"")
 	rm := builder.Command(&Rm{},
 		"Remove public domains",
-		app.Name+" domain rm NAME",
+		app.Name+" domain rm $NAME",
 		"")
 	return cli.Command{
 		Name:      "domains",
