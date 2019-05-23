@@ -37,8 +37,8 @@ func Register(ctx context.Context, rContext *types.Context) error {
 				},
 			},
 			Answers: map[string]string{
-				constants.RioWildcardType:  constants.StagingType,
-				constants.PublicDomainType: constants.StagingType,
+				constants.RioWildcardType:  constants.ProductionType,
+				constants.PublicDomainType: constants.ProductionType,
 			},
 		},
 		FixedAnswers: map[string]string{
