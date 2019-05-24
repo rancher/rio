@@ -228,13 +228,13 @@ default/external-fqdn   3 seconds ago   my.app.com
 `rio domain` allows you to create your own domain pointing to a specific service or route
 
 ```bash
-# Create a domain that points to route1
+# Create a domain that points to route1. You have to setup a cname record from your domain to clusrer domain.
+# For example, foo.bar -> CNAME -> iazlia.on-rio.io
 $ rio domain add foo.bar default/route1
 default/foo-bar
 
-$ rio domain
-DOMAIN    TARGET
-foo.bar   default/route1
+# Use your own certs by providing a secret that contain tls cert and key. The secret has to be created first in system namespace.
+$ rio domain add --secret $name foo.bar default/route1
 ```
 
 ## Autoscaling
@@ -352,6 +352,15 @@ default/webhook
 # Right now every commit and tag event will trigger a new revision
 $ rio run -p 8080/http --build-secret webhook -n build-webhook https://github.com/StrongMonkey/demo.git
 default/build-webhook
+```
+
+To view logs from your builds
+```bash
+$ rio builds
+NAME                                                                     SERVICE                   REVISION                                   CREATED        SUCCEED   REASON
+default/fervent-swartz6-ee709-786b366d5d44de6b547939f51d467437e45c5ee1   default/fervent-swartz6   786b366d5d44de6b547939f51d467437e45c5ee1   23 hours ago   True    
+
+$ rio logs -f default/fervent-swartz6-ee709-786b366d5d44de6b547939f51d467437e45c5ee1
 ```
 
 ## Monitoring
