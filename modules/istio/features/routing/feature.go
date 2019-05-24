@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rancher/rio/pkg/constants"
-
 	"github.com/rancher/rio/modules/istio/controllers/app"
 	"github.com/rancher/rio/modules/istio/controllers/externalservice"
 	"github.com/rancher/rio/modules/istio/controllers/istio"
+	"github.com/rancher/rio/modules/istio/controllers/publicdomain"
 	"github.com/rancher/rio/modules/istio/controllers/routeset"
 	"github.com/rancher/rio/modules/istio/controllers/service"
 	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/features"
 	"github.com/rancher/rio/pkg/systemstack"
 	"github.com/rancher/rio/types"
@@ -35,6 +35,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			routeset.Register,
 			service.Register,
 			app.Register,
+			publicdomain.Register,
 		},
 		FixedAnswers: map[string]string{
 			"HTTP_PORT":         constants.DefaultHTTPOpenPort,

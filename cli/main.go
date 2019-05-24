@@ -180,7 +180,7 @@ func main() {
 			""),
 		builder.Command(&logs.Logs{},
 			"Print logs from containers",
-			appName+" logs [OPTIONS] [CONTAINER_OR_SERVICE...]",
+			appName+" logs [OPTIONS] [CONTAINER_OR_SERVICE_OR_BUILD...]",
 			""),
 
 		builder.Command(&install.Install{},

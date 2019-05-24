@@ -138,7 +138,7 @@ func updateAppDomain(app *riov1.App, clusterDomain *adminv1.ClusterDomain) {
 			endpoints[i] = fmt.Sprintf("%s:%s", endpoint, constants.DefaultHTTPOpenPort)
 		}
 
-		if protocol == "https" && constants.DefaultHTTPOpenPort != "443" {
+		if protocol == "https" && constants.DefaultHTTPSOpenPort != "443" {
 			endpoints[i] = fmt.Sprintf("%s:%s", endpoint, constants.DefaultHTTPSOpenPort)
 		}
 	}

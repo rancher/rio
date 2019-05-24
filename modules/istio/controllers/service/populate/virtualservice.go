@@ -2,8 +2,10 @@ package populate
 
 import (
 	"fmt"
+	"hash/adler32"
 	"strconv"
 
+	"github.com/knative/pkg/apis/istio/common/v1alpha1"
 	"github.com/knative/pkg/apis/istio/v1alpha3"
 	"github.com/rancher/rio/modules/istio/pkg/domains"
 	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
@@ -33,6 +35,31 @@ func virtualServices(namespace string, clusterDomain *projectv1.ClusterDomain, s
 func httpRoutes(systemNamespace string, service *v1.Service, dests []Dest) ([]v1alpha3.HTTPRoute, bool) {
 	external := false
 	var result []v1alpha3.HTTPRoute
+
+	// add https challenge match
+	pb := v1.ContainerPort{
+		Port:       8089,
+		TargetPort: 8089,
+		Protocol:   v1.ProtocolHTTP,
+	}
+	for _, publicDomain := range service.Status.PublicDomains {
+		ds := []Dest{
+			{
+				Host:   fmt.Sprintf("cm-acme-http-solver-%d", adler32.Checksum([]byte(publicDomain))),
+				Subset: "latest",
+				Weight: 100,
+			},
+		}
+		_, route := newRoute(systemNamespace, domains.GetPublicGateway(systemNamespace), true, pb, ds, false, false, nil)
+		route.Match[0].URI = &v1alpha1.StringMatch{
+			Prefix: "/.well-known/acme-challenge/",
+		}
+		route.Match[0].Authority = &v1alpha1.StringMatch{
+			Prefix: publicDomain,
+		}
+		result = append(result, route)
+	}
+
 	autoscale := false
 	if service.Spec.MaxScale != nil && service.Spec.Concurrency != nil && service.Spec.MinScale != nil && *service.Spec.MaxScale != *service.Spec.MinScale {
 		autoscale = true
@@ -110,9 +137,13 @@ func newRoute(systemNamespace, externalGW string, published bool, portBinding v1
 				Weight: 100,
 			})
 		} else {
+			ns := systemNamespace
+			if svc != nil {
+				ns = svc.Namespace
+			}
 			route.Route = append(route.Route, v1alpha3.HTTPRouteDestination{
 				Destination: v1alpha3.Destination{
-					Host:   fmt.Sprintf("%s.%s.svc.cluster.local", dest.Host, svc.Namespace),
+					Host:   fmt.Sprintf("%s.%s.svc.cluster.local", dest.Host, ns),
 					Subset: dest.Subset,
 					Port: v1alpha3.PortSelector{
 						Number: uint32(portBinding.Port),
