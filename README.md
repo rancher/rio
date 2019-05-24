@@ -233,9 +233,12 @@ default/external-fqdn   3 seconds ago   my.app.com
 $ rio domain add foo.bar default/route1
 default/foo-bar
 
-# Use your own certs by providing a secret that contain tls cert and key. The secret has to be created first in system namespace.
+# Use your own certs by providing a secret that contain tls cert and key instead of provisioning by letsencrypts. The secret has to be created first in system namespace.
 $ rio domain add --secret $name foo.bar default/route1
 ```
+
+Note: By default Rio will automatically configure Letsencrypt HTTP-01 challenge to provision certs for your publicdomain. This need you to install rio on standard ports.
+Try `rio install --httpport 80 --httpsport 443`.
 
 ## Autoscaling
 
