@@ -60,7 +60,7 @@ type Install struct {
 
 func (i *Install) Run(ctx *clicontext.CLIContext) error {
 	if ctx.K8s == nil {
-		return fmt.Errorf("can't contact Kubernetes cluster. Please make sure your cluster is accessable")
+		return fmt.Errorf("Can't contact Kubernetes cluster. Please make sure your cluster is accessible")
 	}
 
 	namespace := ctx.SystemNamespace
@@ -104,7 +104,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		cmd.Stdout = stdout
 		cmd.Stderr = stderr
 		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("$(minikube ip) failed with error: (%v). Do you have minikube in your PATH", stderr.String())
+			return fmt.Errorf("$(minikube ip) failed with error: (%v). Do you have minikube in your PATH?", stderr.String())
 		}
 		ip := strings.Trim(stdout.String(), " ")
 		fmt.Printf("Manually setting cluster IP to %s\n", ip)
@@ -114,11 +114,11 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 
 	if memoryWarning {
 		if isMinikubeCluster(nodes) {
-			fmt.Println("Warning: detecting that your minikube cluster doesn't have at least 3 GB of memory. Please try to increase memory by running `minikube start --memory 4098`")
+			fmt.Println("Warning: detected that your minikube cluster doesn't have at least 3 GB of memory. Please increase memory by running `minikube start --memory 4096`")
 		} else if isDockerForMac(nodes) {
-			fmt.Println("Warning: detecting that your Docker For Mac cluster doesn't have at least 3 GB of memory. Please try to increase memory by following the doc https://docs.docker.com/v17.12/docker-for-mac.")
+			fmt.Println("Warning: detected that your Docker For Mac cluster doesn't have at least 3 GB of memory. Please increase memory in Docker Preferences -> Advanced")
 		} else {
-			fmt.Println("Warning: detecting that your cluster doesn't have at least 3 GB of memory in total. Please try to increase memory for your nodes")
+			fmt.Println("Warning: detected that your cluster doesn't have at least 3 GB of memory in total. Please try to increase memory for your nodes")
 		}
 	}
 
@@ -157,14 +157,11 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 			continue
 		}
 		info, err := ctx.Project.RioInfos().Get("rio", metav1.GetOptions{})
-		if err != nil {
-			fmt.Println("Waiting for rio controller to initialize")
-			continue
-		} else if info.Status.Version == "" {
-			fmt.Println("Waiting for rio controller to initialize")
+		if err != nil || info.Status.Version == "" {
+			fmt.Println("Waiting for Rio controller to initialize")
 			continue
 		} else if notReadyList, ok := allReady(info); !ok {
-			fmt.Printf("Waiting for all the system components to be up. Not ready component: %v\n", notReadyList)
+			fmt.Printf("Waiting for system components to become ready: %v\n", notReadyList)
 			time.Sleep(15 * time.Second)
 			continue
 		} else {
@@ -176,7 +173,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 				time.Sleep(5 * time.Second)
 				continue
 			}
-			fmt.Printf("rio controller version %s (%s) installed into namespace %s\n", info.Status.Version, info.Status.GitCommit, info.Status.SystemNamespace)
+			fmt.Printf("Rio controller %s (%s) installed into namespace %s\n", info.Status.Version, info.Status.GitCommit, info.Status.SystemNamespace)
 		}
 		fmt.Printf("Please make sure all the system pods are actually running. Run `kubectl get po -n %s` to get more detail.\n", info.Status.SystemNamespace)
 		fmt.Println("Controller logs are available from `rio systemlogs`")
@@ -220,13 +217,13 @@ func (i *Install) delectingServiceLoadbalancer(ctx *clicontext.CLIContext, info 
 			if time.Now().After(startTime.Add(time.Minute * 2)) {
 				msg := ""
 				if len(svc.Status.LoadBalancer.Ingress) > 0 {
-					msg = fmt.Sprintln("Detecting that your service loadbalancer generates a DNS endpoint(usually AWS provider). Rio doesn't support it right now. Do you want to:")
+					msg = fmt.Sprintln("Detected that your service loadbalancer generates endpoints that are hostnames instead of IP addresses. Rio does not currently support this. Do you want to:")
 				} else {
-					msg = fmt.Sprintln("Detecting that your service loadbalancer for service mesh gateway is still pending. Do you want to:")
+					msg = fmt.Sprintln("Detected that your service loadbalancer for service mesh gateway is still pending. Do you want to:")
 				}
 
 				options := []string{
-					fmt.Sprintf("[1] Use HostPorts(Please make sure port %v and %v are open for your nodes)\n", i.HTTPPort, i.HTTPSPort),
+					fmt.Sprintf("[1] Use HostPorts (make sure inbound ports %v and %v are open to your nodes)\n", i.HTTPPort, i.HTTPSPort),
 					"[2] Wait for Service Load Balancer\n",
 				}
 
