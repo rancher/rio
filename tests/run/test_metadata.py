@@ -12,8 +12,7 @@ def run_metadata(stack, *mdata):
         command += " --metadata " + d
 
     command += " nginx"
-    util.run(command)
-    util.run(f"rio wait {fullName}")
+    util.runwait(command, fullName)
 
     return name
 

@@ -4,8 +4,8 @@ import time
 
 def set_scale(stack, service, scale):
     fullName = "%s/%s" % (stack, service)
-    util.run("rio scale %s=%s" % (fullName, scale))
-    util.run("rio wait %s" % fullName)
+    cmd = (f"rio scale {fullName}={scale}")
+    util.runwait(cmd, fullName)
 
 
 def rio_return_scale(stack, service):

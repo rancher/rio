@@ -19,8 +19,7 @@ def lbl_file_setup(stack, *lbl):
 
     cmd += " --label-file " + fp.name + " nginx"
 
-    util.run(cmd)
-    util.run(f"rio wait {fullName}")
+    util.runwait(cmd, fullName)
 
     unlink(fp.name)
 

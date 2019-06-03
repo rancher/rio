@@ -13,8 +13,7 @@ def run_environment_var(stack, *envs):
 
     command += " nginx"
     print(command)
-    util.run(command)
-    util.run(f"rio wait {fullName}")
+    util.runwait(command, fullName)
 
     return name
 

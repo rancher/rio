@@ -9,9 +9,7 @@ def riorun(stack, vname):
     fullName = "%s/%s" % (stack, sname)
 
     cmd = (f'rio run -n {fullName} -v {vname} nginx')
-    util.run(cmd)
-
-    util.run(f"rio wait {fullName}")
+    util.runwait(cmd, fullName)
 
     return sname
 

@@ -9,8 +9,8 @@ def riorun(stack):
 
     cmd = (f'rio run -p 80/http -n {fullName} nginx:latest')
 
-    util.run(cmd)
-    util.run(f"rio wait {fullName}")
+    util.runwait(cmd, fullName)
+#    util.run(f"rio wait {fullName}")
 
     return name
 

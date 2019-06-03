@@ -3,19 +3,9 @@ from os import system
 from random import randint
 
 
-def run_capdrop(stack, *capability):
-    name = "tsrv" + str(randint(1000, 5000))
-    fullName = "%s/%s" % (stack, name)
+def run_capdrop(stack, *value):
 
-    command = (f'rio run -n {fullName}')
-
-    for c in capability:
-        command += " --cap-drop " + c
-
-    command += " nginx"
-    print(command)
-    system(command)
-    system("rio wait %s" % fullName)
+    name = util.rioRun(stack, ' '.join(value), 'nginx')
 
     return name
 
@@ -40,7 +30,7 @@ def kube_capdrop_chk(stack, service_name, *capabilities):
 
 
 def test_cap_1(stack):
-    service_name = run_capdrop(stack, "AUDIT_CONTROL")
+    service_name = run_capdrop(stack, "--cap-drop", "AUDIT_CONTROL")
 
     r = rio_capdrop_chk(stack, service_name)
     assert r == "[AUDIT_CONTROL]"
@@ -50,7 +40,8 @@ def test_cap_1(stack):
 
 
 def test_cap_2(stack):
-    service_name = run_capdrop(stack, "AUDIT_CONTROL", "SYSLOG")
+    service_name = run_capdrop(stack, "--cap-drop", "AUDIT_CONTROL",
+                               "--cap-drop", "SYSLOG")
 
     r = rio_capdrop_chk(stack, service_name)
     assert r == "[AUDIT_CONTROL SYSLOG]"

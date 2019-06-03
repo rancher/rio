@@ -32,8 +32,7 @@ def rio_bind_workload(stack, vname):
     fullName = (f"{stack}/{name}")
 
     cmd = (f'rio run -n {fullName} -v {vname}:/data nginx')
-    util.run(cmd)
-    util.run(f"rio wait {fullName}")
+    util.runwait(cmd, fullName)
     util.run(f"rio exec {fullName} touch /data/helloworld")
     output = util.run(f"rio exec {fullName} ls /data")
 

@@ -1,34 +1,23 @@
-from os import unlink
-from random import randint
 import util
-import tempfile
+import random
 
 
-def config_setup(stack, *configs):
-    config_name = "tconfig" + str(randint(1000, 5000))
+def config_setup(stack, *text):
 
-    fp = tempfile.NamedTemporaryFile(delete=False)
+    config = util.rioConfigCreate(stack, *text)
+    fullname = (f"{stack}/{config}")
 
-    for c in configs:
-        fp.write(bytes(c+"\n", 'utf8'))
-
-    fp.close()
-
-    util.run(f"rio config create {stack}/{config_name} {fp.name}")
-    unlink(fp.name)
-
-    return config_name
+    return config
 
 
-def run_config(stack, config_names):
-    name = "tsrv" + str(randint(1000, 5000))
+def run_config(stack, config_name):
+    name = "tsrv" + str(random.randint(1000, 5000))
     fullName = "%s/%s" % (stack, name)
+
+    tempdir = ":/temp" + str(random.randint(100, 999))
+
     cmd = (f'rio run -n {fullName}')
-
-    for c in config_names:
-        tempdir = ":/temp" + str(randint(100, 999))
-        cmd += " --config " + c + tempdir
-
+    cmd += (f' --config {config_name}{tempdir}') 
     cmd += " nginx"
 
     print(cmd)
@@ -71,18 +60,12 @@ def kube_chk(stack, service_name):
     return out
 
 
-def test_content(stack):
-    config_name1 = config_setup(stack, "1foo=1bar", "1foo2=1bar2")
-    config_setup(stack, "2foo=2bar", "2foo1=2bar2")
-
-    expect = [config_name1]
-    expect.sort()
-
-    servicename = run_config(stack, expect)
-    print(stack, servicename)
+def test_config_name(stack):
+    config_name1 = config_setup(stack, "2foo=2bar", "2foo1=2bar2")
+    servicename = run_config(stack, config_name1)
 
     gotrio = rio_chk(stack, servicename)
-    assert expect == gotrio
+    assert gotrio == [config_name1]
 
     gotk8s = kube_chk(stack, servicename)
-    assert expect == gotk8s
+    assert gotk8s == [config_name1]

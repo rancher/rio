@@ -3,6 +3,8 @@ import json
 import time
 import random
 import hashlib
+import tempfile
+from os import unlink
 
 # runAndExpect("rio asldfkhsldkfj", 3)
 # output = runAndExpect("rio ps")
@@ -16,8 +18,16 @@ def run(cmd, status=0):
     return result
 
 
+def runwait(cmd, fullName):
+    result = run(cmd)
+    wait = "rio wait " + fullName
+    result = run(wait)
+
+    return result
+
+
 def runToJson(cmd, status=0):
-    print(cmd)
+    print(cmd) 
     result = run(cmd, status)
     print(result)
     return json.loads(result)
@@ -33,6 +43,22 @@ def rioRun(stack, *args):
     run(cmd)
 
     return name
+
+
+def rioConfigCreate(stack, *configs):
+    config_name = "tconfig" + str(random.randint(1000, 5000))
+
+    fp = tempfile.NamedTemporaryFile(delete=False)
+
+    for c in configs:
+        fp.write(bytes(c + " ", 'utf8'))
+
+    fp.close()
+
+    run(f"rio config create {stack}/{config_name} {fp.name}")
+    unlink(fp.name)
+
+    return config_name
 
 
 def rioInspect(resource, field=None):

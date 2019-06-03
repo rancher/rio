@@ -8,8 +8,7 @@ def run_network_setup(stack, value):
 
     cmd = (f'rio run -n {fullName} --network {value} nginx')
 
-    util.run(cmd)
-    util.run(f"rio wait {fullName}")
+    util.runwait(cmd, fullName)
 
     return name
 

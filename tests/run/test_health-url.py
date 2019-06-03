@@ -11,8 +11,7 @@ def run_healthurl_setup(stack, url, interval='',
 
     rcmd = (f'rio run -n {fullName} --health-url {url} {options}nginx')
 
-    util.run(rcmd)
-    util.run(f"rio wait {fullName}")
+    util.runwait(rcmd, fullName)
 
     return name
 

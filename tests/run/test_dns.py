@@ -13,8 +13,7 @@ def run_dns(stack, *dns):
     cmd += " nginx"
 
     print(cmd)
-    util.run(cmd)
-    util.run(f"rio wait {fullName}")
+    util.runwait(cmd, fullName)
     print(name)
 
     return name

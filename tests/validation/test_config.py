@@ -1,41 +1,22 @@
 # Setup
-from os import unlink
-from random import randint
 import util
-import tempfile
 
 
-def config_setup(stack):
-    config = "tconfig" + str(randint(1000, 5000))
+def config_setup(stack, *text):
 
-    fp = tempfile.NamedTemporaryFile(delete=False)
-    fp.write(b"foo=bar")
-    fp.close()
-
+    config = util.rioConfigCreate(stack, *text)
     fullname = (f"{stack}/{config}")
-
-    util.run(f"rio config create {fullname} {fp.name}")
-    unlink(fp.name)
-
     return config
 
 
-# Validation tests
-
-
-def test_rio_content(stack):
-    config_name = config_setup(stack)
-    fullname = (f"{stack}/{config_name}")
-    print(config_name)
+def rio_config_content(fullname):
     rio_content = "rio inspect --format '{{.content}}' %s" % fullname
     rio_content = util.run(rio_content)
 
-    assert rio_content == "foo=bar"
+    return rio_content
 
 
-def test_kube_content(stack):
-    config_name = config_setup(stack)
-    fullname = (f"{stack}/{config_name}")
+def kube_config_content(fullname, config_name):
 
     nsp = "rio inspect --format '{{.id}}' %s | cut -f1 -d:" % fullname
     nsp = util.run(nsp)
@@ -43,4 +24,31 @@ def test_kube_content(stack):
     kube_content = k_cmd + "| jq -r .spec.content"
     kube_content = util.run(kube_content)
 
+    return kube_content
+
+# Validation tests
+
+
+def test_create_config1(stack):
+    text = "foo=bar"
+    config_name = config_setup(stack, text)
+    fullname = (f"{stack}/{config_name}")
+
+    rio_content = rio_config_content(fullname)
+    assert rio_content == "foo=bar"
+
+    kube_content = kube_config_content(fullname, config_name)
     assert kube_content == "foo=bar"
+
+
+def test_create_config2(stack):
+    text1 = "foo=bar"
+    text2 = "foo2=bar2"
+    config_name = config_setup(stack, text1, text2)
+    fullname = (f"{stack}/{config_name}")
+
+    rio_content = rio_config_content(fullname)
+    assert rio_content == "foo=bar foo2=bar2"
+
+    kube_content = kube_config_content(fullname, config_name)
+    assert kube_content == "foo=bar foo2=bar2"
