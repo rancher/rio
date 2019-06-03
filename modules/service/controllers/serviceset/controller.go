@@ -2,6 +2,7 @@ package serviceset
 
 import (
 	"context"
+	"fmt"
 	"sort"
 
 	"github.com/rancher/rio/modules/service/controllers/service/populate/serviceports"
@@ -159,7 +160,7 @@ func (h *handler) onChange(key string, service *riov1.Service) (*riov1.Service, 
 		app.Spec.Revisions = serviceWeight
 		os.Add(app)
 	}
-	return service, h.apply.WithSetID(appName).
+	return service, h.apply.WithSetID(fmt.Sprintf("%s/%s", ns.Name, appName)).
 		WithCacheTypes(h.apps).
 		WithCacheTypes(h.coreservice).Apply(os)
 }

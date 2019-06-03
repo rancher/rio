@@ -37,7 +37,7 @@ func (a *AppData) DeepCopyObject() runtime.Object {
 
 func NewApp(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
-		{"NAME", "{{stackScopedName .Obj.App.Namespace .Obj.App.Name ``}}"},
+		{"Name", "{{stackScopedName .Obj.App.Namespace .Obj.App.Name ``}}"},
 		{"CREATED", "{{.Obj.App.CreationTimestamp | ago}}"},
 		{"ENDPOINT", "{{.Obj.App.Status.Endpoints | array}}"},
 		{"REVISIONS", "{{revisions .Obj.App.Spec.Revisions}}"},

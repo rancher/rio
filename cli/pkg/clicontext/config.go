@@ -21,7 +21,7 @@ import (
 	"k8s.io/kubernetes/staging/src/k8s.io/client-go/tools/clientcmd"
 )
 
-var ErrNoConfig = errors.New("no config found")
+var ErrNoConfig = errors.New("Can not find rio info resource inside your cluster. Have you installed Rio?(run `rio install --help`)")
 
 type Config struct {
 	ShowSystem       bool

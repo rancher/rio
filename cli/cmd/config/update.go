@@ -15,6 +15,7 @@ import (
 
 type Update struct {
 	L_Label map[string]string `desc:"Set meta data on a config"`
+	K_Key   string            `desc:"Set key on config data" default:"content"`
 }
 
 func (c *Update) Run(ctx *clicontext.CLIContext) error {
@@ -35,14 +36,14 @@ func (c *Update) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	err = RunUpdate(ctx, resource.Name, resource.Namespace, content, c.L_Label)
+	err = RunUpdate(ctx, resource.Name, resource.Namespace, c.K_Key, content, c.L_Label)
 	if err == nil {
 		fmt.Println(resource.Name)
 	}
 	return err
 }
 
-func RunUpdate(ctx *clicontext.CLIContext, name, namespace string, content []byte, labels map[string]string) error {
+func RunUpdate(ctx *clicontext.CLIContext, name, namespace, key string, content []byte, labels map[string]string) error {
 	return ctx.UpdateResource(types.Resource{
 		Namespace: namespace,
 		Name:      name,
@@ -54,9 +55,9 @@ func RunUpdate(ctx *clicontext.CLIContext, name, namespace string, content []byt
 			config.Labels = labels
 		}
 		if utf8.Valid(content) {
-			config.Data["content"] = string(content)
+			config.Data[key] = string(content)
 		} else {
-			config.Data["content"] = base64.StdEncoding.EncodeToString(content)
+			config.Data[key] = base64.StdEncoding.EncodeToString(content)
 		}
 
 		return nil

@@ -19,7 +19,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		FeatureName: "letsencrypt",
 		FeatureSpec: v1.FeatureSpec{
 			Description: "Let's Encrypt",
-			Enabled:     true,
+			Enabled:     !constants.DisableLetsencrypt,
 			Questions: []riov1.Question{
 				{
 					Variable:    constants.RioWildcardType,

@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
@@ -10,8 +12,8 @@ import (
 func NewCatCommand(sub string, app *cli.App) cli.Command {
 	return builder.Command(&Cat{},
 		"Print the contents of a config",
-		app.Name+sub+" cat [NAME...]",
-		"")
+		app.Name+sub+" cat [OPTIONS] [NAME...]",
+		fmt.Sprintf("To cat all keys, run `rio cat [$NAMESPACE/]$NAME. To cat specific keys, run `rio cat --key foo --key bar [$NAMESPACE/]$NAME"))
 }
 
 func Config(app *cli.App) cli.Command {

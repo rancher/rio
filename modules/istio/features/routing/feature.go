@@ -23,7 +23,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		FeatureName: "istio",
 		FeatureSpec: projectv1.FeatureSpec{
 			Description: "Service routing using Istio",
-			Enabled:     true,
+			Enabled:     !constants.DisableIstio,
 		},
 		SystemStacks: []*systemstack.SystemStack{
 			systemstack.NewStack(apply, rContext.Namespace, "mesh", true),

@@ -11,13 +11,13 @@ func PublicDomain(app *cli.App) cli.Command {
 		"List public domains",
 		app.Name+" domain ls",
 		"")
-	add := builder.Command(&Add{},
-		"Add public domains",
-		app.Name+" domain add $NAME $NAMESPACE/$SERVICE",
-		"")
-	rm := builder.Command(&Rm{},
-		"Remove public domains",
-		app.Name+" domain rm $NAME",
+	register := builder.Command(&Register{},
+		"Register public domains",
+		app.Name+" domain register $NAME $NAMESPACE/$SERVICE",
+		"Example: run `rio domain register foo.bar default/svc`")
+	unregister := builder.Command(&Unregister{},
+		"Unregister public domains",
+		app.Name+" domain unregister $NAME",
 		"")
 	return cli.Command{
 		Name:      "domains",
@@ -28,8 +28,8 @@ func PublicDomain(app *cli.App) cli.Command {
 		Category:  "SUB COMMANDS",
 		Subcommands: []cli.Command{
 			ls,
-			add,
-			rm,
+			register,
+			unregister,
 		},
 	}
 }

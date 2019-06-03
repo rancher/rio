@@ -11,11 +11,10 @@ import (
 func VirtualServiceForExternalService(namespace string, es *riov1.ExternalService, serviceSet *serviceset.ServiceSet, clusterDomain *v1.ClusterDomain,
 	svc *riov1.Service, os *objectset.ObjectSet) {
 
-	dests := populate.DestsForService(svc.Namespace, svc.Name, serviceSet)
+	dests := populate.DestsForService(serviceSet)
 	serviceVS := populate.VirtualServiceFromSpec(true, namespace, svc.Name, svc.Namespace, clusterDomain, svc, dests...)
 
 	// override host match with external service
-	serviceVS.Spec.Hosts = []string{}
 	serviceVS.Name = es.Name
 	serviceVS.Namespace = es.Namespace
 	os.Add(serviceVS)

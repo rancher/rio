@@ -15,9 +15,10 @@ import (
 )
 
 var (
-	showSystem    = false
-	servicePrefix = &[]string{""}[0]
-	podPrefix     = &[]string{""}[0]
+	showSystem      = false
+	servicePrefix   = &[]string{""}[0]
+	podPrefix       = &[]string{""}[0]
+	containerPrefix = &[]string{""}[0]
 )
 
 func newSelectionList() *tview.List {
@@ -143,7 +144,7 @@ func promote(t *throwing.TableView) {
 
 func edit(t *throwing.TableView) {
 	name := t.GetSelectionName()
-	args := []string{"edit", "--raw", "-t", t.GetResourceKind()}
+	args := []string{"edit", "-t", t.GetResourceKind()}
 	args = append(args, name)
 	cmd := exec.Command("rio", args...)
 	errorBuffer := &strings.Builder{}
@@ -245,18 +246,31 @@ func rm(t *throwing.TableView) {
 	t.InsertDialog("delete", t.GetCurrentPrimitive(), modal)
 }
 
-func viewPods(t *throwing.TableView) {
+func pods(t *throwing.TableView) {
 	name := t.GetSelectionName()
 	podPrefix = &name
 	t.GetTableView(podKind).RefreshManual()
-	t.SwitchPage(podKind, t.GetTableView(podKind))
+	view := t.GetTableView(podKind)
+	view.SetTitle(fmt.Sprintf(" Pod - %v ", name))
+	t.SwitchPage(podKind, view)
+}
+
+func containers(t *throwing.TableView) {
+	name := t.GetSelectionName()
+	containerPrefix = &name
+	t.GetTableView(containerKind).RefreshManual()
+	view := t.GetTableView(containerKind)
+	view.SetTitle(fmt.Sprintf(" Container - %v ", name))
+	t.SwitchPage(containerKind, view)
 }
 
 func revisions(t *throwing.TableView) {
 	name := t.GetSelectionName()
 	servicePrefix = &name
 	t.GetTableView(serviceKind).RefreshManual()
-	t.SwitchPage(serviceKind, t.GetTableView(serviceKind))
+	view := t.GetTableView(serviceKind)
+	view.SetTitle(fmt.Sprintf(" Revision - %v ", name))
+	t.SwitchPage(serviceKind, view)
 }
 
 func escape(t *throwing.TableView) {
@@ -264,6 +278,8 @@ func escape(t *throwing.TableView) {
 	switch kind {
 	case serviceKind:
 		kind = appKind
+	case containerKind:
+		kind = podKind
 	case podKind:
 		kind = serviceKind
 	}

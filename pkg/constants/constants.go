@@ -30,4 +30,14 @@ var (
 	SelfSignedType                 = "selfsigned"
 	StagingIssuerName              = "letsencrypt-staging-issuer"
 	StagingType                    = "staging"
+
+	DisableAutoscaling = false
+	DisableBuild       = false
+	DisableGrafana     = false
+	DisableIstio       = false
+	DisableKiali       = false
+	DisableLetsencrypt = false
+	DisableMixer       = false
+	DisablePrometheus  = false
+	DisableRdns        = false
 )

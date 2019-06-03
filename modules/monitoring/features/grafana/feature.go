@@ -3,6 +3,8 @@ package grafana
 import (
 	"context"
 
+	"github.com/rancher/rio/pkg/constants"
+
 	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/features"
 	"github.com/rancher/rio/pkg/systemstack"
@@ -19,7 +21,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 				"prometheus",
 				"mixer",
 			},
-			Enabled: true,
+			Enabled: !constants.DisableGrafana,
 		},
 		SystemStacks: []*systemstack.SystemStack{
 			systemstack.NewStack(apply, rContext.Namespace, "grafana", true),

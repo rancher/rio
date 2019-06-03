@@ -114,7 +114,7 @@ var (
 	}
 
 	PodRefresher = func(b *bytes.Buffer) error {
-		args := []string{"ps", "-c"}
+		args := []string{"pod"}
 		if *podPrefix != "" {
 			args = append(args, *podPrefix)
 		}
@@ -134,6 +134,25 @@ var (
 
 	BuildRefresher = func(b *bytes.Buffer) error {
 		args := []string{"build"}
+		cmd := reexec.Command(append([]string{"rio"}, args...)...)
+		errBuffer := &strings.Builder{}
+		cmd.Env = append(os.Environ(), "FORMAT=raw")
+		cmd.Stdout = b
+		cmd.Stderr = errBuffer
+		if err := cmd.Run(); err != nil {
+			return errors.New(errBuffer.String())
+		}
+		return nil
+	}
+
+	ContainerRefresher = func(b *bytes.Buffer) error {
+		args := []string{"pods", "-c"}
+		if *containerPrefix != "" {
+			args = append(args, *containerPrefix)
+		}
+		if showSystem {
+			args = append([]string{"--system"}, args...)
+		}
 		cmd := reexec.Command(append([]string{"rio"}, args...)...)
 		errBuffer := &strings.Builder{}
 		cmd.Env = append(os.Environ(), "FORMAT=raw")

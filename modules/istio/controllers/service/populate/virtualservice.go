@@ -166,16 +166,16 @@ type Dest struct {
 	Weight       int
 }
 
-func DestsForService(namespace, name string, service *serviceset.ServiceSet) []Dest {
+func DestsForService(service *serviceset.ServiceSet) []Dest {
 	var result []Dest
 	for _, rev := range service.Revisions {
-		_, ver := services.AppAndVersion(rev)
+		app, ver := services.AppAndVersion(rev)
 		weight := rev.Spec.ServiceRevision.Weight
 		if rev.Status.WeightOverride != nil {
 			weight = *rev.Status.WeightOverride
 		}
 		result = append(result, Dest{
-			Host:   fmt.Sprintf("%s.%s.svc.cluster.local", name, namespace),
+			Host:   app,
 			Weight: weight,
 			Subset: ver,
 		})

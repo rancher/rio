@@ -1,6 +1,7 @@
 package tables
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/rancher/rio/cli/pkg/table"
@@ -26,7 +27,7 @@ type tableWriter struct {
 }
 
 type data struct {
-	ID      string
+	Name    string
 	Context interface{}
 	Obj     runtime.Object
 }
@@ -50,9 +51,13 @@ func (t *tableWriter) Write(objs []runtime.Object) (err error) {
 		if err != nil {
 			return err
 		}
+		id := metaObj.GetName()
+		if metaObj.GetNamespace() != "" {
+			id = fmt.Sprintf("%s/%s", metaObj.GetNamespace(), id)
+		}
 
 		t.writer.Write(&data{
-			ID:      metaObj.GetName(),
+			Name:    id,
 			Context: t.context,
 			Obj:     obj,
 		})

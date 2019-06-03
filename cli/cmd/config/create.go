@@ -15,6 +15,7 @@ import (
 
 type Create struct {
 	L_Label map[string]string `desc:"Set meta data on a config"`
+	K_Key   string            `desc:"Set key on config data" default:"content"`
 }
 
 func (c *Create) Run(ctx *clicontext.CLIContext) error {
@@ -41,9 +42,9 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 
 	config.Labels = c.L_Label
 	if utf8.Valid(content) {
-		config.Data["content"] = string(content)
+		config.Data[c.K_Key] = string(content)
 	} else {
-		config.Data["content"] = base64.StdEncoding.EncodeToString(content)
+		config.Data[c.K_Key] = base64.StdEncoding.EncodeToString(content)
 	}
 
 	return ctx.Create(config)

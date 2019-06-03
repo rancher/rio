@@ -5,12 +5,12 @@ import "github.com/urfave/cli"
 var stackLsFlags = []cli.Flag{
 	cli.BoolFlag{
 		Name:  "quiet,q",
-		Usage: "Only display IDs",
+		Usage: "Only display Names",
 	},
 	cli.StringFlag{
 		Name:   "format",
 		EnvVar: "FORMAT",
-		Usage:  "'json' or 'yaml' or Custom format: '{{.ID}} {{.Stack.ServiceName}}'",
+		Usage:  "'json' or 'yaml' or Custom format: '{{.Name}} {{.Obj.Name}}'",
 	},
 }
 

@@ -3,6 +3,8 @@ package feature
 import (
 	"context"
 
+	"github.com/rancher/rio/pkg/constants"
+
 	"github.com/rancher/rio/modules/autoscale/controller/service"
 	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/features"
@@ -19,7 +21,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			Requires: []string{
 				"prometheus",
 			},
-			Enabled: true,
+			Enabled: !constants.DisableAutoscaling,
 		},
 		SystemStacks: []*systemstack.SystemStack{
 			systemstack.NewStack(apply, rContext.Namespace, "rio-autoscaler", true),

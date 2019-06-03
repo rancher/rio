@@ -30,13 +30,24 @@ func (u Uninstall) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("can't contact Kubernetes cluster. Please make sure your cluster is accessable")
 	}
 
+	var systemNamespace string
+	rioInfo, err := ctx.Project.RioInfos().Get("rio", metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	if rioInfo.Status.SystemNamespace != "" {
+		systemNamespace = rioInfo.Status.SystemNamespace
+	} else {
+		systemNamespace = u.Namespace
+	}
+
 	fmt.Println("Deleting Rio management controller...")
-	if err := ctx.K8s.AppsV1().Deployments(u.Namespace).Delete("rio-controller", &metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
+	if err := ctx.K8s.AppsV1().Deployments(systemNamespace).Delete("rio-controller", &metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
 		return err
 	}
 	fmt.Println("Waiting for Rio controller pod to be deleted...")
 	for {
-		pods, err := ctx.Core.Pods(u.Namespace).List(metav1.ListOptions{
+		pods, err := ctx.Core.Pods(systemNamespace).List(metav1.ListOptions{
 			LabelSelector: "rio-controller=true",
 		})
 		if err != nil {
@@ -51,7 +62,7 @@ func (u Uninstall) Run(ctx *clicontext.CLIContext) error {
 
 	fmt.Println("Deleting system component services")
 	for _, systemSvc := range install.SystemComponents {
-		if err := ctx.K8s.AppsV1().Deployments(u.Namespace).Delete(systemSvc, &metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
+		if err := ctx.K8s.AppsV1().Deployments(systemNamespace).Delete(systemSvc, &metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
 			return err
 		}
 	}
@@ -63,7 +74,7 @@ func (u Uninstall) Run(ctx *clicontext.CLIContext) error {
 	}
 	for _, f := range features.Items {
 		f.Finalizers = nil
-		if _, err := ctx.Project.Features(u.Namespace).Update(&f); err != nil && !errors.IsNotFound(err) {
+		if _, err := ctx.Project.Features(systemNamespace).Update(&f); err != nil && !errors.IsNotFound(err) {
 			return err
 		}
 	}
@@ -305,8 +316,8 @@ func (u Uninstall) Run(ctx *clicontext.CLIContext) error {
 		}
 	}
 
-	fmt.Printf("Deleting Namespace %s...\n", u.Namespace)
-	if err := ctx.Core.Namespaces().Delete(u.Namespace, &metav1.DeleteOptions{}); err != nil {
+	fmt.Printf("Deleting Namespace %s...\n", systemNamespace)
+	if err := ctx.Core.Namespaces().Delete(systemNamespace, &metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 

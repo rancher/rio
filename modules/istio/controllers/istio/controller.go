@@ -51,14 +51,6 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		return err
 	}
 
-	if err := setupConfigmapAndInjectors(ctx, rContext); err != nil {
-		return err
-	}
-
-	if err := enqueueServicesForInject(rContext.Rio.Rio().V1().Service()); err != nil {
-		return err
-	}
-
 	s := &istioDeployController{
 		namespace: rContext.Namespace,
 		apply:     rContext.Apply,
@@ -196,18 +188,6 @@ func (i istioDeployController) syncGateway(key string, obj *adminv1.ClusterDomai
 	}
 	populate.Gateway(i.namespace, domain, publicdomains, os)
 	return obj, i.apply.WithSetID("istio-gateway").Apply(os)
-}
-
-func enqueueServicesForInject(controller riov1controller.ServiceController) error {
-	svcs, err := controller.Cache().List("", labels.Everything())
-	if err != nil {
-		return err
-	}
-
-	for _, svc := range svcs {
-		controller.Enqueue(svc.Namespace, svc.Name)
-	}
-	return nil
 }
 
 func (i *istioDeployController) resolve(namespace, name string, obj runtime.Object) ([]relatedresource.Key, error) {
@@ -407,7 +387,7 @@ func getNodeIP(node *v1.Node) string {
 	return ""
 }
 
-func setupConfigmapAndInjectors(ctx context.Context, rContext *types.Context) error {
+func RegisterInjectors(ctx context.Context, rContext *types.Context) error {
 	cm, err := rContext.Core.Core().V1().ConfigMap().Get(rContext.Namespace, constants.IstionConfigMapName, metav1.GetOptions{})
 	if err != nil {
 		return err

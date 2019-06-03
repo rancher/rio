@@ -9,7 +9,7 @@ import (
 
 func NewExternalService(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
-		{"NAME", "{{stackScopedName .Obj.Namespace .Obj.Name ``}}"},
+		{"Name", "{{stackScopedName .Obj.Namespace .Obj.Name ``}}"},
 		{"CREATED", "{{.Obj.CreationTimestamp | ago}}"},
 		{"TARGET", "{{.Obj | formatTarget}}"},
 	}, cfg)

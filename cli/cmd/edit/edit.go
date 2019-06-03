@@ -2,12 +2,18 @@ package edit
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 
+	"github.com/rancher/rio/cli/cmd/inspect"
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/cli/pkg/lookup"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
+	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/kubernetes/pkg/kubectl/cmd/util/editor"
+	"sigs.k8s.io/yaml"
 )
 
 const (
@@ -26,7 +32,6 @@ var (
 )
 
 type Edit struct {
-	Prompt bool   `desc:"When editing a stack re-ask all questions if not found in environment variables"`
 	Raw    bool   `desc:"Edit the raw API object, not the pretty formatted one"`
 	T_Type string `desc:"Specific type to edit"`
 }
@@ -36,7 +41,99 @@ func (edit *Edit) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("at least one parameter is required")
 	}
 
-	return edit.rawEdit(ctx)
+	return edit.edit(ctx)
+}
+
+func (edit *Edit) edit(ctx *clicontext.CLIContext) error {
+	if len(ctx.CLI.Args()) != 1 {
+		return fmt.Errorf("exactly one Name (not name) arguement is required for raw edit")
+	}
+
+	var types []string
+	for _, t := range inspect.InspectTypes {
+		if t == clitypes.AppType {
+			continue
+		}
+		types = append(types, t)
+	}
+	r, err := lookup.Lookup(ctx, ctx.CLI.Args()[0], types...)
+	if err != nil {
+		return err
+	}
+
+	data, err := json.Marshal(r.Object)
+	if err != nil {
+		return err
+	}
+
+	var dataMap map[string]interface{}
+	if err := json.Unmarshal(data, &dataMap); err != nil {
+		return err
+	}
+	modifiedMap := make(map[string]interface{})
+	if !edit.Raw {
+		newMeta := map[string]interface{}{}
+		if meta, ok := dataMap["metadata"].(map[string]interface{}); ok {
+			newMeta["labels"] = meta["labels"]
+			newMeta["annotations"] = meta["annotations"]
+		}
+
+		modifiedMap["metadata"] = newMeta
+		modifiedMap["spec"] = dataMap["spec"]
+		if dataMap["data"] != nil {
+			modifiedMap["data"] = dataMap["data"]
+		}
+	} else {
+		modifiedMap = dataMap
+	}
+
+	m, err := json.Marshal(modifiedMap)
+	if err != nil {
+		return err
+	}
+	str, err := yaml.JSONToYAML(m)
+	if err != nil {
+		return err
+	}
+
+	updated, err := Loop(nil, str, func(content []byte) error {
+		return ctx.UpdateResource(r, func(obj runtime.Object) error {
+			if !edit.Raw {
+				m := make(map[string]interface{})
+				if err := yaml.Unmarshal(content, &m); err != nil {
+					return err
+				}
+				newMeta := dataMap["metadata"].(map[string]interface{})
+				if meta, ok := m["metadata"].(map[string]interface{}); ok {
+					newMeta["labels"] = meta["labels"]
+					newMeta["annotations"] = meta["annotations"]
+				}
+				dataMap["spec"] = m["spec"]
+				if m["data"] != nil {
+					dataMap["data"] = m["data"]
+				}
+
+				content, err = json.Marshal(dataMap)
+				if err != nil {
+					return err
+				}
+			}
+
+			if err := yaml.Unmarshal(content, &obj); err != nil {
+				return err
+			}
+			return nil
+		})
+	})
+	if err != nil {
+		return err
+	}
+
+	if !updated {
+		logrus.Infof("No change for %s/%s", r.Namespace, r.Name)
+	}
+
+	return nil
 }
 
 type updateFunc func(content []byte) error
@@ -81,11 +178,11 @@ func Loop(prefix, input []byte, update updateFunc) (bool, error) {
 //
 //func (edit *Edit) update(ctx *clicontext.CLIContext, format string, obj *types.Resource, self string, content []byte) error {
 //	if obj.Type == clitypes.NamespaceType {
-//		return up.Run(ctx, content, obj.ID, true, edit.Prompt, nil, "")
+//		return up.Run(ctx, content, obj.Name, true, edit.Prompt, nil, "")
 //	}
 //
 //	if obj.Type == clitypes.ConfigType {
-//		return config.RunUpdate(ctx, obj.ID, content, nil)
+//		return config.RunUpdate(ctx, obj.Name, content, nil)
 //	}
 //
 //	parsed, err := url.Parse(self)

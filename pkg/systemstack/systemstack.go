@@ -2,6 +2,10 @@ package systemstack
 
 import (
 	"bytes"
+	"encoding/json"
+	"strings"
+
+	"sigs.k8s.io/yaml"
 
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/riofile"
@@ -73,6 +77,35 @@ func (s *SystemStack) Deploy(answers map[string]string) error {
 	os := objectset.NewObjectSet()
 	os.Add(rf.Objects()...)
 	return s.apply.Apply(os)
+}
+
+func (s *SystemStack) Yaml(answers map[string]string) (string, error) {
+	content, err := s.content()
+	if err != nil {
+		return "", err
+	}
+
+	rf, err := riofile.Parse(bytes.NewBuffer(content), template.AnswersFromMap(answers))
+	if err != nil {
+		return "", err
+	}
+
+	output := strings.Builder{}
+	objs := rf.Objects()
+	for _, obj := range objs {
+		data, err := json.Marshal(obj)
+		if err != nil {
+			return "", err
+		}
+		r, err := yaml.JSONToYAML(data)
+		if err != nil {
+
+			return "", err
+		}
+		output.Write(r)
+		output.WriteString("---\n")
+	}
+	return output.String(), nil
 }
 
 func (s *SystemStack) Objects(answers map[string]string) ([]runtime.Object, error) {

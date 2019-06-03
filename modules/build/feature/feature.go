@@ -3,6 +3,8 @@ package feature
 import (
 	"context"
 
+	"github.com/rancher/rio/pkg/constants"
+
 	"github.com/rancher/rio/modules/build/controllers/proxy"
 
 	"github.com/rancher/rio/modules/build/controllers/build"
@@ -20,7 +22,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		FeatureName: "build",
 		FeatureSpec: v1.FeatureSpec{
 			Description: "Rio Build, from source code to deployment",
-			Enabled:     true,
+			Enabled:     !constants.DisableBuild,
 		},
 		SystemStacks: []*systemstack.SystemStack{
 			systemstack.NewStack(apply, rContext.Namespace, "build", true),

@@ -3,6 +3,8 @@ package rdns
 import (
 	"context"
 
+	"github.com/rancher/rio/pkg/constants"
+
 	"github.com/rancher/rio/modules/system/features/rdns/controllers/domain"
 	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/features"
@@ -15,7 +17,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		FeatureName: "rdns",
 		FeatureSpec: projectv1.FeatureSpec{
 			Description: "Assign cluster a hostname from public Rancher DNS service",
-			Enabled:     true,
+			Enabled:     !constants.DisableRdns,
 		},
 		Controllers: []features.ControllerRegister{
 			domain.Register,

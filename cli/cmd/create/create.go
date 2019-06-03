@@ -30,7 +30,7 @@ type Create struct {
 	DNS                    []string          `desc:"Set custom DNS servers"`
 	E_Env                  []string          `desc:"Set environment variables"`
 	EnvFile                []string          `desc:"Read in a file of environment variables"`
-	GlobalPermission       []string          `desc:"Permissions to grant to container's service account for all stacks"`
+	GlobalPermission       []string          `desc:"Permissions to grant to container's service account for all namespaces"`
 	Group                  string            `desc:"The GID to run the entrypoint of the container process"`
 	HealthCmd              string            `desc:"Command to run to check health"`
 	HealthFailureThreshold int               `desc:"Consecutive failures needed to report unhealthy"`
@@ -47,7 +47,7 @@ type Create struct {
 	L_Label                map[string]string `desc:"Set meta data on a container"`
 	M_Memory               string            `desc:"Memory reservation (format: <number>[<unit>], where unit = b, k, m or g)"`
 	N_Name                 string            `desc:"Assign a name to the container"`
-	Permission             []string          `desc:"Permissions to grant to container's service account in current stack"`
+	Permission             []string          `desc:"Permissions to grant to container's service account in current namespace"`
 	P_Ports                []string          `desc:"Publish a container's port(s) externally (default: \"80:8080/http\")"`
 	ReadOnly               bool              `desc:"Mount the container's root filesystem as read only"`
 	RolloutInterval        int               `desc:"Rollout interval in seconds" default:"5"`

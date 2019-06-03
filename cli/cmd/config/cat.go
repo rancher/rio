@@ -2,8 +2,11 @@ package config
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/rancher/mapper/slice"
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
@@ -12,9 +15,14 @@ import (
 )
 
 type Cat struct {
+	Key []string `desc:"specify which keys to cat"`
 }
 
 func (c *Cat) Run(ctx *clicontext.CLIContext) error {
+	if len(ctx.CLI.Args()) == 0 {
+		return errors.New("at least one argument is required")
+	}
+
 	for _, arg := range ctx.CLI.Args() {
 		r, err := lookup.Lookup(ctx, arg, types.ConfigType)
 		if err != nil {
@@ -29,12 +37,22 @@ func (c *Cat) Run(ctx *clicontext.CLIContext) error {
 
 		builder := &strings.Builder{}
 		for k, v := range config.Data {
+			if len(c.Key) > 0 {
+				if !slice.ContainsString(c.Key, k) {
+					continue
+				}
+			}
 			builder.WriteString(k)
 			builder.WriteString(":")
 			builder.WriteString(" |- \n")
 			builder.WriteString(v)
 		}
 		for k, v := range config.BinaryData {
+			if len(c.Key) > 0 {
+				if !slice.ContainsString(c.Key, k) {
+					continue
+				}
+			}
 			builder.WriteString(k)
 			builder.WriteString(":")
 			builder.WriteString(" |- \n")

@@ -11,8 +11,6 @@ import (
 
 	yaml2 "sigs.k8s.io/yaml"
 
-	"github.com/rancher/rio/pkg/apis/common"
-
 	"github.com/Masterminds/sprig"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/docker/go-units"
@@ -23,22 +21,20 @@ import (
 
 var (
 	idsHeader = [][]string{
-		{"ID", "ID"},
+		{"Name", "Name"},
 	}
 
 	localFuncMap = map[string]interface{}{
-		"ago":           FormatCreated,
-		"json":          FormatJSON,
-		"jsoncompact":   FormatJSONCompact,
-		"yaml":          FormatYAML,
-		"first":         FormatFirst,
-		"dump":          FormatSpew,
-		"toJson":        ToJSON,
-		"boolToStar":    BoolToStar,
-		"state":         State,
-		"array":         ToArray,
-		"graph":         Graph,
-		"transitioning": Transitioning,
+		"ago":         FormatCreated,
+		"json":        FormatJSON,
+		"jsoncompact": FormatJSONCompact,
+		"yaml":        FormatYAML,
+		"first":       FormatFirst,
+		"dump":        FormatSpew,
+		"toJson":      ToJSON,
+		"boolToStar":  BoolToStar,
+		"array":       ToArray,
+		"graph":       Graph,
 	}
 )
 
@@ -94,7 +90,7 @@ func NewWriter(values [][]string, config WriterConfig) Writer {
 
 	if config.Quiet() {
 		t.HeaderFormat = ""
-		t.ValueFormat = "{{.ID}}\n"
+		t.ValueFormat = "{{.Name}}\n"
 	}
 
 	switch customFormat := config.Format(); customFormat {
@@ -303,20 +299,6 @@ func BoolToStar(obj interface{}) (string, error) {
 	}
 	if b, ok := obj.(*bool); ok && b != nil && *b {
 		return "*", nil
-	}
-	return "", nil
-}
-
-func State(obj interface{}) (string, error) {
-	if b, ok := obj.(common.StateGetter); ok {
-		return b.State().State, nil
-	}
-	return "", nil
-}
-
-func Transitioning(obj interface{}) (string, error) {
-	if b, ok := obj.(common.StateGetter); ok {
-		return b.State().Message, nil
 	}
 	return "", nil
 }
