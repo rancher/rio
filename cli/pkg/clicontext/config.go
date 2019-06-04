@@ -79,10 +79,16 @@ func (c *Config) Validate() error {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
-	c.findKubeConfig()
+	var cfgOverrides *clientcmd.ClientConfigLoadingRules
+	if c.Kubeconfig == "" && os.Getenv("KUBECONFIG") != "" {
+		cfgOverrides = clientcmd.NewDefaultClientConfigLoadingRules()
+	} else {
+		c.findKubeConfig()
+		cfgOverrides = &clientcmd.ClientConfigLoadingRules{ExplicitPath: c.Kubeconfig}
+	}
 
 	loader := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-		&clientcmd.ClientConfigLoadingRules{ExplicitPath: c.Kubeconfig},
+		cfgOverrides,
 		&clientcmd.ConfigOverrides{
 			ClusterInfo: clientcmdapi.Cluster{Server: ""},
 			Context: clientcmdapi.Context{

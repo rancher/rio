@@ -115,7 +115,6 @@ func main() {
 		cli.StringFlag{
 			Name:        "kubeconfig",
 			Usage:       "Kubeconfig file to use",
-			EnvVar:      "KUBECONFIG",
 			Destination: &cfg.Kubeconfig,
 		},
 		cli.BoolFlag{
