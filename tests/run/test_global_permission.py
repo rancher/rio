@@ -12,9 +12,8 @@ def rio_permission_setup(stack, *rpermission):
         cmd += " --global-permission " + p
 
     cmd += " nginx"
-    util.run(cmd)
+    util.runwait(cmd, fullName)
     print(cmd)
-    util.run(f"rio wait {fullName}")
 
     return name
 

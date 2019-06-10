@@ -10,8 +10,7 @@ def run_image_pull(stack, img):
     command += " --image-pull-policy " + img
 
     command += " nginx"
-    util.run(command)
-    util.run(f"rio wait {fullName}")
+    util.runwait(command, fullName)
 
     print(command)
 

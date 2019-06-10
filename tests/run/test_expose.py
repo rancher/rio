@@ -12,8 +12,7 @@ def run_expose(stack, *prt):
         command += " --expose " + c
 
     command += " nginx"
-    util.run(command)
-    util.run(f"rio wait {fullName}")
+    util.runwait(command, fullName)
 
     print(command)
 

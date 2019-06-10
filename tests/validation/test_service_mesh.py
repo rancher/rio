@@ -1,5 +1,4 @@
 import util
-from os import system
 from random import randint
 import tempfile
 
@@ -30,8 +29,7 @@ def create_service(stack, config):
         fullName, config, path
         )
     print(run_command)
-    system(run_command)
-    system("rio wait %s" % fullName)
+    util.runwait(run_command, fullName)
 
     return name
 
@@ -43,8 +41,7 @@ def stage_service(stack, name, version, second_config):
         second_config, path, fullName, version
     )
     print(command)
-    system(command)
-    system("rio wait %s" % fullName)
+    util.runwait(command, fullName)
     stackJson = util.runToJson("rio export -o json %s" % stack)
     got = stackJson['services'][name]['revisions']['v2']['scale']
 
@@ -54,7 +51,7 @@ def stage_service(stack, name, version, second_config):
 def weight_service(stack, name, version, weight):
     fullName = "%s/%s" % (stack, name)
     command = "rio weight %s:%s=%s" % (fullName, version, weight)
-    system(command)
+    util.run(command)
     stackJson = util.runToJson("rio export -o json %s" % stack)
     got = stackJson['services'][name]['revisions']['v2']['weight']
 
@@ -64,7 +61,7 @@ def weight_service(stack, name, version, weight):
 def promote_service(stack, name, version):
     fullName = "%s/%s" % (stack, name)
     command = "rio promote %s:%s" % (fullName, version)
-    system(command)
+    util.run(command)
     stackJson = util.runToJson("rio export -o json %s" % stack)
     got = stackJson['services'][name]['version']
 

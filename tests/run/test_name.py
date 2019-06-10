@@ -5,8 +5,8 @@ import util
 def rio_name_setup(stack, sname):
 
     fullName = (f"{stack}/{sname}")
-    util.run(f"rio run --name {fullName} nginx")
-    util.run(f"rio wait {fullName}")
+    cmd = (f"rio run --name {fullName} nginx")
+    util.runwait(cmd, fullName)
 
     return sname
 

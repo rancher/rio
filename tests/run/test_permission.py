@@ -12,9 +12,7 @@ def rio_permission_setup(stack, *rpermission):
         cmd += " --permission " + p
 
     cmd += " nginx"
-    util.run(cmd)
-    print(cmd)
-    util.run(f"rio wait {fullName}")
+    util.runwait(cmd, fullName)
 
     return name
 

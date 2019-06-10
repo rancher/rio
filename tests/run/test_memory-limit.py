@@ -7,8 +7,7 @@ def run_memlimit(stack, size, unit):
     name = "tsrv" + str(randint(1000, 5000))
     fullName = (f"{stack}/{name}")
     cmd = (f'rio run -n {fullName} --memory-limit {size}{unit} nginx')
-    util.run(cmd)
-    util.run(f"rio wait {fullName}")
+    util.runwait(cmd, fullName)
 
     return name
 

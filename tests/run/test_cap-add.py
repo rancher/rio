@@ -3,19 +3,9 @@ from os import system
 from random import randint
 
 
-def run_capadd(stack, *capability):
-    name = "tsrv" + str(randint(1000, 5000))
-    fullName = "%s/%s" % (stack, name)
+def run_capadd(stack, *value):
 
-    command = (f'rio run -n {fullName}')
-
-    for c in capability:
-        command += " --cap-add " + c
-
-    command += " nginx"
-    print(command)
-    system(command)
-    system(f"rio wait {fullName}")
+    name = util.rioRun(stack, ' '.join(value), 'nginx')
 
     return name
 
@@ -40,7 +30,7 @@ def kube_capadd_chk(stack, service_name, *capabilities):
 
 
 def test_cap_1(stack):
-    service_name = run_capadd(stack, "ALL")
+    service_name = run_capadd(stack, "--cap-add", "ALL")
 
     r = rio_capadd_chk(stack, service_name)
     assert r == "[ALL]"
@@ -50,7 +40,7 @@ def test_cap_1(stack):
 
 
 def test_cap_2(stack):
-    service_name = run_capadd(stack, "ALL", "SYSLOG")
+    service_name = run_capadd(stack, "--cap-add", "ALL", "--cap-add", "SYSLOG")
 
     r = rio_capadd_chk(stack, service_name)
     assert r == "[ALL SYSLOG]"
