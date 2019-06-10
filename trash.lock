@@ -4,6 +4,8 @@ import:
   version: v0.1.0-115-g3b1ae45394a234
 - package: github.com/Azure/go-ansiterm
   version: d6e3b3328b783f23731bc4d058875b0371ff8109
+- package: github.com/Azure/go-autorest
+  version: v11.1.0
 - package: github.com/MakeNowJust/heredoc
   version: bb23615498cded5e105af4ce27de75b089cbe851
 - package: github.com/Masterminds/semver
@@ -16,6 +18,8 @@ import:
   version: 3ac7bf7a47d159a033b107610db8a1b6575507a4
 - package: github.com/davecgh/go-spew
   version: v1.1.0-1-g782f4967f2dc45
+- package: github.com/dgrijalva/jwt-go
+  version: v3.0.0-4-g01aeca54ebda6e
 - package: github.com/docker/docker
   version: docs-v1.12.0-rc4-2016-07-15-9510-ga9fbbdc8dd8794
 - package: github.com/docker/go-units
@@ -58,6 +62,8 @@ import:
   version: dec09d789f3dba190787f8b4454c7d3c936fed9e
 - package: github.com/googleapis/gnostic
   version: 0c5108395e2debce0d731cf0287ddf7242066aba
+- package: github.com/gophercloud/gophercloud
+  version: c818fa66e4c88b30db28038fe3f18f2f4a0db9a8
 - package: github.com/gorilla/mux
   version: v1.6.2
 - package: github.com/gregjones/httpcache
