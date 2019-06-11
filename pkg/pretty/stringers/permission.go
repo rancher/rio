@@ -129,11 +129,12 @@ func assignAPIGroupResource(result *v1.Permission, input string) {
 }
 
 func assignVerbs(result *v1.Permission, input string) {
-	if input == "read" {
+	switch input {
+	case "read":
 		result.Verbs = ReadVerbs
-	} else if input == "write" {
+	case "write":
 		result.Verbs = WriteVerbs
-	} else {
+	default:
 		for _, perm := range strings.Split(input, ",") {
 			result.Verbs = append(result.Verbs, strings.TrimSpace(perm))
 		}

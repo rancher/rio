@@ -37,13 +37,14 @@ func (e *EnvStringer) MaybeString() interface{} {
 	buf := &strings.Builder{}
 	buf.WriteString(e.Key)
 	buf.WriteString("=")
-	if e.SecretName != "" {
+	switch {
+	case e.SecretName != "":
 		buf.WriteString("secret://")
 		buf.WriteString(e.SecretName)
-	} else if e.ConfigMapName != "" {
+	case e.ConfigMapName != "":
 		buf.WriteString("config://")
 		buf.WriteString(e.ConfigMapName)
-	} else {
+	default:
 		buf.WriteString(e.Value)
 	}
 

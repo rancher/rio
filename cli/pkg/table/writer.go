@@ -97,20 +97,22 @@ func NewWriter(values [][]string, config WriterConfig) Writer {
 		t.ValueFormat = "{{.ID}}\n"
 	}
 
-	customFormat := config.Format()
-	if customFormat == "json" {
+	switch customFormat := config.Format(); customFormat {
+	case "json":
 		t.HeaderFormat = ""
 		t.ValueFormat = "json"
-	} else if customFormat == "jsoncompact" {
+	case "jsoncompact":
 		t.HeaderFormat = ""
 		t.ValueFormat = "jsoncompact"
-	} else if customFormat == "yaml" {
+	case "yaml":
 		t.HeaderFormat = ""
 		t.ValueFormat = "yaml"
-	} else if customFormat == "raw" {
-	} else if customFormat != "" {
-		t.ValueFormat = customFormat + "\n"
-		t.HeaderFormat = ""
+	case "raw":
+	default:
+		if customFormat != "" {
+			t.ValueFormat = customFormat + "\n"
+			t.HeaderFormat = ""
+		}
 	}
 
 	return t
@@ -144,21 +146,22 @@ func (t *writer) Write(obj interface{}) {
 		return
 	}
 
-	if t.ValueFormat == "json" {
+	switch t.ValueFormat {
+	case "json":
 		content, err := FormatJSON(obj)
 		t.err = err
 		if t.err != nil {
 			return
 		}
 		_, t.err = t.Writer.Write([]byte(content + "\n"))
-	} else if t.ValueFormat == "jsoncompact" {
+	case "jsoncompact":
 		content, err := FormatJSONCompact(obj)
 		t.err = err
 		if t.err != nil {
 			return
 		}
 		_, t.err = t.Writer.Write([]byte(content))
-	} else if t.ValueFormat == "yaml" {
+	case "yaml":
 		content, err := FormatJSON(obj)
 		t.err = err
 		if t.err != nil {
@@ -171,7 +174,7 @@ func (t *writer) Write(obj interface{}) {
 		}
 		t.Writer.Write([]byte("---\n"))
 		_, t.err = t.Writer.Write(append(converted, []byte("\n")...))
-	} else {
+	default:
 		t.err = t.printTemplate(t.Writer, t.ValueFormat, obj)
 	}
 }

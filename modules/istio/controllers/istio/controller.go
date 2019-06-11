@@ -93,14 +93,15 @@ func Register(ctx context.Context, rContext *types.Context) error {
 
 	rContext.Core.Core().V1().Endpoints().Cache().AddIndexer(indexName, s.indexEPByNode)
 
-	if constants.UseIPAddress != "" {
+	switch {
+	case constants.UseIPAddress != "":
 		addresses := strings.Split(constants.UseIPAddress, ",")
 		if err := s.updateClusterDomain(addresses); err != nil {
 			return err
 		}
-	} else if !constants.UseHostPort {
+	case !constants.UseHostPort:
 		rContext.Core.Core().V1().Service().OnChange(ctx, "istio-endpoints-serviceloadbalancer", s.syncServiceLoadbalancer)
-	} else {
+	default:
 		rContext.Core.Core().V1().Endpoints().OnChange(ctx, "istio-endpoints", s.syncEndpoint)
 	}
 

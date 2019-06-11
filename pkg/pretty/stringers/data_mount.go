@@ -59,12 +59,13 @@ func parseConfig(defaultFolder, mount string) (dataMount v1.DataMount, err error
 		dataMount.Key = fromParts[1]
 	}
 
-	if to == "" {
+	switch {
+	case to == "":
 		dataMount.Directory = defaultFolder
 		dataMount.File = dataMount.Key
-	} else if dataMount.Key == "" {
+	case dataMount.Key == "":
 		dataMount.Directory = to
-	} else {
+	default:
 		dataMount.Directory = filepath.Dir(to)
 		dataMount.File = filepath.Base(to)
 	}

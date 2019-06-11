@@ -22,11 +22,12 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 	var externalService riov1.ExternalService
 
 	for i, name := range ctx.CLI.Args().Tail() {
-		if ip := net.ParseIP(name); ip != nil {
+		switch ip := net.ParseIP(name); {
+		case ip != nil:
 			externalService.Spec.IPAddresses = append(externalService.Spec.IPAddresses, name)
-		} else if strings.ContainsRune(name, '.') {
+		case strings.ContainsRune(name, '.'):
 			externalService.Spec.FQDN = name
-		} else {
+		default:
 			externalService.Spec.Service = name
 		}
 
