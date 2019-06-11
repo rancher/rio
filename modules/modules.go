@@ -2,8 +2,7 @@ package modules
 
 import (
 	"context"
-
-	"github.com/rancher/rio/pkg/constants"
+	"fmt"
 
 	"github.com/rancher/rio/modules/autoscale"
 	"github.com/rancher/rio/modules/build"
@@ -12,11 +11,25 @@ import (
 	"github.com/rancher/rio/modules/monitoring"
 	"github.com/rancher/rio/modules/service"
 	"github.com/rancher/rio/modules/system"
+	"github.com/rancher/rio/pkg/constants"
+	"github.com/rancher/rio/pkg/systemstack"
 	"github.com/rancher/rio/types"
 )
 
 func Register(ctx context.Context, rioContext *types.Context) error {
 	if !constants.DisableIstio {
+		mesh := systemstack.NewStack(rioContext.Apply, rioContext.Namespace, "mesh", true)
+		answer := map[string]string{
+			"HTTP_PORT":         constants.DefaultHTTPOpenPort,
+			"HTTPS_PORT":        constants.DefaultHTTPSOpenPort,
+			"TELEMETRY_ADDRESS": fmt.Sprintf("%s.%s.svc.cluster.local", constants.IstioTelemetry, rioContext.Namespace),
+			"NAMESPACE":         rioContext.Namespace,
+			"TAG":               "1.1.3",
+			"USE_HOSTPORT":      fmt.Sprint(constants.UseHostPort),
+		}
+		if err := mesh.Deploy(answer); err != nil {
+			return err
+		}
 		if err := istio2.RegisterInjectors(ctx, rioContext); err != nil {
 			return err
 		}
