@@ -298,16 +298,16 @@ type StringMatch struct {
 }
 
 func (s StringMatch) String() string {
-	var result string
-	if s.Exact != "" {
-		result = s.Exact
-	} else if s.Prefix != "" {
-		result = s.Prefix + "*"
-	} else if s.Regexp != "" {
-		result = "regex(" + s.Regexp + ")"
+	switch {
+	case s.Exact != "":
+		return s.Exact
+	case s.Prefix != "":
+		return s.Prefix + "*"
+	case s.Regexp != "":
+		return "regex(" + s.Regexp + ")"
+	default:
+		return ""
 	}
-
-	return result
 }
 
 func containsComma(strs ...string) bool {

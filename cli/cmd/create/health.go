@@ -92,11 +92,12 @@ func populateHealthCheck(c *Create, service *riov1.Service) error {
 				})
 			}
 
-			if u.Scheme == "http" {
+			switch u.Scheme {
+			case "http":
 				hc.HTTPGet.Scheme = v1.URISchemeHTTP
-			} else if u.Scheme == "https" {
+			case "https":
 				hc.HTTPGet.Scheme = v1.URISchemeHTTPS
-			} else {
+			default:
 				return fmt.Errorf("invalid scheme in health-url %s: %s", c.HealthURL, u.Scheme)
 			}
 

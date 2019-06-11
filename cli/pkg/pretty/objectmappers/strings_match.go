@@ -29,15 +29,16 @@ type StringMatchStringer struct {
 }
 
 func (s StringMatchStringer) MaybeString() interface{} {
-	if s.Exact != "" {
+	switch {
+	case s.Exact != "":
 		return s.Exact
-	} else if s.Prefix != "" {
+	case s.Prefix != "":
 		return s.Prefix + "*"
-	} else if s.Regexp != "" {
+	case s.Regexp != "":
 		return "regex(" + s.Regexp + ")"
+	default:
+		return ""
 	}
-
-	return ""
 }
 
 func ParseStringMatch(str string) *v1.StringMatch {
@@ -67,14 +68,14 @@ func stringMatchToString(v interface{}) string {
 	prefix, _ := m["prefix"].(string)
 	regexp, _ := m["regexp"].(string)
 
-	var result string
-	if exact != "" {
-		result = exact
-	} else if prefix != "" {
-		result = prefix + "*"
-	} else if regexp != "" {
-		result = "regex(" + regexp + ")"
+	switch {
+	case exact != "":
+		return exact
+	case prefix != "":
+		return prefix + "*"
+	case regexp != "":
+		return "regex(" + regexp + ")"
+	default:
+		return ""
 	}
-
-	return result
 }

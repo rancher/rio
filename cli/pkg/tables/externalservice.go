@@ -22,15 +22,14 @@ func NewExternalService(cfg Config) TableWriter {
 }
 
 func FormatTarget(obj interface{}) (string, error) {
-	item := obj.(*v1.ExternalService)
-	endpoint := ""
-	if item.Spec.FQDN != "" {
-		endpoint = item.Spec.FQDN
-	} else if item.Spec.Service != "" {
-		endpoint = item.Spec.Service
-	} else if len(item.Spec.IPAddresses) > 0 {
-		endpoint = strings.Join(item.Spec.IPAddresses, ",")
+	switch item := obj.(*v1.ExternalService); {
+	case item.Spec.FQDN != "":
+		return item.Spec.FQDN, nil
+	case item.Spec.Service != "":
+		return item.Spec.Service, nil
+	case len(item.Spec.IPAddresses) > 0:
+		return strings.Join(item.Spec.IPAddresses, ","), nil
+	default:
+		return "", nil
 	}
-
-	return endpoint, nil
 }
