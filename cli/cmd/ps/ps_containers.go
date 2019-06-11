@@ -1,6 +1,7 @@
 package ps
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/knative/build/pkg/apis/build/v1alpha1"
@@ -10,6 +11,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/tables"
+	"github.com/rancher/rio/cli/pkg/types"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	v1 "k8s.io/api/core/v1"
@@ -17,7 +19,7 @@ import (
 )
 
 type ContainerData struct {
-	ID        string
+	Name      string
 	Pod       *v1.Pod
 	PodData   *tables.PodData
 	Container *v1.Container
@@ -142,7 +144,7 @@ func toPodData(ctx *clicontext.CLIContext, all bool, pod *v1.Pod, containerName 
 		return podData, false
 	}
 
-	containers := append(pod.Spec.InitContainers, pod.Spec.Containers...)
+	containers := append(pod.Spec.Containers, pod.Spec.InitContainers...)
 	for _, container := range containers {
 		if containerName == "" || container.Name == containerName {
 			podData.Containers = append(podData.Containers, container)
@@ -152,7 +154,12 @@ func toPodData(ctx *clicontext.CLIContext, all bool, pod *v1.Pod, containerName 
 	return podData, true
 }
 
-func (p *Ps) containers(ctx *clicontext.CLIContext) error {
+func Containers(ctx *clicontext.CLIContext) error {
+	appDatas, err := listApp(ctx)
+	if err != nil {
+		return err
+	}
+
 	pds, err := ListPods(ctx, true, ctx.CLI.Args()...)
 	if err != nil {
 		return err
@@ -162,9 +169,12 @@ func (p *Ps) containers(ctx *clicontext.CLIContext) error {
 	defer writer.TableWriter().Close()
 
 	for _, pd := range pds {
+		if _, ok := appDatas[fmt.Sprintf("%s/%s", pd.Pod.Namespace, pd.Service.ServiceName)]; !ok {
+			continue
+		}
 		for _, container := range pd.Containers {
 			writer.TableWriter().Write(ContainerData{
-				ID:        pd.Name,
+				Name:      fmt.Sprintf("%s/%s", pd.Pod.Namespace, pd.Name),
 				PodData:   &pd,
 				Container: &container,
 			})
@@ -172,4 +182,47 @@ func (p *Ps) containers(ctx *clicontext.CLIContext) error {
 	}
 
 	return writer.TableWriter().Err()
+}
+
+func Pods(ctx *clicontext.CLIContext) error {
+	appDatas, err := listApp(ctx)
+	if err != nil {
+		return err
+	}
+
+	pds, err := ListPods(ctx, true, ctx.CLI.Args()...)
+	if err != nil {
+		return err
+	}
+
+	writer := tables.NewPods(ctx)
+	defer writer.TableWriter().Close()
+
+	for _, pd := range pds {
+		if _, ok := appDatas[fmt.Sprintf("%s/%s", pd.Pod.Namespace, pd.Service.ServiceName)]; !ok {
+			continue
+		}
+		writer.TableWriter().Write(ContainerData{
+			Name:    fmt.Sprintf("%s/%s", pd.Pod.Namespace, pd.Name),
+			PodData: &pd,
+		})
+	}
+
+	return writer.TableWriter().Err()
+}
+
+func listApp(ctx *clicontext.CLIContext) (map[string]tables.AppData, error) {
+	appDatas := map[string]tables.AppData{}
+	appObjs, err := ctx.List(types.AppType)
+	if err != nil {
+		return appDatas, err
+	}
+	for _, v := range appObjs {
+		app := v.(*riov1.App)
+		appDatas[app.Namespace+"/"+app.Name] = tables.AppData{
+			App:       app,
+			Revisions: map[string]*riov1.Service{},
+		}
+	}
+	return appDatas, nil
 }

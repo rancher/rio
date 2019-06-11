@@ -9,11 +9,11 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-type Add struct {
+type Register struct {
 	Secret string `desc:"use specified secret that contains TLS certs and key instead of build-in letsencrypt. The secret has to be created first in your system namespace(default: rio-system)"`
 }
 
-func (a *Add) Run(ctx *clicontext.CLIContext) error {
+func (a *Register) Run(ctx *clicontext.CLIContext) error {
 	if len(ctx.CLI.Args()) != 2 {
 		return errors.New("Incorrect Usage. Example: `rio domain add DOMAIN_NAME TARGET_SVC`")
 	}

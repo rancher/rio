@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/libcompose/cli/logger"
 	"github.com/rancher/rio/cli/cmd/ps"
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/cli/pkg/logger"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -31,7 +31,7 @@ func (l *Logs) Run(ctx *clicontext.CLIContext) error {
 
 	logPods := false
 	for _, arg := range ctx.CLI.Args() {
-		if strings.Count(arg, "/") == 3 {
+		if strings.Count(arg, "/") == 2 {
 			logPods = true
 		}
 	}

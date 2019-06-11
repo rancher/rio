@@ -10,7 +10,7 @@ import (
 
 func NewBuild(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
-		{"NAME", "{{stackScopedName .Obj.Namespace .Obj.Name ``}}"},
+		{"Name", "{{stackScopedName .Obj.Namespace .Obj.Name ``}}"},
 		{"SERVICE", "{{.Obj | findService}}"},
 		{"REVISION", "{{.Obj | findRevision}}"},
 		{"CREATED", "{{.Obj.CreationTimestamp | ago}}"},

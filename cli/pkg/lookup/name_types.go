@@ -11,11 +11,11 @@ import (
 
 const (
 	dns1035                      string = "[a-z]([-a-z0-9]*[a-z0-9])?"
-	alphanumeric                 string = "[a-zA-Z0-9_-]*"
-	FourPartsNameType                   = NameType("fourParts")
+	alphanumeric                 string = "[a-zA-Z0-9._-]*"
 	FullDomainNameTypeNameType          = NameType("domainName")
 	SingleNameNameType                  = NameType("singleName")
-	StackScopedNameType                 = NameType("stackScoped")
+	NamespaceScopedNameType             = NameType("stackScoped")
+	NamespacedSecretNameType            = NameType("secretName")
 	ThreePartsNameType                  = NameType("threeParts")
 	VersionedSingleNameNameType         = NameType("versionedSingleName")
 	VersionedStackScopedNameType        = NameType("versionedStackScoped")
@@ -37,8 +37,12 @@ var (
 			Regexp: regexp.MustCompile("^" + dns1035 + ":" + dns1035 + "$"),
 			lookup: resolveStackScoped,
 		},
-		StackScopedNameType: {
+		NamespaceScopedNameType: {
 			Regexp: regexp.MustCompile("^" + dns1035 + "/" + dns1035 + "$"),
+			lookup: resolveStackScoped,
+		},
+		NamespacedSecretNameType: {
+			Regexp: regexp.MustCompile("^" + dns1035 + "/" + alphanumeric + "$"),
 			lookup: resolveStackScoped,
 		},
 		VersionedStackScopedNameType: {
@@ -47,10 +51,6 @@ var (
 		},
 		ThreePartsNameType: {
 			Regexp: regexp.MustCompile("^" + dns1035 + "/" + dns1035 + "/" + dns1035 + "$"),
-			lookup: resolvePod,
-		},
-		FourPartsNameType: {
-			Regexp: regexp.MustCompile("^" + dns1035 + "/" + dns1035 + "/" + alphanumeric + "/" + dns1035 + "$"),
 			lookup: resolvePod,
 		},
 	}
@@ -122,7 +122,7 @@ func resolvePod(defaultStackName, name, typeName string) types.Resource {
 	container, _ := ParseContainer(defaultStackName, name)
 	return types.Resource{
 		Namespace: container.Service.StackName,
-		Name:      container.Service.ServiceName + "-" + container.PodName,
+		Name:      container.PodName + "/" + container.ContainerName,
 		Type:      typeName,
 	}
 }

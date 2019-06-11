@@ -208,7 +208,7 @@ func (t *TableView) InsertDialog(name string, page tview.Primitive, dialog tview
 	newpage := tview.NewPages()
 	newpage.AddPage(name, page, true, true).
 		AddPage("dialog", center(dialog, 50, 20), true, true)
-	t.app.SwitchPage(t.app.currentPage, newpage)
+	t.app.SwitchPage(t.app.currentPage, newpage, t.actions)
 	t.app.Application.SetFocus(dialog)
 }
 
@@ -235,7 +235,7 @@ func (t *TableView) UpdateStatus(status string, isError bool) tview.Primitive {
 		newpage.AddPage("handler", t.app.currentPrimitive, true, true)
 	}
 	newpage.AddPage("dialog", center(statusBar, 100, 5), true, true)
-	t.app.SwitchPage(t.app.currentPage, newpage)
+	t.app.SwitchPage(t.app.currentPage, newpage, t.actions)
 
 	go func() {
 		time.Sleep(time.Second * errorDelayTime)
@@ -278,7 +278,7 @@ func (t *TableView) GetCurrentPrimitive() tview.Primitive {
 }
 
 func (t *TableView) SwitchPage(page string, draw tview.Primitive) {
-	t.app.SwitchPage(page, draw)
+	t.app.SwitchPage(page, draw, t.app.tableViews[page].actions)
 }
 
 func (t *TableView) SetCurrentPage(page string) {
@@ -316,17 +316,6 @@ func (t *TableView) UpdateWithSearch(search string) {
 	t.search = search
 }
 
-func (t *TableView) ShowMenu() {
-	app := t.app
-	if !app.showMenu {
-		newpage := tview.NewPages().AddPage("menu", app.CurrentPage(), true, true).
-			AddPage("menu-decor", center(app.menuView, 60, 35), true, true)
-		app.SwitchPage(app.currentPage, newpage)
-		app.SetFocus(app.menuView)
-		app.showMenu = true
-	}
-}
-
 func (t *TableView) ShowSearch() {
 	t.app.SetFocus(t.app.searchView.InputField)
 }
@@ -338,7 +327,7 @@ func (t *TableView) Navigate(r rune) {
 		if _, ok := app.tableViews[kind]; !ok {
 			app.tableViews[kind] = NewTableView(app, kind, t.drawer)
 		}
-		app.SwitchPage(kind, app.tableViews[kind])
+		app.SwitchPage(kind, app.tableViews[kind], app.tableViews[kind].actions)
 	}
 }
 

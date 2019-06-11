@@ -24,8 +24,6 @@ import:
   version: docs-v1.12.0-rc4-2016-07-15-9510-ga9fbbdc8dd8794
 - package: github.com/docker/go-units
   version: v0.3.1-11-g9e638d38cf6977
-- package: github.com/docker/libcompose
-  version: 213509acef0fe8f2358f4c0bb977eb3f4889ea15
 - package: github.com/docker/spdystream
   version: 449fdfce4d962303d702fec724ef0ad181c92528
 - package: github.com/drone/envsubst
@@ -134,7 +132,7 @@ import:
 - package: github.com/prometheus/procfs
   version: 65c1f6f8f0fc1e2185eb9863a3bc751496404259
 - package: github.com/rancher/axe
-  version: 143d2a1db3cff727b9f1453af54bbb6d03415a6f
+  version: 59fcf8b4414712ce3b20e02e69d214607f389acd
 - package: github.com/rancher/gitwatcher
   version: v0.2.2
 - package: github.com/rancher/mapper

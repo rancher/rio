@@ -16,7 +16,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		FeatureName: "prometheus",
 		FeatureSpec: v1.FeatureSpec{
 			Description: "Enable prometheus",
-			Enabled:     true,
+			Enabled:     !constants.DisablePrometheus,
 		},
 		SystemStacks: []*systemstack.SystemStack{
 			systemstack.NewStack(apply, rContext.Namespace, "prometheus", true),

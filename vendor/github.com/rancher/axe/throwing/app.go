@@ -96,7 +96,7 @@ func (app *AppView) Init() error {
 
 	// set default page to root page
 	app.footerView.TextView.Highlight(app.RootPage).ScrollToHighlight()
-	app.SwitchPage(app.RootPage, app.tableViews[app.RootPage])
+	app.SwitchPage(app.RootPage, app.tableViews[app.RootPage], app.tableViews[app.RootPage].actions)
 
 	// Initialize after switching page so that it has context of current page to search for
 	app.searchView.init()
@@ -149,12 +149,6 @@ func (app *AppView) setInputHandler() {
 	app.SetInputCapture(EscapeEventHandler(app))
 }
 
-func (app *AppView) menuDecor(page string, p tview.Primitive) {
-	newpage := tview.NewPages()
-	newpage.AddPage(page, p, true, true).AddPage("menu", center(app.menuView, 30, 20), true, true)
-	app.SwitchPage(page, newpage)
-}
-
 func (app *AppView) getK8sVersion() (string, error) {
 	ver, err := app.clientset.Discovery().ServerVersion()
 	if err != nil {
@@ -163,7 +157,10 @@ func (app *AppView) getK8sVersion() (string, error) {
 	return ver.GitVersion, nil
 }
 
-func (app *AppView) SwitchPage(page string, p tview.Primitive) {
+func (app *AppView) SwitchPage(page string, p tview.Primitive, actions []types.Action) {
+	app.Menu = actions
+	app.menuView.TextView.Clear()
+	app.menuView.init()
 	if app.currentPage != page {
 		cp := app.currentPage
 		app.currentPage = page
@@ -187,7 +184,7 @@ func (app *AppView) SwitchPage(page string, p tview.Primitive) {
 
 func (app *AppView) SwitchToRootPage() {
 	app.showMenu = false
-	app.SwitchPage(app.currentPage, app.tableViews[app.currentPage])
+	app.SwitchPage(app.currentPage, app.tableViews[app.currentPage], app.tableViews[app.currentPage].actions)
 }
 
 func (app *AppView) CurrentPage() tview.Primitive {
@@ -197,7 +194,7 @@ func (app *AppView) CurrentPage() tview.Primitive {
 func (app *AppView) LastPage() {
 	app.drawQueue.Dequeue()
 	page := app.drawQueue.Last()
-	app.SwitchPage(page.PageName, page.Primitive)
+	app.SwitchPage(page.PageName, page.Primitive, page.Primitive.(*TableView).actions)
 }
 
 type menuView struct {

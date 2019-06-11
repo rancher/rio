@@ -3,6 +3,8 @@ package kiali
 import (
 	"context"
 
+	"github.com/rancher/rio/pkg/constants"
+
 	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/features"
 	"github.com/rancher/rio/pkg/systemstack"
@@ -15,7 +17,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		FeatureName: "kiali",
 		FeatureSpec: v1.FeatureSpec{
 			Description: "Kiali Dashboard",
-			Enabled:     true,
+			Enabled:     !constants.DisableKiali,
 			Answers: map[string]string{
 				"USERNAME": "admin",
 				"PASSWORD": "admin",

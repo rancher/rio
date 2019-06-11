@@ -1,8 +1,6 @@
 package lookup
 
 import (
-	"strings"
-
 	"github.com/rancher/wrangler/pkg/kv"
 )
 
@@ -16,14 +14,10 @@ func ParseContainer(defaultStackName string, name string) (ParsedContainer, bool
 	result := ParsedContainer{}
 
 	var stackScoped StackScoped
-	if len(strings.Split(name, "/")) == 4 {
-		stackScoped = ParseStackScoped(defaultStackName, name)
-	} else {
-		namespace, other := kv.Split(name, "/")
-		stackScoped = StackScoped{
-			StackName: namespace,
-			Other:     other,
-		}
+	namespace, other := kv.Split(name, "/")
+	stackScoped = StackScoped{
+		StackName: namespace,
+		Other:     other,
 	}
 
 	if stackScoped.Other == "" {

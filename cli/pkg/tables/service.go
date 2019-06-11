@@ -3,30 +3,42 @@ package tables
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/rancher/rio/cli/pkg/table"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/services"
+	corev1 "k8s.io/api/core/v1"
 )
 
 func NewService(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
-		{"NAME", "{{serviceName .Obj.Namespace .Obj}}"},
-		{"IMAGE", "{{.Obj | image}}"},
-		{"CREATED", "{{.Obj.CreationTimestamp | ago}}"},
-		{"SCALE", "{{scale .Obj.Spec.Scale .Obj.Status.ScaleStatus .Obj.Status.ObservedScale}}"},
-		{"ENDPOINT", "{{.Obj.Status.Endpoints | array}}"},
-		{"WEIGHT", "{{.Obj.Spec.Weight}}"},
-		{"DETAIL", "{{first (.Obj |  transitioning) (.Obj | transitioning)}}"},
+		{"Name", "{{serviceName .Service.Namespace .Service}}"},
+		{"IMAGE", "{{.Service | image}}"},
+		{"CREATED", "{{.Service.CreationTimestamp | ago}}"},
+		{"SCALE", "{{scale .Service.Spec.Scale .Service.Status.ScaleStatus .Service.Status.ObservedScale}}"},
+		{"ENDPOINT", "{{.Service.Status.Endpoints | array}}"},
+		{"WEIGHT", "{{.Service.Spec.Weight}}"},
+		{"DETAIL", "{{.Pods | podsDetail}}"},
 	}, cfg)
 
 	writer.AddFormatFunc("serviceName", FormatServiceName(cfg))
 	writer.AddFormatFunc("image", FormatImage)
 	writer.AddFormatFunc("scale", FormatScale)
+	writer.AddFormatFunc("podsDetail", podsDetail)
 
 	return &tableWriter{
 		writer: writer,
 	}
+}
+
+func podsDetail(obj interface{}) (string, error) {
+	pods, _ := obj.([]corev1.Pod)
+
+	if len(pods) == 0 {
+		return "", nil
+	}
+	return podDetail(&pods[0])
 }
 
 func FormatScale(data, data2, data3 interface{}) (string, error) {
@@ -93,8 +105,11 @@ func FormatImage(data interface{}) (string, error) {
 	if !ok {
 		return fmt.Sprint(data), nil
 	}
+	image := ""
 	if s.Spec.Image == "" && len(s.Spec.Sidecars) > 0 {
-		return s.Spec.Sidecars[0].Image, nil
+		image = s.Spec.Sidecars[0].Image
+	} else {
+		image = s.Spec.Image
 	}
-	return s.Spec.Image, nil
+	return strings.TrimPrefix(image, "localhost:5442/"), nil
 }

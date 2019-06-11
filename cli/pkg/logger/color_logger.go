@@ -6,7 +6,6 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/docker/libcompose/logger"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -31,22 +30,22 @@ func NewColorLoggerFactory() *ColorLoggerFactory {
 }
 
 // CreateContainerLogger implements logger.Factory.CreateContainerLogger.
-func (c *ColorLoggerFactory) CreateContainerLogger(name string) logger.Logger {
+func (c *ColorLoggerFactory) CreateContainerLogger(name string) Logger {
 	return c.create(name)
 }
 
 // CreateBuildLogger implements logger.Factory.CreateBuildLogger.
-func (c *ColorLoggerFactory) CreateBuildLogger(name string) logger.Logger {
-	return &logger.RawLogger{}
+func (c *ColorLoggerFactory) CreateBuildLogger(name string) Logger {
+	return &RawLogger{}
 }
 
 // CreatePullLogger implements logger.Factory.CreatePullLogger.
-func (c *ColorLoggerFactory) CreatePullLogger(name string) logger.Logger {
-	return &logger.NullLogger{}
+func (c *ColorLoggerFactory) CreatePullLogger(name string) Logger {
+	return &NullLogger{}
 }
 
 // CreateBuildLogger implements logger.Factory.CreateContainerLogger.
-func (c *ColorLoggerFactory) create(name string) logger.Logger {
+func (c *ColorLoggerFactory) create(name string) Logger {
 	if c.maxLength < len(name) {
 		c.maxLength = len(name)
 	}

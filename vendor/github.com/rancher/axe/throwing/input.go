@@ -9,7 +9,7 @@ var (
 		return func(event *tcell.EventKey) *tcell.EventKey {
 			if event.Key() == tcell.KeyEscape || event.Rune() == 'q' {
 				app.showMenu = false
-				app.SwitchPage(app.currentPage, app.tableViews[app.currentPage])
+				app.SwitchPage(app.currentPage, app.tableViews[app.currentPage], app.tableViews[app.currentPage].actions)
 			}
 			return event
 		}

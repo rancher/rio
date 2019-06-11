@@ -12,25 +12,21 @@ func Route(app *cli.App) cli.Command {
 		"List routes",
 		app.Name+" route ls",
 		"")
+	create := builder.Command(&Create{},
+		"Create a route at the end",
+		app.Name+" route append MATCH ACTION [TARGET...]",
+		"To append a rule at the end, run `rio route add route1 to [$NAMESPACE/]$SERVICE_NAME")
+	create.Aliases = []string{"add"}
 	return cli.Command{
 		Name:      "routes",
 		ShortName: "route",
 		Usage:     "Route traffic across the mesh",
 		Action:    clicontext.DefaultAction(ls.Action),
 		Flags:     table.WriterFlags(),
+		Category:  "SUB COMMANDS",
 		Subcommands: []cli.Command{
-			builder.Command(&Ls{},
-				"List routes",
-				app.Name+" route ls",
-				""),
-			builder.Command(&Append{},
-				"Append a route at the end",
-				app.Name+" route append MATCH ACTION [TARGET...]",
-				""),
-			builder.Command(&Insert{},
-				"Insert a route at the first place",
-				app.Name+" route insert MATCH ACTION [TARGET...]",
-				""),
+			ls,
+			create,
 		},
 	}
 }

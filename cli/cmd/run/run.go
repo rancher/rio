@@ -53,7 +53,7 @@ func (r *Run) Run(ctx *clicontext.CLIContext) error {
 
 	if istty && service.Spec.Stdin && service.Spec.TTY {
 		fmt.Println("Attaching...")
-		return attach.RunAttach(ctx, time.Minute, true, true, service.Name)
+		return attach.RunAttach(ctx, time.Minute, service.Name)
 	}
 
 	return nil

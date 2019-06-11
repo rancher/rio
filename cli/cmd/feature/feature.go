@@ -33,9 +33,6 @@ func Feature(app *cli.App) cli.Command {
 			builder.Command(&Enable{},
 				"Enable a feature",
 				app.Name+" feature enable $FEATURE_NAME", ""),
-			builder.Command(&Disable{},
-				"Disable a feature",
-				app.Name+" feature disable $FEATURE_NAME", ""),
 		},
 	}
 }
@@ -54,21 +51,6 @@ func (l *Ls) Run(ctx *clicontext.CLIContext) error {
 	}
 	writer := tables.NewFeature(ctx)
 	return writer.Write(features)
-}
-
-type Disable struct{}
-
-func (d *Disable) Run(ctx *clicontext.CLIContext) error {
-	if len(ctx.CLI.Args()) != 1 {
-		return fmt.Errorf("feature name is required")
-	}
-
-	resource, err := lookup.Lookup(ctx, ctx.CLI.Args()[0], clitypes.FeatureType)
-	if err != nil {
-		return err
-	}
-
-	return flipEnableFlag(ctx, resource.Name, nil, false)
 }
 
 type Enable struct {

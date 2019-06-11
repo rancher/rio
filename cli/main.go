@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+
+	"github.com/rancher/rio/cli/cmd/pods"
 
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/rio/cli/cmd/attach"
 	"github.com/rancher/rio/cli/cmd/builds"
 	"github.com/rancher/rio/cli/cmd/config"
-	"github.com/rancher/rio/cli/cmd/create"
 	"github.com/rancher/rio/cli/cmd/edit"
 	"github.com/rancher/rio/cli/cmd/exec"
 	"github.com/rancher/rio/cli/cmd/export"
@@ -85,22 +87,6 @@ func main() {
 			Usage:       "Turn on debug logs",
 			Destination: &cfg.Debug,
 		},
-		//cli.BoolFlag{
-		//	Name:        "wait,w",
-		//	Usage:       "Wait for resource to reach resting state",
-		//	Destination: &cfg.Wait,
-		//},
-		//cli.IntFlag{
-		//	Name:        "wait-timeout",
-		//	Usage:       "Timeout in seconds to wait",
-		//	Value:       600,
-		//	Destination: &cfg.WaitTimeout,
-		//},
-		//cli.StringFlag{
-		//	Name:        "wait-state",
-		//	Usage:       "State to wait for (active, healthy, etc)",
-		//	Destination: &cfg.WaitState,
-		//},
 		cli.StringFlag{
 			Name:        "system-namespace",
 			Value:       "",
@@ -132,40 +118,39 @@ func main() {
 		feature.Feature(app),
 		secrets.Secrets(app),
 		builds.Builds(app),
+		pods.Pods(app),
 
 		builder.Command(&ps.Ps{},
 			"List services and containers",
-			appName+" ps [OPTIONS] [STACK...]",
-			""),
+			appName+" ps [OPTIONS] [SERVICE_OR_REVISION_...]",
+			"To view revisions, run `%s ps foo`. To view pods of a specific revision, run `%s ps foo:v0`. To view containers, run `%s ps -c foo[:v0]"),
 
 		builder.Command(&run.Run{},
 			"Create and run a new service",
 			appName+" run [OPTIONS] IMAGE [COMMAND] [ARG...]",
 			desc),
-		builder.Command(&create.Create{},
-			"Create a new service",
-			appName+" create [OPTIONS] IMAGE [COMMAND] [ARG...]",
-			desc),
+
 		builder.Command(&scale.Scale{},
 			"Scale a service",
-			appName+" scale [SERVICE=NUMBER...]",
-			""),
+			appName+" scale [SERVICE=NUMBER_OR_MIN-MAX...]",
+			fmt.Sprintf("To scale services to specified scale, run `%s scale foo=5`. To enable autoscaling, run `%s scale foo=1-5`.", appName, appName)),
+
 		builder.Command(&rm.Rm{},
-			"Delete a service or stack",
-			appName+" rm ID_OR_NAME",
+			"Delete resource",
+			appName+" rm [NAMESPACE/]RESOURCE_NAME",
 			""),
 		builder.Command(&inspect.Inspect{},
 			"Print the raw API output of a resource",
-			appName+" inspect [ID_OR_NAME...]",
+			appName+" inspect [[NAMESPACE/]SERVICE_NAME...]",
 			""),
 
 		builder.Command(&edit.Edit{},
-			"Edit a service or stack",
-			appName+" edit ID_OR_NAME",
+			"Edit resource",
+			appName+" edit [NAMESPACE/]RESOURCE_NAME",
 			""),
 		builder.Command(&export.Export{},
-			"Export a stack",
-			appName+" export STACK_ID_OR_NAME",
+			"Export a namespace or service",
+			appName+" export NAMESPACE_OR_SERVICE",
 			""),
 
 		config.NewCatCommand("", app),
@@ -201,7 +186,7 @@ func main() {
 			""),
 		builder.Command(&promote.Promote{},
 			"Promote a staged version to latest",
-			appName+" promote [SERVICE_ID_NAME]",
+			appName+" promote [NAMESPACE/]SERVICE_NAME:REVISION",
 			""),
 		builder.Command(&weight.Weight{},
 			"Weight a percentage of traffic to a staged service",
@@ -232,7 +217,7 @@ func main() {
 		return nil
 	}
 	app.ExitErrHandler = func(context *cli.Context, err error) {
-		if err == clicontext.ErrNoConfig {
+		if err != nil && strings.Contains(err.Error(), clicontext.ErrNoConfig.Error()) {
 			printConfigUsage()
 		} else {
 			cli.HandleExitCoder(err)

@@ -8,8 +8,6 @@ services:
     - '* networking.istio.io/*'
     - '* authentication.istio.io/*'
     - '* apiextensions.k8s.io/customresourcedefinitions'
-    - '* extensions/thirdpartyresources'
-    - '* extensions/thirdpartyresources.extensions'
     - '* extensions/ingresses'
     - '* extensions/ingresses/status'
     - rbac.istio.io/*

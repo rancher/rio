@@ -77,7 +77,7 @@ func Command(obj interface{}, usage, usageText, description string) cli.Command 
 		switch fieldType.Type.Kind() {
 		case reflect.Int:
 			flag := cli.IntFlag{
-				Name:        name(fieldType.Name),
+				Name:        name(fieldType.Name, fieldType.Tag.Get("name")),
 				Usage:       fieldType.Tag.Get("desc"),
 				EnvVar:      fieldType.Tag.Get("env"),
 				Destination: (*int)(unsafe.Pointer(v.Addr().Pointer())),
@@ -93,7 +93,7 @@ func Command(obj interface{}, usage, usageText, description string) cli.Command 
 			c.Flags = append(c.Flags, flag)
 		case reflect.String:
 			flag := cli.StringFlag{
-				Name:        name(fieldType.Name),
+				Name:        name(fieldType.Name, fieldType.Tag.Get("name")),
 				Usage:       fieldType.Tag.Get("desc"),
 				Value:       fieldType.Tag.Get("default"),
 				EnvVar:      fieldType.Tag.Get("env"),
@@ -101,16 +101,16 @@ func Command(obj interface{}, usage, usageText, description string) cli.Command 
 			}
 			c.Flags = append(c.Flags, flag)
 		case reflect.Slice:
-			slices[name(fieldType.Name)] = v
+			slices[name(fieldType.Name, fieldType.Tag.Get("name"))] = v
 			defMessage = " "
 			fallthrough
 		case reflect.Map:
 			if defMessage == "" {
-				maps[name(fieldType.Name)] = v
+				maps[name(fieldType.Name, fieldType.Tag.Get("name"))] = v
 				defMessage = " "
 			}
 			flag := cli.StringSliceFlag{
-				Name:   name(fieldType.Name),
+				Name:   name(fieldType.Name, fieldType.Tag.Get("name")),
 				Usage:  fieldType.Tag.Get("desc") + defMessage,
 				EnvVar: fieldType.Tag.Get("env"),
 				Value:  &cli.StringSlice{},
@@ -118,7 +118,7 @@ func Command(obj interface{}, usage, usageText, description string) cli.Command 
 			c.Flags = append(c.Flags, flag)
 		case reflect.Bool:
 			flag := cli.BoolFlag{
-				Name:        name(fieldType.Name),
+				Name:        name(fieldType.Name, fieldType.Tag.Get("name")),
 				Usage:       fieldType.Tag.Get("desc"),
 				EnvVar:      fieldType.Tag.Get("env"),
 				Destination: (*bool)(unsafe.Pointer(v.Addr().Pointer())),
@@ -184,7 +184,10 @@ func contextKey(name string) string {
 	return parts[len(parts)-1]
 }
 
-func name(name string) string {
+func name(name, setName string) string {
+	if setName != "" {
+		return setName
+	}
 	parts := strings.Split(name, "_")
 	i := len(parts) - 1
 	name = caseRegexp.ReplaceAllString(parts[i], "$1-$2")

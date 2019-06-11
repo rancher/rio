@@ -25,7 +25,8 @@ var (
 	}
 )
 
-type Append struct {
+type Create struct {
+	Insert bool `desc:"Insert the rule at the beginning instead of the end"`
 	Add
 }
 
@@ -51,8 +52,8 @@ type Action interface {
 	getRouteSet(ctx *clicontext.CLIContext, args []string) (*riov1.Router, bool, error)
 }
 
-func (a *Append) Run(ctx *clicontext.CLIContext) error {
-	return insertRoute(ctx, false, a)
+func (a *Create) Run(ctx *clicontext.CLIContext) error {
+	return insertRoute(ctx, a.Insert, a)
 }
 
 func insertRoute(ctx *clicontext.CLIContext, insert bool, a Action) error {

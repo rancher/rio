@@ -84,6 +84,11 @@ func main() {
 			Value:       "10.43.0.0/16",
 			Destination: &constants.ServiceCidr,
 		},
+		cli.StringFlag{
+			Name:   "disable-features",
+			Usage:  "Manually specify features to disable",
+			EnvVar: "DISABLE_FEATURES",
+		},
 	}
 	app.Action = run
 
@@ -99,6 +104,30 @@ func run(c *cli.Context) error {
 	if debug {
 		setupDebugLogging()
 		logrus.SetLevel(logrus.DebugLevel)
+	}
+
+	disableFeatures := strings.Split(c.String("disable-features"), ",")
+	for _, f := range disableFeatures {
+		switch f {
+		case "autoscaling":
+			constants.DisableAutoscaling = true
+		case "build":
+			constants.DisableBuild = true
+		case "grafana":
+			constants.DisableGrafana = true
+		case "istio":
+			constants.DisableIstio = true
+		case "kiali":
+			constants.DisableKiali = true
+		case "letsencrypt":
+			constants.DisableLetsencrypt = true
+		case "mixer":
+			constants.DisableMixer = true
+		case "prometheus":
+			constants.DisablePrometheus = true
+		case "rdns":
+			constants.DisableRdns = true
+		}
 	}
 
 	homeDir, err := os.UserHomeDir()

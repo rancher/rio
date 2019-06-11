@@ -1,20 +1,133 @@
 kubernetes:
   manifest: |-
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: ${NAMESPACE}
+    ---
     apiVersion: rbac.authorization.k8s.io/v1
     kind: ClusterRole
     metadata:
       name: rio-cluster-admin
     rules:
     - apiGroups:
-      - '*'
+      - ""
       resources:
-      - '*'
+      - "*"
       verbs:
-      - '*'
+      - "*"
     - nonResourceURLs:
-      - '*'
+      - "*"
       verbs:
       - '*'
+    - apiGroups:
+      - "extensions"
+      - "apps"
+      resources:
+      - "deployments"
+      - "daemonsets"
+      verbs:
+      - '*'
+    - apiGroups:
+      - "autoscale.rio.cattle.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "build.knative.dev"
+      - "caching.internal.knative.dev"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "certmanager.k8s.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "extensions"
+      resources:
+      - "ingresses"
+      - "ingresses/status"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "batch"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "autoscaling"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "rbac.authorization.k8s.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "admin.rio.cattle.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "rio.cattle.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "gitwatcher.cattle.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "apiextensions.k8s.io"
+      resources:
+      - "customresourcedefinitions"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "authentication.istio.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "networking.istio.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "admissionregistration.k8s.io"
+      resources:
+      - "validatingwebhookconfigurations"
+      verbs:
+      - "get"
+    - apiGroups:
+      - "config.istio.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "rbac.istio.io"
+      resources:
+      - "*"
+      verbs:
+      - "get"
+      - "watch"
+      - "list"
     ---
     apiVersion: rbac.authorization.k8s.io/v1
     kind: ClusterRoleBinding
@@ -71,6 +184,8 @@ kubernetes:
               value: ${IP_ADDRESSES}
             - name: SERVICE_CIDR
               value: ${SERVICE_CIDR}
+            - name: DISABLE_FEATURES
+              value: ${DISABLE_FEATURES}
 
 templates:
   questions:
@@ -90,3 +205,5 @@ templates:
     description: "whether to manually specify ip addresses to generate"
   - variable: SERVICE_CIDR
     description: "manually specify service CIDR for service mesh to intercept"
+  - variable: DISABLE_FEATURES
+    description: "manually specify features to disable"

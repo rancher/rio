@@ -30,16 +30,17 @@ import (
 )
 
 func init() {
-	lookup.RegisterType(types.ConfigType, lookup.StackScopedNameType, lookup.SingleNameNameType)
-	lookup.RegisterType(types.RouterType, lookup.StackScopedNameType, lookup.SingleNameNameType)
-	lookup.RegisterType(types.ExternalServiceType, lookup.StackScopedNameType, lookup.SingleNameNameType)
-	lookup.RegisterType(types.AppType, lookup.StackScopedNameType, lookup.SingleNameNameType)
-	lookup.RegisterType(types.ServiceType, lookup.StackScopedNameType, lookup.SingleNameNameType, lookup.VersionedSingleNameNameType, lookup.VersionedStackScopedNameType)
-	lookup.RegisterType(types.PodType, lookup.FourPartsNameType, lookup.ThreePartsNameType)
+	lookup.RegisterType(types.ConfigType, lookup.NamespaceScopedNameType, lookup.SingleNameNameType)
+	lookup.RegisterType(types.RouterType, lookup.NamespaceScopedNameType, lookup.SingleNameNameType)
+	lookup.RegisterType(types.ExternalServiceType, lookup.NamespaceScopedNameType, lookup.SingleNameNameType)
+	lookup.RegisterType(types.AppType, lookup.NamespaceScopedNameType, lookup.SingleNameNameType)
+	lookup.RegisterType(types.ServiceType, lookup.NamespaceScopedNameType, lookup.SingleNameNameType, lookup.VersionedSingleNameNameType, lookup.VersionedStackScopedNameType)
+	lookup.RegisterType(types.PodType, lookup.NamespaceScopedNameType, lookup.ThreePartsNameType)
 	lookup.RegisterType(types.NamespaceType, lookup.SingleNameNameType)
 	lookup.RegisterType(types.FeatureType, lookup.SingleNameNameType)
-	lookup.RegisterType(types.PublicDomainType, lookup.StackScopedNameType, lookup.FullDomainNameTypeNameType)
-	lookup.RegisterType(types.BuildType, lookup.StackScopedNameType)
+	lookup.RegisterType(types.PublicDomainType, lookup.NamespaceScopedNameType, lookup.FullDomainNameTypeNameType)
+	lookup.RegisterType(types.BuildType, lookup.NamespaceScopedNameType)
+	lookup.RegisterType(types.SecretType, lookup.NamespacedSecretNameType)
 }
 
 func (c *CLIContext) getResource(r types.Resource) (ret types.Resource, err error) {
@@ -77,13 +78,36 @@ func (c *CLIContext) getResource(r types.Resource) (ret types.Resource, err erro
 		r.Object, err = c.Rio.Apps(r.Namespace).Get(r.Name, metav1.GetOptions{})
 		r.FullType = clitypes.AppTypeFull
 	case clitypes.PodType:
-		r.Object, err = c.Core.Pods(r.Namespace).Get(r.Name, metav1.GetOptions{})
-		r.FullType = clitypes.PodType
+		podName, containerName := kv.Split(r.Name, "/")
+		pod, err := c.Core.Pods(r.Namespace).Get(podName, metav1.GetOptions{})
+		if err != nil {
+			return r, err
+		}
+		if containerName != "" {
+			for _, container := range pod.Spec.Containers {
+				if container.Name == containerName {
+					pod.Spec.Containers = []corev1.Container{
+						container,
+					}
+					pod.Spec.InitContainers = nil
+					break
+				}
+			}
+			for _, container := range pod.Spec.InitContainers {
+				if container.Name == containerName {
+					pod.Spec.InitContainers = []corev1.Container{
+						container,
+					}
+					pod.Spec.Containers = nil
+					break
+				}
+			}
+		}
+		r.Object = pod
 	case clitypes.ConfigType:
 		r.Object, err = c.Core.ConfigMaps(r.Namespace).Get(r.Name, metav1.GetOptions{})
 	case clitypes.RouterType:
 		r.Object, err = c.Rio.Routers(r.Namespace).Get(r.Name, metav1.GetOptions{})
-		r.FullType = clitypes.RouterTypeFull
 	case clitypes.ExternalServiceType:
 		r.Object, err = c.Rio.ExternalServices(r.Namespace).Get(r.Name, metav1.GetOptions{})
 	case clitypes.PublicDomainType:
@@ -94,6 +118,8 @@ func (c *CLIContext) getResource(r types.Resource) (ret types.Resource, err erro
 		r.Object, err = c.Project.Features(c.SystemNamespace).Get(r.Name, metav1.GetOptions{})
 	case clitypes.BuildType:
 		r.Object, err = c.Build.Builds(r.Namespace).Get(r.Name, metav1.GetOptions{})
+	case clitypes.SecretType:
+		r.Object, err = c.Core.Secrets(r.Namespace).Get(r.Name, metav1.GetOptions{})
 	default:
 		return r, fmt.Errorf("unknown by id type %s", r.Type)
 	}

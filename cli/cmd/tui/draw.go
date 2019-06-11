@@ -12,6 +12,7 @@ const (
 	routeKind           = "router"
 	appKind             = "app"
 	podKind             = "pod"
+	containerKind       = "container"
 	configKind          = "config"
 	publicdomainKind    = "publicdomain"
 	externalServiceKind = "externalservice"
@@ -97,17 +98,19 @@ var (
 				switch t.GetResourceKind() {
 				case appKind:
 					revisions(t)
-				case podKind:
+				case containerKind:
 					logs("", t)
+				case podKind:
+					containers(t)
 				case serviceKind:
-					viewPods(t)
+					pods(t)
 				}
+			case tcell.KeyDelete:
+				rm(t)
 			case tcell.KeyCtrlH:
 				hit(t)
 			case tcell.KeyCtrlP:
 				promote(t)
-			case tcell.KeyDEL:
-				rm(t)
 			case tcell.KeyCtrlR, tcell.KeyF5:
 				t.Refresh()
 			case tcell.KeyRune:
@@ -128,7 +131,7 @@ var (
 				default:
 					t.Navigate(event.Rune())
 				case 'p':
-					viewPods(t)
+					pods(t)
 				case 'e':
 					edit(t)
 				case 'r':
@@ -140,43 +143,48 @@ var (
 	}
 
 	App = types.ResourceKind{
-		Title: "Apps",
+		Title: " Apps ",
 		Kind:  appKind,
 	}
 
 	Route = types.ResourceKind{
-		Title: "Routers",
+		Title: " Routers ",
 		Kind:  routeKind,
 	}
 
 	Config = types.ResourceKind{
-		Title: "Configs",
+		Title: " Configs ",
 		Kind:  configKind,
 	}
 
 	PublicDomain = types.ResourceKind{
-		Title: "PublicDomains",
+		Title: " PublicDomains ",
 		Kind:  publicdomainKind,
 	}
 
 	Service = types.ResourceKind{
-		Title: "Services",
+		Title: " Services ",
 		Kind:  serviceKind,
 	}
 
 	ExternalService = types.ResourceKind{
-		Title: "ExternalServices",
+		Title: " ExternalServices ",
 		Kind:  externalServiceKind,
 	}
 
 	Pod = types.ResourceKind{
-		Title: "Pods",
+		Title: " Pods ",
 		Kind:  podKind,
 	}
 
 	Build = types.ResourceKind{
-		Title: "Builds",
+		Title: " Builds ",
 		Kind:  buildKind,
+	}
+
+	Container = types.ResourceKind{
+		Title: " Containers ",
+		Kind:  containerKind,
 	}
 
 	DefaultAction = []types.Action{
@@ -194,31 +202,6 @@ var (
 			Name:        "Delete",
 			Shortcut:    "Del",
 			Description: "delete a resource",
-		},
-		{
-			Name:        "Exec",
-			Shortcut:    "X",
-			Description: "exec into a container or service",
-		},
-		{
-			Name:        "Revisions",
-			Shortcut:    "R",
-			Description: "view revisions of a app",
-		},
-		{
-			Name:        "Log",
-			Shortcut:    "L",
-			Description: "view logs of a service",
-		},
-		{
-			Name:        "Pods",
-			Shortcut:    "P",
-			Description: "view pods of a service or app",
-		},
-		{
-			Name:        "Hit",
-			Shortcut:    "Ctrl+H",
-			Description: "hit endpoint of a service(need jq and curl)",
 		},
 		{
 			Name:        "Refresh",
@@ -242,14 +225,44 @@ var (
 		},
 	}
 
+	ExecAction = types.Action{
+		Name:        "Exec",
+		Shortcut:    "X",
+		Description: "exec into a container or service",
+	}
+
+	LogAction = types.Action{
+		Name:        "Log",
+		Shortcut:    "L",
+		Description: "view logs of a service",
+	}
+
+	AppAction = types.Action{
+		Name:        "Revisions",
+		Shortcut:    "R",
+		Description: "view revisions of a app",
+	}
+
+	HitAction = types.Action{
+		Name:        "Hit",
+		Shortcut:    "Ctrl+H",
+		Description: "hit endpoint of a service(need jq and curl)",
+	}
+
+	ServiceAction = types.Action{
+		Name:        "Pods",
+		Shortcut:    "P",
+		Description: "view pods of a service or app",
+	}
+
 	ViewMap = map[string]types.View{
 		appKind: {
-			Actions: DefaultAction,
+			Actions: append(DefaultAction, AppAction, HitAction, ServiceAction, ExecAction, LogAction),
 			Kind:    App,
 			Feeder:  datafeeder.NewDataFeeder(AppRefresher),
 		},
 		routeKind: {
-			Actions: DefaultAction,
+			Actions: append(DefaultAction, HitAction),
 			Kind:    Route,
 			Feeder:  datafeeder.NewDataFeeder(RouteRefresher),
 		},
@@ -269,19 +282,24 @@ var (
 			Feeder:  datafeeder.NewDataFeeder(PublicDomainRefresher),
 		},
 		serviceKind: {
-			Actions: DefaultAction,
+			Actions: append(DefaultAction, HitAction, ServiceAction, ExecAction, LogAction),
 			Kind:    Service,
 			Feeder:  datafeeder.NewDataFeeder(ServiceRefresher),
 		},
 		podKind: {
-			Actions: DefaultAction,
+			Actions: append(DefaultAction, ExecAction, LogAction),
 			Kind:    Pod,
 			Feeder:  datafeeder.NewDataFeeder(PodRefresher),
 		},
 		buildKind: {
-			Actions: DefaultAction,
+			Actions: append(DefaultAction, LogAction),
 			Kind:    Build,
 			Feeder:  datafeeder.NewDataFeeder(BuildRefresher),
+		},
+		containerKind: {
+			Actions: append(DefaultAction, ExecAction, LogAction),
+			Kind:    Container,
+			Feeder:  datafeeder.NewDataFeeder(ContainerRefresher),
 		},
 	}
 
@@ -291,6 +309,6 @@ var (
 		ViewMap:   ViewMap,
 		PageNav:   PageNav,
 		Footers:   Footers,
-		Menu:      DefaultAction,
+		Menu:      ViewMap[RootPage].Actions,
 	}
 )

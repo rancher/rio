@@ -10,8 +10,6 @@ import (
 )
 
 type Attach struct {
-	I_Stdin bool   `desc:"Pass stdin to the container"`
-	T_Tty   bool   `desc:"Stdin is a TTY"`
 	Timeout string `desc:"Timeout waiting for the container to be created to attach to" default:"1m"`
 }
 
@@ -26,10 +24,10 @@ func (a *Attach) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	return RunAttach(ctx, timeout, a.I_Stdin, a.T_Tty, ctx.CLI.Args()[0])
+	return RunAttach(ctx, timeout, ctx.CLI.Args()[0])
 }
 
-func RunAttach(ctx *clicontext.CLIContext, timeout time.Duration, stdin, tty bool, container string) error {
+func RunAttach(ctx *clicontext.CLIContext, timeout time.Duration, container string) error {
 	var pd *tables.PodData
 	var err error
 
@@ -57,10 +55,11 @@ func RunAttach(ctx *clicontext.CLIContext, timeout time.Duration, stdin, tty boo
 		pd.Pod.Name,
 		"-c", pd.Containers[0].Name,
 	}
-	if stdin {
+
+	if pd.Containers[0].Stdin {
 		execArgs = append(execArgs, "-i")
 	}
-	if tty {
+	if pd.Containers[0].TTY {
 		execArgs = append(execArgs, "-t")
 	}
 

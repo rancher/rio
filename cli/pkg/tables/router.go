@@ -91,7 +91,7 @@ func (r *routerWriter) Write(obj interface{}) {
 
 func NewRouter(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
-		{"NAME", "{{stackScopedName .RouteSet.Namespace .RouteSet.Name ``}}"},
+		{"Name", "{{stackScopedName .RouteSet.Namespace .RouteSet.Name ``}}"},
 		{"URL", "{{ . | formatURL }}"},
 		{"OPTS", "{{ . | formatOpts }}"},
 		{"ACTION", "{{ . | formatAction }}"},

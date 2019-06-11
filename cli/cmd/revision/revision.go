@@ -1,16 +1,20 @@
 package revision
 
 import (
+	"fmt"
+
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/stack"
 	"github.com/rancher/rio/cli/pkg/table"
 	"github.com/rancher/rio/cli/pkg/tables"
 	"github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/services"
 	"github.com/urfave/cli"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 type Revision struct {
@@ -23,14 +27,29 @@ func (r *Revision) Customize(cmd *cli.Command) {
 }
 
 func (r *Revision) Run(ctx *clicontext.CLIContext) error {
-	return r.revisions(ctx)
+	return Revisions(ctx)
 }
 
-func (r *Revision) revisions(ctx *clicontext.CLIContext) error {
-	var output []runtime.Object
+type ServiceData struct {
+	Service *riov1.Service
+	Pods    []v1.Pod
+}
+
+func Revisions(ctx *clicontext.CLIContext) error {
+	var output []ServiceData
 
 	// list services for specific app
 	if len(ctx.CLI.Args()) > 0 {
+		namespaces := sets.NewString()
+		for _, app := range ctx.CLI.Args() {
+			namespace, _ := stack.NamespaceAndName(ctx, app)
+			namespaces.Insert(namespace)
+		}
+
+		m, err := podsMap(ctx, namespaces.List())
+		if err != nil {
+			return err
+		}
 		for _, app := range ctx.CLI.Args() {
 			namespace, appName := stack.NamespaceAndName(ctx, app)
 			appObj, err := ctx.Rio.Apps(namespace).Get(appName, metav1.GetOptions{})
@@ -49,7 +68,11 @@ func (r *Revision) revisions(ctx *clicontext.CLIContext) error {
 					return err
 				}
 				service.Spec.Weight = appObj.Status.RevisionWeight[rev.Version].Weight
-				output = append(output, service)
+				app, version := services.AppAndVersion(service)
+				output = append(output, ServiceData{
+					Service: service,
+					Pods:    m[fmt.Sprintf("%s/%s/%s", service.Namespace, app, version)],
+				})
 			}
 		}
 	} else {
@@ -57,6 +80,16 @@ func (r *Revision) revisions(ctx *clicontext.CLIContext) error {
 		if err != nil {
 			return err
 		}
+		namespaces := sets.NewString()
+		for _, obj := range objs {
+			app := obj.(*riov1.App)
+			namespaces.Insert(app.Namespace)
+		}
+		m, err := podsMap(ctx, namespaces.List())
+		if err != nil {
+			return err
+		}
+
 		for _, obj := range objs {
 			app := obj.(*riov1.App)
 			for _, rev := range app.Spec.Revisions {
@@ -68,11 +101,38 @@ func (r *Revision) revisions(ctx *clicontext.CLIContext) error {
 					return err
 				}
 				service.Spec.Weight = app.Status.RevisionWeight[rev.Version].Weight
-				output = append(output, service)
+				appName, version := services.AppAndVersion(service)
+				output = append(output, ServiceData{
+					Service: service,
+					Pods:    m[fmt.Sprintf("%s/%s/%s", app.Namespace, appName, version)],
+				})
 			}
 		}
 	}
 
 	writer := tables.NewService(ctx)
-	return writer.Write(output)
+	defer writer.TableWriter().Close()
+	for _, obj := range output {
+		writer.TableWriter().Write(obj)
+	}
+	return writer.TableWriter().Err()
+}
+
+func podsMap(ctx *clicontext.CLIContext, namespaces []string) (map[string][]v1.Pod, error) {
+	podMap := map[string][]v1.Pod{}
+	for _, ns := range namespaces {
+		pods, err := ctx.Core.Pods(ns).List(metav1.ListOptions{})
+		if err != nil {
+			return podMap, err
+		}
+		for _, p := range pods.Items {
+			app := p.Labels["app"]
+			version := p.Labels["version"]
+			key := fmt.Sprintf("%s/%s/%s", ns, app, version)
+			list := podMap[key]
+			list = append(list, p)
+			podMap[key] = list
+		}
+	}
+	return podMap, nil
 }

@@ -1,6 +1,7 @@
 package rm
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
@@ -9,11 +10,14 @@ import (
 )
 
 type Rm struct {
-	T_Type string `desc:"delete specific type"`
+	T_Type string `desc:"delete specific type. Available types: [config,service,router,externalservice,publicdomain,app,secret,build]"`
 }
 
 func (r *Rm) Run(ctx *clicontext.CLIContext) error {
-	types := []string{clitypes.ServiceType, clitypes.PodType, clitypes.ConfigType, clitypes.RouterType, clitypes.PublicDomainType, clitypes.ExternalServiceType, clitypes.AppType, clitypes.SecretType, clitypes.BuildType}
+	if len(ctx.CLI.Args()) == 0 {
+		return errors.New("at least one argument is needed")
+	}
+	types := []string{clitypes.ServiceType, clitypes.ConfigType, clitypes.RouterType, clitypes.PublicDomainType, clitypes.ExternalServiceType, clitypes.AppType, clitypes.SecretType, clitypes.BuildType}
 	if len(r.T_Type) > 0 {
 		types = []string{r.T_Type}
 	}
