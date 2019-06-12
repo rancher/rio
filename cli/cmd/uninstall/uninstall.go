@@ -6,9 +6,7 @@ import (
 	"time"
 
 	"github.com/rancher/rio/cli/cmd/install"
-
 	"k8s.io/apimachinery/pkg/api/errors"
-
 	certmanagerv1alpha1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	gitwatcherv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"

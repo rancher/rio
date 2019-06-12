@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/rancher/rio/cli/pkg/lookup"
+	"github.com/rancher/rio/cli/pkg/up/questions"
 	"github.com/rancher/mapper"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
@@ -21,6 +23,32 @@ func (s *Scale) Run(ctx *clicontext.CLIContext) error {
 
 	for _, arg := range ctx.CLI.Args() {
 		name, scaleStr := kv.Split(arg, "=")
+		if !strings.Contains(name, ":") {
+			app, err := lookup.Lookup(ctx, name, clitypes.AppType)
+			if err != nil {
+				return err
+			}
+			var versions []string
+			for _, rev := range app.Object.(*v1.App).Spec.Revisions {
+				if rev.AdjustedWeight == 0 {
+					continue
+				}
+				versions = append(versions, rev.Version)
+			}
+			if len(versions) == 1 {
+				name = name + ":" + versions[0]
+			} else {
+				var options []string
+				for i, ver := range versions {
+					options = append(options, fmt.Sprintf("[%v] %v\n", i+1, ver))
+				}
+				num, err := questions.PromptOptions("Choose which version to scale\n", -1, options...)
+				if err != nil {
+					return err
+				}
+				name = name + ":" + versions[num]
+			}
+		}
 		err := ctx.Update(name, clitypes.ServiceType, func(obj runtime.Object) error {
 			service := obj.(*v1.Service)
 
