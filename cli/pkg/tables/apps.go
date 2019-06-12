@@ -57,10 +57,9 @@ func NewApp(cfg Config) TableWriter {
 	}
 }
 
-func revisions(obj interface{}) (result []string) {
-	revs := obj.(*AppData)
-	for _, rev := range revs.App.Spec.Revisions {
-		revStatus := revs.App.Status.RevisionWeight[rev.Version]
+func revisions(app *riov1.App) (result []string) {
+	for _, rev := range app.Spec.Revisions {
+		revStatus := app.Status.RevisionWeight[rev.Version]
 		if revStatus.Weight == 0 {
 			continue
 		}
@@ -70,26 +69,25 @@ func revisions(obj interface{}) (result []string) {
 	return
 }
 
-func revisionsByVersion(obj interface{}) map[string]riov1.Revision {
-	data := obj.(*AppData)
+func revisionsByVersion(app *riov1.App) map[string]riov1.Revision {
 	result := map[string]riov1.Revision{}
-	for _, rev := range data.App.Spec.Revisions {
+	for _, rev := range app.Spec.Revisions {
 		result[rev.Version] = rev
 	}
 	return result
 }
 
 func formatRevisions(obj interface{}) (string, error) {
-	revs := revisions(obj)
+	revs := revisions(obj.(*AppData).App)
 	return strings.Join(revs, ","), nil
 }
 
 func formatAppScale(obj interface{}) (string, error) {
 	var (
-		revMap = revisionsByVersion(obj)
+		revMap = revisionsByVersion(obj.(*AppData).App)
 		result []string
 	)
-	for _, version := range revisions(obj) {
+	for _, version := range revisions(obj.(*AppData).App) {
 		rev := revMap[version]
 		scale, err := FormatScale(rev.Scale, rev.ScaleStatus, nil)
 		if err != nil {
@@ -106,7 +104,7 @@ func formatWeightGraph(obj interface{}) (string, error) {
 		result []string
 	)
 
-	for _, version := range revisions(app.Spec.Revisions) {
+	for _, version := range revisions(app) {
 		weight := app.Status.RevisionWeight[version].Weight
 		ret := fmt.Sprintf("%v%%", weight)
 		result = append(result, ret)
@@ -132,8 +130,8 @@ func formatAppDetail(obj interface{}) (string, error) {
 	appData := obj.(*AppData)
 	buffer := strings.Builder{}
 
-	versions := revisionsByVersion(appData)
-	for _, name := range revisions(appData) {
+	versions := revisionsByVersion(appData.App)
+	for _, name := range revisions(appData.App) {
 		svc, ok := appData.Revisions[name]
 		if !ok {
 			continue

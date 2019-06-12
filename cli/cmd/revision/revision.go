@@ -2,6 +2,7 @@ package revision
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/stack"
@@ -109,6 +110,10 @@ func Revisions(ctx *clicontext.CLIContext) error {
 			}
 		}
 	}
+
+	sort.Slice(output, func(i, j int) bool {
+		return output[i].Service.CreationTimestamp.After(output[j].Service.CreationTimestamp.Time)
+	})
 
 	writer := tables.NewService(ctx)
 	defer writer.TableWriter().Close()

@@ -37,8 +37,7 @@ func (t *tableWriter) Write(objs []runtime.Object) (err error) {
 		leftMeta, _ := meta.Accessor(objs[i])
 		rightMeta, _ := meta.Accessor(objs[j])
 		leftCreated := leftMeta.GetCreationTimestamp()
-		rightCreated := rightMeta.GetCreationTimestamp()
-		return leftCreated.Before(&rightCreated)
+		return leftCreated.After(rightMeta.GetCreationTimestamp().Time)
 	})
 
 	defer func() {
