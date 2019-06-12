@@ -200,7 +200,6 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 			fmt.Println("ClusterDomain is reachable. Run `rio info` to get more info.")
 		}
 
-		fmt.Printf("Please make sure all the system pods are actually running. Run `kubectl get po -n %s` to get more detail.\n", info.Status.SystemNamespace)
 		fmt.Println("Controller logs are available from `rio systemlogs`")
 		fmt.Println("")
 		fmt.Println("Welcome to Rio!")

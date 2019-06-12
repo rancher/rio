@@ -5,13 +5,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
+
+	"github.com/rancher/wrangler/pkg/gvk"
+	name2 "github.com/rancher/wrangler/pkg/name"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/rancher/rio/cli/cmd/inspect"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
 	"github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/kubernetes/pkg/kubectl/cmd/util/editor"
 	"sigs.k8s.io/yaml"
 )
@@ -44,47 +52,100 @@ func (edit *Edit) Run(ctx *clicontext.CLIContext) error {
 	return edit.edit(ctx)
 }
 
+func (edit *Edit) updateObject(ctx *clicontext.CLIContext, data map[string]interface{}, name string, types ...string) (map[string]interface{}, error) {
+	_, origObject, err := edit.getObject(ctx, true, name, types...)
+	if err != nil {
+		return nil, err
+	}
+
+	origMdMap := getMdMap(origObject)
+	newMdMap := getMdMap(data)
+
+	for _, key := range []string{"labels", "annotations"} {
+		origMdMap[key] = newMdMap[key]
+	}
+
+	delete(data, "metadata")
+	for k, v := range data {
+		origObject[k] = v
+	}
+
+	return origObject, nil
+}
+
+func getMdMap(obj map[string]interface{}) map[string]interface{} {
+	md, ok := obj["metadata"]
+	if !ok {
+		return map[string]interface{}{}
+	}
+
+	mdMap, ok := md.(map[string]interface{})
+	if !ok {
+		return map[string]interface{}{}
+	}
+
+	return mdMap
+}
+
+func (edit *Edit) getObject(ctx *clicontext.CLIContext, raw bool, name string, types ...string) (clitypes.Resource, map[string]interface{}, error) {
+	r, err := lookup.Lookup(ctx, ctx.CLI.Args()[0], types...)
+	if err != nil {
+		return clitypes.Resource{}, nil, err
+	}
+
+	data, err := json.Marshal(r.Object)
+	if err != nil {
+		return clitypes.Resource{}, nil, err
+	}
+
+	var dataMap map[string]interface{}
+	if err := json.Unmarshal(data, &dataMap); err != nil {
+		return clitypes.Resource{}, nil, err
+	}
+
+	if raw {
+		return r, dataMap, nil
+	}
+
+	newMdMap := map[string]interface{}{}
+	mdMap := getMdMap(dataMap)
+	for _, key := range []string{"labels", "annotations"} {
+		if val, ok := mdMap[key]; ok {
+			newMdMap[key] = val
+		}
+	}
+	if len(newMdMap) == 0 {
+		delete(dataMap, "metadata")
+	} else {
+		dataMap["metadata"] = newMdMap
+	}
+
+	delete(dataMap, "kind")
+	delete(dataMap, "apiVersion")
+	delete(dataMap, "status")
+	return r, dataMap, nil
+}
+
 func (edit *Edit) edit(ctx *clicontext.CLIContext) error {
 	if len(ctx.CLI.Args()) != 1 {
 		return fmt.Errorf("exactly one Name (not name) arguement is required for raw edit")
 	}
 
-	var types []string
+	var (
+		name  = ctx.CLI.Args()[0]
+		types []string
+	)
+
 	for _, t := range inspect.InspectTypes {
 		if t == clitypes.AppType {
 			continue
 		}
 		types = append(types, t)
 	}
-	r, err := lookup.Lookup(ctx, ctx.CLI.Args()[0], types...)
+
+	r, modifiedMap, err := edit.getObject(ctx, edit.Raw, name, types...)
 	if err != nil {
 		return err
-	}
-
-	data, err := json.Marshal(r.Object)
-	if err != nil {
-		return err
-	}
-
-	var dataMap map[string]interface{}
-	if err := json.Unmarshal(data, &dataMap); err != nil {
-		return err
-	}
-	modifiedMap := make(map[string]interface{})
-	if !edit.Raw {
-		newMeta := map[string]interface{}{}
-		if meta, ok := dataMap["metadata"].(map[string]interface{}); ok {
-			newMeta["labels"] = meta["labels"]
-			newMeta["annotations"] = meta["annotations"]
-		}
-
-		modifiedMap["metadata"] = newMeta
-		modifiedMap["spec"] = dataMap["spec"]
-		if dataMap["data"] != nil {
-			modifiedMap["data"] = dataMap["data"]
-		}
-	} else {
-		modifiedMap = dataMap
 	}
 
 	m, err := json.Marshal(modifiedMap)
@@ -97,33 +158,39 @@ func (edit *Edit) edit(ctx *clicontext.CLIContext) error {
 	}
 
 	updated, err := Loop(nil, str, func(content []byte) error {
-		return ctx.UpdateResource(r, func(obj runtime.Object) error {
-			if !edit.Raw {
-				m := make(map[string]interface{})
-				if err := yaml.Unmarshal(content, &m); err != nil {
-					return err
-				}
-				newMeta := dataMap["metadata"].(map[string]interface{})
-				if meta, ok := m["metadata"].(map[string]interface{}); ok {
-					newMeta["labels"] = meta["labels"]
-					newMeta["annotations"] = meta["annotations"]
-				}
-				dataMap["spec"] = m["spec"]
-				if m["data"] != nil {
-					dataMap["data"] = m["data"]
-				}
+		m := make(map[string]interface{})
+		if err := yaml.Unmarshal(content, &m); err != nil {
+			return err
+		}
 
-				content, err = json.Marshal(dataMap)
-				if err != nil {
-					return err
-				}
-			}
-
-			if err := yaml.Unmarshal(content, &obj); err != nil {
+		if !edit.Raw {
+			m, err = edit.updateObject(ctx, m, name, types...)
+			if err != nil {
 				return err
 			}
-			return nil
-		})
+		}
+
+		obj := &unstructured.Unstructured{
+			Object: m,
+		}
+
+		gvk, err := gvk.Get(obj)
+		if err != nil {
+			return err
+		}
+		gvr := schema.GroupVersionResource{
+			Group:    gvk.Group,
+			Version:  gvk.Version,
+			Resource: strings.ToLower(name2.GuessPluralName(gvk.Kind)),
+		}
+
+		c, err := dynamic.NewForConfig(ctx.RestConfig)
+		if err != nil {
+			return err
+		}
+
+		_, err = c.Resource(gvr).Namespace(obj.GetNamespace()).Update(obj, v1.UpdateOptions{})
+		return err
 	})
 	if err != nil {
 		return err
@@ -174,52 +241,3 @@ func Loop(prefix, input []byte, update updateFunc) (bool, error) {
 
 	return true, nil
 }
-
-//
-//func (edit *Edit) update(ctx *clicontext.CLIContext, format string, obj *types.Resource, self string, content []byte) error {
-//	if obj.Type == clitypes.NamespaceType {
-//		return up.Run(ctx, content, obj.Name, true, edit.Prompt, nil, "")
-//	}
-//
-//	if obj.Type == clitypes.ConfigType {
-//		return config.RunUpdate(ctx, obj.Name, content, nil)
-//	}
-//
-//	parsed, err := url.Parse(self)
-//	if err != nil {
-//		return err
-//	}
-//
-//	q := parsed.Query()
-//	q.Set("_edited", "true")
-//	q.Set("_replace", "true")
-//	parsed.RawQuery = q.Encode()
-//
-//	req, err := http.NewRequest(http.MethodPut, parsed.String(), bytes.NewReader(content))
-//	if err != nil {
-//		return err
-//	}
-//
-//	wc, err := ctx.ProjectClient()
-//	if err != nil {
-//		return err
-//	}
-//
-//	wc.Ops.SetupRequest(req)
-//	req.Header.Set("Content-Type", format)
-//
-//	resp, err := wc.Ops.Client.Do(req)
-//	if err != nil {
-//		return err
-//	}
-//	defer func() {
-//		io.Copy(ioutil.Discard, resp.Body)
-//		resp.Body.Close()
-//	}()
-//
-//	if resp.StatusCode >= 300 {
-//		return clientbase.NewAPIError(resp, parsed.String())
-//	}
-//
-//	return nil
-//}
