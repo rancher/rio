@@ -159,7 +159,7 @@ func (c *featureController) OnRemove(ctx context.Context, name string, sync Feat
 }
 
 func (c *featureController) Enqueue(namespace, name string) {
-	c.controllerManager.Enqueue(c.gvk, namespace, name)
+	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), namespace, name)
 }
 
 func (c *featureController) Informer() cache.SharedIndexInformer {

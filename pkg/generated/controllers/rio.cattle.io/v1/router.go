@@ -159,7 +159,7 @@ func (c *routerController) OnRemove(ctx context.Context, name string, sync Route
 }
 
 func (c *routerController) Enqueue(namespace, name string) {
-	c.controllerManager.Enqueue(c.gvk, namespace, name)
+	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), namespace, name)
 }
 
 func (c *routerController) Informer() cache.SharedIndexInformer {
