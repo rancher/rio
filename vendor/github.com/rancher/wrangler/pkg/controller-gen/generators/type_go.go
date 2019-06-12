@@ -212,7 +212,7 @@ func (c *{{.lowerName}}Controller) OnRemove(ctx context.Context, name string, sy
 }
 
 func (c *{{.lowerName}}Controller) Enqueue({{ if .namespaced}}namespace, {{end}}name string) {
-	c.controllerManager.Enqueue(c.gvk, {{ if .namespaced }}namespace, {{else}}"", {{end}}name)
+	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), {{ if .namespaced }}namespace, {{else}}"", {{end}}name)
 }
 
 func (c *{{.lowerName}}Controller) Informer() cache.SharedIndexInformer {

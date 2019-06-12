@@ -159,7 +159,7 @@ func (c *persistentVolumeClaimController) OnRemove(ctx context.Context, name str
 }
 
 func (c *persistentVolumeClaimController) Enqueue(namespace, name string) {
-	c.controllerManager.Enqueue(c.gvk, namespace, name)
+	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), namespace, name)
 }
 
 func (c *persistentVolumeClaimController) Informer() cache.SharedIndexInformer {

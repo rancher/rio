@@ -159,7 +159,7 @@ func (c *storageClassController) OnRemove(ctx context.Context, name string, sync
 }
 
 func (c *storageClassController) Enqueue(name string) {
-	c.controllerManager.Enqueue(c.gvk, "", name)
+	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), "", name)
 }
 
 func (c *storageClassController) Informer() cache.SharedIndexInformer {

@@ -159,7 +159,7 @@ func (c *rioInfoController) OnRemove(ctx context.Context, name string, sync RioI
 }
 
 func (c *rioInfoController) Enqueue(name string) {
-	c.controllerManager.Enqueue(c.gvk, "", name)
+	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), "", name)
 }
 
 func (c *rioInfoController) Informer() cache.SharedIndexInformer {

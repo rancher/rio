@@ -159,7 +159,7 @@ func (c *podController) OnRemove(ctx context.Context, name string, sync PodHandl
 }
 
 func (c *podController) Enqueue(namespace, name string) {
-	c.controllerManager.Enqueue(c.gvk, namespace, name)
+	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), namespace, name)
 }
 
 func (c *podController) Informer() cache.SharedIndexInformer {

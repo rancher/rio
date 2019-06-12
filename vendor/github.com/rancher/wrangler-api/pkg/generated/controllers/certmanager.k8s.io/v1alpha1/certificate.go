@@ -159,7 +159,7 @@ func (c *certificateController) OnRemove(ctx context.Context, name string, sync 
 }
 
 func (c *certificateController) Enqueue(namespace, name string) {
-	c.controllerManager.Enqueue(c.gvk, namespace, name)
+	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), namespace, name)
 }
 
 func (c *certificateController) Informer() cache.SharedIndexInformer {

@@ -159,7 +159,7 @@ func (c *serviceAccountController) OnRemove(ctx context.Context, name string, sy
 }
 
 func (c *serviceAccountController) Enqueue(namespace, name string) {
-	c.controllerManager.Enqueue(c.gvk, namespace, name)
+	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), namespace, name)
 }
 
 func (c *serviceAccountController) Informer() cache.SharedIndexInformer {
