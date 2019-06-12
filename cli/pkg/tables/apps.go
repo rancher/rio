@@ -40,8 +40,8 @@ func NewApp(cfg Config) TableWriter {
 		{"Name", "{{stackScopedName .Obj.App.Namespace .Obj.App.Name ``}}"},
 		{"CREATED", "{{.Obj.App.CreationTimestamp | ago}}"},
 		{"ENDPOINT", "{{.Obj.App.Status.Endpoints | array}}"},
-		{"REVISIONS", "{{revisions .Obj.App.Spec.Revisions}}"},
-		{"SCALE", "{{appScale .Obj.App.Spec.Revisions}}"},
+		{"REVISIONS", "{{revisions .Obj}}"},
+		{"SCALE", "{{appScale .Obj}}"},
 		{"WEIGHT", "{{weightVersioned .Obj.App}}"},
 		{"DETAIL", "{{detail .Obj}}"},
 	}, cfg)
@@ -58,9 +58,10 @@ func NewApp(cfg Config) TableWriter {
 }
 
 func revisions(obj interface{}) (result []string) {
-	revs := obj.([]riov1.Revision)
-	for _, rev := range revs {
-		if rev.AdjustedWeight == 0 && rev.Scale == 0 {
+	revs := obj.(*AppData)
+	for _, rev := range revs.App.Spec.Revisions {
+		revStatus := revs.App.Status.RevisionWeight[rev.Version]
+		if revStatus.Weight == 0 {
 			continue
 		}
 		result = append(result, rev.Version)
@@ -70,8 +71,9 @@ func revisions(obj interface{}) (result []string) {
 }
 
 func revisionsByVersion(obj interface{}) map[string]riov1.Revision {
+	data := obj.(*AppData)
 	result := map[string]riov1.Revision{}
-	for _, rev := range obj.([]riov1.Revision) {
+	for _, rev := range data.App.Spec.Revisions {
 		result[rev.Version] = rev
 	}
 	return result
@@ -130,8 +132,8 @@ func formatAppDetail(obj interface{}) (string, error) {
 	appData := obj.(*AppData)
 	buffer := strings.Builder{}
 
-	versions := revisionsByVersion(appData.App.Spec.Revisions)
-	for _, name := range revisions(appData.App.Spec.Revisions) {
+	versions := revisionsByVersion(appData)
+	for _, name := range revisions(appData) {
 		svc, ok := appData.Revisions[name]
 		if !ok {
 			continue

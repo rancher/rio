@@ -36,7 +36,9 @@ func (t *tableWriter) Write(objs []runtime.Object) (err error) {
 	sort.Slice(objs, func(i, j int) bool {
 		leftMeta, _ := meta.Accessor(objs[i])
 		rightMeta, _ := meta.Accessor(objs[j])
-		return leftMeta.GetNamespace()+"/"+leftMeta.GetName() < rightMeta.GetNamespace()+"/"+rightMeta.GetName()
+		leftCreated := leftMeta.GetCreationTimestamp()
+		rightCreated := rightMeta.GetCreationTimestamp()
+		return leftCreated.Before(&rightCreated)
 	})
 
 	defer func() {
