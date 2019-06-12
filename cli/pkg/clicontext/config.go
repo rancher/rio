@@ -1,10 +1,6 @@
 package clicontext
 
 import (
-	"os"
-	"path/filepath"
-	"strings"
-
 	buildv1alpha1 "github.com/knative/build/pkg/client/clientset/versioned/typed/build/v1alpha1"
 	"github.com/pkg/errors"
 	"github.com/rancher/rio/pkg/constants"
@@ -12,13 +8,12 @@ import (
 	autoscalev1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/autoscale.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/apply"
+	"github.com/rancher/wrangler/pkg/kubeconfig"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
-	"k8s.io/kubernetes/staging/src/k8s.io/client-go/tools/clientcmd"
 )
 
 var ErrNoConfig = errors.New("Can not find rio info resource inside your cluster. Have you installed Rio?(run `rio install --help`)")
@@ -44,51 +39,12 @@ type Config struct {
 	Autoscale autoscalev1.AutoscaleV1Interface
 }
 
-func (c *Config) findKubeConfig() {
-	homeDir, err := os.UserHomeDir()
-	if err == nil {
-		c.Kubeconfig = strings.Replace(c.Kubeconfig, "${HOME}", homeDir, -1)
-		c.Kubeconfig = strings.Replace(c.Kubeconfig, "$HOME", homeDir, -1)
-	}
-
-	if c.Kubeconfig != "" {
-		return
-	}
-
-	homeConfig := filepath.Join(homeDir, ".kube", "config")
-	if _, err := os.Stat(homeConfig); err == nil {
-		c.Kubeconfig = homeConfig
-		return
-	}
-
-	k3sConfig := "/etc/rancher/k3s/k3s.yaml"
-	if _, err := os.Stat(k3sConfig); err == nil {
-		c.Kubeconfig = k3sConfig
-		return
-	}
-
-	k3sConfig = filepath.Join(homeDir, ".kube", "k3s.yaml")
-	if _, err := os.Stat(k3sConfig); err == nil {
-		c.Kubeconfig = k3sConfig
-		return
-	}
-}
-
 func (c *Config) Validate() error {
 	if c.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
-	c.findKubeConfig()
-
-	loader := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-		&clientcmd.ClientConfigLoadingRules{ExplicitPath: c.Kubeconfig},
-		&clientcmd.ConfigOverrides{
-			ClusterInfo: clientcmdapi.Cluster{Server: ""},
-			Context: clientcmdapi.Context{
-				Namespace: c.SystemNamespace,
-			},
-		})
+	loader := kubeconfig.GetInteractiveClientConfig(c.Kubeconfig)
 
 	restConfig, err := loader.ClientConfig()
 	if err != nil {
