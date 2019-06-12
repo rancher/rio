@@ -30,8 +30,9 @@ func (p *Ps) apps(ctx *clicontext.CLIContext) error {
 	for _, v := range appObjs {
 		app := v.(*riov1.App)
 		appDatas[app.Namespace+"/"+app.Name] = tables.AppData{
-			App:       app,
-			Revisions: map[string]*riov1.Service{},
+			ObjectMeta: app.ObjectMeta,
+			App:        app,
+			Revisions:  map[string]*riov1.Service{},
 		}
 	}
 
