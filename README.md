@@ -244,7 +244,7 @@ default/external-fqdn   3 seconds ago   my.app.com
 `rio domain` allows you to create your own domain pointing to a specific service or route
 
 ```bash
-# Create a domain that points to route1. You have to setup a cname record from your domain to clusrer domain.
+# Create a domain that points to route1. You have to setup a cname record from your domain to cluster domain.
 # For example, foo.bar -> CNAME -> iazlia.on-rio.io
 $ rio domain add foo.bar default/route1
 default/foo-bar
