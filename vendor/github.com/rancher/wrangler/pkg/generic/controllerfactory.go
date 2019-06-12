@@ -43,11 +43,9 @@ func (g *ControllerManager) Start(ctx context.Context, defaultThreadiness int, t
 	return nil
 }
 
-func (g *ControllerManager) Enqueue(gvk schema.GroupVersionKind, namespace, name string) {
-	controller, ok := g.controllers[gvk]
-	if ok {
-		controller.Enqueue(namespace, name)
-	}
+func (g *ControllerManager) Enqueue(gvk schema.GroupVersionKind, informer cache.SharedIndexInformer, namespace, name string) {
+	_, controller, _ := g.getController(gvk, informer, true)
+	controller.Enqueue(namespace, name)
 }
 
 func (g *ControllerManager) removeHandler(gvk schema.GroupVersionKind, generation int) {
@@ -70,6 +68,35 @@ func (g *ControllerManager) removeHandler(gvk schema.GroupVersionKind, generatio
 	handlers.handlers = newHandlers
 }
 
+func (g *ControllerManager) getController(gvk schema.GroupVersionKind, informer cache.SharedIndexInformer, lock bool) (*Handlers, *Controller, bool) {
+	if lock {
+		g.lock.Lock()
+		defer g.lock.Unlock()
+	}
+
+	if controller, ok := g.controllers[gvk]; ok {
+		return g.handlers[gvk], controller, true
+	}
+
+	handlers := &Handlers{}
+
+	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), gvk.String())
+	controller := NewController(gvk.String(), informer, queue, handlers.Handle)
+
+	if g.handlers == nil {
+		g.handlers = map[schema.GroupVersionKind]*Handlers{}
+	}
+
+	if g.controllers == nil {
+		g.controllers = map[schema.GroupVersionKind]*Controller{}
+	}
+
+	g.handlers[gvk] = handlers
+	g.controllers[gvk] = controller
+
+	return handlers, controller, false
+}
+
 func (g *ControllerManager) AddHandler(ctx context.Context, gvk schema.GroupVersionKind, informer cache.SharedIndexInformer, name string, handler Handler) {
 	g.lock.Lock()
 	defer g.lock.Unlock()
@@ -86,31 +113,12 @@ func (g *ControllerManager) AddHandler(ctx context.Context, gvk schema.GroupVers
 		g.removeHandler(gvk, entry.generation)
 	}()
 
-	handlers, ok := g.handlers[gvk]
+	handlers, controller, ok := g.getController(gvk, informer, false)
+	handlers.handlers = append(handlers.handlers, entry)
+
 	if ok {
-		handlers.handlers = append(handlers.handlers, entry)
-		controller := g.controllers[gvk]
 		for _, key := range controller.informer.GetStore().ListKeys() {
 			controller.workqueue.Add(key)
 		}
-		return
 	}
-
-	handlers = &Handlers{
-		handlers: []handlerEntry{entry},
-	}
-
-	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), gvk.String())
-	controller := NewController(gvk.String(), informer, queue, handlers.Handle)
-
-	if g.handlers == nil {
-		g.handlers = map[schema.GroupVersionKind]*Handlers{}
-	}
-
-	if g.controllers == nil {
-		g.controllers = map[schema.GroupVersionKind]*Controller{}
-	}
-
-	g.handlers[gvk] = handlers
-	g.controllers[gvk] = controller
 }

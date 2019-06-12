@@ -159,7 +159,7 @@ func (c *gitWatcherController) OnRemove(ctx context.Context, name string, sync G
 }
 
 func (c *gitWatcherController) Enqueue(namespace, name string) {
-	c.controllerManager.Enqueue(c.gvk, namespace, name)
+	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), namespace, name)
 }
 
 func (c *gitWatcherController) Informer() cache.SharedIndexInformer {

@@ -159,7 +159,7 @@ func (c *customResourceDefinitionController) OnRemove(ctx context.Context, name 
 }
 
 func (c *customResourceDefinitionController) Enqueue(name string) {
-	c.controllerManager.Enqueue(c.gvk, "", name)
+	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), "", name)
 }
 
 func (c *customResourceDefinitionController) Informer() cache.SharedIndexInformer {

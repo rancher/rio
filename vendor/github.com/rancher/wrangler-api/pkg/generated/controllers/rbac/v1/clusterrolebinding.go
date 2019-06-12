@@ -159,7 +159,7 @@ func (c *clusterRoleBindingController) OnRemove(ctx context.Context, name string
 }
 
 func (c *clusterRoleBindingController) Enqueue(name string) {
-	c.controllerManager.Enqueue(c.gvk, "", name)
+	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), "", name)
 }
 
 func (c *clusterRoleBindingController) Informer() cache.SharedIndexInformer {

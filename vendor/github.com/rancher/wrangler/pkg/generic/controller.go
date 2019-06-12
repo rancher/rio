@@ -21,6 +21,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -28,7 +30,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/klog"
 )
 
 type Handler func(key string, obj runtime.Object) (runtime.Object, error)
@@ -55,7 +56,6 @@ func NewController(name string, informer cache.SharedIndexInformer, workqueue wo
 		workqueue: workqueue,
 	}
 
-	klog.Info("Setting up event handlers")
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: controller.handleObject,
 		UpdateFunc: func(old, new interface{}) {
@@ -79,7 +79,7 @@ func (c *Controller) run(threadiness int, stopCh <-chan struct{}) {
 	defer c.workqueue.ShutDown()
 
 	// Start the informer factories to begin populating the informer caches
-	klog.Infof("Starting %s controller", c.name)
+	logrus.Infof("Starting %s controller", c.name)
 
 	// Launch two workers to process Foo resources
 	for i := 0; i < threadiness; i++ {
@@ -87,7 +87,7 @@ func (c *Controller) run(threadiness int, stopCh <-chan struct{}) {
 	}
 
 	<-stopCh
-	klog.Infof("Shutting down %s workers", c.name)
+	logrus.Infof("Shutting down %s workers", c.name)
 }
 
 func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {

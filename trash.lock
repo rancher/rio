@@ -134,15 +134,15 @@ import:
 - package: github.com/rancher/axe
   version: 59fcf8b4414712ce3b20e02e69d214607f389acd
 - package: github.com/rancher/gitwatcher
-  version: v0.2.2
+  version: 6eee8fc7a2021bccda9623a088edcee5b26e6eb7
 - package: github.com/rancher/mapper
   version: 84da984f31461af0a2f39f3079bbbd8efe4bc4bb
 - package: github.com/rancher/rdns-server
   version: 2967d247de7e8be972d326fe394e331eb8ca8d2b
 - package: github.com/rancher/wrangler
-  version: a7cf48fa83ef5cc872170f850aa771ef818a196b
+  version: 51afeff76a3ac0451a975966faeba09ee747b82c
 - package: github.com/rancher/wrangler-api
-  version: 4a2cddbf6ec1bfd2f9a7b7665e04f4dd77bf23ef
+  version: 3b13054fad197f42aa2903214e8ff3d0d38a8eb3
 - package: github.com/rivo/tview
   version: 8d5eba0c2f51d8ae971c5a470e354bbc2aae6777
 - package: github.com/rivo/uniseg

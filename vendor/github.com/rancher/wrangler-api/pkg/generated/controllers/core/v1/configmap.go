@@ -159,7 +159,7 @@ func (c *configMapController) OnRemove(ctx context.Context, name string, sync Co
 }
 
 func (c *configMapController) Enqueue(namespace, name string) {
-	c.controllerManager.Enqueue(c.gvk, namespace, name)
+	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), namespace, name)
 }
 
 func (c *configMapController) Informer() cache.SharedIndexInformer {

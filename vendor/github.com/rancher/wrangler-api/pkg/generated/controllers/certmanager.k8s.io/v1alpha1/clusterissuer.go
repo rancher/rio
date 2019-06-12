@@ -159,7 +159,7 @@ func (c *clusterIssuerController) OnRemove(ctx context.Context, name string, syn
 }
 
 func (c *clusterIssuerController) Enqueue(name string) {
-	c.controllerManager.Enqueue(c.gvk, "", name)
+	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), "", name)
 }
 
 func (c *clusterIssuerController) Informer() cache.SharedIndexInformer {
