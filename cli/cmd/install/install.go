@@ -75,6 +75,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 	namespace := ctx.SystemNamespace
 	if namespace == "" {
 		namespace = "rio-system"
+		ctx.SystemNamespace = namespace
 	}
 
 	controllerStack := systemstack.NewStack(ctx.Apply, namespace, "rio-controller", true)
