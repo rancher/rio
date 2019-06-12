@@ -133,11 +133,13 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 
 	spec.Options = stringers.ParseDNSOptions(c.DNSOption...)
 
-	cpus, err := stringers.ParseQuantity(c.Cpus)
-	if err != nil {
-		return nil, err
+	if c.Cpus != "" {
+		cpus, err := stringers.ParseQuantity(c.Cpus)
+		if err != nil {
+			return nil, err
+		}
+		spec.CPUs = &cpus
 	}
-	spec.CPUs = &cpus
 
 	service := riov1.NewService("", c.N_Name, riov1.Service{
 		ObjectMeta: metav1.ObjectMeta{
