@@ -21,6 +21,7 @@ limitations under the License.
 package v1
 
 import (
+	v1alpha3 "github.com/knative/pkg/apis/istio/v1alpha3"
 	genericcondition "github.com/rancher/wrangler/pkg/genericcondition"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -834,7 +835,11 @@ func (in *RouteSpec) DeepCopyInto(out *RouteSpec) {
 		*out = new(Rewrite)
 		**out = **in
 	}
-	in.Headers.DeepCopyInto(&out.Headers)
+	if in.Headers != nil {
+		in, out := &in.Headers, &out.Headers
+		*out = new(v1alpha3.HeaderOperations)
+		(*in).DeepCopyInto(*out)
+	}
 	in.RouteTraffic.DeepCopyInto(&out.RouteTraffic)
 	return
 }

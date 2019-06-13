@@ -23,7 +23,7 @@ type ClusterDomain struct {
 }
 
 type ClusterDomainSpec struct {
-	SecretRef  v1.SecretReference
+	SecretRef  v1.SecretReference                  `json:"secretRef,omitempty"`
 	Addresses  []Address                           `json:"addresses,omitempty"`
 	Subdomains []Subdomain                         `json:"subdomains,omitempty"`
 	Conditions []genericcondition.GenericCondition `json:"conditions,omitempty"`

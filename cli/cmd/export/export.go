@@ -23,9 +23,8 @@ var (
 )
 
 type Export struct {
-	T_Type   string `desc:"Export specific type. Supported types: namespace or service"`
-	Raw      bool   `desc:"Export the raw API object, not the pretty formatted one"`
-	O_Output string `desc:"Output format (yaml/json)"`
+	T_Type string `desc:"Export specific type. Supported types: namespace or service"`
+	Raw    bool   `desc:"Export the raw API object, not the pretty formatted one"`
 }
 
 func (e *Export) Run(ctx *clicontext.CLIContext) error {

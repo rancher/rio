@@ -14,16 +14,9 @@ const (
 	PublicDomainType    = "publicdomain"
 	SecretType          = "secret"
 	BuildType           = "build"
-
-	ConfigTypeFull          = "configmaps"
-	AppTypeFull             = "apps.rio.cattle.io"
-	ServiceTypeFull         = "services.rio.cattle.io"
-	RouterTypeFull          = "routers.rio.cattle.io"
-	ExternalServiceTypeFull = "externalservices.rio.cattle.io"
-	PublicDomainTypeFull    = "publicdomains.rio.cattle.io"
 )
 
 type Resource struct {
-	LookupName, Name, Namespace, Type, FullType string
-	Object                                      runtime.Object
+	LookupName, Name, Namespace, Type string
+	Object                            runtime.Object
 }
