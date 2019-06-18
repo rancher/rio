@@ -13,6 +13,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/types"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
+	"github.com/rancher/rio/cli/pkg/up/questions"
 	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constructors"
@@ -46,64 +47,11 @@ func init() {
 func (c *CLIContext) getResource(r types.Resource) (ret types.Resource, err error) {
 	switch r.Type {
 	case clitypes.ServiceType:
-		if strings.Contains(r.Name, ":") {
-			appName, version := kv.Split(r.Name, ":")
-			app, err := c.Rio.Apps(r.Namespace).Get(appName, metav1.GetOptions{})
-			if err != nil {
-				return ret, err
-			}
-			for _, rev := range app.Spec.Revisions {
-				if rev.Version == version {
-					var svc *riov1.Service
-					svc, err = c.Rio.Services(r.Namespace).Get(rev.ServiceName, metav1.GetOptions{})
-					if err != nil {
-						return ret, err
-					}
-					svc.APIVersion = riov1.SchemeGroupVersion.String()
-					svc.Kind = "Service"
-					r.Object = svc
-					r.Name = rev.ServiceName
-					r.FullType = clitypes.ServiceTypeFull
-				}
-			}
-		} else {
-			var svc *riov1.Service
-			svc, err = c.Rio.Services(r.Namespace).Get(r.Name, metav1.GetOptions{})
-			svc.APIVersion = riov1.SchemeGroupVersion.String()
-			svc.Kind = "Service"
-			r.Object = svc
-			r.FullType = clitypes.ServiceTypeFull
-		}
+		r, err = findService(r, c)
 	case clitypes.AppType:
 		r.Object, err = c.Rio.Apps(r.Namespace).Get(r.Name, metav1.GetOptions{})
-		r.FullType = clitypes.AppTypeFull
 	case clitypes.PodType:
-		podName, containerName := kv.Split(r.Name, "/")
-		pod, err := c.Core.Pods(r.Namespace).Get(podName, metav1.GetOptions{})
-		if err != nil {
-			return r, err
-		}
-		if containerName != "" {
-			for _, container := range pod.Spec.Containers {
-				if container.Name == containerName {
-					pod.Spec.Containers = []corev1.Container{
-						container,
-					}
-					pod.Spec.InitContainers = nil
-					break
-				}
-			}
-			for _, container := range pod.Spec.InitContainers {
-				if container.Name == containerName {
-					pod.Spec.InitContainers = []corev1.Container{
-						container,
-					}
-					pod.Spec.Containers = nil
-					break
-				}
-			}
-		}
-		r.Object = pod
+		r, err = findPod(r, c)
 	case clitypes.ConfigType:
 		r.Object, err = c.Core.ConfigMaps(r.Namespace).Get(r.Name, metav1.GetOptions{})
 	case clitypes.RouterType:
@@ -124,6 +72,110 @@ func (c *CLIContext) getResource(r types.Resource) (ret types.Resource, err erro
 		return r, fmt.Errorf("unknown by id type %s", r.Type)
 	}
 
+	return r, err
+}
+
+func findPod(r types.Resource, c *CLIContext) (types.Resource, error) {
+	podName, containerName := kv.Split(r.Name, "/")
+	pod, err := c.Core.Pods(r.Namespace).Get(podName, metav1.GetOptions{})
+	if err != nil {
+		return r, err
+	}
+	if containerName != "" {
+		for _, container := range pod.Spec.Containers {
+			if container.Name == containerName {
+				pod.Spec.Containers = []corev1.Container{
+					container,
+				}
+				pod.Spec.InitContainers = nil
+				break
+			}
+		}
+		for _, container := range pod.Spec.InitContainers {
+			if container.Name == containerName {
+				pod.Spec.InitContainers = []corev1.Container{
+					container,
+				}
+				pod.Spec.Containers = nil
+				break
+			}
+		}
+	}
+	r.Object = pod
+	return r, err
+}
+
+func findService(r types.Resource, c *CLIContext) (types.Resource, error) {
+	var app types.Resource
+	var err error
+	if strings.Contains(r.Name, ":") {
+		appName, version := kv.Split(r.Name, ":")
+		app, err := c.Rio.Apps(r.Namespace).Get(appName, metav1.GetOptions{})
+		if err != nil {
+			return r, err
+		}
+		for _, rev := range app.Spec.Revisions {
+			if rev.Version == version {
+				var svc *riov1.Service
+				svc, err = c.Rio.Services(r.Namespace).Get(rev.ServiceName, metav1.GetOptions{})
+				if err != nil {
+					return r, err
+				}
+				svc.APIVersion = riov1.SchemeGroupVersion.String()
+				svc.Kind = "Service"
+				r.Object = svc
+				r.Name = rev.ServiceName
+			}
+		}
+	} else {
+		if !c.NoPrompt {
+			app, err = lookup.Lookup(c, r.Name, clitypes.AppType)
+			if err == nil {
+				set := make(map[string]int)
+				for k, rev := range app.Object.(*riov1.App).Status.RevisionWeight {
+					set[k] = rev.Weight
+				}
+				var versions []struct {
+					version     string
+					serviceName string
+					weight      int
+				}
+				for _, rev := range app.Object.(*riov1.App).Spec.Revisions {
+					versions = append(versions, struct {
+						version     string
+						serviceName string
+						weight      int
+					}{
+						version:     rev.Version,
+						weight:      set[rev.Version],
+						serviceName: rev.ServiceName,
+					})
+				}
+				sort.Slice(versions, func(i, j int) bool {
+					return versions[i].weight > versions[j].weight
+				})
+
+				if len(versions) == 1 {
+					r.Name = versions[0].serviceName
+				} else {
+					var options []string
+					for i, ver := range versions {
+						options = append(options, fmt.Sprintf("[%v] %v\n", i+1, ver.version))
+					}
+					num, err := questions.PromptOptions("Choose which version\n", 1, options...)
+					if err != nil {
+						return r, err
+					}
+					r.Name = versions[num].serviceName
+				}
+			}
+		}
+		var svc *riov1.Service
+		svc, err = c.Rio.Services(r.Namespace).Get(r.Name, metav1.GetOptions{})
+		svc.APIVersion = riov1.SchemeGroupVersion.String()
+		svc.Kind = "Service"
+		r.Object = svc
+	}
 	return r, err
 }
 

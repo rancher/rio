@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/knative/pkg/apis/istio/v1alpha3"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
@@ -59,7 +61,7 @@ func (a *Create) Run(ctx *clicontext.CLIContext) error {
 func insertRoute(ctx *clicontext.CLIContext, insert bool, a Action) error {
 	args := ctx.CLI.Args()
 	if len(args) < 3 {
-		return fmt.Errorf("at least 3 arguements are required: HOST[/PATH] to|redirect|mirror TARGET")
+		return fmt.Errorf("at least 3 arguements are required: HOST[/PATH] to|redirect|mirror|rewrite TARGET")
 	}
 
 	if err := a.validateServiceStack(ctx, args); err != nil {
@@ -156,9 +158,14 @@ func (a *Add) buildRouteSpec(ctx *clicontext.CLIContext, args []string) (*riov1.
 		return nil, err
 	}
 
-	routeSpec.Headers.Add = kv.SplitMapFromSlice(a.AddHeader)
-	routeSpec.Headers.Set = kv.SplitMapFromSlice(a.SetHeader)
-	routeSpec.Headers.Remove = a.RemoveHeader
+	if len(a.AddHeader) != 0 || len(a.SetHeader) != 0 || len(a.RemoveHeader) != 0 {
+		if routeSpec.Headers == nil {
+			routeSpec.Headers = &v1alpha3.HeaderOperations{}
+		}
+		routeSpec.Headers.Add = kv.SplitMapFromSlice(a.AddHeader)
+		routeSpec.Headers.Set = kv.SplitMapFromSlice(a.SetHeader)
+		routeSpec.Headers.Remove = a.RemoveHeader
+	}
 
 	if err := a.addFault(routeSpec); err != nil {
 		return nil, err
@@ -186,6 +193,9 @@ func (a *Add) addTimeout(routeSpec *riov1.RouteSpec) error {
 	n, err := objectmappers.ParseDurationUnit(a.Timeout, "timeout", time.Millisecond)
 	if err != nil {
 		return err
+	}
+	if n == 0 {
+		return nil
 	}
 
 	routeSpec.TimeoutMillis = &n
@@ -310,11 +320,6 @@ func (a *Add) addMatch(ctx *clicontext.CLIContext, matchString string, routeSpec
 			return fmt.Errorf("invalid port number in host/path [%s]: %s", matchString, port)
 		}
 		match.Port = &[]int{int(n)}[0]
-	}
-
-	if len(a.Header) > 0 {
-		addMatch = true
-		match.Headers = stringMapToStringMatchMap(a.Header)
 	}
 
 	if len(a.Cookie) > 0 {

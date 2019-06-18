@@ -37,6 +37,8 @@ type Config struct {
 	Rio       riov1.RioV1Interface
 	Project   projectv1.AdminV1Interface
 	Autoscale autoscalev1.AutoscaleV1Interface
+
+	NoPrompt bool
 }
 
 func (c *Config) Validate() error {

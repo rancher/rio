@@ -2,6 +2,7 @@ package populate
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -76,7 +77,9 @@ func virtualServiceFromRoutesets(systemNamespace string, clusterDomain *projectv
 			if match.Port != nil {
 				httpMatch.Port = uint32(*match.Port)
 			}
-			httpMatch.Headers = map[string]v1alpha1.StringMatch{}
+			if len(match.Cookies) != 0 || len(match.Headers) != 0 {
+				httpMatch.Headers = map[string]v1alpha1.StringMatch{}
+			}
 			for name, cookie := range match.Cookies {
 				match := populateStringMatch(&cookie)
 				if match != nil {
@@ -92,20 +95,22 @@ func virtualServiceFromRoutesets(systemNamespace string, clusterDomain *projectv
 			httpRoute.Match = append(httpRoute.Match, httpMatch)
 		}
 		if len(httpRoute.Match) == 0 {
+			httpPort, _ := strconv.Atoi(constants.DefaultHTTPOpenPort)
+			httpsPort, _ := strconv.Atoi(constants.DefaultHTTPSOpenPort)
 			httpRoute.Match = []v1alpha3.HTTPMatchRequest{
 				{
 					Gateways: []string{privateGw, domains.GetPublicGateway(systemNamespace)},
-					Port:     80,
+					Port:     uint32(httpPort),
 				},
 				{
 					Gateways: []string{privateGw, domains.GetPublicGateway(systemNamespace)},
-					Port:     443,
+					Port:     uint32(httpsPort),
 				},
 			}
 		}
 
 		httpRoute.Headers = &v1alpha3.Headers{
-			Request: &routeSpec.Headers,
+			Request: routeSpec.Headers,
 		}
 
 		if routeSpec.Redirect != nil {
@@ -188,17 +193,6 @@ func populateStringMatch(match *v1.StringMatch) *v1alpha1.StringMatch {
 		m.Regex = match.Regexp
 	default:
 		return nil
-	}
-	return m
-}
-
-func convertEnvFromSliceToMap(envs []string) map[string]string {
-	m := map[string]string{}
-	for _, env := range envs {
-		parts := strings.SplitN(env, "=", 2)
-		if len(parts) == 2 {
-			m[parts[0]] = parts[1]
-		}
 	}
 	return m
 }

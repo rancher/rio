@@ -117,13 +117,24 @@ func Command(obj interface{}, usage, usageText, description string) cli.Command 
 			}
 			c.Flags = append(c.Flags, flag)
 		case reflect.Bool:
-			flag := cli.BoolFlag{
-				Name:        name(fieldType.Name, fieldType.Tag.Get("name")),
-				Usage:       fieldType.Tag.Get("desc"),
-				EnvVar:      fieldType.Tag.Get("env"),
-				Destination: (*bool)(unsafe.Pointer(v.Addr().Pointer())),
+			if fieldType.Tag.Get("default") == "true" {
+				flag := cli.BoolTFlag{
+					Name:        name(fieldType.Name, fieldType.Tag.Get("name")),
+					Usage:       fieldType.Tag.Get("desc"),
+					EnvVar:      fieldType.Tag.Get("env"),
+					Destination: (*bool)(unsafe.Pointer(v.Addr().Pointer())),
+				}
+				c.Flags = append(c.Flags, flag)
+			} else {
+				flag := cli.BoolFlag{
+					Name:        name(fieldType.Name, fieldType.Tag.Get("name")),
+					Usage:       fieldType.Tag.Get("desc"),
+					EnvVar:      fieldType.Tag.Get("env"),
+					Destination: (*bool)(unsafe.Pointer(v.Addr().Pointer())),
+				}
+				c.Flags = append(c.Flags, flag)
 			}
-			c.Flags = append(c.Flags, flag)
+
 		default:
 			panic("Unknown kind on field " + fieldType.Name + " on " + objValue.Type().Name())
 		}

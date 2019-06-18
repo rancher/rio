@@ -56,7 +56,7 @@ type RouteSpec struct {
 	Rewrite *Rewrite `json:"rewrite,omitempty"`
 
 	//Header manipulation rules
-	Headers v1alpha3.HeaderOperations `json:"addHeaders,omitempty"`
+	Headers *v1alpha3.HeaderOperations `json:"headers,omitempty"`
 
 	RouteTraffic
 }

@@ -22,18 +22,19 @@ import (
 type Weight struct {
 	RolloutIncrement int  `desc:"Rollout increment value" default:"5"`
 	RolloutInterval  int  `desc:"Rollout interval value" default:"5"`
-	NoRollout        bool `desc:"Don't rollout"`
+	Rollout          bool `desc:"Whether to rollout gradually"`
 }
 
 func (w *Weight) Run(ctx *clicontext.CLIContext) error {
 	if len(ctx.CLI.Args()) == 0 {
 		return errors.New("at least one parameter is required. Run -h to see options")
 	}
+	ctx.NoPrompt = true
 
-	return ScaleAndAllocate(ctx, ctx.CLI.Args(), w.NoRollout, w.RolloutIncrement, w.RolloutInterval)
+	return ScaleAndAllocate(ctx, ctx.CLI.Args(), w.Rollout, w.RolloutIncrement, w.RolloutInterval)
 }
 
-func ScaleAndAllocate(ctx *clicontext.CLIContext, args []string, noRollout bool, increment, interval int) error {
+func ScaleAndAllocate(ctx *clicontext.CLIContext, args []string, rollout bool, increment, interval int) error {
 	var errors []error
 	appVersion, _ := kv.Split(ctx.CLI.Args()[0], "=")
 	app, _ := kv.Split(appVersion, ":")
@@ -53,6 +54,9 @@ func ScaleAndAllocate(ctx *clicontext.CLIContext, args []string, noRollout bool,
 	for _, arg := range args {
 		appVersion, scaleStr := kv.Split(arg, "=")
 		_, version := kv.Split(appVersion, ":")
+		if version == "" {
+			return err2.New("Can't set weight without specifying version. Example: rio weight foo:version=50%")
+		}
 		toSet[version] = struct{}{}
 
 		scaleStr = strings.TrimSuffix(scaleStr, "%")
@@ -68,6 +72,7 @@ func ScaleAndAllocate(ctx *clicontext.CLIContext, args []string, noRollout bool,
 		}
 
 		// set other version weight to zero and break loop
+
 		resource, err := lookup.Lookup(ctx, versionMap[version], types.ServiceType)
 		if err != nil {
 			return err
@@ -75,7 +80,7 @@ func ScaleAndAllocate(ctx *clicontext.CLIContext, args []string, noRollout bool,
 		err = ctx.UpdateResource(resource, func(obj runtime.Object) error {
 			service := obj.(*v1.Service)
 			service.Spec.ServiceRevision.Weight = scale
-			if noRollout {
+			if !rollout {
 				service.Spec.Rollout = false
 			} else {
 				service.Spec.Rollout = true
@@ -114,7 +119,7 @@ func ScaleAndAllocate(ctx *clicontext.CLIContext, args []string, noRollout bool,
 		err = ctx.UpdateResource(resource, func(obj runtime.Object) error {
 			service := obj.(*v1.Service)
 			service.Spec.ServiceRevision.Weight = weight
-			if noRollout {
+			if !rollout {
 				service.Spec.Rollout = false
 			} else {
 				service.Spec.Rollout = true

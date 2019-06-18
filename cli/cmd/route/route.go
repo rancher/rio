@@ -14,8 +14,8 @@ func Route(app *cli.App) cli.Command {
 		"")
 	create := builder.Command(&Create{},
 		"Create a route at the end",
-		app.Name+" route append MATCH ACTION [TARGET...]",
-		"To append a rule at the end, run `rio route add route1 to [$NAMESPACE/]$SERVICE_NAME")
+		app.Name+" route create/add MATCH ACTION [TARGET...]",
+		"To append a rule at the end, run `rio route add [$NAMESPACE/]$ROUTE_NAME to|redirect|mirror|rewrite [$NAMESPACE/]$SERVICE_NAME")
 	create.Aliases = []string{"add"}
 	return cli.Command{
 		Name:      "routes",

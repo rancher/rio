@@ -17,10 +17,11 @@ import (
 type Promote struct {
 	RolloutIncrement int  `desc:"Rollout increment value" default:"5"`
 	RolloutInterval  int  `desc:"Rollout interval value" default:"5"`
-	NoRollout        bool `desc:"Don't rollout"`
+	Rollout          bool `desc:"Whether to rollout gradually. Default to true" default:"true"`
 }
 
 func (p *Promote) Run(ctx *clicontext.CLIContext) error {
+	ctx.NoPrompt = true
 	var errors []error
 	for _, arg := range ctx.CLI.Args() {
 		app, version := kv.Split(arg, ":")
@@ -45,7 +46,7 @@ func (p *Promote) Run(ctx *clicontext.CLIContext) error {
 				} else {
 					service.Spec.ServiceRevision.Weight = 0
 				}
-				if p.NoRollout {
+				if !p.Rollout {
 					service.Spec.Rollout = false
 				} else {
 					service.Spec.Rollout = true

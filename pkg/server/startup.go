@@ -34,7 +34,6 @@ var Crds = append(crd.NonNamespacedTypes(
 
 	"ClusterDomain.admin.rio.cattle.io/v1",
 	"Feature.admin.rio.cattle.io/v1",
-	"ListenConfig.admin.rio.cattle.io/v1",
 	"PublicDomain.admin.rio.cattle.io/v1",
 
 	"DestinationRule.networking.istio.io/v1alpha3",
