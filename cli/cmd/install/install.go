@@ -2,6 +2,7 @@ package install
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"os"
 	"os/exec"
@@ -47,6 +48,9 @@ var (
 	Prometheus      = "prometheus"
 	Registry        = "registry"
 	Webhook         = "webhook"
+
+	statusIndex = 0
+	statusChar  = "|/-\\"
 )
 
 type Install struct {
@@ -162,30 +166,36 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 			return err
 		}
 		if !serviceset.IsReady(&dep.Status) {
-			fmt.Printf("Waiting for deployment %s/%s to become ready\n", dep.Namespace, dep.Name)
+			fmt.Printf("\rWaiting for deployment %s/%s to become ready --------%v", dep.Namespace, dep.Name, string(statusChar[statusIndex]))
+			statusIndex = modIndex(statusIndex)
 			continue
 		}
 		info, err := ctx.Project.RioInfos().Get("rio", metav1.GetOptions{})
 		if err != nil {
-			fmt.Println("Waiting for rio controller to initialize")
+			fmt.Printf("\rWaiting for rio controller to initialize --------------------------------%v", string(statusChar[statusIndex]))
+			statusIndex = modIndex(statusIndex)
+			time.Sleep(time.Second)
 			continue
 		} else if info.Status.Version == "" {
-			fmt.Println("Waiting for rio controller to initialize")
+			fmt.Printf("\rWaiting for rio controller to initialize --------------------------------%v", string(statusChar[statusIndex]))
+			statusIndex = modIndex(statusIndex)
 			continue
-		} else if notReadyList, ok := allReady(info); !ok {
-			fmt.Printf("Waiting for all the system components to be up. Not ready component: %v\n", notReadyList)
-			time.Sleep(15 * time.Second)
+		} else if _, ok := allReady(info); !ok {
+			fmt.Printf("\rWaiting for all the system components to be up --------------------------%v", string(statusChar[statusIndex]))
+			statusIndex = modIndex(statusIndex)
+			time.Sleep(2 * time.Second)
 			continue
 		} else {
 			ok, err := i.delectingServiceLoadbalancer(ctx, info, start)
 			if err != nil {
 				return err
 			} else if !ok {
-				fmt.Println("Waiting for service loadbalancer to be up")
-				time.Sleep(5 * time.Second)
+				fmt.Printf("\rWaiting for service loadbalancer to be up -------------------------------%v", string(statusChar[statusIndex]))
+				statusIndex = modIndex(statusIndex)
+				time.Sleep(2 * time.Second)
 				continue
 			}
-			fmt.Printf("rio controller version %s (%s) installed into namespace %s\n", info.Status.Version, info.Status.GitCommit, info.Status.SystemNamespace)
+			fmt.Printf("\rrio controller version %s (%s) installed into namespace %s\n", info.Status.Version, info.Status.GitCommit, info.Status.SystemNamespace)
 		}
 
 		fmt.Println("Detecting if clusterDomain is accessible...")
@@ -193,11 +203,15 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		if err != nil {
 			return err
 		}
-		_, err = http.Get(fmt.Sprintf("http://%s", clusterDomain))
-		if err != nil {
-			fmt.Printf("Warning: ClusterDomain is not accessible. Error: %v\n", err)
+		if clusterDomain == "" {
+			fmt.Printf("Warning: Detected that Rio cluster domain is not generated for this cluster right now")
 		} else {
-			fmt.Println("ClusterDomain is reachable. Run `rio info` to get more info.")
+			_, err = http.Get(fmt.Sprintf("http://%s:%s", clusterDomain, i.HTTPPort))
+			if err != nil {
+				fmt.Printf("Warning: ClusterDomain is not accessible. Error: %v\n", err)
+			} else {
+				fmt.Println("ClusterDomain is reachable. Run `rio info` to get more info.")
+			}
 		}
 
 		fmt.Println("Controller logs are available from `rio systemlogs`")
@@ -208,6 +222,11 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		break
 	}
 	return nil
+}
+
+func modIndex(v int) int {
+	v++
+	return int(math.Mod(float64(v), 4.0))
 }
 
 func isMinikubeCluster(nodes *v1.NodeList) bool {
@@ -241,9 +260,9 @@ func (i *Install) delectingServiceLoadbalancer(ctx *clicontext.CLIContext, info 
 			if time.Now().After(startTime.Add(time.Minute * 2)) {
 				msg := ""
 				if len(svc.Status.LoadBalancer.Ingress) > 0 {
-					msg = fmt.Sprintln("Detecting that your service loadbalancer generates a DNS endpoint(usually AWS provider). Rio doesn't support it right now. Do you want to:")
+					msg = fmt.Sprintln("\nDetecting that your service loadbalancer generates a DNS endpoint(usually AWS provider). Rio doesn't support it right now. Do you want to:")
 				} else {
-					msg = fmt.Sprintln("Detecting that your service loadbalancer for service mesh gateway is still pending. Do you want to:")
+					msg = fmt.Sprintln("\nDetecting that your service loadbalancer for service mesh gateway is still pending. Do you want to:")
 				}
 
 				options := []string{

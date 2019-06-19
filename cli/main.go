@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/rancher/rio/cli/cmd/pods"
-
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/rio/cli/cmd/attach"
 	"github.com/rancher/rio/cli/cmd/builds"
@@ -22,6 +20,7 @@ import (
 	"github.com/rancher/rio/cli/cmd/inspect"
 	"github.com/rancher/rio/cli/cmd/install"
 	"github.com/rancher/rio/cli/cmd/logs"
+	"github.com/rancher/rio/cli/cmd/pods"
 	"github.com/rancher/rio/cli/cmd/promote"
 	"github.com/rancher/rio/cli/cmd/ps"
 	"github.com/rancher/rio/cli/cmd/publicdomain"
