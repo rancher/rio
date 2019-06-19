@@ -1,11 +1,16 @@
 package main
 
 import (
+	"os"
+
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	autoscalev1 "github.com/rancher/rio/pkg/apis/autoscale.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	controllergen "github.com/rancher/wrangler/pkg/controller-gen"
 	"github.com/rancher/wrangler/pkg/controller-gen/args"
+
+	// dummy import so go modules will pickup go-bindata
+	_ "github.com/go-bindata/go-bindata/go-bindata"
 )
 
 var (
@@ -13,6 +18,7 @@ var (
 )
 
 func main() {
+	os.Unsetenv("GOPATH")
 	controllergen.Run(args.Options{
 		OutputPackage: "github.com/rancher/rio/pkg/generated",
 		Boilerplate:   "scripts/boilerplate.go.txt",
