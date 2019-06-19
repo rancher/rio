@@ -310,9 +310,6 @@ type ServiceStatus struct {
 	// ScaleStatus for the Service
 	ScaleStatus *ScaleStatus `json:"scaleStatus,omitempty"`
 
-	// Last timestamp scaled from zero replica
-	ScaleFromZeroTimestamp *metav1.Time `json:"scaleFromZeroTimestamp,omitempty"`
-
 	// ObservedScale is calcaluted from autoscaling component to make sure pod has the desired load
 	ObservedScale *int `json:"observedScale,omitempty"`
 

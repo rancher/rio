@@ -18,10 +18,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		FeatureName: "autoscaling",
 		FeatureSpec: v1.FeatureSpec{
 			Description: "Auto-scaling services based on QPS and requests load",
-			Requires: []string{
-				"prometheus",
-			},
-			Enabled: !constants.DisableAutoscaling,
+			Enabled:     !constants.DisableAutoscaling,
 		},
 		SystemStacks: []*systemstack.SystemStack{
 			systemstack.NewStack(apply, rContext.Namespace, "rio-autoscaler", true),

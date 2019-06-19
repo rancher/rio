@@ -21,10 +21,13 @@ import (
 )
 
 const (
-	privateGw          = "mesh"
-	RioNameHeader      = "X-Rio-ServiceName"
-	RioNamespaceHeader = "X-Rio-Namespace"
-	RioPortHeader      = "X-Rio-ServicePort"
+	privateGw = "mesh"
+
+	ProbeHeaderName = "K-Network-Probe"
+	// RevisionHeaderName is the header key for revision name.
+	RevisionHeaderName string = "knative-serving-revision"
+	// RevisionHeaderNamespace is the header key for revision's namespace.
+	RevisionHeaderNamespace string = "knative-serving-namespace"
 )
 
 func virtualServices(namespace string, clusterDomain *projectv1.ClusterDomain, service *v1.Service, os *objectset.ObjectSet) error {
@@ -64,6 +67,24 @@ func httpRoutes(systemNamespace string, service *v1.Service, dests []Dest) ([]v1
 	if service.Spec.MaxScale != nil && service.Spec.Concurrency != nil && service.Spec.MinScale != nil && *service.Spec.MaxScale != *service.Spec.MinScale {
 		autoscale = true
 	}
+	if autoscale && service.Status.ObservedScale != nil && *service.Status.ObservedScale == 0 {
+		for _, port := range service.Spec.Ports {
+			publicPort, route := newRoute(systemNamespace, domains.GetPublicGateway(systemNamespace), !port.InternalOnly, port, dests, true, false, service)
+			if publicPort != "" {
+				route.Match = []v1alpha3.HTTPMatchRequest{
+					{
+						Headers: map[string]v1alpha1.StringMatch{
+							ProbeHeaderName: {
+								Exact: "queue",
+							},
+						},
+					},
+				}
+				result = append(result, route)
+			}
+		}
+	}
+
 	for _, port := range service.Spec.Ports {
 		publicPort, route := newRoute(systemNamespace, domains.GetPublicGateway(systemNamespace), !port.InternalOnly, port, dests, true, autoscale, service)
 		if publicPort != "" {
@@ -105,23 +126,22 @@ func newRoute(systemNamespace, externalGW string, published bool, portBinding v1
 				Gateways: gw,
 			})
 	}
+	matches = append(matches, v1alpha3.HTTPMatchRequest{
+		Port:     uint32(portBinding.Port),
+		Gateways: []string{privateGw},
+	})
 	route.Match = matches
 
-	if autoscale {
+	if autoscale && svc.Status.ObservedScale != nil && *svc.Status.ObservedScale == 0 {
 		if route.Headers == nil {
 			route.Headers = &v1alpha3.Headers{
 				Request: &v1alpha3.HeaderOperations{
 					Add: map[string]string{
-						RioNameHeader:      svc.Name,
-						RioNamespaceHeader: svc.Namespace,
-						RioPortHeader:      strconv.Itoa(int(portBinding.Port)),
+						RevisionHeaderName:      svc.Name,
+						RevisionHeaderNamespace: svc.Namespace,
 					},
 				},
 			}
-		}
-		route.Retries = &v1alpha3.HTTPRetry{
-			PerTryTimeout: "1m",
-			Attempts:      3,
 		}
 	}
 
@@ -129,9 +149,9 @@ func newRoute(systemNamespace, externalGW string, published bool, portBinding v1
 		if autoscale && svc.Status.ObservedScale != nil && *svc.Status.ObservedScale == 0 {
 			route.Route = append(route.Route, v1alpha3.HTTPRouteDestination{
 				Destination: v1alpha3.Destination{
-					Host: fmt.Sprintf("%s.%s.svc.cluster.local", "autoscaler", systemNamespace),
+					Host: fmt.Sprintf("%s.%s.svc.cluster.local", "activator", systemNamespace),
 					Port: v1alpha3.PortSelector{
-						Number: 80,
+						Number: 8012,
 					},
 				},
 				Weight: 100,

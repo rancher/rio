@@ -54,6 +54,8 @@ import:
   version: 7d79101e329e5a3adf994758c578dab82b90c017
 - package: github.com/google/go-cmp
   version: 6f77996f0c42f7b84e5a2b252227263f93432e9b
+- package: github.com/google/go-containerregistry
+  version: ec69c4a8a1bff25fcbe096fcb32c9a6543fbdccf
 - package: github.com/google/gofuzz
   version: 24818f796faf91cd76ec7bddd72458fbced7a6c1
 - package: github.com/google/uuid
@@ -92,6 +94,8 @@ import:
 - package: github.com/knative/pkg
   version: b30ab9de040eb4ba56fdb4108a29045ecac0c46a
   repo: https://github.com/rancher/pkg.git
+- package: github.com/knative/serving
+  version: v0.6.0
 - package: github.com/lucasb-eyer/go-colorful
   version: 12d3b2882a08d1abc9488e34f3e1ae35165f2d07
 - package: github.com/matryer/moq/pkg/moq
@@ -142,7 +146,7 @@ import:
 - package: github.com/rancher/wrangler
   version: 51afeff76a3ac0451a975966faeba09ee747b82c
 - package: github.com/rancher/wrangler-api
-  version: 3b13054fad197f42aa2903214e8ff3d0d38a8eb3
+  version: c3525df452150cac1ae02626f21109776bbf6083
 - package: github.com/rivo/tview
   version: 8d5eba0c2f51d8ae971c5a470e354bbc2aae6777
 - package: github.com/rivo/uniseg

@@ -3,10 +3,14 @@ package service
 import (
 	"context"
 	"fmt"
-	"time"
+	"strconv"
 
+	"github.com/knative/serving/pkg/apis/autoscaling/v1alpha1"
+	"github.com/knative/serving/pkg/apis/networking"
+	servingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
 	autoscalev1 "github.com/rancher/rio/pkg/apis/autoscale.rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constructors"
 	autoscalev1controller "github.com/rancher/rio/pkg/generated/controllers/autoscale.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/services"
@@ -19,14 +23,42 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
+const (
+	GroupName = "autoscaling.knative.dev"
+
+	// MinScaleAnnotationKey is the annotation to specify the minimum number of Pods
+	// the PodAutoscaler should provision. For example,
+	//   autoscaling.knative.dev/minScale: "1"
+	MinScaleAnnotationKey = GroupName + "/minScale"
+	// MaxScaleAnnotationKey is the annotation to specify the maximum number of Pods
+	// the PodAutoscaler should provision. For example,
+	//   autoscaling.knative.dev/maxScale: "10"
+	MaxScaleAnnotationKey = GroupName + "/maxScale"
+
+	ConfigurationKey = "serving.knative.dev/configuration"
+
+	ServiceKey = "serving.knative.dev/service"
+
+	RevisionKey = "serving.knative.dev/revision"
+
+	ScrapeKey = "metric-scrape"
+
+	ReferingLabel = "autoscaling.knative.dev/class"
+
+	ContainerPortKey = "container-port"
+
+	VersionKey = "version"
+)
+
 func Register(ctx context.Context, rContext *types.Context) error {
 	c := stackobject.NewGeneratingController(ctx, rContext, "autoscale-service", rContext.Rio.Rio().V1().Service())
-	c.Apply = c.Apply.WithCacheTypes(rContext.AutoScale.Autoscale().V1().ServiceScaleRecommendation())
+	c.Apply = c.Apply.WithCacheTypes(rContext.AutoScale.Autoscale().V1().ServiceScaleRecommendation(),
+		rContext.Serving.Autoscaling().V1alpha1().PodAutoscaler())
 
 	p := populator{
 		systemNamespace: rContext.Namespace,
 	}
-	c.Populator = p.populateServiceRecommendation
+	c.Populator = p.populate
 
 	h := handler{
 		services: rContext.Rio.Rio().V1().Service(),
@@ -38,6 +70,13 @@ func Register(ctx context.Context, rContext *types.Context) error {
 
 type populator struct {
 	systemNamespace string
+}
+
+func (p populator) populate(object runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) error {
+	if err := p.populatePodAutoscaler(object, ns, os); err != nil {
+		return err
+	}
+	return p.populateServiceRecommendation(object, ns, os)
 }
 
 func (p populator) populateServiceRecommendation(object runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) error {
@@ -54,14 +93,11 @@ func (p populator) populateServiceRecommendation(object runtime.Object, ns *core
 				Labels: labels,
 			},
 			Spec: autoscalev1.ServiceScaleRecommendationSpec{
-				MinScale:          int32(*service.Spec.MinScale),
-				MaxScale:          int32(*service.Spec.MaxScale),
-				Concurrency:       *service.Spec.Concurrency,
-				PrometheusURL:     fmt.Sprintf("http://prometheus.%s:9090", p.systemNamespace),
-				ServiceNameToRead: service.Name,
-				Selector: map[string]string{
-					"app":     app,
-					"version": version,
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"app":     app,
+						"version": version,
+					},
 				},
 			},
 			Status: autoscalev1.ServiceScaleRecommendationStatus{},
@@ -90,28 +126,69 @@ func (h handler) setServiceScale(ssr *autoscalev1.ServiceScaleRecommendation) er
 	if err != nil {
 		return err
 	}
-	// wait for a minute after scale from zero
-	if svc.Status.ScaleFromZeroTimestamp != nil && svc.Status.ScaleFromZeroTimestamp.Add(time.Minute).After(time.Now()) {
-		logrus.Infof("skipping setting scale because service  %s/%s is scaled from zero within a minute", svc.Namespace, svc.Name)
-		go func() {
-			time.Sleep(time.Second * 60)
-			h.ssrs.Enqueue(ssr.Namespace, ssr.Name)
-		}()
+	if ssr.Spec.Replicas == nil {
 		return nil
 	}
 
-	if ssr.Status.DesiredScale == nil {
-		return nil
-	}
-	observedScale := int(*ssr.Status.DesiredScale)
+	observedScale := int(*ssr.Spec.Replicas)
 	if svc.Status.ObservedScale != nil && *svc.Status.ObservedScale == observedScale {
 		return nil
 	}
-	logrus.Infof("Setting desired scale %v for %v/%v", *ssr.Status.DesiredScale, svc.Namespace, svc.Name)
+	logrus.Infof("Setting desired scale %v for %v/%v", *ssr.Spec.Replicas, svc.Namespace, svc.Name)
 
 	svc.Status.ObservedScale = &observedScale
 	if _, err := h.services.Update(svc); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (p populator) populatePodAutoscaler(object runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) error {
+	service := object.(*v1.Service)
+	autoscale := AutoscaleEnabled(service)
+	if !autoscale {
+		return nil
+	}
+	app, version := services.AppAndVersion(service)
+	annotation := map[string]string{
+		ReferingLabel:         "kpa.autoscaling.knative.dev",
+		MinScaleAnnotationKey: strconv.Itoa(*service.Spec.MinScale),
+		MaxScaleAnnotationKey: strconv.Itoa(*service.Spec.MaxScale),
+		ScrapeKey:             "envoy",
+	}
+	var portValue string
+	for _, port := range service.Spec.Ports {
+		if !port.InternalOnly {
+			portValue = strconv.Itoa(int(port.TargetPort))
+			break
+		}
+	}
+	podAutoscaler := constructors.NewPodAutoscaler(service.Namespace, service.Name, v1alpha1.PodAutoscaler{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: annotation,
+			Labels: map[string]string{
+				ConfigurationKey: service.Name,
+				ServiceKey:       service.Name,
+				RevisionKey:      fmt.Sprintf("%s-%s", app, version),
+				ContainerPortKey: portValue,
+				VersionKey:       version,
+			},
+		},
+		Spec: v1alpha1.PodAutoscalerSpec{
+			ContainerConcurrency: servingv1beta1.RevisionContainerConcurrencyType(*service.Spec.AutoscaleConfig.Concurrency),
+			ScaleTargetRef: corev1.ObjectReference{
+				Kind:       "ServiceScaleRecommendation",
+				APIVersion: autoscalev1.SchemeGroupVersion.String(),
+				Name:       service.Name,
+			},
+			ProtocolType: networking.ProtocolHTTP1,
+		},
+	})
+
+	os.Add(podAutoscaler)
+	return nil
+}
+
+func AutoscaleEnabled(service *v1.Service) bool {
+	return service.Spec.MinScale != nil && service.Spec.MaxScale != nil && service.Spec.Concurrency != nil && *service.Spec.MinScale != *service.Spec.MaxScale
 }

@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rancher/mapper/slice"
+
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/up/questions"
@@ -36,6 +38,20 @@ var (
 		Webhook,
 	}
 
+	featureMap = map[string]string{
+		Autoscaler:      "autoscaling",
+		BuildController: "build",
+		Buildkit:        "build",
+		CertManager:     "letsencrypt",
+		Grafana:         "grafana",
+		IstioCitadel:    "istio",
+		IstioPilot:      "istio",
+		IstioTelemetry:  "mixer",
+		Kiali:           "kiali",
+		Prometheus:      "prometheus",
+		Webhook:         "build",
+	}
+
 	Autoscaler      = "autoscaler"
 	BuildController = "build-controller"
 	Buildkit        = "buildkit"
@@ -61,6 +77,7 @@ type Install struct {
 	ServiceCidr     string   `desc:"Manually specify service CIDR for service mesh to intercept"`
 	DisableFeatures []string `desc:"Manually specify features to disable, supports CSV"`
 	Yaml            bool     `desc:"Only print out k8s yaml manifest"`
+	Lite            bool     `desc:"Only install lite version of Rio(monitoring will be disabled, will be ignored if --disable-features is set)"`
 }
 
 func (i *Install) Run(ctx *clicontext.CLIContext) error {
@@ -134,6 +151,11 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		fmt.Fprintf(out, "Defaulting cluster CIDR to %s\n", clusterCIDR)
 		i.ServiceCidr = clusterCIDR
 	}
+
+	if i.Lite && len(i.DisableFeatures) == 0 {
+		fmt.Fprintf(out, "Setting install mode to lite, monitoring features will be disabled\n")
+		i.DisableFeatures = []string{"mixer", "grafana", "kiali", "prometheus"}
+	}
 	answers := map[string]string{
 		"NAMESPACE":        namespace,
 		"DEBUG":            fmt.Sprint(ctx.Debug),
@@ -180,7 +202,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 			fmt.Printf("\rWaiting for rio controller to initialize --------------------------------%v", string(statusChar[statusIndex]))
 			statusIndex = modIndex(statusIndex)
 			continue
-		} else if _, ok := allReady(info); !ok {
+		} else if _, ok := allReady(info, i.DisableFeatures); !ok {
 			fmt.Printf("\rWaiting for all the system components to be up --------------------------%v", string(statusChar[statusIndex]))
 			statusIndex = modIndex(statusIndex)
 			time.Sleep(2 * time.Second)
@@ -237,13 +259,15 @@ func isDockerForMac(nodes *v1.NodeList) bool {
 	return len(nodes.Items) == 1 && nodes.Items[0].Name == "docker-for-desktop"
 }
 
-func allReady(info *adminv1.RioInfo) ([]string, bool) {
+func allReady(info *adminv1.RioInfo, disabledFeatures []string) ([]string, bool) {
 	var notReadyList []string
 	ready := true
 	for _, c := range SystemComponents {
-		if info.Status.SystemComponentReadyMap[c] != "running" {
-			notReadyList = append(notReadyList, c)
-			ready = false
+		if !slice.ContainsString(disabledFeatures, featureMap[c]) {
+			if info.Status.SystemComponentReadyMap[c] != "running" {
+				notReadyList = append(notReadyList, c)
+				ready = false
+			}
 		}
 	}
 	return notReadyList, ready

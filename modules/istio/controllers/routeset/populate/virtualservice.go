@@ -80,11 +80,23 @@ func virtualServiceFromRoutesets(systemNamespace string, clusterDomain *projectv
 			if len(match.Cookies) != 0 || len(match.Headers) != 0 {
 				httpMatch.Headers = map[string]v1alpha1.StringMatch{}
 			}
+			// todo: looks like istio doesn't support multiple headers, take the first one
 			for name, cookie := range match.Cookies {
 				match := populateStringMatch(&cookie)
 				if match != nil {
-					httpMatch.Headers[name] = *match
+					r := v1alpha1.StringMatch{}
+					if match.Exact != "" {
+						r.Exact = fmt.Sprintf("%s=%s", name, match.Exact)
+					} else if match.Prefix != "" {
+						r.Prefix = fmt.Sprintf("%s=%s", name, match.Prefix)
+					} else if match.Regex != "" {
+						r.Regex = fmt.Sprintf("%s=%s", name, match.Regex)
+					} else if match.Suffix != "" {
+						r.Suffix = fmt.Sprintf("%s=%s", name, match.Suffix)
+					}
+					httpMatch.Headers["Cookie"] = r
 				}
+				break
 			}
 			for name, value := range match.Headers {
 				match := populateStringMatch(&value)
