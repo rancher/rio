@@ -128,6 +128,29 @@ kubernetes:
       - "get"
       - "watch"
       - "list"
+    - apiGroups:
+      - "autoscaling.internal.knative.dev"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - serving.knative.dev
+      - autoscaling.internal.knative.dev
+      - networking.internal.knative.dev
+      resources:
+      - '*'
+      - '*/status'
+      - '*/finalizers'
+      verbs:
+      - get
+      - list
+      - create
+      - update
+      - delete
+      - deletecollection
+      - patch
+      - watch
     ---
     apiVersion: rbac.authorization.k8s.io/v1
     kind: ClusterRoleBinding

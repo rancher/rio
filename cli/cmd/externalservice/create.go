@@ -9,6 +9,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/stack"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/wrangler/pkg/kv"
 )
 
 type Create struct {
@@ -22,7 +23,8 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 	var externalService riov1.ExternalService
 
 	for i, name := range ctx.CLI.Args().Tail() {
-		switch ip := net.ParseIP(name); {
+		host, _ := kv.Split(name, ":")
+		switch ip := net.ParseIP(host); {
 		case ip != nil:
 			externalService.Spec.IPAddresses = append(externalService.Spec.IPAddresses, name)
 		case strings.ContainsRune(name, '.'):

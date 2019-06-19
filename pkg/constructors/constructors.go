@@ -4,6 +4,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	v1alpha12 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	"github.com/knative/pkg/apis/istio/v1alpha3"
+	v1alpha13 "github.com/knative/serving/pkg/apis/autoscaling/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	v1beta12 "k8s.io/api/extensions/v1beta1"
@@ -147,6 +148,14 @@ func NewCustomResourceDefinition(namespace, name string, obj v1beta1.CustomResou
 func NewServiceEntry(namespace, name string, obj v1alpha3.ServiceEntry) *v1alpha3.ServiceEntry {
 	obj.APIVersion = "networking.istio.io/v1alpha3"
 	obj.Kind = "ServiceEntry"
+	obj.Name = name
+	obj.Namespace = namespace
+	return &obj
+}
+
+func NewPodAutoscaler(namespace, name string, obj v1alpha13.PodAutoscaler) *v1alpha13.PodAutoscaler {
+	obj.APIVersion = "autoscaling.internal.knative.dev/v1alpha1"
+	obj.Kind = "PodAutoscaler"
 	obj.Name = name
 	obj.Namespace = namespace
 	return &obj

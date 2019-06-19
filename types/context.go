@@ -9,6 +9,7 @@ import (
 	rio "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io"
 	apiextensions "github.com/rancher/wrangler-api/pkg/generated/controllers/apiextensions.k8s.io"
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/apps"
+	serving "github.com/rancher/wrangler-api/pkg/generated/controllers/autoscaling.internal.knative.dev"
 	build "github.com/rancher/wrangler-api/pkg/generated/controllers/build.knative.dev"
 	certmanager "github.com/rancher/wrangler-api/pkg/generated/controllers/certmanager.k8s.io"
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/core"
@@ -39,6 +40,7 @@ type Context struct {
 	Networking  *networking.Factory
 	RBAC        *rbac.Factory
 	Rio         *rio.Factory
+	Serving     *serving.Factory
 	Storage     *storage.Factory
 	Webhook     *webhookinator.Factory
 
@@ -63,6 +65,7 @@ func NewContext(namespace string, config *rest.Config) *Context {
 		Networking:  networking.NewFactoryFromConfigOrDie(config),
 		RBAC:        rbac.NewFactoryFromConfigOrDie(config),
 		Rio:         rio.NewFactoryFromConfigOrDie(config),
+		Serving:     serving.NewFactoryFromConfigOrDie(config),
 		Storage:     storage.NewFactoryFromConfigOrDie(config),
 		Webhook:     webhookinator.NewFactoryFromConfigOrDie(config),
 		K8s:         kubernetes.NewForConfigOrDie(config),
@@ -85,6 +88,7 @@ func (c *Context) Start(ctx context.Context) error {
 		c.Networking,
 		c.RBAC,
 		c.Rio,
+		c.Serving,
 		c.Storage,
 		c.Webhook,
 	)

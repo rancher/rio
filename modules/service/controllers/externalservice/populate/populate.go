@@ -52,8 +52,9 @@ func ServiceForExternalService(es *riov1.ExternalService, namespace *corev1.Name
 						Port:     int32(portInt),
 					},
 				},
+				ClusterIP: v1.ClusterIPNone,
 			}
-			hosts = append(hosts, u.Host)
+			hosts = append(hosts, u.Hostname())
 			ports = append(ports, int32(portInt))
 		}
 		os.Add(populateEndpoint(svc.Name, svc.Namespace, hosts, ports))
