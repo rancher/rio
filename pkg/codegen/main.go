@@ -8,9 +8,6 @@ import (
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	controllergen "github.com/rancher/wrangler/pkg/controller-gen"
 	"github.com/rancher/wrangler/pkg/controller-gen/args"
-
-	// dummy import so go modules will pickup go-bindata
-	_ "github.com/go-bindata/go-bindata/go-bindata"
 )
 
 var (

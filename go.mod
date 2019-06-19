@@ -6,7 +6,7 @@ replace (
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.1
 	github.com/jetstack/cert-manager => github.com/rancher/cert-manager v0.7.0-rio.1
 	github.com/knative/pkg => github.com/rancher/pkg v0.0.0-20190514055449-b30ab9de040e
-	github.com/matryer/moq/pkg/moq => github.com/rancher/moq v0.0.0-20190404221404-ee5226d43009
+	github.com/matryer/moq => github.com/rancher/moq v0.0.0-20190404221404-ee5226d43009
 )
 
 require (
@@ -32,6 +32,7 @@ require (
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
 	github.com/fatih/camelcase v1.0.0 // indirect
 	github.com/gdamore/tcell v0.0.0-20190319073105-ec71b09872d7
+	github.com/go-bindata/go-bindata v3.1.2+incompatible
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/googleapis v1.0.0 // indirect
 	github.com/google/btree v1.0.0 // indirect
