@@ -32,7 +32,7 @@ func (u Uninstall) Run(ctx *clicontext.CLIContext) error {
 
 	var systemNamespace string
 	rioInfo, err := ctx.Project.RioInfos().Get("rio", metav1.GetOptions{})
-	if err != nil {
+	if err != nil && !errors.IsNotFound(err) {
 		return err
 	}
 	if rioInfo.Status.SystemNamespace != "" {
@@ -311,13 +311,16 @@ func (u Uninstall) Run(ctx *clicontext.CLIContext) error {
 	}
 
 	for _, del := range toDelete {
-		if err := crdclient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(del, &metav1.DeleteOptions{}); err != nil {
+		if strings.Contains(del, "/") {
+			continue
+		}
+		if err := crdclient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(del, &metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
 			return err
 		}
 	}
 
 	fmt.Printf("Deleting Namespace %s...\n", systemNamespace)
-	if err := ctx.Core.Namespaces().Delete(systemNamespace, &metav1.DeleteOptions{}); err != nil {
+	if err := ctx.Core.Namespaces().Delete(systemNamespace, &metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
 		return err
 	}
 
@@ -333,7 +336,7 @@ func confirmDelete(resource string) (bool, error) {
 		"[2] No\n",
 	}
 
-	num, err := questions.PromptOptions(msg, -1, options...)
+	num, err := questions.PromptOptions(msg, 1, options...)
 	if err != nil {
 		return false, err
 	}

@@ -55,7 +55,7 @@ services:
     env:
     - REGISTRY_HTTP_ADDR=0.0.0.0:80
     ports:
-    - 80:80/tcp,registry
+    - 80:80/tcp,registry,internal=true
     volumes:
     - storage-registry:/var/lib/registry
   webhook:
