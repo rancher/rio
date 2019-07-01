@@ -25,6 +25,7 @@ var (
 type Export struct {
 	T_Type string `desc:"Export specific type. Supported types: namespace or service"`
 	Raw    bool   `desc:"Export the raw API object, not the pretty formatted one"`
+	Format string `desc:"Specify output format, yaml/json. Defaults to yaml" default:"yaml"`
 }
 
 func (e *Export) Run(ctx *clicontext.CLIContext) error {
@@ -38,7 +39,7 @@ func (e *Export) Run(ctx *clicontext.CLIContext) error {
 		switch r.Type {
 		case clitypes.ServiceType:
 			svc := r.Object.(*riov1.Service)
-			if err := exportService(ctx, svc, output, !e.Raw); err != nil {
+			if err := exportService(ctx, svc, output, !e.Raw, e.Format); err != nil {
 				return err
 			}
 		case clitypes.NamespaceType:
@@ -48,7 +49,7 @@ func (e *Export) Run(ctx *clicontext.CLIContext) error {
 				return err
 			}
 			for _, svc := range services.Items {
-				if err := exportService(ctx, &svc, output, !e.Raw); err != nil {
+				if err := exportService(ctx, &svc, output, !e.Raw, e.Format); err != nil {
 					return err
 				}
 			}
@@ -59,8 +60,8 @@ func (e *Export) Run(ctx *clicontext.CLIContext) error {
 	return nil
 }
 
-func exportService(ctx *clicontext.CLIContext, svc *riov1.Service, output *strings.Builder, pretty bool) error {
-	result, err := objToYaml(svc, pretty)
+func exportService(ctx *clicontext.CLIContext, svc *riov1.Service, output *strings.Builder, pretty bool, format string) error {
+	result, err := objToYaml(svc, pretty, format)
 	if err != nil {
 		return err
 	}
@@ -72,7 +73,7 @@ func exportService(ctx *clicontext.CLIContext, svc *riov1.Service, output *strin
 		if err != nil {
 			return err
 		}
-		result, err := objToYaml(configMap, pretty)
+		result, err := objToYaml(configMap, pretty, format)
 		if err != nil {
 			return err
 		}
@@ -82,7 +83,7 @@ func exportService(ctx *clicontext.CLIContext, svc *riov1.Service, output *strin
 	return nil
 }
 
-func objToYaml(obj runtime.Object, pretty bool) (string, error) {
+func objToYaml(obj runtime.Object, pretty bool, format string) (string, error) {
 	data, err := json.Marshal(obj)
 	if err != nil {
 		return "", err
@@ -114,10 +115,13 @@ func objToYaml(obj runtime.Object, pretty bool) (string, error) {
 			modifiedMap["data"] = m["data"]
 		}
 
-		data, err = json.Marshal(modifiedMap)
+		data, err = json.MarshalIndent(modifiedMap, "", " ")
 		if err != nil {
 			return "", err
 		}
+	}
+	if format == "json" {
+		return string(data), nil
 	}
 
 	r, err := yaml.JSONToYAML(data)
