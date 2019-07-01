@@ -140,6 +140,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		} else {
 			fmt.Fprintln(out, "Warning: detecting that your cluster doesn't have at least 3 GB of memory in total. Please try to increase memory for your nodes")
 		}
+		i.Lite = true
 	}
 
 	if i.ServiceCidr == "" {
@@ -188,22 +189,22 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 			return err
 		}
 		if !serviceset.IsReady(&dep.Status) {
-			fmt.Printf("\rWaiting for deployment %s/%s to become ready --------%v", dep.Namespace, dep.Name, string(statusChar[statusIndex]))
+			fmt.Printf("\r%v Waiting for deployment %s/%s to become ready", string(statusChar[statusIndex]), dep.Namespace, dep.Name)
 			statusIndex = modIndex(statusIndex)
 			continue
 		}
 		info, err := ctx.Project.RioInfos().Get("rio", metav1.GetOptions{})
 		if err != nil {
-			fmt.Printf("\rWaiting for rio controller to initialize --------------------------------%v", string(statusChar[statusIndex]))
+			fmt.Printf("\r%v Waiting for rio controller to initialize", string(statusChar[statusIndex]))
 			statusIndex = modIndex(statusIndex)
 			time.Sleep(time.Second)
 			continue
 		} else if info.Status.Version == "" {
-			fmt.Printf("\rWaiting for rio controller to initialize --------------------------------%v", string(statusChar[statusIndex]))
+			fmt.Printf("\r%v Waiting for rio controller to initialize", string(statusChar[statusIndex]))
 			statusIndex = modIndex(statusIndex)
 			continue
-		} else if _, ok := allReady(info, i.DisableFeatures); !ok {
-			fmt.Printf("\rWaiting for all the system components to be up --------------------------%v", string(statusChar[statusIndex]))
+		} else if notReadyList, ok := allReady(info, i.DisableFeatures); !ok {
+			fmt.Printf("\r%v Waiting for all the system components to be up. Not ready: %v", string(statusChar[statusIndex]), notReadyList)
 			statusIndex = modIndex(statusIndex)
 			time.Sleep(2 * time.Second)
 			continue
@@ -212,7 +213,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 			if err != nil {
 				return err
 			} else if !ok {
-				fmt.Printf("\rWaiting for service loadbalancer to be up -------------------------------%v", string(statusChar[statusIndex]))
+				fmt.Printf("\r%v Waiting for service loadbalancer to be up", string(statusChar[statusIndex]))
 				statusIndex = modIndex(statusIndex)
 				time.Sleep(2 * time.Second)
 				continue
