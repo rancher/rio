@@ -21,6 +21,7 @@ import (
 	"errors"
 	"net/http"
 
+	"k8s.io/client-go/plugin/pkg/client/auth/exec"
 	"k8s.io/client-go/transport"
 )
 
@@ -73,9 +74,10 @@ func (c *Config) TransportConfig() (*transport.Config, error) {
 			KeyFile:    c.KeyFile,
 			KeyData:    c.KeyData,
 		},
-		Username:    c.Username,
-		Password:    c.Password,
-		BearerToken: c.BearerToken,
+		Username:        c.Username,
+		Password:        c.Password,
+		BearerToken:     c.BearerToken,
+		BearerTokenFile: c.BearerTokenFile,
 		Impersonate: transport.ImpersonationConfig{
 			UserName: c.Impersonate.UserName,
 			Groups:   c.Impersonate.Groups,
@@ -88,6 +90,15 @@ func (c *Config) TransportConfig() (*transport.Config, error) {
 		return nil, errors.New("execProvider and authProvider cannot be used in combination")
 	}
 
+	if c.ExecProvider != nil {
+		provider, err := exec.GetAuthenticator(c.ExecProvider)
+		if err != nil {
+			return nil, err
+		}
+		if err := provider.UpdateTransportConfig(conf); err != nil {
+			return nil, err
+		}
+	}
 	if c.AuthProvider != nil {
 		provider, err := GetAuthProvider(c.Host, c.AuthProvider, c.AuthConfigPersister)
 		if err != nil {
