@@ -11,6 +11,7 @@ func Secrets(app *cli.App) cli.Command {
 		"Create Secrets",
 		app.Name+" secrets create [OPTIONS] $Name",
 		"")
+	create.Aliases = []string{"add"}
 	ls := builder.Command(&Ls{},
 		"List Secrets",
 		app.Name+" secrets ls [OPTIONS] $Name",

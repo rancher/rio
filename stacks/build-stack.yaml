@@ -30,26 +30,12 @@ configs:
               "callerEncoder": ""
             }
           }
+  config-artifact-bucket:
+    {}
+  config-artifact-pvc:
+    {}
 
 services:
-  buildkit:
-    maxScale: 10
-    minScale: 1
-    concurrency: 5
-    ports:
-    - 9001/tcp,buildkit,internal=true
-    systemSpec:
-      podSpec:
-        containers:
-        - image: moby/buildkit:v0.3.3
-          args:
-          - --addr
-          - tcp://0.0.0.0:9001
-          name: buildkitd
-          ports:
-          - containerPort: 9001
-          securityContext:
-            privileged: true
   registry:
     image: registry:2
     env:
@@ -82,13 +68,9 @@ services:
     - '* serviceaccounts'
     - '* configmaps'
     - '* extentions/deployments'
-    - 'create,get,list,watch,patch,update,delete build.knative.dev/builds'
-    - 'create,get,list,watch,patch,update,delete build.knative.dev/builds/status'
-    - 'create,get,list,watch,patch,update,delete build.knative.dev/buildtemplates'
-    - 'create,get,list,watch,patch,update,delete build.knative.dev/clusterbuildtemplates'
-    - '* caching.internal.knative.dev/images'
+    - 'create,get,list,watch,patch,update,delete tekton.dev/*'
     - '* apiextensions.k8s.io/customresourcedefinitions'
-    image: gcr.io/knative-releases/github.com/knative/build/cmd/controller@sha256:77b883fec7820bd3219c011796f552f15572a037895fbe7a7c78c7328fd96187
+    image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/controller@sha256:80e040a58ce6c4d58ae893eb934777bce013ef8be079967dc3db783d76fa5aaa
     configs:
     - logging/content:/etc/config-logging
     env:
@@ -97,22 +79,89 @@ services:
     - -logtostderr
     - -stderrthreshold
     - INFO
+    - -kubeconfig-writer-image
+    - gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/kubeconfigwriter@sha256:2000fdb77fd830719533756afe246c460949b46eb0c7fc1841de17656d6f5114
     - -creds-image
-    - gcr.io/knative-releases/github.com/knative/build/cmd/creds-init@sha256:ebf58f848c65c50a7158a155db7e0384c3430221564c4bbaf83e8fbde8f756fe
+    - gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/creds-init@sha256:b4877c99d928fad3cf26c995d171674b34d206178d6f9f0efb337ebff01bb34b
     - -git-image
-    - gcr.io/knative-releases/github.com/knative/build/cmd/git-init@sha256:09f22919256ba4f7451e4e595227fb852b0a55e5e1e4694cb7df5ba0ad742b23
+    - gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init@sha256:4b91c31560f18a8f09c68d5288f2261797b6df31522a57a9d7350bc0060a1284
     - -nop-image
-    - gcr.io/knative-releases/github.com/knative/build/cmd/nop@sha256:a318ee728d516ff732e2861c02ddf86197e52c6288049695781acb7710c841d4
+    - gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/nop@sha256:9160ed41b20b2822d06e907d89f6398ea866c86a971f83371efb9e147fba079f
+    - -bash-noop-image
+    - gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/bash@sha256:0355a9b21a7c0cc9466bf75071648e266de07b5e13fbfd271ec791c45a818bdb
+    - -gsutil-image
+    - gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/gsutil@sha256:6b6b8e02f6f03fb33cf3007b6b501e07bf2f435a0309482b868712a20f1dfd78
+    - -entrypoint-image
+    - gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/entrypoint@sha256:4d1fe990ca06ecc671370dfeab31d857efa8ccf81d632a672561c60482fd9aae
+    - -imagedigest-exporter-image
+    - gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/imagedigestexporter@sha256:3d36cb375da0e4b5b5cf8b0964ed3d80f4645142ac609679c3b26a369f3ed340
 
 
 kubernetes:
   manifest: |-
+    ---
     apiVersion: apiextensions.k8s.io/v1beta1
     kind: CustomResourceDefinition
     metadata:
-      labels:
-        knative.dev/crd-install: "true"
-      name: builds.build.knative.dev
+      name: clustertasks.tekton.dev
+    spec:
+      group: tekton.dev
+      names:
+        categories:
+        - all
+        - tekton-pipelines
+        kind: ClusterTask
+        plural: clustertasks
+      scope: Cluster
+      subresources:
+        status: {}
+      version: v1alpha1
+
+    ---
+    apiVersion: apiextensions.k8s.io/v1beta1
+    kind: CustomResourceDefinition
+    metadata:
+      name: images.caching.internal.knative.dev
+    spec:
+      group: caching.internal.knative.dev
+      names:
+        categories:
+        - all
+        - knative-internal
+        - caching
+        kind: Image
+        plural: images
+        shortNames:
+        - img
+        singular: image
+      scope: Namespaced
+      subresources:
+        status: {}
+      version: v1alpha1
+
+    ---
+    apiVersion: apiextensions.k8s.io/v1beta1
+    kind: CustomResourceDefinition
+    metadata:
+      name: pipelines.tekton.dev
+    spec:
+      group: tekton.dev
+      names:
+        categories:
+        - all
+        - tekton-pipelines
+        kind: Pipeline
+        plural: pipelines
+      scope: Namespaced
+      subresources:
+        status: {}
+      version: v1alpha1
+
+    ---
+    apiVersion: apiextensions.k8s.io/v1beta1
+    kind: CustomResourceDefinition
+    metadata:
+      name: pipelineruns.tekton.dev
     spec:
       additionalPrinterColumns:
       - JSONPath: .status.conditions[?(@.type=="Succeeded")].status
@@ -127,81 +176,88 @@ kubernetes:
       - JSONPath: .status.completionTime
         name: CompletionTime
         type: date
-      group: build.knative.dev
+      group: tekton.dev
       names:
         categories:
         - all
-        - knative
-        kind: Build
-        plural: builds
+        - tekton-pipelines
+        kind: PipelineRun
+        plural: pipelineruns
+        shortNames:
+        - pr
+        - prs
+      scope: Namespaced
+      subresources:
+        status: {}
+      version: v1alpha1
+
+    ---
+    apiVersion: apiextensions.k8s.io/v1beta1
+    kind: CustomResourceDefinition
+    metadata:
+      name: pipelineresources.tekton.dev
+    spec:
+      group: tekton.dev
+      names:
+        categories:
+        - all
+        - tekton-pipelines
+        kind: PipelineResource
+        plural: pipelineresources
+      scope: Namespaced
+      subresources:
+        status: {}
+      version: v1alpha1
+
+    ---
+    apiVersion: apiextensions.k8s.io/v1beta1
+    kind: CustomResourceDefinition
+    metadata:
+      name: tasks.tekton.dev
+    spec:
+      group: tekton.dev
+      names:
+        categories:
+        - all
+        - tekton-pipelines
+        kind: Task
+        plural: tasks
+      scope: Namespaced
+      subresources:
+        status: {}
+      version: v1alpha1
+
+    ---
+    apiVersion: apiextensions.k8s.io/v1beta1
+    kind: CustomResourceDefinition
+    metadata:
+      name: taskruns.tekton.dev
+    spec:
+      additionalPrinterColumns:
+      - JSONPath: .status.conditions[?(@.type=="Succeeded")].status
+        name: Succeeded
+        type: string
+      - JSONPath: .status.conditions[?(@.type=="Succeeded")].reason
+        name: Reason
+        type: string
+      - JSONPath: .status.startTime
+        name: StartTime
+        type: date
+      - JSONPath: .status.completionTime
+        name: CompletionTime
+        type: date
+      group: tekton.dev
+      names:
+        categories:
+        - all
+        - tekton-pipelines
+        kind: TaskRun
+        plural: taskruns
+        shortNames:
+        - tr
+        - trs
       scope: Namespaced
       subresources:
         status: {}
       version: v1alpha1
     ---
-    apiVersion: caching.internal.knative.dev/v1alpha1
-    kind: Image
-    metadata:
-      name: creds-init
-      namespace: ${NAMESPACE}
-    spec:
-      image: gcr.io/knative-releases/github.com/knative/build/cmd/creds-init@sha256:ebf58f848c65c50a7158a155db7e0384c3430221564c4bbaf83e8fbde8f756fe
-    ---
-    apiVersion: caching.internal.knative.dev/v1alpha1
-    kind: Image
-    metadata:
-      name: git-init
-      namespace: ${NAMESPACE}
-    spec:
-      image: gcr.io/knative-releases/github.com/knative/build/cmd/git-init@sha256:09f22919256ba4f7451e4e595227fb852b0a55e5e1e4694cb7df5ba0ad742b23
-    ---
-    apiVersion: caching.internal.knative.dev/v1alpha1
-    kind: Image
-    metadata:
-      name: gcs-fetcher
-      namespace: ${NAMESPACE}
-    spec:
-      image: gcr.io/cloud-builders/gcs-fetcher
-    ---
-    apiVersion: caching.internal.knative.dev/v1alpha1
-    kind: Image
-    metadata:
-      name: nop
-      namespace: ${NAMESPACE}
-    spec:
-      image: gcr.io/knative-releases/github.com/knative/build/cmd/nop@sha256:a318ee728d516ff732e2861c02ddf86197e52c6288049695781acb7710c841d4
-    ---
-    apiVersion: build.knative.dev/v1alpha1
-    kind: ClusterBuildTemplate
-    metadata:
-      name: buildkit
-    spec:
-      parameters:
-      - name: IMAGE
-        description: Where to publish the resulting image
-      - name: DOCKERFILE
-        description: The name of the Dockerfile
-        default: "Dockerfile"
-      - name: PUSH
-        description: Whether push or not
-        default: "true"
-      - name: DIRECTORY
-        description: The directory containing the app
-        default: "/workspace"
-      - name: BUILDKIT_CLIENT_IMAGE
-        description: The name of the BuildKit client (buildctl) image
-        default: "moby/buildkit:v0.3.1-rootless@sha256:2407cc7f24e154a7b699979c7ced886805cac67920169dcebcca9166493ee2b6"
-      - name: BUILDKIT_DAEMON_ADDRESS
-        description: The address of the BuildKit daemon (buildkitd) service
-        default: "tcp://buildkitd:1234"
-      steps:
-      - name: build-and-push
-        image: $${BUILDKIT_CLIENT_IMAGE}
-        workingDir: $${DIRECTORY}
-        command: ["buildctl", "--addr=$${BUILDKIT_DAEMON_ADDRESS}", "build",
-                  "--progress=plain",
-                  "--exporter-opt=registry.insecure=true",
-                  "--frontend=dockerfile.v0",
-                  "--frontend-opt", "filename=$${DOCKERFILE}",
-                  "--local", "context=.", "--local", "dockerfile=.",
-                  "--exporter=image", "--exporter-opt", "name=$${IMAGE}", "--exporter-opt", "push=$${PUSH}"]

@@ -26,7 +26,6 @@ var (
 	SystemComponents = []string{
 		Autoscaler,
 		BuildController,
-		Buildkit,
 		CertManager,
 		Grafana,
 		IstioCitadel,
@@ -41,7 +40,6 @@ var (
 	featureMap = map[string]string{
 		Autoscaler:      "autoscaling",
 		BuildController: "build",
-		Buildkit:        "build",
 		CertManager:     "letsencrypt",
 		Grafana:         "grafana",
 		IstioCitadel:    "istio",
@@ -54,7 +52,6 @@ var (
 
 	Autoscaler      = "autoscaler"
 	BuildController = "build-controller"
-	Buildkit        = "buildkit"
 	CertManager     = "cert-manager"
 	Grafana         = "grafana"
 	IstioCitadel    = "istio-citadel"

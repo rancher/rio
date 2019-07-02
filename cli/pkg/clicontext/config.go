@@ -1,7 +1,6 @@
 package clicontext
 
 import (
-	buildv1alpha1 "github.com/knative/build/pkg/client/clientset/versioned/typed/build/v1alpha1"
 	"github.com/pkg/errors"
 	"github.com/rancher/rio/pkg/constants"
 	projectv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/admin.rio.cattle.io/v1"
@@ -10,6 +9,7 @@ import (
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/kubeconfig"
 	"github.com/sirupsen/logrus"
+	tektonv1alpha1 "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/typed/pipeline/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -33,7 +33,7 @@ type Config struct {
 	K8s        *kubernetes.Clientset
 
 	Core      corev1.CoreV1Interface
-	Build     buildv1alpha1.BuildV1alpha1Interface
+	Build     tektonv1alpha1.TektonV1alpha1Interface
 	Rio       riov1.RioV1Interface
 	Project   projectv1.AdminV1Interface
 	Autoscale autoscalev1.AutoscaleV1Interface
@@ -50,6 +50,7 @@ func (c *Config) Validate() error {
 
 	restConfig, err := loader.ClientConfig()
 	if err != nil {
+		logrus.Error(err)
 		return ErrNoConfig
 	}
 
@@ -68,7 +69,7 @@ func (c *Config) Validate() error {
 		return err
 	}
 
-	build, err := buildv1alpha1.NewForConfig(restConfig)
+	build, err := tektonv1alpha1.NewForConfig(restConfig)
 	if err != nil {
 		return err
 	}
@@ -90,6 +91,7 @@ func (c *Config) Validate() error {
 	c.Autoscale = autoscale
 
 	if info, err := project.RioInfos().Get("rio", metav1.GetOptions{}); err != nil {
+		logrus.Error(err)
 		return ErrNoConfig
 	} else if c.SystemNamespace == "" {
 		c.SystemNamespace = info.Status.SystemNamespace

@@ -4,16 +4,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/knative/build/pkg/apis/build/v1alpha1"
-
-	services2 "github.com/rancher/rio/pkg/services"
-
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/tables"
 	"github.com/rancher/rio/cli/pkg/types"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	services2 "github.com/rancher/rio/pkg/services"
+	tektonv1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -109,8 +107,8 @@ func ListPods(ctx *clicontext.CLIContext, all bool, podOrServices ...string) ([]
 		}
 
 		for _, build := range builds {
-			b := build.Object.(*v1alpha1.Build)
-			if podData.Pod.Labels["build.knative.dev/buildName"] == b.Name {
+			b := build.Object.(*tektonv1alpha1.TaskRun)
+			if podData.Pod.Labels["tekton.dev/taskRun"] == b.Name {
 				result = append(result, podData)
 				break
 			}

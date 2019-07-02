@@ -65,7 +65,7 @@ func (c *CLIContext) getResource(r types.Resource) (ret types.Resource, err erro
 	case clitypes.FeatureType:
 		r.Object, err = c.Project.Features(c.SystemNamespace).Get(r.Name, metav1.GetOptions{})
 	case clitypes.BuildType:
-		r.Object, err = c.Build.Builds(r.Namespace).Get(r.Name, metav1.GetOptions{})
+		r.Object, err = c.Build.TaskRuns(r.Namespace).Get(r.Name, metav1.GetOptions{})
 	case clitypes.SecretType:
 		r.Object, err = c.Core.Secrets(r.Namespace).Get(r.Name, metav1.GetOptions{})
 	default:
@@ -194,7 +194,7 @@ func (c *CLIContext) DeleteResource(r types.Resource) (err error) {
 	case clitypes.PublicDomainType:
 		err = c.Project.PublicDomains(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
 	case clitypes.BuildType:
-		err = c.Build.Builds(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
+		err = c.Build.TaskRuns(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
 	case clitypes.AppType:
 		app := r.Object.(*riov1.App)
 		var errs []error
@@ -432,7 +432,7 @@ func (c *CLIContext) listNamespace(namespace, typeName string) (ret []runtime.Ob
 		}
 		return ret, err
 	case clitypes.BuildType:
-		objs, err := c.Build.Builds(namespace).List(opts)
+		objs, err := c.Build.TaskRuns(namespace).List(opts)
 		for i := range objs.Items {
 			ret = append(ret, &objs.Items[i])
 		}

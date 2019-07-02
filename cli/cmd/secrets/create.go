@@ -4,23 +4,144 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/rancher/wrangler/pkg/kv"
-
-	v1 "k8s.io/api/core/v1"
-
-	"github.com/rancher/rio/cli/pkg/stack"
-
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/cli/pkg/stack"
+	"github.com/rancher/rio/cli/pkg/up/questions"
+	"github.com/rancher/rio/modules/build/controllers/service"
 	"github.com/rancher/rio/pkg/constructors"
+	"github.com/rancher/wrangler/pkg/kv"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	generateversioned "k8s.io/kubernetes/pkg/kubectl/generate/versioned"
 )
 
 type Create struct {
-	T_Type     string   `desc:"Create type" default:"Opaque"`
-	F_FromFile []string `desc:"Creating secrets from files"`
-	D_Data     []string `desc:"Creating secrets from key-pair data"`
+	T_Type       string   `desc:"Create type" default:"Opaque"`
+	F_FromFile   []string `desc:"Creating secrets from files"`
+	D_Data       []string `desc:"Creating secrets from key-pair data"`
+	Github       bool     `desc:"Configure github token"`
+	Docker       bool     `desc:"Configure docker registry secret"`
+	GitBasicAuth bool     `desc:"Configure git basic credential"`
 }
 
 func (s *Create) Run(ctx *clicontext.CLIContext) error {
+	if s.Github {
+		var err error
+		var accessToken, ns string
+		ns, err = questions.Prompt("Select namespace[default]: ", "default")
+		if err != nil {
+			return err
+		}
+
+		secret, err := ctx.Core.Secrets(ns).Get(service.DefaultGithubCrendential, metav1.GetOptions{})
+		if err == nil {
+			accessToken = string(secret.Data["accessToken"])
+		} else {
+			secret = constructors.NewSecret(ns, service.DefaultGithubCrendential, v1.Secret{})
+		}
+		setDefaults(secret)
+
+		accessToken, err = questions.PromptPassword("accessToken[******]: ", accessToken)
+		if err != nil {
+			return err
+		}
+		secret.StringData["accessToken"] = accessToken
+		return createOrUpdate(secret, ctx)
+	}
+
+	if s.Docker {
+		var err error
+		var url, username, password, ns string
+		ns, err = questions.Prompt("Select namespace[default]: ", "default")
+		if err != nil {
+			return err
+		}
+
+		secret, err := ctx.Core.Secrets(ns).Get(service.DefaultDockerCrendential, metav1.GetOptions{})
+		if err == nil {
+			url = secret.Annotations["tekton.dev/docker-0"]
+			username = string(secret.Data["username"])
+			password = string(secret.Data["password"])
+		} else {
+			secret = constructors.NewSecret(ns, service.DefaultDockerCrendential, v1.Secret{})
+		}
+		setDefaults(secret)
+
+		url, err = questions.Prompt(fmt.Sprintf("Registry url[%s]: ", url), url)
+		if err != nil {
+			return err
+		}
+		secret.Annotations["tekton.dev/docker-0"] = url
+
+		username, err = questions.Prompt(fmt.Sprintf("username[%s]: ", username), username)
+		if err != nil {
+			return err
+		}
+		secret.StringData["username"] = username
+
+		password, err = questions.PromptPassword("password[******]: ", password)
+		if err != nil {
+			return err
+		}
+		secret.StringData["password"] = password
+		if err := createOrUpdate(secret, ctx); err != nil {
+			return err
+		}
+
+		generator := generateversioned.SecretForDockerRegistryGeneratorV1{
+			Name:     service.DefaultDockerCrendential + "-" + "pull",
+			Username: username,
+			Password: password,
+			Server:   url,
+		}
+		pullSecret, err := generator.StructuredGenerate()
+		if err != nil {
+			return err
+		}
+		pullSecret.(*v1.Secret).Namespace = ns
+
+		return createOrUpdate(pullSecret.(*v1.Secret), ctx)
+	}
+
+	if s.GitBasicAuth {
+		var err error
+		var url, username, password, ns string
+		ns, err = questions.Prompt("Select namespace[default]: ", "default")
+		if err != nil {
+			return err
+		}
+
+		secret, err := ctx.Core.Secrets(ns).Get(service.DefaultGitCrendential, metav1.GetOptions{})
+		if err == nil {
+			url = secret.Annotations["tekton.dev/git-0"]
+			username = string(secret.Data["username"])
+			password = string(secret.Data["password"])
+		} else {
+			secret = constructors.NewSecret(ns, service.DefaultGitCrendential, v1.Secret{})
+		}
+		setDefaults(secret)
+
+		url, err = questions.Prompt(fmt.Sprintf("git url[%s]: ", url), url)
+		if err != nil {
+			return err
+		}
+		secret.Annotations["tekton.dev/git-0"] = url
+
+		username, err = questions.Prompt(fmt.Sprintf("username[%s]: ", username), username)
+		if err != nil {
+			return err
+		}
+		secret.StringData["username"] = username
+
+		password, err = questions.PromptPassword("password[******]: ", password)
+		if err != nil {
+			return err
+		}
+		secret.StringData["password"] = password
+		return createOrUpdate(secret, ctx)
+	}
+
 	if len(ctx.CLI.Args()) != 1 {
 		return fmt.Errorf("exact one argument is required")
 	}
@@ -50,4 +171,32 @@ func (s *Create) Run(ctx *clicontext.CLIContext) error {
 	fmt.Printf("%s/%s\n", secret.Namespace, secret.Name)
 
 	return nil
+}
+
+func createOrUpdate(secret *v1.Secret, ctx *clicontext.CLIContext) error {
+	if _, err := ctx.Core.Secrets(secret.Namespace).Get(secret.Name, metav1.GetOptions{}); err != nil {
+		if errors.IsNotFound(err) {
+			if _, err := ctx.Core.Secrets(secret.Namespace).Create(secret); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	} else {
+		if _, err := ctx.Core.Secrets(secret.Namespace).Update(secret); err != nil {
+			return err
+		}
+	}
+	fmt.Printf("%s/%s\n", secret.Namespace, secret.Name)
+	return nil
+}
+
+func setDefaults(secret *v1.Secret) {
+	secret.Type = v1.SecretTypeBasicAuth
+	if secret.Annotations == nil {
+		secret.Annotations = make(map[string]string)
+	}
+	if secret.StringData == nil {
+		secret.StringData = make(map[string]string)
+	}
 }

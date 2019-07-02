@@ -1,27 +1,27 @@
 <p>Packages:</p>
 <ul>
 <li>
-<a href="#admin.rio.cattle.io">admin.rio.cattle.io</a>
+<a href="#admin.rio.cattle.io%2fv1">admin.rio.cattle.io/v1</a>
 </li>
 <li>
-<a href="#autoscale.rio.cattle.io">autoscale.rio.cattle.io</a>
+<a href="#autoscale.rio.cattle.io%2fv1">autoscale.rio.cattle.io/v1</a>
 </li>
 <li>
-<a href="#rio.cattle.io">rio.cattle.io</a>
+<a href="#rio.cattle.io%2fv1">rio.cattle.io/v1</a>
 </li>
 </ul>
-<h2 id="admin.rio.cattle.io">admin.rio.cattle.io</h2>
+<h2 id="admin.rio.cattle.io/v1">admin.rio.cattle.io/v1</h2>
 <p>
 </p>
 Resource Types:
 <ul><li>
-<a href="#ClusterDomain">ClusterDomain</a>
+<a href="#admin.rio.cattle.io/v1.ClusterDomain">ClusterDomain</a>
 </li><li>
-<a href="#Feature">Feature</a>
+<a href="#admin.rio.cattle.io/v1.Feature">Feature</a>
 </li><li>
-<a href="#PublicDomain">PublicDomain</a>
+<a href="#admin.rio.cattle.io/v1.PublicDomain">PublicDomain</a>
 </li><li>
-<a href="#RioInfo">RioInfo</a>
+<a href="#admin.rio.cattle.io/v1.RioInfo">RioInfo</a>
 </li></ul>
 <h3 id="ClusterDomain">ClusterDomain
 </h3>
@@ -70,7 +70,7 @@ Refer to the Kubernetes API documentation for the fields of the
 <td>
 <code>spec</code></br>
 <em>
-<a href="#ClusterDomainSpec">
+<a href="#admin.rio.cattle.io/v1.ClusterDomainSpec">
 ClusterDomainSpec
 </a>
 </em>
@@ -81,7 +81,7 @@ ClusterDomainSpec
 <table>
 <tr>
 <td>
-<code>SecretRef</code></br>
+<code>secretRef</code></br>
 <em>
 <a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.13/#secretreference-v1-core">
 Kubernetes core/v1.SecretReference
@@ -95,7 +95,7 @@ Kubernetes core/v1.SecretReference
 <td>
 <code>addresses</code></br>
 <em>
-<a href="#Address">
+<a href="#admin.rio.cattle.io/v1.Address">
 []Address
 </a>
 </em>
@@ -107,7 +107,7 @@ Kubernetes core/v1.SecretReference
 <td>
 <code>subdomains</code></br>
 <em>
-<a href="#Subdomain">
+<a href="#admin.rio.cattle.io/v1.Subdomain">
 []Subdomain
 </a>
 </em>
@@ -132,7 +132,7 @@ Kubernetes core/v1.SecretReference
 <td>
 <code>status</code></br>
 <em>
-<a href="#ClusterDomainStatus">
+<a href="#admin.rio.cattle.io/v1.ClusterDomainStatus">
 ClusterDomainStatus
 </a>
 </em>
@@ -189,7 +189,7 @@ Refer to the Kubernetes API documentation for the fields of the
 <td>
 <code>spec</code></br>
 <em>
-<a href="#FeatureSpec">
+<a href="#admin.rio.cattle.io/v1.FeatureSpec">
 FeatureSpec
 </a>
 </em>
@@ -222,7 +222,7 @@ bool
 <td>
 <code>questions</code></br>
 <em>
-<a href="#Question">
+<a href="#rio.cattle.io/v1.Question">
 []Question
 </a>
 </em>
@@ -257,7 +257,7 @@ map[string]string
 <td>
 <code>status</code></br>
 <em>
-<a href="#FeatureStatus">
+<a href="#admin.rio.cattle.io/v1.FeatureStatus">
 FeatureStatus
 </a>
 </em>
@@ -316,7 +316,7 @@ Refer to the Kubernetes API documentation for the fields of the
 <td>
 <code>spec</code></br>
 <em>
-<a href="#PublicDomainSpec">
+<a href="#admin.rio.cattle.io/v1.PublicDomainSpec">
 PublicDomainSpec
 </a>
 </em>
@@ -381,7 +381,7 @@ PublicDomain name
 <td>
 <code>status</code></br>
 <em>
-<a href="#PublicDomainStatus">
+<a href="#admin.rio.cattle.io/v1.PublicDomainStatus">
 PublicDomainStatus
 </a>
 </em>
@@ -441,7 +441,7 @@ Refer to the Kubernetes API documentation for the fields of the
 <td>
 <code>status</code></br>
 <em>
-<a href="#RioInfoStatus">
+<a href="#admin.rio.cattle.io/v1.RioInfoStatus">
 RioInfoStatus
 </a>
 </em>
@@ -455,8 +455,8 @@ RioInfoStatus
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#ClusterDomainSpec">ClusterDomainSpec</a>, 
-<a href="#Subdomain">Subdomain</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2fadmin.rio.cattle.io%2fv1.ClusterDomainSpec">ClusterDomainSpec</a>, 
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2fadmin.rio.cattle.io%2fv1.Subdomain">Subdomain</a>)
 </p>
 <p>
 </p>
@@ -484,7 +484,7 @@ string
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#ClusterDomain">ClusterDomain</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2fadmin.rio.cattle.io%2fv1.ClusterDomain">ClusterDomain</a>)
 </p>
 <p>
 </p>
@@ -498,7 +498,7 @@ string
 <tbody>
 <tr>
 <td>
-<code>SecretRef</code></br>
+<code>secretRef</code></br>
 <em>
 <a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.13/#secretreference-v1-core">
 Kubernetes core/v1.SecretReference
@@ -512,7 +512,7 @@ Kubernetes core/v1.SecretReference
 <td>
 <code>addresses</code></br>
 <em>
-<a href="#Address">
+<a href="#admin.rio.cattle.io/v1.Address">
 []Address
 </a>
 </em>
@@ -524,7 +524,7 @@ Kubernetes core/v1.SecretReference
 <td>
 <code>subdomains</code></br>
 <em>
-<a href="#Subdomain">
+<a href="#admin.rio.cattle.io/v1.Subdomain">
 []Subdomain
 </a>
 </em>
@@ -548,7 +548,7 @@ Kubernetes core/v1.SecretReference
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#ClusterDomain">ClusterDomain</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2fadmin.rio.cattle.io%2fv1.ClusterDomain">ClusterDomain</a>)
 </p>
 <p>
 </p>
@@ -596,7 +596,7 @@ string
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#Feature">Feature</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2fadmin.rio.cattle.io%2fv1.Feature">Feature</a>)
 </p>
 <p>
 </p>
@@ -632,7 +632,7 @@ bool
 <td>
 <code>questions</code></br>
 <em>
-<a href="#Question">
+<a href="#rio.cattle.io/v1.Question">
 []Question
 </a>
 </em>
@@ -666,7 +666,7 @@ map[string]string
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#Feature">Feature</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2fadmin.rio.cattle.io%2fv1.Feature">Feature</a>)
 </p>
 <p>
 </p>
@@ -704,7 +704,7 @@ bool
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#PublicDomain">PublicDomain</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2fadmin.rio.cattle.io%2fv1.PublicDomain">PublicDomain</a>)
 </p>
 <p>
 </p>
@@ -768,7 +768,7 @@ PublicDomain name
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#PublicDomain">PublicDomain</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2fadmin.rio.cattle.io%2fv1.PublicDomain">PublicDomain</a>)
 </p>
 <p>
 </p>
@@ -819,7 +819,7 @@ Represents the latest available observations of a PublicDomain's current state.
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#RioInfo">RioInfo</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2fadmin.rio.cattle.io%2fv1.RioInfo">RioInfo</a>)
 </p>
 <p>
 </p>
@@ -871,13 +871,23 @@ string
 <td>
 </td>
 </tr>
+<tr>
+<td>
+<code>systemComponentReadyMap</code></br>
+<em>
+map[string]string
+</em>
+</td>
+<td>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="Subdomain">Subdomain
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#ClusterDomainSpec">ClusterDomainSpec</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2fadmin.rio.cattle.io%2fv1.ClusterDomainSpec">ClusterDomainSpec</a>)
 </p>
 <p>
 </p>
@@ -903,7 +913,7 @@ string
 <td>
 <code>addresses</code></br>
 <em>
-<a href="#Address">
+<a href="#admin.rio.cattle.io/v1.Address">
 []Address
 </a>
 </em>
@@ -914,12 +924,12 @@ string
 </tbody>
 </table>
 <hr/>
-<h2 id="autoscale.rio.cattle.io">autoscale.rio.cattle.io</h2>
+<h2 id="autoscale.rio.cattle.io/v1">autoscale.rio.cattle.io/v1</h2>
 <p>
 </p>
 Resource Types:
 <ul><li>
-<a href="#ServiceScaleRecommendation">ServiceScaleRecommendation</a>
+<a href="#autoscale.rio.cattle.io/v1.ServiceScaleRecommendation">ServiceScaleRecommendation</a>
 </li></ul>
 <h3 id="ServiceScaleRecommendation">ServiceScaleRecommendation
 </h3>
@@ -968,7 +978,7 @@ Refer to the Kubernetes API documentation for the fields of the
 <td>
 <code>spec</code></br>
 <em>
-<a href="#ServiceScaleRecommendationSpec">
+<a href="#autoscale.rio.cattle.io/v1.ServiceScaleRecommendationSpec">
 ServiceScaleRecommendationSpec
 </a>
 </em>
@@ -979,59 +989,9 @@ ServiceScaleRecommendationSpec
 <table>
 <tr>
 <td>
-<code>serviceNameToRead</code></br>
-<em>
-string
-</em>
-</td>
-<td>
-</td>
-</tr>
-<tr>
-<td>
-<code>zeroScaleService</code></br>
-<em>
-string
-</em>
-</td>
-<td>
-</td>
-</tr>
-<tr>
-<td>
-<code>minScale</code></br>
+<code>replicas</code></br>
 <em>
 int32
-</em>
-</td>
-<td>
-</td>
-</tr>
-<tr>
-<td>
-<code>maxScale</code></br>
-<em>
-int32
-</em>
-</td>
-<td>
-</td>
-</tr>
-<tr>
-<td>
-<code>concurrency</code></br>
-<em>
-int
-</em>
-</td>
-<td>
-</td>
-</tr>
-<tr>
-<td>
-<code>prometheusURL</code></br>
-<em>
-string
 </em>
 </td>
 <td>
@@ -1041,7 +1001,9 @@ string
 <td>
 <code>selector</code></br>
 <em>
-map[string]string
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.13/#labelselector-v1-meta">
+Kubernetes meta/v1.LabelSelector
+</a>
 </em>
 </td>
 <td>
@@ -1054,7 +1016,7 @@ map[string]string
 <td>
 <code>status</code></br>
 <em>
-<a href="#ServiceScaleRecommendationStatus">
+<a href="#autoscale.rio.cattle.io/v1.ServiceScaleRecommendationStatus">
 ServiceScaleRecommendationStatus
 </a>
 </em>
@@ -1068,7 +1030,7 @@ ServiceScaleRecommendationStatus
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#ServiceScaleRecommendation">ServiceScaleRecommendation</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2fautoscale.rio.cattle.io%2fv1.ServiceScaleRecommendation">ServiceScaleRecommendation</a>)
 </p>
 <p>
 </p>
@@ -1082,59 +1044,9 @@ ServiceScaleRecommendationStatus
 <tbody>
 <tr>
 <td>
-<code>serviceNameToRead</code></br>
-<em>
-string
-</em>
-</td>
-<td>
-</td>
-</tr>
-<tr>
-<td>
-<code>zeroScaleService</code></br>
-<em>
-string
-</em>
-</td>
-<td>
-</td>
-</tr>
-<tr>
-<td>
-<code>minScale</code></br>
+<code>replicas</code></br>
 <em>
 int32
-</em>
-</td>
-<td>
-</td>
-</tr>
-<tr>
-<td>
-<code>maxScale</code></br>
-<em>
-int32
-</em>
-</td>
-<td>
-</td>
-</tr>
-<tr>
-<td>
-<code>concurrency</code></br>
-<em>
-int
-</em>
-</td>
-<td>
-</td>
-</tr>
-<tr>
-<td>
-<code>prometheusURL</code></br>
-<em>
-string
 </em>
 </td>
 <td>
@@ -1144,7 +1056,9 @@ string
 <td>
 <code>selector</code></br>
 <em>
-map[string]string
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.13/#labelselector-v1-meta">
+Kubernetes meta/v1.LabelSelector
+</a>
 </em>
 </td>
 <td>
@@ -1156,7 +1070,7 @@ map[string]string
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#ServiceScaleRecommendation">ServiceScaleRecommendation</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2fautoscale.rio.cattle.io%2fv1.ServiceScaleRecommendation">ServiceScaleRecommendation</a>)
 </p>
 <p>
 </p>
@@ -1168,16 +1082,6 @@ map[string]string
 </tr>
 </thead>
 <tbody>
-<tr>
-<td>
-<code>desiredScale</code></br>
-<em>
-int32
-</em>
-</td>
-<td>
-</td>
-</tr>
 <tr>
 <td>
 <code>conditions</code></br>
@@ -1191,18 +1095,18 @@ int32
 </tbody>
 </table>
 <hr/>
-<h2 id="rio.cattle.io">rio.cattle.io</h2>
+<h2 id="rio.cattle.io/v1">rio.cattle.io/v1</h2>
 <p>
 </p>
 Resource Types:
 <ul><li>
-<a href="#App">App</a>
+<a href="#rio.cattle.io/v1.App">App</a>
 </li><li>
-<a href="#ExternalService">ExternalService</a>
+<a href="#rio.cattle.io/v1.ExternalService">ExternalService</a>
 </li><li>
-<a href="#Router">Router</a>
+<a href="#rio.cattle.io/v1.Router">Router</a>
 </li><li>
-<a href="#Service">Service</a>
+<a href="#rio.cattle.io/v1.Service">Service</a>
 </li></ul>
 <h3 id="App">App
 </h3>
@@ -1251,7 +1155,7 @@ Refer to the Kubernetes API documentation for the fields of the
 <td>
 <code>spec</code></br>
 <em>
-<a href="#AppSpec">
+<a href="#rio.cattle.io/v1.AppSpec">
 AppSpec
 </a>
 </em>
@@ -1264,7 +1168,7 @@ AppSpec
 <td>
 <code>revisions</code></br>
 <em>
-<a href="#Revision">
+<a href="#rio.cattle.io/v1.Revision">
 []Revision
 </a>
 </em>
@@ -1279,7 +1183,7 @@ AppSpec
 <td>
 <code>status</code></br>
 <em>
-<a href="#AppStatus">
+<a href="#rio.cattle.io/v1.AppStatus">
 AppStatus
 </a>
 </em>
@@ -1337,7 +1241,7 @@ Refer to the Kubernetes API documentation for the fields of the
 <td>
 <code>spec</code></br>
 <em>
-<a href="#ExternalServiceSpec">
+<a href="#rio.cattle.io/v1.ExternalServiceSpec">
 ExternalServiceSpec
 </a>
 </em>
@@ -1386,7 +1290,7 @@ In-Mesh service name in another namespace
 <td>
 <code>status</code></br>
 <em>
-<a href="#ExternalServiceStatus">
+<a href="#rio.cattle.io/v1.ExternalServiceStatus">
 ExternalServiceStatus
 </a>
 </em>
@@ -1444,7 +1348,7 @@ Refer to the Kubernetes API documentation for the fields of the
 <td>
 <code>spec</code></br>
 <em>
-<a href="#RouterSpec">
+<a href="#rio.cattle.io/v1.RouterSpec">
 RouterSpec
 </a>
 </em>
@@ -1457,7 +1361,7 @@ RouterSpec
 <td>
 <code>routes</code></br>
 <em>
-<a href="#RouteSpec">
+<a href="#rio.cattle.io/v1.RouteSpec">
 []RouteSpec
 </a>
 </em>
@@ -1473,7 +1377,7 @@ An ordered list of route rules for HTTP traffic. The first rule matching an inco
 <td>
 <code>status</code></br>
 <em>
-<a href="#RouterStatus">
+<a href="#rio.cattle.io/v1.RouterStatus">
 RouterStatus
 </a>
 </em>
@@ -1532,7 +1436,7 @@ Refer to the Kubernetes API documentation for the fields of the
 <td>
 <code>spec</code></br>
 <em>
-<a href="#ServiceSpec">
+<a href="#rio.cattle.io/v1.ServiceSpec">
 ServiceSpec
 </a>
 </em>
@@ -1545,7 +1449,7 @@ ServiceSpec
 <td>
 <code>ServiceScale</code></br>
 <em>
-<a href="#ServiceScale">
+<a href="#rio.cattle.io/v1.ServiceScale">
 ServiceScale
 </a>
 </em>
@@ -1557,7 +1461,7 @@ ServiceScale
 <td>
 <code>ServiceRevision</code></br>
 <em>
-<a href="#ServiceRevision">
+<a href="#rio.cattle.io/v1.ServiceRevision">
 ServiceRevision
 </a>
 </em>
@@ -1569,7 +1473,7 @@ ServiceRevision
 <td>
 <code>AutoscaleConfig</code></br>
 <em>
-<a href="#AutoscaleConfig">
+<a href="#rio.cattle.io/v1.AutoscaleConfig">
 AutoscaleConfig
 </a>
 </em>
@@ -1581,7 +1485,7 @@ AutoscaleConfig
 <td>
 <code>RolloutConfig</code></br>
 <em>
-<a href="#RolloutConfig">
+<a href="#rio.cattle.io/v1.RolloutConfig">
 RolloutConfig
 </a>
 </em>
@@ -1593,7 +1497,7 @@ RolloutConfig
 <td>
 <code>PodConfig</code></br>
 <em>
-<a href="#PodConfig">
+<a href="#rio.cattle.io/v1.PodConfig">
 PodConfig
 </a>
 </em>
@@ -1616,7 +1520,7 @@ Whether to disable ServiceMesh for Service. If true, no mesh sidecar will be dep
 <td>
 <code>permissions</code></br>
 <em>
-<a href="#Permission">
+<a href="#rio.cattle.io/v1.Permission">
 []Permission
 </a>
 </em>
@@ -1629,7 +1533,7 @@ Permissions to the Services. It will create corresponding ServiceAccounts, Roles
 <td>
 <code>globalPermissions</code></br>
 <em>
-<a href="#Permission">
+<a href="#rio.cattle.io/v1.Permission">
 []Permission
 </a>
 </em>
@@ -1645,7 +1549,7 @@ GlobalPermissions to the Services. It will create corresponding ServiceAccounts,
 <td>
 <code>systemSpec</code></br>
 <em>
-<a href="#SystemServiceSpec">
+<a href="#rio.cattle.io/v1.SystemServiceSpec">
 SystemServiceSpec
 </a>
 </em>
@@ -1657,7 +1561,7 @@ SystemServiceSpec
 <td>
 <code>status</code></br>
 <em>
-<a href="#ServiceStatus">
+<a href="#rio.cattle.io/v1.ServiceStatus">
 ServiceStatus
 </a>
 </em>
@@ -1671,7 +1575,7 @@ ServiceStatus
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#Fault">Fault</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.Fault">Fault</a>)
 </p>
 <p>
 </p>
@@ -1700,7 +1604,7 @@ REQUIRED. HTTP status code to use to abort the Http request.
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#App">App</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.App">App</a>)
 </p>
 <p>
 </p>
@@ -1716,7 +1620,7 @@ REQUIRED. HTTP status code to use to abort the Http request.
 <td>
 <code>revisions</code></br>
 <em>
-<a href="#Revision">
+<a href="#rio.cattle.io/v1.Revision">
 []Revision
 </a>
 </em>
@@ -1730,7 +1634,7 @@ REQUIRED. HTTP status code to use to abort the Http request.
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#App">App</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.App">App</a>)
 </p>
 <p>
 </p>
@@ -1776,7 +1680,7 @@ REQUIRED. HTTP status code to use to abort the Http request.
 <td>
 <code>revisionWeight</code></br>
 <em>
-<a href="#ServiceObservedWeight">
+<a href="#rio.cattle.io/v1.ServiceObservedWeight">
 map[string]github.com/rancher/rio/pkg/apis/rio.cattle.io/v1.ServiceObservedWeight
 </a>
 </em>
@@ -1790,7 +1694,7 @@ map[string]github.com/rancher/rio/pkg/apis/rio.cattle.io/v1.ServiceObservedWeigh
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#ServiceSpec">ServiceSpec</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.ServiceSpec">ServiceSpec</a>)
 </p>
 <p>
 </p>
@@ -1842,8 +1746,8 @@ The maximum scale Service can be scaled
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#NamedContainer">NamedContainer</a>, 
-<a href="#PodConfig">PodConfig</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.NamedContainer">NamedContainer</a>, 
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.PodConfig">PodConfig</a>)
 </p>
 <p>
 </p>
@@ -1870,7 +1774,7 @@ Docker image name. More info: https://kubernetes.io/docs/concepts/containers/ima
 <td>
 <code>build</code></br>
 <em>
-<a href="#ImageBuild">
+<a href="#rio.cattle.io/v1.ImageBuild">
 ImageBuild
 </a>
 </em>
@@ -1923,7 +1827,7 @@ Container's working directory. If not specified, the container runtime's default
 <td>
 <code>ports</code></br>
 <em>
-<a href="#ContainerPort">
+<a href="#rio.cattle.io/v1.ContainerPort">
 []ContainerPort
 </a>
 </em>
@@ -1937,7 +1841,7 @@ Any port which is listening on the default "0.0.0.0" address inside a container 
 <td>
 <code>env</code></br>
 <em>
-<a href="#EnvVar">
+<a href="#rio.cattle.io/v1.EnvVar">
 []EnvVar
 </a>
 </em>
@@ -1972,7 +1876,7 @@ Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
 <td>
 <code>secrets</code></br>
 <em>
-<a href="#DataMount">
+<a href="#rio.cattle.io/v1.DataMount">
 []DataMount
 </a>
 </em>
@@ -1985,7 +1889,7 @@ Secrets Mounts
 <td>
 <code>configs</code></br>
 <em>
-<a href="#DataMount">
+<a href="#rio.cattle.io/v1.DataMount">
 []DataMount
 </a>
 </em>
@@ -2071,7 +1975,7 @@ Whether this container should allocate a TTY for itself, also requires 'stdin' t
 <td>
 <code>volumes</code></br>
 <em>
-<a href="#Volume">
+<a href="#rio.cattle.io/v1.Volume">
 []Volume
 </a>
 </em>
@@ -2084,7 +1988,7 @@ Pod volumes to mount into the container's filesystem. Cannot be updated.
 <td>
 <code>ContainerSecurityContext</code></br>
 <em>
-<a href="#ContainerSecurityContext">
+<a href="#rio.cattle.io/v1.ContainerSecurityContext">
 ContainerSecurityContext
 </a>
 </em>
@@ -2098,7 +2002,7 @@ ContainerSecurityContext
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#Container">Container</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.Container">Container</a>)
 </p>
 <p>
 </p>
@@ -2134,7 +2038,7 @@ bool
 <td>
 <code>protocol</code></br>
 <em>
-<a href="#Protocol">
+<a href="#rio.cattle.io/v1.Protocol">
 Protocol
 </a>
 </em>
@@ -2168,7 +2072,7 @@ int32
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#Container">Container</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.Container">Container</a>)
 </p>
 <p>
 ContainerSecurityContext holds pod-level security attributes and common container constants. Optional: Defaults to empty. See type description for default values of each field.
@@ -2222,7 +2126,7 @@ Whether this container has a read-only root filesystem. Default is false.
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#Container">Container</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.Container">Container</a>)
 </p>
 <p>
 </p>
@@ -2280,8 +2184,8 @@ string
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#RouteTraffic">RouteTraffic</a>, 
-<a href="#WeightedDestination">WeightedDestination</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.RouteTraffic">RouteTraffic</a>, 
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.WeightedDestination">WeightedDestination</a>)
 </p>
 <p>
 </p>
@@ -2343,7 +2247,7 @@ Destination Port
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#Container">Container</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.Container">Container</a>)
 </p>
 <p>
 </p>
@@ -2411,7 +2315,7 @@ string
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#ExternalService">ExternalService</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.ExternalService">ExternalService</a>)
 </p>
 <p>
 </p>
@@ -2462,7 +2366,7 @@ In-Mesh service name in another namespace
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#ExternalService">ExternalService</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.ExternalService">ExternalService</a>)
 </p>
 <p>
 </p>
@@ -2491,7 +2395,7 @@ Represents the latest available observations of a ExternalService's current stat
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#RouteTraffic">RouteTraffic</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.RouteTraffic">RouteTraffic</a>)
 </p>
 <p>
 </p>
@@ -2529,7 +2433,7 @@ REQUIRED. Add a fixed delay before forwarding the request. Units: milliseconds
 <td>
 <code>abort</code></br>
 <em>
-<a href="#Abort">
+<a href="#rio.cattle.io/v1.Abort">
 Abort
 </a>
 </em>
@@ -2544,7 +2448,7 @@ Abort Http request attempts and return error codes back to downstream service, g
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#Container">Container</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.Container">Container</a>)
 </p>
 <p>
 </p>
@@ -2613,6 +2517,17 @@ Specify the name Of the Dockerfile in the Repo. Defaults to `Dockerfile`.
 </tr>
 <tr>
 <td>
+<code>dockerContext</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+Specify build context
+</td>
+</tr>
+<tr>
+<td>
 <code>template</code></br>
 <em>
 string
@@ -2624,13 +2539,68 @@ Specify the build template. Defaults to `buildkit`.
 </tr>
 <tr>
 <td>
-<code>secret</code></br>
+<code>githubSecretName</code></br>
 <em>
 string
 </em>
 </td>
 <td>
-Specify the secret name. If specified, it will register a webhook and only creates new revision if webhook is triggered.
+Specify the github secret name. Used to create Github webhook, the secret key has to be `accessToken`
+</td>
+</tr>
+<tr>
+<td>
+<code>gitSecretName</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+Specify secret name for checking our git resources
+</td>
+</tr>
+<tr>
+<td>
+<code>pushRegistry</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+Specify custom registry to push the image instead of built-in one
+</td>
+</tr>
+<tr>
+<td>
+<code>pushRegistrySecretName</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+Specify secret for pushing to custom registry
+</td>
+</tr>
+<tr>
+<td>
+<code>buildImageName</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+Specify image name instead of the one generated from service name, format: $registry/$imageName:$revision
+</td>
+</tr>
+<tr>
+<td>
+<code>enablePr</code></br>
+<em>
+bool
+</em>
+</td>
+<td>
+Whether to enable builds for pull requests
 </td>
 </tr>
 </tbody>
@@ -2639,7 +2609,7 @@ Specify the secret name. If specified, it will register a webhook and only creat
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#RouteSpec">RouteSpec</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.RouteSpec">RouteSpec</a>)
 </p>
 <p>
 </p>
@@ -2655,7 +2625,7 @@ Specify the secret name. If specified, it will register a webhook and only creat
 <td>
 <code>path</code></br>
 <em>
-<a href="#StringMatch">
+<a href="#rio.cattle.io/v1.StringMatch">
 StringMatch
 </a>
 </em>
@@ -2668,7 +2638,7 @@ URI to match values are case-sensitive and formatted as follows:<br/><br/>   exa
 <td>
 <code>scheme</code></br>
 <em>
-<a href="#StringMatch">
+<a href="#rio.cattle.io/v1.StringMatch">
 StringMatch
 </a>
 </em>
@@ -2681,7 +2651,7 @@ URI Scheme values are case-sensitive and formatted as follows:<br/><br/>   exact
 <td>
 <code>method</code></br>
 <em>
-<a href="#StringMatch">
+<a href="#rio.cattle.io/v1.StringMatch">
 StringMatch
 </a>
 </em>
@@ -2694,7 +2664,7 @@ HTTP Method values are case-sensitive and formatted as follows:<br/><br/>   exac
 <td>
 <code>headers</code></br>
 <em>
-<a href="#StringMatch">
+<a href="#rio.cattle.io/v1.StringMatch">
 map[string]github.com/rancher/rio/pkg/apis/rio.cattle.io/v1.StringMatch
 </a>
 </em>
@@ -2707,7 +2677,7 @@ The header keys must be lowercase and use hyphen as the separator, e.g. x-reques
 <td>
 <code>cookies</code></br>
 <em>
-<a href="#StringMatch">
+<a href="#rio.cattle.io/v1.StringMatch">
 map[string]github.com/rancher/rio/pkg/apis/rio.cattle.io/v1.StringMatch
 </a>
 </em>
@@ -2731,7 +2701,7 @@ Specifies the ports on the host that is being addressed. Many services only expo
 <td>
 <code>from</code></br>
 <em>
-<a href="#ServiceSource">
+<a href="#rio.cattle.io/v1.ServiceSource">
 ServiceSource
 </a>
 </em>
@@ -2745,7 +2715,7 @@ ServiceSource
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#PodConfig">PodConfig</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.PodConfig">PodConfig</a>)
 </p>
 <p>
 </p>
@@ -2789,7 +2759,7 @@ Limits are applied to init containers in a similar fashion. Init containers cann
 <td>
 <code>Container</code></br>
 <em>
-<a href="#Container">
+<a href="#rio.cattle.io/v1.Container">
 Container
 </a>
 </em>
@@ -2803,7 +2773,7 @@ Container
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#ServiceSpec">ServiceSpec</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.ServiceSpec">ServiceSpec</a>)
 </p>
 <p>
 </p>
@@ -2881,7 +2851,7 @@ string
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#ServiceSpec">ServiceSpec</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.ServiceSpec">ServiceSpec</a>)
 </p>
 <p>
 </p>
@@ -2897,7 +2867,7 @@ string
 <td>
 <code>containers</code></br>
 <em>
-<a href="#NamedContainer">
+<a href="#rio.cattle.io/v1.NamedContainer">
 []NamedContainer
 </a>
 </em>
@@ -2947,6 +2917,19 @@ HostAliases is an optional list of hosts and IPs that will be injected into the 
 </tr>
 <tr>
 <td>
+<code>imagePullSecrets</code></br>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.13/#localobjectreference-v1-core">
+[]Kubernetes core/v1.LocalObjectReference
+</a>
+</em>
+</td>
+<td>
+Image pull secret
+</td>
+</tr>
+<tr>
+<td>
 <code>Affinity</code></br>
 <em>
 <a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.13/#affinity-v1-core">
@@ -2961,7 +2944,7 @@ Kubernetes core/v1.Affinity
 <td>
 <code>PodDNSConfig</code></br>
 <em>
-<a href="#PodDNSConfig">
+<a href="#rio.cattle.io/v1.PodDNSConfig">
 PodDNSConfig
 </a>
 </em>
@@ -2973,7 +2956,7 @@ PodDNSConfig
 <td>
 <code>Container</code></br>
 <em>
-<a href="#Container">
+<a href="#rio.cattle.io/v1.Container">
 Container
 </a>
 </em>
@@ -2987,7 +2970,7 @@ Container
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#PodConfig">PodConfig</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.PodConfig">PodConfig</a>)
 </p>
 <p>
 PodDNSConfig Specifies the DNS parameters of a pod. Parameters specified here will be merged to the generated DNS configuration based on DNSPolicy.
@@ -3026,7 +3009,7 @@ A list of DNS search domains for host-name lookup. This will be appended to the 
 <td>
 <code>dnsOptions</code></br>
 <em>
-<a href="#PodDNSConfigOption">
+<a href="#rio.cattle.io/v1.PodDNSConfigOption">
 []PodDNSConfigOption
 </a>
 </em>
@@ -3042,7 +3025,7 @@ Duplicated entries will be removed. Resolution options given in Options will ove
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#PodDNSConfig">PodDNSConfig</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.PodDNSConfig">PodDNSConfig</a>)
 </p>
 <p>
 </p>
@@ -3080,7 +3063,7 @@ string
 (<code>string</code> alias)</p></h3>
 <p>
 (<em>Appears on:</em>
-<a href="#ContainerPort">ContainerPort</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.ContainerPort">ContainerPort</a>)
 </p>
 <p>
 </p>
@@ -3088,8 +3071,8 @@ string
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#FeatureSpec">FeatureSpec</a>, 
-<a href="#TemplateMeta">TemplateMeta</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2fadmin.rio.cattle.io%2fv1.FeatureSpec">FeatureSpec</a>, 
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.TemplateMeta">TemplateMeta</a>)
 </p>
 <p>
 </p>
@@ -3259,7 +3242,7 @@ Answer must not have any of these characters
 <td>
 <code>subquestions</code></br>
 <em>
-<a href="#SubQuestion">
+<a href="#rio.cattle.io/v1.SubQuestion">
 []SubQuestion
 </a>
 </em>
@@ -3296,7 +3279,7 @@ Ask subquestions if this evaluates to true
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#RouteSpec">RouteSpec</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.RouteSpec">RouteSpec</a>)
 </p>
 <p>
 </p>
@@ -3334,7 +3317,7 @@ string
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#RouteTraffic">RouteTraffic</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.RouteTraffic">RouteTraffic</a>)
 </p>
 <p>
 </p>
@@ -3375,7 +3358,7 @@ Timeout per retry attempt for a given request. Units: milliseconds
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#AppSpec">AppSpec</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.AppSpec">AppSpec</a>)
 </p>
 <p>
 </p>
@@ -3451,7 +3434,7 @@ int
 <td>
 <code>scaleStatus</code></br>
 <em>
-<a href="#ScaleStatus">
+<a href="#rio.cattle.io/v1.ScaleStatus">
 ScaleStatus
 </a>
 </em>
@@ -3473,7 +3456,7 @@ bool
 <td>
 <code>RolloutConfig</code></br>
 <em>
-<a href="#RolloutConfig">
+<a href="#rio.cattle.io/v1.RolloutConfig">
 RolloutConfig
 </a>
 </em>
@@ -3487,7 +3470,7 @@ RolloutConfig
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#RouteSpec">RouteSpec</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.RouteSpec">RouteSpec</a>)
 </p>
 <p>
 </p>
@@ -3525,8 +3508,8 @@ string
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#Revision">Revision</a>, 
-<a href="#ServiceSpec">ServiceSpec</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.Revision">Revision</a>, 
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.ServiceSpec">ServiceSpec</a>)
 </p>
 <p>
 RolloutConfig specifies the configuration when promoting a new revision
@@ -3578,7 +3561,7 @@ Increment Interval between each Rollout
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#RouterSpec">RouterSpec</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.RouterSpec">RouterSpec</a>)
 </p>
 <p>
 </p>
@@ -3594,7 +3577,7 @@ Increment Interval between each Rollout
 <td>
 <code>matches</code></br>
 <em>
-<a href="#Match">
+<a href="#rio.cattle.io/v1.Match">
 []Match
 </a>
 </em>
@@ -3608,7 +3591,7 @@ The rule is matched if any one of the match blocks succeed.
 <td>
 <code>to</code></br>
 <em>
-<a href="#WeightedDestination">
+<a href="#rio.cattle.io/v1.WeightedDestination">
 []WeightedDestination
 </a>
 </em>
@@ -3622,7 +3605,7 @@ Weights associated with the service version determine the proportion of traffic 
 <td>
 <code>redirect</code></br>
 <em>
-<a href="#Redirect">
+<a href="#rio.cattle.io/v1.Redirect">
 Redirect
 </a>
 </em>
@@ -3636,7 +3619,7 @@ The redirect primitive can be used to send a HTTP 301 redirect to a different UR
 <td>
 <code>rewrite</code></br>
 <em>
-<a href="#Rewrite">
+<a href="#rio.cattle.io/v1.Rewrite">
 Rewrite
 </a>
 </em>
@@ -3647,7 +3630,7 @@ Rewrite HTTP URIs and Authority headers. Rewrite cannot be used with Redirect pr
 </tr>
 <tr>
 <td>
-<code>addHeaders</code></br>
+<code>headers</code></br>
 <em>
 github.com/knative/pkg/apis/istio/v1alpha3.HeaderOperations
 </em>
@@ -3660,7 +3643,7 @@ Header manipulation rules
 <td>
 <code>RouteTraffic</code></br>
 <em>
-<a href="#RouteTraffic">
+<a href="#rio.cattle.io/v1.RouteTraffic">
 RouteTraffic
 </a>
 </em>
@@ -3674,7 +3657,7 @@ RouteTraffic
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#RouteSpec">RouteSpec</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.RouteSpec">RouteSpec</a>)
 </p>
 <p>
 </p>
@@ -3690,7 +3673,7 @@ RouteTraffic
 <td>
 <code>fault</code></br>
 <em>
-<a href="#Fault">
+<a href="#rio.cattle.io/v1.Fault">
 Fault
 </a>
 </em>
@@ -3703,7 +3686,7 @@ Fault injection policy to apply on HTTP traffic at the client side. Note that ti
 <td>
 <code>mirror</code></br>
 <em>
-<a href="#Destination">
+<a href="#rio.cattle.io/v1.Destination">
 Destination
 </a>
 </em>
@@ -3729,7 +3712,7 @@ Timeout for HTTP requests.
 <td>
 <code>retry</code></br>
 <em>
-<a href="#Retry">
+<a href="#rio.cattle.io/v1.Retry">
 Retry
 </a>
 </em>
@@ -3744,7 +3727,7 @@ Retry policy for HTTP requests.
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#Router">Router</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.Router">Router</a>)
 </p>
 <p>
 </p>
@@ -3760,7 +3743,7 @@ Retry policy for HTTP requests.
 <td>
 <code>routes</code></br>
 <em>
-<a href="#RouteSpec">
+<a href="#rio.cattle.io/v1.RouteSpec">
 []RouteSpec
 </a>
 </em>
@@ -3775,7 +3758,7 @@ An ordered list of route rules for HTTP traffic. The first rule matching an inco
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#Router">Router</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.Router">Router</a>)
 </p>
 <p>
 </p>
@@ -3826,8 +3809,8 @@ Represents the latest available observations of a PublicDomain's current state.
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#Revision">Revision</a>, 
-<a href="#ServiceStatus">ServiceStatus</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.Revision">Revision</a>, 
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.ServiceStatus">ServiceStatus</a>)
 </p>
 <p>
 </p>
@@ -3890,7 +3873,7 @@ Total number of non-terminated pods targeted by this deployment that have the de
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#AppStatus">AppStatus</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.AppStatus">AppStatus</a>)
 </p>
 <p>
 </p>
@@ -3940,7 +3923,7 @@ string
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#ServiceSpec">ServiceSpec</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.ServiceSpec">ServiceSpec</a>)
 </p>
 <p>
 ServiceRevision speficies the APP name, Version and Weight to uniquely identify each Revision
@@ -3992,7 +3975,7 @@ Revision App name
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#ServiceSpec">ServiceSpec</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.ServiceSpec">ServiceSpec</a>)
 </p>
 <p>
 ServiceScale Specifies the scale parameters for Service
@@ -4037,7 +4020,7 @@ Once old pods have been killed, new ReplicaSet can be scaled up further, ensurin
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#Match">Match</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.Match">Match</a>)
 </p>
 <p>
 </p>
@@ -4085,7 +4068,7 @@ string
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#Service">Service</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.Service">Service</a>)
 </p>
 <p>
 ServiceSpec represents spec for Service
@@ -4102,7 +4085,7 @@ ServiceSpec represents spec for Service
 <td>
 <code>ServiceScale</code></br>
 <em>
-<a href="#ServiceScale">
+<a href="#rio.cattle.io/v1.ServiceScale">
 ServiceScale
 </a>
 </em>
@@ -4114,7 +4097,7 @@ ServiceScale
 <td>
 <code>ServiceRevision</code></br>
 <em>
-<a href="#ServiceRevision">
+<a href="#rio.cattle.io/v1.ServiceRevision">
 ServiceRevision
 </a>
 </em>
@@ -4126,7 +4109,7 @@ ServiceRevision
 <td>
 <code>AutoscaleConfig</code></br>
 <em>
-<a href="#AutoscaleConfig">
+<a href="#rio.cattle.io/v1.AutoscaleConfig">
 AutoscaleConfig
 </a>
 </em>
@@ -4138,7 +4121,7 @@ AutoscaleConfig
 <td>
 <code>RolloutConfig</code></br>
 <em>
-<a href="#RolloutConfig">
+<a href="#rio.cattle.io/v1.RolloutConfig">
 RolloutConfig
 </a>
 </em>
@@ -4150,7 +4133,7 @@ RolloutConfig
 <td>
 <code>PodConfig</code></br>
 <em>
-<a href="#PodConfig">
+<a href="#rio.cattle.io/v1.PodConfig">
 PodConfig
 </a>
 </em>
@@ -4173,7 +4156,7 @@ Whether to disable ServiceMesh for Service. If true, no mesh sidecar will be dep
 <td>
 <code>permissions</code></br>
 <em>
-<a href="#Permission">
+<a href="#rio.cattle.io/v1.Permission">
 []Permission
 </a>
 </em>
@@ -4186,7 +4169,7 @@ Permissions to the Services. It will create corresponding ServiceAccounts, Roles
 <td>
 <code>globalPermissions</code></br>
 <em>
-<a href="#Permission">
+<a href="#rio.cattle.io/v1.Permission">
 []Permission
 </a>
 </em>
@@ -4201,7 +4184,7 @@ GlobalPermissions to the Services. It will create corresponding ServiceAccounts,
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#Service">Service</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.Service">Service</a>)
 </p>
 <p>
 </p>
@@ -4241,26 +4224,13 @@ The first observed commit for the build
 <td>
 <code>scaleStatus</code></br>
 <em>
-<a href="#ScaleStatus">
+<a href="#rio.cattle.io/v1.ScaleStatus">
 ScaleStatus
 </a>
 </em>
 </td>
 <td>
 ScaleStatus for the Service
-</td>
-</tr>
-<tr>
-<td>
-<code>scaleFromZeroTimestamp</code></br>
-<em>
-<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.13/#time-v1-meta">
-Kubernetes meta/v1.Time
-</a>
-</em>
-</td>
-<td>
-Last timestamp scaled from zero replica
 </td>
 </tr>
 <tr>
@@ -4334,7 +4304,7 @@ The list of publicdomains pointing to the service
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#Match">Match</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.Match">Match</a>)
 </p>
 <p>
 </p>
@@ -4382,7 +4352,7 @@ string
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#Question">Question</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.Question">Question</a>)
 </p>
 <p>
 </p>
@@ -4550,7 +4520,7 @@ string
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#Service">Service</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.Service">Service</a>)
 </p>
 <p>
 </p>
@@ -4684,7 +4654,7 @@ string
 <td>
 <code>questions</code></br>
 <em>
-<a href="#Question">
+<a href="#rio.cattle.io/v1.Question">
 []Question
 </a>
 </em>
@@ -4698,7 +4668,7 @@ string
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#Container">Container</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.Container">Container</a>)
 </p>
 <p>
 </p>
@@ -4736,7 +4706,7 @@ string
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#RouteSpec">RouteSpec</a>)
+<a href="#github.com%2francher%2frio%2fpkg%2fapis%2frio.cattle.io%2fv1.RouteSpec">RouteSpec</a>)
 </p>
 <p>
 </p>
@@ -4752,7 +4722,7 @@ string
 <td>
 <code>Destination</code></br>
 <em>
-<a href="#Destination">
+<a href="#rio.cattle.io/v1.Destination">
 Destination
 </a>
 </em>
@@ -4776,5 +4746,5 @@ Weight for the Destination
 <hr/>
 <p><em>
 Generated with <code>gen-crd-api-reference-docs</code>
-on git commit <code>9ae237ee</code>.
+on git commit <code>9d25cb75</code>.
 </em></p>

@@ -3,9 +3,8 @@ package server
 import (
 	"context"
 
-	"github.com/rancher/rio/modules/istio/controllers/istio"
-
 	"github.com/rancher/rio/modules"
+	"github.com/rancher/rio/modules/istio/controllers/istio"
 	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/rio/pkg/controllers"
 	"github.com/rancher/rio/types"

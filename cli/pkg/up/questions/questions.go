@@ -6,6 +6,9 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"syscall"
+
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/rancher/mapper"
 
@@ -173,6 +176,21 @@ func Prompt(text, def string) (string, error) {
 		}
 
 		return answer, nil
+	}
+}
+
+func PromptPassword(text, def string) (string, error) {
+	for {
+		PrintToTerm(text)
+		answer, err := terminal.ReadPassword(int(syscall.Stdin))
+		if err != nil {
+			return "", err
+		}
+		fmt.Printf("\n")
+		if len(answer) == 0 {
+			return def, nil
+		}
+		return string(answer), nil
 	}
 }
 
