@@ -6,7 +6,8 @@ import time
 
 def create_service(nspc, image):
     port = "-p 80/http"
-    fullName = util.rioRun(nspc, port, image)
+    srv = util.rioRun(nspc, port, image)
+    fullName = (f"{nspc}/{srv}")
 
     return fullName
 
@@ -39,9 +40,14 @@ def test_rio_svc_weight(nspc):
 
     fullName = create_service(nspc, image)
     stage_service(image2, fullName, "v3")
+    fullName1 = (f"{fullName}:v0")
+    fullName2 = (f"{fullName}:v3")
 
-    results1 = get_app_info(fullName, "status.revisionWeight.v0.weight")
-    results2 = get_app_info(fullName, "status.revisionWeight.v3.weight")
+    results1 = get_app_info(fullName1, "spec.weight")
+    results2 = get_app_info(fullName2, "spec.weight")
+
+    print(f"{results1}")
+    print(f"{results2}")
 
     assert results1 == '100'
     assert results2 == 'null'
@@ -53,14 +59,17 @@ def test_rio_svc_weight2(nspc):
 
     fullName = create_service(nspc, image)
     stage_service(image2, fullName, "v3")
+    fullName1 = (f"{fullName}:v0")
+    fullName2 = (f"{fullName}:v3")
+
     time.sleep(5)
 
     change_weight(fullName, "v3", "5%")
 
     time.sleep(5)
 
-    results1 = get_app_info(fullName, "status.revisionWeight.v0.weight")
-    results2 = get_app_info(fullName, "status.revisionWeight.v3.weight")
+    results1 = get_app_info(fullName1, "spec.weight")
+    results2 = get_app_info(fullName2, "spec.weight")
 
     assert results1 == '95'
     assert results2 == '5'

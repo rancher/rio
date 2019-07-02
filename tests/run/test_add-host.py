@@ -1,57 +1,56 @@
 import util
 
 
-def run_addhost(stack, *value):
+def run_addhost(nspc, *value):
 
-    name = util.rioRun(stack, ' '.join(value), 'nginx')
+    name = util.rioRun(nspc, ' '.join(value), 'nginx')
 
     return name
 
 
-def rio_chk_addhost(stack, sname):
-    fullName = (f"{stack}/{sname}")
-    inspect = util.rioInspect(fullName)
+def rio_chk_host(nspc, sname, arraynum, arraynum2):
+    fullName = (f"{nspc}/{sname}:v0")
+    print(fullName)
+    hostname = (f"spec.hostAliases[{arraynum2}].hostnames[{arraynum}]")
+    inspect = util.rioInspect(fullName, hostname)
 
-    return inspect["extraHosts"]
-
-
-def kube_chk_addhost(stack, sname):
-    fullName = (f"{stack}/{sname}")
-    id = util.rioInspect(fullName, "id")
-    namespace = id.split(":")[0]
-
-    obj = util.kubectl(namespace, "deployment", sname)
-    cnt = obj['spec']['template']['spec']
-
-    out = []
-    for item in cnt['hostAliases']:
-        out.append(item['hostnames'])
-        out.append(item['ip'])
-
-#    hostname = [0]
-#    ip = cnt['ip']
-#    results = (f"{ip}:{hostname}")
-
-    return out
+    return inspect
 
 
-def test_addhost1(stack):
-    service_name = run_addhost(stack, '--add-host', '1.2.3.4:example.com')
+def rio_chk_ip(nspc, sname, arraynum):
+    fullName = (f"{nspc}/{sname}:v0")
+    print(fullName)
+    hostname = (f"spec.hostAliases[{arraynum}].ip")
+    inspect = util.rioInspect(fullName, hostname)
 
-    rio_addhost = rio_chk_addhost(stack, service_name)
-    assert rio_addhost == ['1.2.3.4:example.com']
-
-    kube_addhost = kube_chk_addhost(stack, service_name)
-    assert kube_addhost == [['example.com'], '1.2.3.4']
+    return inspect
 
 
-def test_addhost2(stack):
-    service_name = run_addhost(stack, '--add-host', '1.2.3.4:example.com', 
-                               '--add-host', '2.3.4.5:bexample.com')
+def test_addhost1(nspc):
+    service_name = run_addhost(nspc, '--add-host', 'example.com:1.2.3.4')
+    arraynum = 0
 
-    rio_addhost = rio_chk_addhost(stack, service_name)
-    assert rio_addhost == ['1.2.3.4:example.com', '2.3.4.5:bexample.com']
+    rio_hostname = rio_chk_host(nspc, service_name, arraynum, arraynum)
+    assert rio_hostname == 'example.com'
 
-    kube_addhost = kube_chk_addhost(stack, service_name)
-    result = [['example.com'], '1.2.3.4', ['bexample.com'], '2.3.4.5']
-    assert kube_addhost == result
+    rio_hostip = rio_chk_ip(nspc, service_name, arraynum)
+    assert rio_hostip == '1.2.3.4'
+
+
+def test_addhost2(nspc):
+    service_name = run_addhost(nspc, '--add-host', 'example.com:1.2.3.4',
+                               '--add-host', 'bexample.com:2.3.4.5')
+    arraynum1 = 0
+    arraynum2 = 1
+
+    rio_hostname = rio_chk_host(nspc, service_name, arraynum1, arraynum1)
+    assert rio_hostname == 'example.com'
+
+    rio_hostip = rio_chk_ip(nspc, service_name, arraynum1)
+    assert rio_hostip == '1.2.3.4'
+
+    rio_hostname = rio_chk_host(nspc, service_name, arraynum1, arraynum2)
+    assert rio_hostname == 'bexample.com'
+
+    rio_hostip = rio_chk_ip(nspc, service_name, arraynum2)
+    assert rio_hostip == '2.3.4.5'

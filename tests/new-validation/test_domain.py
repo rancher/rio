@@ -4,14 +4,15 @@ import util
 
 
 def create_service(nspc, image):
-    fullName = util.rioRun(nspc, image)
+    srv = util.rioRun(nspc, image)
+    fullName = (f"{nspc}/{srv}")
 
     return fullName
 
 
 def create_domain(dname, fname):
 
-    cmd = (f"rio domain add {dname} {fname}")
+    cmd = (f"rio domain register {dname} {fname}")
     print(cmd)
     util.run(cmd)
 
