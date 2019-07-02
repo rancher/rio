@@ -3,6 +3,8 @@ package server
 import (
 	"context"
 
+	"github.com/rancher/rio/modules/istio/controllers/istio"
+
 	"github.com/rancher/rio/modules"
 	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/rio/pkg/controllers"
@@ -96,6 +98,7 @@ func Startup(ctx context.Context, systemNamespace, kubeConfig string) error {
 	}
 
 	leader.RunOrDie(ctx, systemNamespace, "rio", rioContext.K8s, func(ctx context.Context) {
+		runtime.Must(istio.RegisterNodeEndpointIndexer(ctx, rioContext))
 		runtime.Must(controllers.Register(ctx, rioContext))
 		runtime.Must(modules.Register(ctx, rioContext))
 		runtime.Must(rioContext.Start(ctx))

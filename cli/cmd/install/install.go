@@ -77,6 +77,7 @@ type Install struct {
 	ServiceCidr     string   `desc:"Manually specify service CIDR for service mesh to intercept"`
 	DisableFeatures []string `desc:"Manually specify features to disable, supports CSV"`
 	Yaml            bool     `desc:"Only print out k8s yaml manifest"`
+	Check           bool     `desc:"Only check status, don't deploy controller'"`
 	Lite            bool     `desc:"Only install lite version of Rio(monitoring will be disabled, will be ignored if --disable-features is set)"`
 }
 
@@ -177,21 +178,26 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		return nil
 	}
 
-	if err := controllerStack.Deploy(answers); err != nil {
-		return err
+	if !i.Check {
+		fmt.Println("Deploying Rio control plane....")
+		if err := controllerStack.Deploy(answers); err != nil {
+			return err
+		}
 	}
-	fmt.Println("Deploying Rio control plane....")
+
 	start := time.Now()
 	for {
 		time.Sleep(time.Second * 2)
-		dep, err := ctx.K8s.AppsV1().Deployments(namespace).Get("rio-controller", metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
-		if !serviceset.IsReady(&dep.Status) {
-			fmt.Printf("\r%v Waiting for deployment %s/%s to become ready", string(statusChar[statusIndex]), dep.Namespace, dep.Name)
-			statusIndex = modIndex(statusIndex)
-			continue
+		if !i.Check {
+			dep, err := ctx.K8s.AppsV1().Deployments(namespace).Get("rio-controller", metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			if !serviceset.IsReady(&dep.Status) {
+				fmt.Printf("\r%v Waiting for deployment %s/%s to become ready", string(statusChar[statusIndex]), dep.Namespace, dep.Name)
+				statusIndex = modIndex(statusIndex)
+				continue
+			}
 		}
 		info, err := ctx.Project.RioInfos().Get("rio", metav1.GetOptions{})
 		if err != nil {

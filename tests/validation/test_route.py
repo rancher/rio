@@ -6,7 +6,8 @@ import time
 
 def create_service(nspc, image):
     port = "-p 80/http"
-    fullName = util.rioRun(nspc, port, image)
+    srv = util.rioRun(nspc, port, image)
+    fullName = (f"{nspc}/{srv}")
 
     return fullName
 
@@ -28,7 +29,7 @@ def get_app_info(fullName, field):
 
 def route_service(nspc, rName, sname, fName, vs):
 
-    cmd = (f"rio route append {rName}.{nspc}/to-{sname}-{vs} to {fName}:{vs}")
+    cmd = (f"rio route add {rName}.{nspc}/to-{sname}-{vs} to {fName}:{vs}")
     print(f"{cmd}")
     util.run(cmd)
 

@@ -1,95 +1,75 @@
+# Run Validation test.  Use functions to test run and get output
+
 import util
-from random import randint
-import tempfile
+import time
 
 
-def config_version(stack, version):
-    config = "tconfig" + str(randint(1000, 5000))
+def create_service(nspc, image):
+    port = "-p 80/http"
+    srv = util.rioRun(nspc, port, image)
+    fullName = (f"{nspc}/{srv}")
 
-    fp = tempfile.NamedTemporaryFile(delete=False)
-    version_as_bytes = str.encode(version)
-    fp.write(b'%s' % version_as_bytes)
-    fp.close()
-    print(stack)
-    config_name = stack + "/" + config
-    print(config_name)
-
-    util.run("rio config create %s %s" % (config_name, fp.name))
-
-    return config
+    return fullName
 
 
-def create_service(stack, config):
-    name = "tsrv" + str(randint(1000, 5000))
-    fullName = "%s/%s" % (stack, name)
-    path = "/usr/share/nginx/html/index.html"
-    print(fullName)
-    print(config)
-    run_command = "rio run -n %s -p 80/http --config %s:%s nginx" % (
-        fullName, config, path
-        )
-    print(run_command)
-    util.runwait(run_command, fullName)
+def stage_service(image, fullName, version):
 
-    return name
+    util.rioStage(image, fullName, version)
+
+    return
 
 
-def stage_service(stack, name, version, second_config):
-    fullName = "%s/%s" % (stack, name)
-    path = "/usr/share/nginx/html/index.html"
-    command = "rio stage --image=nginx --config %s:%s %s:%s" % (
-        second_config, path, fullName, version
-    )
-    print(command)
-    util.runwait(command, fullName)
-    stackJson = util.runToJson("rio export -o json %s" % stack)
-    got = stackJson['services'][name]['revisions']['v2']['scale']
+def get_app_info(fullName, field):
 
-    return got
+    inspect = util.rioInspect(fullName, field)
+
+    return inspect
 
 
-def weight_service(stack, name, version, weight):
-    fullName = "%s/%s" % (stack, name)
-    command = "rio weight %s:%s=%s" % (fullName, version, weight)
-    util.run(command)
-    stackJson = util.runToJson("rio export -o json %s" % stack)
-    got = stackJson['services'][name]['revisions']['v2']['weight']
+def change_weight(fullName, version, percent):
 
-    return got
+    cmd = (f"rio weight {fullName}:{version}={percent}")
+    util.run(cmd)
+
+    return
 
 
-def promote_service(stack, name, version):
-    fullName = "%s/%s" % (stack, name)
-    command = "rio promote %s:%s" % (fullName, version)
-    util.run(command)
-    stackJson = util.runToJson("rio export -o json %s" % stack)
-    got = stackJson['services'][name]['version']
+def test_rio_svc_weight(nspc):
+    image = "ibuildthecloud/demo:v1"
+    image2 = "ibuildthecloud/demo:v3"
 
-    return got
+    fullName = create_service(nspc, image)
+    stage_service(image2, fullName, "v3")
+    fullName1 = (f"{fullName}:v0")
+    fullName2 = (f"{fullName}:v3")
 
+    results1 = get_app_info(fullName1, "spec.weight")
+    results2 = get_app_info(fullName2, "spec.weight")
 
-def test_stage_service(stack):
-    config_name = config_version(stack, "1")
-    name = create_service(stack, config_name)
-    second_config = config_version(stack, "2")
-    got = stage_service(stack, name, "v2", second_config)
-    assert got == 1
+    print(f"{results1}")
+    print(f"{results2}")
 
-
-def test_weight_service(stack):
-    config_name = config_version(stack, "1")
-    name = create_service(stack, config_name)
-    second_config = config_version(stack, "2")
-    stage_service(stack, name, "v2", second_config)
-    got = weight_service(stack, name, "v2", "50")
-    assert got == 50
+    assert results1 == '100'
+    assert results2 == 'null'
 
 
-def test_promote_service(stack):
-    config_name = config_version(stack, "1")
-    name = create_service(stack, config_name)
-    second_config = config_version(stack, "2")
-    stage_service(stack, name, "v2", second_config)
-    weight_service(stack, name, "v2", "50")
-    got = promote_service(stack, name, "v2")
-    assert got == "v2"
+def test_rio_svc_weight2(nspc):
+    image = "ibuildthecloud/demo:v1"
+    image2 = "ibuildthecloud/demo:v3"
+
+    fullName = create_service(nspc, image)
+    stage_service(image2, fullName, "v3")
+    fullName1 = (f"{fullName}:v0")
+    fullName2 = (f"{fullName}:v3")
+
+    time.sleep(5)
+
+    change_weight(fullName, "v3", "5%")
+
+    time.sleep(5)
+
+    results1 = get_app_info(fullName1, "spec.weight")
+    results2 = get_app_info(fullName2, "spec.weight")
+
+    assert results1 == '95'
+    assert results2 == '5'

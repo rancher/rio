@@ -1,30 +1,30 @@
-# Run Validation test.  Use functions to test run and get outpu
+# Run Validation test.  Use functions to test run and get output
 
 import util
 
 
-def riotest(stack, service):
-    fullName = (f"{stack}/{service}")
+def test_rio_scale(service):
+    fullName = (f"{service}:v0")
+    scalefield = "spec.scale"
+    print(f"{fullName}")
 
-    inspect = util.rioInspect(fullName)
-
-    return inspect['state']
-
-
-def kubetest(stack, service):
-    fullName = "%s/%s" % (stack, service)
-    id = util.rioInspect(fullName, "id")
-    namespace = id.split(":")[0]
-
-    obj = util.kubectl(namespace, "deployment", service)
-    replicas = obj['status']['replicas']
-
-    return replicas
+    inspect = util.rioInspect(fullName, scalefield)
+    assert inspect == '1'
 
 
-def test_rio_status(stack, service):
-    assert riotest(stack, service) == "active"
+def test_rio_image(service):
+    fullName = (f"{service}:v0")
+    scalefield = "spec.image"
+    print(f"{fullName}")
+
+    inspect = util.rioInspect(fullName, scalefield)
+    assert inspect == 'nginx'
 
 
-def test_kube_replicas(stack, service):
-    assert kubetest(stack, service) == 1
+def test_rio_weight(service):
+    fullName = (f"{service}:v0")
+    scalefield = "spec.weight"
+    print(f"{fullName}")
+
+    inspect = util.rioInspect(fullName, scalefield)
+    assert inspect == '100'

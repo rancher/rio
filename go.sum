@@ -320,6 +320,7 @@ github.com/rancher/cert-manager v0.7.0-rio.1 h1:o7XDzUpKg2X1fSFpy/B4uU0IIQEUzT7E
 github.com/rancher/cert-manager v0.7.0-rio.1/go.mod h1:3cwEbVBo4BRNJ29j2MFyvX4Uno2lAQquejDtUXtE0YY=
 github.com/rancher/gitwatcher v0.0.0-20190612060519-6eee8fc7a202 h1:ID3ndmm5OMdJdjd7EFfXJoPm9QA/0BlSmLtf8sJZLRQ=
 github.com/rancher/gitwatcher v0.0.0-20190612060519-6eee8fc7a202/go.mod h1:8Ky3j8+TgcevUb7u6x7jSUDQf5amzYKYSv1mzn0zivQ=
+github.com/rancher/k3s v1.14.3-k3s.2/go.mod h1:tMIUbj+a40AQcAd6RRazV5hcf7YWjhas4rNxidgJXms=
 github.com/rancher/mapper v0.0.0-20190426050457-84da984f3146 h1:rdM/qnaTd2pnQLlF1TYdyGSd7/ssVuu/a0YituJxxjI=
 github.com/rancher/mapper v0.0.0-20190426050457-84da984f3146/go.mod h1:zU4cm21k7ZBFVQhUu2aSH7NwouY317rLYxruOn+wdOQ=
 github.com/rancher/moq v0.0.0-20190404221404-ee5226d43009 h1:Xsxh7fX3+2wAUJtPy8g2lZh0cYuyifqhBL0vxCIYojs=

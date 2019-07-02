@@ -15,7 +15,7 @@ def nspc():
 
 @pytest.fixture
 def service(nspc):
-    srv = "tsrv" + str(random.randint(1000, 5000))
+    srv = "tsrv" + str(random.randint(1000000, 9999999))
     fullName = (f"{nspc}/{srv}")
 
     os.system(f"rio run -n {fullName} nginx")

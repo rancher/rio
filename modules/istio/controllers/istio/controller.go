@@ -46,6 +46,36 @@ var (
 	evalTrigger trigger.Trigger
 )
 
+func RegisterNodeEndpointIndexer(ctx context.Context, rContext *types.Context) error {
+	i := indexer{
+		namespace: rContext.Namespace,
+	}
+	rContext.Core.Core().V1().Endpoints().Cache().AddIndexer(indexName, i.indexEPByNode)
+	return nil
+}
+
+type indexer struct {
+	namespace string
+}
+
+func (i indexer) indexEPByNode(ep *corev1.Endpoints) ([]string, error) {
+	if ep.Namespace != i.namespace || ep.Name != constants.IstioGateway {
+		return nil, nil
+	}
+
+	var result []string
+
+	for _, subset := range ep.Subsets {
+		for _, addr := range subset.Addresses {
+			if addr.NodeName != nil {
+				result = append(result, *addr.NodeName)
+			}
+		}
+	}
+
+	return result, nil
+}
+
 func Register(ctx context.Context, rContext *types.Context) error {
 	if err := ensureClusterDomain(rContext.Namespace, rContext.Global.Admin().V1().ClusterDomain()); err != nil {
 		return err
@@ -78,12 +108,6 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	relatedresource.Watch(ctx, "cluster-domain-service", s.resolve,
 		rContext.Global.Admin().V1().ClusterDomain(),
 		rContext.Global.Admin().V1().PublicDomain())
-
-	relatedresource.Watch(ctx, "node-enpoint", s.resolveEndpoint,
-		rContext.Core.Core().V1().Endpoints(),
-		rContext.Core.Core().V1().Node())
-
-	rContext.Core.Core().V1().Endpoints().Cache().AddIndexer(indexName, s.indexEPByNode)
 
 	switch {
 	case constants.UseIPAddress != "":
@@ -311,24 +335,6 @@ func (i istioDeployController) updateClusterDomain(addresses []string) error {
 	}
 
 	return err
-}
-
-func (i *istioDeployController) indexEPByNode(ep *corev1.Endpoints) ([]string, error) {
-	if ep.Namespace != i.namespace || ep.Name != constants.IstioGateway {
-		return nil, nil
-	}
-
-	var result []string
-
-	for _, subset := range ep.Subsets {
-		for _, addr := range subset.Addresses {
-			if addr.NodeName != nil {
-				result = append(result, *addr.NodeName)
-			}
-		}
-	}
-
-	return result, nil
 }
 
 func (i *istioDeployController) syncSubdomain(key string, service *corev1.Service) (*corev1.Service, error) {
