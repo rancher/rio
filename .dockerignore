@@ -3,3 +3,4 @@
 ./data-dir
 ./dist
 ./.trash-cache
+./test/.pytest_cache

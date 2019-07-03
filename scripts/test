@@ -3,5 +3,27 @@ set -e
 
 cd $(dirname $0)/..
 
-echo Running tests
-go test -cover -tags=test ./...
+if [[ ${ARCH} == amd64 ]]; then
+    echo Running tests
+
+    k3s server &
+    sleep 10
+
+    export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+    export PATH=$(pwd)/bin:$PATH
+
+    rio-controller &
+    rio install --check
+
+    cd ./tests
+    PROC=$(nproc)
+    if [ "$PROC" > 8 ]; then
+    PROC=8
+    fi
+    # todo: set $PROC=1, figure out how to run test in parallel
+    PROC=1
+    tox -- -n $PROC
+    cd ..
+fi
+
+

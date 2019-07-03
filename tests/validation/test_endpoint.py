@@ -43,12 +43,15 @@ def test_rio_app_endpoint(nspc):
     image = "ibuildthecloud/demo:v1"
     image2 = "ibuildthecloud/demo:v3"
 
-    fullName = create_service(nspc, image)
+    srv = create_service(nspc, image)
+    fullName = (f"{nspc}/{srv}")
+    print(fullName)
     stage_service(image2, fullName, "v3")
 
     appEndpoint = get_app_info(fullName, "status.endpoints[0]")
+    print(f"{appEndpoint}")
 
-    results = util.run(f"curl {appEndpoint}")
+    results = util.run(f"curl -s {appEndpoint}")
     print(f"{results}")
 
     assert results == 'Hello World'
@@ -58,7 +61,9 @@ def test_rio_svc_endpoint1(nspc):
     image = "ibuildthecloud/demo:v1"
     image2 = "ibuildthecloud/demo:v3"
 
-    fullName = create_service(nspc, image)
+    srv = create_service(nspc, image)
+    fullName = (f"{nspc}/{srv}")
+
     stage_service(image2, fullName, "v3")
 
     svcEndpoint = get_version_endpoint(fullName, "v0")

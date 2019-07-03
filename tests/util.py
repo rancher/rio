@@ -45,7 +45,7 @@ def rioRun(nspc, *args):
     run(cmd)
     time.sleep(5)
 
-    return fullName
+    return srv
 
 
 def rioStage(image, srv, version):
@@ -56,7 +56,7 @@ def rioStage(image, srv, version):
     return
 
 
-def rioConfigCreate(stack, *configs):
+def rioConfigCreate(nspc, *configs):
     config_name = "tconfig" + str(random.randint(1000, 5000))
 
     fp = tempfile.NamedTemporaryFile(delete=False)
@@ -66,7 +66,7 @@ def rioConfigCreate(stack, *configs):
 
     fp.close()
 
-    run(f"rio config create {stack}/{config_name} {fp.name}")
+    run(f"rio config create {nspc}/{config_name} {fp.name}")
     os.unlink(fp.name)
 
     return config_name
@@ -74,13 +74,15 @@ def rioConfigCreate(stack, *configs):
 
 def rioInspect(resource, field=None):
     if field:
+        print(resource)
+        print(field)
         return run(f"rio inspect --format json {resource} | jq -r .{field}")
     else:
         return runToJson(f"rio inspect {resource}")
 
 
 def kubectl(namespace, ktype, resource):
-    cmd = (f"rio kubectl get -n {namespace} -o=json {ktype}/{resource}")
+    cmd = (f"kubectl get -n {namespace} -o=json {ktype}/{resource}")
     return runToJson(cmd)
 
 
