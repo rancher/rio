@@ -258,6 +258,9 @@ type PodConfig struct {
 	// HostAliases is an optional list of hosts and IPs that will be injected into the pod's hosts file if specified. This is only valid for non-hostNetwork pods.
 	HostAliases []v1.HostAlias `json:"hostAliases,omitempty"`
 
+	// Image pull secret
+	ImagePullSecrets []v1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
+
 	*v1.Affinity
 	PodDNSConfig
 	Container
@@ -359,11 +362,29 @@ type ImageBuild struct {
 	// Specify the name Of the Dockerfile in the Repo. Defaults to `Dockerfile`.
 	DockerFile string `json:"dockerFile,omitempty"`
 
+	// Specify build context
+	BuildContext string `json:"buildContext,omitempty"`
+
 	// Specify the build template. Defaults to `buildkit`.
 	Template string `json:"template,omitempty"`
 
-	// Specify the secret name. If specified, it will register a webhook and only creates new revision if webhook is triggered.
-	Secret string `json:"secret,omitempty"`
+	// Specify the github secret name. Used to create Github webhook, the secret key has to be `accessToken`
+	GithubSecretName string `json:"githubSecretName,omitempty"`
+
+	// Specify secret name for checking our git resources
+	GitSecretName string `json:"gitSecretName,omitempty"`
+
+	// Specify custom registry to push the image instead of built-in one
+	PushRegistry string `json:"pushRegistry,omitempty"`
+
+	// Specify secret for pushing to custom registry
+	PushRegistrySecretName string `json:"pushRegistrySecretName,omitempty"`
+
+	// Specify image name instead of the one generated from service name, format: $registry/$imageName:$revision
+	BuildImageName string `json:"buildImageName,omitempty"`
+
+	// Whether to enable builds for pull requests
+	EnablePr bool `json:"enablePr,omitempty"`
 }
 
 func (in *Service) State() common.State {

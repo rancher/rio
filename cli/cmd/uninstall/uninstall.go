@@ -151,14 +151,14 @@ func (u Uninstall) Run(ctx *clicontext.CLIContext) error {
 		}
 	}
 
-	fmt.Println("Cleaning up finalizers for resource Build, group build.knative.dev...")
-	builds, err := ctx.Build.Builds("").List(metav1.ListOptions{})
+	fmt.Println("Cleaning up finalizers for resource Build, group tekton.dev...")
+	builds, err := ctx.Build.TaskRuns("").List(metav1.ListOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	}
 	for _, build := range builds.Items {
 		build.Finalizers = nil
-		if _, err := ctx.Build.Builds(build.Namespace).Update(&build); err != nil && !errors.IsNotFound(err) {
+		if _, err := ctx.Build.TaskRuns(build.Namespace).Update(&build); err != nil && !errors.IsNotFound(err) {
 			return err
 		}
 	}

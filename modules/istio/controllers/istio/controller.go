@@ -260,24 +260,6 @@ func (i *istioDeployController) resolveApp(namespace, name string, obj runtime.O
 	return nil, nil
 }
 
-func (i *istioDeployController) resolveEndpoint(namespace, name string, obj runtime.Object) ([]relatedresource.Key, error) {
-	switch obj.(type) {
-	case *corev1.Node:
-		eps, err := i.endpointCache.GetByIndex(indexName, obj.(*corev1.Node).Name)
-		if err != nil || len(eps) == 0 {
-			return nil, err
-		}
-		return []relatedresource.Key{
-			{
-				Namespace: eps[0].Namespace,
-				Name:      eps[0].Name,
-			},
-		}, nil
-
-	}
-	return nil, nil
-}
-
 func (i *istioDeployController) syncEndpoint(key string, endpoint *corev1.Endpoints) (*corev1.Endpoints, error) {
 	if endpoint == nil {
 		return nil, nil

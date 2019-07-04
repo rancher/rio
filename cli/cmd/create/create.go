@@ -3,6 +3,8 @@ package create
 import (
 	"fmt"
 
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/stack"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
@@ -19,7 +21,11 @@ type Create struct {
 	AddHost                []string          `desc:"Add a custom host-to-IP mapping (host:ip)"`
 	Annotations            map[string]string `desc:"Annotations to attach to this service"`
 	BuildBranch            string            `desc:"Build repository branch" default:"master"`
-	BuildSecret            string            `desc:"Set webhook secret"`
+	BuildWebhookSecret     string            `desc:"Set GitHub webhook secret name"`
+	BuildDockerPushSecret  string            `desc:"Set docker push secret name"`
+	BuildGitSecret         string            `desc:"Set git basic secret name"`
+	BuildImageName         string            `desc:"Specify custom image name"`
+	BuildRegistry          string            `desc:"Specify registry for image"`
 	BuildRevision          string            `desc:"Build commit or tag"`
 	Command                []string          `desc:"Overwrite the default ENTRYPOINT of the image"`
 	Concurrency            int               `desc:"The maximum concurrent request a container can handle(autoscaling)" default:"10"`
@@ -43,6 +49,7 @@ type Create struct {
 	Hostname               string            `desc:"Container host name"`
 	I_Interactive          bool              `desc:"Keep STDIN open even if not attached"`
 	ImagePullPolicy        string            `desc:"Behavior determining when to pull the image (never|always|not-present)" default:"not-present"`
+	ImagePullSecrets       []string          `desc:"Specify image pull secrets"`
 	LabelFile              []string          `desc:"Read in a line delimited file of labels"`
 	L_Label                map[string]string `desc:"Set meta data on a container"`
 	M_Memory               string            `desc:"Memory reservation (format: <number>[<unit>], where unit = b, k, m or g)"`
@@ -126,6 +133,13 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 		return nil, err
 	}
 
+	for _, s := range c.ImagePullSecrets {
+		spec.ImagePullSecrets = append(spec.ImagePullSecrets,
+			v1.LocalObjectReference{
+				Name: s,
+			})
+	}
+
 	spec.HostAliases, err = stringers.ParseHostAliases(c.AddHost...)
 	if err != nil {
 		return nil, err
@@ -153,7 +167,11 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 		service.Spec.Build = &riov1.ImageBuild{}
 		service.Spec.Build.Branch = c.BuildBranch
 		service.Spec.Build.Revision = c.BuildRevision
-		service.Spec.Build.Secret = c.BuildSecret
+		service.Spec.Build.GithubSecretName = c.BuildWebhookSecret
+		service.Spec.Build.GitSecretName = c.BuildGitSecret
+		service.Spec.Build.BuildImageName = c.BuildImageName
+		service.Spec.Build.PushRegistry = c.BuildRegistry
+		service.Spec.Build.PushRegistrySecretName = c.BuildDockerPushSecret
 		service.Spec.Build.Repo = args[0]
 		service.Spec.Build.StageOnly = c.StageOnly
 	} else {

@@ -17,7 +17,7 @@ func (r *Restart) Run(ctx *clicontext.CLIContext) error {
 	}
 	for _, arg := range ctx.CLI.Args() {
 		namespace, name := stack.NamespaceAndName(ctx, arg)
-		if err := ctx.Build.Builds(namespace).Delete(name, &metav1.DeleteOptions{}); err != nil {
+		if err := ctx.Build.TaskRuns(namespace).Delete(name, &metav1.DeleteOptions{}); err != nil {
 			return err
 		}
 	}

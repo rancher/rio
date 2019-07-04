@@ -68,6 +68,7 @@ require (
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.5 // indirect
 	github.com/stretchr/testify v1.3.0
+	github.com/tektoncd/pipeline v0.4.0
 	github.com/urfave/cli v1.20.1-0.20190203184040-693af58b4d51
 	go.uber.org/atomic v1.3.2 // indirect
 	go.uber.org/multierr v1.1.0 // indirect

@@ -16,7 +16,7 @@ import (
 func Register(ctx context.Context, rContext *types.Context) error {
 	c := stackobject.NewGeneratingController(ctx, rContext, "stack-service", rContext.Rio.Rio().V1().Service(), "istio-injecter")
 	c.Apply = c.Apply.WithCacheTypes(
-		rContext.Build.Build().V1alpha1().Build(),
+		rContext.Build.Tekton().V1alpha1().TaskRun(),
 		rContext.RBAC.Rbac().V1().Role(),
 		rContext.RBAC.Rbac().V1().RoleBinding(),
 		rContext.RBAC.Rbac().V1().ClusterRole(),

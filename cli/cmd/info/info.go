@@ -47,7 +47,6 @@ func info(ctx *clicontext.CLIContext) error {
 	builder.WriteString("System Components:\n")
 	builder.WriteString(fmt.Sprintf("Autoscaler status: %v\n", info.Status.SystemComponentReadyMap[install.Autoscaler]))
 	builder.WriteString(fmt.Sprintf("BuildController status: %v\n", info.Status.SystemComponentReadyMap[install.BuildController]))
-	builder.WriteString(fmt.Sprintf("BuildKit status: %v\n", info.Status.SystemComponentReadyMap[install.Buildkit]))
 	builder.WriteString(fmt.Sprintf("CertManager status: %v\n", info.Status.SystemComponentReadyMap[install.CertManager]))
 	builder.WriteString(fmt.Sprintf("Grafana status: %v\n", info.Status.SystemComponentReadyMap[install.Grafana]))
 	builder.WriteString(fmt.Sprintf("IstioCitadel status: %v\n", info.Status.SystemComponentReadyMap[install.IstioCitadel]))

@@ -3,8 +3,10 @@ package tables
 import (
 	"fmt"
 
-	"github.com/knative/build/pkg/apis/build/v1alpha1"
+	"github.com/knative/pkg/apis"
+
 	"github.com/rancher/rio/cli/pkg/table"
+	tektonv1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 )
 
 func NewBuild(cfg Config) TableWriter {
@@ -28,11 +30,11 @@ func NewBuild(cfg Config) TableWriter {
 }
 
 func findSucceed(data interface{}) (string, error) {
-	b, ok := data.(*v1alpha1.Build)
+	b, ok := data.(*tektonv1alpha1.TaskRun)
 	if !ok {
 		return "", nil
 	}
-	cond := b.Status.GetCondition(v1alpha1.BuildSucceeded)
+	cond := b.Status.GetCondition(apis.ConditionSucceeded)
 	if cond == nil {
 		return "", nil
 	}
@@ -40,11 +42,11 @@ func findSucceed(data interface{}) (string, error) {
 }
 
 func findReason(data interface{}) (string, error) {
-	b, ok := data.(*v1alpha1.Build)
+	b, ok := data.(*tektonv1alpha1.TaskRun)
 	if !ok {
 		return "", nil
 	}
-	cond := b.Status.GetCondition(v1alpha1.BuildSucceeded)
+	cond := b.Status.GetCondition(apis.ConditionSucceeded)
 	if cond == nil {
 		return "", nil
 	}
@@ -52,7 +54,7 @@ func findReason(data interface{}) (string, error) {
 }
 
 func findService(data interface{}) (string, error) {
-	m, ok := data.(*v1alpha1.Build)
+	m, ok := data.(*tektonv1alpha1.TaskRun)
 	if !ok {
 		return "", nil
 	}
@@ -62,9 +64,14 @@ func findService(data interface{}) (string, error) {
 }
 
 func findRevision(data interface{}) (string, error) {
-	m, ok := data.(*v1alpha1.Build)
+	m, ok := data.(*tektonv1alpha1.TaskRun)
 	if !ok {
 		return "", nil
 	}
-	return m.Spec.Source.Git.Revision, nil
+	for _, param := range m.Spec.Inputs.Resources[0].ResourceSpec.Params {
+		if param.Name == "revision" {
+			return param.Value, nil
+		}
+	}
+	return "", nil
 }

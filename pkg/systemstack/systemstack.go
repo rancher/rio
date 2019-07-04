@@ -3,6 +3,8 @@ package systemstack
 import (
 	"bytes"
 	"encoding/json"
+	"io/ioutil"
+	"os"
 	"strings"
 
 	"sigs.k8s.io/yaml"
@@ -59,6 +61,9 @@ func (s *SystemStack) Questions() ([]v1.Question, error) {
 func (s *SystemStack) content() ([]byte, error) {
 	if len(s.contents) > 0 {
 		return s.contents, nil
+	}
+	if os.Getenv("RIO_DEV") != "" {
+		return ioutil.ReadFile("stacks/" + s.name + "-stack.yaml")
 	}
 	return stacks.Asset("stacks/" + s.name + "-stack.yaml")
 }

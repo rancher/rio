@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 
-	"github.com/knative/build/pkg/apis/build/v1alpha1"
+	"github.com/knative/pkg/apis"
 	"github.com/rancher/rio/modules/build/controllers/service"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
-	v1alpha12 "github.com/rancher/wrangler-api/pkg/generated/controllers/build.knative.dev/v1alpha1"
+	tektonv1alpha1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/tekton.dev/v1alpha1"
+	tektonv1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
@@ -21,8 +22,8 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		clusterDomainCache: rContext.Global.Admin().V1().ClusterDomain().Cache(),
 	}
 
-	rContext.Build.Build().V1alpha1().Build().OnChange(ctx, "build-service-update", v1alpha12.UpdateBuildOnChange(rContext.Build.Build().V1alpha1().Build().Updater(), h.updateService))
-	rContext.Build.Build().V1alpha1().Build().OnRemove(ctx, "build-service-remove", h.updateServiceOnRemove)
+	rContext.Build.Tekton().V1alpha1().TaskRun().OnChange(ctx, "build-service-update", tektonv1alpha1controller.UpdateTaskRunOnChange(rContext.Build.Tekton().V1alpha1().TaskRun().Updater(), h.updateService))
+	rContext.Build.Tekton().V1alpha1().TaskRun().OnRemove(ctx, "build-service-remove", h.updateServiceOnRemove)
 	return nil
 }
 
@@ -33,7 +34,7 @@ type handler struct {
 	clusterDomainCache projectv1controller.ClusterDomainCache
 }
 
-func (h handler) updateService(key string, build *v1alpha1.Build) (*v1alpha1.Build, error) {
+func (h handler) updateService(key string, build *tektonv1alpha1.TaskRun) (*tektonv1alpha1.TaskRun, error) {
 	if build == nil {
 		return build, nil
 	}
@@ -44,11 +45,6 @@ func (h handler) updateService(key string, build *v1alpha1.Build) (*v1alpha1.Bui
 	}
 	domain := clusterDomain.Status.ClusterDomain
 	if domain == "" {
-		return build, nil
-	}
-
-	con := build.Status.GetCondition(v1alpha1.BuildSucceeded)
-	if con == nil {
 		return build, nil
 	}
 
@@ -63,17 +59,22 @@ func (h handler) updateService(key string, build *v1alpha1.Build) (*v1alpha1.Bui
 		return build, nil
 	}
 
-	if con.IsTrue() {
-		imageName := service.PullImageName(h.registry, h.systemNamespace, build.Spec.Source.Git.Revision, domain, svc)
+	if build.IsSuccessful() {
+		rev := svc.Spec.Build.Revision
+		if rev == "" {
+			rev = svc.Status.FirstRevision
+		}
+		imageName := service.PullImageName(rev, svc)
 		if svc.Spec.Image != imageName {
 			deepCopy := svc.DeepCopy()
 			v1.ServiceConditionImageReady.SetError(deepCopy, "", nil)
-			deepCopy.Spec.Image = service.PullImageName(h.registry, h.systemNamespace, build.Spec.Source.Git.Revision, domain, deepCopy)
+			deepCopy.Spec.Image = service.PullImageName(rev, deepCopy)
 			if _, err := h.services.Update(deepCopy); err != nil {
 				return build, err
 			}
 		}
-	} else if con.IsFalse() {
+	} else if build.IsDone() {
+		con := build.Status.GetCondition(apis.ConditionSucceeded)
 		deepCopy := svc.DeepCopy()
 		v1.ServiceConditionImageReady.SetError(deepCopy, con.Reason, errors.New(con.Message))
 		_, err := h.services.Update(deepCopy)
@@ -83,13 +84,12 @@ func (h handler) updateService(key string, build *v1alpha1.Build) (*v1alpha1.Bui
 	return build, nil
 }
 
-func (h *handler) updateServiceOnRemove(key string, build *v1alpha1.Build) (*v1alpha1.Build, error) {
+func (h *handler) updateServiceOnRemove(key string, build *tektonv1alpha1.TaskRun) (*tektonv1alpha1.TaskRun, error) {
 	if build == nil {
 		return build, nil
 	}
 
-	con := build.Status.GetCondition(v1alpha1.BuildSucceeded)
-	if con != nil && con.IsFalse() {
+	if !build.IsDone() {
 		namespace := build.Labels["service-namespace"]
 		name := build.Labels["service-name"]
 		h.services.Enqueue(namespace, name)
