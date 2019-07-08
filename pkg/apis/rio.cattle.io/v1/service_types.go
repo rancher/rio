@@ -384,7 +384,7 @@ type ImageBuild struct {
 	BuildImageName string `json:"buildImageName,omitempty"`
 
 	// Whether to enable builds for pull requests
-	EnablePr bool `json:"enablePr,omitempty"`
+	EnablePR bool `json:"enablePr,omitempty"`
 }
 
 func (in *Service) State() common.State {

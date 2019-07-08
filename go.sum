@@ -37,6 +37,8 @@ github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 h1:d+Bc7a5rLufV
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdkoq3SwY9Y+13GIhn11/XLaGBb4BfwItxLd5jeuXE=
 github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWXgklEdEo=
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
+github.com/StrongMonkey/webhookinator v0.0.0-20190708173018-7715ce4e3af1 h1:FNnD8qSHNGwrlO2+CYjTUSurfz0Lu0yahJOH+u36qMU=
+github.com/StrongMonkey/webhookinator v0.0.0-20190708173018-7715ce4e3af1/go.mod h1:8Ky3j8+TgcevUb7u6x7jSUDQf5amzYKYSv1mzn0zivQ=
 github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38/go.mod h1:r7bzyVFMNntcxPZXK3/+KdruV1H5KSlyVY0gc+NgInI=
 github.com/alecthomas/chroma v0.6.3/go.mod h1:quT2EpvJNqkuPi6DmBHB+E33FXBgBBPzyH5++Dn1LPc=
 github.com/alecthomas/colour v0.0.0-20160524082231-60882d9e2721/go.mod h1:QO9JBoKquHd+jz9nshCh40fOfO+JzsoXy8qTHF68zU0=
@@ -85,6 +87,7 @@ github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c/go.mod h1:Qh8CwZ
 github.com/drone/envsubst v0.0.0-20171016184023-f4d1a8ef8670 h1:3LLJe3dlZl268BQUiNZo1XhJt9rSEfn5uC2cGaHzJCI=
 github.com/drone/envsubst v0.0.0-20171016184023-f4d1a8ef8670/go.mod h1:xswv6s39sYkg3yi8X0pj3ho/CSNZy58I5gLCeBXwy08=
 github.com/drone/go-scm v0.0.0-20181205215702-67e85b16fa2f/go.mod h1:YT4FxQ3U/ltdCrBJR9B0tRpJ1bYA/PM3NyaLE/rYIvw=
+github.com/drone/go-scm v1.4.0 h1:sYkPvIQb0tVuct/zX+KfAn88I6qPnSkoktRD4hUDkzY=
 github.com/drone/go-scm v1.4.0/go.mod h1:YT4FxQ3U/ltdCrBJR9B0tRpJ1bYA/PM3NyaLE/rYIvw=
 github.com/eapache/go-resiliency v1.1.0/go.mod h1:kFI+JgMyC7bLPUVY133qvEBtVayf5mFgVsvEsIPBvNs=
 github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21/go.mod h1:+020luEh2TKB4/GOp8oxxtq0Daoen/Cii55CzbTV6DU=
@@ -320,6 +323,8 @@ github.com/rancher/cert-manager v0.7.0-rio.1 h1:o7XDzUpKg2X1fSFpy/B4uU0IIQEUzT7E
 github.com/rancher/cert-manager v0.7.0-rio.1/go.mod h1:3cwEbVBo4BRNJ29j2MFyvX4Uno2lAQquejDtUXtE0YY=
 github.com/rancher/gitwatcher v0.0.0-20190612060519-6eee8fc7a202 h1:ID3ndmm5OMdJdjd7EFfXJoPm9QA/0BlSmLtf8sJZLRQ=
 github.com/rancher/gitwatcher v0.0.0-20190612060519-6eee8fc7a202/go.mod h1:8Ky3j8+TgcevUb7u6x7jSUDQf5amzYKYSv1mzn0zivQ=
+github.com/rancher/gitwatcher v0.3.0 h1:f8YgJWr/0D0omPJR74bObOtCwHrzU62arO9N5NAEqf0=
+github.com/rancher/gitwatcher v0.3.0/go.mod h1:8Ky3j8+TgcevUb7u6x7jSUDQf5amzYKYSv1mzn0zivQ=
 github.com/rancher/k3s v1.14.3-k3s.2/go.mod h1:tMIUbj+a40AQcAd6RRazV5hcf7YWjhas4rNxidgJXms=
 github.com/rancher/mapper v0.0.0-20190426050457-84da984f3146 h1:rdM/qnaTd2pnQLlF1TYdyGSd7/ssVuu/a0YituJxxjI=
 github.com/rancher/mapper v0.0.0-20190426050457-84da984f3146/go.mod h1:zU4cm21k7ZBFVQhUu2aSH7NwouY317rLYxruOn+wdOQ=

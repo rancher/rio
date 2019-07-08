@@ -41,6 +41,7 @@ func (s *Create) Run(ctx *clicontext.CLIContext) error {
 			secret = constructors.NewSecret(ns, service.DefaultGithubCrendential, v1.Secret{})
 		}
 		setDefaults(secret)
+		secret.Type = v1.SecretTypeOpaque
 
 		accessToken, err = questions.PromptPassword("accessToken[******]: ", accessToken)
 		if err != nil {

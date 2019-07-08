@@ -286,7 +286,7 @@ github.com/prometheus/procfs/internal/fs
 github.com/rancher/axe/throwing
 github.com/rancher/axe/throwing/datafeeder
 github.com/rancher/axe/throwing/types
-# github.com/rancher/gitwatcher v0.0.0-20190612060519-6eee8fc7a202
+# github.com/rancher/gitwatcher v0.3.0
 github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1
 github.com/rancher/gitwatcher/pkg/generated/controllers/gitwatcher.cattle.io/v1
 github.com/rancher/gitwatcher/pkg/generated/controllers/gitwatcher.cattle.io

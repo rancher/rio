@@ -280,12 +280,16 @@ func (p populator) populateBuild(service *riov1.Service, systemNamespace string,
 }
 
 func populateWebhookAndSecrets(webhookService *riov1.App, service *riov1.Service, os *objectset.ObjectSet) {
+	if service.Spec.Build.Revision != "" {
+		return
+	}
 	webhookReceiver := webhookv1.NewGitWatcher(service.Namespace, service.Name, webhookv1.GitWatcher{
 		Spec: webhookv1.GitWatcherSpec{
 			RepositoryURL:                  service.Spec.Build.Repo,
 			Enabled:                        true,
 			Push:                           true,
 			Tag:                            true,
+			PR:                             service.Spec.Build.EnablePR,
 			Branch:                         service.Spec.Build.Branch,
 			RepositoryCredentialSecretName: service.Spec.Build.GitSecretName,
 		},
