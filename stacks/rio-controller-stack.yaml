@@ -209,6 +209,8 @@ kubernetes:
               value: ${SERVICE_CIDR}
             - name: DISABLE_FEATURES
               value: ${DISABLE_FEATURES}
+            - name: HTTP_PROXY
+              value: ${HTTP_PROXY}
 
 templates:
   questions:
@@ -230,3 +232,5 @@ templates:
     description: "manually specify service CIDR for service mesh to intercept"
   - variable: DISABLE_FEATURES
     description: "manually specify features to disable"
+  - variable: HTTP_PROXY
+    description: "specify http proxy setting"

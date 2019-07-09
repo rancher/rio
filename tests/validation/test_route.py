@@ -52,7 +52,7 @@ def test_rio_svc_route(nspc):
     sName = get_app_info(fullName, "metadata.name")
     print(f"{sName}")
     nsproute = (f"{nspc}/{rName}")
-    result = get_app_info(nsproute, "status.endpoint[0]")
+    result = get_app_info(nsproute, "status.endpoints[0]")
     print(f"{result}")
 
     time.sleep(2)

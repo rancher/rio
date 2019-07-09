@@ -73,6 +73,7 @@ type Install struct {
 	IPAddress       []string `desc:"Manually specify IP addresses to generate rdns domain" name:"ip-address"`
 	ServiceCidr     string   `desc:"Manually specify service CIDR for service mesh to intercept"`
 	DisableFeatures []string `desc:"Manually specify features to disable, supports CSV"`
+	HTTPProxy       string   `desc:"Set HTTP_PROXY environment variable for control plane"`
 	Yaml            bool     `desc:"Only print out k8s yaml manifest"`
 	Check           bool     `desc:"Only check status, don't deploy controller'"`
 	Lite            bool     `desc:"Only install lite version of Rio(monitoring will be disabled, will be ignored if --disable-features is set)"`
@@ -165,6 +166,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		"IP_ADDRESSES":     strings.Join(i.IPAddress, ","),
 		"SERVICE_CIDR":     i.ServiceCidr,
 		"DISABLE_FEATURES": strings.Join(i.DisableFeatures, ","),
+		"HTTP_PROXY":       i.HTTPProxy,
 	}
 	if i.Yaml {
 		yamlOutput, err := controllerStack.Yaml(answers)
