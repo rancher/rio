@@ -2517,7 +2517,7 @@ Specify the name Of the Dockerfile in the Repo. Defaults to `Dockerfile`.
 </tr>
 <tr>
 <td>
-<code>dockerContext</code></br>
+<code>buildContext</code></br>
 <em>
 string
 </em>
@@ -4746,5 +4746,5 @@ Weight for the Destination
 <hr/>
 <p><em>
 Generated with <code>gen-crd-api-reference-docs</code>
-on git commit <code>9d25cb75</code>.
+on git commit <code>d52b45ef</code>.
 </em></p>
