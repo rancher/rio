@@ -33,7 +33,7 @@ type RouterStatus struct {
 	PublicDomains []string `json:"publicDomains,omitempty"`
 
 	// The endpoint to access the router
-	Endpoints []string `json:"endpoint,omitempty"`
+	Endpoints []string `json:"endpoints,omitempty"`
 
 	// Represents the latest available observations of a PublicDomain's current state.
 	Conditions []genericcondition.GenericCondition `json:"conditions,omitempty"`

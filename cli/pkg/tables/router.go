@@ -12,7 +12,7 @@ import (
 )
 
 type RouteSpecData struct {
-	ID        string
+	Name      string
 	RouteSet  v1.Router
 	RouteSpec v1.RouteSpec
 	Match     *v1.Match
@@ -70,7 +70,7 @@ func (r *routerWriter) Write(obj interface{}) {
 	for j, routeSpec := range routeSet.Spec.Routes {
 		if len(routeSpec.Matches) == 0 {
 			r.Writer.Write(&RouteSpecData{
-				ID:        routeSet.Name,
+				Name:      fmt.Sprintf("%s/%s", routeSet.Namespace, routeSet.Name),
 				RouteSet:  *routeSet,
 				RouteSpec: routeSet.Spec.Routes[j],
 				Domain:    r.domain,
@@ -80,6 +80,7 @@ func (r *routerWriter) Write(obj interface{}) {
 
 		for k := range routeSpec.Matches {
 			r.Writer.Write(&RouteSpecData{
+				Name:      fmt.Sprintf("%s/%s", routeSet.Namespace, routeSet.Name),
 				RouteSet:  *routeSet,
 				RouteSpec: routeSet.Spec.Routes[j],
 				Match:     &routeSet.Spec.Routes[j].Matches[k],
