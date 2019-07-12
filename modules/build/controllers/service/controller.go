@@ -166,6 +166,10 @@ func (p populator) populateBuild(service *riov1.Service, systemNamespace string,
 							Description: "The name of the Dockerfile",
 						},
 						{
+							Name:        "dockerfile-path",
+							Description: "The path of the Dockerfile",
+						},
+						{
 							Name:        "docker-context",
 							Description: "The context of the build",
 						},
@@ -228,7 +232,7 @@ func (p populator) populateBuild(service *riov1.Service, systemNamespace string,
 							"--frontend=dockerfile.v0",
 							"--frontend-opt", "filename=${inputs.params.dockerfile}",
 							"--local", "context=${inputs.params.docker-context}",
-							"--local", "dockerfile=.",
+							"--local", "dockerfile=${inputs.params.dockerfile-path}",
 							"--output", "type=image,name=${inputs.params.image},push=true,registry.insecure=${inputs.params.insecure-registry}",
 						},
 					},
@@ -251,6 +255,10 @@ func (p populator) populateBuild(service *riov1.Service, systemNamespace string,
 					{
 						Name:  "docker-context",
 						Value: service.Spec.Build.BuildContext,
+					},
+					{
+						Name:  "dockerfile-path",
+						Value: service.Spec.Build.DockerFilePath,
 					},
 				},
 				Resources: []tektonv1alpha1.TaskResourceBinding{
@@ -311,6 +319,9 @@ func (p populator) setDefaults(service *riov1.Service) {
 	}
 	if service.Spec.Build.BuildContext == "" {
 		service.Spec.Build.BuildContext = "."
+	}
+	if service.Spec.Build.DockerFilePath == "" {
+		service.Spec.Build.DockerFilePath = service.Spec.Build.BuildContext
 	}
 	if service.Spec.Build.GitSecretName == "" {
 		if _, err := p.secretsCache.Get(service.Namespace, DefaultGitCrendential); err == nil {

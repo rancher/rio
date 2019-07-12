@@ -121,7 +121,7 @@ func main() {
 		builder.Command(&ps.Ps{},
 			"List services and containers",
 			appName+" ps [OPTIONS] [SERVICE_OR_REVISION_...]",
-			"To view revisions, run `%s ps foo`. To view pods of a specific revision, run `%s ps foo:v0`. To view containers, run `%s ps -c foo[:v0]"),
+			"To view revisions, run `rio ps foo`. To view pods of a specific revision, run `rio ps foo:v0`. To view containers, run `rio ps -c foo[:v0]"),
 
 		builder.Command(&run.Run{},
 			"Create and run a new service",

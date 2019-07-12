@@ -91,7 +91,7 @@ func (c *Config) Validate() error {
 	c.Autoscale = autoscale
 
 	if info, err := project.RioInfos().Get("rio", metav1.GetOptions{}); err != nil {
-		logrus.Error(err)
+		logrus.Debug(err)
 		return ErrNoConfig
 	} else if c.SystemNamespace == "" {
 		c.SystemNamespace = info.Status.SystemNamespace

@@ -359,10 +359,13 @@ type ImageBuild struct {
 	// Whether to only stage the new revision. If true, the new created service will not be allocating any traffic automatically.
 	StageOnly bool `json:"stageOnly,omitempty"`
 
-	// Specify the name Of the Dockerfile in the Repo. Defaults to `Dockerfile`.
+	// Specify the name of the Dockerfile in the Repo. Defaults to `Dockerfile`.
 	DockerFile string `json:"dockerFile,omitempty"`
 
-	// Specify build context
+	// Specify the path of the Dockerfile in the Repo. Defaults to spec.BuildContext.
+	DockerFilePath string `json:"dockerFilePath,omitempty"`
+
+	// Specify build context. Defaults to "."
 	BuildContext string `json:"buildContext,omitempty"`
 
 	// Specify the build template. Defaults to `buildkit`.
