@@ -58,7 +58,7 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.0.0 // indirect
 	github.com/rancher/axe v0.0.0-20190531011056-59fcf8b44147
-	github.com/rancher/gitwatcher v0.0.0-20190612060519-6eee8fc7a202
+	github.com/rancher/gitwatcher v0.3.0
 	github.com/rancher/mapper v0.0.0-20190426050457-84da984f3146
 	github.com/rancher/rdns-server v0.4.2
 	github.com/rancher/wrangler v0.1.4

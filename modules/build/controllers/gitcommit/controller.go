@@ -72,7 +72,7 @@ func (h Handler) scaleDownRevisions(namespace, name string) error {
 
 func (h Handler) onChange(key string, obj *webhookv1.GitCommit) (*webhookv1.GitCommit, error) {
 	if obj == nil {
-		return nil, nil
+		return obj, nil
 	}
 
 	gitWatcher, err := h.gitWatcherCache.Get(obj.Namespace, obj.Spec.GitWatcherName)
@@ -109,6 +109,11 @@ func (h Handler) onChange(key string, obj *webhookv1.GitCommit) (*webhookv1.GitC
 	}
 
 	return obj, webhookv1.GitWebHookExecutionConditionHandled.Once(obj, func() (runtime.Object, error) {
+		// if git commit is from different branch do no-op
+		if obj.Spec.Branch != "" && obj.Spec.Branch != service.Spec.Build.Branch {
+			return obj, nil
+		}
+
 		appName, _ := services.AppAndVersion(service)
 		specCopy := service.Spec.DeepCopy()
 		specCopy.Build.Repo = obj.Spec.RepositoryURL
@@ -116,7 +121,13 @@ func (h Handler) onChange(key string, obj *webhookv1.GitCommit) (*webhookv1.GitC
 		specCopy.Build.Branch = ""
 		specCopy.Image = ""
 		specCopy.App = appName
-		specCopy.Version = "v" + obj.Spec.Commit[0:5]
+		if obj.Spec.PR != "" {
+			specCopy.Version = "pr-" + obj.Spec.PR
+			specCopy.Build.StageOnly = true
+		} else {
+			specCopy.Version = "v" + obj.Spec.Commit[0:5]
+		}
+
 		if !specCopy.Build.StageOnly {
 			if err := h.scaleDownRevisions(obj.Namespace, appName); err != nil {
 				return obj, err
@@ -130,14 +141,42 @@ func (h Handler) onChange(key string, obj *webhookv1.GitCommit) (*webhookv1.GitC
 		} else {
 			specCopy.Weight = 0
 		}
-		newServiceName := name.SafeConcatName(service.Name, name.Hex(obj.Spec.RepositoryURL, 7), name.Hex(obj.Spec.Commit, 5))
+		newServiceName := serviceName(service, obj)
 		newService := riov1.NewService(service.Namespace, newServiceName, riov1.Service{
 			Spec: *specCopy,
 		})
-		logrus.Infof("Creating new service revision, name: %s, namespace: %s, revision: %s", newService.Name, newService.Namespace, obj.Spec.Commit)
-		if _, err := h.services.Create(newService); err != nil {
+
+		if obj.Spec.PR != "" && obj.Spec.Merged {
+			logrus.Infof("PR %s is merged, deleting revision, name: %s, namespace: %s, revision: %s", obj.Spec.PR, newService.Name, newService.Namespace, obj.Spec.Commit)
+			if err := h.services.Delete(newService.Namespace, newService.Name, &v1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
+				return obj, err
+			}
+			return obj, nil
+		}
+
+		logrus.Infof("Creating/Updating service revision, name: %s, namespace: %s, revision: %s", newService.Name, newService.Namespace, obj.Spec.Commit)
+		if existing, err := h.services.Get(newService.Namespace, newService.Name, v1.GetOptions{}); err == nil {
+			existing.Spec = newService.Spec
+			if _, err := h.services.Update(existing); err != nil {
+				return obj, err
+			}
+		} else if errors.IsNotFound(err) {
+			if _, err := h.services.Create(newService); err != nil {
+				return obj, err
+			}
+		} else {
 			return obj, err
 		}
 		return obj, nil
 	})
+}
+
+func serviceName(service *riov1.Service, obj *webhookv1.GitCommit) string {
+	n := name.SafeConcatName(service.Name, name.Hex(obj.Spec.RepositoryURL, 7))
+	if obj.Spec.PR != "" {
+		n = name.SafeConcatName(n, "pr"+obj.Spec.PR)
+	} else {
+		n = name.SafeConcatName(n, name.Hex(obj.Spec.Commit, 5))
+	}
+	return n
 }

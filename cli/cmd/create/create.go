@@ -21,16 +21,19 @@ type Create struct {
 	AddHost                []string          `desc:"Add a custom host-to-IP mapping (host:ip)"`
 	Annotations            map[string]string `desc:"Annotations to attach to this service"`
 	BuildBranch            string            `desc:"Build repository branch" default:"master"`
+	BuildContext           string            `desc:"Set build context, defaults to ./"`
 	BuildWebhookSecret     string            `desc:"Set GitHub webhook secret name"`
 	BuildDockerPushSecret  string            `desc:"Set docker push secret name"`
 	BuildGitSecret         string            `desc:"Set git basic secret name"`
 	BuildImageName         string            `desc:"Specify custom image name"`
 	BuildRegistry          string            `desc:"Specify registry for image"`
 	BuildRevision          string            `desc:"Build commit or tag"`
+	BuildEnablePr          bool              `desc:"Enable pull request builds"`
 	Command                []string          `desc:"Overwrite the default ENTRYPOINT of the image"`
 	Concurrency            int               `desc:"The maximum concurrent request a container can handle(autoscaling)" default:"10"`
 	Config                 []string          `desc:"Configs to expose to the service (format: name:target)"`
 	Cpus                   string            `desc:"Number of CPUs"`
+	DockerFile             string            `desc:"Set Dockerfile name, defaults to Dockerfile"`
 	DNSOption              []string          `desc:"Set DNS options (format: key:value or key)"`
 	DNSSearch              []string          `desc:"Set custom DNS search domains"`
 	DNS                    []string          `desc:"Set custom DNS servers"`
@@ -166,6 +169,8 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 	if stringers.IsRepo(args[0]) {
 		service.Spec.Build = &riov1.ImageBuild{}
 		service.Spec.Build.Branch = c.BuildBranch
+		service.Spec.Build.DockerFile = c.DockerFile
+		service.Spec.Build.BuildContext = c.BuildContext
 		service.Spec.Build.Revision = c.BuildRevision
 		service.Spec.Build.GithubSecretName = c.BuildWebhookSecret
 		service.Spec.Build.GitSecretName = c.BuildGitSecret
@@ -174,6 +179,7 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 		service.Spec.Build.PushRegistrySecretName = c.BuildDockerPushSecret
 		service.Spec.Build.Repo = args[0]
 		service.Spec.Build.StageOnly = c.StageOnly
+		service.Spec.Build.EnablePR = c.BuildEnablePr
 	} else {
 		service.Spec.Image = args[0]
 	}

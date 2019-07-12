@@ -45,13 +45,14 @@ services:
     volumes:
     - storage-registry:/var/lib/registry
   webhook:
+    disableServiceMesh: true
     global_permissions:
     - "* gitwatcher.cattle.io/gitwatchers"
     - "* gitwatcher.cattle.io/gitcommits"
     - '* configmaps'
     - '* events'
     - secrets
-    image: rancher/gitwatcher:v0.2.2
+    image: rancher/gitwatcher:v0.3.0
     args:
     - gitwatcher
     - --listen-address

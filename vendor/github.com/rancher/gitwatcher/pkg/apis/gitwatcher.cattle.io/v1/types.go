@@ -54,6 +54,7 @@ type GitCommitSpec struct {
 	Branch         string `json:"branch,omitempty"`
 	Tag            string `json:"tag,omitempty"`
 	PR             string `json:"pr,omitempty"`
+	Merged         bool   `json:"merged,omitempty"`
 	SourceLink     string `json:"sourceLink,omitempty"`
 	RepositoryURL  string `json:"repositoryUrl,omitempty"`
 	Title          string `json:"title,omitempty"`

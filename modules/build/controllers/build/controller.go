@@ -7,7 +7,6 @@ import (
 	"github.com/knative/pkg/apis"
 	"github.com/rancher/rio/modules/build/controllers/service"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/constants"
 	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
@@ -17,9 +16,8 @@ import (
 
 func Register(ctx context.Context, rContext *types.Context) error {
 	h := handler{
-		systemNamespace:    rContext.Namespace,
-		services:           rContext.Rio.Rio().V1().Service(),
-		clusterDomainCache: rContext.Global.Admin().V1().ClusterDomain().Cache(),
+		systemNamespace: rContext.Namespace,
+		services:        rContext.Rio.Rio().V1().Service(),
 	}
 
 	rContext.Build.Tekton().V1alpha1().TaskRun().OnChange(ctx, "build-service-update", tektonv1alpha1controller.UpdateTaskRunOnChange(rContext.Build.Tekton().V1alpha1().TaskRun().Updater(), h.updateService))
@@ -36,15 +34,6 @@ type handler struct {
 
 func (h handler) updateService(key string, build *tektonv1alpha1.TaskRun) (*tektonv1alpha1.TaskRun, error) {
 	if build == nil {
-		return build, nil
-	}
-
-	clusterDomain, err := h.clusterDomainCache.Get(h.systemNamespace, constants.ClusterDomainName)
-	if err != nil {
-		return build, err
-	}
-	domain := clusterDomain.Status.ClusterDomain
-	if domain == "" {
 		return build, nil
 	}
 
