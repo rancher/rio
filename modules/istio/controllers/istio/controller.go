@@ -8,6 +8,7 @@ import (
 
 	"github.com/rancher/rio/modules/istio/controllers/istio/populate"
 	"github.com/rancher/rio/modules/istio/pkg/istio/config"
+	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	adminv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
@@ -210,7 +211,7 @@ func (i istioDeployController) syncGateway(key string, obj *adminv1.ClusterDomai
 	if err != nil {
 		return obj, err
 	}
-	populate.Gateway(i.namespace, domain, publicdomains, os)
+	populate.Gateway(i.namespace, domain, obj.Spec.SecretRef.Name, publicdomains, os)
 	return obj, i.apply.WithSetID("istio-gateway").Apply(os)
 }
 
@@ -397,7 +398,7 @@ func ensureClusterDomain(ns string, clusterDomain adminv1controller.ClusterDomai
 			Spec: adminv1.ClusterDomainSpec{
 				SecretRef: v1.SecretReference{
 					Namespace: ns,
-					Name:      constants.GatewaySecretName,
+					Name:      issuers.RioWildcardCerts,
 				},
 			},
 		}))

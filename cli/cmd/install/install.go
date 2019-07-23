@@ -9,9 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rancher/mapper/slice"
-
 	"github.com/docker/docker/pkg/reexec"
+	"github.com/rancher/mapper/slice"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/up/questions"
 	"github.com/rancher/rio/modules/service/controllers/serviceset"
@@ -46,6 +45,7 @@ var (
 		IstioPilot:      "istio",
 		IstioTelemetry:  "mixer",
 		Kiali:           "kiali",
+		Registry:        "build",
 		Prometheus:      "prometheus",
 		Webhook:         "build",
 	}
@@ -70,7 +70,7 @@ type Install struct {
 	HTTPPort        string   `desc:"Http port service mesh gateway will listen to" default:"9080" name:"http-port"`
 	HTTPSPort       string   `desc:"Https port service mesh gateway will listen to" default:"9443" name:"https-port"`
 	HostPorts       bool     `desc:"Whether to use hostPorts to expose service mesh gateway"`
-	IPAddress       []string `desc:"Manually specify IP addresses to generate rdns domain" name:"ip-address"`
+	IPAddress       []string `desc:"Manually specify IP addresses to generate rdns domain, supports CSV" name:"ip-address"`
 	ServiceCidr     string   `desc:"Manually specify service CIDR for service mesh to intercept"`
 	DisableFeatures []string `desc:"Manually specify features to disable, supports CSV"`
 	HTTPProxy       string   `desc:"Set HTTP_PROXY environment variable for control plane"`
@@ -183,6 +183,12 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 			return err
 		}
 	}
+
+	var disabledFeatures []string
+	for _, dfs := range i.DisableFeatures {
+		disabledFeatures = append(disabledFeatures, strings.Split(dfs, ",")...)
+	}
+	i.DisableFeatures = disabledFeatures
 
 	start := time.Now()
 	for {
@@ -307,7 +313,20 @@ func (i *Install) delectingServiceLoadbalancer(ctx *clicontext.CLIContext, info 
 
 				if num == 0 {
 					fmt.Println("Reinstall Rio using --host-ports")
-					cmd := reexec.Command("rio", "install", "--host-ports", "--http-port", i.HTTPPort, "--https-port", i.HTTPSPort)
+					args := []string{"rio", "install", "--host-ports", "--http-port", i.HTTPPort, "--https-port", i.HTTPSPort}
+					for _, ip := range i.IPAddress {
+						args = append(args, "--ip-address", ip)
+					}
+					for _, df := range i.DisableFeatures {
+						args = append(args, "--disable-features", df)
+					}
+					if i.ServiceCidr != "" {
+						args = append(args, "--service-cidr", i.ServiceCidr)
+					}
+					if i.HTTPProxy != "" {
+						args = append(args, "--httpproxy", i.HTTPProxy)
+					}
+					cmd := reexec.Command(args...)
 					cmd.Stdout = os.Stdout
 					cmd.Stderr = os.Stderr
 					cmd.Env = os.Environ()

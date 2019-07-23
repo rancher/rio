@@ -344,3 +344,22 @@ abilities for services to talk to each other, inbound traffic and outbound traff
 validated, and routed dynamically according to the configuration. Rio specifically does not require the user to
 understand much about the underlying service mesh.
 
+## FAQ
+
+* How can I upgrade rio?
+```
+Upgrading rio just needs the latest release of rio binary. Re-run `rio install` with your install options.
+```
+
+* How can I swap out letsencrypt certificate with my own certs?
+```
+Create a TLS secret in `rio-system` namespace that contains your tls cert and key. Edit cluster domain by running `k edit clusterdomain cluster-domain -n rio-system`.
+Change spec.secretRef.name to the name of your TLS secret.
+```
+
+* How can I use my own DNS domain?
+```
+Disable rdns and letsencrypt features by running `rio install --disable-features rdns,letsencrypt`. Edit cluster domain by running `k edit clusterdomain cluster-domain -n rio-system`.
+Change status.domain to your own wildcard doamin. You are responsible to manage your dns record to gateway IP or worker nodes.
+```
+
