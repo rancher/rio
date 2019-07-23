@@ -86,17 +86,18 @@ func (f *certsHandler) onChangeCert(key string, cert *v1alpha1.Certificate) (*v1
 		return cert, nil
 	}
 
-	if cert.Name == issuers.RioWildcardCerts {
+	deepcopy := clusterDomain.DeepCopy()
+	deepcopy.Status.HTTPSSupported = true
+	if clusterDomain.Spec.SecretRef.Name == issuers.RioWildcardCerts {
 		for _, con := range cert.Status.Conditions {
-			if con.Type == v1alpha1.CertificateConditionReady && con.Status == certmanagerapi.ConditionTrue {
-				deepcopy := clusterDomain.DeepCopy()
-				deepcopy.Status.HTTPSSupported = true
-				if _, err := f.clusterDomain.Update(deepcopy); err != nil {
-					return cert, err
-				}
+			if con.Type == v1alpha1.CertificateConditionReady && con.Status != certmanagerapi.ConditionTrue {
+				deepcopy.Status.HTTPSSupported = false
 				break
 			}
 		}
+	}
+	if _, err := f.clusterDomain.Update(deepcopy); err != nil {
+		return cert, err
 	}
 
 	ns, name := kv.Split(cert.Name, "/")

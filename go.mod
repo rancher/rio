@@ -10,14 +10,16 @@ replace (
 )
 
 require (
+	github.com/Azure/azure-sdk-for-go v31.1.0+incompatible // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
 	github.com/Azure/go-autorest/autorest v0.2.0 // indirect
+	github.com/Azure/go-autorest/autorest/to v0.2.0 // indirect
+	github.com/Azure/go-autorest/autorest/validation v0.1.0 // indirect
 	github.com/MakeNowJust/heredoc v0.0.0-20171113091838-e9091a26100e // indirect
 	github.com/Masterminds/semver v1.4.2 // indirect
 	github.com/Masterminds/sprig v2.15.0+incompatible
-	github.com/Sirupsen/logrus v0.0.0-00010101000000-000000000000 // indirect
-	github.com/alecthomas/chroma v0.6.3 // indirect
 	github.com/aokoli/goutils v1.0.1
+	github.com/aws/aws-sdk-go v1.21.2 // indirect
 	github.com/cenkalti/backoff v2.1.1+incompatible // indirect
 	github.com/cyphar/filepath-securejoin v0.2.2 // indirect
 	github.com/davecgh/go-spew v1.1.1
@@ -37,7 +39,6 @@ require (
 	github.com/gogo/googleapis v1.0.0 // indirect
 	github.com/google/btree v1.0.0 // indirect
 	github.com/gophercloud/gophercloud v0.2.0 // indirect
-	github.com/gorilla/websocket v1.2.0 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
 	github.com/hashicorp/errwrap v0.0.0-20141028054710-7554cd9344ce // indirect
 	github.com/hashicorp/go-multierror v0.0.0-20161216184304-ed905158d874 // indirect
@@ -47,13 +48,13 @@ require (
 	github.com/knative/build v0.6.0
 	github.com/knative/pkg v0.0.0-20190514205332-5e4512dcb2ca
 	github.com/knative/serving v0.6.1
+	github.com/markbates/inflect v1.0.4 // indirect
 	github.com/mattn/go-shellwords v1.0.5
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	github.com/natefinch/lumberjack v0.0.0-20170911140457-aee462912944 // indirect
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/openshift/api v3.9.0+incompatible // indirect
-	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.0.0 // indirect
@@ -79,7 +80,6 @@ require (
 	golang.org/x/tools v0.0.0-20190411180116-681f9ce8ac52 // indirect
 	google.golang.org/appengine v1.5.0 // indirect
 	google.golang.org/grpc v1.21.1 // indirect
-	gopkg.in/freddierice/go-losetup.v1 v1.0.0-20170407175016-fc9adea44124 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/yaml.v2 v2.2.2
 	gotest.tools v2.2.0+incompatible // indirect
