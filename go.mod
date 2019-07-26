@@ -4,9 +4,12 @@ go 1.12
 
 replace (
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.1
+	github.com/docker/distribution => github.com/docker/distribution v2.7.1-0.20190104202606-0ac367fd6bee+incompatible
+	github.com/jaguilar/vt100 => github.com/tonistiigi/vt100 v0.0.0-20190402012908-ad4c4a574305
 	github.com/jetstack/cert-manager => github.com/rancher/cert-manager v0.7.0-rio.1
 	github.com/knative/pkg => github.com/rancher/pkg v0.0.0-20190514055449-b30ab9de040e
 	github.com/matryer/moq => github.com/rancher/moq v0.0.0-20190404221404-ee5226d43009
+	golang.org/x/tools => golang.org/x/tools v0.0.0-20190411180116-681f9ce8ac52
 )
 
 require (
@@ -23,7 +26,7 @@ require (
 	github.com/cenkalti/backoff v2.1.1+incompatible // indirect
 	github.com/cyphar/filepath-securejoin v0.2.2 // indirect
 	github.com/davecgh/go-spew v1.1.1
-	github.com/docker/docker v0.7.3-0.20190618200816-384c782721c7
+	github.com/docker/docker v1.14.0-0.20190319215453-e7b5f7dbe98c
 	github.com/docker/go-units v0.3.3
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/drone/envsubst v0.0.0-20171016184023-f4d1a8ef8670
