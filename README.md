@@ -36,7 +36,7 @@ If your cluster doesn't support service load balancers, simply run `rio install 
 
 If your host has multiple IP addresses, you can specify which IP address Rio should use for creating external DNS records with the `--ip-address` flag. For instance to advertise the external IP of an AWS instance: `rio install --ip-address $(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)`
 
-On start up, you can specify which feature to disable when installing rio. Simplely run `rio install --disable-features autoscaling,build --disable-features letsencrypt`
+On start up, you can specify which feature to disable when installing rio. Simply run `rio install --disable-features autoscaling,build --disable-features letsencrypt`
 
 | Feature | Description |
 |----------|----------------|
