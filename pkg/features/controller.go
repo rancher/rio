@@ -6,7 +6,7 @@ import (
 	ntypes "github.com/rancher/mapper"
 	"github.com/rancher/mapper/slice"
 	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/systemstack"
+	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/rio/types"
 )
 
@@ -20,7 +20,7 @@ type FeatureController struct {
 	OnStop       func() error
 	OnChange     func(*v1.Feature) error
 	OnStart      func(*v1.Feature) error
-	SystemStacks []*systemstack.SystemStack
+	SystemStacks []*stack.SystemStack
 	FixedAnswers map[string]string
 	registered   bool
 }

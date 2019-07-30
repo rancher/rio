@@ -24,9 +24,14 @@ require (
 	github.com/aokoli/goutils v1.0.1
 	github.com/aws/aws-sdk-go v1.21.2 // indirect
 	github.com/cenkalti/backoff v2.1.1+incompatible // indirect
+	github.com/chai2010/gettext-go v0.0.0-20170215093142-bf70f2a70fb1 // indirect
+	github.com/containerd/console v0.0.0-20181022165439-0650fd9eeb50
+	github.com/containerd/containerd v1.3.0-0.20190426060238-3a3f0aac8819
 	github.com/cyphar/filepath-securejoin v0.2.2 // indirect
 	github.com/davecgh/go-spew v1.1.1
+	github.com/docker/cli v0.0.0-20190723080722-8560f9e8cdad // indirect
 	github.com/docker/docker v1.14.0-0.20190319215453-e7b5f7dbe98c
+	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.3.3
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/drone/envsubst v0.0.0-20171016184023-f4d1a8ef8670
@@ -54,6 +59,7 @@ require (
 	github.com/markbates/inflect v1.0.4 // indirect
 	github.com/mattn/go-shellwords v1.0.5
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
+	github.com/moby/buildkit v0.5.1
 	github.com/natefinch/lumberjack v0.0.0-20170911140457-aee462912944 // indirect
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0 // indirect
@@ -82,16 +88,15 @@ require (
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 	golang.org/x/tools v0.0.0-20190411180116-681f9ce8ac52 // indirect
 	google.golang.org/appengine v1.5.0 // indirect
-	google.golang.org/grpc v1.21.1 // indirect
+	google.golang.org/grpc v1.21.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/yaml.v2 v2.2.2
-	gotest.tools v2.2.0+incompatible // indirect
 	istio.io/api v0.0.0-20190408162927-e9ab8d6a54a6
 	istio.io/istio v0.0.0-20190412222632-d19179769183
 	k8s.io/api v0.0.0-20190606204050-af9c91bd2759
 	k8s.io/apiextensions-apiserver v0.0.0-20190606210616-f848dc7be4a4
 	k8s.io/apimachinery v0.0.0-20190404173353-6a84e37a896d
-	k8s.io/cli-runtime v0.0.0-20190606211212-7b5a46666fe9 // indirect
+	k8s.io/cli-runtime v0.0.0-20190606211212-7b5a46666fe9
 	k8s.io/client-go v11.0.1-0.20190606204521-b8faab9c5193+incompatible
 	k8s.io/helm v2.14.1+incompatible // indirect
 	k8s.io/klog v0.3.1

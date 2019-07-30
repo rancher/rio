@@ -77,6 +77,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rio().V1().Routers().Informer()}, nil
 	case riocattleiov1.SchemeGroupVersion.WithResource("services"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rio().V1().Services().Informer()}, nil
+	case riocattleiov1.SchemeGroupVersion.WithResource("stacks"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Rio().V1().Stacks().Informer()}, nil
 
 	}
 

@@ -30,6 +30,7 @@ type Interface interface {
 	ExternalService() ExternalServiceController
 	Router() RouterController
 	Service() ServiceController
+	Stack() StackController
 }
 
 func New(controllerManager *generic.ControllerManager, client clientset.RioV1Interface,
@@ -58,4 +59,7 @@ func (c *version) Router() RouterController {
 }
 func (c *version) Service() ServiceController {
 	return NewServiceController(v1.SchemeGroupVersion.WithKind("Service"), c.controllerManager, c.client, c.informers.Services())
+}
+func (c *version) Stack() StackController {
+	return NewStackController(v1.SchemeGroupVersion.WithKind("Stack"), c.controllerManager, c.client, c.informers.Stacks())
 }

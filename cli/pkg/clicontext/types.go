@@ -256,8 +256,10 @@ func (c *CLIContext) Create(obj runtime.Object) (err error) {
 		_, err = c.Rio.ExternalServices(o.Namespace).Create(o)
 	case *projectv1.PublicDomain:
 		_, err = c.Project.PublicDomains(o.Namespace).Create(o)
+	case *riov1.Stack:
+		_, err = c.Rio.Stacks(o.Namespace).Create(o)
 	default:
-		return fmt.Errorf("unknown delete type %v", reflect.TypeOf(obj))
+		return fmt.Errorf("unknown type %v", reflect.TypeOf(obj))
 	}
 	if err != nil {
 		return err
@@ -282,8 +284,10 @@ func (c *CLIContext) UpdateObject(obj runtime.Object) (err error) {
 		_, err = c.Project.Features(o.Namespace).Update(o)
 	case *projectv1.PublicDomain:
 		_, err = c.Project.PublicDomains(o.Namespace).Update(o)
+	case *riov1.Stack:
+		_, err = c.Rio.Stacks(o.Namespace).Update(o)
 	default:
-		return fmt.Errorf("unknown delete type %v", reflect.TypeOf(obj))
+		return fmt.Errorf("unknown type %v", reflect.TypeOf(obj))
 	}
 	return
 }

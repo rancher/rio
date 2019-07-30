@@ -11,6 +11,7 @@ import (
 	"github.com/rancher/rio/modules/service/controllers/service"
 	"github.com/rancher/rio/modules/service/controllers/serviceset"
 	"github.com/rancher/rio/modules/service/controllers/servicestatus"
+	"github.com/rancher/rio/modules/service/controllers/stack"
 	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/features"
 	"github.com/rancher/rio/types"
@@ -32,6 +33,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			appweight.Register,
 			publicdomain.Register,
 			info.Register,
+			stack.Register,
 		},
 	}
 

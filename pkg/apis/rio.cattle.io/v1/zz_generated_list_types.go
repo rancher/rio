@@ -91,3 +91,20 @@ func NewApp(namespace, name string, obj App) *App {
 	obj.Namespace = namespace
 	return &obj
 }
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// StackList is a list of Stack resources
+type StackList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []Stack `json:"items"`
+}
+
+func NewStack(namespace, name string, obj Stack) *Stack {
+	obj.APIVersion, obj.Kind = SchemeGroupVersion.WithKind("Stack").ToAPIVersionAndKind()
+	obj.Name = name
+	obj.Namespace = namespace
+	return &obj
+}

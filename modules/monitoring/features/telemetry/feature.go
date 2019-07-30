@@ -7,7 +7,7 @@ import (
 
 	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/features"
-	"github.com/rancher/rio/pkg/systemstack"
+	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/rio/types"
 )
 
@@ -26,8 +26,8 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			},
 			Enabled: !constants.DisableMixer,
 		},
-		SystemStacks: []*systemstack.SystemStack{
-			systemstack.NewStack(apply, rContext.Namespace, "istio-telemetry", true),
+		SystemStacks: []*stack.SystemStack{
+			stack.NewSystemStack(apply, rContext.Namespace, "istio-telemetry"),
 		},
 		FixedAnswers: map[string]string{
 			"NAMESPACE": rContext.Namespace,

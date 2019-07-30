@@ -31,6 +31,7 @@ type RioV1Interface interface {
 	ExternalServicesGetter
 	RoutersGetter
 	ServicesGetter
+	StacksGetter
 }
 
 // RioV1Client is used to interact with features provided by the rio.cattle.io group.
@@ -52,6 +53,10 @@ func (c *RioV1Client) Routers(namespace string) RouterInterface {
 
 func (c *RioV1Client) Services(namespace string) ServiceInterface {
 	return newServices(c, namespace)
+}
+
+func (c *RioV1Client) Stacks(namespace string) StackInterface {
+	return newStacks(c, namespace)
 }
 
 // NewForConfig creates a new RioV1Client for the given config.

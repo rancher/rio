@@ -25,3 +25,5 @@ type ExternalServiceExpansion interface{}
 type RouterExpansion interface{}
 
 type ServiceExpansion interface{}
+
+type StackExpansion interface{}

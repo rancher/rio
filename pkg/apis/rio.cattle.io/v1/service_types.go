@@ -368,6 +368,9 @@ type ImageBuild struct {
 	// Specify build context. Defaults to "."
 	BuildContext string `json:"buildContext,omitempty"`
 
+	// Specify build args
+	BuildArgs []string `json:"buildArgs,omitempty"`
+
 	// Specify the build template. Defaults to `buildkit`.
 	Template string `json:"template,omitempty"`
 
@@ -388,6 +391,12 @@ type ImageBuild struct {
 
 	// Whether to enable builds for pull requests
 	EnablePR bool `json:"enablePr,omitempty"`
+
+	// Build image with no cache
+	NoCache bool `json:"noCache,omitempty"`
+
+	// Push image
+	Push bool `json:"push,omitempty"`
 }
 
 func (in *Service) State() common.State {
