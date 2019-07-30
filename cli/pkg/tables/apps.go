@@ -5,11 +5,11 @@ import (
 	"sort"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/runtime"
-
 	"github.com/rancher/rio/cli/pkg/table"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type AppData struct {
@@ -17,7 +17,10 @@ type AppData struct {
 	metav1.ObjectMeta
 
 	App       *riov1.App
-	Revisions map[string]*riov1.Service
+	Revisions map[string]struct {
+		Revision *riov1.Service
+		Pods     []corev1.Pod
+	}
 }
 
 func (a *AppData) DeepCopyObject() runtime.Object {
@@ -25,11 +28,14 @@ func (a *AppData) DeepCopyObject() runtime.Object {
 		TypeMeta:   a.TypeMeta,
 		ObjectMeta: *a.ObjectMeta.DeepCopy(),
 		App:        a.App.DeepCopy(),
-		Revisions:  map[string]*riov1.Service{},
+		Revisions: map[string]struct {
+			Revision *riov1.Service
+			Pods     []corev1.Pod
+		}{},
 	}
 
 	for k, v := range a.Revisions {
-		ad.Revisions[k] = v.DeepCopy()
+		ad.Revisions[k] = v
 	}
 
 	return ad
@@ -138,23 +144,30 @@ func formatAppDetail(obj interface{}) (string, error) {
 		}
 
 		rev := versions[name]
-		if !rev.DeploymentReady && (svc.SystemSpec == nil || !svc.SystemSpec.Global) {
+		if !rev.DeploymentReady && (svc.Revision.SystemSpec == nil || !svc.Revision.SystemSpec.Global) {
 			if buffer.Len() > 0 {
 				buffer.WriteString("; ")
 			}
-			buffer.WriteString(name)
-			buffer.WriteString(" NotReady")
+			buffer.WriteString(name + ": ")
+			pd, err := podsDetail(svc.Pods)
+			if err != nil {
+				return "", err
+			}
+			if pd == "" {
+				pd = "not ready"
+			}
+			buffer.WriteString(pd)
 		}
 
-		if waitingOnBuild(svc) {
-			if riov1.ServiceConditionImageReady.IsFalse(svc) {
+		if waitingOnBuild(svc.Revision) {
+			if riov1.ServiceConditionImageReady.IsFalse(svc.Revision) {
 				if buffer.Len() > 0 {
 					buffer.WriteString("; ")
 				}
 				buffer.WriteString(name)
 				buffer.WriteString(" build failed: ")
-				buffer.WriteString(riov1.ServiceConditionImageReady.GetMessage(svc))
-			} else if !riov1.ServiceConditionImageReady.IsTrue(svc) {
+				buffer.WriteString(riov1.ServiceConditionImageReady.GetMessage(svc.Revision))
+			} else if !riov1.ServiceConditionImageReady.IsTrue(svc.Revision) {
 				if buffer.Len() > 0 {
 					buffer.WriteString("; ")
 				}

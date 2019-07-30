@@ -87,6 +87,12 @@ func main() {
 			Destination: &cfg.Debug,
 		},
 		cli.StringFlag{
+			Name:        "debug-level",
+			Usage:       "kubernetes client-go debug level",
+			Value:       "6",
+			Destination: &cfg.DebugLevel,
+		},
+		cli.StringFlag{
 			Name:        "system-namespace",
 			Value:       "",
 			Destination: &cfg.SystemNamespace,

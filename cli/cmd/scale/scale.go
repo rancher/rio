@@ -39,13 +39,13 @@ func (s *Scale) Run(ctx *clicontext.CLIContext) error {
 				}
 				service.Spec.AutoscaleConfig.MinScale = &minScale
 				service.Spec.AutoscaleConfig.MaxScale = &maxScale
-				service.Spec.Scale = 0
+				service.Spec.Scale = &[]int{0}[0]
 			} else {
 				scale, err := strconv.Atoi(scaleStr)
 				if err != nil {
 					return fmt.Errorf("failed to parse %s: %v", arg, err)
 				}
-				service.Spec.Scale = scale
+				service.Spec.Scale = &scale
 				service.Spec.MinScale = nil
 				service.Spec.MaxScale = nil
 				service.Status.ObservedScale = nil

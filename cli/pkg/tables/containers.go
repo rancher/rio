@@ -106,13 +106,16 @@ func podDetail(obj interface{}) (string, error) {
 	pod, _ := obj.(*v1.Pod)
 	output := strings.Builder{}
 	for _, con := range append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) {
-		if con.State.Waiting != nil {
+		if con.State.Waiting != nil && con.State.Waiting.Reason != "" {
 			output.WriteString(";")
 			output.WriteString(fmt.Sprintf("%s: %s", con.State.Waiting.Reason, con.State.Waiting.Message))
 		}
 
 		if con.State.Terminated != nil && con.State.Terminated.ExitCode != 0 {
 			output.WriteString(";")
+			if con.State.Terminated.Message == "" {
+				con.State.Terminated.Message = "exit code not zero"
+			}
 			output.WriteString(fmt.Sprintf("%s: %s, exit code: %v", con.State.Terminated.Reason, con.State.Terminated.Message, con.State.Terminated.ExitCode))
 		}
 	}

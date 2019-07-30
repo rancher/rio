@@ -29,16 +29,13 @@ func (r *Run) Run(ctx *clicontext.CLIContext) error {
 			service.Spec.AutoscaleConfig.MinScale = &minScale
 			service.Spec.AutoscaleConfig.MaxScale = &maxScale
 			service.Spec.AutoscaleConfig.Concurrency = &r.Concurrency
-			service.Spec.Scale = minScale
+			service.Spec.Scale = &minScale
 			return service
 		}
 
 		// disable autoscaling
 		scale, _ := strconv.Atoi(r.Scale)
-		if scale == 0 {
-			scale = 1
-		}
-		service.Spec.Scale = scale
+		service.Spec.Scale = &scale
 		service.Spec.AutoscaleConfig.MinScale = &scale
 		service.Spec.AutoscaleConfig.MaxScale = &scale
 		return service

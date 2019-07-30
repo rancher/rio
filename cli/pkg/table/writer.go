@@ -53,8 +53,7 @@ type writer struct {
 	err           error
 	headerPrinted bool
 	Writer        io.Writer
-	//Writer        *tabwriter.Writer
-	funcMap map[string]interface{}
+	funcMap       map[string]interface{}
 }
 
 type FormatFunc interface{}
@@ -64,6 +63,7 @@ type WriterConfig interface {
 	Quiet() bool
 	Format() string
 	Writer() io.Writer
+	WithWriter(writer io.Writer)
 }
 
 func NewWriter(values [][]string, config WriterConfig) Writer {

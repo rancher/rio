@@ -1,10 +1,13 @@
 package ps
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/rancher/rio/cli/cmd/externalservice"
 	"github.com/rancher/rio/cli/cmd/revision"
+	"github.com/rancher/rio/cli/cmd/route"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
 	"github.com/urfave/cli"
@@ -12,6 +15,7 @@ import (
 
 type Ps struct {
 	C_Containers bool `desc:"print containers, not services"`
+	A_All        bool `desc:"print all resources, including router and externalservice"`
 }
 
 func (p *Ps) Customize(cmd *cli.Command) {
@@ -24,6 +28,9 @@ func (p *Ps) Run(ctx *clicontext.CLIContext) error {
 	if len(args) == 0 {
 		if p.C_Containers {
 			return Containers(ctx)
+		}
+		if p.A_All {
+			return p.showAll(ctx)
 		}
 		return p.apps(ctx)
 	}
@@ -48,4 +55,30 @@ func (p *Ps) Run(ctx *clicontext.CLIContext) error {
 	}
 
 	return Pods(ctx)
+}
+
+func (p *Ps) showAll(ctx *clicontext.CLIContext) error {
+	buffer := &strings.Builder{}
+	ctx.WithWriter(buffer)
+
+	fmt.Fprintf(buffer, "Applications\n")
+	if err := p.apps(ctx); err != nil {
+		return err
+	}
+	fmt.Fprintf(buffer, "\n")
+
+	fmt.Fprintf(buffer, "Routers\n")
+	if err := route.ListRouters(ctx); err != nil {
+		return err
+	}
+	fmt.Fprintf(buffer, "\n")
+
+	fmt.Fprintf(buffer, "ExternalServices\n")
+	if err := externalservice.ListExternalServices(ctx); err != nil {
+		return err
+	}
+	fmt.Fprintf(buffer, "\n")
+
+	fmt.Print(buffer.String())
+	return nil
 }

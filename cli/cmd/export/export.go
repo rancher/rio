@@ -39,19 +39,60 @@ func (e *Export) Run(ctx *clicontext.CLIContext) error {
 		switch r.Type {
 		case clitypes.ServiceType:
 			svc := r.Object.(*riov1.Service)
-			if err := exportService(ctx, svc, output, !e.Raw, e.Format); err != nil {
+			var objects []runtime.Object
+
+			for _, cm := range svc.Spec.Configs {
+				configMap, err := ctx.Core.ConfigMaps(svc.Namespace).Get(cm.Name, metav1.GetOptions{})
+				if err != nil {
+					return err
+				}
+				objects = append(objects, configMap)
+			}
+			objects = append(objects, r.Object)
+			if err := exportObjects(objects, ctx, output, !e.Raw, e.Format); err != nil {
 				return err
 			}
 		case clitypes.NamespaceType:
+			var objects []runtime.Object
+
 			ns := r.Object.(*corev1.Namespace)
+
 			services, err := ctx.Rio.Services(ns.Name).List(metav1.ListOptions{})
 			if err != nil {
 				return err
 			}
+			for _, obj := range services.Items {
+				objects = append(objects, &obj)
+			}
+
 			for _, svc := range services.Items {
-				if err := exportService(ctx, &svc, output, !e.Raw, e.Format); err != nil {
-					return err
+				for _, cm := range svc.Spec.Configs {
+					configMap, err := ctx.Core.ConfigMaps(svc.Namespace).Get(cm.Name, metav1.GetOptions{})
+					if err != nil {
+						return err
+					}
+					objects = append(objects, configMap)
 				}
+			}
+
+			externalservices, err := ctx.Rio.ExternalServices(ns.Name).List(metav1.ListOptions{})
+			if err != nil {
+				return err
+			}
+			for _, obj := range externalservices.Items {
+				objects = append(objects, &obj)
+			}
+
+			routers, err := ctx.Rio.Routers(ns.Name).List(metav1.ListOptions{})
+			if err != nil {
+				return err
+			}
+			for _, obj := range routers.Items {
+				objects = append(objects, &obj)
+			}
+
+			if err := exportObjects(objects, ctx, output, !e.Raw, e.Format); err != nil {
+				return err
 			}
 		}
 	}
@@ -60,20 +101,9 @@ func (e *Export) Run(ctx *clicontext.CLIContext) error {
 	return nil
 }
 
-func exportService(ctx *clicontext.CLIContext, svc *riov1.Service, output *strings.Builder, pretty bool, format string) error {
-	result, err := objToYaml(svc, pretty, format)
-	if err != nil {
-		return err
-	}
-	output.WriteString(result)
-	output.WriteString("\n---\n")
-
-	for _, cm := range svc.Spec.Configs {
-		configMap, err := ctx.Core.ConfigMaps(svc.Namespace).Get(cm.Name, metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
-		result, err := objToYaml(configMap, pretty, format)
+func exportObjects(objects []runtime.Object, ctx *clicontext.CLIContext, output *strings.Builder, pretty bool, format string) error {
+	for _, obj := range objects {
+		result, err := objToYaml(obj, pretty, format)
 		if err != nil {
 			return err
 		}
