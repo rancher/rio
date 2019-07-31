@@ -186,7 +186,7 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 		service.Spec.Image = args[0]
 	}
 
-	spec.RunAsUser, spec.RunAsGroup, err = stringers.ParseUserGroup(c.U_User, c.Group)
+	service.Spec.RunAsUser, service.Spec.RunAsGroup, err = stringers.ParseUserGroup(c.U_User, c.Group)
 	if err != nil {
 		return nil, err
 	}
