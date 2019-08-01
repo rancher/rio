@@ -13,7 +13,7 @@ configs:
     zap-logger-config: |-
       {
         "level": "info",
-        "development": true,
+        "development": false,
         "outputPaths": ["stdout"],
         "errorOutputPaths": ["stderr"],
         "encoding": "json",
@@ -32,7 +32,7 @@ configs:
         }
       }
     loglevel.controller: "info"
-    loglevel.autoscaler: "debug"
+    loglevel.autoscaler: "info"
     loglevel.queueproxy: "info"
     loglevel.webhook: "info"
     loglevel.activator: "info"
@@ -87,7 +87,7 @@ services:
     - get,watch,list,update,create,patch networking.internal.knative.dev/*/status
     - get,watch,list,update,create,patch networking.internal.knative.dev/*/finalizers
     - get,watch,list,update,create,patch caching.internal.knative.dev/images
-    image: rancher/autoscaler-b41733a3e5694e8fc64777bdfd8e791a@sha256:87ed2233a87f75ab6a8eb60bef9b0223b597bccea1a90e7a3a2d69c430d6af3f
+    image: rancher/autoscaler-b41733a3e5694e8fc64777bdfd8e791a@sha256:2545ae552c52f0eac70dff8c1e0b35a8ae9dbd6c05a6d8f3780c2b35f5a9ad73
     imagePullPolicy: always
     ports:
     - 8080/http,websocket,internal=true
@@ -121,7 +121,7 @@ services:
     - get,watch,list,update,create,patch networking.internal.knative.dev/*/status
     - get,watch,list,update,create,patch networking.internal.knative.dev/*/finalizers
     - get,watch,list,update,create,patch caching.internal.knative.dev/images
-    image: rancher/activator-2d008c4c36689d255523e5fa210c0bec@sha256:19318a8e5ef80587d9d785df6f5a3e463a39fc4a19dea68b49818715c368b14b
+    image: rancher/activator-2d008c4c36689d255523e5fa210c0bec@sha256:ca69d7fa28c9d6f2ae02e940df8b8d5d76b13d897b5e0d4a4028432f50f3ca1a
     imagePullPolicy: always
     livenessProbe:
       httpGet:
@@ -167,7 +167,7 @@ services:
     - get,watch,list,update,create,patch networking.internal.knative.dev/*/status
     - get,watch,list,update,create,patch networking.internal.knative.dev/*/finalizers
     - get,watch,list,update,create,patch caching.internal.knative.dev/images
-    image: rancher/controller-43f0364ab2f6dab17267e80a1f6a4adc@sha256:4f5b43f481b13c9cf8cb6da238347e21ba8b898c0faaaaa3d80c2a0e7879adb5
+    image: rancher/controller-43f0364ab2f6dab17267e80a1f6a4adc@sha256:48827922082604e3e897732a91419fbec9086b8844d9b0230e0f47d0bbf67973
     ports:
     - 9090/http,metrics,internal=true
     configs:
