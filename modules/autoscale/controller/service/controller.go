@@ -47,6 +47,8 @@ const (
 
 	ContainerPortKey = "container-port"
 
+	AppKey = "app"
+
 	VersionKey = "version"
 )
 
@@ -171,6 +173,7 @@ func (p populator) populatePodAutoscaler(object runtime.Object, ns *corev1.Names
 				ServiceKey:       service.Name,
 				RevisionKey:      fmt.Sprintf("%s-%s", app, version),
 				ContainerPortKey: portValue,
+				AppKey:           app,
 				VersionKey:       version,
 			},
 		},
