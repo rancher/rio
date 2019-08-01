@@ -16,6 +16,10 @@ func (l *Ls) Customize(cmd *cli.Command) {
 }
 
 func (l *Ls) Run(ctx *clicontext.CLIContext) error {
+	return ListRouters(ctx)
+}
+
+func ListRouters(ctx *clicontext.CLIContext) error {
 	routeSets, err := ctx.List(types.RouterType)
 	if err != nil {
 		return err

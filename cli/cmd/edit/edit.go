@@ -7,25 +7,19 @@ import (
 	"os"
 	"strings"
 
-	"github.com/rancher/wrangler/pkg/gvk"
-	name2 "github.com/rancher/wrangler/pkg/name"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
-
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
 	"github.com/rancher/rio/cli/cmd/inspect"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
+	"github.com/rancher/wrangler/pkg/gvk"
+	name2 "github.com/rancher/wrangler/pkg/name"
 	"github.com/sirupsen/logrus"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/kubernetes/pkg/kubectl/cmd/util/editor"
 	"sigs.k8s.io/yaml"
-)
-
-const (
-	format = "application/yaml"
 )
 
 var (
@@ -148,6 +142,16 @@ func (edit *Edit) edit(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
+	g, err := gvk.Get(r.Object)
+	if err != nil {
+		return err
+	}
+	gvr := schema.GroupVersionResource{
+		Group:    g.Group,
+		Version:  g.Version,
+		Resource: strings.ToLower(name2.GuessPluralName(g.Kind)),
+	}
+
 	m, err := json.Marshal(modifiedMap)
 	if err != nil {
 		return err
@@ -172,16 +176,6 @@ func (edit *Edit) edit(ctx *clicontext.CLIContext) error {
 
 		obj := &unstructured.Unstructured{
 			Object: m,
-		}
-
-		gvk, err := gvk.Get(obj)
-		if err != nil {
-			return err
-		}
-		gvr := schema.GroupVersionResource{
-			Group:    gvk.Group,
-			Version:  gvk.Version,
-			Resource: strings.ToLower(name2.GuessPluralName(gvk.Kind)),
 		}
 
 		c, err := dynamic.NewForConfig(ctx.RestConfig)

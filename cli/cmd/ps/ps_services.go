@@ -1,13 +1,18 @@
 package ps
 
 import (
+	"fmt"
+
+	"github.com/rancher/rio/cli/cmd/revision"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/tables"
 	"github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/services"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 type ServiceData struct {
@@ -27,12 +32,23 @@ func (p *Ps) apps(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
+	namespaces := sets.NewString()
+	for _, app := range appObjs {
+		namespaces.Insert(app.(*riov1.App).Namespace)
+	}
+	m, err := revision.PodsMap(ctx, namespaces.List())
+	if err != nil {
+		return err
+	}
 	for _, v := range appObjs {
 		app := v.(*riov1.App)
 		appDatas[app.Namespace+"/"+app.Name] = tables.AppData{
 			ObjectMeta: app.ObjectMeta,
 			App:        app,
-			Revisions:  map[string]*riov1.Service{},
+			Revisions: map[string]struct {
+				Revision *riov1.Service
+				Pods     []corev1.Pod
+			}{},
 		}
 	}
 
@@ -55,17 +71,23 @@ func (p *Ps) apps(ctx *clicontext.CLIContext) error {
 					Spec: riov1.AppSpec{
 						Revisions: []riov1.Revision{
 							{
-								Scale:   svc.Spec.Scale,
+								Scale:   *svc.Spec.Scale,
 								Version: version,
 							},
 						},
 					},
 				}),
-				Revisions: map[string]*riov1.Service{},
+				Revisions: map[string]struct {
+					Revision *riov1.Service
+					Pods     []corev1.Pod
+				}{},
 			}
 			appDatas[key] = app
 		}
-		app.Revisions[version] = svc
+		app.Revisions[version] = struct {
+			Revision *riov1.Service
+			Pods     []corev1.Pod
+		}{Revision: svc, Pods: m[fmt.Sprintf("%s/%s/%s", svc.Namespace, appName, version)]}
 	}
 
 	for _, v := range appDatas {

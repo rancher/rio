@@ -1,6 +1,10 @@
 package clicontext
 
 import (
+	"flag"
+	"io"
+	"os"
+
 	"github.com/pkg/errors"
 	"github.com/rancher/rio/pkg/constants"
 	projectv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/admin.rio.cattle.io/v1"
@@ -14,6 +18,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog"
 )
 
 var ErrNoConfig = errors.New("Can not find rio info resource inside your cluster. Have you installed Rio?(run `rio install --help`)")
@@ -39,10 +44,17 @@ type Config struct {
 	Autoscale autoscalev1.AutoscaleV1Interface
 
 	NoPrompt bool
+	Writer   io.Writer
+
+	DebugLevel string
 }
 
 func (c *Config) Validate() error {
 	if c.Debug {
+		klog.InitFlags(flag.CommandLine)
+		flag.CommandLine.Lookup("v").Value.Set(c.DebugLevel)
+		flag.CommandLine.Lookup("alsologtostderr").Value.Set("true")
+
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
@@ -53,6 +65,8 @@ func (c *Config) Validate() error {
 		logrus.Error(err)
 		return ErrNoConfig
 	}
+	restConfig.QPS = 500
+	restConfig.Burst = 100
 
 	project, err := projectv1.NewForConfig(restConfig)
 	if err != nil {
@@ -100,6 +114,7 @@ func (c *Config) Validate() error {
 	if c.DefaultNamespace == c.SystemNamespace {
 		c.ShowSystem = true
 	}
+	c.Writer = os.Stdout
 
 	return nil
 }

@@ -13,12 +13,15 @@ type scaleParams struct {
 }
 
 func parseScaleParams(service *riov1.ServiceSpec) scaleParams {
-	scale := int32(service.Scale)
-	batchSize := service.UpdateBatchSize
-
-	if scale == 0 {
-		scale = 1
+	scaleNum := 0
+	if service.Scale == nil {
+		scaleNum = 1
 	}
+	if service.Scale != nil {
+		scaleNum = *service.Scale
+	}
+	scale := int32(scaleNum)
+	batchSize := service.UpdateBatchSize
 
 	if batchSize == 0 {
 		batchSize = 1

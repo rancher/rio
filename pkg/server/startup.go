@@ -9,13 +9,13 @@ import (
 	"github.com/rancher/rio/pkg/controllers"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/crd"
+	"github.com/rancher/wrangler/pkg/kubeconfig"
 	"github.com/rancher/wrangler/pkg/leader"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 var Crds = append(crd.NonNamespacedTypes(
@@ -74,7 +74,8 @@ var Crds = append(crd.NonNamespacedTypes(
 )...)
 
 func Startup(ctx context.Context, systemNamespace, kubeConfig string) error {
-	restConfig, err := clientcmd.BuildConfigFromFlags("", kubeConfig)
+	loader := kubeconfig.GetInteractiveClientConfig(kubeConfig)
+	restConfig, err := loader.ClientConfig()
 	if err != nil {
 		return err
 	}

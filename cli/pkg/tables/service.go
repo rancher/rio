@@ -42,18 +42,23 @@ func podsDetail(obj interface{}) (string, error) {
 }
 
 func FormatScale(data, data2, data3 interface{}) (string, error) {
-	scale, ok := data.(int)
+	scale, ok := data.(*int)
 	if !ok {
 		return fmt.Sprint(data), nil
 	}
-	if scale == 0 {
-		scale = 1
+
+	scaleNum := 0
+	if scale == nil {
+		scaleNum = 1
+	} else {
+		scaleNum = *scale
 	}
+
 	observedScale, ok := data3.(*int)
 	if ok && observedScale != nil {
-		scale = *observedScale
+		scaleNum = *observedScale
 	}
-	scaleStr := strconv.Itoa(scale)
+	scaleStr := strconv.Itoa(scaleNum)
 
 	scaleStatus, ok := data2.(*v1.ScaleStatus)
 	if !ok {
@@ -64,22 +69,21 @@ func FormatScale(data, data2, data3 interface{}) (string, error) {
 		scaleStatus = &v1.ScaleStatus{}
 	}
 
-	if scaleStatus.Available == 0 && scaleStatus.Unavailable == 0 && scaleStatus.Ready == scale {
+	if scaleStatus.Available == 0 && scaleStatus.Unavailable == 0 && scaleStatus.Ready == scaleNum {
 		return scaleStr, nil
 	}
 
 	percentage := ""
-	if scale > 0 && scaleStatus.Updated > 0 && scale != scaleStatus.Updated {
-		percentage = fmt.Sprintf(" %d%%", (scaleStatus.Updated*100)/scale)
+	if scaleNum > 0 && scaleStatus.Updated > 0 && scaleNum != scaleStatus.Updated {
+		percentage = fmt.Sprintf(" %d%%", (scaleStatus.Updated*100)/scaleNum)
 	}
 
 	prefix := ""
-	if scale > 0 && scaleStatus.Ready != scale {
+	if scaleNum > 0 && scaleStatus.Ready != scaleNum {
 		prefix = fmt.Sprintf("%d/", scaleStatus.Ready)
 	}
 
-	//return fmt.Sprintf("(%d/%d/%d)/%d%s", scaleStatus.Unavailable, scaleStatus.Available, scaleStatus.Ready, scale, percentage), nil
-	return fmt.Sprintf("%s%d%s", prefix, scale, percentage), nil
+	return fmt.Sprintf("%s%d%s", prefix, scaleNum, percentage), nil
 }
 
 func FormatServiceName(cfg Config) func(data, data2 interface{}) (string, error) {

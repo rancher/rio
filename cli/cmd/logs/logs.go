@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/rancher/rio/cli/cmd/ps"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/logger"
@@ -46,11 +48,14 @@ func (l *Logs) Run(ctx *clicontext.CLIContext) error {
 	}
 
 	factory := logger.NewColorLoggerFactory()
+	errg, _ := errgroup.WithContext(ctx.Ctx)
 	for _, pd := range pds {
 		if l.R_Revision != "" && pd.Service.Version != l.R_Revision {
 			continue
 		}
 		for _, container := range pd.Containers {
+			pod := pd.Pod
+			c := container
 			if l.C_Container != "" && container.Name != l.C_Container {
 				continue
 			}
@@ -59,12 +64,12 @@ func (l *Logs) Run(ctx *clicontext.CLIContext) error {
 					continue
 				}
 			}
-			go l.logContainer(pd.Pod, container, ctx.Core, factory)
+			errg.Go(func() error {
+				return l.logContainer(pod, c, ctx.Core, factory)
+			})
 		}
 	}
-	<-ctx.Ctx.Done()
-
-	return nil
+	return errg.Wait()
 }
 
 func (l *Logs) logContainer(pod *v1.Pod, container v1.Container, coreClient corev1.CoreV1Interface, factory *logger.ColorLoggerFactory) error {

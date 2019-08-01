@@ -25,6 +25,7 @@ import (
 
 var (
 	debug          bool
+	level          string
 	kubeconfig     string
 	namespace      string
 	customRegistry string
@@ -50,6 +51,11 @@ func main() {
 			Name:        "debug",
 			EnvVar:      "RIO_DEBUG",
 			Destination: &debug,
+		},
+		cli.StringFlag{
+			Name:        "debug-level",
+			Value:       "6",
+			Destination: &level,
 		},
 		cli.StringFlag{
 			Name:        "http-listen-port",
@@ -130,18 +136,6 @@ func run(c *cli.Context) error {
 		}
 	}
 
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return err
-	}
-
-	kubeconfig = strings.Replace(kubeconfig, "${HOME}", homeDir, -1)
-	kubeconfig = strings.Replace(kubeconfig, "$HOME", homeDir, -1)
-
-	if os.Getenv("RIO_IN_CLUSTER") != "" {
-		kubeconfig = ""
-	}
-
 	ctx := signals.SetupSignalHandler(context.Background())
 	if err := server.Startup(ctx, namespace, kubeconfig); err != nil {
 		return err
@@ -151,7 +145,7 @@ func run(c *cli.Context) error {
 }
 
 func setupDebugLogging() {
-	flag.Set("alsologtostderr", "true")
-	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
-	klog.InitFlags(klogFlags)
+	klog.InitFlags(flag.CommandLine)
+	flag.CommandLine.Lookup("v").Value.Set(level)
+	flag.CommandLine.Lookup("alsologtostderr").Value.Set("true")
 }

@@ -12,6 +12,7 @@ import (
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	services2 "github.com/rancher/rio/pkg/services"
 	tektonv1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -158,6 +159,8 @@ func Containers(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
+	showSidecar := len(ctx.CLI.Args()) > 0
+
 	pds, err := ListPods(ctx, true, ctx.CLI.Args()...)
 	if err != nil {
 		return err
@@ -171,6 +174,11 @@ func Containers(ctx *clicontext.CLIContext) error {
 			continue
 		}
 		for _, container := range pd.Containers {
+			if !showSidecar {
+				if container.Name == "istio-proxy" || container.Name == "istio-init" {
+					continue
+				}
+			}
 			writer.TableWriter().Write(ContainerData{
 				Name:      fmt.Sprintf("%s/%s", pd.Pod.Namespace, pd.Name),
 				PodData:   &pd,
@@ -218,8 +226,11 @@ func listApp(ctx *clicontext.CLIContext) (map[string]tables.AppData, error) {
 	for _, v := range appObjs {
 		app := v.(*riov1.App)
 		appDatas[app.Namespace+"/"+app.Name] = tables.AppData{
-			App:       app,
-			Revisions: map[string]*riov1.Service{},
+			App: app,
+			Revisions: map[string]struct {
+				Revision *riov1.Service
+				Pods     []corev1.Pod
+			}{},
 		}
 	}
 	return appDatas, nil

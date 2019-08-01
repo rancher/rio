@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"strconv"
 
-	"github.com/rancher/rio/pkg/apis/common"
 	"github.com/rancher/wrangler/pkg/condition"
 	"github.com/rancher/wrangler/pkg/genericcondition"
 	appsv1 "k8s.io/api/apps/v1"
@@ -46,7 +45,7 @@ type ServiceRevision struct {
 // ServiceScale Specifies the scale parameters for Service
 type ServiceScale struct {
 	// Number of desired pods. This is a pointer to distinguish between explicit zero and not specified. Defaults to 1.
-	Scale int `json:"scale,omitempty"`
+	Scale *int `json:"scale,omitempty"`
 
 	// The maximum number of pods that can be scheduled above the desired number of pods. Value can be an absolute number (ex: 5) or a percentage of desired pods (ex: 10%).
 	// This can not be 0 if MaxUnavailable is 0. Absolute number is calculated from percentage by rounding up.
@@ -388,28 +387,4 @@ type ImageBuild struct {
 
 	// Whether to enable builds for pull requests
 	EnablePR bool `json:"enablePr,omitempty"`
-}
-
-func (in *Service) State() common.State {
-	state := common.StateFromConditionAndMeta(in.ObjectMeta, in.Status.Conditions)
-	if len(in.Status.Conditions) == 0 {
-		state.State = "pending"
-	}
-	if scaleIsZero(in) {
-		state.State = "inactive"
-	}
-	return state
-}
-
-func scaleIsZero(service *Service) bool {
-	if service.Status.ScaleStatus == nil {
-		return true
-	}
-	ready := service.Status.ScaleStatus.Ready
-	available := service.Status.ScaleStatus.Available
-	unavailable := service.Status.ScaleStatus.Unavailable
-	updated := service.Status.ScaleStatus.Updated
-	scale := service.Spec.Scale
-
-	return ready+available+unavailable+updated+scale == 0
 }

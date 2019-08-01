@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/docker/docker/pkg/namesgenerator"
@@ -20,7 +19,6 @@ import (
 	"github.com/rancher/rio/pkg/services"
 	"github.com/rancher/wrangler/pkg/kv"
 	"github.com/rancher/wrangler/pkg/merr"
-	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -48,10 +46,10 @@ func (c *CLIContext) getResource(r types.Resource) (ret types.Resource, err erro
 	switch r.Type {
 	case clitypes.ServiceType:
 		r, err = findService(r, c)
-	case clitypes.AppType:
-		r.Object, err = c.Rio.Apps(r.Namespace).Get(r.Name, metav1.GetOptions{})
 	case clitypes.PodType:
 		r, err = findPod(r, c)
+	case clitypes.AppType:
+		r.Object, err = c.Rio.Apps(r.Namespace).Get(r.Name, metav1.GetOptions{})
 	case clitypes.ConfigType:
 		r.Object, err = c.Core.ConfigMaps(r.Namespace).Get(r.Name, metav1.GetOptions{})
 	case clitypes.RouterType:
@@ -295,46 +293,26 @@ func (c *CLIContext) List(typeName string) (ret []runtime.Object, err error) {
 	case clitypes.FeatureType:
 		return c.listFeatures()
 	default:
-		namespaces, err := c.List(types.NamespaceType)
+		obj, err := c.listNamespace("", typeName)
 		if err != nil {
-			return nil, err
+			return ret, err
 		}
-
-		lock := sync.Mutex{}
-		eg := errgroup.Group{}
-		for _, ns := range namespaces {
-			meta, err := meta.Accessor(ns)
+		for _, o := range obj {
+			meta, err := meta.Accessor(o)
 			if err != nil {
 				return nil, err
 			}
-			if c.CLI.GlobalString("namespace") != "" && meta.GetName() != c.CLI.GlobalString("namespace") {
+			if c.CLI.GlobalString("namespace") != "" && meta.GetNamespace() != c.CLI.GlobalString("namespace") {
 				continue
 			}
-			if !c.ShowSystem && meta.GetName() == c.SystemNamespace {
+			if !c.ShowSystem && meta.GetNamespace() == c.SystemNamespace {
 				continue
 			}
-			if c.ShowSystem && meta.GetName() != c.SystemNamespace {
+			if c.ShowSystem && meta.GetNamespace() != c.SystemNamespace {
 				continue
 			}
-			eg.Go(func() error {
-				obj, err := c.listNamespace(meta.GetName(), typeName)
-				if err != nil {
-					return err
-				}
-				lock.Lock()
-				ret = append(ret, obj...)
-				lock.Unlock()
-				return nil
-			})
+			ret = append(ret, o)
 		}
-		if err := eg.Wait(); err != nil {
-			return ret, err
-		}
-		sort.Slice(ret, func(i, j int) bool {
-			meta1, _ := meta.Accessor(ret[i])
-			meta2, _ := meta.Accessor(ret[j])
-			return meta1.GetNamespace()+"/"+meta1.GetName() < meta2.GetNamespace()+"/"+meta2.GetName()
-		})
 
 		return ret, nil
 	}

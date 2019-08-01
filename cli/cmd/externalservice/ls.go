@@ -16,6 +16,10 @@ func (l *Ls) Customize(cmd *cli.Command) {
 }
 
 func (l *Ls) Run(ctx *clicontext.CLIContext) error {
+	return ListExternalServices(ctx)
+}
+
+func ListExternalServices(ctx *clicontext.CLIContext) error {
 	externalServices, err := ctx.List(clitypes.ExternalServiceType)
 	if err != nil {
 		return err

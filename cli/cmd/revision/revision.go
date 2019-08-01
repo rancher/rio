@@ -47,7 +47,7 @@ func Revisions(ctx *clicontext.CLIContext) error {
 			namespaces.Insert(namespace)
 		}
 
-		m, err := podsMap(ctx, namespaces.List())
+		m, err := PodsMap(ctx, namespaces.List())
 		if err != nil {
 			return err
 		}
@@ -86,7 +86,7 @@ func Revisions(ctx *clicontext.CLIContext) error {
 			app := obj.(*riov1.App)
 			namespaces.Insert(app.Namespace)
 		}
-		m, err := podsMap(ctx, namespaces.List())
+		m, err := PodsMap(ctx, namespaces.List())
 		if err != nil {
 			return err
 		}
@@ -123,7 +123,7 @@ func Revisions(ctx *clicontext.CLIContext) error {
 	return writer.TableWriter().Err()
 }
 
-func podsMap(ctx *clicontext.CLIContext, namespaces []string) (map[string][]v1.Pod, error) {
+func PodsMap(ctx *clicontext.CLIContext, namespaces []string) (map[string][]v1.Pod, error) {
 	podMap := map[string][]v1.Pod{}
 	for _, ns := range namespaces {
 		pods, err := ctx.Core.Pods(ns).List(metav1.ListOptions{})

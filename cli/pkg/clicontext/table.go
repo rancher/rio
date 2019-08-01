@@ -2,7 +2,6 @@ package clicontext
 
 import (
 	"io"
-	"os"
 )
 
 func (c *CLIContext) IDs() bool {
@@ -18,7 +17,11 @@ func (c *CLIContext) Format() string {
 }
 
 func (c *CLIContext) Writer() io.Writer {
-	return os.Stdout
+	return c.Config.Writer
+}
+
+func (c *CLIContext) WithWriter(writer io.Writer) {
+	c.Config.Writer = writer
 }
 
 func (c *CLIContext) GetSetNamespace() string {
