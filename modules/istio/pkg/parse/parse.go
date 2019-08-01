@@ -6,7 +6,7 @@ import (
 )
 
 func TargetURL(target string) (*url.URL, error) {
-	if !strings.HasPrefix(target, "https://") && !strings.HasPrefix(target, "http://") {
+	if !strings.Contains(target, "://") {
 		target = "http://" + target
 	}
 	u, err := url.Parse(target)
