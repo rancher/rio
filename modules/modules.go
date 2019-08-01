@@ -12,13 +12,13 @@ import (
 	"github.com/rancher/rio/modules/service"
 	"github.com/rancher/rio/modules/system"
 	"github.com/rancher/rio/pkg/constants"
-	"github.com/rancher/rio/pkg/systemstack"
+	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/rio/types"
 )
 
 func Register(ctx context.Context, rioContext *types.Context) error {
 	if !constants.DisableIstio {
-		mesh := systemstack.NewStack(rioContext.Apply, rioContext.Namespace, "mesh", true)
+		mesh := stack.NewSystemStack(rioContext.Apply, rioContext.Namespace, "mesh")
 		answer := map[string]string{
 			"HTTP_PORT":         constants.DefaultHTTPOpenPort,
 			"HTTPS_PORT":        constants.DefaultHTTPSOpenPort,

@@ -41,6 +41,7 @@ func main() {
 					riov1.Router{},
 					riov1.Service{},
 					riov1.App{},
+					riov1.Stack{},
 				},
 				GenerateTypes: true,
 			},

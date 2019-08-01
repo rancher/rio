@@ -13,7 +13,7 @@ import (
 	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/features"
-	"github.com/rancher/rio/pkg/systemstack"
+	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/rio/types"
 )
 
@@ -25,9 +25,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			Description: "Service routing using Istio",
 			Enabled:     !constants.DisableIstio,
 		},
-		SystemStacks: []*systemstack.SystemStack{
-			systemstack.NewStack(apply, rContext.Namespace, "mesh", true),
-			systemstack.NewStack(apply, rContext.Namespace, "istio", true),
+		SystemStacks: []*stack.SystemStack{
+			stack.NewSystemStack(apply, rContext.Namespace, "mesh"),
+			stack.NewSystemStack(apply, rContext.Namespace, "istio"),
 		},
 		Controllers: []features.ControllerRegister{
 			externalservice.Register,

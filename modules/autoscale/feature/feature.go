@@ -8,7 +8,7 @@ import (
 	"github.com/rancher/rio/modules/autoscale/controller/service"
 	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/features"
-	"github.com/rancher/rio/pkg/systemstack"
+	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/rio/types"
 )
 
@@ -20,8 +20,8 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			Description: "Auto-scaling services based on QPS and requests load",
 			Enabled:     !constants.DisableAutoscaling,
 		},
-		SystemStacks: []*systemstack.SystemStack{
-			systemstack.NewStack(apply, rContext.Namespace, "rio-autoscaler", true),
+		SystemStacks: []*stack.SystemStack{
+			stack.NewSystemStack(apply, rContext.Namespace, "rio-autoscaler"),
 		},
 		FixedAnswers: map[string]string{
 			"TAG": "v0.1.2",

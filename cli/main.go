@@ -34,6 +34,7 @@ import (
 	"github.com/rancher/rio/cli/cmd/systemlogs"
 	"github.com/rancher/rio/cli/cmd/tui"
 	"github.com/rancher/rio/cli/cmd/uninstall"
+	"github.com/rancher/rio/cli/cmd/up"
 	"github.com/rancher/rio/cli/cmd/weight"
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
@@ -203,6 +204,10 @@ func main() {
 		builder.Command(&systemlogs.SystemLogs{},
 			"View system log for Rio management plane",
 			appName+" systemlogs",
+			""),
+		builder.Command(&up.Up{},
+			"Apply a rio file",
+			appName+" up [OPTIONS]",
 			""),
 		route.Route(app),
 		info.Info(app),

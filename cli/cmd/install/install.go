@@ -16,7 +16,7 @@ import (
 	"github.com/rancher/rio/modules/service/controllers/serviceset"
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
-	"github.com/rancher/rio/pkg/systemstack"
+	"github.com/rancher/rio/pkg/stack"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -81,7 +81,7 @@ type Install struct {
 
 func (i *Install) Run(ctx *clicontext.CLIContext) error {
 	if ctx.K8s == nil {
-		return fmt.Errorf("Can't contact Kubernetes cluster. Please make sure your cluster is accessible")
+		return fmt.Errorf("can't contact Kubernetes cluster. Please make sure your cluster is accessible")
 	}
 	out := os.Stdout
 	if i.Yaml {
@@ -98,7 +98,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		ctx.SystemNamespace = namespace
 	}
 
-	controllerStack := systemstack.NewStack(ctx.Apply, namespace, "rio-controller", true)
+	controllerStack := stack.NewSystemStack(ctx.Apply, namespace, "rio-controller")
 
 	// hack for detecting minikube cluster
 	nodes, err := ctx.Core.Nodes().List(metav1.ListOptions{})

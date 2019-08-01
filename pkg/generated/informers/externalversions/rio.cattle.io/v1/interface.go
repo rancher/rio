@@ -32,6 +32,8 @@ type Interface interface {
 	Routers() RouterInformer
 	// Services returns a ServiceInformer.
 	Services() ServiceInformer
+	// Stacks returns a StackInformer.
+	Stacks() StackInformer
 }
 
 type version struct {
@@ -63,4 +65,9 @@ func (v *version) Routers() RouterInformer {
 // Services returns a ServiceInformer.
 func (v *version) Services() ServiceInformer {
 	return &serviceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Stacks returns a StackInformer.
+func (v *version) Stacks() StackInformer {
+	return &stackInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

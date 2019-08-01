@@ -6,7 +6,7 @@ import (
 	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/features"
-	"github.com/rancher/rio/pkg/systemstack"
+	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/rio/types"
 )
 
@@ -18,8 +18,8 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			Description: "Enable prometheus",
 			Enabled:     !constants.DisablePrometheus,
 		},
-		SystemStacks: []*systemstack.SystemStack{
-			systemstack.NewStack(apply, rContext.Namespace, "prometheus", true),
+		SystemStacks: []*stack.SystemStack{
+			stack.NewSystemStack(apply, rContext.Namespace, "prometheus"),
 		},
 		FixedAnswers: map[string]string{
 			"TELEMETRY_NAMESPACE": rContext.Namespace,

@@ -32,6 +32,7 @@ var Crds = append(crd.NonNamespacedTypes(
 	"ExternalService.rio.cattle.io/v1",
 	"Router.rio.cattle.io/v1",
 	"Service.rio.cattle.io/v1",
+	"Stack.rio.cattle.io/v1",
 
 	"ClusterDomain.admin.rio.cattle.io/v1",
 	"Feature.admin.rio.cattle.io/v1",

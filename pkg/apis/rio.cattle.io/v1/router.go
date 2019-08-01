@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/knative/pkg/apis/istio/v1alpha3"
-
 	"github.com/rancher/mapper/convert"
 	"github.com/rancher/wrangler/pkg/genericcondition"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
