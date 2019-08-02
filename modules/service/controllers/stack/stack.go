@@ -3,14 +3,13 @@ package stack
 import (
 	"context"
 
-	"github.com/rancher/rio/pkg/stack"
-
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
-	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/objectset"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -20,17 +19,13 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		rContext.Rio.Rio().V1().Service(),
 		rContext.Core.Core().V1().ConfigMap())
 
-	p := stackPopulator{
-		apply: c.Apply,
-	}
+	p := stackPopulator{}
 
 	c.Populator = p.populate
 	return nil
 }
 
-type stackPopulator struct {
-	apply apply.Apply
-}
+type stackPopulator struct{}
 
 func (s stackPopulator) populate(obj runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) error {
 	st := obj.(*riov1.Stack)
@@ -44,6 +39,12 @@ func (s stackPopulator) populate(obj runtime.Object, ns *corev1.Namespace, os *o
 	objs, err := deployStack.GetObjects()
 	if err != nil {
 		return err
+	}
+	accessor := meta.NewAccessor()
+	for _, obj := range objs {
+		if err := accessor.SetNamespace(obj, st.Namespace); err != nil {
+			return err
+		}
 	}
 	os.Add(objs...)
 	return nil
