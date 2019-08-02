@@ -105,8 +105,6 @@ github.com/docker/docker v1.14.0-0.20190319215453-e7b5f7dbe98c/go.mod h1:eEKB0N0
 github.com/docker/docker-credential-helpers v0.6.0 h1:5bhDRLn1roGiNjz8IezRngHxMfoeaXGyr0BeMHq4rD8=
 github.com/docker/docker-credential-helpers v0.6.0/go.mod h1:WRaJzqw3CTB9bk10avuGsjVBZsD05qeibJ1/TYlvc0Y=
 github.com/docker/go-connections v0.3.0/go.mod h1:Gbd7IOopHjR8Iph03tsViu4nIes5XhDvyHbTtUxmeec=
-github.com/docker/go-connections v0.4.0 h1:El9xVISelRB7BuFusrZozjnkIM5YnzCViNKohAFqRJQ=
-github.com/docker/go-connections v0.4.0/go.mod h1:Gbd7IOopHjR8Iph03tsViu4nIes5XhDvyHbTtUxmeec=
 github.com/docker/go-events v0.0.0-20170721190031-9461782956ad h1:VXIse57M5C6ezDuCPyq6QmMvEJ2xclYKZ35SfkXdm3E=
 github.com/docker/go-events v0.0.0-20170721190031-9461782956ad/go.mod h1:Uw6UezgYA44ePAFQYUehOuCzmy5zmg/+nl2ZfMWGkpA=
 github.com/docker/go-units v0.3.1/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
@@ -365,6 +363,8 @@ github.com/rancher/rdns-server v0.4.2/go.mod h1:YW8wJ/coee2n9ed937uPBWQArBaVlxs+
 github.com/rancher/wrangler v0.0.0-20190426050201-5946f0eaed19/go.mod h1:snD4YYjLOsxOwXNQORUkKr0y2TOVk54yWjgZ7myL8es=
 github.com/rancher/wrangler v0.1.4 h1:bdzBw4H9JKQhXPBPNp4eHbmrkA24+VII865VLiVWcw8=
 github.com/rancher/wrangler v0.1.4/go.mod h1:EYP7cqpg42YqElaCm+U9ieSrGQKAXxUH5xsr+XGpWyE=
+github.com/rancher/wrangler v0.1.5 h1:HiXOeP6Kci2DK+e04D1g6INT77xAYpAr54zmTTe0Spk=
+github.com/rancher/wrangler v0.1.5/go.mod h1:EYP7cqpg42YqElaCm+U9ieSrGQKAXxUH5xsr+XGpWyE=
 github.com/rancher/wrangler-api v0.1.4 h1:2jkZBat27ZHR2RCWQacFEIMdkA1A5fbDE439s3gHLU8=
 github.com/rancher/wrangler-api v0.1.4/go.mod h1:Mc8bNN5rNxpQ7am2orUbonahw4xJ6ztF+fUTSku8KnE=
 github.com/rancher/wrangler-api v0.1.5-0.20190619170228-c3525df45215 h1:HGAPuJz2CjUJKMfuZJMjeJyk8VjuMouR/bRVgr5YymQ=

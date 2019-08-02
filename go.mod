@@ -31,7 +31,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/docker/cli v0.0.0-20190723080722-8560f9e8cdad // indirect
 	github.com/docker/docker v1.14.0-0.20190319215453-e7b5f7dbe98c
-	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.3.3
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/drone/envsubst v0.0.0-20171016184023-f4d1a8ef8670
@@ -71,7 +70,7 @@ require (
 	github.com/rancher/gitwatcher v0.3.0
 	github.com/rancher/mapper v0.0.0-20190426050457-84da984f3146
 	github.com/rancher/rdns-server v0.4.2
-	github.com/rancher/wrangler v0.1.4
+	github.com/rancher/wrangler v0.1.5
 	github.com/rancher/wrangler-api v0.1.5-0.20190619170228-c3525df45215
 	github.com/rivo/tview v0.0.0-20190319111340-8d5eba0c2f51
 	github.com/rivo/uniseg v0.0.0-20190313204849-f699dde9c340 // indirect
