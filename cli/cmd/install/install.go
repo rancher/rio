@@ -2,16 +2,17 @@ package install
 
 import (
 	"fmt"
-	"math"
 	"net/http"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/mapper/slice"
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/cli/pkg/progress"
 	"github.com/rancher/rio/cli/pkg/up/questions"
 	"github.com/rancher/rio/modules/service/controllers/serviceset"
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
@@ -61,9 +62,6 @@ var (
 	Prometheus      = "prometheus"
 	Registry        = "registry"
 	Webhook         = "webhook"
-
-	statusIndex = 0
-	statusChar  = "|/-\\"
 )
 
 type Install struct {
@@ -193,55 +191,48 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 	}
 	i.DisableFeatures = disabledFeatures
 
+	progress := progress.NewWriter()
 	start := time.Now()
 	for {
-		time.Sleep(time.Second * 2)
+		// Checking rio-controller deployment
 		if !i.Check {
 			dep, err := ctx.K8s.AppsV1().Deployments(namespace).Get("rio-controller", metav1.GetOptions{})
 			if err != nil {
 				return err
 			}
 			if !serviceset.IsReady(&dep.Status) {
-				fmt.Printf("\r%v Waiting for deployment %s/%s to become ready", string(statusChar[statusIndex]), dep.Namespace, dep.Name)
-				statusIndex = modIndex(statusIndex)
+				progress.Display("Waiting for deployment %s/%s to become ready", 2, dep.Namespace, dep.Name)
 				continue
 			}
 		}
+
+		// Checking systemInfo and components
 		info, err := ctx.Project.RioInfos().Get("rio", metav1.GetOptions{})
-		if err != nil {
-			fmt.Printf("\r%v Waiting for rio controller to initialize", string(statusChar[statusIndex]))
-			statusIndex = modIndex(statusIndex)
-			time.Sleep(time.Second)
-			continue
-		} else if info.Status.Version == "" {
-			fmt.Printf("\r%v Waiting for rio controller to initialize", string(statusChar[statusIndex]))
-			statusIndex = modIndex(statusIndex)
+		if err != nil || info.Status.Version == "" {
+			progress.Display("Waiting for rio controller to initialize", 2)
 			continue
 		} else if notReadyList, ok := allReady(info, i.DisableFeatures); !ok {
-			fmt.Printf("\r%v Waiting for all the system components to be up. Not ready: %v", string(statusChar[statusIndex]), notReadyList)
-			statusIndex = modIndex(statusIndex)
-			time.Sleep(2 * time.Second)
+			progress.Display("Waiting for all the system components to be up. Not ready: %v", 2, notReadyList)
 			continue
 		} else {
 			ok, err := i.delectingServiceLoadbalancer(ctx, info, start)
 			if err != nil {
 				return err
 			} else if !ok {
-				fmt.Printf("\r%v Waiting for service loadbalancer to be up", string(statusChar[statusIndex]))
-				statusIndex = modIndex(statusIndex)
-				time.Sleep(2 * time.Second)
+				progress.Display("Waiting for service loadbalancer to be up", 2)
 				continue
 			}
 			fmt.Printf("\rrio controller version %s (%s) installed into namespace %s\n", info.Status.Version, info.Status.GitCommit, info.Status.SystemNamespace)
 		}
 
+		// Checking if clusterDomain is available
 		fmt.Println("Detecting if clusterDomain is accessible...")
 		clusterDomain, err := ctx.Domain()
 		if err != nil {
 			return err
 		}
 		if clusterDomain == "" {
-			fmt.Printf("Warning: Detected that Rio cluster domain is not generated for this cluster right now")
+			fmt.Println("Warning: Detected that Rio cluster domain is not generated for this cluster right now")
 		} else {
 			_, err = http.Get(fmt.Sprintf("http://%s:%s", clusterDomain, i.HTTPPort))
 			if err != nil {
@@ -261,11 +252,6 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 	return nil
 }
 
-func modIndex(v int) int {
-	v++
-	return int(math.Mod(float64(v), 4.0))
-}
-
 func isMinikubeCluster(nodes *v1.NodeList) bool {
 	return len(nodes.Items) == 1 && nodes.Items[0].Name == "minikube"
 }
@@ -274,18 +260,30 @@ func isDockerForMac(nodes *v1.NodeList) bool {
 	return len(nodes.Items) == 1 && nodes.Items[0].Name == "docker-for-desktop"
 }
 
-func allReady(info *adminv1.RioInfo, disabledFeatures []string) ([]string, bool) {
-	var notReadyList []string
+type list struct {
+	notReady []string
+}
+
+func (l list) String() string {
+	sort.Strings(l.notReady)
+	if len(l.notReady) > 3 {
+		return fmt.Sprint(append(l.notReady[:3], "..."))
+	}
+	return fmt.Sprint(l.notReady)
+}
+
+func allReady(info *adminv1.RioInfo, disabledFeatures []string) (list, bool) {
+	var l list
 	ready := true
 	for _, c := range SystemComponents {
 		if !slice.ContainsString(disabledFeatures, featureMap[c]) {
 			if info.Status.SystemComponentReadyMap[c] != "running" {
-				notReadyList = append(notReadyList, c)
+				l.notReady = append(l.notReady, c)
 				ready = false
 			}
 		}
 	}
-	return notReadyList, ready
+	return l, ready
 }
 
 func (i *Install) delectingServiceLoadbalancer(ctx *clicontext.CLIContext, info *adminv1.RioInfo, startTime time.Time) (bool, error) {
