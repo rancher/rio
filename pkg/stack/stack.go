@@ -85,6 +85,15 @@ func (s *Stack) GetImageBuilds() (map[string]riov1.ImageBuild, error) {
 	for _, obj := range objs {
 		if svc, ok := obj.(*riov1.Service); ok {
 			if svc.Spec.Image == "" {
+				if svc.Spec.Build == nil {
+					buildConfig[svc.Name] = riov1.ImageBuild{}
+					continue
+				}
+
+				if svc.Spec.Build.Repo != "" {
+					continue
+				}
+
 				buildConfig[svc.Name] = *svc.Spec.Build
 			}
 		}

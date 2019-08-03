@@ -7,6 +7,7 @@
 - [Monitoring](#Monitoring)
 - [AutoScaling based on QPS](#autoscaling)
 - [Continuous Delivery](#continuous-deliverysource-code-to-deployment)
+- [Using Riofile to build and develop](#using-riofile-to-build-and-develop-application)
 
 ### Install Options
 Rio by default expose 9443 and 9080 for https and http traffic. To change port, `rio run --http-port ${http_port} --https-port ${https_port}`.
@@ -20,6 +21,8 @@ More advanced options are also available by running `rio install --help`. To cha
 - [Adding external services](#adding-external-services)
 - [Adding Router](#adding-router)
 - [Adding Public domain](#adding-public-domain)
+- [Using Riofile](#using-riofile)
+
 
 ##### Example
 To run a workload, simple type `rio run -p ${port} $image`. For example
@@ -159,6 +162,47 @@ $ rio domain add --secret $name foo.bar default/route1
 
 Note: By default Rio will automatically configure Letsencrypt HTTP-01 challenge to provision certs for your publicdomain. This needs you to install rio on standard ports.
 Try `rio install --httpport 80 --httpsport 443`.
+
+##### Using Riofile
+
+Rio allows you to define a file called `Riofile`. `Riofile` allows you define rio services and configmap is a friendly way with `docker-compose` syntax.
+For example, to define a nginx application with conf
+
+```yaml
+configs:
+  conf:
+    index.html: |-
+      <!DOCTYPE html>
+      <html>
+      <body>
+      
+      <h1>Hello World</h1>
+      
+      </body>
+      </html>
+services:
+  nginx:
+    image: nginx
+    ports:
+    - 80/http
+    configs:
+    - conf/index.html:/usr/share/nginx/html/index.html
+```
+
+```yaml
+services:
+  demo:
+    build:
+      repo: https://github.com/rancher/rio-demo
+      branch: master
+    ports:
+    - 80/http
+    scale: 1-20
+```
+
+Once you have defined `Riofile`, simply run `rio up`. Any change you made for `Riofile`, re-run `rio up` to pick the change.
+
+More complicated examples are available at [here](../stacks). 
 
 ### Monitoring
 By default, Rio will deploy [Grafana](https://grafana.com/) and [Kiali](https://www.kiali.io/) to give users the ability to watch all metrics of the service mesh.
@@ -306,6 +350,40 @@ default/fervent-swartz6-ee709-786b366d5d44de6b547939f51d467437e45c5ee1   default
 
 $ rio logs -f default/fervent-swartz6-ee709-786b366d5d44de6b547939f51d467437e45c5ee1
 ```
+
+### Using Riofile to build and develop application
+
+Rio allows developer to build and develop applications from local source code. Rio will by default use buildkit to build application.
+
+Requirements:
+1. Local repo must have `Dockerfile` and `Riofile`.
+2. Developer have rio installed in a **single-node k3s** cluster. We will support minikube later, but as today buildkit is not supported in minikube.(https://github.com/kubernetes/minikube/issues/4143 )
+
+Use cases:
+1. `git clone https://github.com/StrongMonkey/riofile-demo.git`
+2. `cd riofile-demo`
+3. `rio up`. It will build the project and bring up services.
+4. `rio ps`. 
+5. `vim main.go && change "Hi there, I am demoing Riofile" to "Hi there, I am demoing something"`
+6. Re-run `rio up`. It will rebuild. After it is done, revisit service endpoint to see if content is changed.
+
+If you want more complicated build arguments, rio supports the following format
+```yaml
+services:
+  demo:
+   ports:
+   - 8080/http
+   build:
+    buildArgs:
+    - foo=bar
+    dockerFile: Dockerfile
+    dockerFilePath: ./
+    buildContext: ./
+    noCache: true
+    push: true
+    buildImageName: docker.io/foo/bar
+```
+
 
 ## Concept
 
