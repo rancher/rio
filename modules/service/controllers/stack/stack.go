@@ -14,8 +14,9 @@ import (
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
-	c := stackobject.NewGeneratingController(ctx, rContext, "stack-riofile", rContext.Rio.Rio().V1().Stack())
-	c.Apply = c.Apply.WithCacheTypes(
+	controllerName := "stack-riofile"
+	c := stackobject.NewGeneratingController(ctx, rContext, controllerName, rContext.Rio.Rio().V1().Stack())
+	c.Apply = rContext.Apply.WithSetID(controllerName).WithCacheTypes(
 		rContext.Rio.Rio().V1().Service(),
 		rContext.Core.Core().V1().ConfigMap())
 
