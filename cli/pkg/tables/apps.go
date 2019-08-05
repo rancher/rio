@@ -95,7 +95,11 @@ func formatAppScale(obj interface{}) (string, error) {
 	)
 	for _, version := range revisions(obj.(*AppData).App) {
 		rev := revMap[version]
-		scale, err := FormatScale(rev.Scale, rev.ScaleStatus, nil)
+		var s *int
+		if rev.Scale != 0 {
+			s = &rev.Scale
+		}
+		scale, err := FormatScale(s, rev.ScaleStatus, nil)
 		if err != nil {
 			return "", nil
 		}

@@ -41,10 +41,10 @@ func podsDetail(obj interface{}) (string, error) {
 	return podDetail(&pods[0])
 }
 
-func FormatScale(data, data2, data3 interface{}) (string, error) {
-	scale, ok := data.(*int)
-	if !ok {
-		return fmt.Sprint(data), nil
+func FormatScale(data *int, data2, data3 interface{}) (string, error) {
+	scale := data
+	if data != nil {
+		return fmt.Sprint(*data), nil
 	}
 
 	scaleNum := 0

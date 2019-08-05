@@ -49,7 +49,7 @@ func (d Scale) ToInternal(data map[string]interface{}) error {
 			if min == max {
 				data["scale"] = min
 			} else {
-				data["scale"] = 0
+				delete(data, "scale")
 			}
 		}
 	}

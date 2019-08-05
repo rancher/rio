@@ -59,6 +59,10 @@ func (p *Ps) apps(ctx *clicontext.CLIContext) error {
 
 	for _, v := range svcObjs {
 		svc := v.(*riov1.Service)
+		scale := 1
+		if svc.Spec.Scale != nil {
+			scale = *svc.Spec.Scale
+		}
 		appName, version := services.AppAndVersion(svc)
 		key := svc.Namespace + "/" + appName
 		app, ok := appDatas[key]
@@ -71,7 +75,7 @@ func (p *Ps) apps(ctx *clicontext.CLIContext) error {
 					Spec: riov1.AppSpec{
 						Revisions: []riov1.Revision{
 							{
-								Scale:   *svc.Spec.Scale,
+								Scale:   scale,
 								Version: version,
 							},
 						},
