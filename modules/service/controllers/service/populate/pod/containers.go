@@ -143,6 +143,32 @@ func envs(containerName string, c *riov1.Container) (result []v1.EnvVar) {
 			Value: value,
 		}
 
+		if env.ConfigMapName != "" {
+			basic.ValueFrom = &v1.EnvVarSource{
+				ConfigMapKeyRef: &v1.ConfigMapKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: env.ConfigMapName,
+					},
+					Key: env.Key,
+				},
+			}
+			result = append(result, basic)
+			continue
+		}
+
+		if env.SecretName != "" {
+			basic.ValueFrom = &v1.EnvVarSource{
+				SecretKeyRef: &v1.SecretKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: env.SecretName,
+					},
+					Key: env.Key,
+				},
+			}
+			result = append(result, basic)
+			continue
+		}
+
 		if !strings.HasPrefix(value, "$(") || !strings.HasSuffix(value, ")") {
 			result = append(result, basic)
 			continue
@@ -174,33 +200,6 @@ func envs(containerName string, c *riov1.Container) (result []v1.EnvVar) {
 			})
 			continue
 		}
-
-		envVar := v1.EnvVar{
-			Name:  env.Name,
-			Value: env.Value,
-		}
-
-		if env.ConfigMapName != "" {
-			envVar.ValueFrom = &v1.EnvVarSource{
-				ConfigMapKeyRef: &v1.ConfigMapKeySelector{
-					LocalObjectReference: v1.LocalObjectReference{
-						Name: env.ConfigMapName,
-					},
-					Key: env.Key,
-				},
-			}
-		} else if env.SecretName != "" {
-			envVar.ValueFrom = &v1.EnvVarSource{
-				ConfigMapKeyRef: &v1.ConfigMapKeySelector{
-					LocalObjectReference: v1.LocalObjectReference{
-						Name: env.ConfigMapName,
-					},
-					Key: env.Key,
-				},
-			}
-		}
-
-		result = append(result, envVar)
 	}
 
 	return
