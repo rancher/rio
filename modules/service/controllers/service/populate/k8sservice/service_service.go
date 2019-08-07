@@ -20,7 +20,7 @@ func serviceSelector(service *riov1.Service, systemNamespace string, os *objects
 	selectorLabels := servicelabels.SelectorLabels(service)
 	app, version := services.AppAndVersion(service)
 	svc := newServiceSelector(app+"-"+version, service.Namespace, v1.ServiceTypeClusterIP, labels, selectorLabels)
-	if isGateway(service, systemNamespace) && !constants.UseHostPort {
+	if isGateway(service, systemNamespace) && constants.InstallMode == constants.InstallModeSvclb {
 		svc.Spec.Type = v1.ServiceTypeLoadBalancer
 		httpPort, _ := strconv.Atoi(constants.DefaultHTTPOpenPort)
 		httpsPort, _ := strconv.Atoi(constants.DefaultHTTPSOpenPort)

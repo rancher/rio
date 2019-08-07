@@ -71,11 +71,12 @@ func main() {
 			Value:       constants.DefaultHTTPSOpenPort,
 			Destination: &constants.DefaultHTTPSOpenPort,
 		},
-		cli.BoolFlag{
-			Name:        "use-host-ports",
+		cli.StringFlag{
+			Name:        "install-mode",
 			Usage:       "Whether to use hostPort to export servicemesh gateway",
-			EnvVar:      "USE_HOSTPORT",
-			Destination: &constants.UseHostPort,
+			EnvVar:      "INSTALL_MODE",
+			Value:       constants.InstallMode,
+			Destination: &constants.InstallMode,
 		},
 		cli.StringFlag{
 			Name:        "use-ipaddresses",

@@ -42,37 +42,39 @@ func Gateway(systemNamespace, clusterDomain, certs string, publicdomains []*v1.P
 		})
 	}
 
-	// https port
-	if clusterDomain != "" {
-		httpsPort, _ := strconv.ParseInt(constants.DefaultHTTPSOpenPort, 10, 0)
-		gws.Servers = append(gws.Servers, v1alpha3.Server{
-			Port: v1alpha3.Port{
-				Protocol: v1alpha3.ProtocolHTTPS,
-				Number:   int(httpsPort),
-				Name:     fmt.Sprintf("%v-%v", strings.ToLower(string(v1alpha3.ProtocolHTTPS)), httpsPort),
-			},
-			Hosts: []string{"*"},
-			TLS: &v1alpha3.TLSOptions{
-				Mode:           v1alpha3.TLSModeSimple,
-				CredentialName: certs,
-			},
-		})
-	}
+	if constants.InstallMode != constants.InstallModeIngress {
+		// https port
+		if clusterDomain != "" {
+			httpsPort, _ := strconv.ParseInt(constants.DefaultHTTPSOpenPort, 10, 0)
+			gws.Servers = append(gws.Servers, v1alpha3.Server{
+				Port: v1alpha3.Port{
+					Protocol: v1alpha3.ProtocolHTTPS,
+					Number:   int(httpsPort),
+					Name:     fmt.Sprintf("%v-%v", strings.ToLower(string(v1alpha3.ProtocolHTTPS)), httpsPort),
+				},
+				Hosts: []string{"*"},
+				TLS: &v1alpha3.TLSOptions{
+					Mode:           v1alpha3.TLSModeSimple,
+					CredentialName: certs,
+				},
+			})
+		}
 
-	for _, pd := range publicdomains {
-		httpsPort, _ := strconv.ParseInt(constants.DefaultHTTPSOpenPort, 10, 0)
-		gws.Servers = append(gws.Servers, v1alpha3.Server{
-			Port: v1alpha3.Port{
-				Protocol: v1alpha3.ProtocolHTTPS,
-				Number:   int(httpsPort),
-				Name:     fmt.Sprintf("%v-%v-%v", pd.Name, strings.ToLower(string(v1alpha3.ProtocolHTTPS)), httpsPort),
-			},
-			Hosts: []string{pd.Spec.DomainName},
-			TLS: &v1alpha3.TLSOptions{
-				Mode:           v1alpha3.TLSModeSimple,
-				CredentialName: pd.Spec.SecretRef.Name,
-			},
-		})
+		for _, pd := range publicdomains {
+			httpsPort, _ := strconv.ParseInt(constants.DefaultHTTPSOpenPort, 10, 0)
+			gws.Servers = append(gws.Servers, v1alpha3.Server{
+				Port: v1alpha3.Port{
+					Protocol: v1alpha3.ProtocolHTTPS,
+					Number:   int(httpsPort),
+					Name:     fmt.Sprintf("%v-%v-%v", pd.Name, strings.ToLower(string(v1alpha3.ProtocolHTTPS)), httpsPort),
+				},
+				Hosts: []string{pd.Spec.DomainName},
+				TLS: &v1alpha3.TLSOptions{
+					Mode:           v1alpha3.TLSModeSimple,
+					CredentialName: pd.Spec.SecretRef.Name,
+				},
+			})
+		}
 	}
 
 	gateway := constructors.NewGateway(systemNamespace, constants.RioGateway, v1alpha3.Gateway{

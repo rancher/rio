@@ -95,6 +95,7 @@ func (p *publicDomainHandler) onChange(key string, obj runtime.Object) (runtime.
 	}
 	domain.Spec.SecretRef.Name = fmt.Sprintf("%s-%s", domain.Namespace, domain.Name)
 	domain.Spec.SecretRef.Namespace = domain.Namespace
+	domain.Status.IssuerName = issuerName
 
 	return domain, p.apply.WithOwner(domain).Apply(os)
 }

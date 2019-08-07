@@ -67,7 +67,6 @@ var (
 type Install struct {
 	HTTPPort        string   `desc:"Http port service mesh gateway will listen to" default:"9080" name:"http-port"`
 	HTTPSPort       string   `desc:"Https port service mesh gateway will listen to" default:"9443" name:"https-port"`
-	HostPorts       bool     `desc:"Whether to use hostPorts to expose service mesh gateway"`
 	IPAddress       []string `desc:"Manually specify IP addresses to generate rdns domain, supports comma separated values" name:"ip-address"`
 	ServiceCidr     string   `desc:"Manually specify service CIDR for service mesh to intercept"`
 	DisableFeatures []string `desc:"Manually specify features to disable, supports comma separated values"`
@@ -75,6 +74,7 @@ type Install struct {
 	Yaml            bool     `desc:"Only print out k8s yaml manifest"`
 	Check           bool     `desc:"Only check status, don't deploy controller'"`
 	Lite            bool     `desc:"Only install lite version of Rio(monitoring will be disabled, will be ignored if --disable-features is set)"`
+	Mode            string   `desc:"Install mode to expose gateway. Available options are ingress, svclb and hostport" default:"ingress"`
 }
 
 func (i *Install) Run(ctx *clicontext.CLIContext) error {
@@ -126,7 +126,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		ip := strings.Trim(stdout.String(), " ")
 		fmt.Fprintf(out, "Manually setting cluster IP to %s\n", ip)
 		i.IPAddress = []string{ip}
-		i.HostPorts = true
+		i.Mode = constants.InstallModeHostport
 	}
 
 	if memoryWarning {
@@ -154,13 +154,19 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		fmt.Fprintf(out, "Setting install mode to lite, monitoring features will be disabled\n")
 		i.DisableFeatures = []string{"mixer", "grafana", "kiali", "prometheus"}
 	}
+
+	if i.Mode == constants.InstallModeIngress {
+		i.HTTPPort = "80"
+		i.HTTPSPort = "443"
+	}
+
 	answers := map[string]string{
 		"NAMESPACE":        namespace,
 		"DEBUG":            fmt.Sprint(ctx.Debug),
 		"IMAGE":            fmt.Sprintf("%s:%s", constants.ControllerImage, constants.ControllerImageTag),
 		"HTTPS_PORT":       i.HTTPSPort,
 		"HTTP_PORT":        i.HTTPPort,
-		"USE_HOSTPORT":     fmt.Sprint(i.HostPorts),
+		"INSTALL_MODE":     i.Mode,
 		"IP_ADDRESSES":     strings.Join(i.IPAddress, ","),
 		"SERVICE_CIDR":     i.ServiceCidr,
 		"DISABLE_FEATURES": strings.Join(i.DisableFeatures, ","),
@@ -215,7 +221,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 			progress.Display("Waiting for all the system components to be up. Not ready: %v", 2, notReadyList)
 			continue
 		} else {
-			ok, err := i.delectingServiceLoadbalancer(ctx, info, start)
+			ok, err := i.fallbackInstall(ctx, info, start)
 			if err != nil {
 				return err
 			} else if !ok {
@@ -286,13 +292,53 @@ func allReady(info *adminv1.RioInfo, disabledFeatures []string) (list, bool) {
 	return l, ready
 }
 
-func (i *Install) delectingServiceLoadbalancer(ctx *clicontext.CLIContext, info *adminv1.RioInfo, startTime time.Time) (bool, error) {
-	svc, err := ctx.Core.Services(info.Status.SystemNamespace).Get(fmt.Sprintf("%s-%s", constants.IstioGateway, constants.DefaultServiceVersion), metav1.GetOptions{})
-	if err != nil {
-		return false, err
+func (i *Install) fallbackInstall(ctx *clicontext.CLIContext, info *adminv1.RioInfo, startTime time.Time) (bool, error) {
+	if i.Mode == constants.InstallModeIngress {
+		ingress, err := ctx.K8s.NetworkingV1beta1().Ingresses(info.Status.SystemNamespace).Get(constants.ClusterIngressName, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+
+		if len(ingress.Status.LoadBalancer.Ingress) == 0 || (ingress.Status.LoadBalancer.Ingress[0].Hostname != "" && ingress.Status.LoadBalancer.Ingress[0].Hostname != "localhost") {
+			if time.Now().After(startTime.Add(time.Minute * 2)) {
+				msg := ""
+				if len(ingress.Status.LoadBalancer.Ingress) > 0 {
+					msg = fmt.Sprintln("\nDetecting that your ingress generates a DNS endpoint(usually AWS provider). Rio doesn't support it right now. Do you want to:")
+				} else {
+					msg = fmt.Sprintln("\nDetecting that your ingress for service mesh gateway is still pending. Do you want to:")
+				}
+
+				options := []string{
+					"[1]: Use Service Loadbalancer\n",
+					fmt.Sprintf("[2]: Use HostPorts (Please make sure port %v and %v are open for your nodes)\n", i.HTTPPort, i.HTTPSPort),
+					"[3]: Wait for ingress\n",
+				}
+
+				num, err := questions.PromptOptions(msg, -1, options...)
+				if err != nil {
+					return false, nil
+				}
+
+				if num == 0 {
+					fmt.Println("Reinstall Rio using svclb")
+					return true, i.reinstall(constants.InstallModeSvclb)
+				}
+
+				if num == 1 {
+					fmt.Println("Reinstall Rio using hostport")
+					return true, i.reinstall(constants.InstallModeHostport)
+				}
+				return true, nil
+			}
+			return false, nil
+		}
 	}
 
-	if svc.Spec.Type == v1.ServiceTypeLoadBalancer && !i.HostPorts {
+	if i.Mode == constants.InstallModeSvclb {
+		svc, err := ctx.Core.Services(info.Status.SystemNamespace).Get(fmt.Sprintf("%s-%s", constants.IstioGateway, constants.DefaultServiceVersion), metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
 		if len(svc.Status.LoadBalancer.Ingress) == 0 || (svc.Status.LoadBalancer.Ingress[0].Hostname != "" && svc.Status.LoadBalancer.Ingress[0].Hostname != "localhost") {
 			if time.Now().After(startTime.Add(time.Minute * 2)) {
 				msg := ""
@@ -303,8 +349,8 @@ func (i *Install) delectingServiceLoadbalancer(ctx *clicontext.CLIContext, info 
 				}
 
 				options := []string{
-					fmt.Sprintf("[1] Use HostPorts(Please make sure port %v and %v are open for your nodes)\n", i.HTTPPort, i.HTTPSPort),
-					"[2] Wait for Service Load Balancer\n",
+					fmt.Sprintf("[1]: Use HostPorts (Please make sure port %v and %v are open for your nodes)\n", i.HTTPPort, i.HTTPSPort),
+					"[2]: Wait for Service Load Balancer\n",
 				}
 
 				num, err := questions.PromptOptions(msg, -1, options...)
@@ -313,25 +359,8 @@ func (i *Install) delectingServiceLoadbalancer(ctx *clicontext.CLIContext, info 
 				}
 
 				if num == 0 {
-					fmt.Println("Reinstall Rio using --host-ports")
-					args := []string{"rio", "install", "--host-ports", "--http-port", i.HTTPPort, "--https-port", i.HTTPSPort}
-					for _, ip := range i.IPAddress {
-						args = append(args, "--ip-address", ip)
-					}
-					for _, df := range i.DisableFeatures {
-						args = append(args, "--disable-features", df)
-					}
-					if i.ServiceCidr != "" {
-						args = append(args, "--service-cidr", i.ServiceCidr)
-					}
-					if i.HTTPProxy != "" {
-						args = append(args, "--httpproxy", i.HTTPProxy)
-					}
-					cmd := reexec.Command(args...)
-					cmd.Stdout = os.Stdout
-					cmd.Stderr = os.Stderr
-					cmd.Env = os.Environ()
-					return true, cmd.Run()
+					fmt.Println("Reinstall Rio using hostport")
+					return true, i.reinstall(constants.InstallModeHostport)
 				}
 				return true, nil
 			}
@@ -339,4 +368,25 @@ func (i *Install) delectingServiceLoadbalancer(ctx *clicontext.CLIContext, info 
 		}
 	}
 	return true, nil
+}
+
+func (i *Install) reinstall(mode string) error {
+	args := []string{"rio", "install", "--mode", mode, "--http-port", i.HTTPPort, "--https-port", i.HTTPSPort}
+	for _, ip := range i.IPAddress {
+		args = append(args, "--ip-address", ip)
+	}
+	for _, df := range i.DisableFeatures {
+		args = append(args, "--disable-features", df)
+	}
+	if i.ServiceCidr != "" {
+		args = append(args, "--service-cidr", i.ServiceCidr)
+	}
+	if i.HTTPProxy != "" {
+		args = append(args, "--httpproxy", i.HTTPProxy)
+	}
+	cmd := reexec.Command(args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Env = os.Environ()
+	return cmd.Run()
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
+	"github.com/rancher/rio/pkg/constructors"
 	adminv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
@@ -24,10 +25,12 @@ import (
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 const (
@@ -52,6 +55,21 @@ func RegisterNodeEndpointIndexer(ctx context.Context, rContext *types.Context) e
 		namespace: rContext.Namespace,
 	}
 	rContext.Core.Core().V1().Endpoints().Cache().AddIndexer(indexName, i.indexEPByNode)
+	return nil
+}
+
+func RegisterInjectors(ctx context.Context, rContext *types.Context) error {
+	cm, err := rContext.Core.Core().V1().ConfigMap().Get(rContext.Namespace, constants.IstionConfigMapName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	meshConfig, template, err := config.DoConfigAndTemplate(cm.Data[constants.IstioMeshConfigKey], cm.Data[constants.IstioSidecarTemplateName])
+	if err != nil {
+		return err
+	}
+
+	injector := config.NewIstioInjector(meshConfig, template)
+	injectors.Register(istioInjector, injector.Inject)
 	return nil
 }
 
@@ -84,9 +102,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 
 	s := &istioDeployController{
 		namespace: rContext.Namespace,
-		apply:     rContext.Apply,
-		gatewayApply: rContext.Apply.WithSetID(istioStack).
-			WithCacheTypes(rContext.Networking.Networking().V1alpha3().Gateway()),
+		gatewayApply: rContext.Apply.WithSetID(istioStack).WithStrictCaching().
+			WithCacheTypes(rContext.Networking.Networking().V1alpha3().Gateway(),
+				rContext.K8sNetworking.Networking().V1beta1().Ingress()),
 		serviceApply:      rContext.Apply.WithSetID(istioInjector).WithInjectorName(istioInjector),
 		apps:              rContext.Rio.Rio().V1().App(),
 		services:          rContext.Rio.Rio().V1().Service(),
@@ -110,16 +128,20 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		rContext.Global.Admin().V1().ClusterDomain(),
 		rContext.Global.Admin().V1().PublicDomain())
 
-	switch {
-	case constants.UseIPAddress != "":
+	if constants.UseIPAddress != "" {
 		addresses := strings.Split(constants.UseIPAddress, ",")
 		if err := s.updateClusterDomain(addresses); err != nil {
 			return err
 		}
-	case !constants.UseHostPort:
+	}
+
+	switch constants.InstallMode {
+	case constants.InstallModeSvclb:
 		rContext.Core.Core().V1().Service().OnChange(ctx, "istio-endpoints-serviceloadbalancer", s.syncServiceLoadbalancer)
-	default:
+	case constants.InstallModeHostport:
 		rContext.Core.Core().V1().Endpoints().OnChange(ctx, "istio-endpoints", s.syncEndpoint)
+	case constants.InstallModeIngress:
+		rContext.K8sNetworking.Networking().V1beta1().Ingress().OnChange(ctx, "ingress-endpoints", s.syncIngress)
 	}
 
 	rContext.Core.Core().V1().Service().OnChange(ctx, "rdns-subdomain", s.syncSubdomain)
@@ -132,7 +154,6 @@ func Register(ctx context.Context, rContext *types.Context) error {
 
 type istioDeployController struct {
 	namespace         string
-	apply             apply.Apply
 	gatewayApply      apply.Apply
 	serviceApply      apply.Apply
 	apps              riov1controller.AppController
@@ -216,7 +237,33 @@ func (i istioDeployController) syncGateway(key string, obj *adminv1.ClusterDomai
 		return obj, err
 	}
 	populate.Gateway(i.namespace, domain, obj.Spec.SecretRef.Name, publicdomains, os)
-	return obj, i.apply.WithSetID("istio-gateway").Apply(os)
+	if constants.InstallMode == constants.InstallModeIngress {
+		ingress := constructors.NewIngress(i.namespace, constants.ClusterIngressName, networkingv1beta1.Ingress{
+			Spec: networkingv1beta1.IngressSpec{
+				Rules: []networkingv1beta1.IngressRule{
+					{
+						Host: domain,
+						IngressRuleValue: networkingv1beta1.IngressRuleValue{
+							HTTP: &networkingv1beta1.HTTPIngressRuleValue{
+								Paths: []networkingv1beta1.HTTPIngressPath{
+									{
+										Path: "/rio-gateway",
+										Backend: networkingv1beta1.IngressBackend{
+											ServiceName: constants.IstioGateway,
+											ServicePort: intstr.FromInt(80),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		})
+		os.Add(ingress)
+	}
+
+	return obj, i.gatewayApply.Apply(os)
 }
 
 func (i *istioDeployController) resolve(namespace, name string, obj runtime.Object) ([]relatedresource.Key, error) {
@@ -295,6 +342,23 @@ func (i *istioDeployController) syncEndpoint(key string, endpoint *corev1.Endpoi
 		return endpoint, err
 	}
 	return endpoint, nil
+}
+
+func (i istioDeployController) syncIngress(key string, ingress *networkingv1beta1.Ingress) (*networkingv1beta1.Ingress, error) {
+	if ingress == nil {
+		return ingress, nil
+	}
+
+	if ingress.Namespace == i.namespace && ingress.Name == constants.ClusterIngressName {
+		var ips []string
+		for _, ip := range ingress.Status.LoadBalancer.Ingress {
+			if ip.IP != "" {
+				ips = append(ips, ip.IP)
+			}
+		}
+		return ingress, i.updateClusterDomain(ips)
+	}
+	return ingress, nil
 }
 
 func (i istioDeployController) updateClusterDomain(addresses []string) error {
@@ -378,21 +442,6 @@ func getNodeIP(node *v1.Node) string {
 	}
 
 	return ""
-}
-
-func RegisterInjectors(ctx context.Context, rContext *types.Context) error {
-	cm, err := rContext.Core.Core().V1().ConfigMap().Get(rContext.Namespace, constants.IstionConfigMapName, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	meshConfig, template, err := config.DoConfigAndTemplate(cm.Data[constants.IstioMeshConfigKey], cm.Data[constants.IstioSidecarTemplateName])
-	if err != nil {
-		return err
-	}
-
-	injector := config.NewIstioInjector(meshConfig, template)
-	injectors.Register(istioInjector, injector.Inject)
-	return nil
 }
 
 func ensureClusterDomain(ns string, clusterDomain adminv1controller.ClusterDomainClient) error {

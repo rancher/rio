@@ -142,13 +142,13 @@ services:
         - name: istio-proxy
           ports:
           - name: http2
-            {{- if eq "${USE_HOSTPORT}" "true" }}
+            {{- if eq "${INSTALL_MODE}" "hostport" }}
             hostPort: ${HTTP_PORT}
             {{- end}}
             containerPort: ${HTTP_PORT}
             protocol: TCP
           - name: https
-            {{- if eq "${USE_HOSTPORT}" "true" }}
+            {{- if eq "${INSTALL_MODE}" "hostport" }}
             hostPort: ${HTTPS_PORT}
             {{- end}}
             containerPort: ${HTTPS_PORT}
@@ -233,6 +233,6 @@ services:
 
 templates:
   questions:
-    - variable: USE_HOSTPORT
-      description: "whether to use hostPort"
+    - variable: INSTALL_MODE
+      description: "install mode"
 

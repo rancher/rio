@@ -22,8 +22,8 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	c := stackobject.NewGeneratingController(ctx, rContext, "routing-serviceset", rContext.Rio.Rio().V1().App())
 	c.Apply = c.Apply.WithStrictCaching().
 		WithCacheTypes(rContext.Networking.Networking().V1alpha3().DestinationRule(),
-			rContext.Networking.Networking().V1alpha3().VirtualService(),
-			rContext.Extensions.Extensions().V1beta1().Ingress()).WithRateLimiting(10)
+			rContext.K8sNetworking.Networking().V1beta1().Ingress(),
+			rContext.Networking.Networking().V1alpha3().VirtualService()).WithRateLimiting(10)
 
 	sh := &serviceHandler{
 		systemNamespace:    rContext.Namespace,
@@ -101,6 +101,10 @@ func (s serviceHandler) populate(obj runtime.Object, namespace *corev1.Namespace
 	deepcopy.Status.PublicDomains = app.Status.PublicDomains
 	revVs := populate.VirtualServiceFromSpec(true, s.systemNamespace, app.Name, app.Namespace, clusterDomain, deepcopy, dests...)
 	os.Add(revVs)
+
+	if clusterDomain.Status.ClusterDomain != "" && constants.InstallMode == constants.InstallModeIngress {
+		populate.Ingress(s.systemNamespace, clusterDomain.Status.ClusterDomain, true, revision, os)
+	}
 
 	return nil
 }

@@ -22,7 +22,7 @@ import (
 	"context"
 
 	"github.com/rancher/wrangler/pkg/generic"
-	v1beta1 "k8s.io/api/extensions/v1beta1"
+	v1beta1 "k8s.io/api/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -31,9 +31,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/watch"
-	informers "k8s.io/client-go/informers/extensions/v1beta1"
-	clientset "k8s.io/client-go/kubernetes/typed/extensions/v1beta1"
-	listers "k8s.io/client-go/listers/extensions/v1beta1"
+	informers "k8s.io/client-go/informers/networking/v1beta1"
+	clientset "k8s.io/client-go/kubernetes/typed/networking/v1beta1"
+	listers "k8s.io/client-go/listers/networking/v1beta1"
 	"k8s.io/client-go/tools/cache"
 )
 

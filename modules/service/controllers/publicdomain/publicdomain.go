@@ -3,16 +3,12 @@ package publicdomain
 import (
 	"context"
 
-	"github.com/rancher/rio/modules/service/controllers/publicdomain/populate"
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	adminv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
-	"github.com/rancher/wrangler/pkg/objectset"
 	"github.com/rancher/wrangler/pkg/relatedresource"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -23,13 +19,6 @@ const (
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
-	c := stackobject.NewGeneratingController(ctx, rContext, "stack-public-domain", rContext.Global.Admin().V1().PublicDomain())
-	c.Apply = c.Apply.WithCacheTypes(rContext.Extensions.Extensions().V1beta1().Ingress())
-	p := populator{
-		systemNamespace: rContext.Namespace,
-	}
-
-	c.Populator = p.populate
 	h := handler{
 		services: rContext.Rio.Rio().V1().Service(),
 		routers:  rContext.Rio.Rio().V1().Router(),
@@ -51,15 +40,6 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		rContext.Rio.Rio().V1().Router(),
 		rContext.Global.Admin().V1().PublicDomain())
 
-	return nil
-}
-
-type populator struct {
-	systemNamespace string
-}
-
-func (p populator) populate(obj runtime.Object, namespace *corev1.Namespace, os *objectset.ObjectSet) error {
-	populate.Ingress(p.systemNamespace, obj.(*adminv1.PublicDomain), os)
 	return nil
 }
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/rancher/rio/modules/istio/controllers/routeset/populate"
 	"github.com/rancher/rio/modules/istio/pkg/domains"
+	"github.com/rancher/rio/modules/istio/pkg/parse"
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
@@ -32,7 +33,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		WithCacheTypes(rContext.Networking.Networking().V1alpha3().VirtualService(),
 			rContext.Networking.Networking().V1alpha3().DestinationRule(),
 			rContext.Networking.Networking().V1alpha3().ServiceEntry(),
-			rContext.Extensions.Extensions().V1beta1().Ingress())
+			rContext.K8sNetworking.Networking().V1beta1().Ingress())
 
 	r := &routeSetHandler{
 		systemNamespace:      rContext.Namespace,
@@ -84,6 +85,10 @@ func (r *routeSetHandler) populate(obj runtime.Object, ns *corev1.Namespace, os 
 	if err != nil {
 		return err
 	}
+	domain := clusterDomain.Status.ClusterDomain
+	if domain == "" {
+		return nil
+	}
 
 	ess, err := r.externalServiceCache.List(routeSet.Namespace, labels.Everything())
 	if err != nil {
@@ -103,6 +108,10 @@ func (r *routeSetHandler) populate(obj runtime.Object, ns *corev1.Namespace, os 
 
 	if err := populate.VirtualServices(r.systemNamespace, clusterDomain, obj.(*riov1.Router), externalServiceMap, routesetMap, os); err != nil {
 		return err
+	}
+
+	if constants.InstallMode == constants.InstallModeIngress {
+		populate.Ingress(r.systemNamespace, domain, routeSet, os)
 	}
 
 	return nil
@@ -134,14 +143,5 @@ func updateDomain(router *riov1.Router, clusterDomain *adminv1.ClusterDomain) {
 	for _, pd := range router.Status.PublicDomains {
 		router.Status.Endpoints = append(router.Status.Endpoints, fmt.Sprintf("%s://%s", protocol, pd))
 	}
-
-	for i, endpoint := range router.Status.Endpoints {
-		if protocol == "http" && constants.DefaultHTTPOpenPort != "80" {
-			router.Status.Endpoints[i] = fmt.Sprintf("%s:%s", endpoint, constants.DefaultHTTPOpenPort)
-		}
-
-		if protocol == "https" && constants.DefaultHTTPOpenPort != "443" {
-			router.Status.Endpoints[i] = fmt.Sprintf("%s:%s", endpoint, constants.DefaultHTTPSOpenPort)
-		}
-	}
+	router.Status.Endpoints = parse.FormatEndpoint(protocol, router.Status.Endpoints)
 }
