@@ -203,7 +203,7 @@ func (c *CLIContext) DeleteResource(r types.Resource) (err error) {
 			}
 		}
 		newerr := c.Rio.Apps(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
-		if newerr != nil {
+		if newerr != nil && !errors.IsNotFound(err) {
 			errs = append(errs, newerr)
 		}
 		err = merr.NewErrors(errs...)
