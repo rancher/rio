@@ -16,15 +16,16 @@ func (l *Ls) Customize(cmd *cli.Command) {
 }
 
 func (l *Ls) Run(ctx *clicontext.CLIContext) error {
-	return ListRouters(ctx)
+	_, err := ListRouters(ctx)
+	return err
 }
 
-func ListRouters(ctx *clicontext.CLIContext) error {
+func ListRouters(ctx *clicontext.CLIContext) (bool, error) {
 	routeSets, err := ctx.List(types.RouterType)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	writer := tables.NewRouter(ctx)
-	return writer.Write(routeSets)
+	return len(routeSets) == 0, writer.Write(routeSets)
 }

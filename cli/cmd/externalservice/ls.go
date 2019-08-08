@@ -16,15 +16,16 @@ func (l *Ls) Customize(cmd *cli.Command) {
 }
 
 func (l *Ls) Run(ctx *clicontext.CLIContext) error {
-	return ListExternalServices(ctx)
+	_, err := ListExternalServices(ctx)
+	return err
 }
 
-func ListExternalServices(ctx *clicontext.CLIContext) error {
+func ListExternalServices(ctx *clicontext.CLIContext) (bool, error) {
 	externalServices, err := ctx.List(clitypes.ExternalServiceType)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	writer := tables.NewExternalService(ctx)
-	return writer.Write(externalServices)
+	return len(externalServices) == 0, writer.Write(externalServices)
 }

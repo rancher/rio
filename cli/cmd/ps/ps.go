@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rancher/rio/cli/cmd/externalservice"
+	"github.com/rancher/rio/cli/cmd/publicdomain"
 	"github.com/rancher/rio/cli/cmd/revision"
 	"github.com/rancher/rio/cli/cmd/route"
 	"github.com/rancher/rio/cli/pkg/clicontext"
@@ -15,7 +16,7 @@ import (
 
 type Ps struct {
 	C_Containers bool `desc:"print containers, not services"`
-	A_All        bool `desc:"print all resources, including router and externalservice"`
+	A_All        bool `desc:"print all resources, including router, publicdomain and externalservice"`
 }
 
 func (p *Ps) Customize(cmd *cli.Command) {
@@ -58,27 +59,34 @@ func (p *Ps) Run(ctx *clicontext.CLIContext) error {
 }
 
 func (p *Ps) showAll(ctx *clicontext.CLIContext) error {
-	buffer := &strings.Builder{}
-	ctx.WithWriter(buffer)
-
-	fmt.Fprintf(buffer, "Applications\n")
 	if err := p.apps(ctx); err != nil {
 		return err
 	}
-	fmt.Fprintf(buffer, "\n")
+	fmt.Println()
 
-	fmt.Fprintf(buffer, "Routers\n")
-	if err := route.ListRouters(ctx); err != nil {
+	hide, err := route.ListRouters(ctx)
+	if err != nil {
 		return err
 	}
-	fmt.Fprintf(buffer, "\n")
+	if !hide {
+		fmt.Println()
+	}
 
-	fmt.Fprintf(buffer, "ExternalServices\n")
-	if err := externalservice.ListExternalServices(ctx); err != nil {
+	hide, err = externalservice.ListExternalServices(ctx)
+	if err != nil {
 		return err
 	}
-	fmt.Fprintf(buffer, "\n")
+	if !hide {
+		fmt.Println()
+	}
 
-	fmt.Print(buffer.String())
+	hide, err = publicdomain.ListPublicDomain(ctx)
+	if err != nil {
+		return err
+	}
+	if !hide {
+		fmt.Println()
+	}
+
 	return nil
 }

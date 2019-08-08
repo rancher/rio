@@ -16,10 +16,16 @@ func (l *Ls) Customize(cmd *cli.Command) {
 }
 
 func (l *Ls) Run(ctx *clicontext.CLIContext) error {
+	_, err := ListPublicDomain(ctx)
+	return err
+}
+
+func ListPublicDomain(ctx *clicontext.CLIContext) (bool, error) {
 	publicDomains, err := ctx.List(types.PublicDomainType)
 	if err != nil {
-		return err
+		return false, err
 	}
+
 	writer := tables.NewPublicDomain(ctx)
-	return writer.Write(publicDomains)
+	return len(publicDomains) == 0, writer.Write(publicDomains)
 }
