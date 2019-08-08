@@ -146,6 +146,10 @@ type istioDeployController struct {
 }
 
 func (i *istioDeployController) onChangeNode(key string, node *corev1.Node) (*corev1.Node, error) {
+	if node == nil {
+		return node, nil
+	}
+
 	if _, ok := node.Labels[nodeSelectorLabel]; !ok {
 		return node, nil
 	}
