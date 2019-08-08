@@ -234,7 +234,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		if clusterDomain == "" {
 			fmt.Println("Warning: Detected that Rio cluster domain is not generated for this cluster right now")
 		} else {
-			_, err = http.Get(fmt.Sprintf("http://%s:%s", clusterDomain, i.HTTPPort))
+			_, err = http.Get(fmt.Sprintf("http://rio.%s:%s", clusterDomain, i.HTTPPort))
 			if err != nil {
 				fmt.Printf("Warning: ClusterDomain is not accessible. Error: %v\n", err)
 			} else {

@@ -105,7 +105,7 @@ func main() {
 
 func run(c *cli.Context) error {
 	go func() {
-		logrus.Fatal(http.ListenAndServe("localhost:6061", nil))
+		logrus.Fatal(http.ListenAndServe("127.0.0.1:6061", nil))
 	}()
 	if debug {
 		setupDebugLogging()
