@@ -17,16 +17,16 @@ import (
 )
 
 type Create struct {
-	T_Type       string   `desc:"Create type" default:"Opaque"`
-	F_FromFile   []string `desc:"Creating secrets from files"`
-	D_Data       []string `desc:"Creating secrets from key-pair data"`
-	Github       bool     `desc:"Configure github token"`
-	Docker       bool     `desc:"Configure docker registry secret"`
-	GitBasicAuth bool     `desc:"Configure git basic credential"`
+	T_Type        string   `desc:"Create type" default:"Opaque"`
+	F_FromFile    []string `desc:"Creating secrets from files"`
+	D_Data        []string `desc:"Creating secrets from key-pair data"`
+	GithubWebhook bool     `desc:"Configure github token"`
+	Docker        bool     `desc:"Configure docker registry secret"`
+	GitBasicAuth  bool     `desc:"Configure git basic credential"`
 }
 
 func (s *Create) Run(ctx *clicontext.CLIContext) error {
-	if s.Github {
+	if s.GithubWebhook {
 		var err error
 		var accessToken, ns string
 		ns, err = questions.Prompt("Select namespace[default]: ", "default")

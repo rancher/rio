@@ -10,12 +10,23 @@
 - [Using Riofile to build and develop](#using-riofile-to-build-and-develop-application)
 
 ### Install Options
-Rio by default expose 9443 and 9080 for https and http traffic. To change port, `rio run --http-port ${http_port} --https-port ${https_port}`.
-More advanced options are also available by running `rio install --help`. To change install options, re-run `rio install ${args}`. 
+Rio provides three install options for users. 
+`ingress`: Rio will use existing ingress controller and ingress resource to expose gateway services. All the traffic will go through ingress then inside cluster. Starting v0.4.0 this is the default mode.
+`svclb`: Rio will use service loadbalancer to expose gateway services. 
+`hostport`: Rio will expose hostport for gateway services.
+
+There are other install options:
+`http-port`: Http port gateway service will listen. If install mode is ingress, it will 80.
+`https-port`: Https port gateway service will listen. If install mode is ingress, it will 443.
+`ip-address`: Manually specify worker IP addresses to generate DNS domain. By default Rio will detect based on install mode.
+`service-cidr`: Manually specify service-cidr for service mesh to intercept traffic. By default Rio will try to detect.
+`disable-features`: Specify feature to disable during install.
+`httpproxy`: Specify HTTP_PROXY environment variable for control plane.
+`lite`: install with lite mode.
 
 ### Running workload
 
-- [Example](#Example)
+- [Quick start](#quick-start)
 - [Canary Deployment](#canary-deployment)
 - [Automatic DNS and HTTPS](#automatic-dns-and-https)
 - [Adding external services](#adding-external-services)
@@ -24,10 +35,10 @@ More advanced options are also available by running `rio install --help`. To cha
 - [Using Riofile](#using-riofile)
 
 
-##### Example
-To run a workload, simple type `rio run -p ${port} $image`. For example
-
+##### Quick start
+To deploy workload to rio:
 ```bash
+# ibuildthecloud/demo:v1 is a docker image that listens on 80 and print "hello world"
 $ rio run -p 80/http --name svc ibuildthecloud/demo:v1
 default/svc:v0
 
@@ -41,26 +52,24 @@ $ curl https://svc-default.5yt5mw.on-rio.io:9443
 Hello World
 ```
 
+Rio provides a similar experience as Docker CLI when running a container. Run `rio run --help` to see more options.
+
 ##### Canary Deployment
 Rio allows you to easily configure canary deployment by staging services and shifting traffic between revisions.
 
 ```bash
 # Create a new service
-$ rio run -p 80/http --name demo1 --scale=3 ibuildthecloud/demo:v1
-default/svc:v0
+$ rio run -p 80/http --name demo1 ibuildthecloud/demo:v1
 
-# Stage a new version, updating just the docker image and assigning it to "v3" version.
+# Stage a new version, updating just the docker image and assigning it to "v3" version. If you want to change options other than just image, run with --edit.
 $ rio stage --image=ibuildthecloud/demo:v3 default/demo1:v3
-default/svc:v3
-
-# Or change the spec of the new service by adding --edit
 $ rio stage --edit default/svc:v3
 
-# Notice a new URL was created for your staged service
+# Notice a new URL was created for your staged service. For each revision you will get a unique URL.
 $ rio revision default/demo1
 Name               IMAGE                    CREATED          SCALE     ENDPOINT                                         WEIGHT    DETAIL
-default/demo1:v3   ibuildthecloud/demo:v3   19 seconds ago   3         https://demo1-v3-default.5yt5mw.on-rio.io:9443   0         
-default/demo1:v0   ibuildthecloud/demo:v1   2 minutes ago    3         https://demo1-v0-default.5yt5mw.on-rio.io:9443   100   
+default/demo1:v3   ibuildthecloud/demo:v3   19 seconds ago   1         https://demo1-v3-default.5yt5mw.on-rio.io:9443   0         
+default/demo1:v0   ibuildthecloud/demo:v1   2 minutes ago    1         https://demo1-v0-default.5yt5mw.on-rio.io:9443   100   
 
 # Access the current revision
 $ curl -s https://demo1-v0-default.5yt5mw.on-rio.io:9443
@@ -76,8 +85,8 @@ Hello World v3
 $ rio promote default/demo1:v3
 
 Name               IMAGE                    CREATED              SCALE     ENDPOINT                                         WEIGHT    DETAIL
-default/demo1:v3   ibuildthecloud/demo:v3   About a minute ago   3         https://demo1-v3-default.5yt5mw.on-rio.io:9443   5         
-default/demo1:v0   ibuildthecloud/demo:v1   3 minutes ago        3         https://demo1-v0-default.5yt5mw.on-rio.io:9443   95   
+default/demo1:v3   ibuildthecloud/demo:v3   About a minute ago   1         https://demo1-v3-default.5yt5mw.on-rio.io:9443   5         
+default/demo1:v0   ibuildthecloud/demo:v1   3 minutes ago        1         https://demo1-v0-default.5yt5mw.on-rio.io:9443   95   
 
 # Access the app. You should be able to see traffic routing to the new revision
 $ curl https://demo1-default.5yt5mw.on-rio.io:9443
@@ -89,8 +98,8 @@ Hello World v3
 # Wait for v3 to be 100% weight. Access the app, all traffic should be routed to new revision right now.
 $ rio revision default/svc
 Name               IMAGE                    CREATED         SCALE     ENDPOINT                                         WEIGHT    DETAIL
-default/demo1:v3   ibuildthecloud/demo:v3   4 minutes ago   3         https://demo1-v3-default.5yt5mw.on-rio.io:9443   100       
-default/demo1:v0   ibuildthecloud/demo:v1   6 minutes ago   3         https://demo1-v0-default.5yt5mw.on-rio.io:9443   0         
+default/demo1:v3   ibuildthecloud/demo:v3   4 minutes ago   1         https://demo1-v3-default.5yt5mw.on-rio.io:9443   100       
+default/demo1:v0   ibuildthecloud/demo:v1   6 minutes ago   1         https://demo1-v0-default.5yt5mw.on-rio.io:9443   0         
 
 $ curl https://demo1-default.5yt5mw.on-rio.io:9443
 Hello World v3
@@ -153,17 +162,21 @@ run
 ```bash
 # Create a domain that points to route1. You have to setup a cname record from your domain to cluster domain.
 # For example, foo.bar -> CNAME -> iazlia.on-rio.io
-$ rio domain add foo.bar default/route1
+$ rio domain register www.myproductionsite.com default/route1
 default/foo-bar
 
 # Use your own certs by providing a secret that contain tls cert and key instead of provisioning by letsencrypts. The secret has to be created first in system namespace.
-$ rio domain add --secret $name foo.bar default/route1
+$ rio domain register --secret $name www.myproductionsite.com default/route1
+
+# Access your domain 
 ```
 
 Note: By default Rio will automatically configure Letsencrypt HTTP-01 challenge to provision certs for your publicdomain. This needs you to install rio on standard ports.
-Try `rio install --httpport 80 --httpsport 443`.
+If you are install rio with svclb or hostport mode, try `rio install --httpport 80 --httpsport 443`.
 
 ##### Using Riofile
+
+###### Riofile example
 
 Rio allows you to define a file called `Riofile`. `Riofile` allows you define rio services and configmap is a friendly way with `docker-compose` syntax.
 For example, to define a nginx application with conf
@@ -202,7 +215,98 @@ services:
 
 Once you have defined `Riofile`, simply run `rio up`. Any change you made for `Riofile`, re-run `rio up` to pick the change.
 
-More complicated examples are available at [here](../stacks). 
+More complicated examples are available at [here](../stacks).
+
+###### Riofile reference
+`arg`: Arguments to the entrypoint
+
+`command`: Entrypoint array
+
+`scale`: Scale of the service. Can be specifed as `min-max`(1-10) to enable autoscaling.
+
+`ports`: Container ports. Format: `$(servicePort:)containerPort/protocol`. 
+
+`build`: Build arguments.  
+
+```yaml
+build:
+    buildArgs: # build arguments
+    - foo=bar
+    dockerFile: Dockerfile # the name of Dockerfile to look for
+    dockerFilePath: ./ # the path of Dockerfile to look for
+    buildContext: ./  # build context
+    noCache: true # build without cache
+    push: true
+    buildImageName: foo/bar # specify custom image name
+    pushRegistry: docker.io # specify push registry
+```
+
+`configs`: Specify configmap to mount. Format: `$name/$key:/path/to/file`.
+
+`secrets`: Specify secret to mount. Format: `$name/$key:/path/to/file`.
+
+`pullPolicy`: Specify image pull policy. Options: `always/never/ifNotProsent`.
+
+`disableServiceMesh`: Disable service mesh sidecar.
+
+`global_permissions`: Specify the global permission of workload
+
+Example: 
+```yaml
+global_permissions:
+- 'create,get,list certmanager.k8s.io/*'
+```
+this will give workload abilities to **create, get, list** **all** resources in api group **certmanager.k8s.io**.
+
+If you want to hook up with an existing role:
+
+```yaml
+global_permissions:
+- 'role=cluster-admin'
+```
+
+`permisions`: Specify current namespace permission of workload
+
+Example: 
+```yaml
+permissions:
+- 'create,get,list certmanager.k8s.io/*'
+```
+
+this will give workload abilities to **create, get, list** **all** resources in api group **certmanager.k8s.io** in **current** namespace.
+
+`labels`: Specify labels
+
+`annotations`: Specify annotations
+
+`containers`: Specify multiple containers.
+
+`env`: Specify environment variables. You can use the following syntax.
+
+```yaml
+"self/name":           "metadata.name",
+"self/namespace":      "metadata.namespace",
+"self/labels":         "metadata.labels",
+"self/annotations":    "metadata.annotations",
+"self/node":           "spec.nodeName",
+"self/serviceAccount": "spec.serviceAccountName",
+"self/hostIp":         "status.hostIP",
+"self/nodeIp":         "status.hostIP",
+"self/ip":             "status.podIP",
+```
+For example, to set an environment name to its own name
+```yaml
+env:
+- POD_NAME=$(self/name)
+```
+
+###### Watching Riofile
+You can setup github repository to watch Riofile changes and re-apply Riofile changes. Here is the example:
+```bash
+$ rio up https://github.com/username/repo
+```
+If you want to setup webhook to watch, go to [here](#setup-github-webhook-experimental)
+
 
 ### Monitoring
 By default, Rio will deploy [Grafana](https://grafana.com/) and [Kiali](https://www.kiali.io/) to give users the ability to watch all metrics of the service mesh.
@@ -330,18 +434,58 @@ $ curl https://build-default.8axlxl.on-rio.io
 Hi there, I am StrongMonkey:v3
 ```
 
-To configure webhook secret, run `rio secret add --github`. Once webhook secret is configured, a webhook will be created to create new revision based on push and tag events.
+#### Setup credential for private repository and github webhook
+1. Set up git basic auth.(Currently ssh key is not supported and will be added soon). Here is an exmaple of adding a github repo.
+```bash
+$ rio secret add --git-basic-auth
+Select namespace[default]: $(put the same namespace with your workload)
+git url: https://github.com/username
+username: $username
+password: $password
+```
+2. Run your workload and point it to your private git repo. It will automatically use the secret you just configured.
 
-To configure private git repo for basic auth, run `rio secret add --git`. After this, you can add private git repo to Rio.
+#### Setup Github webhook (experimental)
+By default, rio will automatically pull git repo and check if repo code has changed. You can also configure a webhook to automatically push any events to Rio to trigger the build.
 
-To configure private docker registry, run `rio secret add --docker`. This configures docker push secret so you can push to a custom registry instead of built-in local registry.
+1. Set up Github webhook token.
+```bash
+$ rio secret add --github-webhook
+Select namespace[default]: $(put the same namespace with your workload)
+accessToken: $(github_accesstoken)
+```
+$(github_accesstoken) has to be able create webhook in your github repo.
+2. Create workload and point to your repo.
+3. Go to your Github repo, it should have webhook configured to point to one of our webhook service.
 
-To configure custom dockerFile path and buildContext, run `rio run --docker-file ${path} --build-context ${path}`
+#### Set Custom build arguments and docker registry
+You can also push to your own registry for images that rio has built.
+1. Setup docker registry auth. Here is an example of how to setup docker registry.
+```bash
+$ rio secret add --docker
+Select namespace[default]: $(put the same namespace with your workload)
+Registry url[]: https://index.docker.io/v1/
+username[]: $(your_docker_hub_username)
+password[]: $(password)
+```
+2. Create your workload. Set the correct push registry.
+```bash
+$ rio run --build-registry docker.io --build-image-name $(username)/yourimagename $(repo)
+```
+`docker.io/$(username)/yourimagename` will be pushed into dockerhub registry. 
 
-To configure custom registry and image name, run `rio run --build-registry ${registry} --build-image-name ${image_name}`
+#### Enable Pull request (experimental)
+Rio also allows you to configure pull request builds. This needs you to configure github webhook token correctly.
+1. Set up github webhook token in the previous session
+2. Run workload with pull-request enabled.
+```bash
+$ rio run --build-enable-pr $(repo)
+```
 
-To enable build for pull-request, run `rio run --build-enable-pr ${args}`. 
+After this, if there is any pull request, Rio will create a deployment based on this pull request, and you will get a unique link
+to see the change this pull request introduced in the actual deployment.
 
+#### View build logs
 To view logs from your builds
 ```bash
 $ rio builds
@@ -349,6 +493,9 @@ NAME                                                                     SERVICE
 default/fervent-swartz6-ee709-786b366d5d44de6b547939f51d467437e45c5ee1   default/fervent-swartz6   786b366d5d44de6b547939f51d467437e45c5ee1   23 hours ago   True    
 
 $ rio logs -f default/fervent-swartz6-ee709-786b366d5d44de6b547939f51d467437e45c5ee1
+
+# restart any builds that failed
+$ rio build restart default/fervent-swartz6-ee709-786b366d5d44de6b547939f51d467437e45c5ee1
 ```
 
 ### Using Riofile to build and develop application
