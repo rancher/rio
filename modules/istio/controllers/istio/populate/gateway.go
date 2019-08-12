@@ -51,7 +51,7 @@ func Gateway(systemNamespace, clusterDomain, certs string, publicdomains []*v1.P
 				Number:   int(httpsPort),
 				Name:     fmt.Sprintf("%v-%v", strings.ToLower(string(v1alpha3.ProtocolHTTPS)), httpsPort),
 			},
-			Hosts: []string{clusterDomain},
+			Hosts: []string{"*"},
 			TLS: &v1alpha3.TLSOptions{
 				Mode:           v1alpha3.TLSModeSimple,
 				CredentialName: certs,
