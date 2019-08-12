@@ -138,35 +138,42 @@ func envs(containerName string, c *riov1.Container) (result []v1.EnvVar) {
 	for _, env := range c.Env {
 		name := env.Name
 		value := env.Value
-		basic := v1.EnvVar{
-			Name:  name,
-			Value: value,
-		}
 
 		if env.ConfigMapName != "" {
-			basic.ValueFrom = &v1.EnvVarSource{
-				ConfigMapKeyRef: &v1.ConfigMapKeySelector{
-					LocalObjectReference: v1.LocalObjectReference{
-						Name: env.ConfigMapName,
+			result = append(result, v1.EnvVar{
+				Name: name,
+				ValueFrom: &v1.EnvVarSource{
+					ConfigMapKeyRef: &v1.ConfigMapKeySelector{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: env.ConfigMapName,
+						},
+						Key: env.Key,
 					},
-					Key: env.Key,
 				},
-			}
-			result = append(result, basic)
+			})
+
 			continue
 		}
 
 		if env.SecretName != "" {
-			basic.ValueFrom = &v1.EnvVarSource{
-				SecretKeyRef: &v1.SecretKeySelector{
-					LocalObjectReference: v1.LocalObjectReference{
-						Name: env.SecretName,
+			result = append(result, v1.EnvVar{
+				Name: name,
+				ValueFrom: &v1.EnvVarSource{
+					SecretKeyRef: &v1.SecretKeySelector{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: env.SecretName,
+						},
+						Key: env.Key,
 					},
-					Key: env.Key,
 				},
-			}
-			result = append(result, basic)
+			})
+
 			continue
+		}
+
+		basic := v1.EnvVar{
+			Name:  name,
+			Value: value,
 		}
 
 		if !strings.HasPrefix(value, "$(") || !strings.HasSuffix(value, ")") {
