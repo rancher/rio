@@ -38,7 +38,7 @@ func (u *Up) Run(c *clicontext.CLIContext) error {
 			u.F_File = defaultRiofile
 		}
 		if u.F_File == "" {
-			return fmt.Errorf("can not file a rio file, must specify one. Example: rio up -f rio-file.yaml")
+			return fmt.Errorf("can not found Riofile under current directory, must specify one. Example: rio up -f /path/to/Riofile.yaml")
 		}
 	}
 
