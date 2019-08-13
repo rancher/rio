@@ -6,6 +6,7 @@ import (
 
 	"github.com/rancher/rio/modules/istio/controllers/service/populate"
 	"github.com/rancher/rio/modules/istio/pkg/domains"
+	"github.com/rancher/rio/modules/istio/pkg/parse"
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
@@ -31,7 +32,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	c.Apply = c.Apply.WithStrictCaching().
 		WithCacheTypes(rContext.Networking.Networking().V1alpha3().DestinationRule(),
 			rContext.Networking.Networking().V1alpha3().VirtualService(),
-			rContext.Extensions.Extensions().V1beta1().Ingress())
+			rContext.K8sNetworking.Networking().V1beta1().Ingress())
 
 	sh := &serviceHandler{
 		systemNamespace:      rContext.Namespace,
@@ -73,6 +74,10 @@ func (s *serviceHandler) populate(obj runtime.Object, namespace *corev1.Namespac
 
 	if err := populate.DestinationRulesAndVirtualServices(s.systemNamespace, clusterDomain, service, os); err != nil {
 		return err
+	}
+
+	if clusterDomain.Status.ClusterDomain != "" && constants.InstallMode == constants.InstallModeIngress {
+		populate.Ingress(s.systemNamespace, clusterDomain.Status.ClusterDomain, false, service, os)
 	}
 
 	return err
@@ -133,26 +138,11 @@ func updateAppDomain(app *riov1.App, clusterDomain *adminv1.ClusterDomain) {
 		endpoints = append(endpoints, fmt.Sprintf("%s://%s", protocol, pd))
 	}
 
-	for i, endpoint := range endpoints {
-		if protocol == "http" && constants.DefaultHTTPOpenPort != "80" {
-			endpoints[i] = fmt.Sprintf("%s:%s", endpoint, constants.DefaultHTTPOpenPort)
-		}
-
-		if protocol == "https" && constants.DefaultHTTPSOpenPort != "443" {
-			endpoints[i] = fmt.Sprintf("%s:%s", endpoint, constants.DefaultHTTPSOpenPort)
-		}
-	}
-	app.Status.Endpoints = endpoints
+	app.Status.Endpoints = parse.FormatEndpoint(protocol, endpoints)
 }
 
 func updateDomain(service *riov1.Service, clusterDomain *adminv1.ClusterDomain) {
-	public := false
-	for _, port := range service.Spec.Ports {
-		if !port.InternalOnly {
-			public = true
-			break
-		}
-	}
+	public := domains.IsPublic(service)
 
 	protocol := "http"
 	if clusterDomain.Status.HTTPSSupported {
@@ -169,14 +159,5 @@ func updateDomain(service *riov1.Service, clusterDomain *adminv1.ClusterDomain) 
 		endpoints = append(endpoints, fmt.Sprintf("%s://%s", protocol, pd))
 	}
 
-	for i, endpoint := range endpoints {
-		if protocol == "http" && constants.DefaultHTTPOpenPort != "80" {
-			endpoints[i] = fmt.Sprintf("%s:%s", endpoint, constants.DefaultHTTPOpenPort)
-		}
-
-		if protocol == "https" && constants.DefaultHTTPOpenPort != "443" {
-			endpoints[i] = fmt.Sprintf("%s:%s", endpoint, constants.DefaultHTTPSOpenPort)
-		}
-	}
-	service.Status.Endpoints = endpoints
+	service.Status.Endpoints = parse.FormatEndpoint(protocol, endpoints)
 }

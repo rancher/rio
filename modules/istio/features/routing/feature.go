@@ -43,7 +43,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			"TELEMETRY_ADDRESS": fmt.Sprintf("%s.%s.svc.cluster.local", constants.IstioTelemetry, rContext.Namespace),
 			"NAMESPACE":         rContext.Namespace,
 			"TAG":               "1.1.3",
-			"USE_HOSTPORT":      fmt.Sprint(constants.UseHostPort),
+			"INSTALL_MODE":      constants.InstallMode,
 		},
 	}
 

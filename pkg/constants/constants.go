@@ -1,12 +1,20 @@
 package constants
 
+const (
+	InstallModeIngress  = "ingress"
+	InstallModeSvclb    = "svclb"
+	InstallModeHostport = "hostport"
+
+	ClusterIngressName = "cluster-ingress"
+)
+
 var (
 	ControllerImage                = "rancher/rio-controller"
 	ControllerImageTag             = "dev"
 	ClusterDomainName              = "cluster-domain"
-	DefaultHTTPOpenPort            = "9080"
-	DefaultHTTPSOpenPort           = "9443"
-	UseHostPort                    = false
+	DefaultHTTPOpenPort            = "80"
+	DefaultHTTPSOpenPort           = "443"
+	InstallMode                    = InstallModeIngress
 	UseIPAddress                   = ""
 	ServiceCidr                    = ""
 	DefaultServiceVersion          = "v0"

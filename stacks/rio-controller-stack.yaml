@@ -48,7 +48,7 @@ kubernetes:
       verbs:
       - "*"
     - apiGroups:
-      - "extensions"
+      - "networking.k8s.io"
       resources:
       - "ingresses"
       - "ingresses/status"
@@ -256,8 +256,6 @@ kubernetes:
               value: "${HTTPS_PORT}"
             - name: HTTP_PORT
               value: "${HTTP_PORT}"
-            - name: USE_HOSTPORT
-              value: "${USE_HOSTPORT}"
             - name: IP_ADDRESSES
               value: ${IP_ADDRESSES}
             - name: SERVICE_CIDR
@@ -266,6 +264,8 @@ kubernetes:
               value: ${DISABLE_FEATURES}
             - name: HTTP_PROXY
               value: ${HTTP_PROXY}
+            - name: INSTALL_MODE
+              value: ${INSTALL_MODE}
 
 templates:
   questions:
@@ -279,8 +279,6 @@ templates:
     description: "https port gateway will listen to"
   - variable: HTTP_PORT
     description: "http port gateway will listen to"
-  - variable: USE_HOSTPORT
-    description: "whether to use hostPort"
   - variable: IP_ADDRESSES
     description: "whether to manually specify ip addresses to generate"
   - variable: SERVICE_CIDR
@@ -289,3 +287,5 @@ templates:
     description: "manually specify features to disable"
   - variable: HTTP_PROXY
     description: "specify http proxy setting"
+  - variable: INSTALL_MODE
+    description: "install mode"

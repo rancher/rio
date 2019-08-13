@@ -37,6 +37,9 @@ type PublicDomainStatus struct {
 	// Whether HTTP is supported in the Domain
 	HTTPSSupported bool `json:"httpsSupported,omitempty"`
 
+	// Letsencrypt issuer name
+	IssuerName string `json:"issuerName,omitempty"`
+
 	// Endpoint to access this Domain
 	Endpoint string `json:"endpoint,omitempty"`
 

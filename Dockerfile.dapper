@@ -2,7 +2,7 @@ FROM golang:1.12.6-alpine3.9
 
 ARG DAPPER_HOST_ARCH
 ENV ARCH $DAPPER_HOST_ARCH
-ENV K3S_VERSION v0.5.0
+ENV K3S_VERSION v0.8.0
 ENV KUBECTL_VERSION v1.15.0
 
 RUN apk -U add bash git gcc musl-dev docker vim less file curl wget ca-certificates python3 py3-pip python3-dev openssl-dev libffi-dev jq
