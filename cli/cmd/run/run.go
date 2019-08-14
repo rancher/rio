@@ -24,13 +24,15 @@ func (r *Run) Run(ctx *clicontext.CLIContext) error {
 	service, err := r.RunCallback(ctx, func(service *riov1.Service) *riov1.Service {
 		if strings.ContainsRune(r.Scale, '-') {
 			min, max := kv.Split(r.Scale, "-")
-			minScale, _ := strconv.Atoi(min)
-			maxScale, _ := strconv.Atoi(max)
-			service.Spec.AutoscaleConfig.MinScale = &minScale
-			service.Spec.AutoscaleConfig.MaxScale = &maxScale
-			service.Spec.AutoscaleConfig.Concurrency = &r.Concurrency
-			service.Spec.Scale = &minScale
-			return service
+			if min != "" && max != "" {
+				minScale, _ := strconv.Atoi(min)
+				maxScale, _ := strconv.Atoi(max)
+				service.Spec.AutoscaleConfig.MinScale = &minScale
+				service.Spec.AutoscaleConfig.MaxScale = &maxScale
+				service.Spec.AutoscaleConfig.Concurrency = &r.Concurrency
+				service.Spec.Scale = &minScale
+				return service
+			}
 		}
 
 		// disable autoscaling

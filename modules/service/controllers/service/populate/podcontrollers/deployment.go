@@ -15,7 +15,6 @@ func deployment(service *riov1.Service, cp *controllerParams, os *objectset.Obje
 			Annotations: map[string]string{},
 		},
 		Spec: appsv1.DeploymentSpec{
-			Replicas: &cp.Scale.Scale,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: cp.SelectorLabels,
 			},
@@ -25,6 +24,10 @@ func deployment(service *riov1.Service, cp *controllerParams, os *objectset.Obje
 			},
 		},
 	})
+
+	if cp.Scale.Scale != -1 {
+		dep.Spec.Replicas = &cp.Scale.Scale
+	}
 
 	if service.SystemSpec != nil && service.SystemSpec.DeploymentStrategy != "" {
 		dep.Spec.Strategy.Type = appsv1.DeploymentStrategyType(service.SystemSpec.DeploymentStrategy)
