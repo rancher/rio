@@ -20,6 +20,7 @@ func podSpec(service *riov1.Service) v1.PodSpec {
 		DNSPolicy:          service.Spec.DNSPolicy,
 		HostAliases:        service.Spec.HostAliases,
 		Hostname:           service.Spec.Hostname,
+		HostNetwork:        service.Spec.HostNetwork,
 		ServiceAccountName: rbac.ServiceAccountName(service),
 		EnableServiceLinks: &f,
 		Containers:         containers(service, false),

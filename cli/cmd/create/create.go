@@ -42,6 +42,7 @@ type Create struct {
 	EnvFile                []string          `desc:"Read in a file of environment variables"`
 	GlobalPermission       []string          `desc:"Permissions to grant to container's service account for all namespaces"`
 	Group                  string            `desc:"The GID to run the entrypoint of the container process"`
+	Net                    string            `desc:"Set network mode (host)"`
 	HealthCmd              string            `desc:"Command to run to check health"`
 	HealthFailureThreshold int               `desc:"Consecutive failures needed to report unhealthy"`
 	HealthHeader           map[string]string `desc:"HTTP Headers to send in GET request for healthcheck"`
@@ -122,6 +123,10 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 	spec.Hostname = c.Hostname
 	spec.Nameservers = c.DNS
 	spec.Searches = c.DNSSearch
+
+	if c.Net == "host" {
+		spec.HostNetwork = true
+	}
 
 	min, max := 1, 10
 	spec.AutoscaleConfig.MinScale = &min

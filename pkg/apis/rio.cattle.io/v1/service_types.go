@@ -257,6 +257,9 @@ type PodConfig struct {
 	// HostAliases is an optional list of hosts and IPs that will be injected into the pod's hosts file if specified. This is only valid for non-hostNetwork pods.
 	HostAliases []v1.HostAlias `json:"hostAliases,omitempty"`
 
+	// Host networking requested for this pod. Use the host's network namespace. If this option is set, the ports that will be used must be specified. Default to false.
+	HostNetwork bool `json:"hostNetwork,omitempty"`
+
 	// Image pull secret
 	ImagePullSecrets []v1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 
