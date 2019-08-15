@@ -34,7 +34,7 @@ func NewService(cfg Config) TableWriter {
 
 func FormatScale(data *int, data2, data3 interface{}) (string, error) {
 	scale := data
-	if data != nil {
+	if data != nil && *data > 0 {
 		return fmt.Sprint(*data), nil
 	}
 
@@ -58,6 +58,10 @@ func FormatScale(data *int, data2, data3 interface{}) (string, error) {
 
 	if scaleStatus == nil {
 		scaleStatus = &v1.ScaleStatus{}
+	}
+
+	if scaleNum == -1 {
+		return strconv.Itoa(scaleStatus.Ready), nil
 	}
 
 	if scaleStatus.Available == 0 && scaleStatus.Unavailable == 0 && scaleStatus.Ready == scaleNum {
