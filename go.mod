@@ -26,7 +26,7 @@ require (
 	github.com/cenkalti/backoff v2.1.1+incompatible // indirect
 	github.com/chai2010/gettext-go v0.0.0-20170215093142-bf70f2a70fb1 // indirect
 	github.com/containerd/console v0.0.0-20181022165439-0650fd9eeb50
-	github.com/containerd/containerd v1.3.0-0.20190426060238-3a3f0aac8819
+	github.com/containerd/containerd v1.3.0-0.20190507210959-7c1e88399ec0
 	github.com/cyphar/filepath-securejoin v0.2.2 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/docker/cli v0.0.0-20190723080722-8560f9e8cdad // indirect
@@ -43,7 +43,6 @@ require (
 	github.com/gdamore/tcell v0.0.0-20190319073105-ec71b09872d7
 	github.com/go-bindata/go-bindata v3.1.2+incompatible
 	github.com/gobwas/glob v0.2.3 // indirect
-	github.com/gogo/googleapis v1.0.0 // indirect
 	github.com/google/btree v1.0.0 // indirect
 	github.com/gophercloud/gophercloud v0.2.0 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
@@ -58,19 +57,20 @@ require (
 	github.com/markbates/inflect v1.0.4 // indirect
 	github.com/mattn/go-shellwords v1.0.5
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
-	github.com/moby/buildkit v0.5.1
+	github.com/moby/buildkit v0.6.0
 	github.com/natefinch/lumberjack v0.0.0-20170911140457-aee462912944 // indirect
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0 // indirect
+	github.com/opencontainers/runc v1.0.1-0.20190307181833-2b18fe1d885e // indirect
 	github.com/openshift/api v3.9.0+incompatible // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.0.0 // indirect
 	github.com/rancher/axe v0.0.0-20190531011056-59fcf8b44147
 	github.com/rancher/gitwatcher v0.3.0
-	github.com/rancher/mapper v0.0.0-20190426050457-84da984f3146
+	github.com/rancher/mapper v0.0.0-20190814232720-058a8b7feb99
 	github.com/rancher/rdns-server v0.4.2
-	github.com/rancher/wrangler v0.1.5
+	github.com/rancher/wrangler v0.1.6-0.20190813204652-db3f96a5ee8e
 	github.com/rancher/wrangler-api v0.2.0
 	github.com/rivo/tview v0.0.0-20190319111340-8d5eba0c2f51
 	github.com/rivo/uniseg v0.0.0-20190313204849-f699dde9c340 // indirect
