@@ -10,15 +10,15 @@ import (
 )
 
 const (
-	dns1035                      string = "[a-z]([-a-z0-9]*[a-z0-9])?"
-	alphanumeric                 string = "[a-zA-Z0-9._-]*"
-	FullDomainNameTypeNameType          = NameType("domainName")
-	SingleNameNameType                  = NameType("singleName")
-	NamespaceScopedNameType             = NameType("stackScoped")
-	NamespacedSecretNameType            = NameType("secretName")
-	ThreePartsNameType                  = NameType("threeParts")
-	VersionedSingleNameNameType         = NameType("versionedSingleName")
-	VersionedStackScopedNameType        = NameType("versionedStackScoped")
+	dns1035                        string = "[a-z]([-a-z0-9]*[a-z0-9])?"
+	alphanumeric                   string = "[a-zA-Z0-9._-]*"
+	FullDomainNameTypeNameType            = NameType("domainName")
+	SingleNameNameType                    = NameType("singleName")
+	NamespaceScopedNameType               = NameType("stackScoped")
+	NamespacedAlphanumericNameType        = NameType("alphanumericName")
+	ThreePartsNameType                    = NameType("threeParts")
+	VersionedSingleNameNameType           = NameType("versionedSingleName")
+	VersionedStackScopedNameType          = NameType("versionedStackScoped")
 )
 
 type NameType string
@@ -26,7 +26,7 @@ type NameType string
 var (
 	nameTypes = map[NameType]nameType{
 		FullDomainNameTypeNameType: {
-			Regexp: regexp.MustCompile("^" + dns1035 + "\\." + dns1035 + ".*" + "$"),
+			Regexp: regexp.MustCompile("^" + alphanumeric + "\\." + dns1035 + ".*" + "$"),
 			lookup: resolveFullDomain,
 		},
 		SingleNameNameType: {
@@ -41,7 +41,7 @@ var (
 			Regexp: regexp.MustCompile("^" + dns1035 + "/" + dns1035 + "$"),
 			lookup: resolveStackScoped,
 		},
-		NamespacedSecretNameType: {
+		NamespacedAlphanumericNameType: {
 			Regexp: regexp.MustCompile("^" + dns1035 + "/" + alphanumeric + "$"),
 			lookup: resolveStackScoped,
 		},

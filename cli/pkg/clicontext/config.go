@@ -14,6 +14,7 @@ import (
 	"github.com/rancher/wrangler/pkg/kubeconfig"
 	"github.com/sirupsen/logrus"
 	tektonv1alpha1 "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/typed/pipeline/v1alpha1"
+	errors2 "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -47,6 +48,9 @@ type Config struct {
 	Writer   io.Writer
 
 	DebugLevel string
+
+	BuildkitPodName string
+	SocatPodName    string
 }
 
 func (c *Config) Validate() error {
@@ -105,10 +109,14 @@ func (c *Config) Validate() error {
 	c.Autoscale = autoscale
 
 	if info, err := project.RioInfos().Get("rio", metav1.GetOptions{}); err != nil {
-		logrus.Debug(err)
-		return ErrNoConfig
-	} else if c.SystemNamespace == "" {
+		if !errors2.IsForbidden(err) {
+			logrus.Debug(err)
+			return ErrNoConfig
+		}
+	} else {
 		c.SystemNamespace = info.Status.SystemNamespace
+		c.BuildkitPodName = info.Status.BuildkitPodName
+		c.SocatPodName = info.Status.SocatPodName
 	}
 
 	if c.DefaultNamespace == c.SystemNamespace {

@@ -30,6 +30,9 @@ type stackPopulator struct{}
 
 func (s stackPopulator) populate(obj runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) error {
 	st := obj.(*riov1.Stack)
+	if st.Spec.Template == "" {
+		return nil
+	}
 
 	deployStack := stack.NewStack([]byte(st.Spec.Template), st.Spec.Answers)
 

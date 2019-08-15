@@ -17,11 +17,36 @@ type Stack struct {
 }
 
 type StackSpec struct {
-	Template string            `json:"template,omitempty"`
-	Images   map[string]string `json:"images,omitempty"`
-	Answers  map[string]string `json:"answers,omitempty"`
+	// Stack build parameters that watches git repo
+	Build *StackBuild `json:"build,omitempty"`
+
+	// Stack template
+	Template string `json:"template,omitempty"`
+
+	// Stack images
+	Images map[string]string `json:"images,omitempty"`
+
+	// Stack answers
+	Answers map[string]string `json:"answers,omitempty"`
+}
+
+type StackBuild struct {
+	// Git repo url
+	Repo string `json:"repo,omitempty"`
+
+	// Git branch
+	Branch string `json:"branch,omitempty"`
+
+	// Git revision
+	Revision string `json:"revision,omitempty"`
+
+	// Git secret name for repository
+	GitSecretName string `json:"gitSecretName,omitempty"`
 }
 
 type StackStatus struct {
+	// Observed commit for the build
+	Revision string `json:"revision,omitempty"`
+
 	Conditions []genericcondition.GenericCondition `json:"conditions,omitempty"`
 }

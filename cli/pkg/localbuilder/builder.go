@@ -13,21 +13,18 @@ import (
 	"github.com/rancher/rio/cli/pkg/localbuilder/containerd"
 	"github.com/rancher/rio/cli/pkg/localbuilder/docker"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 )
 
 var (
-	dockerSocket      = "/run/docker.sock"
-	containerdSocket  = "/run/k3s/containerd/containerd.sock"
-	buildkitNamespace = "default"
+	dockerSocket     = "/run/docker.sock"
+	containerdSocket = "/run/k3s/containerd/containerd.sock"
 
 	maxBuildThread = int64(10)
 
@@ -43,41 +40,44 @@ type RuntimeBuilder interface {
 	Build(ctx context.Context, spec riov1.ImageBuild) (string, error)
 }
 
-func NewLocalBuilder(ctx context.Context, apply apply.Apply, k8s *kubernetes.Clientset) (LocalBuilder, error) {
+func NewLocalBuilder(ctx context.Context, buildkitPodName, socatPodName, systemNamespace string, pushLocal bool, apply apply.Apply, k8s *kubernetes.Clientset) (LocalBuilder, error) {
 	runtime := containerRuntime(k8s)
 	builder := &localBuilder{
-		runtime:      runtime,
-		k8s:          k8s,
-		apply:        apply,
-		buildkitPort: generateRandomPort(),
-		socketPort:   generateRandomPort(),
+		runtime:         runtime,
+		k8s:             k8s,
+		apply:           apply,
+		buildkitPort:    generateRandomPort(),
+		socketPort:      generateRandomPort(),
+		systemNamespace: systemNamespace,
+		buildkitPodName: buildkitPodName,
+		socatPodName:    socatPodName,
+		pushLocal:       pushLocal,
 	}
 
 	var err error
 	if runtime == "docker" {
-		builder.socketAddress = dockerSocket
 		builder.runtimeBuilder = docker.NewDockerBuilder()
-	} else if runtime == "containerd" {
+	} else {
 		builder.runtimeBuilder, err = containerd.NewContainerdBuilder(builder.socketPort, builder.buildkitPort)
 		if err != nil {
 			return nil, err
 		}
-		builder.socketAddress = containerdSocket
-	} else {
-		return nil, fmt.Errorf("runtime %s is not supported for local builder", runtime)
 	}
 
 	return builder, builder.setup(ctx)
 }
 
 type localBuilder struct {
-	socketAddress  string
-	apply          apply.Apply
-	k8s            *kubernetes.Clientset
-	runtime        string
-	runtimeBuilder RuntimeBuilder
-	buildkitPort   string
-	socketPort     string
+	apply           apply.Apply
+	k8s             *kubernetes.Clientset
+	runtime         string
+	runtimeBuilder  RuntimeBuilder
+	buildkitPort    string
+	socketPort      string
+	systemNamespace string
+	buildkitPodName string
+	socatPodName    string
+	pushLocal       bool
 }
 
 func (l localBuilder) Build(ctx context.Context, specs map[string]riov1.ImageBuild, parallel bool, namespace string) (map[string]string, error) {
@@ -90,7 +90,7 @@ func (l localBuilder) Build(ctx context.Context, specs map[string]riov1.ImageBui
 	errg, _ := errgroup.WithContext(ctx)
 	s := semaphore.NewWeighted(maxBuildThread)
 
-	specs = setupBuildConfig(specs, namespace)
+	specs = l.setupBuildConfig(specs, namespace)
 	for name := range specs {
 		n := name
 		if err := s.Acquire(ctx, 1); err != nil {
@@ -119,66 +119,21 @@ func (l localBuilder) Build(ctx context.Context, specs map[string]riov1.ImageBui
 }
 
 func (l localBuilder) setup(ctx context.Context) error {
-	if err := l.setupStack(); err != nil {
-		return err
-	}
-
 	return l.setupPortforwarding(ctx)
 }
 
-func (l localBuilder) setupStack() error {
-	return stack.NewSystemStack(l.apply, buildkitNamespace, "buildkit-local").Deploy(map[string]string{
-		"RUNTIME":        l.runtime,
-		"SOCKET_ADDRESS": l.socketAddress,
-	})
-}
-
 func (l localBuilder) setupPortforwarding(ctx context.Context) error {
-	newctx, cancel := context.WithCancel(ctx)
-
-	var buildkitReady, socatReady bool
-	var socatPod *v1.Pod
-	wait.JitterUntil(func() {
-		if !buildkitReady {
-			if deploy, err := l.k8s.AppsV1().Deployments(buildkitNamespace).Get("buildkit", metav1.GetOptions{}); err == nil {
-				if isReady(&deploy.Status) {
-					buildkitReady = true
-				} else {
-					logrus.Info("Waiting for buildkitd deploy to be ready")
-				}
-			}
-		}
-
-		if !socatReady {
-			if p, err := l.k8s.CoreV1().Pods(buildkitNamespace).Get("socat-socket", metav1.GetOptions{}); err == nil {
-				if p.Status.Phase == v1.PodRunning {
-					socatPod = p
-					socatReady = true
-				} else {
-					logrus.Info("Waiting for socat-socket pod to be running")
-				}
-			}
-		}
-
-		if buildkitReady && socatReady {
-			cancel()
-			return
-		}
-	}, 500*time.Millisecond, 1.5, false, newctx.Done())
-
-	buildkitdPod, err := findPod(l.k8s, buildkitNamespace, "app=buildkitd-dev")
-	if err != nil {
-		return err
-	}
-
 	go func() {
-		if err := portForward(buildkitdPod, l.k8s, l.buildkitPort, "8080", chanWrapper(ctx.Done())); err != nil {
+		if err := portForward(l.buildkitPodName, l.systemNamespace, l.k8s, l.buildkitPort, "80", chanWrapper(ctx.Done())); err != nil {
 			logrus.Error(err)
 		}
 	}()
 
 	go func() {
-		if err := portForward(socatPod, l.k8s, l.socketPort, "9091", chanWrapper(ctx.Done())); err != nil {
+		if l.socatPodName == "" {
+			return
+		}
+		if err := portForward(l.socatPodName, l.systemNamespace, l.k8s, l.socketPort, "80", chanWrapper(ctx.Done())); err != nil {
 			logrus.Error(err)
 		}
 	}()
@@ -197,7 +152,7 @@ func chanWrapper(input <-chan struct{}) chan struct{} {
 	return output
 }
 
-func setupBuildConfig(specs map[string]riov1.ImageBuild, namespace string) map[string]riov1.ImageBuild {
+func (l localBuilder) setupBuildConfig(specs map[string]riov1.ImageBuild, namespace string) map[string]riov1.ImageBuild {
 	r := map[string]riov1.ImageBuild{}
 	for name, config := range specs {
 		if config.DockerFile == "" {
@@ -213,7 +168,13 @@ func setupBuildConfig(specs map[string]riov1.ImageBuild, namespace string) map[s
 			config.BuildImageName = fmt.Sprintf("%s/%s", namespace, name)
 		}
 		if config.PushRegistry == "" {
-			config.PushRegistry = "docker.io"
+			if l.pushLocal {
+				config.Push = true
+				config.PushRegistry = fmt.Sprintf("registry.%s", l.systemNamespace)
+			} else {
+				config.PushRegistry = "docker.io"
+			}
+
 		}
 		r[name] = config
 	}
@@ -251,8 +212,17 @@ func generateRandomPort() string {
 
 func containerRuntime(k8s *kubernetes.Clientset) string {
 	nodes, err := k8s.CoreV1().Nodes().List(metav1.ListOptions{})
-	if err == nil && len(nodes.Items) == 1 && strings.Contains(nodes.Items[0].Status.NodeInfo.ContainerRuntimeVersion, "containerd") {
-		return "containerd"
+	if err == nil {
+		if len(nodes.Items) == 1 {
+			r := nodes.Items[0].Status.NodeInfo.ContainerRuntimeVersion
+			if strings.Contains(r, "containerd") {
+				return "containerd"
+			} else if strings.Contains(r, "docker") {
+				return "docker"
+			}
+		} else if len(nodes.Items) > 1 {
+			return "multiple-nodes"
+		}
 	}
-	return "docker"
+	return ""
 }

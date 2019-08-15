@@ -48,6 +48,9 @@ func (l Builder) Build(ctx context.Context, spec riov1.ImageBuild) (string, erro
 }
 
 func (l Builder) tag(ctx context.Context, spec riov1.ImageBuild, tag string) error {
+	if spec.Push {
+		return nil
+	}
 	if !strings.ContainsAny(spec.BuildImageName, ":@") {
 		image := fmt.Sprintf("%s/%s", spec.PushRegistry, spec.BuildImageName)
 		if err := l.tagContainerd(ctx, image, tag); err != nil {
@@ -92,6 +95,9 @@ func (l Builder) build(ctx context.Context, spec riov1.ImageBuild) (string, erro
 	exportEntry.Attrs["name"] = image
 	if spec.Push {
 		exportEntry.Attrs["push"] = "true"
+	}
+	if strings.HasPrefix(spec.PushRegistry, "registry.") {
+		exportEntry.Attrs["registry.insecure"] = "true"
 	}
 	solveOpt.Exports = []client.ExportEntry{
 		exportEntry,

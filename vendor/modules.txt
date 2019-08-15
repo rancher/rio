@@ -479,7 +479,7 @@ github.com/rancher/mapper/httperror
 # github.com/rancher/rdns-server v0.4.2
 github.com/rancher/rdns-server/client
 github.com/rancher/rdns-server/model
-# github.com/rancher/wrangler v0.1.6-0.20190813204652-db3f96a5ee8e
+# github.com/rancher/wrangler v0.1.6-0.20190816172853-95ab7af39785
 github.com/rancher/wrangler/pkg/signals
 github.com/rancher/wrangler/pkg/yaml
 github.com/rancher/wrangler/pkg/kv
@@ -738,8 +738,8 @@ istio.io/istio/pilot/cmd/pilot-agent/status/util
 # k8s.io/api v0.0.0-20190606204050-af9c91bd2759
 k8s.io/api/core/v1
 k8s.io/api/apps/v1
-k8s.io/api/networking/v1beta1
 k8s.io/api/rbac/v1
+k8s.io/api/networking/v1beta1
 k8s.io/api/authentication/v1
 k8s.io/api/autoscaling/v1
 k8s.io/api/policy/v1beta1

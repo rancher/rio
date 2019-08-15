@@ -219,9 +219,6 @@ func newVirtualServiceGeneric(name, namespace string) *v1alpha3.VirtualService {
 }
 
 func destWeightForService(d v1.WeightedDestination, defaultNamespace string) v1alpha3.HTTPRouteDestination {
-	if d.Revision == "" {
-		d.Revision = constants.DefaultServiceVersion
-	}
 	if d.Port == nil {
 		d.Port = &[]uint32{80}[0]
 	}
@@ -231,9 +228,10 @@ func destWeightForService(d v1.WeightedDestination, defaultNamespace string) v1a
 	if d.Namespace == "" {
 		d.Namespace = defaultNamespace
 	}
+	host := fmt.Sprintf("%s.%s.svc.cluster.local", d.Service, d.Namespace)
 	return v1alpha3.HTTPRouteDestination{
 		Destination: v1alpha3.Destination{
-			Host:   fmt.Sprintf("%s.%s.svc.cluster.local", d.Service, d.Namespace),
+			Host:   host,
 			Subset: d.Revision,
 			Port: v1alpha3.PortSelector{
 				Number: *d.Port,

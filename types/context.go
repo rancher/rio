@@ -77,6 +77,7 @@ func NewContext(namespace string, config *rest.Config) *Context {
 
 func (c *Context) Start(ctx context.Context) error {
 	return start.All(ctx, 5,
+		c.Global,
 		c.Apps,
 		c.AutoScale,
 		c.Build,
@@ -84,7 +85,6 @@ func (c *Context) Start(ctx context.Context) error {
 		c.Core,
 		c.K8sNetworking,
 		c.Ext,
-		c.Global,
 		c.Networking,
 		c.RBAC,
 		c.Rio,

@@ -68,23 +68,6 @@ func (f *featureHandler) syncAll() error {
 	return f.apply.Apply(os)
 }
 
-func (f *featureHandler) onRemove(key string, obj *v1.Feature) (*v1.Feature, error) {
-	if obj == nil {
-		return nil, nil
-	}
-
-	if obj.Namespace != f.namespace {
-		return obj, nil
-	}
-
-	feature := features.GetFeature(obj.Name)
-	if feature == nil {
-		return obj, nil
-	}
-
-	return f.stop(obj, feature)
-}
-
 func (f *featureHandler) onChange(key string, obj *v1.Feature) (*v1.Feature, error) {
 	if obj == nil {
 		return nil, nil
@@ -114,6 +97,23 @@ func (f *featureHandler) onChange(key string, obj *v1.Feature) (*v1.Feature, err
 	}
 
 	return obj, feature.Changed(obj)
+}
+
+func (f *featureHandler) onRemove(key string, obj *v1.Feature) (*v1.Feature, error) {
+	if obj == nil {
+		return nil, nil
+	}
+
+	if obj.Namespace != f.namespace {
+		return obj, nil
+	}
+
+	feature := features.GetFeature(obj.Name)
+	if feature == nil {
+		return obj, nil
+	}
+
+	return f.stop(obj, feature)
 }
 
 func isEnabled(obj *v1.Feature) bool {
