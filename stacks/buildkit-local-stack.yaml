@@ -24,7 +24,7 @@ kubernetes:
             app: buildkitd-dev
         spec:
           containers:
-          - image: moby/buildkit:v0.5.1
+          - image: moby/buildkit:v0.6.0
             imagePullPolicy: IfNotPresent
             name: buildkitd
             ports:
@@ -41,11 +41,11 @@ kubernetes:
               name: config
               subPath: buildkitd.toml
             {{- if eq "${RUNTIME}" "containerd" }}
-            - mountPath: /var/lib/rancher
-              name: rancher
+            - mountPath: /var/lib/rancher/k3s
+              name: containerd
             - mountPath: /run
               name: run
-            - mountPath: /var/lib/buildkit
+            - mountPath: /buildkit-data
               name: data
             {{- end}}
           dnsPolicy: ClusterFirst
@@ -60,15 +60,15 @@ kubernetes:
             name: config
           {{- if eq "${RUNTIME}" "containerd" }}
           - hostPath:
-              path: /var/lib/rancher
+              path: /var/lib/rancher/k3s
               type: Directory
-            name: rancher
+            name: containerd
           - hostPath:
               path: /run
               type: Directory
             name: run
           - hostPath:
-              path: /var/lib/buildkit
+              path: /buildkit-data
               type: DirectoryOrCreate
             name: data
           {{- end}}
@@ -81,6 +81,7 @@ kubernetes:
     data:
       buildkitd.toml: |
         {{- if eq "${RUNTIME}" "containerd" }}
+        root = "/buildkit-data"
         [grpc]
           address = [ "tcp://0.0.0.0:8080" ]
           # debugAddress is address for attaching go profiles and debuggers.
@@ -92,19 +93,8 @@ kubernetes:
         [worker.containerd]
           address = "/run/k3s/containerd/containerd.sock"
           enabled = true
-          platforms = [ "linux/amd64", "linux/arm64" ]
+          platforms = [ "linux/amd64" ]
           namespace = "k8s.io"
-          gc = true
-          # gckeepstorage sets storage limit for default gc profile, in bytes.
-          gckeepstorage = 9000
-
-          [[worker.containerd.gcpolicy]]
-            keepBytes = 512000000
-            keepDuration = 172800 # in seconds
-            filters = [ "type==source.local", "type==exec.cachemount", "type==source.git.checkout"]
-          [[worker.containerd.gcpolicy]]
-            all = true
-            keepBytes = 1024000000
         {{- else}}
         [grpc]
           address = [ "tcp://0.0.0.0:8080" ]

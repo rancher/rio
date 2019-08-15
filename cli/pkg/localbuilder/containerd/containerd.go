@@ -136,7 +136,7 @@ func initializeClient(ctx context.Context, buildSpec riov1.ImageBuild, port stri
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	attachable := []session.Attachable{authprovider.NewDockerAuthProvider()}
+	attachable := []session.Attachable{authprovider.NewDockerAuthProvider(os.Stderr)}
 
 	buildkitClient, err := client.New(ctx, fmt.Sprintf("tcp://localhost:%s", port))
 	if err != nil {

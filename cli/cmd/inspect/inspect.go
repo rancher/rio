@@ -23,6 +23,7 @@ var (
 		clitypes.PublicDomainType,
 		clitypes.BuildType,
 		clitypes.SecretType,
+		clitypes.StackType,
 	}
 )
 

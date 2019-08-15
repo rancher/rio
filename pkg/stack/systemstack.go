@@ -1,7 +1,6 @@
 package stack
 
 import (
-	"bytes"
 	"io/ioutil"
 	"os"
 
@@ -42,7 +41,7 @@ func (s *SystemStack) Deploy(answers map[string]string) error {
 		return err
 	}
 
-	rf, err := riofile.Parse(bytes.NewBuffer(content), template.AnswersFromMap(answers))
+	rf, err := riofile.Parse(content, template.AnswersFromMap(answers))
 	if err != nil {
 		return err
 	}

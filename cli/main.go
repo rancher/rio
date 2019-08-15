@@ -30,6 +30,7 @@ import (
 	"github.com/rancher/rio/cli/cmd/run"
 	"github.com/rancher/rio/cli/cmd/scale"
 	"github.com/rancher/rio/cli/cmd/secrets"
+	"github.com/rancher/rio/cli/cmd/stacks"
 	"github.com/rancher/rio/cli/cmd/stage"
 	"github.com/rancher/rio/cli/cmd/systemlogs"
 	"github.com/rancher/rio/cli/cmd/tui"
@@ -124,6 +125,7 @@ func main() {
 		secrets.Secrets(app),
 		builds.Builds(app),
 		pods.Pods(app),
+		stacks.Stacks(app),
 
 		builder.Command(&ps.Ps{},
 			"List services and containers",

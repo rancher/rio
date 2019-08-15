@@ -34,5 +34,6 @@ func NewObject(kind, apiVersion string) mapper.Mapper {
 			Field:    "spec",
 			Optional: true,
 		},
+		LabelCleaner{},
 	}
 }

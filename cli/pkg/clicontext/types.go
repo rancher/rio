@@ -17,6 +17,7 @@ import (
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/rio/pkg/services"
+	"github.com/rancher/wrangler/pkg/gvk"
 	"github.com/rancher/wrangler/pkg/kv"
 	"github.com/rancher/wrangler/pkg/merr"
 	corev1 "k8s.io/api/core/v1"
@@ -40,6 +41,7 @@ func init() {
 	lookup.RegisterType(types.PublicDomainType, lookup.NamespaceScopedNameType, lookup.FullDomainNameTypeNameType)
 	lookup.RegisterType(types.BuildType, lookup.NamespaceScopedNameType)
 	lookup.RegisterType(types.SecretType, lookup.NamespacedSecretNameType)
+	lookup.RegisterType(types.StackType, lookup.NamespaceScopedNameType, lookup.SingleNameNameType)
 }
 
 func (c *CLIContext) getResource(r types.Resource) (ret types.Resource, err error) {
@@ -66,8 +68,13 @@ func (c *CLIContext) getResource(r types.Resource) (ret types.Resource, err erro
 		r.Object, err = c.Build.TaskRuns(r.Namespace).Get(r.Name, metav1.GetOptions{})
 	case clitypes.SecretType:
 		r.Object, err = c.Core.Secrets(r.Namespace).Get(r.Name, metav1.GetOptions{})
+	case clitypes.StackType:
+		r.Object, err = c.Rio.Stacks(r.Namespace).Get(r.Name, metav1.GetOptions{})
 	default:
 		return r, fmt.Errorf("unknown by id type %s", r.Type)
+	}
+	if err == nil && r.Object != nil {
+		return r, gvk.Set(r.Object)
 	}
 
 	return r, err
@@ -193,17 +200,19 @@ func (c *CLIContext) DeleteResource(r types.Resource) (err error) {
 		err = c.Project.PublicDomains(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
 	case clitypes.BuildType:
 		err = c.Build.TaskRuns(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
+	case clitypes.StackType:
+		err = c.Rio.Stacks(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
 	case clitypes.AppType:
 		app := r.Object.(*riov1.App)
 		var errs []error
 		for _, rev := range app.Spec.Revisions {
 			newerr := c.Rio.Services(r.Namespace).Delete(rev.ServiceName, &metav1.DeleteOptions{})
-			if newerr != nil && !errors.IsNotFound(err) {
+			if newerr != nil && !errors.IsNotFound(newerr) {
 				errs = append(errs, newerr)
 			}
 		}
 		newerr := c.Rio.Apps(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
-		if newerr != nil && !errors.IsNotFound(err) {
+		if newerr != nil && !errors.IsNotFound(newerr) {
 			errs = append(errs, newerr)
 		}
 		err = merr.NewErrors(errs...)
@@ -415,6 +424,12 @@ func (c *CLIContext) listNamespace(namespace, typeName string) (ret []runtime.Ob
 		return ret, err
 	case clitypes.BuildType:
 		objs, err := c.Build.TaskRuns(namespace).List(opts)
+		for i := range objs.Items {
+			ret = append(ret, &objs.Items[i])
+		}
+		return ret, err
+	case clitypes.StackType:
+		objs, err := c.Rio.Stacks(namespace).List(opts)
 		for i := range objs.Items {
 			ret = append(ret, &objs.Items[i])
 		}

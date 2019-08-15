@@ -19,21 +19,33 @@ func init() {
 	schema.
 		Init(service).
 		Init(config).
+		Init(router).
+		Init(externalservice).
 		MustImport(riofile{})
 }
 
 func config(schemas *mapper.Schemas) *mapper.Schemas {
 	schemas.AddMapperForType(corev1.ConfigMap{},
 		m.NewObject("ConfigMap", "v1"),
-		m.NewConfigMapMapper("data"),
-	)
+		m.NewConfigMapMapper("data"))
+	return schemas
+}
+
+func router(schemas *mapper.Schemas) *mapper.Schemas {
+	schemas.AddMapperForType(v1.Router{},
+		m.NewObject("Router", "v1"))
+	return schemas
+}
+
+func externalservice(schemas *mapper.Schemas) *mapper.Schemas {
+	schemas.AddMapperForType(v1.ExternalService{},
+		m.NewObject("ExternalService", "v1"))
 	return schemas
 }
 
 func service(schemas *mapper.Schemas) *mapper.Schemas {
 	schemas.AddMapperForType(v1.Service{},
-		m.NewObject("Service", "rio.cattle.io/v1"),
-	)
+		m.NewObject("Service", "rio.cattle.io/v1"))
 	schemas.AddMapperForType(v1.ServiceSpec{},
 		m.Scale{},
 		mappers.Drop{Field: "maxScale"},
@@ -55,7 +67,6 @@ func service(schemas *mapper.Schemas) *mapper.Schemas {
 		mappers.SingleSlice{Field: "args"},
 
 		// aliases
-		mappers.NewAlias("args", "arg"),
 		mappers.NewAlias("dnsNameservers", "dns", "nameservers", "nameserver"),
 		mappers.NewAlias("dnsSearches", "dnsSearch", "search", "searches"),
 		mappers.NewAlias("globalPermissions", "globalPermission"),
@@ -71,19 +82,6 @@ func service(schemas *mapper.Schemas) *mapper.Schemas {
 
 func containerMappers() mapper.Mapper {
 	return mapper.Mappers{
-		// aliases
-		//mappers.NewAlias("args", "arg"),
-		//mappers.NewAlias("configs", "config"),
-		//mappers.NewAlias("cpus", "cpu"),
-		//mappers.NewAlias("env", "environment"),
-		//mappers.NewAlias("imagePullPolicy", "pullPolicy"),
-		//mappers.NewAlias("memory", "mem"),
-		//mappers.NewAlias("readOnlyRootFilesystem", "readOnly", "readOnlyFS"),
-		//mappers.NewAlias("runAsGroup", "group"),
-		//mappers.NewAlias("runAsUser", "user"),
-		//mappers.NewAlias("secrets", "secret"),
-		//mappers.NewAlias("stdin", "stdinOpen"),
-
 		// stringers
 		stringers.NewContainerPort("ports"),
 		stringers.NewEnv("env"),
@@ -107,5 +105,17 @@ func containerMappers() mapper.Mapper {
 		mappers.MapToSlice{Field: "env", Sep: "="},
 		mappers.MapToSlice{Field: "configs", Sep: ":"},
 		mappers.MapToSlice{Field: "secrets", Sep: ":"},
+
+		mappers.NewAlias("args", "arg"),
+		mappers.NewAlias("configs", "config"),
+		mappers.NewAlias("cpus", "cpu"),
+		mappers.NewAlias("env", "environment"),
+		mappers.NewAlias("imagePullPolicy", "pullPolicy"),
+		mappers.NewAlias("memory", "mem"),
+		mappers.NewAlias("readOnlyRootFilesystem", "readOnly", "readOnlyFS"),
+		mappers.NewAlias("runAsGroup", "group"),
+		mappers.NewAlias("runAsUser", "user"),
+		mappers.NewAlias("secrets", "secret"),
+		mappers.NewAlias("stdin", "stdinOpen"),
 	}
 }

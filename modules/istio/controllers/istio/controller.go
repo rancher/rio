@@ -108,6 +108,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		serviceApply:      rContext.Apply.WithSetID(istioInjector).WithInjectorName(istioInjector),
 		apps:              rContext.Rio.Rio().V1().App(),
 		services:          rContext.Rio.Rio().V1().Service(),
+		routers:           rContext.Rio.Rio().V1().Router().Cache(),
 		publicDomainCache: rContext.Global.Admin().V1().PublicDomain().Cache(),
 		clusterDomain:     rContext.Global.Admin().V1().ClusterDomain(),
 		secretCache:       rContext.Core.Core().V1().Secret().Cache(),
@@ -122,6 +123,10 @@ func Register(ctx context.Context, rContext *types.Context) error {
 
 	relatedresource.Watch(ctx, "publicdomain-clusterdomain", s.resolve,
 		rContext.Rio.Rio().V1().Service(),
+		rContext.Global.Admin().V1().ClusterDomain())
+
+	relatedresource.Watch(ctx, "router-clusterdomain", s.resolveRouter,
+		rContext.Rio.Rio().V1().Router(),
 		rContext.Global.Admin().V1().ClusterDomain())
 
 	relatedresource.Watch(ctx, "cluster-domain-service", s.resolve,
@@ -158,6 +163,7 @@ type istioDeployController struct {
 	serviceApply      apply.Apply
 	apps              riov1controller.AppController
 	services          riov1controller.ServiceController
+	routers           riov1controller.RouterCache
 	publicDomainCache adminv1controller.PublicDomainCache
 	clusterDomain     adminv1controller.ClusterDomainController
 	secretCache       corev1controller.SecretCache
@@ -291,6 +297,21 @@ func (i *istioDeployController) resolve(namespace, name string, obj runtime.Obje
 	}
 
 	return nil, nil
+}
+
+func (i *istioDeployController) resolveRouter(namespace, name string, obj runtime.Object) ([]relatedresource.Key, error) {
+	apps, err := i.routers.List("", labels.NewSelector())
+	if err != nil {
+		return nil, err
+	}
+	var keys []relatedresource.Key
+	for _, app := range apps {
+		keys = append(keys, relatedresource.Key{
+			Name:      app.Name,
+			Namespace: app.Namespace,
+		})
+	}
+	return keys, nil
 }
 
 func (i *istioDeployController) resolveApp(namespace, name string, obj runtime.Object) ([]relatedresource.Key, error) {

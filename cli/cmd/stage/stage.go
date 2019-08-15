@@ -6,7 +6,7 @@ import (
 	"sort"
 
 	"github.com/aokoli/goutils"
-	"github.com/rancher/rio/cli/cmd/edit"
+	"github.com/rancher/rio/cli/cmd/edit/edit"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/stack"
 	"github.com/rancher/rio/cli/pkg/types"

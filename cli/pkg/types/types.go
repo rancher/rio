@@ -14,6 +14,7 @@ const (
 	PublicDomainType    = "publicdomain"
 	SecretType          = "secret"
 	BuildType           = "build"
+	StackType           = "stack"
 )
 
 type Resource struct {

@@ -1,7 +1,6 @@
 package stack
 
 import (
-	"bytes"
 	"encoding/json"
 	"strings"
 
@@ -40,7 +39,7 @@ func (s *Stack) Questions() ([]v1.Question, error) {
 }
 
 func (s *Stack) Yaml(answers map[string]string) (string, error) {
-	rf, err := riofile.Parse(bytes.NewBuffer(s.contents), template.AnswersFromMap(answers))
+	rf, err := riofile.Parse(s.contents, template.AnswersFromMap(s.answers))
 	if err != nil {
 		return "", err
 	}
@@ -68,7 +67,7 @@ func (s *Stack) GetObjects() ([]runtime.Object, error) {
 		return s.objects, nil
 	}
 
-	rf, err := riofile.Parse(bytes.NewBuffer(s.contents), template.AnswersFromMap(s.answers))
+	rf, err := riofile.Parse(s.contents, template.AnswersFromMap(s.answers))
 	if err != nil {
 		return nil, err
 	}

@@ -6,7 +6,7 @@ import (
 
 func NewPublicDomain(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
-		{"Name", "{{stackScopedName .Obj.Namespace .Obj.Name ``}}"},
+		{"NAME", "{{stackScopedName .Obj.Namespace .Obj.Name ``}}"},
 		{"DOMAIN", "Obj.Spec.DomainName"},
 		{"TARGET", "{{stackScopedName .Obj.Namespace .Obj.Spec.TargetServiceName ``}}"},
 	}, cfg)

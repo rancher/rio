@@ -46,8 +46,8 @@ type SolveOpt struct {
 type ExportEntry struct {
 	Type      string
 	Attrs     map[string]string
-	Output    io.WriteCloser // for ExporterOCI and ExporterDocker
-	OutputDir string         // for ExporterLocal
+	Output    func(map[string]string) (io.WriteCloser, error) // for ExporterOCI and ExporterDocker
+	OutputDir string                                          // for ExporterLocal
 }
 
 type CacheOptionsEntry struct {
@@ -409,9 +409,6 @@ func parseCacheOptions(opt SolveOpt) (*cacheOptions, error) {
 			csDir := im.Attrs["src"]
 			if csDir == "" {
 				return nil, errors.New("local cache importer requires src")
-			}
-			if err := os.MkdirAll(csDir, 0755); err != nil {
-				return nil, err
 			}
 			cs, err := contentlocal.NewStore(csDir)
 			if err != nil {
