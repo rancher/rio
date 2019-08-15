@@ -12,6 +12,7 @@ type ClientLookup interface {
 	ByID(namespace, name, typeName string) (types.Resource, error)
 	GetDefaultNamespace() string
 	GetSystemNamespace() string
+	GetSetNamespace() string
 }
 
 func getValidNameTypes(name string) (ret []nameType) {

@@ -1,7 +1,6 @@
 package riofile
 
 import (
-	"bytes"
 	"fmt"
 	"testing"
 
@@ -154,7 +153,7 @@ kubernetes:
 )
 
 func TestParse(t *testing.T) {
-	f, err := Parse(bytes.NewBuffer([]byte(file)), template.AnswersFromMap(nil))
+	f, err := Parse([]byte(file), template.AnswersFromMap(nil))
 	if err != nil {
 		t.Fatal(err)
 	}

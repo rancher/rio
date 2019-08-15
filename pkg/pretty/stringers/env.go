@@ -35,7 +35,7 @@ type EnvStringer struct {
 
 func (e *EnvStringer) MaybeString() interface{} {
 	buf := &strings.Builder{}
-	buf.WriteString(e.Key)
+	buf.WriteString(e.Name)
 	buf.WriteString("=")
 	switch {
 	case e.SecretName != "":

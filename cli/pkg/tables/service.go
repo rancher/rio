@@ -13,7 +13,7 @@ import (
 
 func NewService(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
-		{"Name", "{{serviceName .Service.Namespace .Service}}"},
+		{"NAME", "{{serviceName .Service.Namespace .Service}}"},
 		{"IMAGE", "{{.Service | image}}"},
 		{"CREATED", "{{.Service.CreationTimestamp | ago}}"},
 		{"SCALE", "{{scale .Service.Spec.Scale .Service.Status.ScaleStatus .Service.Status.ObservedScale}}"},
@@ -30,15 +30,6 @@ func NewService(cfg Config) TableWriter {
 	return &tableWriter{
 		writer: writer,
 	}
-}
-
-func podsDetail(obj interface{}) (string, error) {
-	pods, _ := obj.([]corev1.Pod)
-
-	if len(pods) == 0 {
-		return "", nil
-	}
-	return podDetail(&pods[0])
 }
 
 func FormatScale(data *int, data2, data3 interface{}) (string, error) {
@@ -84,6 +75,15 @@ func FormatScale(data *int, data2, data3 interface{}) (string, error) {
 	}
 
 	return fmt.Sprintf("%s%d%s", prefix, scaleNum, percentage), nil
+}
+
+func podsDetail(obj interface{}) (string, error) {
+	pods, _ := obj.([]corev1.Pod)
+
+	if len(pods) == 0 {
+		return "", nil
+	}
+	return podDetail(&pods[0])
 }
 
 func FormatServiceName(cfg Config) func(data, data2 interface{}) (string, error) {

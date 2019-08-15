@@ -19,7 +19,7 @@ type PodData struct {
 
 func NewPods(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
-		{"Name", "{{stackScopedName .PodData.Pod.Namespace .PodData.Pod.Name ``}}"},
+		{"NAME", "{{stackScopedName .PodData.Pod.Namespace .PodData.Pod.Name ``}}"},
 		{"CREATED", "{{.PodData.Pod.CreationTimestamp | ago}}"},
 		{"SERVICE", "{{.PodData.Service.ServiceName}}"},
 		{"REVISION", "{{.PodData.Service.Version}}"},

@@ -136,27 +136,35 @@ func (l localBuilder) setupStack() error {
 func (l localBuilder) setupPortforwarding(ctx context.Context) error {
 	newctx, cancel := context.WithCancel(ctx)
 
-	var deployReady bool
+	var buildkitReady, socatReady bool
 	var socatPod *v1.Pod
 	wait.JitterUntil(func() {
-		if !deployReady {
+		if !buildkitReady {
 			if deploy, err := l.k8s.AppsV1().Deployments(buildkitNamespace).Get("buildkit", metav1.GetOptions{}); err == nil {
 				if isReady(&deploy.Status) {
-					deployReady = true
+					buildkitReady = true
+				} else {
+					logrus.Info("Waiting for buildkitd deploy to be ready")
 				}
-				logrus.Debug("Waiting for buildkitd deploy to be ready")
 			}
 		}
 
-		if p, err := l.k8s.CoreV1().Pods(buildkitNamespace).Get("socat-socket", metav1.GetOptions{}); err == nil {
-			if p.Status.Phase == v1.PodRunning {
-				socatPod = p
-				cancel()
-				return
+		if !socatReady {
+			if p, err := l.k8s.CoreV1().Pods(buildkitNamespace).Get("socat-socket", metav1.GetOptions{}); err == nil {
+				if p.Status.Phase == v1.PodRunning {
+					socatPod = p
+					socatReady = true
+				} else {
+					logrus.Info("Waiting for socat-socket pod to be running")
+				}
 			}
-			logrus.Debug("Waiting for socat-socket pod to be running")
 		}
-	}, 100*time.Millisecond, 1.5, false, newctx.Done())
+
+		if buildkitReady && socatReady {
+			cancel()
+			return
+		}
+	}, 500*time.Millisecond, 1.5, false, newctx.Done())
 
 	buildkitdPod, err := findPod(l.k8s, buildkitNamespace, "app=buildkitd-dev")
 	if err != nil {

@@ -30,6 +30,8 @@ func Register(ctx context.Context, rContext *types.Context) error {
 
 	rContext.Apps.Apps().V1().Deployment().OnChange(ctx, "sub-service-deploy-controller", s.deploymentChanged)
 
+	rContext.Apps.Apps().V1().DaemonSet().OnChange(ctx, "sub-service-deploy-daemonset-controller", s.daemonsetChanged)
+
 	return nil
 }
 
@@ -57,6 +59,36 @@ func (s *subServiceController) updateStatus(service, newService *riov1.Service, 
 	}
 
 	return nil
+}
+
+func (s *subServiceController) daemonsetChanged(key string, ds *appsv1.DaemonSet) (*appsv1.DaemonSet, error) {
+	if ds == nil {
+		return ds, nil
+	}
+	if ds.DeletionTimestamp != nil {
+		return ds, nil
+	}
+	service, err := s.serviceLister.Get(ds.Namespace, ds.Name)
+	if errors.IsNotFound(err) {
+		return ds, nil
+	} else if err != nil {
+		return ds, err
+	}
+
+	if service.DeletionTimestamp != nil {
+		return ds, nil
+	}
+
+	newService := service.DeepCopy()
+	newService.Status.ScaleStatus = &riov1.ScaleStatus{
+		Ready:       int(ds.Status.NumberReady),
+		Unavailable: int(ds.Status.NumberUnavailable),
+		Available:   int(ds.Status.NumberUnavailable),
+		Updated:     int(ds.Status.NumberReady),
+	}
+
+	_, err = s.services.Update(newService)
+	return ds, err
 }
 
 func (s *subServiceController) deploymentChanged(key string, dep *appsv1.Deployment) (*appsv1.Deployment, error) {

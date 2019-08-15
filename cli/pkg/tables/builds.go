@@ -11,7 +11,7 @@ import (
 
 func NewBuild(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
-		{"Name", "{{stackScopedName .Obj.Namespace .Obj.Name ``}}"},
+		{"NAME", "{{stackScopedName .Obj.Namespace .Obj.Name ``}}"},
 		{"SERVICE", "{{.Obj | findService}}"},
 		{"REVISION", "{{.Obj | findRevision}}"},
 		{"CREATED", "{{.Obj.CreationTimestamp | ago}}"},

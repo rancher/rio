@@ -71,7 +71,11 @@ func (n nameType) Lookup(lookup ClientLookup, name, typeName string) (types.Reso
 	case types.FeatureType:
 		r = n.lookup(lookup.GetSystemNamespace(), name, typeName)
 	default:
-		r = n.lookup(lookup.GetDefaultNamespace(), name, typeName)
+		namespace := lookup.GetSetNamespace()
+		if namespace == "" {
+			namespace = lookup.GetDefaultNamespace()
+		}
+		r = n.lookup(namespace, name, typeName)
 	}
 	r, err := lookup.ByID(r.Namespace, r.Name, typeName)
 	r.LookupName = name

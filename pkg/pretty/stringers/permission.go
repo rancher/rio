@@ -74,7 +74,7 @@ func (p PermissionStringer) MaybeString() interface{} {
 	resources := p.Resource
 	names := p.ResourceName
 
-	if groups != "" || strings.Contains(resources, "/") {
+	if groups != "" || strings.Contains(resources, "/") || resources == "*" {
 		buf.WriteString(groups)
 		buf.WriteString("/")
 	}
@@ -87,6 +87,7 @@ func (p PermissionStringer) MaybeString() interface{} {
 	}
 
 	if len(p.URL) > 0 {
+		buf.WriteString(" ")
 		buf.WriteString("url=")
 		buf.WriteString(p.URL)
 	}

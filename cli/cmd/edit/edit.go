@@ -1,12 +1,12 @@
 package edit
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
+	"github.com/rancher/rio/cli/cmd/edit/pretty"
+	"github.com/rancher/rio/cli/cmd/edit/raw"
+	"github.com/rancher/rio/cli/cmd/edit/stack"
 	"github.com/rancher/rio/cli/cmd/inspect"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
@@ -16,10 +16,9 @@ import (
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/util/editor"
-	"sigs.k8s.io/yaml"
 )
 
 var (
@@ -46,78 +45,8 @@ func (edit *Edit) Run(ctx *clicontext.CLIContext) error {
 	return edit.edit(ctx)
 }
 
-func (edit *Edit) updateObject(ctx *clicontext.CLIContext, data map[string]interface{}, name string, types ...string) (map[string]interface{}, error) {
-	_, origObject, err := edit.getObject(ctx, true, name, types...)
-	if err != nil {
-		return nil, err
-	}
-
-	origMdMap := getMdMap(origObject)
-	newMdMap := getMdMap(data)
-
-	for _, key := range []string{"labels", "annotations"} {
-		origMdMap[key] = newMdMap[key]
-	}
-
-	delete(data, "metadata")
-	for k, v := range data {
-		origObject[k] = v
-	}
-
-	return origObject, nil
-}
-
-func getMdMap(obj map[string]interface{}) map[string]interface{} {
-	md, ok := obj["metadata"]
-	if !ok {
-		return map[string]interface{}{}
-	}
-
-	mdMap, ok := md.(map[string]interface{})
-	if !ok {
-		return map[string]interface{}{}
-	}
-
-	return mdMap
-}
-
-func (edit *Edit) getObject(ctx *clicontext.CLIContext, raw bool, name string, types ...string) (clitypes.Resource, map[string]interface{}, error) {
-	r, err := lookup.Lookup(ctx, ctx.CLI.Args()[0], types...)
-	if err != nil {
-		return clitypes.Resource{}, nil, err
-	}
-
-	data, err := json.Marshal(r.Object)
-	if err != nil {
-		return clitypes.Resource{}, nil, err
-	}
-
-	var dataMap map[string]interface{}
-	if err := json.Unmarshal(data, &dataMap); err != nil {
-		return clitypes.Resource{}, nil, err
-	}
-
-	if raw {
-		return r, dataMap, nil
-	}
-
-	newMdMap := map[string]interface{}{}
-	mdMap := getMdMap(dataMap)
-	for _, key := range []string{"labels", "annotations"} {
-		if val, ok := mdMap[key]; ok {
-			newMdMap[key] = val
-		}
-	}
-	if len(newMdMap) == 0 {
-		delete(dataMap, "metadata")
-	} else {
-		dataMap["metadata"] = newMdMap
-	}
-
-	delete(dataMap, "kind")
-	delete(dataMap, "apiVersion")
-	delete(dataMap, "status")
-	return r, dataMap, nil
+type Editor interface {
+	Edit(obj runtime.Object) (updated bool, err error)
 }
 
 func (edit *Edit) edit(ctx *clicontext.CLIContext) error {
@@ -137,7 +66,7 @@ func (edit *Edit) edit(ctx *clicontext.CLIContext) error {
 		types = append(types, t)
 	}
 
-	r, modifiedMap, err := edit.getObject(ctx, edit.Raw, name, types...)
+	r, err := lookup.Lookup(ctx, name, types...)
 	if err != nil {
 		return err
 	}
@@ -152,40 +81,22 @@ func (edit *Edit) edit(ctx *clicontext.CLIContext) error {
 		Resource: strings.ToLower(name2.GuessPluralName(g.Kind)),
 	}
 
-	m, err := json.Marshal(modifiedMap)
+	c, err := dynamic.NewForConfig(ctx.RestConfig)
 	if err != nil {
 		return err
 	}
-	str, err := yaml.JSONToYAML(m)
-	if err != nil {
-		return err
+	u := updater{
+		client: c,
+		gvr:    gvr,
+		gvk: schema.GroupVersionKind{
+			Group:   g.Group,
+			Version: g.Version,
+			Kind:    g.Kind,
+		},
 	}
 
-	updated, err := Loop(nil, str, func(content []byte) error {
-		m := make(map[string]interface{})
-		if err := yaml.Unmarshal(content, &m); err != nil {
-			return err
-		}
-
-		if !edit.Raw {
-			m, err = edit.updateObject(ctx, m, name, types...)
-			if err != nil {
-				return err
-			}
-		}
-
-		obj := &unstructured.Unstructured{
-			Object: m,
-		}
-
-		c, err := dynamic.NewForConfig(ctx.RestConfig)
-		if err != nil {
-			return err
-		}
-
-		_, err = c.Resource(gvr).Namespace(obj.GetNamespace()).Update(obj, v1.UpdateOptions{})
-		return err
-	})
+	editor := edit.getEditor(r.Type, u)
+	updated, err := editor.Edit(r.Object)
 	if err != nil {
 		return err
 	}
@@ -197,41 +108,33 @@ func (edit *Edit) edit(ctx *clicontext.CLIContext) error {
 	return nil
 }
 
-type updateFunc func(content []byte) error
+type updater struct {
+	gvr    schema.GroupVersionResource
+	gvk    schema.GroupVersionKind
+	client dynamic.Interface
+}
 
-func Loop(prefix, input []byte, update updateFunc) (bool, error) {
-	for {
-		buf := &bytes.Buffer{}
-		buf.Write(prefix)
-		buf.Write(input)
-		rawInput := buf.Bytes()
+func (u updater) Update(obj runtime.Object) error {
+	toUpdate, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		return fmt.Errorf("object is not an unstructured object")
+	}
+	_, err := u.client.Resource(u.gvr).Namespace(toUpdate.GetNamespace()).Update(toUpdate, v1.UpdateOptions{})
+	return err
+}
 
-		editors := []string{
-			"KUBE_EDITOR",
-			"EDITOR",
-		}
-		e := editor.NewDefaultEditor(editors)
-		content, path, err := e.LaunchTempFile("rio-", "-edit.yaml", buf)
-		if path != "" {
-			defer os.Remove(path)
-		}
-		if err != nil {
-			return false, err
-		}
+func (u updater) GetGvk() schema.GroupVersionKind {
+	return u.gvk
+}
 
-		if bytes.Compare(content, rawInput) != 0 {
-			content = bytes.TrimPrefix(content, prefix)
-			input = content
-			if err := update(content); err != nil {
-				prefix = []byte(fmt.Sprintf("#\n# Error updating content:\n#    %v\n#\n", err.Error()))
-				continue
-			}
-		} else {
-			return false, nil
-		}
-
-		break
+func (edit Edit) getEditor(t string, u updater) Editor {
+	if t == clitypes.StackType && !edit.Raw {
+		return stack.NewEditor(u)
 	}
 
-	return true, nil
+	if (t == clitypes.ServiceType || t == clitypes.ConfigType || t == clitypes.RouterType || t == clitypes.ExternalServiceType) && !edit.Raw {
+		return pretty.NewEditor(u)
+	}
+
+	return raw.NewRawEditor(u)
 }

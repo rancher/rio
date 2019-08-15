@@ -43,7 +43,7 @@ func (a *AppData) DeepCopyObject() runtime.Object {
 
 func NewApp(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
-		{"Name", "{{stackScopedName .Obj.App.Namespace .Obj.App.Name ``}}"},
+		{"NAME", "{{stackScopedName .Obj.App.Namespace .Obj.App.Name ``}}"},
 		{"CREATED", "{{.Obj.App.CreationTimestamp | ago}}"},
 		{"ENDPOINT", "{{.Obj.App.Status.Endpoints | array}}"},
 		{"REVISIONS", "{{revisions .Obj}}"},
@@ -123,12 +123,16 @@ func formatWeightGraph(obj interface{}) (string, error) {
 }
 
 func waitingOnBuild(svc *riov1.Service) bool {
-	if svc.Spec.Image == "" && svc.Spec.Build != nil && svc.Spec.Build.Repo != "" {
+	if svc.SystemSpec != nil {
+		return false
+	}
+
+	if svc.Spec.Image == "" && len(svc.Spec.Sidecars) == 0 {
 		return true
 	}
 
 	for _, container := range svc.Spec.Sidecars {
-		if container.Image == "" && container.Build != nil && container.Build.Repo != "" {
+		if container.Image == "" {
 			return true
 		}
 	}
