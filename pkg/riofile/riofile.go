@@ -191,8 +191,9 @@ func Update(originalObj runtime.Object, bytes []byte) (runtime.Object, error) {
 		}
 	}
 
-	modifiedAnno, _ := data["metadata"].(map[string]interface{})["annotations"].(map[string]interface{})
-	modifiedLabels, _ := data["metadata"].(map[string]interface{})["labels"].(map[string]interface{})
+	meta, _ := data["metadata"].(map[string]interface{})
+	modifiedAnno, _ := meta["annotations"].(map[string]interface{})
+	modifiedLabels, _ := meta["labels"].(map[string]interface{})
 
 	originalMeta["annotations"] = merge(annotations, modifiedAnno)
 	originalMeta["labels"] = merge(labels, modifiedLabels)

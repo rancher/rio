@@ -106,6 +106,8 @@ func containerMappers() mapper.Mapper {
 		mappers.MapToSlice{Field: "configs", Sep: ":"},
 		mappers.MapToSlice{Field: "secrets", Sep: ":"},
 
+		m.HostNetwork{},
+
 		mappers.NewAlias("args", "arg"),
 		mappers.NewAlias("configs", "config"),
 		mappers.NewAlias("cpus", "cpu"),
