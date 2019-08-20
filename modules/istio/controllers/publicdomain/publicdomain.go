@@ -33,5 +33,6 @@ func (p populator) populate(obj runtime.Object, ns *corev1.Namespace, os *object
 	if constants.InstallMode == constants.InstallModeIngress {
 		populate.Ingress(p.systemNamespace, pd, os)
 	}
-	return populate.DestionationRule(obj.(*adminv1.PublicDomain), p.systemNamespace, os)
+	populate.DestionationRule(obj.(*adminv1.PublicDomain), p.systemNamespace, os)
+	return nil
 }

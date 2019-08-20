@@ -50,7 +50,7 @@ func serviceEntryForFQDN(fqdn string, svc *v1.ExternalService) (*v1alpha3.Servic
 
 	se := constructors.NewServiceEntry(svc.Namespace, svc.Name, v1alpha3.ServiceEntry{
 		Spec: v1alpha3.ServiceEntrySpec{
-			Hosts:      []string{u.Host},
+			Hosts:      []string{u.Hostname()},
 			Location:   int32(v1alpha32.ServiceEntry_MESH_EXTERNAL),
 			Resolution: int32(v1alpha32.ServiceEntry_DNS),
 			Ports: []v1alpha3.Port{
@@ -62,7 +62,7 @@ func serviceEntryForFQDN(fqdn string, svc *v1.ExternalService) (*v1alpha3.Servic
 			},
 			Endpoints: []v1alpha3.ServiceEntry_Endpoint{
 				{
-					Address: u.Host,
+					Address: u.Hostname(),
 					Ports: map[string]uint32{
 						scheme: uint32(port),
 					},

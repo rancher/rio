@@ -10,7 +10,7 @@ import (
 	"github.com/rancher/wrangler/pkg/objectset"
 )
 
-func DestionationRule(pd *adminv1.PublicDomain, systemNamespace string, os *objectset.ObjectSet) error {
+func DestionationRule(pd *adminv1.PublicDomain, systemNamespace string, os *objectset.ObjectSet) {
 	name := fmt.Sprintf("cm-acme-http-solver-%d", adler32.Checksum([]byte(pd.Spec.DomainName)))
 	os.Add(constructors.NewDestinationRule(systemNamespace, name, v1alpha3.DestinationRule{
 		Spec: v1alpha3.DestinationRuleSpec{
@@ -22,5 +22,5 @@ func DestionationRule(pd *adminv1.PublicDomain, systemNamespace string, os *obje
 			},
 		},
 	}))
-	return nil
+	return
 }

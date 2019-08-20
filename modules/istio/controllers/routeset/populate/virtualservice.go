@@ -17,7 +17,6 @@ import (
 	"github.com/rancher/wrangler/pkg/kv"
 	"github.com/rancher/wrangler/pkg/objectset"
 	v1alpha3type "istio.io/api/networking/v1alpha3"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -156,7 +155,7 @@ func virtualServiceFromRoutesets(systemNamespace string, clusterDomain *projectv
 
 		if routeSpec.Mirror != nil {
 			httpRoute.Mirror = &v1alpha3.Destination{
-				Host:   domains.GetExternalDomain(routeSpec.Mirror.Service, routeSpec.Mirror.Namespace, clusterDomain.Status.ClusterDomain),
+				Host:   fmt.Sprintf("%s.%s.svc.cluster.local", routeSpec.Mirror.Service, routeSpec.Mirror.Namespace),
 				Subset: routeSpec.Mirror.Revision,
 			}
 			if routeSpec.Mirror.Port != nil {
@@ -177,7 +176,7 @@ func virtualServiceFromRoutesets(systemNamespace string, clusterDomain *projectv
 	}
 
 	// set port to 80 for virtual services that are created from gateway
-	vs := newVirtualServiceGeneric(routeSet.Name, routeSet.Namespace)
+	vs := constructors.NewVirtualService(routeSet.Namespace, routeSet.Name, v1alpha3.VirtualService{})
 	vs.Spec = spec
 
 	return vs
@@ -207,15 +206,6 @@ func populateStringMatch(match *v1.StringMatch) *v1alpha1.StringMatch {
 		return nil
 	}
 	return m
-}
-
-func newVirtualServiceGeneric(name, namespace string) *v1alpha3.VirtualService {
-	return constructors.NewVirtualService(namespace, name, v1alpha3.VirtualService{
-		ObjectMeta: metav1.ObjectMeta{
-			Annotations: map[string]string{},
-			Labels:      map[string]string{},
-		},
-	})
 }
 
 func destWeightForService(d v1.WeightedDestination, defaultNamespace string) v1alpha3.HTTPRouteDestination {

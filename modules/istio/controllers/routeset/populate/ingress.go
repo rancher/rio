@@ -3,7 +3,6 @@ package populate
 import (
 	"fmt"
 
-	"github.com/rancher/rio/modules/system/features/letsencrypt/pkg/issuers"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
@@ -12,7 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func Ingress(namespace, domain string, route *riov1.Router, os *objectset.ObjectSet) {
+func Ingress(namespace, domain, certName string, route *riov1.Router, os *objectset.ObjectSet) {
 	host := fmt.Sprintf("%s-%s.%s", route.Name, route.Namespace, domain)
 
 	ingress := constructors.NewIngress(namespace, fmt.Sprintf("%s-%s", route.Name, route.Namespace), networkingv1beta1.Ingress{
@@ -37,7 +36,7 @@ func Ingress(namespace, domain string, route *riov1.Router, os *objectset.Object
 			TLS: []networkingv1beta1.IngressTLS{
 				{
 					Hosts:      []string{fmt.Sprintf("*.%s", domain)},
-					SecretName: issuers.RioWildcardCerts,
+					SecretName: certName,
 				},
 			},
 		},
