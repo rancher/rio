@@ -51,7 +51,7 @@ func addRoles(labels map[string]string, subject v1.Subject, service *riov1.Servi
 		if role.Role == "" {
 			continue
 		}
-		roleBinding := newBinding(service.Namespace, name.SafeConcatName("rio", service.Name, role.Role), labels)
+		roleBinding := NewBinding(service.Namespace, name.SafeConcatName("rio", service.Name, role.Role), labels)
 		roleBinding.Subjects = []v1.Subject{
 			subject,
 		}
@@ -67,7 +67,7 @@ func addRoles(labels map[string]string, subject v1.Subject, service *riov1.Servi
 		if role.Role == "" {
 			continue
 		}
-		roleBinding := newClusterBinding(name.SafeConcatName("rio", service.Namespace, service.Name, role.Role), labels)
+		roleBinding := NewClusterBinding(name.SafeConcatName("rio", service.Namespace, service.Name, role.Role), labels)
 		roleBinding.Subjects = []v1.Subject{
 			subject,
 		}
@@ -81,7 +81,7 @@ func addRoles(labels map[string]string, subject v1.Subject, service *riov1.Servi
 }
 
 func addRules(labels map[string]string, subject v1.Subject, service *riov1.Service, os *objectset.ObjectSet) {
-	role := newRole(service.Namespace, name.SafeConcatName("rio", service.Name), labels)
+	role := NewRole(service.Namespace, name.SafeConcatName("rio", service.Name), labels)
 	for _, perm := range service.Spec.Permissions {
 		if perm.Role != "" {
 			continue
@@ -95,7 +95,7 @@ func addRules(labels map[string]string, subject v1.Subject, service *riov1.Servi
 	if len(role.Rules) > 0 {
 		os.Add(role)
 
-		roleBinding := newBinding(service.Namespace, name.SafeConcatName("rio", service.Name, role.Name), labels)
+		roleBinding := NewBinding(service.Namespace, name.SafeConcatName("rio", service.Name, role.Name), labels)
 		roleBinding.Subjects = []v1.Subject{
 			subject,
 		}
@@ -109,7 +109,7 @@ func addRules(labels map[string]string, subject v1.Subject, service *riov1.Servi
 }
 
 func addClusterRules(labels map[string]string, subject v1.Subject, service *riov1.Service, os *objectset.ObjectSet) {
-	role := newClusterRole(name.SafeConcatName("rio", service.Namespace, service.Name), labels)
+	role := NewClusterRole(name.SafeConcatName("rio", service.Namespace, service.Name), labels)
 	for _, perm := range service.Spec.GlobalPermissions {
 		if perm.Role != "" {
 			continue
@@ -123,7 +123,7 @@ func addClusterRules(labels map[string]string, subject v1.Subject, service *riov
 	if len(role.Rules) > 0 {
 		os.Add(role)
 
-		roleBinding := newClusterBinding(name.SafeConcatName("rio", service.Namespace, service.Name, role.Name), labels)
+		roleBinding := NewClusterBinding(name.SafeConcatName("rio", service.Namespace, service.Name, role.Name), labels)
 		roleBinding.Subjects = []v1.Subject{
 			subject,
 		}
@@ -185,7 +185,7 @@ func newServiceAccount(namespace, name string, labels map[string]string) *corev1
 	}
 }
 
-func newRole(namespace, name string, labels map[string]string) *v1.Role {
+func NewRole(namespace, name string, labels map[string]string) *v1.Role {
 	return &v1.Role{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Role",
@@ -200,7 +200,7 @@ func newRole(namespace, name string, labels map[string]string) *v1.Role {
 	}
 }
 
-func newClusterRole(name string, labels map[string]string) *v1.ClusterRole {
+func NewClusterRole(name string, labels map[string]string) *v1.ClusterRole {
 	return &v1.ClusterRole{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ClusterRole",
@@ -214,7 +214,7 @@ func newClusterRole(name string, labels map[string]string) *v1.ClusterRole {
 	}
 }
 
-func newClusterBinding(name string, labels map[string]string) *v1.ClusterRoleBinding {
+func NewClusterBinding(name string, labels map[string]string) *v1.ClusterRoleBinding {
 	return &v1.ClusterRoleBinding{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ClusterRoleBinding",
@@ -228,7 +228,7 @@ func newClusterBinding(name string, labels map[string]string) *v1.ClusterRoleBin
 	}
 }
 
-func newBinding(namespace, name string, labels map[string]string) *v1.RoleBinding {
+func NewBinding(namespace, name string, labels map[string]string) *v1.RoleBinding {
 	return &v1.RoleBinding{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "RoleBinding",

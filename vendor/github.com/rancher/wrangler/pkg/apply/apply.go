@@ -38,6 +38,7 @@ type Apply interface {
 	WithPatcher(gvk schema.GroupVersionKind, patchers Patcher) Apply
 	WithStrictCaching() Apply
 	WithDefaultNamespace(ns string) Apply
+	WithListerNamespace(ns string) Apply
 	WithRateLimiting(ratelimitingQps float32) Apply
 	WithNoDelete() Apply
 }
@@ -159,6 +160,10 @@ func (a *apply) WithStrictCaching() Apply {
 
 func (a *apply) WithDefaultNamespace(ns string) Apply {
 	return a.newDesiredSet().WithDefaultNamespace(ns)
+}
+
+func (a *apply) WithListerNamespace(ns string) Apply {
+	return a.newDesiredSet().WithListerNamespace(ns)
 }
 
 func (a *apply) WithRateLimiting(ratelimitingQps float32) Apply {

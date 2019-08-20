@@ -20,7 +20,7 @@ import (
 	"k8s.io/kubernetes/pkg/kubectl/cmd/portforward"
 )
 
-func portForward(pod *v1.Pod, k8s *kubernetes.Clientset, port, targetPort string, stopChan chan struct{}) error {
+func portForward(podName, podNamespace string, k8s *kubernetes.Clientset, port, targetPort string, stopChan chan struct{}) error {
 	loader := kubeconfig.GetInteractiveClientConfig(os.Getenv("KUBECONFIG"))
 
 	restConfig, err := loader.ClientConfig()
@@ -37,8 +37,8 @@ func portForward(pod *v1.Pod, k8s *kubernetes.Clientset, port, targetPort string
 	ioStreams := genericclioptions.IOStreams{}
 
 	portForwardOpt := portforward.PortForwardOptions{
-		Namespace:    pod.Namespace,
-		PodName:      pod.Name,
+		Namespace:    podNamespace,
+		PodName:      podName,
 		RESTClient:   restClient,
 		Config:       restConfig,
 		PodClient:    k8s.CoreV1(),

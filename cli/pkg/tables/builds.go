@@ -12,7 +12,7 @@ import (
 func NewBuild(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
 		{"NAME", "{{stackScopedName .Obj.Namespace .Obj.Name ``}}"},
-		{"SERVICE", "{{.Obj | findService}}"},
+		{"SERVICE/STACK", "{{.Obj | findService}}"},
 		{"REVISION", "{{.Obj | findRevision}}"},
 		{"CREATED", "{{.Obj.CreationTimestamp | ago}}"},
 		{"SUCCEED", "{{ .Obj | succeed }}"},
@@ -58,9 +58,16 @@ func findService(data interface{}) (string, error) {
 	if !ok {
 		return "", nil
 	}
-	name := m.Labels["service-name"]
-	namespace := m.Labels["service-namespace"]
-	return fmt.Sprintf("%s/%s", namespace, name), nil
+	if m.Labels["service-name"] != "" {
+		name := m.Labels["service-name"]
+		namespace := m.Labels["service-namespace"]
+		return fmt.Sprintf("%s/%s", namespace, name), nil
+	} else if m.Labels["stack-name"] != "" {
+		name := m.Labels["stack-name"]
+		namespace := m.Labels["stack-namespace"]
+		return fmt.Sprintf("%s/%s", namespace, name), nil
+	}
+	return "", nil
 }
 
 func findRevision(data interface{}) (string, error) {

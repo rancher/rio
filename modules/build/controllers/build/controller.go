@@ -18,10 +18,11 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	h := handler{
 		systemNamespace: rContext.Namespace,
 		services:        rContext.Rio.Rio().V1().Service(),
+		stacks:          rContext.Rio.Rio().V1().Stack(),
 	}
 
 	rContext.Build.Tekton().V1alpha1().TaskRun().OnChange(ctx, "build-service-update", tektonv1alpha1controller.UpdateTaskRunOnChange(rContext.Build.Tekton().V1alpha1().TaskRun().Updater(), h.updateService))
-	rContext.Build.Tekton().V1alpha1().TaskRun().OnRemove(ctx, "build-service-remove", h.updateServiceOnRemove)
+	rContext.Build.Tekton().V1alpha1().TaskRun().OnRemove(ctx, "build-service-remove", h.updateOnRemove)
 	return nil
 }
 
@@ -29,6 +30,7 @@ type handler struct {
 	registry           string
 	systemNamespace    string
 	services           riov1controller.ServiceController
+	stacks             riov1controller.StackController
 	clusterDomainCache projectv1controller.ClusterDomainCache
 }
 
@@ -73,15 +75,21 @@ func (h handler) updateService(key string, build *tektonv1alpha1.TaskRun) (*tekt
 	return build, nil
 }
 
-func (h *handler) updateServiceOnRemove(key string, build *tektonv1alpha1.TaskRun) (*tektonv1alpha1.TaskRun, error) {
+func (h *handler) updateOnRemove(key string, build *tektonv1alpha1.TaskRun) (*tektonv1alpha1.TaskRun, error) {
 	if build == nil {
 		return build, nil
 	}
 
-	if !build.IsDone() {
-		namespace := build.Labels["service-namespace"]
-		name := build.Labels["service-name"]
-		h.services.Enqueue(namespace, name)
+	if !build.IsSuccessful() || !build.IsDone() {
+		if build.Labels["service-namespace"] != "" {
+			namespace := build.Labels["service-namespace"]
+			name := build.Labels["service-name"]
+			h.services.Enqueue(namespace, name)
+		} else if build.Labels["stack-namespace"] != "" {
+			namespace := build.Labels["stack-namespace"]
+			name := build.Labels["stack-name"]
+			h.stacks.Enqueue(namespace, name)
+		}
 	}
 
 	return build, nil

@@ -25,8 +25,6 @@ import (
 )
 
 const (
-	buildkitAddr = "buildkit"
-
 	DefaultGitCrendential    = "gitcredential"
 	DefaultDockerCrendential = "dockerconfig"
 	DefaultGithubCrendential = "githubtoken"
@@ -282,8 +280,8 @@ func (p populator) populateBuild(service *riov1.Service, systemNamespace string,
 			},
 		},
 	})
-	os.Add(build)
 	os.Add(sa)
+	os.Add(build)
 	return nil
 }
 

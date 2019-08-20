@@ -15,7 +15,7 @@ type Register struct {
 
 func (a *Register) Run(ctx *clicontext.CLIContext) error {
 	if len(ctx.CLI.Args()) != 2 {
-		return errors.New("Incorrect Usage. Example: `rio domain add DOMAIN_NAME TARGET_SVC`")
+		return errors.New("Incorrect Usage. Example: `rio domain register DOMAIN_NAME TARGET_SVC`")
 	}
 	domainName := ctx.CLI.Args().Get(0)
 	target := ctx.CLI.Args().Get(1)

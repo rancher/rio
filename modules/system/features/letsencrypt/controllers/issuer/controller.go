@@ -88,7 +88,7 @@ func (f *certsHandler) onChangeCert(key string, cert *v1alpha1.Certificate) (*v1
 
 	deepcopy := clusterDomain.DeepCopy()
 	deepcopy.Status.HTTPSSupported = true
-	if clusterDomain.Spec.SecretRef.Name == issuers.RioWildcardCerts {
+	if clusterDomain.Spec.SecretRef.Name == issuers.RioWildcardCerts && cert.Name == clusterDomain.Spec.SecretRef.Name {
 		for _, con := range cert.Status.Conditions {
 			if con.Type == v1alpha1.CertificateConditionReady && con.Status != certmanagerapi.ConditionTrue {
 				deepcopy.Status.HTTPSSupported = false

@@ -46,6 +46,7 @@ def test_rio_app_endpoint(nspc):
     srv = create_service(nspc, image)
     fullName = (f"{nspc}/{srv}")
     print(fullName)
+    time.sleep(5)
     stage_service(image2, fullName, "v3")
 
     appEndpoint = get_app_info(fullName, "status.endpoints[0]")

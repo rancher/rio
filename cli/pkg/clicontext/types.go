@@ -38,9 +38,9 @@ func init() {
 	lookup.RegisterType(types.PodType, lookup.NamespaceScopedNameType, lookup.ThreePartsNameType)
 	lookup.RegisterType(types.NamespaceType, lookup.SingleNameNameType)
 	lookup.RegisterType(types.FeatureType, lookup.SingleNameNameType)
-	lookup.RegisterType(types.PublicDomainType, lookup.NamespaceScopedNameType, lookup.FullDomainNameTypeNameType)
+	lookup.RegisterType(types.PublicDomainType, lookup.NamespacedAlphanumericNameType, lookup.FullDomainNameTypeNameType)
 	lookup.RegisterType(types.BuildType, lookup.NamespaceScopedNameType)
-	lookup.RegisterType(types.SecretType, lookup.NamespacedSecretNameType)
+	lookup.RegisterType(types.SecretType, lookup.NamespacedAlphanumericNameType)
 	lookup.RegisterType(types.StackType, lookup.NamespaceScopedNameType, lookup.SingleNameNameType)
 }
 

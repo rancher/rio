@@ -96,7 +96,7 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:        "system-namespace",
-			Value:       "",
+			Value:       "rio-system",
 			Destination: &cfg.SystemNamespace,
 		},
 		cli.StringFlag{
@@ -187,6 +187,7 @@ func main() {
 			"List service revisions",
 			appName+" revision [OPTIONS] [APP...]",
 			""),
+
 		builder.Command(&stage.Stage{},
 			"Stage a new revision of a service",
 			appName+" stage [OPTIONS] SERVICE_ID_NAME",
