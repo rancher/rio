@@ -11,18 +11,20 @@
 
 ### Install Options
 Rio provides three install options for users. 
-`ingress`: Rio will use existing ingress controller and ingress resource to expose gateway services. All the traffic will go through ingress then inside cluster. Starting v0.4.0 this is the default mode.
-`svclb`: Rio will use service loadbalancer to expose gateway services. 
-`hostport`: Rio will expose hostport for gateway services.
+
+* `ingress`: Rio will use existing ingress controller and ingress resource to expose gateway services. All the traffic will go through ingress then inside cluster. Starting v0.4.0 this is the default mode.
+* `svclb`: Rio will use service loadbalancer to expose gateway services. 
+* `hostport`: Rio will expose hostport for gateway services.
 
 There are other install options:
-`http-port`: Http port gateway service will listen. If install mode is ingress, it will 80.
-`https-port`: Https port gateway service will listen. If install mode is ingress, it will 443.
-`ip-address`: Manually specify worker IP addresses to generate DNS domain. By default Rio will detect based on install mode.
-`service-cidr`: Manually specify service-cidr for service mesh to intercept traffic. By default Rio will try to detect.
-`disable-features`: Specify feature to disable during install.
-`httpproxy`: Specify HTTP_PROXY environment variable for control plane.
-`lite`: install with lite mode.
+
+* `http-port`: Http port gateway service will listen. If install mode is ingress, it will 80.
+* `https-port`: Https port gateway service will listen. If install mode is ingress, it will 443.
+* `ip-address`: Manually specify worker IP addresses to generate DNS domain. By default Rio will detect based on install mode.
+* `service-cidr`: Manually specify service-cidr for service mesh to intercept traffic. By default Rio will try to detect.
+* `disable-features`: Specify feature to disable during install.
+* `httpproxy`: Specify HTTP_PROXY environment variable for control plane.
+* `lite`: install with lite mode.
 
 ### Running workload
 
@@ -218,16 +220,11 @@ Once you have defined `Riofile`, simply run `rio up`. Any change you made for `R
 More complicated examples are available at [here](../stacks).
 
 ###### Riofile reference
-`arg`: Arguments to the entrypoint
-
-`command`: Entrypoint array
-
-`scale`: Scale of the service. Can be specifed as `min-max`(1-10) to enable autoscaling.
-
-`ports`: Container ports. Format: `$(servicePort:)containerPort/protocol`. 
-
-`build`: Build arguments.  
-
+- `arg`: Arguments to the entrypoint
+- `command`: Entrypoint array
+- `scale`: Scale of the service. Can be specifed as `min-max`(1-10) to enable autoscaling.
+- `ports`: Container ports. Format: `$(servicePort:)containerPort/protocol`. 
+- `build`: Build arguments.
 ```yaml
 build:
     buildArgs: # build arguments
@@ -240,16 +237,11 @@ build:
     buildImageName: foo/bar # specify custom image name
     pushRegistry: docker.io # specify push registry
 ```
-
-`configs`: Specify configmap to mount. Format: `$name/$key:/path/to/file`.
-
-`secrets`: Specify secret to mount. Format: `$name/$key:/path/to/file`.
-
-`pullPolicy`: Specify image pull policy. Options: `always/never/ifNotProsent`.
-
-`disableServiceMesh`: Disable service mesh sidecar.
-
-`global_permissions`: Specify the global permission of workload
+- `configs`: Specify configmap to mount. Format: `$name/$key:/path/to/file`.
+- `secrets`: Specify secret to mount. Format: `$name/$key:/path/to/file`.
+- `pullPolicy`: Specify image pull policy. Options: `always/never/ifNotProsent`.
+- `disableServiceMesh`: Disable service mesh sidecar.
+- `global_permissions`: Specify the global permission of workload
 
 Example: 
 ```yaml
@@ -265,7 +257,7 @@ global_permissions:
 - 'role=cluster-admin'
 ```
 
-`permisions`: Specify current namespace permission of workload
+- `permisions`: Specify current namespace permission of workload
 
 Example: 
 ```yaml
@@ -275,14 +267,10 @@ permissions:
 
 this will give workload abilities to **create, get, list** **all** resources in api group **certmanager.k8s.io** in **current** namespace.
 
-`labels`: Specify labels
-
-`annotations`: Specify annotations
-
-`containers`: Specify multiple containers.
-
-`env`: Specify environment variables. You can use the following syntax.
-
+- `labels`: Specify labels
+- `annotations`: Specify annotations
+- `containers`: Specify multiple containers.
+- `env`: Specify environment variables. You can use the following syntax.
 ```yaml
 "self/name":           "metadata.name",
 "self/namespace":      "metadata.namespace",
@@ -452,14 +440,16 @@ By default, rio will automatically pull git repo and check if repo code has chan
 ```bash
 $ rio secret add --github-webhook
 Select namespace[default]: $(put the same namespace with your workload)
-accessToken: $(github_accesstoken)
+accessToken: $(github_accesstoken) # the token has to be able create webhook in your github repo.
 ```
-$(github_accesstoken) has to be able create webhook in your github repo.
+
 2. Create workload and point to your repo.
+
 3. Go to your Github repo, it should have webhook configured to point to one of our webhook service.
 
 #### Set Custom build arguments and docker registry
 You can also push to your own registry for images that rio has built.
+
 1. Setup docker registry auth. Here is an example of how to setup docker registry.
 ```bash
 $ rio secret add --docker
@@ -468,7 +458,9 @@ Registry url[]: https://index.docker.io/v1/
 username[]: $(your_docker_hub_username)
 password[]: $(password)
 ```
+
 2. Create your workload. Set the correct push registry.
+
 ```bash
 $ rio run --build-registry docker.io --build-image-name $(username)/yourimagename $(repo)
 ```
@@ -476,8 +468,11 @@ $ rio run --build-registry docker.io --build-image-name $(username)/yourimagenam
 
 #### Enable Pull request (experimental)
 Rio also allows you to configure pull request builds. This needs you to configure github webhook token correctly.
+
 1. Set up github webhook token in the previous session
+
 2. Run workload with pull-request enabled.
+
 ```bash
 $ rio run --build-enable-pr $(repo)
 ```
