@@ -72,12 +72,12 @@ func (s *serviceHandler) populate(obj runtime.Object, namespace *corev1.Namespac
 		return err
 	}
 
-	if err := populate.DestinationRulesAndVirtualServices(s.systemNamespace, clusterDomain, service, os); err != nil {
+	if err := populate.VirtualServices(s.systemNamespace, clusterDomain, service, os); err != nil {
 		return err
 	}
 
 	if clusterDomain.Status.ClusterDomain != "" && constants.InstallMode == constants.InstallModeIngress {
-		populate.Ingress(s.systemNamespace, clusterDomain.Status.ClusterDomain, false, service, os)
+		populate.Ingress(s.systemNamespace, clusterDomain.Status.ClusterDomain, clusterDomain.Spec.SecretRef.Name, false, service, os)
 	}
 
 	return err

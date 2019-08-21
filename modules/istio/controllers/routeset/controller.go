@@ -111,7 +111,7 @@ func (r *routeSetHandler) populate(obj runtime.Object, ns *corev1.Namespace, os 
 	}
 
 	if constants.InstallMode == constants.InstallModeIngress {
-		populate.Ingress(r.systemNamespace, domain, routeSet, os)
+		populate.Ingress(r.systemNamespace, domain, clusterDomain.Spec.SecretRef.Name, routeSet, os)
 	}
 
 	return nil

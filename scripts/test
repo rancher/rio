@@ -6,14 +6,16 @@ cd $(dirname $0)/..
 if [[ ${ARCH} == amd64 ]]; then
     echo Running tests
 
-    k3s server &
+    go test -cover -tags=test ./...
+
+    k3s server >/dev/null 2>&1 &
     sleep 10
 
     export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
     export PATH=$(pwd)/bin:$PATH
 
-    rio-controller &
-    rio install --check
+    rio-controller >/dev/null 2>&1 &
+    rio install --check >/dev/null 2>&1
 
     cd ./tests
     PROC=$(nproc)

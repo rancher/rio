@@ -16,7 +16,6 @@ import (
 	"github.com/rancher/rio/pkg/services"
 	"github.com/rancher/rio/pkg/serviceset"
 	"github.com/rancher/wrangler/pkg/objectset"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -30,7 +29,7 @@ const (
 	RevisionHeaderNamespace string = "knative-serving-namespace"
 )
 
-func virtualServices(namespace string, clusterDomain *projectv1.ClusterDomain, service *v1.Service, os *objectset.ObjectSet) error {
+func VirtualServices(namespace string, clusterDomain *projectv1.ClusterDomain, service *v1.Service, os *objectset.ObjectSet) error {
 	os.Add(virtualServiceFromService(namespace, clusterDomain, service)...)
 	return nil
 }
@@ -221,6 +220,13 @@ func virtualServiceFromService(namespace string, clusterDomain *projectv1.Cluste
 	return result
 }
 
+func isProtocolSupported(protocol v1.Protocol) bool {
+	if protocol == v1.ProtocolHTTP || protocol == v1.ProtocolHTTP2 || protocol == v1.ProtocolGRPC || protocol == v1.ProtocolTCP {
+		return true
+	}
+	return false
+}
+
 func VirtualServiceFromSpec(aggregated bool, systemNamespace string, name, namespace string, clusterDomain *projectv1.ClusterDomain, service *v1.Service, dests ...Dest) *v1alpha3.VirtualService {
 	routes, external := httpRoutes(systemNamespace, service, dests)
 	if len(routes) == 0 {
@@ -231,7 +237,7 @@ func VirtualServiceFromSpec(aggregated bool, systemNamespace string, name, names
 		external = false
 	}
 
-	vs := newVirtualService(name, namespace)
+	vs := constructors.NewVirtualService(namespace, name, v1alpha3.VirtualService{})
 	spec := v1alpha3.VirtualServiceSpec{
 		Gateways: []string{privateGw},
 		HTTP:     routes,
@@ -256,19 +262,4 @@ func VirtualServiceFromSpec(aggregated bool, systemNamespace string, name, names
 
 	vs.Spec = spec
 	return vs
-}
-
-func newVirtualService(name, namespace string) *v1alpha3.VirtualService {
-	return constructors.NewVirtualService(namespace, name, v1alpha3.VirtualService{
-		ObjectMeta: metav1.ObjectMeta{
-			Annotations: map[string]string{},
-		},
-	})
-}
-
-func isProtocolSupported(protocol v1.Protocol) bool {
-	if protocol == v1.ProtocolHTTP || protocol == v1.ProtocolHTTP2 || protocol == v1.ProtocolGRPC || protocol == v1.ProtocolTCP {
-		return true
-	}
-	return false
 }

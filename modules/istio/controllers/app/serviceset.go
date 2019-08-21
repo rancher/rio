@@ -2,11 +2,14 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"sort"
 
+	"github.com/knative/pkg/apis/istio/v1alpha3"
 	"github.com/rancher/rio/modules/istio/controllers/service/populate"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
+	"github.com/rancher/rio/pkg/constructors"
 	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/stackobject"
@@ -58,7 +61,7 @@ func (s serviceHandler) populate(obj runtime.Object, namespace *corev1.Namespace
 		return nil
 	}
 
-	dr := populate.DestinationRuleForService(app)
+	dr := destinationRuleForService(app)
 	os.Add(dr)
 
 	public := false
@@ -103,8 +106,36 @@ func (s serviceHandler) populate(obj runtime.Object, namespace *corev1.Namespace
 	os.Add(revVs)
 
 	if clusterDomain.Status.ClusterDomain != "" && constants.InstallMode == constants.InstallModeIngress {
-		populate.Ingress(s.systemNamespace, clusterDomain.Status.ClusterDomain, true, revision, os)
+		populate.Ingress(s.systemNamespace, clusterDomain.Status.ClusterDomain, clusterDomain.Spec.SecretRef.Name, true, revision, os)
 	}
 
 	return nil
+}
+
+func destinationRuleForService(app *riov1.App) *v1alpha3.DestinationRule {
+	drSpec := v1alpha3.DestinationRuleSpec{
+		Host: fmt.Sprintf("%s.%s.svc.cluster.local", app.Name, app.Namespace),
+	}
+
+	for _, rev := range app.Spec.Revisions {
+		drSpec.Subsets = append(drSpec.Subsets, newSubSet(rev.Version))
+	}
+
+	dr := newDestinationRule(app.Namespace, app.Name)
+	dr.Spec = drSpec
+
+	return dr
+}
+
+func newSubSet(version string) v1alpha3.Subset {
+	return v1alpha3.Subset{
+		Name: version,
+		Labels: map[string]string{
+			"version": version,
+		},
+	}
+}
+
+func newDestinationRule(namespace, name string) *v1alpha3.DestinationRule {
+	return constructors.NewDestinationRule(namespace, name, v1alpha3.DestinationRule{})
 }

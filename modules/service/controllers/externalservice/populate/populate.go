@@ -28,11 +28,15 @@ func ServiceForExternalService(es *riov1.ExternalService, namespace *corev1.Name
 		}
 		svc.Spec = v1.ServiceSpec{
 			Type:         v1.ServiceTypeExternalName,
-			ExternalName: u.Host,
+			ExternalName: u.Hostname(),
 		}
 	} else if len(es.Spec.IPAddresses) > 0 {
 		var hosts []string
 		var ports []int32
+		svc.Spec = v1.ServiceSpec{
+			Type:      v1.ServiceTypeClusterIP,
+			ClusterIP: v1.ClusterIPNone,
+		}
 		for _, ip := range es.Spec.IPAddresses {
 			u, err := parse.TargetURL(ip)
 			if err != nil {
@@ -43,17 +47,11 @@ func ServiceForExternalService(es *riov1.ExternalService, namespace *corev1.Name
 				port = "80"
 			}
 			portInt, _ := strconv.Atoi(port)
-			svc.Spec = v1.ServiceSpec{
-				Type: v1.ServiceTypeClusterIP,
-				Ports: []v1.ServicePort{
-					{
-						Name:     fmt.Sprintf("http-%v-%v", portInt, portInt),
-						Protocol: v1.ProtocolTCP,
-						Port:     int32(portInt),
-					},
-				},
-				ClusterIP: v1.ClusterIPNone,
-			}
+			svc.Spec.Ports = append(svc.Spec.Ports, v1.ServicePort{
+				Name:     fmt.Sprintf("http-%v-%v", portInt, portInt),
+				Protocol: v1.ProtocolTCP,
+				Port:     int32(portInt),
+			})
 			hosts = append(hosts, u.Hostname())
 			ports = append(ports, int32(portInt))
 		}
@@ -86,7 +84,7 @@ func populateEndpoint(name, namespace string, hosts []string, ports []int32) *v1
 			},
 			Ports: []v1.EndpointPort{
 				{
-					Name:     "http-80-80",
+					Name:     fmt.Sprintf("http-%v-%v", ports[i], ports[i]),
 					Protocol: v1.ProtocolTCP,
 					Port:     ports[i],
 				},

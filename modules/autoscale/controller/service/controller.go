@@ -75,25 +75,17 @@ type populator struct {
 }
 
 func (p populator) populate(object runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) error {
-	if err := p.populatePodAutoscaler(object, ns, os); err != nil {
-		return err
-	}
-	return p.populateServiceRecommendation(object, ns, os)
+	populatePodAutoscaler(object, ns, os)
+	populateServiceRecommendation(object, ns, os)
+	return nil
 }
 
-func (p populator) populateServiceRecommendation(object runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) error {
+func populateServiceRecommendation(object runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) {
 	service := object.(*v1.Service)
-	labels := map[string]string{}
-	autoscale := false
-	if service.Spec.MinScale != nil && service.Spec.MaxScale != nil && service.Spec.Concurrency != nil && *service.Spec.MinScale != *service.Spec.MaxScale {
-		autoscale = true
-	}
+	autoscale := AutoscaleEnabled(service)
 	app, version := services.AppAndVersion(service)
 	if autoscale {
 		spec := autoscalev1.ServiceScaleRecommendation{
-			ObjectMeta: metav1.ObjectMeta{
-				Labels: labels,
-			},
 			Spec: autoscalev1.ServiceScaleRecommendationSpec{
 				Selector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
@@ -108,7 +100,7 @@ func (p populator) populateServiceRecommendation(object runtime.Object, ns *core
 		autoscalev1.ServiceScaleRecommendationSynced.True(ssr)
 		os.Add(ssr)
 	}
-	return nil
+	return
 }
 
 type handler struct {
@@ -145,11 +137,11 @@ func (h handler) setServiceScale(ssr *autoscalev1.ServiceScaleRecommendation) er
 	return nil
 }
 
-func (p populator) populatePodAutoscaler(object runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) error {
+func populatePodAutoscaler(object runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) {
 	service := object.(*v1.Service)
 	autoscale := AutoscaleEnabled(service)
 	if !autoscale {
-		return nil
+		return
 	}
 	app, version := services.AppAndVersion(service)
 	annotation := map[string]string{
@@ -189,7 +181,7 @@ func (p populator) populatePodAutoscaler(object runtime.Object, ns *corev1.Names
 	})
 
 	os.Add(podAutoscaler)
-	return nil
+	return
 }
 
 func AutoscaleEnabled(service *v1.Service) bool {

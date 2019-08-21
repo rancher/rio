@@ -21,11 +21,11 @@ var (
 	}
 )
 
-func Gateway(systemNamespace, clusterDomain, certs string, publicdomains []*v1.PublicDomain, output *objectset.ObjectSet) {
+func Gateway(systemNamespace, clusterDomain, certName string, publicdomains []*v1.PublicDomain, output *objectset.ObjectSet) {
 	// Istio Gateway
 	gws := v1alpha3.GatewaySpec{
 		Selector: map[string]string{
-			"app": "istio-gateway",
+			"app": constants.IstioGateway,
 		},
 	}
 
@@ -55,7 +55,7 @@ func Gateway(systemNamespace, clusterDomain, certs string, publicdomains []*v1.P
 				Hosts: []string{"*"},
 				TLS: &v1alpha3.TLSOptions{
 					Mode:           v1alpha3.TLSModeSimple,
-					CredentialName: certs,
+					CredentialName: certName,
 				},
 			})
 		}
