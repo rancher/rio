@@ -133,20 +133,20 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		rContext.Global.Admin().V1().ClusterDomain(),
 		rContext.Global.Admin().V1().PublicDomain())
 
-	if constants.UseIPAddress != "" {
+	if constants.UseIPAddress == "" {
+		switch constants.InstallMode {
+		case constants.InstallModeSvclb:
+			rContext.Core.Core().V1().Service().OnChange(ctx, "istio-endpoints-serviceloadbalancer", s.syncServiceLoadbalancer)
+		case constants.InstallModeHostport:
+			rContext.Core.Core().V1().Endpoints().OnChange(ctx, "istio-endpoints", s.syncEndpoint)
+		case constants.InstallModeIngress:
+			rContext.K8sNetworking.Networking().V1beta1().Ingress().OnChange(ctx, "ingress-endpoints", s.syncIngress)
+		}
+	} else {
 		addresses := strings.Split(constants.UseIPAddress, ",")
 		if err := s.updateClusterDomain(addresses); err != nil {
 			return err
 		}
-	}
-
-	switch constants.InstallMode {
-	case constants.InstallModeSvclb:
-		rContext.Core.Core().V1().Service().OnChange(ctx, "istio-endpoints-serviceloadbalancer", s.syncServiceLoadbalancer)
-	case constants.InstallModeHostport:
-		rContext.Core.Core().V1().Endpoints().OnChange(ctx, "istio-endpoints", s.syncEndpoint)
-	case constants.InstallModeIngress:
-		rContext.K8sNetworking.Networking().V1beta1().Ingress().OnChange(ctx, "ingress-endpoints", s.syncIngress)
 	}
 
 	rContext.Core.Core().V1().Service().OnChange(ctx, "rdns-subdomain", s.syncSubdomain)
