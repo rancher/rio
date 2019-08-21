@@ -62,6 +62,14 @@ func (r *Riofile) Objects() (result []runtime.Object) {
 		copy := s
 		result = append(result, &copy)
 	}
+	for _, s := range r.ExternalServices {
+		copy := s
+		result = append(result, &copy)
+	}
+	for _, s := range r.Routers {
+		copy := s
+		result = append(result, &copy)
+	}
 
 	return
 }

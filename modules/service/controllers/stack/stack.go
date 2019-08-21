@@ -8,6 +8,7 @@ import (
 	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/objectset"
+	"github.com/rancher/wrangler/pkg/relatedresource"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -18,12 +19,37 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	c := stackobject.NewGeneratingController(ctx, rContext, controllerName, rContext.Rio.Rio().V1().Stack())
 	c.Apply = rContext.Apply.WithSetID(controllerName).WithCacheTypes(
 		rContext.Rio.Rio().V1().Service(),
-		rContext.Core.Core().V1().ConfigMap())
+		rContext.Rio.Rio().V1().ExternalService(),
+		rContext.Core.Core().V1().ConfigMap(),
+		rContext.Rio.Rio().V1().Router())
 
 	p := stackPopulator{}
 
 	c.Populator = p.populate
+
+	relatedresource.Watch(ctx, "stack-reenqueue-changes", resolve,
+		rContext.Rio.Rio().V1().Stack(),
+		rContext.Rio.Rio().V1().Service(),
+		rContext.Rio.Rio().V1().ExternalService(),
+		rContext.Rio.Rio().V1().Router(),
+		rContext.Core.Core().V1().ConfigMap())
 	return nil
+}
+
+func resolve(namespace, name string, obj runtime.Object) ([]relatedresource.Key, error) {
+	meta, err := meta.Accessor(obj)
+	if err != nil {
+		return nil, nil
+	}
+	if meta.GetAnnotations()["objectset.rio.cattle.io/owner-gvk"] == "rio.cattle.io/v1, Kind=Stack" {
+		return []relatedresource.Key{
+			{
+				Namespace: meta.GetAnnotations()["objectset.rio.cattle.io/owner-namespace"],
+				Name:      meta.GetAnnotations()["objectset.rio.cattle.io/owner-name"],
+			},
+		}, nil
+	}
+	return nil, nil
 }
 
 type stackPopulator struct{}

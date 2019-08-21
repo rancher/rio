@@ -33,13 +33,13 @@ func config(schemas *mapper.Schemas) *mapper.Schemas {
 
 func router(schemas *mapper.Schemas) *mapper.Schemas {
 	schemas.AddMapperForType(v1.Router{},
-		m.NewObject("Router", "v1"))
+		m.NewObject("Router", "rio.cattle.io/v1"))
 	return schemas
 }
 
 func externalservice(schemas *mapper.Schemas) *mapper.Schemas {
 	schemas.AddMapperForType(v1.ExternalService{},
-		m.NewObject("ExternalService", "v1"))
+		m.NewObject("ExternalService", "rio.cattle.io/v1"))
 	return schemas
 }
 
