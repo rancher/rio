@@ -714,6 +714,12 @@ google.golang.org/grpc/internal/syscall
 gopkg.in/inf.v0
 # gopkg.in/yaml.v2 v2.2.2
 gopkg.in/yaml.v2
+# gotest.tools v2.2.0+incompatible
+gotest.tools/assert
+gotest.tools/assert/cmp
+gotest.tools/internal/format
+gotest.tools/internal/source
+gotest.tools/internal/difflib
 # istio.io/api v0.0.0-20190408162927-e9ab8d6a54a6
 istio.io/api/networking/v1alpha3
 istio.io/api/mesh/v1alpha1
