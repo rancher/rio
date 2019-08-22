@@ -58,7 +58,7 @@ type Create struct {
 	LabelFile              []string          `desc:"Read in a line delimited file of labels"`
 	L_Label                map[string]string `desc:"Set meta data on a container"`
 	M_Memory               string            `desc:"Memory reservation (format: <number>[<unit>], where unit = b, k, m or g)"`
-	N_Name                 string            `desc:"Assign a name to the container"`
+	N_Name                 string            `desc:"Assign a name to the container. Use format ${namespace}/${name} to assign workload to a different namespace"`
 	Permission             []string          `desc:"Permissions to grant to container's service account in current namespace"`
 	P_Ports                []string          `desc:"Publish a container's port(s) externally (default: \"80:8080/http\")"`
 	ReadOnly               bool              `desc:"Mount the container's root filesystem as read only"`

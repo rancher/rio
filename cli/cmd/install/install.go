@@ -18,6 +18,7 @@ import (
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/stack"
+	"github.com/rancher/rio/pkg/version"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -224,7 +225,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 				progress.Display("Waiting for service loadbalancer to be up", 2)
 				continue
 			}
-			fmt.Printf("\rrio controller version %s (%s) installed into namespace %s\n", info.Status.Version, info.Status.GitCommit, info.Status.SystemNamespace)
+			fmt.Printf("\rrio controller version %s (%s) installed into namespace %s\n", version.Version, version.GitCommit, info.Status.SystemNamespace)
 		}
 
 		// Checking if clusterDomain is available

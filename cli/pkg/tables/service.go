@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/rancher/rio/cli/pkg/table"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/services"
 	corev1 "k8s.io/api/core/v1"
@@ -16,7 +17,7 @@ func NewService(cfg Config) TableWriter {
 		{"NAME", "{{serviceName .Service.Namespace .Service}}"},
 		{"IMAGE", "{{.Service | image}}"},
 		{"CREATED", "{{.Service.CreationTimestamp | ago}}"},
-		{"SCALE", "{{scale .Service.Spec.Scale .Service.Status.ScaleStatus .Service.Status.ObservedScale}}"},
+		{"SCALE", "{{scale .Service .Service.Status.ScaleStatus}}"},
 		{"ENDPOINT", "{{.Service.Status.Endpoints | array}}"},
 		{"WEIGHT", "{{.Service.Spec.Weight}}"},
 		{"DETAIL", "{{.Pods | podsDetail}}"},
@@ -24,7 +25,7 @@ func NewService(cfg Config) TableWriter {
 
 	writer.AddFormatFunc("serviceName", FormatServiceName(cfg))
 	writer.AddFormatFunc("image", FormatImage)
-	writer.AddFormatFunc("scale", FormatScale)
+	writer.AddFormatFunc("scale", formatRevisionScale)
 	writer.AddFormatFunc("podsDetail", podsDetail)
 
 	return &tableWriter{
@@ -32,29 +33,21 @@ func NewService(cfg Config) TableWriter {
 	}
 }
 
-func FormatScale(data *int, data2, data3 interface{}) (string, error) {
-	scale := data
-	if data != nil && *data > 0 {
-		return fmt.Sprint(*data), nil
+func formatRevisionScale(svc *riov1.Service, scaleStatus *v1.ScaleStatus) (string, error) {
+	scale := svc.Spec.Scale
+	if svc.Status.ObservedScale != nil {
+		scale = svc.Status.ObservedScale
 	}
+	return FormatScale(scale, scaleStatus)
+}
 
-	scaleNum := 0
-	if scale == nil {
-		scaleNum = 1
-	} else {
+func FormatScale(scale *int, scaleStatus *v1.ScaleStatus) (string, error) {
+	scaleNum := 1
+	if scale != nil {
 		scaleNum = *scale
 	}
 
-	observedScale, ok := data3.(*int)
-	if ok && observedScale != nil {
-		scaleNum = *observedScale
-	}
 	scaleStr := strconv.Itoa(scaleNum)
-
-	scaleStatus, ok := data2.(*v1.ScaleStatus)
-	if !ok {
-		return scaleStr, nil
-	}
 
 	if scaleStatus == nil {
 		scaleStatus = &v1.ScaleStatus{}
@@ -69,8 +62,8 @@ func FormatScale(data *int, data2, data3 interface{}) (string, error) {
 	}
 
 	percentage := ""
-	if scaleNum > 0 && scaleStatus.Updated > 0 && scaleNum != scaleStatus.Updated {
-		percentage = fmt.Sprintf(" %d%%", (scaleStatus.Updated*100)/scaleNum)
+	if scaleNum > 0 && scaleStatus.Ready > 0 && scaleNum != scaleStatus.Ready {
+		percentage = fmt.Sprintf(" %d%%", (scaleStatus.Ready*100)/scaleNum)
 	}
 
 	prefix := ""

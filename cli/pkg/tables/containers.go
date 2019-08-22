@@ -107,8 +107,12 @@ func podDetail(obj interface{}) (string, error) {
 	output := strings.Builder{}
 	for _, con := range append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) {
 		if con.State.Waiting != nil && con.State.Waiting.Reason != "" {
-			output.WriteString(";")
-			output.WriteString(fmt.Sprintf("%s: %s", con.State.Waiting.Reason, con.State.Waiting.Message))
+			output.WriteString("; ")
+			reason := con.State.Waiting.Reason
+			if con.State.Waiting.Message != "" {
+				reason = reason + "/" + con.State.Waiting.Message
+			}
+			output.WriteString(fmt.Sprintf("%s(%s)", con.Name, reason))
 		}
 
 		if con.State.Terminated != nil && con.State.Terminated.ExitCode != 0 {
@@ -116,10 +120,14 @@ func podDetail(obj interface{}) (string, error) {
 			if con.State.Terminated.Message == "" {
 				con.State.Terminated.Message = "exit code not zero"
 			}
-			output.WriteString(fmt.Sprintf("%s: %s, exit code: %v", con.State.Terminated.Reason, con.State.Terminated.Message, con.State.Terminated.ExitCode))
+			reason := con.State.Terminated.Reason
+			if con.State.Terminated.Message != "" {
+				reason = reason + "/" + con.State.Terminated.Message
+			}
+			output.WriteString(fmt.Sprintf("%s(%s), exit code: %v", con.Name, reason, con.State.Terminated.ExitCode))
 		}
 	}
-	return strings.Trim(output.String(), ";"), nil
+	return strings.Trim(output.String(), "; "), nil
 }
 
 func podReady(obj interface{}) (string, error) {

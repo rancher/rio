@@ -131,7 +131,7 @@ func newRoute(systemNamespace, externalGW string, published bool, portBinding v1
 	})
 	route.Match = matches
 
-	if autoscale && svc.Status.ObservedScale != nil && *svc.Status.ObservedScale == 0 {
+	if autoscale && deployIsZero(svc) {
 		if route.Headers == nil {
 			route.Headers = &v1alpha3.Headers{
 				Request: &v1alpha3.HeaderOperations{
@@ -145,7 +145,7 @@ func newRoute(systemNamespace, externalGW string, published bool, portBinding v1
 	}
 
 	for _, dest := range dests {
-		if autoscale && svc.Status.ObservedScale != nil && *svc.Status.ObservedScale == 0 {
+		if autoscale && deployIsZero(svc) {
 			route.Route = append(route.Route, v1alpha3.HTTPRouteDestination{
 				Destination: v1alpha3.Destination{
 					Host: fmt.Sprintf("%s.%s.svc.cluster.local", "activator", systemNamespace),
@@ -178,6 +178,13 @@ func newRoute(systemNamespace, externalGW string, published bool, portBinding v1
 		sourcePort = httpsPort
 	}
 	return fmt.Sprintf("%v/%s", sourcePort, portBinding.Protocol), route
+}
+
+func deployIsZero(service *riov1.Service) bool {
+	if service.Status.DeploymentStatus != nil && service.Status.DeploymentStatus.Replicas == 0 {
+		return true
+	}
+	return false
 }
 
 type Dest struct {

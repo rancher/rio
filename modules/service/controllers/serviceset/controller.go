@@ -108,7 +108,7 @@ func (h *handler) onChange(key string, service *riov1.Service) (*riov1.Service, 
 			}
 		}
 		scale := service.Spec.Scale
-		if service.Status.ObservedScale != nil && *service.Status.ObservedScale != 0 {
+		if service.Status.ObservedScale != nil {
 			scale = service.Status.ObservedScale
 		}
 
