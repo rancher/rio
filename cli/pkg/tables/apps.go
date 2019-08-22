@@ -99,7 +99,7 @@ func formatAppScale(obj interface{}) (string, error) {
 		if rev.Scale != 0 {
 			s = &rev.Scale
 		}
-		scale, err := FormatScale(s, rev.ScaleStatus, nil)
+		scale, err := FormatScale(s, rev.ScaleStatus)
 		if err != nil {
 			return "", nil
 		}
