@@ -21,13 +21,8 @@ import (
 var Crds = append(crd.NonNamespacedTypes(
 	"ClusterIssuer.certmanager.k8s.io/v1alpha1",
 
-	"ClusterBuildTemplate.build.knative.dev/v1alpha1",
-
 	"RioInfo.admin.rio.cattle.io/v1",
 ), crd.NamespacedTypes(
-	"BuildTemplate.build.knative.dev/v1alpha1",
-	"Image.caching.internal.knative.dev/v1alpha1",
-
 	"App.rio.cattle.io/v1",
 	"ExternalService.rio.cattle.io/v1",
 	"Router.rio.cattle.io/v1",
