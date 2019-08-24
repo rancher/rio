@@ -174,7 +174,7 @@ $ rio domain register --secret $name www.myproductionsite.com default/route1
 ```
 
 Note: By default Rio will automatically configure Letsencrypt HTTP-01 challenge to provision certs for your publicdomain. This needs you to install rio on standard ports.
-If you are install rio with svclb or hostport mode, try `rio install --httpport 80 --httpsport 443`.
+If you are install rio with svclb or hostport mode, try `rio install --http-port 80 --https-port 443`.
 
 ##### Using Riofile
 
