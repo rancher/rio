@@ -120,6 +120,9 @@ a certificate for the cluster domain so that all services support HTTPS by defau
 For example, when you deploy your workload, you can access your workload in HTTPS. The domain always follows the format
 of ${app}-${namespace}.\${cluster-domain}. You can see your cluster domain by running `rio info`.
 
+Some name servers provide protection against DNS rebinding attacks. Dnsmasq is a popular example running on many
+ routers. This may break endpoint name resolution (`on-rio.io`) for you. Luckily dnsmasq also provides whitelisting.
+
 ##### Adding external services
 ExternalService is a service(databases, legacy apps) that is outside of your cluster, and can be added into service discovery.
 It can be IPs, FQDN or service in another namespace. Once added, external service can be discovered by short name within the same namespace.
