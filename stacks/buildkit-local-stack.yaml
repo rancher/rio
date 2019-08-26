@@ -87,7 +87,6 @@ services:
       podSpec:
         containers:
         - args:
-          - socat
           - TCP-LISTEN:80,fork
           - UNIX-CONNECT:${SOCKET_ADDRESS}
           image: alpine/socat:1.0.3
