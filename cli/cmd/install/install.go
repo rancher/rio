@@ -120,8 +120,8 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("$(minikube ip) failed with error: (%v). Do you have minikube in your PATH", stderr.String())
 		}
-		ip := strings.Trim(stdout.String(), " ")
-		fmt.Fprintf(out, "Manually setting cluster IP to %s\n", ip)
+		ip := strings.Trim(stdout.String(), " \n")
+		fmt.Fprintf(out, "Manually setting cluster IP to %s and install mode to %s\n", ip, constants.InstallModeHostport)
 		i.IPAddress = []string{ip}
 		i.Mode = constants.InstallModeHostport
 	}

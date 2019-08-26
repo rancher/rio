@@ -105,6 +105,7 @@ func main() {
 }
 
 func run(c *cli.Context) error {
+	logrus.Infof("Starting rio-controller, version: %s, git commit: %s", version.Version, version.GitCommit)
 	go func() {
 		logrus.Fatal(http.ListenAndServe("127.0.0.1:6061", nil))
 	}()
