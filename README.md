@@ -35,25 +35,6 @@ $ rio console
 $ rio info
 ```
 
-Note: Rio will use a [service loadbalancer](https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer) to expose the service mesh gateway.
-If your cluster doesn't support service load balancers, simply run `rio install --host-ports` to use host ports to expose gateway.
-
-If your host has multiple IP addresses, you can specify which IP address Rio should use for creating external DNS records with the `--ip-address` flag. For instance to advertise the external IP of an AWS instance: `rio install --ip-address $(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)`
-
-On start up, you can specify which feature to disable when installing rio. Simply run `rio install --disable-features autoscaling,build --disable-features letsencrypt`
-
-| Feature | Description |
-|----------|----------------|
-| autoscaling | Auto-scaling services based on QPS and requests load
-| build | Rio Build, from source code to deployment
-| grafana | Grafana Dashboard
-| istio | Service routing using Istio
-| kiali | Kiali Dashboard
-| letsencrypt | Let's Encrypt
-| mixer | Istio Mixer telemetry
-| prometheus | Enable prometheus
-| rdns | Assign cluster a hostname from public Rancher DNS service
-
 ## Documentation
 Detailed documentation can be found in [here](/docs/README.md).
 
