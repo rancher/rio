@@ -327,6 +327,11 @@ func (a *Add) addMatch(ctx *clicontext.CLIContext, matchString string, routeSpec
 		match.Cookies = stringMapToStringMatchMap(a.Cookie)
 	}
 
+	if len(a.Header) > 0 {
+		addMatch = true
+		match.Headers = stringMapToStringMatchMap(a.Header)
+	}
+
 	if addMatch {
 		routeSpec.Matches = append(routeSpec.Matches, match)
 	}
