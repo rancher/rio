@@ -462,12 +462,24 @@ username[]: $(your_docker_hub_username)
 password[]: $(password)
 ```
 
+To confirm this worked you can decode the contents of generated secret:
+
+```bash
+kubectl get secret dockerconfig-pull --output="jsonpath={.data.\.dockerconfigjson}" | base64 --decode
+```
+
 2. Create your workload. Set the correct push registry.
 
 ```bash
 $ rio run --build-registry docker.io --build-image-name $(username)/yourimagename $(repo)
 ```
-`docker.io/$(username)/yourimagename` will be pushed into dockerhub registry. 
+`docker.io/$(username)/yourimagename` will be pushed into dockerhub registry.
+
+If you'd like to pull your image from a private repository, rather than push an image, setup your docker secret as above then pull and run your image with:
+
+```bash
+$ rio run --image-pull-secrets=dockerconfig-pull $(repo)
+```
 
 #### Enable Pull request (experimental)
 Rio also allows you to configure pull request builds. This needs you to configure github webhook token correctly.
