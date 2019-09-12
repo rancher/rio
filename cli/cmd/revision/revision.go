@@ -72,7 +72,7 @@ func Revisions(ctx *clicontext.CLIContext) error {
 				service.Spec.Weight = appObj.Status.RevisionWeight[rev.Version].Weight
 				app, version := services.AppAndVersion(service)
 				output = append(output, ServiceData{
-					Name:    fmt.Sprintf("%s/%s", service.Namespace, app),
+					Name:    fmt.Sprintf("%s/%s:%s", service.Namespace, app, version),
 					Service: service,
 					Pods:    m[fmt.Sprintf("%s/%s/%s", service.Namespace, app, version)],
 				})
@@ -106,7 +106,7 @@ func Revisions(ctx *clicontext.CLIContext) error {
 				service.Spec.Weight = app.Status.RevisionWeight[rev.Version].Weight
 				appName, version := services.AppAndVersion(service)
 				output = append(output, ServiceData{
-					Name:    fmt.Sprintf("%s/%s", service.Namespace, app),
+					Name:    fmt.Sprintf("%s/%s:%s", service.Namespace, appName, version),
 					Service: service,
 					Pods:    m[fmt.Sprintf("%s/%s/%s", app.Namespace, appName, version)],
 				})
