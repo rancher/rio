@@ -27,6 +27,7 @@ type GitWatcherSpec struct {
 	ReceiverURL                    string            `json:"receiverURL,omitempty"`
 	RepositoryURL                  string            `json:"repositoryUrl,omitempty"`
 	RepositoryCredentialSecretName string            `json:"repositoryCredentialSecretName,omitempty"`
+	GithubWebhookToken             string            `json:"githubWebhookToken,omitempty"`
 	Provider                       string            `json:"provider,omitempty"`
 	Push                           bool              `json:"push,omitempty"`
 	PR                             bool              `json:"pr,omitempty"`
@@ -34,6 +35,7 @@ type GitWatcherSpec struct {
 	Branch                         string            `json:"branch,omitempty"`
 	ExecutionLabels                map[string]string `json:"executionLabels,omitempty"`
 	Enabled                        bool              `json:"enabled,omitempty"`
+	GithubDeployment               bool              `json:"githubDeployment,omitempty"`
 }
 
 // +genclient
@@ -48,6 +50,7 @@ type GitCommit struct {
 }
 
 type GitCommitSpec struct {
+	Action         string `json:"action,omitempty"`
 	Payload        string `json:"payload,omitempty"`
 	GitWatcherName string `json:"gitWatcherName,omitempty"`
 	Commit         string `json:"commit,omitempty"`
@@ -55,6 +58,7 @@ type GitCommitSpec struct {
 	Tag            string `json:"tag,omitempty"`
 	PR             string `json:"pr,omitempty"`
 	Merged         bool   `json:"merged,omitempty"`
+	Closed         bool   `json:"closed,omitempty"`
 	SourceLink     string `json:"sourceLink,omitempty"`
 	RepositoryURL  string `json:"repositoryUrl,omitempty"`
 	Title          string `json:"title,omitempty"`
@@ -71,10 +75,19 @@ type GitWatcherStatus struct {
 	FirstCommit string      `json:"firstCommit,omitempty"`
 }
 
+type GithubStatus struct {
+	DeploymentID    int64  `json:"deploymentId,omitempty"`
+	DeploymentState string `json:"deploymentState,omitempty"`
+	EnvironmentURL  string `json:"environmentUrl,omitempty"`
+	LogURL          string `json:"logUrl,omitempty"`
+}
+
 type GitCommitStatus struct {
-	Conditions    []Condition `json:"conditions,omitempty"`
-	StatusURL     string      `json:"statusUrl,omitempty"`
-	AppliedStatus string      `json:"appliedStatus,omitempty"`
+	Conditions    []Condition   `json:"conditions,omitempty"`
+	StatusURL     string        `json:"statusUrl,omitempty"`
+	AppliedStatus string        `json:"appliedStatus,omitempty"`
+	BuildStatus   string        `json:"buildStatus,omitempty"`
+	GithubStatus  *GithubStatus `json:"githubStatus,omitempty"`
 }
 
 type Condition struct {

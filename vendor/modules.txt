@@ -454,7 +454,7 @@ github.com/prometheus/procfs/internal/fs
 github.com/rancher/axe/throwing
 github.com/rancher/axe/throwing/datafeeder
 github.com/rancher/axe/throwing/types
-# github.com/rancher/gitwatcher v0.3.0
+# github.com/rancher/gitwatcher v0.4.1
 github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1
 github.com/rancher/gitwatcher/pkg/generated/controllers/gitwatcher.cattle.io/v1
 github.com/rancher/gitwatcher/pkg/generated/controllers/gitwatcher.cattle.io
@@ -479,7 +479,7 @@ github.com/rancher/mapper/httperror
 # github.com/rancher/rdns-server v0.4.2
 github.com/rancher/rdns-server/client
 github.com/rancher/rdns-server/model
-# github.com/rancher/wrangler v0.1.6-0.20190816172853-95ab7af39785
+# github.com/rancher/wrangler v0.1.7-0.20190824203417-e7b6ecb74e90
 github.com/rancher/wrangler/pkg/signals
 github.com/rancher/wrangler/pkg/yaml
 github.com/rancher/wrangler/pkg/kv

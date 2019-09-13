@@ -27,6 +27,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+var (
+	ServiceScaleRecommendationResourceName = "servicescalerecommendations"
+)
+
 // SchemeGroupVersion is group version used to register these objects
 var SchemeGroupVersion = schema.GroupVersion{Group: autoscale.GroupName, Version: "v1"}
 

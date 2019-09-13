@@ -11,6 +11,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -41,6 +43,15 @@ type Apply interface {
 	WithListerNamespace(ns string) Apply
 	WithRateLimiting(ratelimitingQps float32) Apply
 	WithNoDelete() Apply
+}
+
+func NewForConfig(cfg *rest.Config) (Apply, error) {
+	k8s, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return New(k8s.Discovery(), NewClientFactory(cfg)), nil
 }
 
 func New(discovery discovery.DiscoveryInterface, cf ClientFactory, igs ...InformerGetter) Apply {

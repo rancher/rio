@@ -84,8 +84,8 @@ func (h Handler) onChangeService(key string, obj *webhookv1.GitCommit, gitWatche
 			Spec: *specCopy,
 		})
 
-		if obj.Spec.PR != "" && obj.Spec.Merged {
-			logrus.Infof("PR %s is merged, deleting revision, name: %s, namespace: %s, revision: %s", obj.Spec.PR, newService.Name, newService.Namespace, obj.Spec.Commit)
+		if obj.Spec.PR != "" && (obj.Spec.Merged || obj.Spec.Closed) {
+			logrus.Infof("PR %s is merged/closed, deleting revision, name: %s, namespace: %s, revision: %s", obj.Spec.PR, newService.Name, newService.Namespace, obj.Spec.Commit)
 			if err := h.services.Delete(newService.Namespace, newService.Name, &v1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
 				return obj, err
 			}
@@ -95,10 +95,12 @@ func (h Handler) onChangeService(key string, obj *webhookv1.GitCommit, gitWatche
 		logrus.Infof("Creating/Updating service revision, name: %s, namespace: %s, revision: %s", newService.Name, newService.Namespace, obj.Spec.Commit)
 		if existing, err := h.services.Get(newService.Namespace, newService.Name, v1.GetOptions{}); err == nil {
 			existing.Spec = newService.Spec
+			existing.Status.GitCommitName = obj.Name
 			if _, err := h.services.Update(existing); err != nil {
 				return obj, err
 			}
 		} else if errors.IsNotFound(err) {
+			newService.Status.GitCommitName = obj.Name
 			if _, err := h.services.Create(newService); err != nil {
 				return obj, err
 			}
