@@ -27,6 +27,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+var (
+	GitCommitResourceName  = "gitcommits"
+	GitWatcherResourceName = "gitwatchers"
+)
+
 // SchemeGroupVersion is group version used to register these objects
 var SchemeGroupVersion = schema.GroupVersion{Group: gitwatcher.GroupName, Version: "v1"}
 
