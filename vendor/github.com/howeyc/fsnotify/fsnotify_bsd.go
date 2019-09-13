@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// +build freebsd openbsd netbsd dragonfly darwin
+// +build freebsd openbsd netbsd darwin
 
 package fsnotify
 
@@ -79,6 +79,8 @@ type Watcher struct {
 	Event           chan *FileEvent     // Events are returned on this channel
 	done            chan bool           // Channel for sending a "quit message" to the reader goroutine
 	isClosed        bool                // Set to true when Close() is first called
+	kbuf            [1]syscall.Kevent_t // An event buffer for Add/Remove watch
+	bufmut          sync.Mutex          // Protects access to kbuf.
 }
 
 // NewWatcher creates and returns a new kevent instance using kqueue(2)
@@ -121,9 +123,9 @@ func (w *Watcher) Close() error {
 
 	// Send "quit" message to the reader goroutine
 	w.done <- true
-	w.wmut.Lock()
+	w.pmut.Lock()
 	ws := w.watches
-	w.wmut.Unlock()
+	w.pmut.Unlock()
 	for path := range ws {
 		w.removeWatch(path)
 	}
@@ -205,13 +207,15 @@ func (w *Watcher) addWatch(path string, flags uint32) error {
 	w.enFlags[path] = flags
 	w.enmut.Unlock()
 
-	var kbuf [1]syscall.Kevent_t
-	watchEntry := &kbuf[0]
+	w.bufmut.Lock()
+	watchEntry := &w.kbuf[0]
 	watchEntry.Fflags = flags
 	syscall.SetKevent(watchEntry, watchfd, syscall.EVFILT_VNODE, syscall.EV_ADD|syscall.EV_CLEAR)
 	entryFlags := watchEntry.Flags
-	success, errno := syscall.Kevent(w.kq, kbuf[:], nil, nil)
-	if success == -1 {
+	w.bufmut.Unlock()
+
+	wd, errno := syscall.Kevent(w.kq, w.kbuf[:], nil, nil)
+	if wd == -1 {
 		return errno
 	} else if (entryFlags & syscall.EV_ERROR) == syscall.EV_ERROR {
 		return errors.New("kevent add error")
@@ -242,14 +246,14 @@ func (w *Watcher) removeWatch(path string) error {
 	if !ok {
 		return errors.New(fmt.Sprintf("can't remove non-existent kevent watch for: %s", path))
 	}
-	var kbuf [1]syscall.Kevent_t
-	watchEntry := &kbuf[0]
+	w.bufmut.Lock()
+	watchEntry := &w.kbuf[0]
 	syscall.SetKevent(watchEntry, watchfd, syscall.EVFILT_VNODE, syscall.EV_DELETE)
-	entryFlags := watchEntry.Flags
-	success, errno := syscall.Kevent(w.kq, kbuf[:], nil, nil)
+	success, errno := syscall.Kevent(w.kq, w.kbuf[:], nil, nil)
+	w.bufmut.Unlock()
 	if success == -1 {
 		return os.NewSyscallError("kevent_rm_watch", errno)
-	} else if (entryFlags & syscall.EV_ERROR) == syscall.EV_ERROR {
+	} else if (watchEntry.Flags & syscall.EV_ERROR) == syscall.EV_ERROR {
 		return errors.New("kevent rm error")
 	}
 	syscall.Close(watchfd)

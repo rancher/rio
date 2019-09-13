@@ -12,6 +12,7 @@ import (
 	io "io"
 	v1alpha3 "istio.io/api/networking/v1alpha3"
 	math "math"
+	math_bits "math/bits"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -115,6 +116,34 @@ func (MeshConfig_AccessLogEncoding) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_b5c7ece76d5d5022, []int{0, 2}
 }
 
+// Default Policy for upgrading http1.1 connections to http2.
+type MeshConfig_H2UpgradePolicy int32
+
+const (
+	// Do not upgrade connections to http2.
+	MeshConfig_DO_NOT_UPGRADE MeshConfig_H2UpgradePolicy = 0
+	// Upgrade the connections to http2.
+	MeshConfig_UPGRADE MeshConfig_H2UpgradePolicy = 1
+)
+
+var MeshConfig_H2UpgradePolicy_name = map[int32]string{
+	0: "DO_NOT_UPGRADE",
+	1: "UPGRADE",
+}
+
+var MeshConfig_H2UpgradePolicy_value = map[string]int32{
+	"DO_NOT_UPGRADE": 0,
+	"UPGRADE":        1,
+}
+
+func (x MeshConfig_H2UpgradePolicy) String() string {
+	return proto.EnumName(MeshConfig_H2UpgradePolicy_name, int32(x))
+}
+
+func (MeshConfig_H2UpgradePolicy) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_b5c7ece76d5d5022, []int{0, 3}
+}
+
 type MeshConfig_OutboundTrafficPolicy_Mode int32
 
 const (
@@ -183,6 +212,16 @@ type MeshConfig struct {
 	ProxyHttpPort int32 `protobuf:"varint,5,opt,name=proxy_http_port,json=proxyHttpPort,proto3" json:"proxy_http_port,omitempty"`
 	// Connection timeout used by Envoy. (MUST BE >=1ms)
 	ConnectTimeout *types.Duration `protobuf:"bytes,6,opt,name=connect_timeout,json=connectTimeout,proto3" json:"connect_timeout,omitempty"`
+	// Automatic protocol detection uses a set of heuristics to
+	// determine whether the connection is using TLS or not (on the
+	// server side), as well as the application protocol being used
+	// (e.g., http vs tcp). These heuristics rely on the client sending
+	// the first bits of data. For server first protocols like MySQL,
+	// MongoDB, etc., Envoy will timeout on the protocol detection after
+	// the specified period, defaulting to non mTLS plain TCP
+	// traffic. Set this field to tweak the period that Envoy will wait
+	// for the client to send the first bits of data. (MUST BE >=1ms)
+	ProtocolDetectionTimeout *types.Duration `protobuf:"bytes,42,opt,name=protocol_detection_timeout,json=protocolDetectionTimeout,proto3" json:"protocol_detection_timeout,omitempty"`
 	// If set then set SO_KEEPALIVE on the socket to enable TCP Keepalives.
 	TcpKeepalive *v1alpha3.ConnectionPoolSettings_TCPSettings_TcpKeepalive `protobuf:"bytes,28,opt,name=tcp_keepalive,json=tcpKeepalive,proto3" json:"tcp_keepalive,omitempty"`
 	// Class of ingress resources to be processed by Istio ingress
@@ -209,6 +248,10 @@ type MeshConfig struct {
 	// Encoding for the proxy access log (text or json).
 	// Default value is text.
 	AccessLogEncoding MeshConfig_AccessLogEncoding `protobuf:"varint,27,opt,name=access_log_encoding,json=accessLogEncoding,proto3,enum=istio.mesh.v1alpha1.MeshConfig_AccessLogEncoding" json:"access_log_encoding,omitempty"`
+	// This flag enables Envoy's gRPC Access Log Service.
+	// See [Access Log Service](https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/accesslog/v2/als.proto)
+	// for details about Envoy's gRPC Access Log Service API.
+	EnableEnvoyAccessLogService bool `protobuf:"varint,40,opt,name=enable_envoy_access_log_service,json=enableEnvoyAccessLogService,proto3" json:"enable_envoy_access_log_service,omitempty"`
 	// Default proxy config used by the proxy injection mechanism operating in the mesh
 	// (e.g. Kubernetes admission controller)
 	// In case of Kubernetes, the proxy config is applied once during the injection process,
@@ -237,6 +280,18 @@ type MeshConfig struct {
 	// rules, and other Istio configuration artifacts. Multiple data sources
 	// can be configured for a single control plane.
 	ConfigSources []*ConfigSource `protobuf:"bytes,22,rep,name=config_sources,json=configSources,proto3" json:"config_sources,omitempty"`
+	// This flag is used to enable mutual TLS automatically for service to service communication
+	// within the mesh, default false.
+	// If set to true, and a given service does not have a corresponding DestinationRule configured,
+	// or its DestinationRule does not have TLSSettings specified, Istio configures client side
+	// TLS configuration appropriately. More specifically,
+	// If the upstream authentication policy is in STRICT mode, use Istio provisioned certificate
+	// for mutual TLS to connect to upstream.
+	// If upstream service is in plain text mode, use plain text.
+	// If the upstream authentication policy is in PERMISSIVE mode, Istio configures clients to use
+	// mutual TLS when server sides are capable of accepting mutual TLS traffic.
+	// If service DestinationRule exists and has TLSSettings specified, that is always used instead.
+	EnableAutoMtls *types.BoolValue `protobuf:"bytes,43,opt,name=enable_auto_mtls,json=enableAutoMtls,proto3" json:"enable_auto_mtls,omitempty"`
 	// $hide_from_docs
 	// This flag is used by secret discovery service(SDS).
 	// If set to true ([prerequisite](https://kubernetes.io/docs/concepts/storage/volumes/#projected)), Istio will inject volumes mount
@@ -256,7 +311,6 @@ type MeshConfig struct {
 	// Refer to [SPIFEE-ID](https://github.com/spiffe/spiffe/blob/master/standards/SPIFFE-ID.md#21-trust-domain)
 	// Fallback to old identity format(without trust domain) if not set.
 	TrustDomain string `protobuf:"bytes,26,opt,name=trust_domain,json=trustDomain,proto3" json:"trust_domain,omitempty"`
-	// $hide_from_docs
 	// The default value for the ServiceEntry.export_to field and services
 	// imported through container registry integrations, e.g. this applies to
 	// Kubernetes Service resources. The value is a list of namespace names and
@@ -282,21 +336,18 @@ type MeshConfig struct {
 	// For further discussion see the reference documentation for ServiceEntry,
 	// Sidecar, and Gateway.
 	DefaultServiceExportTo []string `protobuf:"bytes,31,rep,name=default_service_export_to,json=defaultServiceExportTo,proto3" json:"default_service_export_to,omitempty"`
-	// $hide_from_docs
 	// The default value for the VirtualService.export_to field. Has the same
 	// syntax as 'default_service_export_to'.
 	//
 	// If not set the system will use "*" as the default value which implies that
 	// virtual services are exported to all namespaces
 	DefaultVirtualServiceExportTo []string `protobuf:"bytes,32,rep,name=default_virtual_service_export_to,json=defaultVirtualServiceExportTo,proto3" json:"default_virtual_service_export_to,omitempty"`
-	// $hide_from_docs
 	// The default value for the DestinationRule.export_to field. Has the same
 	// syntax as 'default_service_export_to'.
 	//
 	// If not set the system will use "*" as the default value which implies that
 	// destination rules are exported to all namespaces
 	DefaultDestinationRuleExportTo []string `protobuf:"bytes,33,rep,name=default_destination_rule_export_to,json=defaultDestinationRuleExportTo,proto3" json:"default_destination_rule_export_to,omitempty"`
-	// $hide_from_docs
 	// The namespace to treat as the administrative root namespace for
 	// Istio configuration. When processing a leaf namespace Istio will search for
 	// declarations in that namespace first and if none are found it will
@@ -305,20 +356,60 @@ type MeshConfig struct {
 	//
 	// The precise semantics of this processing are documented on each resource
 	// type.
-	//
-	// There is no default value for this flag in 1.1 but in later releases it
-	// is expected to default to a new namespace, `istio-config`, which is
-	// maintained separately from the `istio-system` namespace where an instance
-	// of the control plane runtime is deployed. This separates the concerns of
-	// configuring the control-plane runtime from configuration of the mesh.
 	RootNamespace string `protobuf:"bytes,34,opt,name=root_namespace,json=rootNamespace,proto3" json:"root_namespace,omitempty"`
 	// Locality based load balancing distribution or failover settings.
 	LocalityLbSetting *LocalityLoadBalancerSetting `protobuf:"bytes,35,opt,name=locality_lb_setting,json=localityLbSetting,proto3" json:"locality_lb_setting,omitempty"`
 	// Configures DNS refresh rate for Envoy clusters of type STRICT_DNS
-	DnsRefreshRate       *types.Duration `protobuf:"bytes,36,opt,name=dns_refresh_rate,json=dnsRefreshRate,proto3" json:"dns_refresh_rate,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
+	DnsRefreshRate *types.Duration `protobuf:"bytes,36,opt,name=dns_refresh_rate,json=dnsRefreshRate,proto3" json:"dns_refresh_rate,omitempty"`
+	// The flag to disable report batch.
+	DisableReportBatch bool `protobuf:"varint,37,opt,name=disable_report_batch,json=disableReportBatch,proto3" json:"disable_report_batch,omitempty"`
+	// When disable_report_batch is false, this value specifies the maximum number
+	// of requests that are batched in report. If left unspecified, the default value
+	// of report_batch_max_entries == 0 will use the hardcoded defaults of
+	// istio::mixerclient::ReportOptions.
+	ReportBatchMaxEntries uint32 `protobuf:"varint,38,opt,name=report_batch_max_entries,json=reportBatchMaxEntries,proto3" json:"report_batch_max_entries,omitempty"`
+	// When disable_report_batch is false, this value specifies the maximum elapsed
+	// time a batched report will be sent after a user request is processed. If left
+	// unspecified, the default report_batch_max_time == 0 will use the hardcoded
+	// defaults of istio::mixerclient::ReportOptions.
+	ReportBatchMaxTime *types.Duration `protobuf:"bytes,39,opt,name=report_batch_max_time,json=reportBatchMaxTime,proto3" json:"report_batch_max_time,omitempty"`
+	// Specify if http1.1 connections should be upgraded to http2 by default.
+	// if sidecar is installed on all pods in the mesh, then this should be set to UPGRADE.
+	// If one or more services or namespaces do not have sidecar(s), then this should be set to DO_NOT_UPGRADE.
+	// It can be enabled by destination using the destinationRule.trafficPolicy.connectionPool.http.h2UpgradePolicy override.
+	H2UpgradePolicy MeshConfig_H2UpgradePolicy `protobuf:"varint,41,opt,name=h2_upgrade_policy,json=h2UpgradePolicy,proto3,enum=istio.mesh.v1alpha1.MeshConfig_H2UpgradePolicy" json:"h2_upgrade_policy,omitempty"`
+	// Name to be used while emitting statistics for inbound clusters.
+	// By default, Istio emits statistics with the pattern inbound|<port>|<port-name>|<service-FQDN>.
+	// For example inbound|7443|grpc-reviews|reviews.prod.svc.cluster.local. This can be used to override that pattern.
+	//
+	// A Pattern can be composed of various pre-defined variables. The following variables are supported.
+	// %SERVICE% - Will be substituted with name of the service.
+	// %SERVICE_FQDN% - Will be substituted with FQDN of the service.
+	// %SERVICE_PORT% - Will be substituted with port of the service.
+	// %SERVICE_PORT_NAME% - Will be substituted with port name of the service.
+	//
+	// Following are some examples of supported patterns for reviews.
+	// %SERVICE_FQDN%_%SERVICE_PORT% will use reviews.prod.svc.cluster.local_7443 as the stats name.
+	// %SERVICE% will use reviews.prod as the stats name.
+	InboundClusterStatName string `protobuf:"bytes,44,opt,name=inbound_cluster_stat_name,json=inboundClusterStatName,proto3" json:"inbound_cluster_stat_name,omitempty"`
+	// Name to be used while emitting statistics for outbound clusters.
+	// By default, Istio emits statistics with the pattern outbound|<port>|<subsetname>|<service-FQDN>.
+	// For example outbound|8080|v2|reviews.prod.svc.cluster.local. This can be used to override that pattern.
+	//
+	// A Pattern can be composed of various pre-defined variables. The following variables are supported.
+	// %SERVICE% - Will be substituted with name of the service.
+	// %SERVICE_FQDN% - Will be substituted with FQDN of the service.
+	// %SERVICE_PORT% - Will be substituted with port of the service.
+	// %SERVICE_PORT_NAME% - Will be substituted with port name of the service.
+	// %SUBSET_NAME% - Will be substituted with subset.
+	//
+	// Following are some examples of supported patterns for reviews.
+	// %SERVICE_FQDN%_%SERVICE_PORT% will use reviews.prod.svc.cluster.local_7443 as the stats name.
+	// %SERVICE% will use reviews.prod as the stats name.
+	OutboundClusterStatName string   `protobuf:"bytes,45,opt,name=outbound_cluster_stat_name,json=outboundClusterStatName,proto3" json:"outbound_cluster_stat_name,omitempty"`
+	XXX_NoUnkeyedLiteral    struct{} `json:"-"`
+	XXX_unrecognized        []byte   `json:"-"`
+	XXX_sizecache           int32    `json:"-"`
 }
 
 func (m *MeshConfig) Reset()         { *m = MeshConfig{} }
@@ -335,7 +426,7 @@ func (m *MeshConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_MeshConfig.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -406,6 +497,13 @@ func (m *MeshConfig) GetProxyHttpPort() int32 {
 func (m *MeshConfig) GetConnectTimeout() *types.Duration {
 	if m != nil {
 		return m.ConnectTimeout
+	}
+	return nil
+}
+
+func (m *MeshConfig) GetProtocolDetectionTimeout() *types.Duration {
+	if m != nil {
+		return m.ProtocolDetectionTimeout
 	}
 	return nil
 }
@@ -482,6 +580,13 @@ func (m *MeshConfig) GetAccessLogEncoding() MeshConfig_AccessLogEncoding {
 	return MeshConfig_TEXT
 }
 
+func (m *MeshConfig) GetEnableEnvoyAccessLogService() bool {
+	if m != nil {
+		return m.EnableEnvoyAccessLogService
+	}
+	return false
+}
+
 func (m *MeshConfig) GetDefaultConfig() *ProxyConfig {
 	if m != nil {
 		return m.DefaultConfig
@@ -529,6 +634,13 @@ func (m *MeshConfig) GetSdsRefreshDelay() *types.Duration {
 func (m *MeshConfig) GetConfigSources() []*ConfigSource {
 	if m != nil {
 		return m.ConfigSources
+	}
+	return nil
+}
+
+func (m *MeshConfig) GetEnableAutoMtls() *types.BoolValue {
+	if m != nil {
+		return m.EnableAutoMtls
 	}
 	return nil
 }
@@ -596,6 +708,48 @@ func (m *MeshConfig) GetDnsRefreshRate() *types.Duration {
 	return nil
 }
 
+func (m *MeshConfig) GetDisableReportBatch() bool {
+	if m != nil {
+		return m.DisableReportBatch
+	}
+	return false
+}
+
+func (m *MeshConfig) GetReportBatchMaxEntries() uint32 {
+	if m != nil {
+		return m.ReportBatchMaxEntries
+	}
+	return 0
+}
+
+func (m *MeshConfig) GetReportBatchMaxTime() *types.Duration {
+	if m != nil {
+		return m.ReportBatchMaxTime
+	}
+	return nil
+}
+
+func (m *MeshConfig) GetH2UpgradePolicy() MeshConfig_H2UpgradePolicy {
+	if m != nil {
+		return m.H2UpgradePolicy
+	}
+	return MeshConfig_DO_NOT_UPGRADE
+}
+
+func (m *MeshConfig) GetInboundClusterStatName() string {
+	if m != nil {
+		return m.InboundClusterStatName
+	}
+	return ""
+}
+
+func (m *MeshConfig) GetOutboundClusterStatName() string {
+	if m != nil {
+		return m.OutboundClusterStatName
+	}
+	return ""
+}
+
 type MeshConfig_OutboundTrafficPolicy struct {
 	Mode                 MeshConfig_OutboundTrafficPolicy_Mode `protobuf:"varint,1,opt,name=mode,proto3,enum=istio.mesh.v1alpha1.MeshConfig_OutboundTrafficPolicy_Mode" json:"mode,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                              `json:"-"`
@@ -617,7 +771,7 @@ func (m *MeshConfig_OutboundTrafficPolicy) XXX_Marshal(b []byte, deterministic b
 		return xxx_messageInfo_MeshConfig_OutboundTrafficPolicy.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -674,7 +828,7 @@ func (m *ConfigSource) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return xxx_messageInfo_ConfigSource.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -712,7 +866,7 @@ func (m *ConfigSource) GetTlsSettings() *v1alpha3.TLSSettings {
 // traffic originates and where it will terminate. These localities are
 // specified using arbitrary labels that designate a hierarchy of localities in
 // {region}/{zone}/{sub-zone} form. For additional detail refer to
-// [Locality Weight](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/load_balancing/locality_weight)
+// [Locality Weight](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/locality_weight)
 // The following example shows how to setup locality weights mesh-wide.
 //
 // Given a mesh with workloads and their service deployed to "us-west/zone1/*"
@@ -757,7 +911,7 @@ func (m *ConfigSource) GetTlsSettings() *v1alpha3.TLSSettings {
 type LocalityLoadBalancerSetting struct {
 	// Optional: only one of distribute or failover can be set.
 	// Explicitly specify loadbalancing weight across different zones and geographical locations.
-	// Refer to [Locality weighted load balancing](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/load_balancing/locality_weight)
+	// Refer to [Locality weighted load balancing](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/locality_weight)
 	// If empty, the locality weight is set according to the endpoints number within it.
 	Distribute []*LocalityLoadBalancerSetting_Distribute `protobuf:"bytes,1,rep,name=distribute,proto3" json:"distribute,omitempty"`
 	// Optional: only failover or distribute can be set.
@@ -784,7 +938,7 @@ func (m *LocalityLoadBalancerSetting) XXX_Marshal(b []byte, deterministic bool) 
 		return xxx_messageInfo_LocalityLoadBalancerSetting.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -852,7 +1006,7 @@ func (m *LocalityLoadBalancerSetting_Distribute) XXX_Marshal(b []byte, determini
 		return xxx_messageInfo_LocalityLoadBalancerSetting_Distribute.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -917,7 +1071,7 @@ func (m *LocalityLoadBalancerSetting_Failover) XXX_Marshal(b []byte, determinist
 		return xxx_messageInfo_LocalityLoadBalancerSetting_Failover.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -954,6 +1108,7 @@ func init() {
 	proto.RegisterEnum("istio.mesh.v1alpha1.MeshConfig_IngressControllerMode", MeshConfig_IngressControllerMode_name, MeshConfig_IngressControllerMode_value)
 	proto.RegisterEnum("istio.mesh.v1alpha1.MeshConfig_AuthPolicy", MeshConfig_AuthPolicy_name, MeshConfig_AuthPolicy_value)
 	proto.RegisterEnum("istio.mesh.v1alpha1.MeshConfig_AccessLogEncoding", MeshConfig_AccessLogEncoding_name, MeshConfig_AccessLogEncoding_value)
+	proto.RegisterEnum("istio.mesh.v1alpha1.MeshConfig_H2UpgradePolicy", MeshConfig_H2UpgradePolicy_name, MeshConfig_H2UpgradePolicy_value)
 	proto.RegisterEnum("istio.mesh.v1alpha1.MeshConfig_OutboundTrafficPolicy_Mode", MeshConfig_OutboundTrafficPolicy_Mode_name, MeshConfig_OutboundTrafficPolicy_Mode_value)
 	proto.RegisterType((*MeshConfig)(nil), "istio.mesh.v1alpha1.MeshConfig")
 	proto.RegisterType((*MeshConfig_OutboundTrafficPolicy)(nil), "istio.mesh.v1alpha1.MeshConfig.OutboundTrafficPolicy")
@@ -967,106 +1122,122 @@ func init() {
 func init() { proto.RegisterFile("mesh/v1alpha1/config.proto", fileDescriptor_b5c7ece76d5d5022) }
 
 var fileDescriptor_b5c7ece76d5d5022 = []byte{
-	// 1482 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x57, 0xdd, 0x72, 0xdb, 0xb8,
-	0x15, 0x0e, 0x65, 0x25, 0x96, 0x8f, 0x7e, 0x4c, 0x41, 0x71, 0x96, 0x56, 0xba, 0x5e, 0x59, 0xdb,
-	0x24, 0x1a, 0x4f, 0x87, 0x6e, 0xec, 0xd9, 0x99, 0x64, 0x7b, 0x65, 0x4b, 0xf2, 0xc6, 0x5e, 0xd9,
-	0xf2, 0x50, 0x74, 0xda, 0xb4, 0x17, 0x28, 0x4c, 0x42, 0x12, 0x6a, 0x8a, 0xe0, 0x10, 0xa0, 0x13,
-	0xbd, 0x53, 0xdb, 0xe9, 0x63, 0xf4, 0xb2, 0x8f, 0xd0, 0xc9, 0x93, 0x74, 0x08, 0x90, 0x96, 0xe2,
-	0xd5, 0xac, 0xbb, 0xed, 0x9d, 0xf0, 0x9d, 0xef, 0x7c, 0x20, 0xce, 0xf9, 0x70, 0x48, 0x41, 0x73,
-	0x46, 0xc5, 0x74, 0xff, 0xf6, 0x35, 0x09, 0xa2, 0x29, 0x79, 0xbd, 0xef, 0xf1, 0x70, 0xcc, 0x26,
-	0x76, 0x14, 0x73, 0xc9, 0x51, 0x83, 0x09, 0xc9, 0xb8, 0x9d, 0x32, 0xec, 0x9c, 0xd1, 0xdc, 0x99,
-	0x70, 0x3e, 0x09, 0xe8, 0xbe, 0xa2, 0x5c, 0x27, 0xe3, 0x7d, 0x3f, 0x89, 0x89, 0x64, 0x3c, 0xd4,
-	0x49, 0xcd, 0xed, 0x2f, 0x05, 0xa3, 0x98, 0x7f, 0x9a, 0x67, 0xa1, 0xbd, 0x90, 0xca, 0x8f, 0x3c,
-	0xbe, 0x61, 0xe1, 0x24, 0x27, 0x1c, 0xee, 0xfb, 0x54, 0x48, 0x16, 0x2a, 0x05, 0x1c, 0x27, 0x01,
-	0xd5, 0xdc, 0xf6, 0xdf, 0x1b, 0x00, 0xe7, 0x54, 0x4c, 0xbb, 0xea, 0x81, 0xd0, 0x6f, 0x00, 0xcd,
-	0xd8, 0x27, 0x1a, 0x63, 0x6f, 0x4a, 0xbd, 0x1b, 0x2c, 0x68, 0x7c, 0x4b, 0x63, 0xcb, 0x68, 0x19,
-	0x9d, 0x0d, 0xc7, 0x54, 0x91, 0x6e, 0x1a, 0x18, 0x29, 0x1c, 0xd9, 0xd0, 0xd0, 0xec, 0x98, 0x46,
-	0x3c, 0x96, 0x39, 0xbd, 0xa0, 0xe8, 0x75, 0x15, 0x72, 0x54, 0x24, 0xe3, 0x1f, 0xc0, 0x96, 0xcf,
-	0x04, 0xb9, 0x0e, 0x28, 0x8e, 0x78, 0xc0, 0xbc, 0xb9, 0xde, 0x46, 0x58, 0x6b, 0x2d, 0xa3, 0x53,
-	0x72, 0x1a, 0x59, 0xf0, 0x52, 0xc5, 0xd4, 0x46, 0x02, 0x1d, 0xc2, 0xb3, 0x65, 0x2e, 0x1e, 0x13,
-	0x16, 0x60, 0x1e, 0xd1, 0xd0, 0xda, 0xd6, 0x49, 0xd1, 0x82, 0x7d, 0x42, 0x58, 0x30, 0x8c, 0x68,
-	0x88, 0x2e, 0xe1, 0x85, 0x60, 0x3e, 0xf5, 0x48, 0x8c, 0x25, 0xc7, 0x92, 0x06, 0x74, 0x46, 0x65,
-	0x3c, 0xc7, 0x82, 0x0a, 0x91, 0x16, 0x80, 0x8c, 0xc7, 0x2c, 0x64, 0x72, 0x6e, 0xed, 0x28, 0x8d,
-	0xdd, 0x8c, 0xec, 0x72, 0x37, 0xa7, 0x8e, 0x34, 0xf3, 0x28, 0x23, 0xa2, 0x3d, 0xa8, 0xab, 0x12,
-	0xe3, 0x80, 0x09, 0x49, 0x43, 0x9c, 0x9e, 0xca, 0x2a, 0xb6, 0x8c, 0xce, 0x63, 0x67, 0x53, 0x05,
-	0x06, 0x0a, 0xbf, 0xe4, 0xb1, 0x44, 0x2f, 0x41, 0x43, 0x78, 0x2a, 0x65, 0xa4, 0x99, 0x8f, 0x15,
-	0xb3, 0xaa, 0xe0, 0x77, 0x52, 0x46, 0x8a, 0x77, 0x0c, 0x9b, 0x1e, 0x0f, 0x43, 0xea, 0x49, 0x2c,
-	0xd9, 0x8c, 0xf2, 0x44, 0x5a, 0x4f, 0x5a, 0x46, 0xa7, 0x7c, 0xb0, 0x6d, 0xeb, 0xe6, 0xdb, 0x79,
-	0xf3, 0xed, 0x5e, 0xd6, 0x7c, 0xa7, 0x96, 0x65, 0xb8, 0x3a, 0x01, 0x71, 0xa8, 0x4a, 0x2f, 0xc2,
-	0x37, 0x94, 0x46, 0x24, 0x60, 0xb7, 0xd4, 0xfa, 0x95, 0x52, 0x38, 0xb3, 0xb5, 0xa7, 0x16, 0x4e,
-	0xc8, 0x9d, 0x75, 0x68, 0x77, 0xb5, 0x02, 0xe3, 0xe1, 0x25, 0xe7, 0xc1, 0x88, 0x4a, 0xc9, 0xc2,
-	0x89, 0xb0, 0xdd, 0xee, 0xe5, 0xe2, 0xb7, 0x17, 0xfd, 0x98, 0x2b, 0x3a, 0x15, 0xb9, 0xb4, 0x42,
-	0xdf, 0x42, 0x95, 0x85, 0x93, 0x98, 0x0a, 0x81, 0xbd, 0x80, 0x08, 0x61, 0xad, 0xab, 0x6e, 0x57,
-	0x32, 0xb0, 0x9b, 0x62, 0xe8, 0x15, 0x6c, 0xe6, 0xa4, 0xd4, 0x13, 0xcc, 0xa3, 0x56, 0x49, 0xd1,
-	0x6a, 0x19, 0x3c, 0xd2, 0x28, 0x9a, 0xc1, 0x57, 0x77, 0x6a, 0x3c, 0x94, 0x31, 0x0f, 0x02, 0x1a,
-	0xe3, 0x19, 0xf7, 0xa9, 0xb5, 0xd1, 0x32, 0x3a, 0xb5, 0x83, 0xef, 0xec, 0x15, 0x97, 0xc3, 0x5e,
-	0x38, 0xd6, 0x3e, 0xcd, 0xf6, 0xbd, 0xcb, 0x3e, 0xe7, 0x3e, 0x75, 0xb6, 0xd8, 0x2a, 0x18, 0x0d,
-	0xa1, 0x4c, 0x12, 0x39, 0xcd, 0xdc, 0x67, 0x81, 0xda, 0x62, 0xef, 0xa1, 0x2d, 0x8e, 0x12, 0x39,
-	0xd5, 0x9e, 0x3c, 0x2e, 0x58, 0x86, 0x03, 0xe4, 0x6e, 0x8d, 0x4e, 0xa1, 0x1e, 0xfb, 0x02, 0xc7,
-	0x74, 0x1c, 0x53, 0x31, 0xc5, 0x3e, 0x0d, 0xc8, 0xdc, 0x2a, 0x3f, 0xd0, 0x44, 0xa5, 0xb2, 0x19,
-	0xfb, 0xc2, 0xd1, 0x69, 0xbd, 0x34, 0x0b, 0xbd, 0x80, 0x1a, 0x0d, 0xd5, 0xdd, 0x90, 0x31, 0xf1,
-	0x58, 0x38, 0xb1, 0x2a, 0xca, 0x9c, 0x55, 0x8d, 0xba, 0x1a, 0x4c, 0xcd, 0x45, 0x3c, 0x2f, 0x2d,
-	0x58, 0xc0, 0x27, 0x78, 0xcc, 0x02, 0x6a, 0x55, 0x55, 0x69, 0xab, 0x1a, 0x1e, 0xf0, 0xc9, 0x09,
-	0x0b, 0x68, 0x6a, 0xd8, 0x65, 0x1e, 0x8f, 0x67, 0x44, 0x5a, 0x96, 0x62, 0x6e, 0x2e, 0x98, 0x0a,
-	0x46, 0x04, 0x1a, 0x4b, 0x5c, 0x1a, 0x7a, 0xdc, 0x4f, 0xf7, 0x7f, 0xae, 0xca, 0xf3, 0xfa, 0xc1,
-	0xf2, 0xe4, 0x6a, 0xfd, 0x2c, 0xd1, 0xa9, 0x93, 0xfb, 0x10, 0xfa, 0x01, 0x6a, 0x3e, 0x1d, 0x93,
-	0x24, 0x90, 0x58, 0xcf, 0x3e, 0xab, 0xa6, 0xaa, 0xd4, 0x5a, 0xa9, 0x7e, 0x99, 0xde, 0x13, 0x2d,
-	0xef, 0x54, 0xb3, 0xbc, 0x6c, 0x42, 0xbd, 0x82, 0xaa, 0x9e, 0x39, 0xc4, 0xf7, 0xd3, 0x0e, 0x5b,
-	0x66, 0x7a, 0x26, 0x55, 0xd2, 0x8a, 0x0a, 0x1c, 0x69, 0x3c, 0xb5, 0x16, 0x4f, 0xe4, 0x35, 0x4f,
-	0x42, 0x3f, 0xad, 0xe8, 0x78, 0xcc, 0xbc, 0xbc, 0xef, 0x75, 0xb5, 0xf5, 0x83, 0xd6, 0x1a, 0x66,
-	0xe9, 0xae, 0xce, 0xd6, 0x2d, 0x77, 0xb6, 0xf8, 0x2a, 0x18, 0xf5, 0xe0, 0x9b, 0xac, 0x7d, 0x5e,
-	0xc0, 0x68, 0x28, 0x71, 0x3a, 0x53, 0xbe, 0x18, 0x73, 0x56, 0x43, 0xf5, 0xf3, 0xb9, 0xa6, 0x75,
-	0x15, 0x6b, 0xc4, 0xfc, 0xe5, 0x71, 0x87, 0x5a, 0x50, 0x11, 0xbe, 0xc0, 0x89, 0x2f, 0x70, 0x44,
-	0xe4, 0xd4, 0x7a, 0xaa, 0x1a, 0x06, 0xc2, 0x17, 0x57, 0xbe, 0xb8, 0x24, 0x72, 0x9a, 0x3a, 0x4e,
-	0xfc, 0xc4, 0x71, 0x5b, 0xff, 0x95, 0xe3, 0xc4, 0x3d, 0xc7, 0xbd, 0x83, 0x9a, 0xee, 0x05, 0x16,
-	0x3c, 0x89, 0x3d, 0x2a, 0xac, 0x67, 0xad, 0xb5, 0x4e, 0xf9, 0x60, 0x77, 0x65, 0x61, 0x74, 0x51,
-	0x46, 0x8a, 0xe9, 0x54, 0xbd, 0xa5, 0x95, 0x1a, 0xd2, 0xd9, 0xe1, 0xd3, 0x67, 0x93, 0xfc, 0x86,
-	0x86, 0x78, 0xc6, 0x93, 0x50, 0x5a, 0x5f, 0xe9, 0x21, 0xad, 0xa3, 0x23, 0x5f, 0xb8, 0x69, 0xec,
-	0x3c, 0x0d, 0xa1, 0x3d, 0x40, 0xea, 0xac, 0x82, 0xe2, 0x9b, 0x37, 0x02, 0x0b, 0x82, 0xff, 0xf2,
-	0x51, 0x5a, 0x5f, 0xab, 0x84, 0x5a, 0x7a, 0x62, 0x41, 0x7f, 0x7c, 0x23, 0x46, 0xe4, 0xec, 0xa3,
-	0x44, 0xbb, 0x50, 0x91, 0x71, 0x22, 0x24, 0xf6, 0xf9, 0x8c, 0xb0, 0xd0, 0x6a, 0xaa, 0xba, 0x94,
-	0x15, 0xd6, 0x53, 0x10, 0x7a, 0x0b, 0xdb, 0xb9, 0xc3, 0xb2, 0x99, 0x83, 0xe9, 0x27, 0xf5, 0x5a,
-	0x92, 0xdc, 0xfa, 0xa6, 0xb5, 0xd6, 0xd9, 0x70, 0x9e, 0x65, 0x84, 0x6c, 0xfa, 0xf4, 0x55, 0xd8,
-	0xe5, 0xe8, 0x1d, 0xec, 0xe6, 0xa9, 0xb7, 0x2c, 0x96, 0x09, 0x09, 0x56, 0x48, 0xb4, 0x94, 0xc4,
-	0xd7, 0x19, 0xf1, 0xbd, 0xe6, 0xdd, 0x57, 0x3a, 0x83, 0x76, 0xae, 0x74, 0xff, 0x85, 0xbb, 0x24,
-	0xb5, 0xab, 0xa4, 0x76, 0x32, 0x66, 0x6f, 0x41, 0x74, 0x92, 0x60, 0xa1, 0xf5, 0x02, 0x6a, 0x31,
-	0xe7, 0x12, 0x87, 0x64, 0x46, 0x45, 0x44, 0x3c, 0x6a, 0xb5, 0xf5, 0x45, 0x4f, 0xd1, 0x8b, 0x1c,
-	0x44, 0x7f, 0x86, 0x46, 0xc0, 0x3d, 0x12, 0x30, 0x39, 0xc7, 0xc1, 0x35, 0x16, 0x7a, 0x86, 0x5b,
-	0xdf, 0x2a, 0x4b, 0xfc, 0x76, 0x65, 0x2b, 0x07, 0x19, 0x7f, 0xc0, 0x89, 0x7f, 0x4c, 0x02, 0x12,
-	0x7a, 0x34, 0xce, 0x66, 0xbf, 0x53, 0xcf, 0xc5, 0x06, 0xd7, 0x19, 0x84, 0xba, 0x60, 0xfa, 0xe1,
-	0xc2, 0x72, 0x31, 0x91, 0xd4, 0xfa, 0xf5, 0x83, 0x2f, 0x2a, 0x3f, 0xcc, 0xdd, 0xe6, 0x10, 0x49,
-	0x9b, 0x7f, 0x33, 0x60, 0x6b, 0xe5, 0x85, 0x42, 0x17, 0x50, 0x54, 0x03, 0xdf, 0x50, 0xe3, 0xe6,
-	0xfb, 0xff, 0xe9, 0x56, 0xda, 0x6a, 0xea, 0x2b, 0x9d, 0x76, 0x0f, 0x8a, 0x6a, 0xd8, 0xd7, 0xa1,
-	0xea, 0xf4, 0x7f, 0x38, 0x1d, 0xb9, 0xce, 0x07, 0x3c, 0xbc, 0x18, 0x7c, 0x30, 0x1f, 0xa1, 0x2a,
-	0x6c, 0x1c, 0x0d, 0x06, 0xc3, 0xdf, 0xe3, 0xa3, 0x8b, 0x0f, 0xa6, 0xd1, 0x2e, 0x96, 0x0a, 0x66,
-	0x61, 0xef, 0xe9, 0xfb, 0x53, 0xc7, 0xbd, 0x3a, 0x1a, 0xe0, 0x51, 0xdf, 0x79, 0x7f, 0xda, 0xed,
-	0x2b, 0x72, 0xfb, 0x2d, 0x6c, 0xad, 0x7c, 0xb5, 0xa0, 0x75, 0x58, 0x1b, 0x9e, 0x9c, 0x98, 0x8f,
-	0x50, 0x19, 0xd6, 0x7b, 0xfd, 0x93, 0xa3, 0xab, 0x81, 0x6b, 0x1a, 0x08, 0xe0, 0xc9, 0xc8, 0x75,
-	0x4e, 0xbb, 0xae, 0x59, 0x68, 0xbf, 0x04, 0x58, 0xbc, 0x32, 0x50, 0x09, 0x8a, 0x17, 0xc3, 0x8b,
-	0xbe, 0xf9, 0x08, 0xd5, 0x00, 0xce, 0xaf, 0xd4, 0x4e, 0xee, 0x60, 0x64, 0x1a, 0xed, 0x57, 0x50,
-	0xff, 0xc9, 0xec, 0x4c, 0xe9, 0x6e, 0xff, 0x0f, 0xae, 0xf9, 0x28, 0xfd, 0x75, 0x36, 0x1a, 0x5e,
-	0x98, 0xc6, 0x59, 0xb1, 0xb4, 0x69, 0x9a, 0x67, 0xc5, 0x12, 0x32, 0x1b, 0x6d, 0x01, 0x95, 0xe5,
-	0x9b, 0x88, 0x2c, 0x58, 0xcf, 0x27, 0xa1, 0xfe, 0x4c, 0xcb, 0x97, 0xe8, 0x14, 0x2a, 0x32, 0x10,
-	0xb9, 0x21, 0x84, 0xfa, 0x2c, 0x2b, 0x1f, 0xbc, 0xfc, 0x99, 0x2f, 0x03, 0x77, 0x30, 0xca, 0x3f,
-	0x01, 0x9c, 0xb2, 0x0c, 0x44, 0xbe, 0x68, 0xff, 0x63, 0x0d, 0x9e, 0xff, 0x8c, 0x69, 0xd0, 0x9f,
-	0x00, 0x7c, 0x26, 0x64, 0xcc, 0xae, 0x13, 0x99, 0x36, 0x32, 0x9d, 0x22, 0xbf, 0xfb, 0xa5, 0xd6,
-	0xb3, 0x7b, 0x77, 0x12, 0xce, 0x92, 0x1c, 0xba, 0x82, 0x52, 0xfa, 0xd1, 0xc7, 0xf5, 0xa7, 0x65,
-	0x2a, 0xfd, 0xf6, 0x17, 0x4b, 0x9f, 0x64, 0x02, 0xce, 0x9d, 0x54, 0xf3, 0xaf, 0x06, 0xc0, 0x62,
-	0x47, 0x84, 0xa0, 0x38, 0x8e, 0xf9, 0x2c, 0x2b, 0xa2, 0xfa, 0x8d, 0x46, 0x50, 0x90, 0x3c, 0xdb,
-	0xb3, 0xfb, 0x7f, 0x1c, 0xc7, 0x76, 0x79, 0x3f, 0x94, 0xf1, 0xdc, 0x29, 0x48, 0xde, 0xfc, 0x0e,
-	0xd6, 0xb3, 0x25, 0x32, 0x61, 0xed, 0x86, 0xce, 0xb3, 0x2d, 0xd3, 0x9f, 0xe8, 0x29, 0x3c, 0xbe,
-	0x25, 0x41, 0x42, 0x55, 0xb3, 0xaa, 0x8e, 0x5e, 0x7c, 0x5f, 0x78, 0x63, 0x34, 0x6d, 0x28, 0xe5,
-	0x87, 0x58, 0xf9, 0xac, 0xb5, 0xec, 0x59, 0x53, 0xa4, 0x20, 0xf9, 0x71, 0xe7, 0x9f, 0x9f, 0x77,
-	0x8c, 0x7f, 0x7d, 0xde, 0x31, 0xfe, 0xfd, 0x79, 0xc7, 0xf8, 0x63, 0x53, 0x3f, 0x3c, 0xe3, 0xfb,
-	0x24, 0x62, 0xfb, 0x5f, 0xfc, 0x75, 0xb8, 0x7e, 0xa2, 0x2e, 0xef, 0xe1, 0x7f, 0x02, 0x00, 0x00,
-	0xff, 0xff, 0x33, 0x88, 0x4e, 0x58, 0xa3, 0x0c, 0x00, 0x00,
+	// 1743 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x57, 0x5f, 0x57, 0x1b, 0xb9,
+	0x15, 0xcf, 0x00, 0x09, 0xe4, 0x82, 0x8d, 0x11, 0x21, 0xab, 0x38, 0x5d, 0xd6, 0x78, 0x9b, 0xc4,
+	0xa5, 0x5b, 0xb3, 0x21, 0x67, 0x4f, 0x93, 0xdd, 0x27, 0xb0, 0x4d, 0x02, 0x6b, 0x30, 0x67, 0x6c,
+	0xb2, 0x4d, 0xf7, 0x41, 0x15, 0x33, 0xb2, 0xad, 0x32, 0x1e, 0xcd, 0x19, 0x69, 0x08, 0x7c, 0xa7,
+	0xf6, 0x9c, 0x7e, 0x8c, 0x3e, 0xf6, 0xa5, 0xef, 0x3d, 0xf9, 0x24, 0x3d, 0xfa, 0x33, 0xd8, 0x80,
+	0xcf, 0xd2, 0x74, 0xdf, 0x46, 0xf7, 0xfe, 0xee, 0x4f, 0xd2, 0xbd, 0x3f, 0x5d, 0x69, 0xa0, 0x3c,
+	0x62, 0x72, 0xb8, 0x75, 0xfe, 0x92, 0x46, 0xc9, 0x90, 0xbe, 0xdc, 0x0a, 0x44, 0xdc, 0xe7, 0x83,
+	0x7a, 0x92, 0x0a, 0x25, 0xd0, 0x2a, 0x97, 0x8a, 0x8b, 0xba, 0x46, 0xd4, 0x73, 0x44, 0x79, 0x7d,
+	0x20, 0xc4, 0x20, 0x62, 0x5b, 0x06, 0x72, 0x9a, 0xf5, 0xb7, 0xc2, 0x2c, 0xa5, 0x8a, 0x8b, 0xd8,
+	0x06, 0xdd, 0xf6, 0x7f, 0x4c, 0x69, 0x92, 0xb0, 0x54, 0x3a, 0xff, 0x93, 0xeb, 0x13, 0x26, 0xa9,
+	0xb8, 0xb8, 0x74, 0xae, 0xcd, 0x98, 0xa9, 0x8f, 0x22, 0x3d, 0xe3, 0xf1, 0x20, 0x07, 0xbc, 0xda,
+	0x0a, 0x99, 0x54, 0x3c, 0x36, 0x33, 0x90, 0x34, 0x8b, 0x98, 0xc5, 0x56, 0xff, 0x8d, 0x01, 0x0e,
+	0x99, 0x1c, 0x36, 0xcc, 0x82, 0xd1, 0x37, 0x80, 0x46, 0xfc, 0x82, 0xa5, 0x24, 0x18, 0xb2, 0xe0,
+	0x8c, 0x48, 0x96, 0x9e, 0xb3, 0x14, 0x7b, 0x15, 0xaf, 0xf6, 0xd0, 0x2f, 0x19, 0x4f, 0x43, 0x3b,
+	0xba, 0xc6, 0x8e, 0xea, 0xb0, 0x6a, 0xd1, 0x29, 0x4b, 0x44, 0xaa, 0x72, 0xf8, 0x8c, 0x81, 0xaf,
+	0x18, 0x97, 0x6f, 0x3c, 0x0e, 0xbf, 0x0d, 0x6b, 0x21, 0x97, 0xf4, 0x34, 0x62, 0x24, 0x11, 0x11,
+	0x0f, 0x2e, 0xed, 0x34, 0x12, 0xcf, 0x56, 0xbc, 0xda, 0x82, 0xbf, 0xea, 0x9c, 0xc7, 0xc6, 0x67,
+	0x26, 0x92, 0xe8, 0x15, 0x3c, 0x9e, 0xc4, 0x92, 0x3e, 0xe5, 0x11, 0x11, 0x09, 0x8b, 0xf1, 0x13,
+	0x1b, 0x94, 0x8c, 0xd1, 0x7b, 0x94, 0x47, 0x9d, 0x84, 0xc5, 0xe8, 0x18, 0x9e, 0x49, 0x1e, 0xb2,
+	0x80, 0xa6, 0x44, 0x09, 0xa2, 0x58, 0xc4, 0x46, 0x4c, 0xa5, 0x97, 0x44, 0x32, 0x29, 0x75, 0x02,
+	0x68, 0xbf, 0xcf, 0x63, 0xae, 0x2e, 0xf1, 0xba, 0xe1, 0xd8, 0x70, 0xe0, 0x9e, 0xe8, 0xe5, 0xd0,
+	0xae, 0x45, 0xee, 0x38, 0x20, 0xda, 0x84, 0x15, 0x93, 0x62, 0x12, 0x71, 0xa9, 0x58, 0x4c, 0xf4,
+	0xae, 0xf0, 0x5c, 0xc5, 0xab, 0xdd, 0xf7, 0x97, 0x8d, 0xa3, 0x6d, 0xec, 0xc7, 0x22, 0x55, 0xe8,
+	0x39, 0x58, 0x13, 0x19, 0x2a, 0x95, 0x58, 0xe4, 0x7d, 0x83, 0x2c, 0x18, 0xf3, 0x3b, 0xa5, 0x12,
+	0x83, 0xdb, 0x85, 0xe5, 0x40, 0xc4, 0x31, 0x0b, 0x14, 0x51, 0x7c, 0xc4, 0x44, 0xa6, 0xf0, 0x83,
+	0x8a, 0x57, 0x5b, 0xdc, 0x7e, 0x52, 0xb7, 0xc5, 0xaf, 0xe7, 0xc5, 0xaf, 0x37, 0x9d, 0x38, 0xfc,
+	0xa2, 0x8b, 0xe8, 0xd9, 0x00, 0xf4, 0x13, 0x94, 0x0d, 0x28, 0x10, 0x11, 0x09, 0x99, 0x62, 0x81,
+	0x29, 0x70, 0x4e, 0xb7, 0x79, 0x17, 0x1d, 0xce, 0x83, 0x9b, 0x79, 0x6c, 0x4e, 0x2c, 0xa0, 0xa0,
+	0x82, 0x84, 0x9c, 0x31, 0x96, 0xd0, 0x88, 0x9f, 0x33, 0xfc, 0x1b, 0xc3, 0x75, 0x50, 0xb7, 0x62,
+	0x1e, 0x4b, 0x2c, 0x97, 0xf4, 0xab, 0x7a, 0xc3, 0x2e, 0x8d, 0x8b, 0xf8, 0x58, 0x88, 0xa8, 0xcb,
+	0x94, 0xe2, 0xf1, 0x40, 0xd6, 0x7b, 0x8d, 0xe3, 0xf1, 0x77, 0x90, 0xfc, 0x98, 0x33, 0xfa, 0x4b,
+	0x6a, 0x62, 0x84, 0xbe, 0x86, 0x02, 0x8f, 0x07, 0x29, 0x93, 0x92, 0x04, 0x11, 0x95, 0x12, 0xcf,
+	0x1b, 0x19, 0x2d, 0x39, 0x63, 0x43, 0xdb, 0xd0, 0x0b, 0x58, 0xce, 0x41, 0x5a, 0x6c, 0x3c, 0x60,
+	0x78, 0xc1, 0xc0, 0x8a, 0xce, 0xdc, 0xb5, 0x56, 0x34, 0x82, 0x2f, 0xae, 0xd8, 0x44, 0xac, 0x52,
+	0x11, 0x45, 0x2c, 0x25, 0x23, 0x11, 0x32, 0xfc, 0xb0, 0xe2, 0xd5, 0x8a, 0xdb, 0xdf, 0xd5, 0xa7,
+	0x9c, 0xca, 0xfa, 0xf8, 0x28, 0xd4, 0xf7, 0xdd, 0xbc, 0x57, 0xd1, 0x87, 0x22, 0x64, 0xfe, 0x1a,
+	0x9f, 0x66, 0x46, 0x1d, 0x58, 0xa4, 0x99, 0x1a, 0x3a, 0x59, 0x63, 0x30, 0x53, 0x6c, 0xde, 0x35,
+	0xc5, 0x4e, 0xa6, 0x86, 0x56, 0xec, 0xbb, 0x33, 0xd8, 0xf3, 0x81, 0x5e, 0x8d, 0xd1, 0x3e, 0xac,
+	0xa4, 0xa1, 0x24, 0x29, 0xeb, 0xa7, 0x4c, 0x0e, 0x49, 0xc8, 0x22, 0x7a, 0x89, 0x17, 0xef, 0x28,
+	0xa7, 0x61, 0x59, 0x4e, 0x43, 0xe9, 0xdb, 0xb0, 0xa6, 0x8e, 0x42, 0xcf, 0xa0, 0xc8, 0x62, 0x73,
+	0xe8, 0x54, 0x4a, 0x03, 0x1e, 0x0f, 0xf0, 0x92, 0x51, 0x7d, 0xc1, 0x5a, 0x7b, 0xd6, 0xa8, 0x55,
+	0x4b, 0x83, 0x40, 0x27, 0x2c, 0x12, 0x03, 0xd2, 0xe7, 0x11, 0xc3, 0x05, 0x93, 0xda, 0x82, 0x35,
+	0xb7, 0xc5, 0x60, 0x8f, 0x47, 0x4c, 0x9f, 0x84, 0x49, 0x9c, 0x48, 0x47, 0x54, 0x61, 0x6c, 0x90,
+	0xcb, 0x63, 0xa4, 0x31, 0x23, 0x0a, 0xab, 0x13, 0x58, 0x16, 0x07, 0x22, 0xd4, 0xf3, 0x3f, 0x35,
+	0xe9, 0x79, 0x79, 0x67, 0x7a, 0x72, 0xb6, 0x96, 0x0b, 0xf4, 0x57, 0xe8, 0x4d, 0x13, 0x6a, 0xc2,
+	0x57, 0x6e, 0x77, 0x2c, 0x3e, 0x17, 0x97, 0x64, 0x62, 0xbe, 0x5c, 0x21, 0x35, 0xb3, 0xdd, 0xa7,
+	0x16, 0xd6, 0xd2, 0xa8, 0x2b, 0xe6, 0x5c, 0x2e, 0x6f, 0xa1, 0x18, 0xb2, 0x3e, 0xcd, 0x22, 0x45,
+	0x6c, 0xeb, 0xc6, 0x45, 0x93, 0xeb, 0xca, 0xd4, 0x35, 0x1e, 0xeb, 0x63, 0x6c, 0x17, 0xe9, 0x17,
+	0x5c, 0x9c, 0x6b, 0xa0, 0x2f, 0xa0, 0x60, 0x5b, 0x22, 0x0d, 0x43, 0xad, 0x13, 0x5c, 0xd2, 0x99,
+	0x31, 0x85, 0x59, 0x32, 0x8e, 0x1d, 0x6b, 0xd7, 0x02, 0x15, 0x99, 0x3a, 0x15, 0x59, 0x1c, 0xea,
+	0xba, 0xf4, 0xfb, 0x3c, 0xc8, 0xd5, 0xb3, 0x62, 0xa6, 0xbe, 0x53, 0xa0, 0x1d, 0x17, 0xde, 0xb3,
+	0xd1, 0x56, 0x38, 0xfe, 0x9a, 0x98, 0x66, 0x9e, 0x48, 0x53, 0x10, 0x71, 0x16, 0x2b, 0xa2, 0x5b,
+	0xde, 0xb5, 0x2e, 0x8c, 0x57, 0x27, 0xd3, 0xd4, 0x30, 0xa8, 0x2e, 0x0f, 0x27, 0xbb, 0x31, 0xaa,
+	0xc0, 0x92, 0x0c, 0x25, 0xc9, 0x42, 0x49, 0x12, 0xaa, 0x86, 0xf8, 0x91, 0x29, 0x3b, 0xc8, 0x50,
+	0x9e, 0x84, 0xf2, 0x98, 0xaa, 0xa1, 0xd6, 0xad, 0xbc, 0xa5, 0xdb, 0xb5, 0xff, 0x49, 0xb7, 0xf2,
+	0x86, 0x6e, 0xdf, 0x41, 0xd1, 0xd6, 0x82, 0x48, 0x91, 0xa5, 0x01, 0x93, 0xf8, 0x71, 0x65, 0xb6,
+	0xb6, 0xb8, 0xbd, 0x31, 0x35, 0x31, 0x36, 0x29, 0x5d, 0x83, 0xf4, 0x0b, 0xc1, 0xc4, 0x48, 0xa2,
+	0x26, 0x94, 0xdc, 0xe6, 0x69, 0xa6, 0x04, 0x19, 0xa9, 0x48, 0xe2, 0xdf, 0x9b, 0x35, 0x95, 0x6f,
+	0xad, 0x69, 0x57, 0x88, 0xe8, 0x3d, 0x8d, 0x32, 0xe6, 0xbb, 0x53, 0xb3, 0x93, 0x29, 0x71, 0xa8,
+	0x22, 0x73, 0x13, 0x39, 0x16, 0xbd, 0x43, 0x25, 0xce, 0x58, 0x4c, 0x46, 0x22, 0x8b, 0x15, 0xfe,
+	0xc2, 0xde, 0x44, 0xd6, 0xdb, 0x0d, 0x65, 0x4f, 0xfb, 0x0e, 0xb5, 0x0b, 0x6d, 0x02, 0x32, 0x19,
+	0x93, 0x8c, 0x9c, 0xbd, 0x96, 0x44, 0x52, 0xf2, 0xd7, 0x8f, 0x0a, 0x7f, 0x69, 0x02, 0x8a, 0x3a,
+	0x6f, 0x92, 0xfd, 0xf8, 0x5a, 0x76, 0xe9, 0xc1, 0x47, 0x85, 0x36, 0x60, 0x49, 0xa5, 0x99, 0x54,
+	0x24, 0x14, 0x23, 0xca, 0x63, 0x5c, 0x36, 0xd9, 0x5d, 0x34, 0xb6, 0xa6, 0x31, 0xa1, 0x37, 0xf0,
+	0x24, 0xd7, 0xa9, 0x53, 0x37, 0x61, 0x17, 0xe6, 0xee, 0x55, 0x02, 0x7f, 0x55, 0x99, 0xad, 0x3d,
+	0xf4, 0x1f, 0x3b, 0x80, 0x93, 0x76, 0xcb, 0xb8, 0x7b, 0x02, 0xbd, 0x83, 0x8d, 0x3c, 0xf4, 0x9c,
+	0xa7, 0x2a, 0xa3, 0xd1, 0x14, 0x8a, 0x8a, 0xa1, 0xf8, 0xd2, 0x01, 0xdf, 0x5b, 0xdc, 0x4d, 0xa6,
+	0x03, 0xa8, 0xe6, 0x4c, 0x37, 0x5f, 0x15, 0x13, 0x54, 0x1b, 0x86, 0x6a, 0xdd, 0x21, 0x9b, 0x63,
+	0xa0, 0x9f, 0x45, 0x63, 0xae, 0x67, 0x50, 0x4c, 0x85, 0x50, 0x24, 0xa6, 0x23, 0x26, 0x13, 0x1a,
+	0x30, 0x5c, 0xb5, 0x4d, 0x47, 0x5b, 0x8f, 0x72, 0x23, 0xfa, 0x0b, 0xac, 0x46, 0x22, 0xa0, 0x11,
+	0x57, 0x97, 0x24, 0x3a, 0x25, 0xd2, 0xde, 0x27, 0xf8, 0x6b, 0x53, 0xc4, 0x6f, 0xa7, 0x0a, 0xa2,
+	0xed, 0xf0, 0x6d, 0x41, 0xc3, 0x5d, 0x1a, 0xd1, 0x38, 0x60, 0xa9, 0xbb, 0x87, 0xfc, 0x95, 0x9c,
+	0xac, 0x7d, 0xea, 0x4c, 0xa8, 0x01, 0xa5, 0x30, 0x1e, 0x0b, 0x37, 0xa5, 0x8a, 0xe1, 0xdf, 0xde,
+	0x79, 0x1b, 0x87, 0x71, 0xae, 0x59, 0x9f, 0x2a, 0x86, 0xbe, 0x85, 0x47, 0xf9, 0x03, 0xc7, 0x3d,
+	0x89, 0x4e, 0xa9, 0x0a, 0x86, 0xf8, 0x99, 0xa9, 0x37, 0x72, 0x3e, 0xfb, 0x26, 0xda, 0xd5, 0x1e,
+	0xf4, 0x47, 0xc0, 0x93, 0x48, 0x32, 0xa2, 0x17, 0x84, 0xc5, 0x2a, 0xe5, 0x4c, 0xe2, 0xe7, 0x15,
+	0xaf, 0x56, 0xf0, 0xd7, 0xd2, 0x31, 0xfc, 0x90, 0x5e, 0xb4, 0xac, 0x13, 0xb5, 0x61, 0xed, 0x56,
+	0xa0, 0xbe, 0xf6, 0xf1, 0x8b, 0xbb, 0x16, 0x8d, 0xae, 0x13, 0xea, 0x0b, 0x1f, 0xfd, 0x0c, 0x2b,
+	0xc3, 0x6d, 0x92, 0x25, 0x83, 0x94, 0x5e, 0xb5, 0x05, 0xfc, 0x3b, 0xd3, 0xa6, 0xb7, 0xee, 0xea,
+	0x43, 0xef, 0xb6, 0x4f, 0x6c, 0x9c, 0xeb, 0x40, 0xcb, 0xc3, 0xeb, 0x06, 0x2d, 0x5a, 0x1e, 0xdb,
+	0x4e, 0x17, 0x44, 0x99, 0x54, 0x2c, 0x25, 0x52, 0x51, 0x5b, 0x73, 0xfc, 0x8d, 0x29, 0xf7, 0x63,
+	0x07, 0x68, 0x58, 0x7f, 0x57, 0x51, 0x53, 0x7c, 0xf4, 0x03, 0x94, 0xaf, 0xba, 0xe4, 0xed, 0xd8,
+	0x3f, 0x98, 0xd8, 0xab, 0x3e, 0x7a, 0x23, 0xb8, 0xfc, 0x77, 0x0f, 0xd6, 0xa6, 0x36, 0x49, 0x74,
+	0x04, 0x73, 0xe6, 0x29, 0xe0, 0x99, 0x1d, 0x7e, 0xff, 0x7f, 0x75, 0xda, 0xba, 0x79, 0x0f, 0x18,
+	0x9e, 0x6a, 0x13, 0xe6, 0xcc, 0x33, 0x60, 0x05, 0x0a, 0x7e, 0xeb, 0xed, 0x7e, 0xb7, 0xe7, 0x7f,
+	0x20, 0x9d, 0xa3, 0xf6, 0x87, 0xd2, 0x3d, 0x54, 0x80, 0x87, 0x3b, 0xed, 0x76, 0xe7, 0x27, 0xb2,
+	0x73, 0xf4, 0xa1, 0xe4, 0x55, 0xe7, 0x16, 0x66, 0x4a, 0x33, 0x9b, 0x8f, 0xde, 0xef, 0xfb, 0xbd,
+	0x93, 0x9d, 0x36, 0xe9, 0xb6, 0xfc, 0xf7, 0xfb, 0x8d, 0x96, 0x01, 0x57, 0xdf, 0xc0, 0xda, 0xd4,
+	0x47, 0x07, 0x9a, 0x87, 0xd9, 0xce, 0xde, 0x5e, 0xe9, 0x1e, 0x5a, 0x84, 0xf9, 0x66, 0x6b, 0x6f,
+	0xe7, 0xa4, 0xdd, 0x2b, 0x79, 0x08, 0xe0, 0x41, 0xb7, 0xe7, 0xef, 0x37, 0x7a, 0xa5, 0x99, 0xea,
+	0x73, 0x80, 0xf1, 0x63, 0x02, 0x2d, 0xc0, 0xdc, 0x51, 0xe7, 0xa8, 0x55, 0xba, 0x87, 0x8a, 0x00,
+	0x87, 0x27, 0x66, 0xa6, 0x5e, 0xbb, 0x5b, 0xf2, 0xaa, 0x2f, 0x60, 0xe5, 0xd6, 0xad, 0xaa, 0xe1,
+	0xbd, 0xd6, 0x9f, 0x7a, 0xa5, 0x7b, 0xfa, 0xeb, 0xa0, 0xdb, 0x39, 0x2a, 0x79, 0xd5, 0x6d, 0x58,
+	0xbe, 0x51, 0x57, 0x84, 0xa0, 0xd8, 0xec, 0x90, 0xa3, 0x4e, 0x8f, 0x9c, 0x1c, 0xbf, 0xf5, 0x77,
+	0x9a, 0x2d, 0xbb, 0xa0, 0x7c, 0xe0, 0x1d, 0xcc, 0x2d, 0x2c, 0x97, 0x4a, 0x07, 0x73, 0x0b, 0xa8,
+	0xb4, 0x5a, 0x95, 0xb0, 0x34, 0xd9, 0x91, 0x11, 0x86, 0xf9, 0xfc, 0x46, 0xb4, 0x7f, 0x13, 0xf9,
+	0x10, 0xed, 0xc3, 0x92, 0x8a, 0x64, 0x7e, 0xa4, 0xa5, 0xf9, 0x7b, 0x58, 0xdc, 0x7e, 0xfe, 0x0b,
+	0xef, 0xcc, 0x5e, 0xbb, 0x9b, 0x3f, 0x28, 0xfd, 0x45, 0x15, 0xc9, 0x7c, 0x50, 0xfd, 0xc7, 0x2c,
+	0x3c, 0xfd, 0x85, 0x63, 0x8f, 0x7e, 0x06, 0x08, 0xb9, 0x54, 0x29, 0x3f, 0xcd, 0x94, 0x2e, 0xbe,
+	0xbe, 0x4d, 0x7e, 0xf8, 0xdc, 0xe6, 0x51, 0x6f, 0x5e, 0x51, 0xf8, 0x13, 0x74, 0xe8, 0x04, 0x16,
+	0xf4, 0xbf, 0x89, 0xb0, 0x7f, 0x40, 0x9a, 0xfa, 0xcd, 0x67, 0x53, 0xef, 0x39, 0x02, 0xff, 0x8a,
+	0xaa, 0xfc, 0x37, 0x0f, 0x60, 0x3c, 0x23, 0x42, 0x30, 0xd7, 0x4f, 0xc5, 0xc8, 0x25, 0xd1, 0x7c,
+	0xa3, 0x2e, 0xcc, 0x28, 0xe1, 0xe6, 0x6c, 0xfc, 0x8a, 0xed, 0xd4, 0x7b, 0x42, 0x77, 0x97, 0x4b,
+	0x7f, 0x46, 0x89, 0xf2, 0x77, 0x30, 0xef, 0x86, 0xa8, 0x04, 0xb3, 0x67, 0xec, 0xd2, 0x4d, 0xa9,
+	0x3f, 0xd1, 0x23, 0xb8, 0x7f, 0xae, 0xef, 0x48, 0x53, 0xac, 0x82, 0x6f, 0x07, 0xdf, 0xcf, 0xbc,
+	0xf6, 0xca, 0x75, 0x58, 0xc8, 0x37, 0x31, 0x75, 0xad, 0x45, 0xb7, 0x56, 0x6d, 0x99, 0x51, 0x62,
+	0xb7, 0xf6, 0xcf, 0x4f, 0xeb, 0xde, 0xbf, 0x3e, 0xad, 0x7b, 0xff, 0xf9, 0xb4, 0xee, 0xfd, 0xb9,
+	0x6c, 0x17, 0xcf, 0xc5, 0x16, 0x4d, 0xf8, 0xd6, 0xb5, 0x3f, 0xdc, 0xd3, 0x07, 0xa6, 0x93, 0xbd,
+	0xfa, 0x6f, 0x00, 0x00, 0x00, 0xff, 0xff, 0xcb, 0xaa, 0x69, 0xad, 0x6a, 0x0f, 0x00, 0x00,
 }
 
 func (m *MeshConfig) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1074,352 +1245,466 @@ func (m *MeshConfig) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *MeshConfig) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MeshConfig) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.MixerCheckServer) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(len(m.MixerCheckServer)))
-		i += copy(dAtA[i:], m.MixerCheckServer)
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
 	}
-	if len(m.MixerReportServer) > 0 {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(len(m.MixerReportServer)))
-		i += copy(dAtA[i:], m.MixerReportServer)
+	if len(m.OutboundClusterStatName) > 0 {
+		i -= len(m.OutboundClusterStatName)
+		copy(dAtA[i:], m.OutboundClusterStatName)
+		i = encodeVarintConfig(dAtA, i, uint64(len(m.OutboundClusterStatName)))
+		i--
+		dAtA[i] = 0x2
+		i--
+		dAtA[i] = 0xea
 	}
-	if m.DisablePolicyChecks {
-		dAtA[i] = 0x18
-		i++
-		if m.DisablePolicyChecks {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i++
+	if len(m.InboundClusterStatName) > 0 {
+		i -= len(m.InboundClusterStatName)
+		copy(dAtA[i:], m.InboundClusterStatName)
+		i = encodeVarintConfig(dAtA, i, uint64(len(m.InboundClusterStatName)))
+		i--
+		dAtA[i] = 0x2
+		i--
+		dAtA[i] = 0xe2
 	}
-	if m.ProxyListenPort != 0 {
-		dAtA[i] = 0x20
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(m.ProxyListenPort))
-	}
-	if m.ProxyHttpPort != 0 {
-		dAtA[i] = 0x28
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(m.ProxyHttpPort))
-	}
-	if m.ConnectTimeout != nil {
-		dAtA[i] = 0x32
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(m.ConnectTimeout.Size()))
-		n1, err := m.ConnectTimeout.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n1
-	}
-	if len(m.IngressClass) > 0 {
-		dAtA[i] = 0x3a
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(len(m.IngressClass)))
-		i += copy(dAtA[i:], m.IngressClass)
-	}
-	if len(m.IngressService) > 0 {
-		dAtA[i] = 0x42
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(len(m.IngressService)))
-		i += copy(dAtA[i:], m.IngressService)
-	}
-	if m.IngressControllerMode != 0 {
-		dAtA[i] = 0x48
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(m.IngressControllerMode))
-	}
-	if m.AuthPolicy != 0 {
-		dAtA[i] = 0x50
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(m.AuthPolicy))
-	}
-	if m.RdsRefreshDelay != nil {
-		dAtA[i] = 0x5a
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(m.RdsRefreshDelay.Size()))
-		n2, err := m.RdsRefreshDelay.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n2
-	}
-	if m.EnableTracing {
-		dAtA[i] = 0x60
-		i++
-		if m.EnableTracing {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i++
-	}
-	if len(m.AccessLogFile) > 0 {
-		dAtA[i] = 0x6a
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(len(m.AccessLogFile)))
-		i += copy(dAtA[i:], m.AccessLogFile)
-	}
-	if m.DefaultConfig != nil {
-		dAtA[i] = 0x72
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(m.DefaultConfig.Size()))
-		n3, err := m.DefaultConfig.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n3
-	}
-	if len(m.MixerAddress) > 0 {
-		dAtA[i] = 0x82
-		i++
-		dAtA[i] = 0x1
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(len(m.MixerAddress)))
-		i += copy(dAtA[i:], m.MixerAddress)
-	}
-	if m.OutboundTrafficPolicy != nil {
-		dAtA[i] = 0x8a
-		i++
-		dAtA[i] = 0x1
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(m.OutboundTrafficPolicy.Size()))
-		n4, err := m.OutboundTrafficPolicy.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n4
-	}
-	if m.EnableClientSidePolicyCheck {
-		dAtA[i] = 0x98
-		i++
-		dAtA[i] = 0x1
-		i++
-		if m.EnableClientSidePolicyCheck {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i++
-	}
-	if len(m.SdsUdsPath) > 0 {
-		dAtA[i] = 0xa2
-		i++
-		dAtA[i] = 0x1
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(len(m.SdsUdsPath)))
-		i += copy(dAtA[i:], m.SdsUdsPath)
-	}
-	if m.SdsRefreshDelay != nil {
-		dAtA[i] = 0xaa
-		i++
-		dAtA[i] = 0x1
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(m.SdsRefreshDelay.Size()))
-		n5, err := m.SdsRefreshDelay.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n5
-	}
-	if len(m.ConfigSources) > 0 {
-		for _, msg := range m.ConfigSources {
-			dAtA[i] = 0xb2
-			i++
-			dAtA[i] = 0x1
-			i++
-			i = encodeVarintConfig(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
+	if m.EnableAutoMtls != nil {
+		{
+			size, err := m.EnableAutoMtls.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
-			i += n
+			i -= size
+			i = encodeVarintConfig(dAtA, i, uint64(size))
 		}
+		i--
+		dAtA[i] = 0x2
+		i--
+		dAtA[i] = 0xda
 	}
-	if m.EnableSdsTokenMount {
-		dAtA[i] = 0xb8
-		i++
-		dAtA[i] = 0x1
-		i++
-		if m.EnableSdsTokenMount {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
+	if m.ProtocolDetectionTimeout != nil {
+		{
+			size, err := m.ProtocolDetectionTimeout.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintConfig(dAtA, i, uint64(size))
 		}
-		i++
-	}
-	if len(m.AccessLogFormat) > 0 {
-		dAtA[i] = 0xc2
-		i++
-		dAtA[i] = 0x1
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(len(m.AccessLogFormat)))
-		i += copy(dAtA[i:], m.AccessLogFormat)
-	}
-	if m.PolicyCheckFailOpen {
-		dAtA[i] = 0xc8
-		i++
-		dAtA[i] = 0x1
-		i++
-		if m.PolicyCheckFailOpen {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i++
-	}
-	if len(m.TrustDomain) > 0 {
+		i--
+		dAtA[i] = 0x2
+		i--
 		dAtA[i] = 0xd2
-		i++
-		dAtA[i] = 0x1
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(len(m.TrustDomain)))
-		i += copy(dAtA[i:], m.TrustDomain)
 	}
-	if m.AccessLogEncoding != 0 {
-		dAtA[i] = 0xd8
-		i++
-		dAtA[i] = 0x1
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(m.AccessLogEncoding))
+	if m.H2UpgradePolicy != 0 {
+		i = encodeVarintConfig(dAtA, i, uint64(m.H2UpgradePolicy))
+		i--
+		dAtA[i] = 0x2
+		i--
+		dAtA[i] = 0xc8
 	}
-	if m.TcpKeepalive != nil {
-		dAtA[i] = 0xe2
-		i++
-		dAtA[i] = 0x1
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(m.TcpKeepalive.Size()))
-		n6, err := m.TcpKeepalive.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n6
-	}
-	if m.SdsUseK8SSaJwt {
-		dAtA[i] = 0xe8
-		i++
-		dAtA[i] = 0x1
-		i++
-		if m.SdsUseK8SSaJwt {
+	if m.EnableEnvoyAccessLogService {
+		i--
+		if m.EnableEnvoyAccessLogService {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i++
+		i--
+		dAtA[i] = 0x2
+		i--
+		dAtA[i] = 0xc0
+	}
+	if m.ReportBatchMaxTime != nil {
+		{
+			size, err := m.ReportBatchMaxTime.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintConfig(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x2
+		i--
+		dAtA[i] = 0xba
+	}
+	if m.ReportBatchMaxEntries != 0 {
+		i = encodeVarintConfig(dAtA, i, uint64(m.ReportBatchMaxEntries))
+		i--
+		dAtA[i] = 0x2
+		i--
+		dAtA[i] = 0xb0
+	}
+	if m.DisableReportBatch {
+		i--
+		if m.DisableReportBatch {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x2
+		i--
+		dAtA[i] = 0xa8
+	}
+	if m.DnsRefreshRate != nil {
+		{
+			size, err := m.DnsRefreshRate.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintConfig(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x2
+		i--
+		dAtA[i] = 0xa2
+	}
+	if m.LocalityLbSetting != nil {
+		{
+			size, err := m.LocalityLbSetting.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintConfig(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x2
+		i--
+		dAtA[i] = 0x9a
+	}
+	if len(m.RootNamespace) > 0 {
+		i -= len(m.RootNamespace)
+		copy(dAtA[i:], m.RootNamespace)
+		i = encodeVarintConfig(dAtA, i, uint64(len(m.RootNamespace)))
+		i--
+		dAtA[i] = 0x2
+		i--
+		dAtA[i] = 0x92
+	}
+	if len(m.DefaultDestinationRuleExportTo) > 0 {
+		for iNdEx := len(m.DefaultDestinationRuleExportTo) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.DefaultDestinationRuleExportTo[iNdEx])
+			copy(dAtA[i:], m.DefaultDestinationRuleExportTo[iNdEx])
+			i = encodeVarintConfig(dAtA, i, uint64(len(m.DefaultDestinationRuleExportTo[iNdEx])))
+			i--
+			dAtA[i] = 0x2
+			i--
+			dAtA[i] = 0x8a
+		}
+	}
+	if len(m.DefaultVirtualServiceExportTo) > 0 {
+		for iNdEx := len(m.DefaultVirtualServiceExportTo) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.DefaultVirtualServiceExportTo[iNdEx])
+			copy(dAtA[i:], m.DefaultVirtualServiceExportTo[iNdEx])
+			i = encodeVarintConfig(dAtA, i, uint64(len(m.DefaultVirtualServiceExportTo[iNdEx])))
+			i--
+			dAtA[i] = 0x2
+			i--
+			dAtA[i] = 0x82
+		}
+	}
+	if len(m.DefaultServiceExportTo) > 0 {
+		for iNdEx := len(m.DefaultServiceExportTo) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.DefaultServiceExportTo[iNdEx])
+			copy(dAtA[i:], m.DefaultServiceExportTo[iNdEx])
+			i = encodeVarintConfig(dAtA, i, uint64(len(m.DefaultServiceExportTo[iNdEx])))
+			i--
+			dAtA[i] = 0x1
+			i--
+			dAtA[i] = 0xfa
+		}
 	}
 	if m.SidecarToTelemetrySessionAffinity {
-		dAtA[i] = 0xf0
-		i++
-		dAtA[i] = 0x1
-		i++
+		i--
 		if m.SidecarToTelemetrySessionAffinity {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i++
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0xf0
 	}
-	if len(m.DefaultServiceExportTo) > 0 {
-		for _, s := range m.DefaultServiceExportTo {
-			dAtA[i] = 0xfa
-			i++
+	if m.SdsUseK8SSaJwt {
+		i--
+		if m.SdsUseK8SSaJwt {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0xe8
+	}
+	if m.TcpKeepalive != nil {
+		{
+			size, err := m.TcpKeepalive.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintConfig(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0xe2
+	}
+	if m.AccessLogEncoding != 0 {
+		i = encodeVarintConfig(dAtA, i, uint64(m.AccessLogEncoding))
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0xd8
+	}
+	if len(m.TrustDomain) > 0 {
+		i -= len(m.TrustDomain)
+		copy(dAtA[i:], m.TrustDomain)
+		i = encodeVarintConfig(dAtA, i, uint64(len(m.TrustDomain)))
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0xd2
+	}
+	if m.PolicyCheckFailOpen {
+		i--
+		if m.PolicyCheckFailOpen {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0xc8
+	}
+	if len(m.AccessLogFormat) > 0 {
+		i -= len(m.AccessLogFormat)
+		copy(dAtA[i:], m.AccessLogFormat)
+		i = encodeVarintConfig(dAtA, i, uint64(len(m.AccessLogFormat)))
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0xc2
+	}
+	if m.EnableSdsTokenMount {
+		i--
+		if m.EnableSdsTokenMount {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0xb8
+	}
+	if len(m.ConfigSources) > 0 {
+		for iNdEx := len(m.ConfigSources) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ConfigSources[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintConfig(dAtA, i, uint64(size))
+			}
+			i--
 			dAtA[i] = 0x1
-			i++
-			l = len(s)
-			for l >= 1<<7 {
-				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
-				l >>= 7
-				i++
+			i--
+			dAtA[i] = 0xb2
+		}
+	}
+	if m.SdsRefreshDelay != nil {
+		{
+			size, err := m.SdsRefreshDelay.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
 			}
-			dAtA[i] = uint8(l)
-			i++
-			i += copy(dAtA[i:], s)
+			i -= size
+			i = encodeVarintConfig(dAtA, i, uint64(size))
 		}
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0xaa
 	}
-	if len(m.DefaultVirtualServiceExportTo) > 0 {
-		for _, s := range m.DefaultVirtualServiceExportTo {
-			dAtA[i] = 0x82
-			i++
-			dAtA[i] = 0x2
-			i++
-			l = len(s)
-			for l >= 1<<7 {
-				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
-				l >>= 7
-				i++
-			}
-			dAtA[i] = uint8(l)
-			i++
-			i += copy(dAtA[i:], s)
-		}
-	}
-	if len(m.DefaultDestinationRuleExportTo) > 0 {
-		for _, s := range m.DefaultDestinationRuleExportTo {
-			dAtA[i] = 0x8a
-			i++
-			dAtA[i] = 0x2
-			i++
-			l = len(s)
-			for l >= 1<<7 {
-				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
-				l >>= 7
-				i++
-			}
-			dAtA[i] = uint8(l)
-			i++
-			i += copy(dAtA[i:], s)
-		}
-	}
-	if len(m.RootNamespace) > 0 {
-		dAtA[i] = 0x92
-		i++
-		dAtA[i] = 0x2
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(len(m.RootNamespace)))
-		i += copy(dAtA[i:], m.RootNamespace)
-	}
-	if m.LocalityLbSetting != nil {
-		dAtA[i] = 0x9a
-		i++
-		dAtA[i] = 0x2
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(m.LocalityLbSetting.Size()))
-		n7, err := m.LocalityLbSetting.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n7
-	}
-	if m.DnsRefreshRate != nil {
+	if len(m.SdsUdsPath) > 0 {
+		i -= len(m.SdsUdsPath)
+		copy(dAtA[i:], m.SdsUdsPath)
+		i = encodeVarintConfig(dAtA, i, uint64(len(m.SdsUdsPath)))
+		i--
+		dAtA[i] = 0x1
+		i--
 		dAtA[i] = 0xa2
-		i++
-		dAtA[i] = 0x2
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(m.DnsRefreshRate.Size()))
-		n8, err := m.DnsRefreshRate.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+	}
+	if m.EnableClientSidePolicyCheck {
+		i--
+		if m.EnableClientSidePolicyCheck {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
 		}
-		i += n8
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0x98
 	}
-	if m.XXX_unrecognized != nil {
-		i += copy(dAtA[i:], m.XXX_unrecognized)
+	if m.OutboundTrafficPolicy != nil {
+		{
+			size, err := m.OutboundTrafficPolicy.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintConfig(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0x8a
 	}
-	return i, nil
+	if len(m.MixerAddress) > 0 {
+		i -= len(m.MixerAddress)
+		copy(dAtA[i:], m.MixerAddress)
+		i = encodeVarintConfig(dAtA, i, uint64(len(m.MixerAddress)))
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0x82
+	}
+	if m.DefaultConfig != nil {
+		{
+			size, err := m.DefaultConfig.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintConfig(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x72
+	}
+	if len(m.AccessLogFile) > 0 {
+		i -= len(m.AccessLogFile)
+		copy(dAtA[i:], m.AccessLogFile)
+		i = encodeVarintConfig(dAtA, i, uint64(len(m.AccessLogFile)))
+		i--
+		dAtA[i] = 0x6a
+	}
+	if m.EnableTracing {
+		i--
+		if m.EnableTracing {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x60
+	}
+	if m.RdsRefreshDelay != nil {
+		{
+			size, err := m.RdsRefreshDelay.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintConfig(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x5a
+	}
+	if m.AuthPolicy != 0 {
+		i = encodeVarintConfig(dAtA, i, uint64(m.AuthPolicy))
+		i--
+		dAtA[i] = 0x50
+	}
+	if m.IngressControllerMode != 0 {
+		i = encodeVarintConfig(dAtA, i, uint64(m.IngressControllerMode))
+		i--
+		dAtA[i] = 0x48
+	}
+	if len(m.IngressService) > 0 {
+		i -= len(m.IngressService)
+		copy(dAtA[i:], m.IngressService)
+		i = encodeVarintConfig(dAtA, i, uint64(len(m.IngressService)))
+		i--
+		dAtA[i] = 0x42
+	}
+	if len(m.IngressClass) > 0 {
+		i -= len(m.IngressClass)
+		copy(dAtA[i:], m.IngressClass)
+		i = encodeVarintConfig(dAtA, i, uint64(len(m.IngressClass)))
+		i--
+		dAtA[i] = 0x3a
+	}
+	if m.ConnectTimeout != nil {
+		{
+			size, err := m.ConnectTimeout.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintConfig(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x32
+	}
+	if m.ProxyHttpPort != 0 {
+		i = encodeVarintConfig(dAtA, i, uint64(m.ProxyHttpPort))
+		i--
+		dAtA[i] = 0x28
+	}
+	if m.ProxyListenPort != 0 {
+		i = encodeVarintConfig(dAtA, i, uint64(m.ProxyListenPort))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.DisablePolicyChecks {
+		i--
+		if m.DisablePolicyChecks {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.MixerReportServer) > 0 {
+		i -= len(m.MixerReportServer)
+		copy(dAtA[i:], m.MixerReportServer)
+		i = encodeVarintConfig(dAtA, i, uint64(len(m.MixerReportServer)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.MixerCheckServer) > 0 {
+		i -= len(m.MixerCheckServer)
+		copy(dAtA[i:], m.MixerCheckServer)
+		i = encodeVarintConfig(dAtA, i, uint64(len(m.MixerCheckServer)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *MeshConfig_OutboundTrafficPolicy) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1427,25 +1712,31 @@ func (m *MeshConfig_OutboundTrafficPolicy) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *MeshConfig_OutboundTrafficPolicy) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MeshConfig_OutboundTrafficPolicy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Mode != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(m.Mode))
-	}
 	if m.XXX_unrecognized != nil {
-		i += copy(dAtA[i:], m.XXX_unrecognized)
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
 	}
-	return i, nil
+	if m.Mode != 0 {
+		i = encodeVarintConfig(dAtA, i, uint64(m.Mode))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *ConfigSource) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1453,36 +1744,45 @@ func (m *ConfigSource) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ConfigSource) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ConfigSource) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Address) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(len(m.Address)))
-		i += copy(dAtA[i:], m.Address)
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
 	}
 	if m.TlsSettings != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(m.TlsSettings.Size()))
-		n9, err := m.TlsSettings.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.TlsSettings.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintConfig(dAtA, i, uint64(size))
 		}
-		i += n9
+		i--
+		dAtA[i] = 0x12
 	}
-	if m.XXX_unrecognized != nil {
-		i += copy(dAtA[i:], m.XXX_unrecognized)
+	if len(m.Address) > 0 {
+		i -= len(m.Address)
+		copy(dAtA[i:], m.Address)
+		i = encodeVarintConfig(dAtA, i, uint64(len(m.Address)))
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *LocalityLoadBalancerSetting) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1490,44 +1790,54 @@ func (m *LocalityLoadBalancerSetting) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *LocalityLoadBalancerSetting) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *LocalityLoadBalancerSetting) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Distribute) > 0 {
-		for _, msg := range m.Distribute {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintConfig(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
 	}
 	if len(m.Failover) > 0 {
-		for _, msg := range m.Failover {
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintConfig(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.Failover) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Failover[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintConfig(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0x12
 		}
 	}
-	if m.XXX_unrecognized != nil {
-		i += copy(dAtA[i:], m.XXX_unrecognized)
+	if len(m.Distribute) > 0 {
+		for iNdEx := len(m.Distribute) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Distribute[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintConfig(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *LocalityLoadBalancerSetting_Distribute) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1535,42 +1845,50 @@ func (m *LocalityLoadBalancerSetting_Distribute) Marshal() (dAtA []byte, err err
 }
 
 func (m *LocalityLoadBalancerSetting_Distribute) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *LocalityLoadBalancerSetting_Distribute) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.From) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(len(m.From)))
-		i += copy(dAtA[i:], m.From)
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
 	}
 	if len(m.To) > 0 {
-		for k, _ := range m.To {
-			dAtA[i] = 0x12
-			i++
+		for k := range m.To {
 			v := m.To[k]
-			mapSize := 1 + len(k) + sovConfig(uint64(len(k))) + 1 + sovConfig(uint64(v))
-			i = encodeVarintConfig(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintConfig(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			dAtA[i] = 0x10
-			i++
+			baseI := i
 			i = encodeVarintConfig(dAtA, i, uint64(v))
+			i--
+			dAtA[i] = 0x10
+			i -= len(k)
+			copy(dAtA[i:], k)
+			i = encodeVarintConfig(dAtA, i, uint64(len(k)))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintConfig(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x12
 		}
 	}
-	if m.XXX_unrecognized != nil {
-		i += copy(dAtA[i:], m.XXX_unrecognized)
+	if len(m.From) > 0 {
+		i -= len(m.From)
+		copy(dAtA[i:], m.From)
+		i = encodeVarintConfig(dAtA, i, uint64(len(m.From)))
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *LocalityLoadBalancerSetting_Failover) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1578,36 +1896,46 @@ func (m *LocalityLoadBalancerSetting_Failover) Marshal() (dAtA []byte, err error
 }
 
 func (m *LocalityLoadBalancerSetting_Failover) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *LocalityLoadBalancerSetting_Failover) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.From) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(len(m.From)))
-		i += copy(dAtA[i:], m.From)
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
 	}
 	if len(m.To) > 0 {
-		dAtA[i] = 0x12
-		i++
+		i -= len(m.To)
+		copy(dAtA[i:], m.To)
 		i = encodeVarintConfig(dAtA, i, uint64(len(m.To)))
-		i += copy(dAtA[i:], m.To)
+		i--
+		dAtA[i] = 0x12
 	}
-	if m.XXX_unrecognized != nil {
-		i += copy(dAtA[i:], m.XXX_unrecognized)
+	if len(m.From) > 0 {
+		i -= len(m.From)
+		copy(dAtA[i:], m.From)
+		i = encodeVarintConfig(dAtA, i, uint64(len(m.From)))
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintConfig(dAtA []byte, offset int, v uint64) int {
+	offset -= sovConfig(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func (m *MeshConfig) Size() (n int) {
 	if m == nil {
@@ -1747,6 +2075,38 @@ func (m *MeshConfig) Size() (n int) {
 		l = m.DnsRefreshRate.Size()
 		n += 2 + l + sovConfig(uint64(l))
 	}
+	if m.DisableReportBatch {
+		n += 3
+	}
+	if m.ReportBatchMaxEntries != 0 {
+		n += 2 + sovConfig(uint64(m.ReportBatchMaxEntries))
+	}
+	if m.ReportBatchMaxTime != nil {
+		l = m.ReportBatchMaxTime.Size()
+		n += 2 + l + sovConfig(uint64(l))
+	}
+	if m.EnableEnvoyAccessLogService {
+		n += 3
+	}
+	if m.H2UpgradePolicy != 0 {
+		n += 2 + sovConfig(uint64(m.H2UpgradePolicy))
+	}
+	if m.ProtocolDetectionTimeout != nil {
+		l = m.ProtocolDetectionTimeout.Size()
+		n += 2 + l + sovConfig(uint64(l))
+	}
+	if m.EnableAutoMtls != nil {
+		l = m.EnableAutoMtls.Size()
+		n += 2 + l + sovConfig(uint64(l))
+	}
+	l = len(m.InboundClusterStatName)
+	if l > 0 {
+		n += 2 + l + sovConfig(uint64(l))
+	}
+	l = len(m.OutboundClusterStatName)
+	if l > 0 {
+		n += 2 + l + sovConfig(uint64(l))
+	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -1857,14 +2217,7 @@ func (m *LocalityLoadBalancerSetting_Failover) Size() (n int) {
 }
 
 func sovConfig(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozConfig(x uint64) (n int) {
 	return sovConfig(uint64((x << 1) ^ uint64((int64(x) >> 63))))
@@ -2870,6 +3223,256 @@ func (m *MeshConfig) Unmarshal(dAtA []byte) error {
 			if err := m.DnsRefreshRate.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		case 37:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DisableReportBatch", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConfig
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.DisableReportBatch = bool(v != 0)
+		case 38:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ReportBatchMaxEntries", wireType)
+			}
+			m.ReportBatchMaxEntries = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConfig
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ReportBatchMaxEntries |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 39:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ReportBatchMaxTime", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConfig
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthConfig
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ReportBatchMaxTime == nil {
+				m.ReportBatchMaxTime = &types.Duration{}
+			}
+			if err := m.ReportBatchMaxTime.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 40:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EnableEnvoyAccessLogService", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConfig
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.EnableEnvoyAccessLogService = bool(v != 0)
+		case 41:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field H2UpgradePolicy", wireType)
+			}
+			m.H2UpgradePolicy = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConfig
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.H2UpgradePolicy |= MeshConfig_H2UpgradePolicy(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 42:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProtocolDetectionTimeout", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConfig
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthConfig
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ProtocolDetectionTimeout == nil {
+				m.ProtocolDetectionTimeout = &types.Duration{}
+			}
+			if err := m.ProtocolDetectionTimeout.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 43:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EnableAutoMtls", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConfig
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthConfig
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.EnableAutoMtls == nil {
+				m.EnableAutoMtls = &types.BoolValue{}
+			}
+			if err := m.EnableAutoMtls.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 44:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field InboundClusterStatName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConfig
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthConfig
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.InboundClusterStatName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 45:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OutboundClusterStatName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConfig
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthConfig
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.OutboundClusterStatName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

@@ -1,15 +1,24 @@
 # File system notifications for Go
 
-[![GoDoc](https://godoc.org/github.com/howeyc/fsnotify?status.png)](http://godoc.org/github.com/howeyc/fsnotify)
+[![Build Status](https://goci.herokuapp.com/project/image/github.com/howeyc/fsnotify)](http://goci.me/project/github.com/howeyc/fsnotify) [![GoDoc](https://godoc.org/github.com/howeyc/fsnotify?status.png)](http://godoc.org/github.com/howeyc/fsnotify)
 
-Cross platform: Windows, Linux, BSD and OS X.
+Cross platform, works on:
+* Windows
+* Linux
+* BSD
+* OSX
 
-## Moving Notice
+### Moving Notice
 
-There is a fork being actively developed with a new API in preparation for the Go Standard Library:
-[github.com/go-fsnotify/fsnotify](https://github.com/go-fsnotify/fsnotify)
+We plan to include os/fsnotify in the Go standard library with a new [API](http://goo.gl/MrYxyA). 
 
-## Example:
+* Import `code.google.com/p/go.exp/fsnotify` ([GoDoc](http://godoc.org/code.google.com/p/go.exp/fsnotify)) for the latest API under development.
+* Continue importing `github.com/howeyc/fsnotify` ([GoDoc](http://godoc.org/github.com/howeyc/fsnotify)) for the stable API.
+* [Report Issues](https://code.google.com/p/go/issues/list?q=fsnotify) to go.exp/fsnotify after testing against `code.google.com/p/go.exp/fsnotify`
+* Join [golang-dev](https://groups.google.com/forum/#!forum/golang-dev) to discuss fsnotify.
+* See the [Contribution Guidelines](http://golang.org/doc/contribute.html) for Go and sign the CLA.
+
+### Example:
 
 ```go
 package main
@@ -44,8 +53,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	
-	// Hang so program doesn't exit
+
 	<-done
 
 	/* ... do stuff ... */
@@ -60,7 +68,7 @@ For each event:
 * IsModify()
 * IsRename()
 
-## FAQ
+### FAQ
 
 **When a file is moved to another directory is it still being watched?**
 
