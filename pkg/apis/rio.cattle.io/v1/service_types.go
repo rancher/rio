@@ -30,7 +30,7 @@ type Service struct {
 	Status     ServiceStatus      `json:"status,omitempty"`
 }
 
-// ServiceRevision speficies the APP name, Version and Weight to uniquely identify each Revision
+// ServiceRevision specifies the APP name, Version and Weight to uniquely identify each Revision
 type ServiceRevision struct {
 	// Revision Version
 	Version string `json:"version,omitempty"`
@@ -331,6 +331,16 @@ type ServiceStatus struct {
 
 	// The list of publicdomains pointing to the service
 	PublicDomains []string `json:"publicDomains,omitempty"`
+
+	// gitwatcher name
+	GitCommitName string `json:"gitCommitName,omitempty"`
+
+	// log token to access build log
+	BuildLogToken string `json:"buildLogToken,omitempty"`
+}
+
+type GithubStatus struct {
+	PR string `json:"pr,omitempty"`
 }
 
 type ScaleStatus struct {

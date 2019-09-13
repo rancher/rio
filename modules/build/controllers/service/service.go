@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/rancher/rio/pkg/randomtoken"
+
 	webhookv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constructors"
@@ -45,6 +47,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		secretsCache:       rContext.Core.Core().V1().Secret().Cache(),
 		clusterDomainCache: rContext.Global.Admin().V1().ClusterDomain().Cache(),
 		serviceCache:       rContext.Rio.Rio().V1().Service().Cache(),
+		services:           rContext.Rio.Rio().V1().Service(),
 	}
 
 	c.Populator = p.populate
@@ -61,6 +64,7 @@ type populator struct {
 	appCache           v1.AppCache
 	secretsCache       corev1controller.SecretCache
 	serviceCache       v1.ServiceCache
+	services           v1.ServiceClient
 	clusterDomainCache projectv1controller.ClusterDomainCache
 }
 
@@ -99,6 +103,19 @@ func (p *populator) populate(obj runtime.Object, ns *corev1.Namespace, os *objec
 
 	if service == nil || service.Spec.Build == nil || service.Spec.Build.Repo == "" {
 		return nil
+	}
+
+	if service.Status.BuildLogToken == "" {
+		token, err := randomtoken.Generate()
+		if err != nil {
+			return err
+		}
+		service.Status.BuildLogToken = token
+		newService, err := p.services.Update(service)
+		if err != nil {
+			return err
+		}
+		service = newService
 	}
 
 	if err := p.populateBuild(service, p.systemNamespace, os); err != nil {
@@ -148,6 +165,8 @@ func (p populator) populateBuild(service *riov1.Service, systemNamespace string,
 			Labels: map[string]string{
 				"service-name":      service.Name,
 				"service-namespace": service.Namespace,
+				"gitcommit-name":    service.Status.GitCommitName,
+				"log-token":         service.Status.BuildLogToken,
 			},
 		},
 		Spec: tektonv1alpha1.TaskRunSpec{
@@ -298,6 +317,8 @@ func populateWebhookAndSecrets(webhookService *riov1.App, service *riov1.Service
 			PR:                             service.Spec.Build.EnablePR,
 			Branch:                         service.Spec.Build.Branch,
 			RepositoryCredentialSecretName: service.Spec.Build.GitSecretName,
+			GithubWebhookToken:             service.Spec.Build.GithubSecretName,
+			GithubDeployment:               true,
 		},
 	})
 
