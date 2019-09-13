@@ -27,6 +27,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+var (
+	AppResourceName             = "apps"
+	ExternalServiceResourceName = "externalservices"
+	RouterResourceName          = "routers"
+	ServiceResourceName         = "services"
+	StackResourceName           = "stacks"
+)
+
 // SchemeGroupVersion is group version used to register these objects
 var SchemeGroupVersion = schema.GroupVersion{Group: rio.GroupName, Version: "v1"}
 

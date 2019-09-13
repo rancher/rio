@@ -27,6 +27,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+var (
+	ClusterDomainResourceName = "clusterdomains"
+	FeatureResourceName       = "features"
+	PublicDomainResourceName  = "publicdomains"
+	RioInfoResourceName       = "rioinfos"
+)
+
 // SchemeGroupVersion is group version used to register these objects
 var SchemeGroupVersion = schema.GroupVersion{Group: admin.GroupName, Version: "v1"}
 

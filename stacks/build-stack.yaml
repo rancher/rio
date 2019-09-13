@@ -51,8 +51,10 @@ services:
     - "* gitwatcher.cattle.io/gitcommits"
     - '* configmaps'
     - '* events'
+    - get,list pods
+    - create,get,list /pods/log
     - secrets
-    image: rancher/gitwatcher:v0.3.1
+    image: rancher/gitwatcher:v0.4.1
     args:
     - gitwatcher
     - --listen-address
