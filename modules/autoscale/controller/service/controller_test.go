@@ -161,7 +161,7 @@ func TestPopulateAutoscalerMinMaxNotEqual(t *testing.T) {
 				ReferingLabel:         "kpa.autoscaling.knative.dev",
 				MinScaleAnnotationKey: strconv.Itoa(*input.Spec.MinScale),
 				MaxScaleAnnotationKey: strconv.Itoa(*input.Spec.MaxScale),
-				ScrapeKey:             "envoy",
+				ScrapeKey:             "linkerd",
 			},
 			Labels: map[string]string{
 				ConfigurationKey: input.Name,

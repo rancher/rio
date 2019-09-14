@@ -24,7 +24,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	if errors.IsNotFound(err) {
 		_, err = client.Create(newInfo)
 	} else if err == nil {
-		info.Status = newInfo.Status
+		info.Status.SystemNamespace = newInfo.Status.SystemNamespace
+		info.Status.Version = newInfo.Status.Version
+		info.Status.GitCommit = newInfo.Status.GitCommit
 		_, err = client.Update(info)
 	}
 

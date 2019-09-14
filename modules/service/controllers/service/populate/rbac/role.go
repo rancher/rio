@@ -35,13 +35,16 @@ func subject(service *riov1.Service) *v1.Subject {
 		Namespace: service.Namespace,
 		Kind:      "ServiceAccount",
 	}
-
 }
 
 func ServiceAccountName(service *riov1.Service) string {
 	if len(service.Spec.Permissions) == 0 &&
-		len(service.Spec.GlobalPermissions) == 0 {
+		len(service.Spec.GlobalPermissions) == 0 && service.Spec.DisableServiceAccount {
 		return ""
+	}
+	// need to hard code name as it is hardcoded in istio
+	if service.Name == "istio-sidecar-injector" {
+		return service.Name + "-service-account"
 	}
 	return service.Name
 }

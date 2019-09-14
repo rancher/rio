@@ -4,6 +4,10 @@ kubernetes:
     kind: Namespace
     metadata:
       name: ${NAMESPACE}
+      annotations:
+        linkerd.io/inject: disabled
+      labels:
+        linkerd.io/is-control-plane: "true"
     ---
     apiVersion: rbac.authorization.k8s.io/v1
     kind: ClusterRole
@@ -20,6 +24,19 @@ kubernetes:
       - "*"
       verbs:
       - '*'
+    - apiGroups:
+      - "apiregistration.k8s.io"
+      resources:
+      - "apiservices"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "admissionregistration.k8s.io"
+      resources:
+      - "mutatingwebhookconfigurations"
+      - "validatingwebhookconfigurations"
+      verbs:
+      - "*"
     - apiGroups:
       - "extensions"
       - "apps"
@@ -266,6 +283,8 @@ kubernetes:
               value: ${HTTP_PROXY}
             - name: INSTALL_MODE
               value: ${INSTALL_MODE}
+            - name: SM_MODE
+              value: ${SM_MODE}
 
 templates:
   questions:
@@ -289,3 +308,5 @@ templates:
     description: "specify http proxy setting"
   - variable: INSTALL_MODE
     description: "install mode"
+  - variable: SM_MODE
+    description: "service mesh mode"

@@ -1,88 +1,412 @@
+configs:
+  {{- if not .Values.DISABLE_KIALI}}
+  kiali-config:
+    content: |-
+      istio_namespace: ${NAMESPACE}
+      auth:
+        strategy: "login"
+      server:
+        port: 20001
+        web_root: /kiali
+      external_services:
+        prometheus:
+          url: http://prometheus:9090
+  {{- end}}
+  {{- if not .Values.DISABLE_PROMETHEUS}}
+  prometheus-config:
+    content:  |-
+      global:
+        scrape_interval: 15s
+      scrape_configs:
+      - job_name: 'istio-mesh'
+        # Override the global default and scrape targets from this job every 5 seconds.
+        scrape_interval: 5s
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - ${TELEMETRY_NAMESPACE}
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: istio-telemetry;prometheus
+      # Scrape config for envoy stats
+      - job_name: 'envoy-stats'
+        scrape_interval: 5s
+        metrics_path: /stats/prometheus
+        kubernetes_sd_configs:
+        - role: pod
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_container_port_name]
+          action: keep
+          regex: '.*-envoy-prom'
+        - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+          action: replace
+          regex: ([^:]+)(?::\d+)?;(\d+)
+          replacement: $1:15090
+          target_label: __address__
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+        - source_labels: [__meta_kubernetes_namespace]
+          action: replace
+          target_label: namespace
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: pod_name
+        metric_relabel_configs:
+        # Exclude some of the envoy metrics that have massive cardinality
+        # This list may need to be pruned further moving forward, as informed
+        # by performance and scalability testing.
+        - source_labels: [ cluster_name ]
+          regex: '(outbound|inbound|prometheus_stats).*'
+          action: drop
+        - source_labels: [ tcp_prefix ]
+          regex: '(outbound|inbound|prometheus_stats).*'
+          action: drop
+        - source_labels: [ listener_address ]
+          regex: '(.+)'
+          action: drop
+        - source_labels: [ __name__ ]
+          regex: 'envoy_tls.*'
+          action: drop
+        - source_labels: [ __name__ ]
+          regex: 'envoy_tcp_downstream.*'
+          action: drop
+        - source_labels: [ __name__ ]
+          regex: 'envoy_http_(stats|admin).*'
+          action: drop
+        - source_labels: [ __name__ ]
+          regex: 'envoy_cluster_(lb|retry|bind|internal|max|original).*'
+          action: drop
+      - job_name: 'istio-policy'
+        # Override the global default and scrape targets from this job every 5 seconds.
+        scrape_interval: 5s
+        # metrics_path defaults to '/metrics'
+        # scheme defaults to 'http'.
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - ${TELEMETRY_NAMESPACE}
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: istio-policy;http-monitoring
+      - job_name: 'istio-telemetry'
+        # Override the global default and scrape targets from this job every 5 seconds.
+        scrape_interval: 5s
+        # metrics_path defaults to '/metrics'
+        # scheme defaults to 'http'.
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - ${TELEMETRY_NAMESPACE}
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: istio-telemetry;http-monitoring
+      - job_name: 'pilot'
+        # Override the global default and scrape targets from this job every 5 seconds.
+        scrape_interval: 5s
+        # metrics_path defaults to '/metrics'
+        # scheme defaults to 'http'.
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - ${TELEMETRY_NAMESPACE}
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: istio-pilot;http-monitoring
+      - job_name: 'galley'
+        # Override the global default and scrape targets from this job every 5 seconds.
+        scrape_interval: 5s
+        # metrics_path defaults to '/metrics'
+        # scheme defaults to 'http'.
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - ${TELEMETRY_NAMESPACE}
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: istio-galley;http-monitoring
+      # scrape config for API servers
+      - job_name: 'kubernetes-apiservers'
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - default
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: kubernetes;https
+        - target_label: __address__
+          replacement: kubernetes.default.svc:443
+      # scrape config for nodes (kubelet)
+      - job_name: 'kubernetes-nodes'
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+        - role: node
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+        - target_label: __address__
+          replacement: kubernetes.default.svc:443
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/$${1}/proxy/metrics
+      # Scrape config for Kubelet cAdvisor.
+      #
+      # This is required for Kubernetes 1.7.3 and later, where cAdvisor metrics
+      # (those whose names begin with 'container_') have been removed from the
+      # Kubelet metrics endpoint.  This job scrapes the cAdvisor endpoint to
+      # retrieve those metrics.
+      #
+      # In Kubernetes 1.7.0-1.7.2, these metrics are only exposed on the cAdvisor
+      # HTTP endpoint; use "replacement: /api/v1/nodes/${1}:4194/proxy/metrics"
+      # in that case (and ensure cAdvisor's HTTP server hasn't been disabled with
+      # the --cadvisor-port=0 Kubelet flag).
+      #
+      # This job is not necessary and should be removed in Kubernetes 1.6 and
+      # earlier versions, or it will cause the metrics to be scraped twice.
+      - job_name: 'kubernetes-cadvisor'
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+        - role: node
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+        - target_label: __address__
+          replacement: kubernetes.default.svc:443
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/$${1}/proxy/metrics/cadvisor
+      # scrape config for service endpoints.
+      - job_name: 'kubernetes-service-endpoints'
+        kubernetes_sd_configs:
+        - role: endpoints
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
+          action: keep
+          regex: true
+        - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scheme]
+          action: replace
+          target_label: __scheme__
+          regex: (https?)
+        - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
+          action: replace
+          target_label: __metrics_path__
+          regex: (.+)
+        - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
+          action: replace
+          target_label: __address__
+          regex: ([^:]+)(?::\d+)?;(\d+)
+          replacement: $1:$2
+        - action: labelmap
+          regex: __meta_kubernetes_service_label_(.+)
+        - source_labels: [__meta_kubernetes_namespace]
+          action: replace
+          target_label: kubernetes_namespace
+        - source_labels: [__meta_kubernetes_service_name]
+          action: replace
+          target_label: kubernetes_name
+      - job_name: 'kubernetes-pods'
+        kubernetes_sd_configs:
+        - role: pod
+        relabel_configs:  # If first two labels are present, pod should be scraped  by the istio-secure job.
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+          action: keep
+          regex: true
+        - source_labels: [__meta_kubernetes_pod_annotation_sidecar_istio_io_status]
+          action: drop
+          regex: (.+)
+        - source_labels: [__meta_kubernetes_pod_annotation_istio_mtls]
+          action: drop
+          regex: (true)
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+          action: replace
+          target_label: __metrics_path__
+          regex: (.+)
+        - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+          action: replace
+          regex: ([^:]+)(?::\d+)?;(\d+)
+          replacement: $1:$2
+          target_label: __address__
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+        - source_labels: [__meta_kubernetes_namespace]
+          action: replace
+          target_label: namespace
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: pod_name
+      - job_name: 'kubernetes-pods-istio-secure'
+        scheme: https
+        tls_config:
+          ca_file: /etc/istio-certs/root-cert.pem
+          cert_file: /etc/istio-certs/cert-chain.pem
+          key_file: /etc/istio-certs/key.pem
+          insecure_skip_verify: true  # prometheus does not support secure naming.
+        kubernetes_sd_configs:
+        - role: pod
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+          action: keep
+          regex: true
+        # sidecar status annotation is added by sidecar injector and
+        # istio_workload_mtls_ability can be specifically placed on a pod to indicate its ability to receive mtls traffic.
+        - source_labels: [__meta_kubernetes_pod_annotation_sidecar_istio_io_status, __meta_kubernetes_pod_annotation_istio_mtls]
+          action: keep
+          regex: (([^;]+);([^;]*))|(([^;]*);(true))
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+          action: replace
+          target_label: __metrics_path__
+          regex: (.+)
+        - source_labels: [__address__]  # Only keep address that is host:port
+          action: keep    # otherwise an extra target with ':443' is added for https scheme
+          regex: ([^:]+):(\d+)
+        - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+          action: replace
+          regex: ([^:]+)(?::\d+)?;(\d+)
+          replacement: $1:$2
+          target_label: __address__
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+        - source_labels: [__meta_kubernetes_namespace]
+          action: replace
+          target_label: namespace
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: pod_name
+  {{- end}}
+
 services:
-  istio-pilot:
+  {{- if not .Values.DISABLE_PROMETHEUS}}
+  prometheus:
     disableServiceMesh: true
-    labels:
-      istio: pilot
     global_permissions:
-    - '* config.istio.io/*'
-    - '* networking.istio.io/*'
-    - '* authentication.istio.io/*'
-    - '* apiextensions.k8s.io/customresourcedefinitions'
-    - '* extensions/ingresses'
-    - '* extensions/ingresses/status'
-    - rbac.istio.io/*
-    - create,get,list,watch,update configmaps
+    - nodes
+    - services
     - endpoints
     - pods
-    - services
-    - namespaces
-    - nodes
-    - secrets
-    containers:
-    - name: discovery
-      args:
-      - discovery
-      - --monitoringAddr=:15014
-      - --domain
-      - cluster.local
-      - --secureGrpcAddr
-      - ""
-      - --keepaliveMaxServerConnectionAge
-      - 30m
-      configs:
-      - mesh/meshConfig:/etc/istio/config/mesh
-      ports:
-      - 8080/http,http-legacy-discovery
-      - 15010/grpc,grpc-xds
-      - 15014/http,http-monitoring
-      env:
-      - POD_NAME=$(self/name)
-      - POD_NAMESPACE=$(self/namespace)
-      - PILOT_THROTTLE=500
-      - PILOT_CACHE_SQUASH=5
-      - PILOT_DISABLE_XDS_MARSHALING_TO_ANY=1
-      - PILOT_TRACE_SAMPLING=100
-      image: "istio/pilot:${TAG}"
-      imagePullPolicy: always
-      secrets: identity:/etc/certs
-      readinessProbe:
-        failureThreshold: 3
-        httpGet:
-          path: /ready
-          port: 8080
-          scheme: HTTP
-        initialDelaySeconds: 5
-        periodSeconds: 30
-        successThreshold: 1
-        timeoutSeconds: 5
-    - name: istio-proxy
-      ports:
-      - 15011/https,https-xds
-      image: "istio/proxyv2:${TAG}"
-      imagePullPolicy: always
-      args:
-      - proxy
-      - --domain
-      - $(POD_NAMESPACE).svc.cluster.local
-      - --serviceCluster
-      - istio-pilot
-      - --templateFile
-      - /etc/istio/proxy/envoy_pilot.yaml.tmpl
-      - --controlPlaneAuthPolicy
-      - NONE
-      env:
-      - POD_NAME=$(self/name)
-      - POD_NAMESPACE=$(self/namespace)
-      - INSTANCE_IP=$(self/ip)
-      secrets: identity:/etc/certs
-
+    - /nodes/proxy
+    - configmaps
+    - get url=/metrics
+    image: docker.io/prom/prometheus:v2.8.0
+    imagePullPolicy: IfNotPresent
+    ports:
+    - 9090/http,http-prometheus,internal=true
+    configs:
+    - prometheus-config/content:/etc/prometheus/prometheus.yml
+    args:
+    - --storage.tsdb.retention=6h
+    - --config.file=/etc/prometheus/prometheus.yml
+    livenessProbe:
+      httpGet:
+        path: /-/healthy
+        port: 9090
+    readinessProbe:
+      httpGet:
+        path: /-/ready
+        port: 9090
+  {{- end}}
+  {{- if not .Values.DISABLE_KIALI}}
+  kiali:
+    disableServiceMesh: true
+    global_permissions:
+    - "get,list,watch networking.istio.io/virtualservices"
+    - "get,list,watch networking.istio.io/destinationrules"
+    - "get,list,watch networking.istio.io/serviceentries"
+    - "get,list,watch networking.istio.io/gateways"
+    - "get,list,watch authentication.istio.io/policies"
+    - "get,list,watch config.istio.io/*"
+    - "get,list,watch /*"
+    - "get,list,watch batch/*"
+    - "get,list,watch apps/*"
+    - "get,list,watch autoscaling/*"
+    image: quay.io/kiali/kiali:v0.20
+    env:
+    - ACTIVE_NAMESPACE=$(self/namespace}
+    args:
+    - -config
+    - /kiali-configuration/config.yaml
+    - -v
+    - '4'
+    configs:
+    - kiali-config/content:/kiali-configuration/config.yaml
+    secrets:
+    - kiali:/kiali-secret/
+    ports:
+    - 20001/http
+    cpus: "10m"
+  {{- end}}
+  istio-sidecar-injector:
+    labels:
+      istio: sidecar-injector
+    global_permissions:
+    - "get,list,watch configmaps"
+    - "get,list,watch,patch admissionregistration.k8s.io/mutatingwebhookconfigurations"
+    disableServiceMesh: true
+    image: "docker.io/istio/sidecar_injector:${TAG}"
+    args:
+    - --caCertFile=/etc/istio/certs/root-cert.pem
+    - --tlsCertFile=/etc/istio/certs/cert-chain.pem
+    - --tlsKeyFile=/etc/istio/certs/key.pem
+    - --injectConfig=/etc/istio/inject/config
+    - --meshConfig=/etc/istio/config/mesh
+    - --healthCheckInterval=2s
+    - --healthCheckFile=/health
+    cpus: "10m"
+    ports:
+    - 443,https,internal=true
+    livenessProbe:
+      exec:
+        command:
+        - /usr/local/bin/sidecar-injector
+        - probe
+        - --probe-path=/health
+        - --interval=4s
+      initialDelaySeconds: 4
+      periodSeconds: 4
+    readinessProbe:
+      exec:
+        command:
+        - /usr/local/bin/sidecar-injector
+        - probe
+        - --probe-path=/health
+        - --interval=4s
+      initialDelaySeconds: 4
+      periodSeconds: 4
+    configs:
+    - istio-sidecar-injector/config:/etc/istio/inject/config
+    - istio-sidecar-injector/values:/etc/istio/inject/values
+    - mesh/meshConfig:/etc/istio/config/mesh
+    secrets:
+    - identity:/etc/istio/certs
   istio-citadel:
     disableServiceMesh: true
     image: "istio/citadel:${TAG}"
     args:
     - --append-dns-names=true
     - --grpc-port=8060
-    - --grpc-hostname=citadel
+    - --custom-dns-names=istio-pilot-service-account.${NAMESPACE}:istio-pilot.${NAMESPACE}
     - --self-signed-ca=true
     - --monitoring-port=15014
     - --citadel-storage-namespace=${NAMESPACE}
@@ -97,142 +421,1136 @@ services:
     - get,list,update,delete extensions/deployments
     - get,list,update,delete extensions/replicasets
     secrets: identity:/etc/certs
-
-  istio-gateway:
+  {{- if not .Values.DISABLE_MIXER}}
+  istio-telemetry:
     disableServiceMesh: true
-    labels:
-      "gateway": "external"
-      "istio": "gateway"
     global_permissions:
-    - "get,watch,list,update extensions/thirdpartyresources"
-    - "get,watch,list,update */virtualservices"
-    - "get,watch,list,update */destinationrules"
-    - "get,watch,list,update */gateways"
-    - secrets
-    update_order: stop-first
-    systemSpec:
-      global: true
-      deployment_strategy: Recreate
-      podSpec:
-        volumes:
-        - name: secret-identity
-          secret:
-            defaultMode: 420
-            optional: true
-            secretName: istio.istio-gateway
-        - name: ingressgatewaysdsudspath
-          emptyDir: {}
-        containers:
-        - name: ingress-sds
-          image: "istio/node-agent-k8s:${TAG}"
-          imagePullPolicy: Always
-          env:
-          - name: "ENABLE_WORKLOAD_SDS"
-            value: "false"
-          - name: "ENABLE_INGRESS_GATEWAY_SDS"
-            value: "true"
-          - name: "INGRESS_GATEWAY_NAMESPACE"
-            valueFrom:
-              fieldRef:
-                apiVersion: v1
-                fieldPath: metadata.namespace
-          volumeMounts:
-            - name: ingressgatewaysdsudspath
-              mountPath: /var/run/ingress_gateway
-        - name: istio-proxy
-          ports:
-          - name: http2
-            {{- if eq "${INSTALL_MODE}" "hostport" }}
-            hostPort: ${HTTP_PORT}
-            {{- end}}
-            containerPort: ${HTTP_PORT}
-            protocol: TCP
-          - name: https
-            {{- if eq "${INSTALL_MODE}" "hostport" }}
-            hostPort: ${HTTPS_PORT}
-            {{- end}}
-            containerPort: ${HTTPS_PORT}
-            protocol: TCP
-          image: "istio/proxyv2:${TAG}"
-          imagePullPolicy: Always
-          args:
-          - proxy
-          - router
-          - --domain
-          - $(POD_NAMESPACE).svc.cluster.local
-          - --log_output_level
-          - info
-          - --drainDuration
-          - '45s' #drainDuration
-          - --parentShutdownDuration
-          - '1m0s' #parentShutdownDuration
-          - --connectTimeout
-          - '10s' #connectTimeout
-          - --serviceCluster
-          - istio-gateway
-          - --zipkinAddress
-          - ""
-          - --statsdUdpAddress
-          - ""
-          - --proxyAdminPort
-          - "15000"
-          - --statusPort
-          - "15020"
-          - --controlPlaneAuthPolicy
-          - NONE
-          - --discoveryAddress
-          - istio-pilot:15010
-          env:
-          - name: POD_NAME
-            valueFrom:
-              fieldRef:
-                apiVersion: v1
-                fieldPath: metadata.name
-          - name: POD_NAMESPACE
-            valueFrom:
-              fieldRef:
-                apiVersion: v1
-                fieldPath: metadata.namespace
-          - name: INSTANCE_IP
-            valueFrom:
-              fieldRef:
-                apiVersion: v1
-                fieldPath: status.podIP
-          - name: HOST_IP
-            valueFrom:
-              fieldRef:
-                apiVersion: v1
-                fieldPath: status.hostIP
-          - name: ISTIO_META_POD_NAME
-            valueFrom:
-              fieldRef:
-                apiVersion: v1
-                fieldPath: metadata.name
-          - name: ISTIO_META_CONFIG_NAMESPACE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.namespace
-          - name: ISTIO_META_USER_SDS
-            value: "true"
-          volumeMounts:
-          - mountPath: /etc/certs
-            name: secret-identity
-            readOnly: true
-          - name: ingressgatewaysdsudspath
-            mountPath: /var/run/ingress_gateway
-          readinessProbe:
-            failureThreshold: 30
-            httpGet:
-              path: /healthz/ready
-              port: 15020
-              scheme: HTTP
-            initialDelaySeconds: 1
-            periodSeconds: 2
-            successThreshold: 1
-            timeoutSeconds: 1
+    - role=cluster-admin
+    image: "istio/mixer:${TAG}"
+    imagePullPolicy: always
+    args:
+    - --monitoringPort=9093
+    - --address
+    - unix:///sock/mixer.socket
+    - --configStoreURL=k8s://
+    - --configDefaultNamespace=${NAMESPACE}
+    volumes:
+    - uds-socket:/sock
+    env:
+    - GODEBUG=gctrace=2
+    ports:
+    - 9093/tcp,monitoring,internal=true
+    - 42422/tcp,prometheus,internal=true
+    containers:
+    - name: istio-proxy
+      ports:
+      - 15004/tcp
+      - 9091/tcp,grpc
+      image: "istio/proxyv2:${TAG}"
+      args:
+      - proxy
+      - --serviceCluster
+      - istio-telemetry
+      - --templateFile
+      - /etc/istio/proxy/envoy_telemetry.yaml.tmpl
+      - --controlPlaneAuthPolicy
+      - NONE
+      env:
+      - POD_NAME=$(self/name)
+      - POD_NAMESPACE=$(self/namespace)
+      - INSTANCE_IP=$(self/ip)
+      secrets: identity:/etc/certs
+      volumes:
+      - uds-socket:/sock
+  {{- end}}
 
-templates:
-  questions:
-    - variable: INSTALL_MODE
-      description: "install mode"
 
+kubernetes:
+  manifest: |-
+    ---
+    # Source: istio/charts/sidecarInjectorWebhook/templates/mutatingwebhook.yaml
+    apiVersion: admissionregistration.k8s.io/v1beta1
+    kind: MutatingWebhookConfiguration
+    metadata:
+      name: istio-sidecar-injector
+      labels:
+        app: istio-sidecar-injector
+    webhooks:
+      - name: sidecar-injector.istio.io
+        clientConfig:
+          service:
+            name: istio-sidecar-injector
+            namespace: ${NAMESPACE}
+            path: "/inject"
+        rules:
+          - operations: [ "CREATE" ]
+            apiGroups: [""]
+            apiVersions: ["v1"]
+            resources: ["pods"]
+        failurePolicy: Fail
+        namespaceSelector:
+          matchLabels:
+            istio-injection: enabled
+    ---
+    {{- if not .Values.DISABLE_KIALI}}
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: kiali
+      namespace: ${NAMESPACE}
+      labels:
+        app: kiali
+    type: Opaque
+    data:
+      username: ${KIALI_USERNAME}
+      passphrase: ${KIALI_PASSPHRASE}
+    {{- end}}
+    {{- if not .Values.DISABLE_MIXER}}
+    ---
+    # Source: istio/charts/mixer/templates/config.yaml
+
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: attributemanifest
+    metadata:
+      name: istioproxy
+      namespace: ${NAMESPACE}
+      labels:
+        app: mixer
+        chart: mixer
+        heritage: Tiller
+        release: istio
+    spec:
+      attributes:
+        origin.ip:
+          valueType: IP_ADDRESS
+        origin.uid:
+          valueType: STRING
+        origin.user:
+          valueType: STRING
+        request.headers:
+          valueType: STRING_MAP
+        request.id:
+          valueType: STRING
+        request.host:
+          valueType: STRING
+        request.method:
+          valueType: STRING
+        request.path:
+          valueType: STRING
+        request.url_path:
+          valueType: STRING
+        request.query_params:
+          valueType: STRING_MAP
+        request.reason:
+          valueType: STRING
+        request.referer:
+          valueType: STRING
+        request.scheme:
+          valueType: STRING
+        request.total_size:
+          valueType: INT64
+        request.size:
+          valueType: INT64
+        request.time:
+          valueType: TIMESTAMP
+        request.useragent:
+          valueType: STRING
+        response.code:
+          valueType: INT64
+        response.duration:
+          valueType: DURATION
+        response.headers:
+          valueType: STRING_MAP
+        response.total_size:
+          valueType: INT64
+        response.size:
+          valueType: INT64
+        response.time:
+          valueType: TIMESTAMP
+        response.grpc_status:
+          valueType: STRING
+        response.grpc_message:
+          valueType: STRING
+        source.uid:
+          valueType: STRING
+        source.user: # DEPRECATED
+          valueType: STRING
+        source.principal:
+          valueType: STRING
+        destination.uid:
+          valueType: STRING
+        destination.principal:
+          valueType: STRING
+        destination.port:
+          valueType: INT64
+        connection.event:
+          valueType: STRING
+        connection.id:
+          valueType: STRING
+        connection.received.bytes:
+          valueType: INT64
+        connection.received.bytes_total:
+          valueType: INT64
+        connection.sent.bytes:
+          valueType: INT64
+        connection.sent.bytes_total:
+          valueType: INT64
+        connection.duration:
+          valueType: DURATION
+        connection.mtls:
+          valueType: BOOL
+        connection.requested_server_name:
+          valueType: STRING
+        context.protocol:
+          valueType: STRING
+        context.proxy_error_code:
+          valueType: STRING
+        context.timestamp:
+          valueType: TIMESTAMP
+        context.time:
+          valueType: TIMESTAMP
+        # Deprecated, kept for compatibility
+        context.reporter.local:
+          valueType: BOOL
+        context.reporter.kind:
+          valueType: STRING
+        context.reporter.uid:
+          valueType: STRING
+        api.service:
+          valueType: STRING
+        api.version:
+          valueType: STRING
+        api.operation:
+          valueType: STRING
+        api.protocol:
+          valueType: STRING
+        request.auth.principal:
+          valueType: STRING
+        request.auth.audiences:
+          valueType: STRING
+        request.auth.presenter:
+          valueType: STRING
+        request.auth.claims:
+          valueType: STRING_MAP
+        request.auth.raw_claims:
+          valueType: STRING
+        request.api_key:
+          valueType: STRING
+        rbac.permissive.response_code:
+          valueType: STRING
+        rbac.permissive.effective_policy_id:
+          valueType: STRING
+        check.error_code:
+          valueType: INT64
+        check.error_message:
+          valueType: STRING
+        check.cache_hit:
+          valueType: BOOL
+        quota.cache_hit:
+          valueType: BOOL
+
+    ---
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: attributemanifest
+    metadata:
+      name: kubernetes
+      namespace: ${NAMESPACE}
+      labels:
+        app: mixer
+        chart: mixer
+        heritage: Tiller
+        release: istio
+    spec:
+      attributes:
+        source.ip:
+          valueType: IP_ADDRESS
+        source.labels:
+          valueType: STRING_MAP
+        source.metadata:
+          valueType: STRING_MAP
+        source.name:
+          valueType: STRING
+        source.namespace:
+          valueType: STRING
+        source.owner:
+          valueType: STRING
+        source.serviceAccount:
+          valueType: STRING
+        source.services:
+          valueType: STRING
+        source.workload.uid:
+          valueType: STRING
+        source.workload.name:
+          valueType: STRING
+        source.workload.namespace:
+          valueType: STRING
+        destination.ip:
+          valueType: IP_ADDRESS
+        destination.labels:
+          valueType: STRING_MAP
+        destination.metadata:
+          valueType: STRING_MAP
+        destination.owner:
+          valueType: STRING
+        destination.name:
+          valueType: STRING
+        destination.container.name:
+          valueType: STRING
+        destination.namespace:
+          valueType: STRING
+        destination.service.uid:
+          valueType: STRING
+        destination.service.name:
+          valueType: STRING
+        destination.service.namespace:
+          valueType: STRING
+        destination.service.host:
+          valueType: STRING
+        destination.serviceAccount:
+          valueType: STRING
+        destination.workload.uid:
+          valueType: STRING
+        destination.workload.name:
+          valueType: STRING
+        destination.workload.namespace:
+          valueType: STRING
+    ---
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: handler
+    metadata:
+      name: stdio
+      namespace: ${NAMESPACE}
+      labels:
+        app: mixer
+        chart: mixer
+        heritage: Tiller
+        release: istio
+    spec:
+      compiledAdapter: stdio
+      params:
+        outputAsJson: true
+    ---
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: instance
+    metadata:
+      name: accesslog
+      namespace: ${NAMESPACE}
+      labels:
+        app: mixer
+        chart: mixer
+        heritage: Tiller
+        release: istio
+    spec:
+      compiledTemplate: logentry
+      params:
+        severity: '"Info"'
+        timestamp: request.time
+        variables:
+          sourceIp: source.ip | ip("0.0.0.0")
+          sourceApp: source.labels["app"] | ""
+          sourcePrincipal: source.principal | ""
+          sourceName: source.name | ""
+          sourceWorkload: source.workload.name | ""
+          sourceNamespace: source.namespace | ""
+          sourceOwner: source.owner | ""
+          destinationApp: destination.labels["app"] | ""
+          destinationIp: destination.ip | ip("0.0.0.0")
+          destinationServiceHost: destination.service.host | ""
+          destinationWorkload: destination.workload.name | ""
+          destinationName: destination.name | ""
+          destinationNamespace: destination.namespace | ""
+          destinationOwner: destination.owner | ""
+          destinationPrincipal: destination.principal | ""
+          apiClaims: request.auth.raw_claims | ""
+          apiKey: request.api_key | request.headers["x-api-key"] | ""
+          protocol: request.scheme | context.protocol | "http"
+          method: request.method | ""
+          url: request.path | ""
+          responseCode: response.code | 0
+          responseFlags: context.proxy_error_code | ""
+          responseSize: response.size | 0
+          permissiveResponseCode: rbac.permissive.response_code | "none"
+          permissiveResponsePolicyID: rbac.permissive.effective_policy_id | "none"
+          requestSize: request.size | 0
+          requestId: request.headers["x-request-id"] | ""
+          clientTraceId: request.headers["x-client-trace-id"] | ""
+          latency: response.duration | "0ms"
+          connection_security_policy: conditional((context.reporter.kind | "inbound") == "outbound", "unknown", conditional(connection.mtls | false, "mutual_tls", "none"))
+          requestedServerName: connection.requested_server_name | ""
+          userAgent: request.useragent | ""
+          responseTimestamp: response.time
+          receivedBytes: request.total_size | 0
+          sentBytes: response.total_size | 0
+          referer: request.referer | ""
+          httpAuthority: request.headers[":authority"] | request.host | ""
+          xForwardedFor: request.headers["x-forwarded-for"] | "0.0.0.0"
+          reporter: conditional((context.reporter.kind | "inbound") == "outbound", "source", "destination")
+          grpcStatus: response.grpc_status | ""
+          grpcMessage: response.grpc_message | ""
+        monitored_resource_type: '"global"'
+    ---
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: instance
+    metadata:
+      name: tcpaccesslog
+      namespace: ${NAMESPACE}
+      labels:
+        app: mixer
+        chart: mixer
+        heritage: Tiller
+        release: istio
+    spec:
+      compiledTemplate: logentry
+      params:
+        severity: '"Info"'
+        timestamp: context.time | timestamp("2017-01-01T00:00:00Z")
+        variables:
+          connectionEvent: connection.event | ""
+          sourceIp: source.ip | ip("0.0.0.0")
+          sourceApp: source.labels["app"] | ""
+          sourcePrincipal: source.principal | ""
+          sourceName: source.name | ""
+          sourceWorkload: source.workload.name | ""
+          sourceNamespace: source.namespace | ""
+          sourceOwner: source.owner | ""
+          destinationApp: destination.labels["app"] | ""
+          destinationIp: destination.ip | ip("0.0.0.0")
+          destinationServiceHost: destination.service.host | ""
+          destinationWorkload: destination.workload.name | ""
+          destinationName: destination.name | ""
+          destinationNamespace: destination.namespace | ""
+          destinationOwner: destination.owner | ""
+          destinationPrincipal: destination.principal | ""
+          protocol: context.protocol | "tcp"
+          connectionDuration: connection.duration | "0ms"
+          connection_security_policy: conditional((context.reporter.kind | "inbound") == "outbound", "unknown", conditional(connection.mtls | false, "mutual_tls", "none"))
+          requestedServerName: connection.requested_server_name | ""
+          receivedBytes: connection.received.bytes | 0
+          sentBytes: connection.sent.bytes | 0
+          totalReceivedBytes: connection.received.bytes_total | 0
+          totalSentBytes: connection.sent.bytes_total | 0
+          reporter: conditional((context.reporter.kind | "inbound") == "outbound", "source", "destination")
+          responseFlags: context.proxy_error_code | ""
+        monitored_resource_type: '"global"'
+    ---
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: rule
+    metadata:
+      name: stdio
+      namespace: ${NAMESPACE}
+      labels:
+        app: mixer
+        chart: mixer
+        heritage: Tiller
+        release: istio
+    spec:
+      match: context.protocol == "http" || context.protocol == "grpc"
+      actions:
+      - handler: stdio
+        instances:
+        - accesslog
+    ---
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: rule
+    metadata:
+      name: stdiotcp
+      namespace: ${NAMESPACE}
+      labels:
+        app: mixer
+        chart: mixer
+        heritage: Tiller
+        release: istio
+    spec:
+      match: context.protocol == "tcp"
+      actions:
+      - handler: stdio
+        instances:
+        - tcpaccesslog
+    ---
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: instance
+    metadata:
+      name: requestcount
+      namespace: ${NAMESPACE}
+      labels:
+        app: mixer
+        chart: mixer
+        heritage: Tiller
+        release: istio
+    spec:
+      compiledTemplate: metric
+      params:
+        value: "1"
+        dimensions:
+          reporter: conditional((context.reporter.kind | "inbound") == "outbound", "source", "destination")
+          source_workload: source.workload.name | "unknown"
+          source_workload_namespace: source.workload.namespace | "unknown"
+          source_principal: source.principal | "unknown"
+          source_app: source.labels["app"] | "unknown"
+          source_version: source.labels["version"] | "unknown"
+          destination_workload: destination.workload.name | "unknown"
+          destination_workload_namespace: destination.workload.namespace | "unknown"
+          destination_principal: destination.principal | "unknown"
+          destination_app: destination.labels["app"] | "unknown"
+          destination_version: destination.labels["version"] | "unknown"
+          destination_service: destination.service.host | "unknown"
+          destination_service_name: destination.service.name | "unknown"
+          destination_service_namespace: destination.service.namespace | "unknown"
+          request_protocol: api.protocol | context.protocol | "unknown"
+          response_code: response.code | 200
+          response_flags: context.proxy_error_code | "-"
+          permissive_response_code: rbac.permissive.response_code | "none"
+          permissive_response_policyid: rbac.permissive.effective_policy_id | "none"
+          connection_security_policy: conditional((context.reporter.kind | "inbound") == "outbound", "unknown", conditional(connection.mtls | false, "mutual_tls", "none"))
+        monitored_resource_type: '"UNSPECIFIED"'
+    ---
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: instance
+    metadata:
+      name: requestduration
+      namespace: ${NAMESPACE}
+      labels:
+        app: mixer
+        chart: mixer
+        heritage: Tiller
+        release: istio
+    spec:
+      compiledTemplate: metric
+      params:
+        value: response.duration | "0ms"
+        dimensions:
+          reporter: conditional((context.reporter.kind | "inbound") == "outbound", "source", "destination")
+          source_workload: source.workload.name | "unknown"
+          source_workload_namespace: source.workload.namespace | "unknown"
+          source_principal: source.principal | "unknown"
+          source_app: source.labels["app"] | "unknown"
+          source_version: source.labels["version"] | "unknown"
+          destination_workload: destination.workload.name | "unknown"
+          destination_workload_namespace: destination.workload.namespace | "unknown"
+          destination_principal: destination.principal | "unknown"
+          destination_app: destination.labels["app"] | "unknown"
+          destination_version: destination.labels["version"] | "unknown"
+          destination_service: destination.service.host | "unknown"
+          destination_service_name: destination.service.name | "unknown"
+          destination_service_namespace: destination.service.namespace | "unknown"
+          request_protocol: api.protocol | context.protocol | "unknown"
+          response_code: response.code | 200
+          response_flags: context.proxy_error_code | "-"
+          permissive_response_code: rbac.permissive.response_code | "none" 
+          permissive_response_policyid: rbac.permissive.effective_policy_id | "none"
+          connection_security_policy: conditional((context.reporter.kind | "inbound") == "outbound", "unknown", conditional(connection.mtls | false, "mutual_tls", "none"))
+        monitored_resource_type: '"UNSPECIFIED"'
+    ---
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: instance
+    metadata:
+      name: requestsize
+      namespace: ${NAMESPACE}
+      labels:
+        app: mixer
+        chart: mixer
+        heritage: Tiller
+        release: istio
+    spec:
+      compiledTemplate: metric
+      params:
+        value: request.size | 0
+        dimensions:
+          reporter: conditional((context.reporter.kind | "inbound") == "outbound", "source", "destination")
+          source_workload: source.workload.name | "unknown"
+          source_workload_namespace: source.workload.namespace | "unknown"
+          source_principal: source.principal | "unknown"
+          source_app: source.labels["app"] | "unknown"
+          source_version: source.labels["version"] | "unknown"
+          destination_workload: destination.workload.name | "unknown"
+          destination_workload_namespace: destination.workload.namespace | "unknown"
+          destination_principal: destination.principal | "unknown"
+          destination_app: destination.labels["app"] | "unknown"
+          destination_version: destination.labels["version"] | "unknown"
+          destination_service: destination.service.host | "unknown"
+          destination_service_name: destination.service.name | "unknown"
+          destination_service_namespace: destination.service.namespace | "unknown"
+          request_protocol: api.protocol | context.protocol | "unknown"
+          response_code: response.code | 200
+          response_flags: context.proxy_error_code | "-"
+          permissive_response_code: rbac.permissive.response_code | "none" 
+          permissive_response_policyid: rbac.permissive.effective_policy_id | "none"
+          connection_security_policy: conditional((context.reporter.kind | "inbound") == "outbound", "unknown", conditional(connection.mtls | false, "mutual_tls", "none"))
+        monitored_resource_type: '"UNSPECIFIED"'
+    ---
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: instance
+    metadata:
+      name: responsesize
+      namespace: ${NAMESPACE}
+      labels:
+        app: mixer
+        chart: mixer
+        heritage: Tiller
+        release: istio
+    spec:
+      compiledTemplate: metric
+      params:
+        value: response.size | 0
+        dimensions:
+          reporter: conditional((context.reporter.kind | "inbound") == "outbound", "source", "destination")
+          source_workload: source.workload.name | "unknown"
+          source_workload_namespace: source.workload.namespace | "unknown"
+          source_principal: source.principal | "unknown"
+          source_app: source.labels["app"] | "unknown"
+          source_version: source.labels["version"] | "unknown"
+          destination_workload: destination.workload.name | "unknown"
+          destination_workload_namespace: destination.workload.namespace | "unknown"
+          destination_principal: destination.principal | "unknown"
+          destination_app: destination.labels["app"] | "unknown"
+          destination_version: destination.labels["version"] | "unknown"
+          destination_service: destination.service.host | "unknown"
+          destination_service_name: destination.service.name | "unknown"
+          destination_service_namespace: destination.service.namespace | "unknown"
+          request_protocol: api.protocol | context.protocol | "unknown"
+          response_code: response.code | 200
+          response_flags: context.proxy_error_code | "-"
+          permissive_response_code: rbac.permissive.response_code | "none" 
+          permissive_response_policyid: rbac.permissive.effective_policy_id | "none"
+          connection_security_policy: conditional((context.reporter.kind | "inbound") == "outbound", "unknown", conditional(connection.mtls | false, "mutual_tls", "none"))
+        monitored_resource_type: '"UNSPECIFIED"'
+    ---
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: instance
+    metadata:
+      name: tcpbytesent
+      namespace: ${NAMESPACE}
+      labels:
+        app: mixer
+        chart: mixer
+        heritage: Tiller
+        release: istio
+    spec:
+      compiledTemplate: metric
+      params:
+        value: connection.sent.bytes | 0
+        dimensions:
+          reporter: conditional((context.reporter.kind | "inbound") == "outbound", "source", "destination")
+          source_workload: source.workload.name | "unknown"
+          source_workload_namespace: source.workload.namespace | "unknown"
+          source_principal: source.principal | "unknown"
+          source_app: source.labels["app"] | "unknown"
+          source_version: source.labels["version"] | "unknown"
+          destination_workload: destination.workload.name | "unknown"
+          destination_workload_namespace: destination.workload.namespace | "unknown"
+          destination_principal: destination.principal | "unknown"
+          destination_app: destination.labels["app"] | "unknown"
+          destination_version: destination.labels["version"] | "unknown"
+          destination_service: destination.service.host | "unknown"
+          destination_service_name: destination.service.name | "unknown"
+          destination_service_namespace: destination.service.namespace | "unknown"
+          connection_security_policy: conditional((context.reporter.kind | "inbound") == "outbound", "unknown", conditional(connection.mtls | false, "mutual_tls", "none"))
+          response_flags: context.proxy_error_code | "-"
+        monitored_resource_type: '"UNSPECIFIED"'
+    ---
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: instance
+    metadata:
+      name: tcpbytereceived
+      namespace: ${NAMESPACE}
+      labels:
+        app: mixer
+        chart: mixer
+        heritage: Tiller
+        release: istio
+    spec:
+      compiledTemplate: metric
+      params:
+        value: connection.received.bytes | 0
+        dimensions:
+          reporter: conditional((context.reporter.kind | "inbound") == "outbound", "source", "destination")
+          source_workload: source.workload.name | "unknown"
+          source_workload_namespace: source.workload.namespace | "unknown"
+          source_principal: source.principal | "unknown"
+          source_app: source.labels["app"] | "unknown"
+          source_version: source.labels["version"] | "unknown"
+          destination_workload: destination.workload.name | "unknown"
+          destination_workload_namespace: destination.workload.namespace | "unknown"
+          destination_principal: destination.principal | "unknown"
+          destination_app: destination.labels["app"] | "unknown"
+          destination_version: destination.labels["version"] | "unknown"
+          destination_service: destination.service.host | "unknown"
+          destination_service_name: destination.service.name | "unknown"
+          destination_service_namespace: destination.service.namespace | "unknown"
+          connection_security_policy: conditional((context.reporter.kind | "inbound") == "outbound", "unknown", conditional(connection.mtls | false, "mutual_tls", "none"))
+          response_flags: context.proxy_error_code | "-"
+        monitored_resource_type: '"UNSPECIFIED"'
+    ---
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: instance
+    metadata:
+      name: tcpconnectionsopened
+      namespace: ${NAMESPACE}
+      labels:
+        app: mixer
+        chart: mixer
+        heritage: Tiller
+        release: istio
+    spec:
+      compiledTemplate: metric
+      params:
+        value: "1"
+        dimensions:
+          reporter: conditional((context.reporter.kind | "inbound") == "outbound", "source", "destination")
+          source_workload: source.workload.name | "unknown"
+          source_workload_namespace: source.workload.namespace | "unknown"
+          source_principal: source.principal | "unknown"
+          source_app: source.labels["app"] | "unknown"
+          source_version: source.labels["version"] | "unknown"
+          destination_workload: destination.workload.name | "unknown"
+          destination_workload_namespace: destination.workload.namespace | "unknown"
+          destination_principal: destination.principal | "unknown"
+          destination_app: destination.labels["app"] | "unknown"
+          destination_version: destination.labels["version"] | "unknown"
+          destination_service: destination.service.name | "unknown"
+          destination_service_name: destination.service.name | "unknown"
+          destination_service_namespace: destination.service.namespace | "unknown"
+          connection_security_policy: conditional((context.reporter.kind | "inbound") == "outbound", "unknown", conditional(connection.mtls | false, "mutual_tls", "none"))
+          response_flags: context.proxy_error_code | "-"
+        monitored_resource_type: '"UNSPECIFIED"'
+    ---
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: instance
+    metadata:
+      name: tcpconnectionsclosed
+      namespace: ${NAMESPACE}
+      labels:
+        app: mixer
+        chart: mixer
+        heritage: Tiller
+        release: istio
+    spec:
+      compiledTemplate: metric
+      params:
+        value: "1"
+        dimensions:
+          reporter: conditional((context.reporter.kind | "inbound") == "outbound", "source", "destination")
+          source_workload: source.workload.name | "unknown"
+          source_workload_namespace: source.workload.namespace | "unknown"
+          source_principal: source.principal | "unknown"
+          source_app: source.labels["app"] | "unknown"
+          source_version: source.labels["version"] | "unknown"
+          destination_workload: destination.workload.name | "unknown"
+          destination_workload_namespace: destination.workload.namespace | "unknown"
+          destination_principal: destination.principal | "unknown"
+          destination_app: destination.labels["app"] | "unknown"
+          destination_version: destination.labels["version"] | "unknown"
+          destination_service: destination.service.name | "unknown"
+          destination_service_name: destination.service.name | "unknown"
+          destination_service_namespace: destination.service.namespace | "unknown"
+          connection_security_policy: conditional((context.reporter.kind | "inbound") == "outbound", "unknown", conditional(connection.mtls | false, "mutual_tls", "none"))
+          response_flags: context.proxy_error_code | "-"
+        monitored_resource_type: '"UNSPECIFIED"'
+    ---
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: handler
+    metadata:
+      name: prometheus
+      namespace: ${NAMESPACE}
+      labels:
+        app: mixer
+        chart: mixer
+        heritage: Tiller
+        release: istio
+    spec:
+      compiledAdapter: prometheus
+      params:
+        metricsExpirationPolicy:
+          metricsExpiryDuration: "10m"
+        metrics:
+        - name: requests_total
+          instance_name: requestcount.instance.${NAMESPACE}
+          kind: COUNTER
+          label_names:
+          - reporter
+          - source_app
+          - source_principal
+          - source_workload
+          - source_workload_namespace
+          - source_version
+          - destination_app
+          - destination_principal
+          - destination_workload
+          - destination_workload_namespace
+          - destination_version
+          - destination_service
+          - destination_service_name
+          - destination_service_namespace
+          - request_protocol
+          - response_code
+          - response_flags
+          - permissive_response_code
+          - permissive_response_policyid
+          - connection_security_policy
+        - name: request_duration_seconds
+          instance_name: requestduration.instance.${NAMESPACE}
+          kind: DISTRIBUTION
+          label_names:
+          - reporter
+          - source_app
+          - source_principal
+          - source_workload
+          - source_workload_namespace
+          - source_version
+          - destination_app
+          - destination_principal
+          - destination_workload
+          - destination_workload_namespace
+          - destination_version
+          - destination_service
+          - destination_service_name
+          - destination_service_namespace
+          - request_protocol
+          - response_code
+          - response_flags
+          - permissive_response_code
+          - permissive_response_policyid
+          - connection_security_policy
+          buckets:
+            explicit_buckets:
+              bounds: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
+        - name: request_bytes
+          instance_name: requestsize.instance.${NAMESPACE}
+          kind: DISTRIBUTION
+          label_names:
+          - reporter
+          - source_app
+          - source_principal
+          - source_workload
+          - source_workload_namespace
+          - source_version
+          - destination_app
+          - destination_principal
+          - destination_workload
+          - destination_workload_namespace
+          - destination_version
+          - destination_service
+          - destination_service_name
+          - destination_service_namespace
+          - request_protocol
+          - response_code
+          - response_flags
+          - permissive_response_code
+          - permissive_response_policyid
+          - connection_security_policy
+          buckets:
+            exponentialBuckets:
+              numFiniteBuckets: 8
+              scale: 1
+              growthFactor: 10
+        - name: response_bytes
+          instance_name: responsesize.instance.${NAMESPACE}
+          kind: DISTRIBUTION
+          label_names:
+          - reporter
+          - source_app
+          - source_principal
+          - source_workload
+          - source_workload_namespace
+          - source_version
+          - destination_app
+          - destination_principal
+          - destination_workload
+          - destination_workload_namespace
+          - destination_version
+          - destination_service
+          - destination_service_name
+          - destination_service_namespace
+          - request_protocol
+          - response_code
+          - response_flags
+          - permissive_response_code
+          - permissive_response_policyid
+          - connection_security_policy
+          buckets:
+            exponentialBuckets:
+              numFiniteBuckets: 8
+              scale: 1
+              growthFactor: 10
+        - name: tcp_sent_bytes_total
+          instance_name: tcpbytesent.instance.${NAMESPACE}
+          kind: COUNTER
+          label_names:
+          - reporter
+          - source_app
+          - source_principal
+          - source_workload
+          - source_workload_namespace
+          - source_version
+          - destination_app
+          - destination_principal
+          - destination_workload
+          - destination_workload_namespace
+          - destination_version
+          - destination_service
+          - destination_service_name
+          - destination_service_namespace
+          - connection_security_policy
+          - response_flags
+        - name: tcp_received_bytes_total
+          instance_name: tcpbytereceived.instance.${NAMESPACE}
+          kind: COUNTER
+          label_names:
+          - reporter
+          - source_app
+          - source_principal
+          - source_workload
+          - source_workload_namespace
+          - source_version
+          - destination_app
+          - destination_principal
+          - destination_workload
+          - destination_workload_namespace
+          - destination_version
+          - destination_service
+          - destination_service_name
+          - destination_service_namespace
+          - connection_security_policy
+          - response_flags
+        - name: tcp_connections_opened_total
+          instance_name: tcpconnectionsopened.instance.${NAMESPACE}
+          kind: COUNTER
+          label_names:
+          - reporter
+          - source_app
+          - source_principal
+          - source_workload
+          - source_workload_namespace
+          - source_version
+          - destination_app
+          - destination_principal
+          - destination_workload
+          - destination_workload_namespace
+          - destination_version
+          - destination_service
+          - destination_service_name
+          - destination_service_namespace
+          - connection_security_policy
+          - response_flags
+        - name: tcp_connections_closed_total
+          instance_name: tcpconnectionsclosed.instance.${NAMESPACE}
+          kind: COUNTER
+          label_names:
+          - reporter
+          - source_app
+          - source_principal
+          - source_workload
+          - source_workload_namespace
+          - source_version
+          - destination_app
+          - destination_principal
+          - destination_workload
+          - destination_workload_namespace
+          - destination_version
+          - destination_service
+          - destination_service_name
+          - destination_service_namespace
+          - connection_security_policy
+          - response_flags
+    ---
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: rule
+    metadata:
+      name: promhttp
+      namespace: ${NAMESPACE}
+      labels:
+        app: mixer
+        chart: mixer
+        heritage: Tiller
+        release: istio
+    spec:
+      match: (context.protocol == "http" || context.protocol == "grpc") && (match((request.useragent | "-"), "kube-probe*") == false) && (match((request.useragent | "-"), "Prometheus*") == false)
+      actions:
+      - handler: prometheus
+        instances:
+        - requestcount
+        - requestduration
+        - requestsize
+        - responsesize
+    ---
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: rule
+    metadata:
+      name: promtcp
+      namespace: ${NAMESPACE}
+      labels:
+        app: mixer
+        chart: mixer
+        heritage: Tiller
+        release: istio
+    spec:
+      match: context.protocol == "tcp"
+      actions:
+      - handler: prometheus
+        instances:
+        - tcpbytesent
+        - tcpbytereceived
+    ---
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: rule
+    metadata:
+      name: promtcpconnectionopen
+      namespace: ${NAMESPACE}
+      labels:
+        app: mixer
+        chart: mixer
+        heritage: Tiller
+        release: istio
+    spec:
+      match: context.protocol == "tcp" && ((connection.event | "na") == "open")
+      actions:
+      - handler: prometheus
+        instances:
+        - tcpconnectionsopened
+    ---
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: rule
+    metadata:
+      name: promtcpconnectionclosed
+      namespace: ${NAMESPACE}
+      labels:
+        app: mixer
+        chart: mixer
+        heritage: Tiller
+        release: istio
+    spec:
+      match: context.protocol == "tcp" && ((connection.event | "na") == "close")
+      actions:
+      - handler: prometheus
+        instances:
+        - tcpconnectionsclosed
+    ---
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: handler
+    metadata:
+      name: kubernetesenv
+      namespace: ${NAMESPACE}
+      labels:
+        app: mixer
+        chart: mixer
+        heritage: Tiller
+        release: istio
+    spec:
+      compiledAdapter: kubernetesenv
+      params:
+        # when running from mixer root, use the following config after adding a
+        # symbolic link to a kubernetes config file via:
+        #
+        # $ ln -s ~/.kube/config mixer/adapter/kubernetes/kubeconfig
+        #
+        # kubeconfig_path: "mixer/adapter/kubernetes/kubeconfig"
+
+    ---
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: rule
+    metadata:
+      name: kubeattrgenrulerule
+      namespace: ${NAMESPACE}
+      labels:
+        app: mixer
+        chart: mixer
+        heritage: Tiller
+        release: istio
+    spec:
+      actions:
+      - handler: kubernetesenv
+        instances:
+        - attributes
+    ---
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: rule
+    metadata:
+      name: tcpkubeattrgenrulerule
+      namespace: ${NAMESPACE}
+      labels:
+        app: mixer
+        chart: mixer
+        heritage: Tiller
+        release: istio
+    spec:
+      match: context.protocol == "tcp"
+      actions:
+      - handler: kubernetesenv
+        instances:
+        - attributes
+    ---
+    apiVersion: "config.istio.io/v1alpha2"
+    kind: instance
+    metadata:
+      name: attributes
+      namespace: ${NAMESPACE}
+      labels:
+        app: mixer
+        chart: mixer
+        heritage: Tiller
+        release: istio
+    spec:
+      compiledTemplate: kubernetes
+      params:
+        # Pass the required attribute data to the adapter
+        source_uid: source.uid | ""
+        source_ip: source.ip | ip("0.0.0.0") # default to unspecified ip addr
+        destination_uid: destination.uid | ""
+        destination_port: destination.port | 0
+      attributeBindings:
+        # Fill the new attributes from the adapter produced output.
+        # $out refers to an instance of OutputTemplate message
+        source.ip: $out.source_pod_ip | ip("0.0.0.0")
+        source.uid: $out.source_pod_uid | "unknown"
+        source.labels: $out.source_labels | emptyStringMap()
+        source.name: $out.source_pod_name | "unknown"
+        source.namespace: $out.source_namespace | "default"
+        source.owner: $out.source_owner | "unknown"
+        source.serviceAccount: $out.source_service_account_name | "unknown"
+        source.workload.uid: $out.source_workload_uid | "unknown"
+        source.workload.name: $out.source_workload_name | "unknown"
+        source.workload.namespace: $out.source_workload_namespace | "unknown"
+        destination.ip: $out.destination_pod_ip | ip("0.0.0.0")
+        destination.uid: $out.destination_pod_uid | "unknown"
+        destination.labels: $out.destination_labels | emptyStringMap()
+        destination.name: $out.destination_pod_name | "unknown"
+        destination.container.name: $out.destination_container_name | "unknown"
+        destination.namespace: $out.destination_namespace | "default"
+        destination.owner: $out.destination_owner | "unknown"
+        destination.serviceAccount: $out.destination_service_account_name | "unknown"
+        destination.workload.uid: $out.destination_workload_uid | "unknown"
+        destination.workload.name: $out.destination_workload_name | "unknown"
+        destination.workload.namespace: $out.destination_workload_namespace | "unknown"
+    ---
+    # Configuration needed by Mixer.
+    # Mixer cluster is delivered via CDS
+    # Specify mixer cluster settings
+    apiVersion: networking.istio.io/v1alpha3
+    kind: DestinationRule
+    metadata:
+      name: istio-policy
+      namespace: ${NAMESPACE}
+      labels:
+        app: mixer
+        chart: mixer
+        heritage: Tiller
+        release: istio
+    spec:
+      host: istio-policy.${NAMESPACE}.svc.cluster.local
+      trafficPolicy:
+        connectionPool:
+          http:
+            http2MaxRequests: 10000
+            maxRequestsPerConnection: 10000
+{{- end}}
+
+questions:
+  - variable: DISABLE_KIALI
+  - variable: DISABLE_MIXER
+  - variable: DISABLE_PROMETHEUS
+  - variable: INSTALL_MODE
+    description: "install mode"
+  - variable: KIALI_USERNAME
+    description: "username to login kiali dashboard"
+  - variable: KIALI_PASSPHRASE
+    description: "password to login kiali dashboard"

@@ -1,12 +1,35 @@
 # Changelog
 
+## 1.10.0 (29 Apr 2019)
+
+Bugfixes:
+* [#657][]: Fix `MapObjectEncoder.AppendByteString` not adding value as a
+  string.
+* [#706][]: Fix incorrect call depth to determine caller in Go 1.12.
+
+Enhancements:
+* [#610][]: Add `zaptest.WrapOptions` to wrap `zap.Option` for creating test
+  loggers.
+* [#675][]: Don't panic when encoding a String field.
+* [#704][]: Disable HTML escaping for JSON objects encoded using the
+  reflect-based encoder.
+
+Thanks to @iaroslav-ciupin, @lelenanam, @joa, @NWilson for their contributions
+to this release.
+
+## v1.9.1 (06 Aug 2018)
+
+Bugfixes:
+
+* [#614][]: MapObjectEncoder should not ignore empty slices.
+
 ## v1.9.0 (19 Jul 2018)
 
 Enhancements:
 * [#602][]: Reduce number of allocations when logging with reflection.
 * [#572][], [#606][]: Expose a registry for third-party logging sinks.
 
-Thanks to @nfarah86, @AlekSi, @JeanMertz, @phillippgille, @etsangsplk, and
+Thanks to @nfarah86, @AlekSi, @JeanMertz, @philippgille, @etsangsplk, and
 @dimroc for their contributions to this release.
 
 ## v1.8.0 (13 Apr 2018)
@@ -296,3 +319,9 @@ upgrade to the upcoming stable release.
 [#602]: https://github.com/uber-go/zap/pull/602
 [#572]: https://github.com/uber-go/zap/pull/572
 [#606]: https://github.com/uber-go/zap/pull/606
+[#614]: https://github.com/uber-go/zap/pull/614
+[#657]: https://github.com/uber-go/zap/pull/657
+[#706]: https://github.com/uber-go/zap/pull/706
+[#610]: https://github.com/uber-go/zap/pull/610
+[#675]: https://github.com/uber-go/zap/pull/675
+[#704]: https://github.com/uber-go/zap/pull/704

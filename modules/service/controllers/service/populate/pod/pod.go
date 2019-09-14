@@ -3,6 +3,8 @@ package pod
 import (
 	"strings"
 
+	"github.com/rancher/rio/pkg/constants"
+
 	"github.com/rancher/rio/modules/service/controllers/service/populate/rbac"
 	"github.com/rancher/rio/modules/service/controllers/service/populate/servicelabels"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
@@ -26,7 +28,7 @@ var (
 	}
 )
 
-func Populate(service *riov1.Service, os *objectset.ObjectSet) (v1.PodTemplateSpec, error) {
+func Populate(service *riov1.Service, systemNamespace string, os *objectset.ObjectSet) (v1.PodTemplateSpec, error) {
 	pts := v1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels:      servicelabels.ServiceLabels(service),
@@ -34,11 +36,11 @@ func Populate(service *riov1.Service, os *objectset.ObjectSet) (v1.PodTemplateSp
 		},
 	}
 
-	if _, ok := pts.Annotations[statsPatternAnnotationKey]; !ok {
+	if _, ok := pts.Annotations[statsPatternAnnotationKey]; !ok && constants.ServiceMeshMode == constants.ServiceMeshModeIstio {
 		pts.Annotations[statsPatternAnnotationKey] = strings.Join(defaultEnvoyStatsMatcherInclusionPatterns, ",")
 	}
 
-	podSpec := podSpec(service)
+	podSpec := podSpec(service, systemNamespace)
 	Roles(service, &podSpec, os)
 	if err := images(service, &podSpec); err != nil {
 		return pts, err

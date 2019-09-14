@@ -15,6 +15,7 @@ import (
 	"github.com/rancher/rio/pkg/features"
 	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/rio/types"
+	"github.com/rancher/wrangler/pkg/start"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -54,6 +55,12 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			"NAMESPACE":      rContext.Namespace,
 			"RUNTIME":        runtime,
 			"SOCKET_ADDRESS": socket,
+		},
+		OnStart: func(feature *v1.Feature) error {
+			return start.All(ctx, 5,
+				rContext.Build,
+				rContext.Webhook,
+			)
 		},
 	}
 	return feature.Register()

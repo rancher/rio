@@ -16,10 +16,11 @@ func Apply(contents []byte, variables map[string]string) ([]byte, error) {
 		return contents, nil
 	}
 
-	templateFuncs := sprig.HermeticTxtFuncMap()
-	templateFuncs["splitPreserveQuotes"] = funcs.SplitPreserveQuotes
+	funcMaps := sprig.TxtFuncMap()
+	funcMaps["splitPreserveQuotes"] = funcs.SplitPreserveQuotes
+	funcMaps["flat"] = funcs.Flat
 
-	t, err := template.New("template").Funcs(templateFuncs).Parse(string(contents))
+	t, err := template.New("template").Funcs(funcMaps).Parse(string(contents))
 	if err != nil {
 		return nil, err
 	}

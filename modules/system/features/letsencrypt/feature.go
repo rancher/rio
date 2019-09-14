@@ -11,6 +11,7 @@ import (
 	"github.com/rancher/rio/pkg/features"
 	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/rio/types"
+	"github.com/rancher/wrangler/pkg/start"
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
@@ -51,6 +52,11 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		Controllers: []features.ControllerRegister{
 			issuer.Register,
 			publicdomain.Register,
+		},
+		OnStart: func(feature *v1.Feature) error {
+			return start.All(ctx, 5,
+				rContext.CertManager,
+			)
 		},
 	}
 

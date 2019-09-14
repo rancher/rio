@@ -22,6 +22,7 @@ func TestService(t *testing.T) {
 	systemNs := "rio-system-fake"
 	input := riov1.NewService("default", "test", riov1.Service{
 		Spec: riov1.ServiceSpec{
+			DisableServiceMesh: true,
 			AutoscaleConfig: riov1.AutoscaleConfig{
 				MaxScale:    &[]int{10}[0],
 				MinScale:    &[]int{1}[0],
@@ -125,12 +126,10 @@ func TestService(t *testing.T) {
 			},
 			Template: v1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{},
 					Labels: map[string]string{
 						"app":     "foo",
 						"version": "v0",
-					},
-					Annotations: map[string]string{
-						"sidecar.istio.io/statsInclusionPrefixes": "http,cluster_manager,listener_manager,http_mixer_filter,tcp_mixer_filter,server,cluster.xds-grpc",
 					},
 				},
 				Spec: v1.PodSpec{

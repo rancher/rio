@@ -28,41 +28,82 @@ var (
 		Autoscaler,
 		BuildController,
 		CertManager,
-		Grafana,
-		IstioCitadel,
+		Gateway,
 		IstioPilot,
-		IstioTelemetry,
-		Kiali,
-		Prometheus,
 		Registry,
 		Webhook,
 	}
-
-	featureMap = map[string]string{
-		Autoscaler:      "autoscaling",
-		BuildController: "build",
-		CertManager:     "letsencrypt",
-		Grafana:         "grafana",
-		IstioCitadel:    "istio",
-		IstioPilot:      "istio",
-		IstioTelemetry:  "mixer",
-		Kiali:           "kiali",
-		Registry:        "build",
-		Prometheus:      "prometheus",
-		Webhook:         "build",
+	istioComponents = []string{
+		IstioGrafana,
+		IstioCitadel,
+		IstioTelemetry,
+		IstioKiali,
+		IstioPrometheus,
+		IstioSidecarInjector,
 	}
 
-	Autoscaler      = "autoscaler"
-	BuildController = "build-controller"
-	CertManager     = "cert-manager"
-	Grafana         = "grafana"
-	IstioCitadel    = "istio-citadel"
-	IstioPilot      = "istio-pilot"
-	IstioTelemetry  = "istio-telemetry"
-	Kiali           = "kiali"
-	Prometheus      = "prometheus"
-	Registry        = "registry"
-	Webhook         = "webhook"
+	linkerdComponents = []string{
+		LinkerdController,
+		LinkerdIdentity,
+		LinkerdGrafana,
+		LinkerdPrometheus,
+		LinkerdSidecarInjector,
+		LinkerdSpValidator,
+		LinkerdTap,
+		LinkerdWeb,
+	}
+
+	featureMap = map[string]string{
+		Autoscaler: "autoscaling",
+
+		BuildController: "build",
+
+		CertManager: "letsencrypt",
+
+		Gateway:    "gateway",
+		IstioPilot: "gateway",
+
+		IstioGrafana:         "istio",
+		IstioCitadel:         "istio",
+		IstioTelemetry:       "istio",
+		IstioKiali:           "istio",
+		IstioSidecarInjector: "istio",
+		IstioPrometheus:      "istio",
+
+		LinkerdController:      "linkerd",
+		LinkerdIdentity:        "linkerd",
+		LinkerdGrafana:         "linkerd",
+		LinkerdPrometheus:      "linkerd",
+		LinkerdSidecarInjector: "linkerd",
+		LinkerdSpValidator:     "linkerd",
+		LinkerdTap:             "linkerd",
+		LinkerdWeb:             "linkerd",
+
+		Registry: "build",
+		Webhook:  "build",
+	}
+
+	Autoscaler             = "autoscaler"
+	BuildController        = "build-controller"
+	CertManager            = "cert-manager"
+	IstioGrafana           = "grafana"
+	IstioCitadel           = "istio-citadel"
+	IstioPilot             = "istio-pilot"
+	IstioTelemetry         = "istio-telemetry"
+	IstioKiali             = "kiali"
+	IstioSidecarInjector   = "istio-sidecar-injector"
+	IstioPrometheus        = "prometheus"
+	LinkerdController      = "linkerd-controller"
+	LinkerdIdentity        = "linkerd-identity"
+	LinkerdWeb             = "linkerd-web"
+	LinkerdTap             = "linkerd-tap"
+	LinkerdPrometheus      = "linkerd-prometheus"
+	LinkerdGrafana         = "linkerd-grafana"
+	LinkerdSidecarInjector = "linkerd-proxy-injector"
+	LinkerdSpValidator     = "linkerd-sp-validator"
+	Gateway                = "gateway"
+	Registry               = "registry"
+	Webhook                = "webhook"
 )
 
 type Install struct {
@@ -73,9 +114,10 @@ type Install struct {
 	DisableFeatures []string `desc:"Manually specify features to disable, supports comma separated values"`
 	HTTPProxy       string   `desc:"Set HTTP_PROXY environment variable for control plane"`
 	Yaml            bool     `desc:"Only print out k8s yaml manifest"`
-	Check           bool     `desc:"Only check status, don't deploy controller'"`
+	Check           bool     `desc:"Only check status, don't deploy controller"`
 	Lite            bool     `desc:"Only install lite version of Rio(monitoring will be disabled, will be ignored if --disable-features is set)"`
 	Mode            string   `desc:"Install mode to expose gateway. Available options are ingress, svclb and hostport" default:"ingress"`
+	MeshMode        string   `desc:"Service mesh mode. Options: (linkerd/istio)" default:"linkerd"`
 }
 
 func (i *Install) Run(ctx *clicontext.CLIContext) error {
@@ -168,6 +210,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		"SERVICE_CIDR":     i.ServiceCidr,
 		"DISABLE_FEATURES": strings.Join(i.DisableFeatures, ","),
 		"HTTP_PROXY":       i.HTTPProxy,
+		"SM_MODE":          i.MeshMode,
 	}
 	if i.Yaml {
 		yamlOutput, err := controllerStack.Yaml(answers)
@@ -193,6 +236,11 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		}
 	}
 	i.DisableFeatures = disabledFeatures
+	if i.MeshMode == "linkerd" {
+		disabledFeatures = append(disabledFeatures, "istio")
+	} else if i.MeshMode == "istio" {
+		disabledFeatures = append(disabledFeatures, "linkerd")
+	}
 
 	progress := progress.NewWriter()
 	start := time.Now()
@@ -214,7 +262,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		if err != nil || info.Status.Version == "" {
 			progress.Display("Waiting for rio controller to initialize", 2)
 			continue
-		} else if notReadyList, ok := allReady(info, i.DisableFeatures); !ok {
+		} else if notReadyList, ok := allReady(info, i.MeshMode, disabledFeatures); !ok {
 			progress.Display("Waiting for all the system components to be up. Not ready: %v", 2, notReadyList)
 			continue
 		} else {
@@ -275,10 +323,16 @@ func (l list) String() string {
 	return fmt.Sprint(l.notReady)
 }
 
-func allReady(info *adminv1.RioInfo, disabledFeatures []string) (list, bool) {
+func allReady(info *adminv1.RioInfo, smMode string, disabledFeatures []string) (list, bool) {
 	var l list
 	ready := true
-	for _, c := range SystemComponents {
+	components := SystemComponents
+	if smMode == "linkerd" {
+		components = append(components, linkerdComponents...)
+	} else if smMode == "istio" {
+		components = append(components, istioComponents...)
+	}
+	for _, c := range components {
 		if !slice.ContainsString(disabledFeatures, featureMap[c]) {
 			if info.Status.SystemComponentReadyMap[c] != "running" {
 				l.notReady = append(l.notReady, c)
@@ -332,7 +386,7 @@ func (i *Install) fallbackInstall(ctx *clicontext.CLIContext, info *adminv1.RioI
 	}
 
 	if i.Mode == constants.InstallModeSvclb {
-		svc, err := ctx.Core.Services(info.Status.SystemNamespace).Get(fmt.Sprintf("%s-%s", constants.IstioGateway, constants.DefaultServiceVersion), metav1.GetOptions{})
+		svc, err := ctx.Core.Services(info.Status.SystemNamespace).Get(fmt.Sprintf("%s-%s", constants.GatewayName, constants.DefaultServiceVersion), metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}

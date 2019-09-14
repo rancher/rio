@@ -29,6 +29,9 @@ func volumes(service *riov1.Service) (result []v1.Volume) {
 		secretName := secret
 		if secret == "identity" {
 			secretName = "istio." + service.Name
+			if service.Name == "istio-sidecar-injector" {
+				secretName = secretName + "-service-account"
+			}
 		}
 		result = append(result, v1.Volume{
 			Name: fmt.Sprintf("secret-%s", secret),
@@ -55,9 +58,21 @@ func volumes(service *riov1.Service) (result []v1.Volume) {
 		})
 	}
 
-	for i, volume := range service.Spec.Volumes {
+	volumeMap := map[string]riov1.Volume{}
+	for _, v := range service.Spec.Volumes {
+		volumeMap[v.Name] = v
+	}
+	for _, c := range service.Spec.Sidecars {
+		for _, v := range c.Volumes {
+			volumeMap[v.Name] = v
+		}
+	}
+
+	index := 0
+	for _, volume := range volumeMap {
 		if volume.Name == "" {
-			volume.Name = strconv.Itoa(i)
+			volume.Name = strconv.Itoa(index)
+			index++
 		}
 		result = append(result, v1.Volume{
 			Name: fmt.Sprintf("emptydir-%s", volume.Name),

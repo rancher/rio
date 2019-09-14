@@ -9,5 +9,5 @@ import (
 
 func Service(service *v1.Service, systemNamespace string, os *objectset.ObjectSet) error {
 	k8sservice.Populate(service, systemNamespace, os)
-	return podcontrollers.Populate(service, os)
+	return podcontrollers.Populate(service, systemNamespace, os)
 }

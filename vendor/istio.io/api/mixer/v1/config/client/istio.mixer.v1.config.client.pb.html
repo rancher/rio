@@ -161,7 +161,7 @@ spec:
           stringValue: deletePet
     httpMethod: DELETE
     uriTemplate: /api/pets/&lbrace;id}
-  api_keys:
+  apiKeys:
   - query: api-key
 </code></pre>
 
@@ -226,7 +226,7 @@ spec:
   services:
   - name: foo
     namespace: bar
-  api_specs:
+  apiSpecs:
   - name: petstore
     namespace: default
 </code></pre>
@@ -1032,6 +1032,28 @@ Istio Grafana dashboards to be reconfigured to use the new name.</p>
 <p>Default attributes to forward to Mixer upstream. This typically
 includes the &ldquo;source.ip&rdquo; and &ldquo;source.uid&rdquo; attributes. These
 attributes are consumed by the proxy in front of mixer.</p>
+
+</td>
+</tr>
+<tr id="TransportConfig-report_batch_max_entries">
+<td><code>reportBatchMaxEntries</code></td>
+<td><code>uint32</code></td>
+<td>
+<p>When disable<em>report</em>batch is false, this value specifies the maximum number
+of requests that are batched in report. If left unspecified, the default value
+of report<em>batch</em>max_entries == 0 will use the hardcoded defaults of
+istio::mixerclient::ReportOptions.</p>
+
+</td>
+</tr>
+<tr id="TransportConfig-report_batch_max_time">
+<td><code>reportBatchMaxTime</code></td>
+<td><code><a href="https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#duration">google.protobuf.Duration</a></code></td>
+<td>
+<p>When disable<em>report</em>batch is false, this value specifies the maximum elapsed
+time a batched report will be sent after a user request is processed. If left
+unspecified, the default report<em>batch</em>max_time == 0 will use the hardcoded
+defaults of istio::mixerclient::ReportOptions.</p>
 
 </td>
 </tr>

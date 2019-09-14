@@ -4,6 +4,7 @@ description: Authentication policy for Istio services.
 location: https://istio.io/docs/reference/config/istio.authentication.v1alpha1.html
 layout: protoc-gen-docs
 generator: protoc-gen-docs
+weight: 29
 number_of_entries: 11
 ---
 <p>This package defines user-facing authentication policy.</p>
@@ -32,9 +33,9 @@ prefix <code>/status/</code>. This is useful to expose some paths for public acc
 keep others JWT validated.</p>
 
 <pre><code class="language-yaml">issuer: https://example.com
-jwks_uri: https://example.com/.well-known/jwks.json
-trigger_rules:
-- excluded_paths:
+jwksUri: https://example.com/.well-known/jwks.json
+triggerRules:
+- excludedPaths:
   - exact: /health_check
   - prefix: /status/
 </code></pre>
@@ -43,9 +44,9 @@ trigger_rules:
 validation on a specific set of paths but keep others public accessible.</p>
 
 <pre><code class="language-yaml">issuer: https://example.com
-jwks_uri: https://example.com/.well-known/jwks.json
-trigger_rules:
-- included_paths:
+jwksUri: https://example.com/.well-known/jwks.json
+triggerRules:
+- includedPaths:
   - prefix: /admin
 </code></pre>
 
@@ -54,11 +55,11 @@ trigger_rules:
 <code>/status/version</code> will require a valid JWT to proceed.</p>
 
 <pre><code class="language-yaml">issuer: https://example.com
-jwks_uri: https://example.com/.well-known/jwks.json
-trigger_rules:
-- excluded_paths:
+jwksUri: https://example.com/.well-known/jwks.json
+triggerRules:
+- excludedPaths:
   - exact: /status/version
-  included_paths:
+  includedPaths:
   - prefix: /status/
 </code></pre>
 
@@ -109,8 +110,7 @@ audiences will be accepted.</p>
 <td><code>string</code></td>
 <td>
 <p>URL of the provider&rsquo;s public key set to validate signature of the
-JWT. See <a href="https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata">OpenID
-Discovery</a>.</p>
+JWT. See <a href="https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata">OpenID Discovery</a>.</p>
 
 <p>Optional if the key set document can either (a) be retrieved from
 <a href="https://openid.net/specs/openid-connect-discovery-1_0.html">OpenID
@@ -119,6 +119,19 @@ the issuer or (b) inferred from the email domain of the issuer (e.g. a
 Google service account).</p>
 
 <p>Example: <code>https://www.googleapis.com/oauth2/v1/certs</code></p>
+
+<p>Note: Only one of jwks_uri and jwks should be used.</p>
+
+</td>
+</tr>
+<tr id="Jwt-jwks">
+<td><code>jwks</code></td>
+<td><code>string</code></td>
+<td>
+<p>JSON Web Key Set of public keys to validate signature of the JWT.
+See https://auth0.com/docs/jwks.</p>
+
+<p>Note: Only one of jwks_uri and jwks should be used.</p>
 
 </td>
 </tr>
@@ -130,7 +143,7 @@ Google service account).</p>
 header name.</p>
 
 <p>For example, if <code>header=x-goog-iap-jwt-assertion</code>, the header
-format will be x-goog-iap-jwt-assertion: <JWT>.</p>
+format will be x-goog-iap-jwt-assertion: &lt;JWT&gt;.</p>
 
 </td>
 </tr>
@@ -369,7 +382,7 @@ metadata:
   name: productpage-mTLS-with-JWT
   namespace: frod
 spec:
-  target:
+  targets:
   - name: productpage
     ports:
     - number: 9000
@@ -381,10 +394,10 @@ spec:
       audiences:
       - &quot;productpage&quot;
       jwksUri: &quot;https://www.googleapis.com/oauth2/v1/certs&quot;
-      jwt_headers:
+      jwtHeaders:
       - &quot;x-goog-iap-jwt-assertion&quot;
-      trigger_rules:
-      - excluded_paths:
+      triggerRules:
+      - excludedPaths:
         - exact: /health_check
   principalBinding: USE_ORIGIN
 </code></pre>
@@ -613,7 +626,7 @@ fully qualified domain name will be resolved in a platform specific manner.</p>
 <td><code>ports</code></td>
 <td><code><a href="#PortSelector">PortSelector[]</a></code></td>
 <td>
-<p>Specifies the ports. Note that this is the port(s) exposed by the service, not workload ports.
+<p>Specifies the ports. Note that this is the port(s) exposed by the service, not workload instance ports.
 For example, if a service is defined as below, then <code>8000</code> should be used, not <code>9000</code>.</p>
 
 <pre><code class="language-yaml">kind: Service

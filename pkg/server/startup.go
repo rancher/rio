@@ -3,8 +3,9 @@ package server
 import (
 	"context"
 
+	"github.com/rancher/rio/modules/system/features/nodes"
+
 	"github.com/rancher/rio/modules"
-	"github.com/rancher/rio/modules/istio/controllers/istio"
 	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/rio/pkg/controllers"
 	"github.com/rancher/rio/types"
@@ -32,31 +33,6 @@ var Crds = append(crd.NonNamespacedTypes(
 	"ClusterDomain.admin.rio.cattle.io/v1",
 	"Feature.admin.rio.cattle.io/v1",
 	"PublicDomain.admin.rio.cattle.io/v1",
-
-	"DestinationRule.networking.istio.io/v1alpha3",
-	"Gateway.networking.istio.io/v1alpha3",
-	"ServiceEntry.networking.istio.io/v1alpha3",
-	"VirtualService.networking.istio.io/v1alpha3",
-
-	"adapter.config.istio.io/v1alpha2",
-	"attributemanifest.config.istio.io/v1alpha2",
-	"EgressRule.config.istio.io/v1alpha2",
-	"handler.config.istio.io/v1alpha2",
-	"HTTPAPISpecBinding.config.istio.io/v1alpha2",
-	"HTTPAPISpec.config.istio.io/v1alpha2",
-	"instance.config.istio.io/v1alpha2",
-	"kubernetes.config.istio.io/v1alpha2",
-	"kubernetesenv.config.istio.io/v1alpha2",
-	"logentry.config.istio.io/v1alpha2",
-	"metric.config.istio.io/v1alpha2",
-	"Policy.authentication.istio.io/v1alpha1",
-	"prometheus.config.istio.io/v1alpha2",
-	"QuotaSpecBinding.config.istio.io/v1alpha2",
-	"QuotaSpec.config.istio.io/v1alpha2",
-	"RouteRule.config.istio.io/v1alpha2",
-	"rule.config.istio.io/v1alpha2",
-	"stdio.config.istio.io/v1alpha2",
-	"template.config.istio.io/v1alpha2",
 
 	"GitCommit.gitwatcher.cattle.io/v1",
 	"GitWatcher.gitwatcher.cattle.io/v1",
@@ -94,7 +70,7 @@ func Startup(ctx context.Context, systemNamespace, kubeConfig string) error {
 	}
 
 	leader.RunOrDie(ctx, systemNamespace, "rio", rioContext.K8s, func(ctx context.Context) {
-		runtime.Must(istio.RegisterNodeEndpointIndexer(ctx, rioContext))
+		runtime.Must(nodes.RegisterNodeEndpointIndexer(ctx, rioContext))
 		runtime.Must(controllers.Register(ctx, rioContext))
 		runtime.Must(modules.Register(ctx, rioContext))
 		runtime.Must(rioContext.Start(ctx))

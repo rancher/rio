@@ -72,7 +72,6 @@ type SystemServiceSpec struct {
 	UpdateOrder        string                     `json:"updateOrder,omitempty"`
 	UpdateStrategy     string                     `json:"updateStrategy,omitempty"`
 	DeploymentStrategy string                     `json:"deploymentStrategy,omitempty"`
-	Global             bool                       `json:"global,omitempty"`
 	VolumeTemplates    []v1.PersistentVolumeClaim `json:"volumeClaimTemplates,omitempty"`
 	PodSpec            v1.PodSpec                 `json:"podSpec,omitempty"`
 }
@@ -96,6 +95,8 @@ type ServiceSpec struct {
 	AutoscaleConfig
 	RolloutConfig
 	PodConfig
+
+	Global bool `json:"global,omitempty"`
 
 	// Whether to disable ServiceMesh for Service. If true, no mesh sidecar will be deployed along with the Service
 	DisableServiceMesh bool `json:"disableServiceMesh,omitempty"`
@@ -219,6 +220,8 @@ type Container struct {
 	// Pod volumes to mount into the container's filesystem. Cannot be updated.
 	Volumes []Volume `json:"volumes,omitempty"`
 
+	SecurityContext *v1.SecurityContext `json:"securityContext,omitempty"`
+
 	ContainerSecurityContext
 }
 
@@ -243,6 +246,8 @@ type EnvVar struct {
 }
 
 type PodConfig struct {
+	DisableServiceAccount bool `json:"disableServiceAccount,omitempty"`
+
 	// List of containers belonging to the pod. Containers cannot currently be added or removed. There must be at least one container in a Pod. Cannot be updated.
 	Sidecars []NamedContainer `json:"containers,omitempty"`
 
@@ -285,6 +290,7 @@ type ContainerPort struct {
 	Protocol     Protocol `json:"protocol,omitempty"`
 	Port         int32    `json:"port"`
 	TargetPort   int32    `json:"targetPort,omitempty"`
+	HostPort     bool     `json:"hostport,omitempty"`
 }
 
 func (c ContainerPort) MaybeString() interface{} {

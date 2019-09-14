@@ -129,6 +129,7 @@ var genericMap = map[string]interface{}{
 	"shuffle":      xstrings.Shuffle,
 	"snakecase":    xstrings.ToSnakeCase,
 	"camelcase":    xstrings.ToCamelCase,
+	"kebabcase":    xstrings.ToKebabCase,
 	"wrap":         func(l int, s string) string { return util.Wrap(s, l) },
 	"wrapWith":     func(l int, sep, str string) string { return util.WrapCustom(str, l, sep, true) },
 	// Switch order so that "foobar" | contains "foo"
@@ -144,6 +145,7 @@ var genericMap = map[string]interface{}{
 	"plural":    plural,
 	"sha1sum":   sha1sum,
 	"sha256sum": sha256sum,
+	"adler32sum": adler32sum,
 	"toString":  strval,
 
 	// Wrap Atoi to stop errors.
@@ -160,6 +162,8 @@ var genericMap = map[string]interface{}{
 	// split "/" foo/bar returns map[int]string{0: foo, 1: bar}
 	"split":     split,
 	"splitList": func(sep, orig string) []string { return strings.Split(orig, sep) },
+	// splitn "/" foo/bar/fuu returns map[int]string{0: foo, 1: bar/fuu}
+	"splitn":    splitn,
 	"toStrings": strslice,
 
 	"until":     until,
@@ -241,6 +245,7 @@ var genericMap = map[string]interface{}{
 	"pick":   pick,
 	"omit":   omit,
 	"merge":  merge,
+	"values": values,
 
 	"append": push, "push": push,
 	"prepend": prepend,
@@ -252,6 +257,7 @@ var genericMap = map[string]interface{}{
 	"uniq":    uniq,
 	"without": without,
 	"has":     has,
+	"slice":   slice,
 
 	// Crypto:
 	"genPrivateKey":     generatePrivateKey,

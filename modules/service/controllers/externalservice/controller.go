@@ -16,8 +16,7 @@ import (
 func Register(ctx context.Context, rContext *types.Context) error {
 	c := stackobject.NewGeneratingController(ctx, rContext, "stack-external-service", rContext.Rio.Rio().V1().ExternalService())
 	c.Apply = c.Apply.WithCacheTypes(rContext.Core.Core().V1().Service(),
-		rContext.Core.Core().V1().Endpoints(),
-		rContext.Networking.Networking().V1alpha3().VirtualService())
+		rContext.Core.Core().V1().Endpoints())
 
 	p := populator{
 		serviceCache: rContext.Rio.Rio().V1().Service().Cache(),

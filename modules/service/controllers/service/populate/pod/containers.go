@@ -34,9 +34,10 @@ var (
 	}
 )
 
-func containers(service *riov1.Service, init bool) (result []v1.Container) {
+func containers(service *riov1.Service, systemNamespace string, init bool) (result []v1.Container) {
+	system := service.Namespace == systemNamespace
 	if !init && !reflect.DeepEqual(service.Spec.Container, riov1.Container{}) {
-		c := toContainer(service.Name, &service.Spec.Container)
+		c := toContainer(service.Name, &service.Spec.Container, system)
 		c.Name = service.Name
 		result = append(result, c)
 	}
@@ -46,7 +47,7 @@ func containers(service *riov1.Service, init bool) (result []v1.Container) {
 			continue
 		}
 
-		c := toContainer(sidecar.Name, &sidecar.Container)
+		c := toContainer(sidecar.Name, &sidecar.Container, system)
 		c.Name = sidecar.Name
 		result = append(result, c)
 	}
@@ -54,8 +55,8 @@ func containers(service *riov1.Service, init bool) (result []v1.Container) {
 	return
 }
 
-func toContainer(containerName string, c *riov1.Container) v1.Container {
-	return v1.Container{
+func toContainer(containerName string, c *riov1.Container, system bool) v1.Container {
+	con := v1.Container{
 		Image:           c.Image,
 		Command:         c.Command,
 		Args:            c.Args,
@@ -67,11 +68,16 @@ func toContainer(containerName string, c *riov1.Container) v1.Container {
 		StdinOnce:       c.StdinOnce,
 		TTY:             c.TTY,
 		Resources:       resources(c),
-		Ports:           ports(c),
+		Ports:           ports(c, system),
 		Env:             envs(containerName, c),
 		VolumeMounts:    mounts(c),
 		SecurityContext: securityContext(c),
 	}
+
+	if system && c.SecurityContext != nil {
+		con.SecurityContext = c.SecurityContext
+	}
+	return con
 }
 
 func securityContext(c *riov1.Container) *v1.SecurityContext {
@@ -207,17 +213,23 @@ func envs(containerName string, c *riov1.Container) (result []v1.EnvVar) {
 			})
 			continue
 		}
+		result = append(result, basic)
 	}
 
 	return
 }
 
-func ports(c *riov1.Container) (result []v1.ContainerPort) {
+func ports(c *riov1.Container, system bool) (result []v1.ContainerPort) {
 	for _, port := range c.Ports {
-		result = append(result, v1.ContainerPort{
+		p := v1.ContainerPort{
+			Name:          port.Name,
 			ContainerPort: port.TargetPort,
 			Protocol:      serviceports.Protocol(port.Protocol),
-		})
+		}
+		if system && port.HostPort {
+			p.HostPort = port.Port
+		}
+		result = append(result, p)
 	}
 
 	return

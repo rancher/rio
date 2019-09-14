@@ -10,6 +10,7 @@ import (
 	servingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
 	autoscalev1 "github.com/rancher/rio/pkg/apis/autoscale.rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
 	autoscalev1controller "github.com/rancher/rio/pkg/generated/controllers/autoscale.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
@@ -148,7 +149,11 @@ func populatePodAutoscaler(object runtime.Object, ns *corev1.Namespace, os *obje
 		ReferingLabel:         "kpa.autoscaling.knative.dev",
 		MinScaleAnnotationKey: strconv.Itoa(*service.Spec.MinScale),
 		MaxScaleAnnotationKey: strconv.Itoa(*service.Spec.MaxScale),
-		ScrapeKey:             "envoy",
+	}
+	if constants.ServiceMeshMode == constants.ServiceMeshModeLinkerd {
+		annotation[ScrapeKey] = "linkerd"
+	} else if constants.ServiceMeshMode == constants.ServiceMeshModeIstio {
+		annotation[ScrapeKey] = "envoy"
 	}
 	var portValue string
 	for _, port := range service.Spec.Ports {

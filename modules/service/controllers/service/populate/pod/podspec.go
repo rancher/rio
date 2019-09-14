@@ -14,7 +14,7 @@ var (
 	defaultMemory = resource.MustParse("64Mi")
 )
 
-func podSpec(service *riov1.Service) v1.PodSpec {
+func podSpec(service *riov1.Service, systemNamespace string) v1.PodSpec {
 	podSpec := v1.PodSpec{
 		DNSConfig:          podDNS(service),
 		DNSPolicy:          service.Spec.DNSPolicy,
@@ -23,8 +23,8 @@ func podSpec(service *riov1.Service) v1.PodSpec {
 		HostNetwork:        service.Spec.HostNetwork,
 		ServiceAccountName: rbac.ServiceAccountName(service),
 		EnableServiceLinks: &f,
-		Containers:         containers(service, false),
-		InitContainers:     containers(service, true),
+		Containers:         containers(service, systemNamespace, false),
+		InitContainers:     containers(service, systemNamespace, true),
 		Volumes:            volumes(service),
 		Affinity:           service.Spec.Affinity,
 		ImagePullSecrets:   service.Spec.ImagePullSecrets,

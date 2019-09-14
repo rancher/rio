@@ -4,19 +4,16 @@ import (
 	"github.com/rancher/rio/modules/service/controllers/service/populate/pod"
 	"github.com/rancher/rio/modules/service/controllers/service/populate/servicelabels"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/wrangler/pkg/objectset"
 	v1 "k8s.io/api/core/v1"
 )
 
-func Populate(service *riov1.Service, os *objectset.ObjectSet) error {
+func Populate(service *riov1.Service, systemNamespace string, os *objectset.ObjectSet) error {
 	if service.SystemSpec != nil {
 		pod.Roles(service, &service.SystemSpec.PodSpec, os)
 		cp := newControllerParams(service, v1.PodTemplateSpec{Spec: service.SystemSpec.PodSpec})
-		if service.SystemSpec.Global {
-			daemonset(service, cp, os)
-		} else {
-			deployment(service, cp, os)
-		}
+		deployment(service, cp, os)
 
 		return nil
 	}
@@ -25,13 +22,17 @@ func Populate(service *riov1.Service, os *objectset.ObjectSet) error {
 		return nil
 	}
 
-	podTemplateSpec, err := pod.Populate(service, os)
+	podTemplateSpec, err := pod.Populate(service, systemNamespace, os)
 	if err != nil {
 		return err
 	}
 
 	cp := newControllerParams(service, podTemplateSpec)
-	deployment(service, cp, os)
+	if service.Spec.Global && service.Namespace == systemNamespace {
+		daemonset(service, cp, os)
+	} else {
+		deployment(service, cp, os)
+	}
 
 	return nil
 }
@@ -52,6 +53,20 @@ func newControllerParams(service *riov1.Service, podTemplateSpec v1.PodTemplateS
 	scaleParams := parseScaleParams(&service.Spec)
 	selectorLabels := servicelabels.SelectorLabels(service)
 	labels := servicelabels.ServiceLabels(service)
+
+	if podTemplateSpec.Annotations == nil {
+		podTemplateSpec.Annotations = map[string]string{}
+	}
+
+	if constants.ServiceMeshMode == constants.ServiceMeshModeLinkerd {
+		if !service.Spec.DisableServiceMesh {
+			podTemplateSpec.Annotations["linkerd.io/inject"] = "enabled"
+		}
+	} else if constants.ServiceMeshMode == constants.ServiceMeshModeIstio {
+		if service.Spec.DisableServiceMesh {
+			podTemplateSpec.Annotations["sidecar.istio.io/inject"] = "false"
+		}
+	}
 
 	if podTemplateSpec.Labels == nil {
 		podTemplateSpec.Labels = map[string]string{}

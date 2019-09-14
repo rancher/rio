@@ -121,7 +121,7 @@ func (h *handler) onChange(key string, service *riov1.Service) (*riov1.Service, 
 		weight := service.Spec.Weight
 
 		// hack for daemonsets
-		if scaleStatus == nil && service.SystemSpec != nil && service.SystemSpec.Global {
+		if scaleStatus == nil && service.Spec.Global {
 			scaleStatus = &riov1.ScaleStatus{
 				Available: scaleNum,
 				Ready:     scaleNum,

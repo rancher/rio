@@ -4,6 +4,8 @@ import (
 	"io/ioutil"
 	"os"
 
+	"k8s.io/client-go/dynamic"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/rancher/rio/stacks"
@@ -15,6 +17,7 @@ import (
 )
 
 type SystemStack struct {
+	k8s   dynamic.Interface
 	apply apply.Apply
 	name  string
 	Stack
