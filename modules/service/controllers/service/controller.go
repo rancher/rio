@@ -8,13 +8,14 @@ import (
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
+	corev1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/pkg/objectset"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
-	c := stackobject.NewGeneratingController(ctx, rContext, "stack-service", rContext.Rio.Rio().V1().Service(), "istio-injecter")
+	c := stackobject.NewGeneratingController(ctx, rContext, "stack-service", rContext.Rio.Rio().V1().Service())
 	c.Apply = c.Apply.WithCacheTypes(
 		rContext.Build.Tekton().V1alpha1().TaskRun(),
 		rContext.RBAC.Rbac().V1().Role(),
@@ -35,6 +36,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		namespace:     rContext.Namespace,
 		serviceClient: rContext.Rio.Rio().V1().Service(),
 		serviceCache:  rContext.Rio.Rio().V1().Service().Cache(),
+		ns:            rContext.Core.Core().V1().Namespace(),
 	}
 
 	c.Populator = sh.populate
@@ -45,10 +47,27 @@ type serviceHandler struct {
 	namespace     string
 	serviceClient riov1controller.ServiceController
 	serviceCache  riov1controller.ServiceCache
+	ns            corev1controller.NamespaceController
 }
 
 func (s *serviceHandler) populate(obj runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) error {
 	service := obj.(*riov1.Service)
+
+	ns, err := s.ns.Cache().Get(service.Namespace)
+	if err != nil {
+		return err
+	}
+	if ns.Name != s.namespace {
+		ns = ns.DeepCopy()
+		if ns.Labels == nil {
+			ns.Labels = map[string]string{}
+		}
+		ns.Labels["istio-injection"] = "enabled"
+		if _, err := s.ns.Update(ns); err != nil {
+			return err
+		}
+	}
+
 	if service.Namespace != s.namespace && service.SystemSpec != nil {
 		service = service.DeepCopy()
 		service.SystemSpec = nil

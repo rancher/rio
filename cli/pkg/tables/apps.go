@@ -152,7 +152,7 @@ func formatAppDetail(obj interface{}) (string, error) {
 		}
 
 		rev := versions[name]
-		if !rev.DeploymentReady && (svc.Revision.SystemSpec == nil || !svc.Revision.SystemSpec.Global) {
+		if !rev.DeploymentReady && !svc.Revision.Spec.Global {
 			if buffer.Len() > 0 {
 				buffer.WriteString("; ")
 			}

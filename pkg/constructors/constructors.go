@@ -1,6 +1,7 @@
 package constructors
 
 import (
+	splitv1alpha1 "github.com/deislabs/smi-sdk-go/pkg/apis/split/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/knative/pkg/apis/istio/v1alpha3"
 	v1alpha13 "github.com/knative/serving/pkg/apis/autoscaling/v1alpha1"
@@ -116,6 +117,14 @@ func NewPersistentVolumeClaim(namespace, name string, obj v1.PersistentVolumeCla
 func NewIngress(namespace, name string, obj networkingv1beta1.Ingress) *networkingv1beta1.Ingress {
 	obj.APIVersion = "networking.k8s.io/v1beta1"
 	obj.Kind = "Ingress"
+	obj.Name = name
+	obj.Namespace = namespace
+	return &obj
+}
+
+func NewTrafficSplit(namespace, name string, obj splitv1alpha1.TrafficSplit) *splitv1alpha1.TrafficSplit {
+	obj.APIVersion = "split.smi-spec.io/v1alpha1"
+	obj.Kind = "TrafficSplit"
 	obj.Name = name
 	obj.Namespace = namespace
 	return &obj

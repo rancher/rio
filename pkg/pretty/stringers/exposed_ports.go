@@ -57,6 +57,10 @@ func (e ContainerPortStringer) MaybeString() interface{} {
 		buf.WriteString(",internal")
 	}
 
+	if e.HostPort {
+		buf.WriteString(",hostport")
+	}
+
 	return buf.String()
 }
 
@@ -111,6 +115,10 @@ func parsePortBinding(spec string) (result v1.ContainerPort, err error) {
 
 	if v, ok := opts["internal"]; ok && v != "false" {
 		result.InternalOnly = true
+	}
+
+	if v, ok := opts["hostport"]; ok && v != "false" {
+		result.HostPort = true
 	}
 
 	return

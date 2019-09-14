@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/rancher/rio/pkg/constants"
+	"github.com/rancher/wrangler/pkg/start"
 
 	"github.com/rancher/rio/modules/system/features/rdns/controllers/domain"
 	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
@@ -21,6 +22,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		},
 		Controllers: []features.ControllerRegister{
 			domain.Register,
+		},
+		OnStart: func(feature *projectv1.Feature) error {
+			return start.All(ctx, 5)
 		},
 	}
 

@@ -2,6 +2,7 @@ package funcs
 
 import (
 	"bytes"
+	"strings"
 	"unicode"
 )
 
@@ -32,4 +33,8 @@ func SplitPreserveQuotes(s string) []string {
 	}
 
 	return pieces
+}
+
+func Flat(s string) string {
+	return strings.Replace(s, "\n", `\n`, -1)
 }

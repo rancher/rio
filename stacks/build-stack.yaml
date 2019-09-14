@@ -1,5 +1,5 @@
 configs:
-  logging:
+  config-logging:
     content: |-
       loglevel.controller: info
         loglevel.creds-init: info
@@ -37,6 +37,7 @@ configs:
 
 services:
   registry:
+    disableServiceMesh: true
     image: registry:2
     env:
     - REGISTRY_HTTP_ADDR=0.0.0.0:80
@@ -61,8 +62,9 @@ services:
     - :8090
     imagePullPolicy: always
     ports:
-    - 8090/tcp,http-webhookinator
+    - 8090/http,http-webhook
   build-controller:
+    disableServiceMesh: true
     global_permissions:
     - '* pods'
     - '* namespaces'
@@ -75,7 +77,7 @@ services:
     - '* apiextensions.k8s.io/customresourcedefinitions'
     image: index.docker.io/rancher/controller-10a3e32792f33651396d02b6855a6e36@sha256:7eedd62fb41a51b63683c8c00ad15ad319e75af13d74168af637f046875381a4
     configs:
-    - logging/content:/etc/config-logging
+    - config-logging/content:/etc/config-logging
     env:
     - SYSTEM_NAMESPACE=${NAMESPACE}
     args:

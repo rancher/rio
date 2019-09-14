@@ -38,6 +38,7 @@ type Create struct {
 	DNSOption              []string          `desc:"Set DNS options (format: key:value or key)"`
 	DNSSearch              []string          `desc:"Set custom DNS search domains"`
 	DNS                    []string          `desc:"Set custom DNS servers"`
+	DisableServiceMesh     bool              `desc:"Disable service mesh"`
 	E_Env                  []string          `desc:"Set environment variables"`
 	EnvFile                []string          `desc:"Read in a file of environment variables"`
 	GlobalPermission       []string          `desc:"Permissions to grant to container's service account for all namespaces"`

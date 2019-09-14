@@ -260,6 +260,11 @@ func (in *Container) DeepCopyInto(out *Container) {
 		*out = make([]Volume, len(*in))
 		copy(*out, *in)
 	}
+	if in.SecurityContext != nil {
+		in, out := &in.SecurityContext, &out.SecurityContext
+		*out = new(corev1.SecurityContext)
+		(*in).DeepCopyInto(*out)
+	}
 	in.ContainerSecurityContext.DeepCopyInto(&out.ContainerSecurityContext)
 	return
 }

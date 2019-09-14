@@ -47,7 +47,7 @@ func serviceSelector(service *riov1.Service, systemNamespace string, os *objects
 }
 
 func isGateway(service *riov1.Service, systemNamespace string) bool {
-	return service.Name == constants.IstioGateway && service.Namespace == systemNamespace
+	return service.Name == constants.GatewayName && service.Namespace == systemNamespace
 }
 
 func newServiceSelector(name, namespace string, serviceType v1.ServiceType, labels, selectorLabels map[string]string) *v1.Service {

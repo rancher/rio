@@ -1,0 +1,154 @@
+kubernetes:
+  manifest: |-
+    ---
+    apiVersion: apiextensions.k8s.io/v1beta1
+    kind: CustomResourceDefinition
+    metadata:
+      name: virtualservices.networking.istio.io
+      labels:
+        app: istio-pilot
+        chart: istio
+        heritage: Tiller
+        release: istio
+      annotations:
+        "helm.sh/resource-policy": keep
+    spec:
+      group: networking.istio.io
+      names:
+        kind: VirtualService
+        listKind: VirtualServiceList
+        plural: virtualservices
+        singular: virtualservice
+        shortNames:
+          - vs
+        categories:
+          - istio-io
+          - networking-istio-io
+      scope: Namespaced
+      version: v1alpha3
+      additionalPrinterColumns:
+        - JSONPath: .spec.gateways
+          description: The names of gateways and sidecars that should apply these routes
+          name: Gateways
+          type: string
+        - JSONPath: .spec.hosts
+          description: The destination hosts to which traffic is being sent
+          name: Hosts
+          type: string
+        - JSONPath: .metadata.creationTimestamp
+          description: |-
+            CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+
+            Populated by the system. Read-only. Null for lists. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
+          name: Age
+          type: date
+    ---
+    apiVersion: apiextensions.k8s.io/v1beta1
+    kind: CustomResourceDefinition
+    metadata:
+      name: destinationrules.networking.istio.io
+      labels:
+        app: istio-pilot
+        chart: istio
+        heritage: Tiller
+        release: istio
+      annotations:
+        "helm.sh/resource-policy": keep
+    spec:
+      group: networking.istio.io
+      names:
+        kind: DestinationRule
+        listKind: DestinationRuleList
+        plural: destinationrules
+        singular: destinationrule
+        shortNames:
+          - dr
+        categories:
+          - istio-io
+          - networking-istio-io
+      scope: Namespaced
+      version: v1alpha3
+      additionalPrinterColumns:
+        - JSONPath: .spec.host
+          description: The name of a service from the service registry
+          name: Host
+          type: string
+        - JSONPath: .metadata.creationTimestamp
+          description: |-
+            CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+
+            Populated by the system. Read-only. Null for lists. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
+          name: Age
+          type: date
+    ---
+    apiVersion: apiextensions.k8s.io/v1beta1
+    kind: CustomResourceDefinition
+    metadata:
+      name: serviceentries.networking.istio.io
+      labels:
+        app: istio-pilot
+        chart: istio
+        heritage: Tiller
+        release: istio
+      annotations:
+        "helm.sh/resource-policy": keep
+    spec:
+      group: networking.istio.io
+      names:
+        kind: ServiceEntry
+        listKind: ServiceEntryList
+        plural: serviceentries
+        singular: serviceentry
+        shortNames:
+          - se
+        categories:
+          - istio-io
+          - networking-istio-io
+      scope: Namespaced
+      version: v1alpha3
+      additionalPrinterColumns:
+        - JSONPath: .spec.hosts
+          description: The hosts associated with the ServiceEntry
+          name: Hosts
+          type: string
+        - JSONPath: .spec.location
+          description: Whether the service is external to the mesh or part of the mesh (MESH_EXTERNAL or MESH_INTERNAL)
+          name: Location
+          type: string
+        - JSONPath: .spec.resolution
+          description: Service discovery mode for the hosts (NONE, STATIC, or DNS)
+          name: Resolution
+          type: string
+        - JSONPath: .metadata.creationTimestamp
+          description: |-
+            CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+
+            Populated by the system. Read-only. Null for lists. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
+          name: Age
+          type: date
+    ---
+    apiVersion: apiextensions.k8s.io/v1beta1
+    kind: CustomResourceDefinition
+    metadata:
+      name: gateways.networking.istio.io
+      labels:
+        app: istio-pilot
+        chart: istio
+        heritage: Tiller
+        release: istio
+      annotations:
+        "helm.sh/resource-policy": keep
+    spec:
+      group: networking.istio.io
+      names:
+        kind: Gateway
+        plural: gateways
+        singular: gateway
+        shortNames:
+          - gw
+        categories:
+          - istio-io
+          - networking-istio-io
+      scope: Namespaced
+      version: v1alpha3
+    ---

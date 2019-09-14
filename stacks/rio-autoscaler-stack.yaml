@@ -6,7 +6,7 @@ configs:
     container-concurrency-target-default: "1"
     stable-window: 60s
     panic-window: 6s
-    tick-interval: 2s
+    tick-interval: 10s
     scale-to-zero-threshold: 2m
     scale-to-zero-grace-period: 1m
   config-logging:
@@ -64,6 +64,7 @@ configs:
 
 services:
   autoscaler:
+    disableServiceMesh: true
     global_permissions:
     - '* configmaps'
     - '* events'
@@ -87,7 +88,7 @@ services:
     - get,watch,list,update,create,patch networking.internal.knative.dev/*/status
     - get,watch,list,update,create,patch networking.internal.knative.dev/*/finalizers
     - get,watch,list,update,create,patch caching.internal.knative.dev/images
-    image: rancher/autoscaler-b41733a3e5694e8fc64777bdfd8e791a@sha256:2545ae552c52f0eac70dff8c1e0b35a8ae9dbd6c05a6d8f3780c2b35f5a9ad73
+    image: index.docker.io/rancher/autoscaler-b41733a3e5694e8fc64777bdfd8e791a@sha256:f6b4558d8c05b6a64e38cebb5bb40f5d79ac55f10cba0315b2aceffa08bc0405
     imagePullPolicy: always
     ports:
     - 8080/http,websocket,internal=true
@@ -99,6 +100,7 @@ services:
     env:
     - SYSTEM_NAMESPACE=$(self/namespace)
   activator:
+    disableServiceMesh: true
     global_permissions:
     - '* configmaps'
     - '* events'
@@ -121,7 +123,7 @@ services:
     - get,watch,list,update,create,patch networking.internal.knative.dev/*/status
     - get,watch,list,update,create,patch networking.internal.knative.dev/*/finalizers
     - get,watch,list,update,create,patch caching.internal.knative.dev/images
-    image: rancher/activator-2d008c4c36689d255523e5fa210c0bec@sha256:ca69d7fa28c9d6f2ae02e940df8b8d5d76b13d897b5e0d4a4028432f50f3ca1a
+    image: index.docker.io/rancher/activator-2d008c4c36689d255523e5fa210c0bec@sha256:c7a8e95a695be5718bea09ca6e2d264de2096cacbf998fcdec3d474c21399fe5
     imagePullPolicy: always
     livenessProbe:
       httpGet:
@@ -167,7 +169,7 @@ services:
     - get,watch,list,update,create,patch networking.internal.knative.dev/*/status
     - get,watch,list,update,create,patch networking.internal.knative.dev/*/finalizers
     - get,watch,list,update,create,patch caching.internal.knative.dev/images
-    image: rancher/controller-43f0364ab2f6dab17267e80a1f6a4adc@sha256:48827922082604e3e897732a91419fbec9086b8844d9b0230e0f47d0bbf67973
+    image: index.docker.io/rancher/controller-43f0364ab2f6dab17267e80a1f6a4adc@sha256:32fd64f1d46742f850f12985711bb99ffc3146d0431ecd933648e69d7a466086
     ports:
     - 9090/http,metrics,internal=true
     configs:

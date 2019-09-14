@@ -1,0 +1,784 @@
+configs:
+  linkerd-config:
+    {{- if .Values.CA_PEM }}
+    global: |
+      {"linkerdNamespace":"${NAMESPACE}","cniEnabled":false,"version":"stable-2.5.0","identityContext":{"trustDomain":"cluster.local","trustAnchorsPem":"{{ flat .Values.CA_PEM }}","issuanceLifetime":"86400s","clockSkewAllowance":"20s"},"autoInjectContext":null,"omitWebhookSideEffects":false,"clusterDomain":"cluster.local"}
+    {{- end}}
+    proxy: |
+      {"proxyImage":{"imageName":"gcr.io/linkerd-io/proxy","pullPolicy":"IfNotPresent"},"proxyInitImage":{"imageName":"gcr.io/linkerd-io/proxy-init","pullPolicy":"IfNotPresent"},"controlPort":{"port":4190},"ignoreInboundPorts":[],"ignoreOutboundPorts":[],"inboundPort":{"port":4143},"adminPort":{"port":4191},"outboundPort":{"port":4140},"resource":{"requestCpu":"","requestMemory":"","limitCpu":"","limitMemory":""},"proxyUid":"2102","logLevel":{"level":"warn,linkerd2_proxy=info"},"disableExternalProfiles":true,"proxyVersion":"stable-2.5.0","proxyInitImageVersion":"v1.1.0"}
+    install: |
+      {"uuid":"${UUID}","cliVersion":"stable-2.5.0","flags":[]}
+  linkerd-prometheus-config:
+    prometheus.yml: |-
+      global:
+        scrape_interval: 10s
+        scrape_timeout: 10s
+        evaluation_interval: 10s
+
+      rule_files:
+      - /etc/prometheus/*_rules.yml
+
+      scrape_configs:
+      - job_name: 'prometheus'
+        static_configs:
+        - targets: ['localhost:9090']
+
+      - job_name: 'grafana'
+        kubernetes_sd_configs:
+        - role: pod
+          namespaces:
+            names: ['${NAMESPACE}']
+        relabel_configs:
+        - source_labels:
+          - __meta_kubernetes_pod_container_name
+          action: keep
+          regex: ^grafana$
+
+      #  Required for: https://grafana.com/grafana/dashboards/315
+      - job_name: 'kubernetes-nodes-cadvisor'
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+
+        kubernetes_sd_configs:
+        - role: node
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+        - target_label: __address__
+          replacement: kubernetes.default.svc:443
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/$1/proxy/metrics/cadvisor
+
+      - job_name: 'linkerd-controller'
+        kubernetes_sd_configs:
+        - role: pod
+          namespaces:
+            names: ['${NAMESPACE}']
+        relabel_configs:
+        - source_labels:
+          - __meta_kubernetes_pod_label_linkerd_io_control_plane_component
+          - __meta_kubernetes_pod_container_port_name
+          action: keep
+          regex: (.*);admin-http$
+        - source_labels: [__meta_kubernetes_pod_container_name]
+          action: replace
+          target_label: component
+
+      - job_name: 'linkerd-proxy'
+        kubernetes_sd_configs:
+        - role: pod
+        relabel_configs:
+        - source_labels:
+          - __meta_kubernetes_pod_container_name
+          - __meta_kubernetes_pod_container_port_name
+          - __meta_kubernetes_pod_label_linkerd_io_control_plane_ns
+          action: keep
+          regex: ^linkerd-proxy;linkerd-admin;${NAMESPACE}$
+        - source_labels: [__meta_kubernetes_namespace]
+          action: replace
+          target_label: namespace
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: pod
+        # special case k8s' "job" label, to not interfere with prometheus' "job"
+        # label
+        # __meta_kubernetes_pod_label_linkerd_io_proxy_job=foo =>
+        # k8s_job=foo
+        - source_labels: [__meta_kubernetes_pod_label_linkerd_io_proxy_job]
+          action: replace
+          target_label: k8s_job
+        # drop __meta_kubernetes_pod_label_linkerd_io_proxy_job
+        - action: labeldrop
+          regex: __meta_kubernetes_pod_label_linkerd_io_proxy_job
+        # __meta_kubernetes_pod_label_linkerd_io_proxy_deployment=foo =>
+        # deployment=foo
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_linkerd_io_proxy_(.+)
+        # drop all labels that we just made copies of in the previous labelmap
+        - action: labeldrop
+          regex: __meta_kubernetes_pod_label_linkerd_io_proxy_(.+)
+        # __meta_kubernetes_pod_label_linkerd_io_foo=bar =>
+        # foo=bar
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_linkerd_io_(.+)
+  linkerd-grafana-config:
+    grafana.ini: |-
+      instance_name = linkerd-grafana
+
+      [server]
+      root_url = %(protocol)s://%(domain)s:/grafana/
+
+      [auth]
+      disable_login_form = true
+
+      [auth.anonymous]
+      enabled = true
+      org_role = Editor
+
+      [auth.basic]
+      enabled = false
+
+      [analytics]
+      check_for_updates = false
+
+      [panels]
+      disable_sanitize_html = true
+
+    datasources.yaml: |-
+      apiVersion: 1
+      datasources:
+      - name: prometheus
+        type: prometheus
+        access: proxy
+        orgId: 1
+        url: http://linkerd-prometheus.${NAMESPACE}.svc.cluster.local:9090
+        isDefault: true
+        jsonData:
+          timeInterval: "5s"
+        version: 1
+        editable: true
+
+    dashboards.yaml: |-
+      apiVersion: 1
+      providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: true
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards
+          homeDashboardId: linkerd-top-line
+
+services:
+  linkerd-identity:
+    disableServiceMesh: true
+    global_permissions:
+    - 'create authentication.k8s.io/tokenreviews'
+    labels:
+      linkerd.io/control-plane-component: identity
+      linkerd.io/control-plane-ns: ${NAMESPACE}
+      linkerd.io/proxy-deployment: linkerd-identity
+    annotations:
+      linkerd.io/created-by: linkerd/cli ${TAG}
+      linkerd.io/identity-mode: default
+      linkerd.io/proxy-version: ${TAG}
+    args:
+    - identity
+    - -log-level=debug
+    image: "gcr.io/linkerd-io/controller:${TAG}"
+    livenessProbe:
+      httpGet:
+        path: /ping
+        port: 9990
+      initialDelaySeconds: 10
+    readinessProbe:
+      failureThreshold: 7
+      httpGet:
+        path: /ready
+        port: 9990
+    ports:
+    - 8080/grpc,grpc,internal=true
+    - 9990/http,admin-http,internal=true
+    user: 2103
+    configs:
+    - linkerd-config:/var/run/linkerd/config
+    secrets:
+    - linkerd-identity-issuer:/var/run/linkerd/identity/issuer
+    containers:
+{{- if .Values.PROXY_INJECT_IDENTITY }}
+{{ indent 4 .Values.PROXY_INJECT_IDENTITY }}
+{{- end}}
+  linkerd-controller:
+    disableServiceMesh: true
+    global_permissions:
+    - 'list,get,watch extensions/daemonsets'
+    - 'list,get,watch apps/daemonsets'
+    - 'list,get,watch extensions/deployments'
+    - 'list,get,watch apps/deployments'
+    - 'list,get,watch extensions/replicasets'
+    - 'list,get,watch apps/replicasets'
+    - 'list,get,watch extensions/statefulsets'
+    - 'list,get,watch apps/statefulsets'
+    - 'list,get,watch extensions/jobs'
+    - 'list,get,watch batch/jobs'
+    - 'list,get,watch pods'
+    - 'list,get,watch endpoints'
+    - 'list,get,watch services'
+    - 'list,get,watch replicationcontrollers'
+    - 'list,get,watch namespaces'
+    - 'list,get,watch linkerd.io/serviceprofiles'
+    - 'list,get,watch split.smi-spec.io/trafficsplits'
+    annotations:
+      linkerd.io/created-by: linkerd/cli ${TAG}
+      linkerd.io/identity-mode: default
+      linkerd.io/proxy-version: ${TAG}
+    labels:
+      linkerd.io/control-plane-component: controller
+      linkerd.io/control-plane-ns: ${NAMESPACE}
+      linkerd.io/proxy-deployment: linkerd-controller
+    args:
+    - public-api
+    - -prometheus-url=http://linkerd-prometheus.${NAMESPACE}.svc.cluster.local:9090
+    - -controller-namespace=${NAMESPACE}
+    - -log-level=info
+    image: "gcr.io/linkerd-io/controller:${TAG}"
+    livenessProbe:
+      httpGet:
+        path: /ping
+        port: 9995
+      initialDelaySeconds: 10
+    readinessProbe:
+      failureThreshold: 7
+      httpGet:
+        path: /ready
+        port: 9995
+    ports:
+    - 8085/http,http
+    - 9995/http,admin-http,internal=true
+    user: 2103
+    configs:
+    - linkerd-config:/var/run/linkerd/config
+    containers:
+    - args:
+      - destination
+      - -addr=:8086
+      - -controller-namespace=${NAMESPACE}
+      - -enable-h2-upgrade=true
+      - -log-level=info
+      image: "gcr.io/linkerd-io/controller:${TAG}"
+      livenessProbe:
+        httpGet:
+          path: /ping
+          port: 9996
+        initialDelaySeconds: 10
+      name: linkerd-destination
+      ports:
+      - 8086/grpc,grpc,internal=true
+      readinessProbe:
+        failureThreshold: 7
+        httpGet:
+          path: /ready
+          port: 9996
+      user: 2103
+      configs:
+      - linkerd-config:/var/run/linkerd/config
+{{- if .Values.PROXY_INJECT_CONTROL }}
+{{ indent 4 .Values.PROXY_INJECT_CONTROL }}
+{{- end}}
+  linkerd-web:
+    disableServiceMesh: true
+    global_permissions:
+    - 'list,get,watch pods'
+    - 'list,get,watch services'
+    - 'list,get,watch replicationcontrollers'
+    - 'list,get,watch namespaces'
+    - 'list,get,watch extensions/daemonsets'
+    - 'list,get,watch apps/daemonsets'
+    - 'list,get,watch extensions/deployments'
+    - 'list,get,watch apps/deployments'
+    - 'list,get,watch extensions/replicasets'
+    - 'list,get,watch apps/replicasets'
+    - 'list,get,watch extensions/statefulsets'
+    - 'list,get,watch apps/statefulsets'
+    - 'list,get,watch extensions/jobs'
+    - 'list,get,watch batch/jobs'
+    - 'watch tap.linkerd.io/*'
+    annotations:
+      linkerd.io/created-by: linkerd/cli ${TAG}
+      linkerd.io/identity-mode: default
+      linkerd.io/proxy-version: ${TAG}
+    labels:
+      linkerd.io/control-plane-component: web
+      linkerd.io/control-plane-ns: ${NAMESPACE}
+      linkerd.io/proxy-deployment: linkerd-web
+    args:
+    - -api-addr=linkerd-controller.${NAMESPACE}.svc.cluster.local:8085
+    - -grafana-addr=linkerd-grafana.${NAMESPACE}.svc.cluster.local:3000
+    - -controller-namespace=${NAMESPACE}
+    - -log-level=info
+    image: "gcr.io/linkerd-io/web:${TAG}"
+    livenessProbe:
+      httpGet:
+          path: /ping
+          port: 9994
+      initialDelaySeconds: 10
+    readinessProbe:
+      failureThreshold: 7
+      httpGet:
+        path: /ready
+        port: 9994
+    ports:
+    - 8084/http,http
+    - 9994/http,admin-http,internal=true
+    user: 2103
+    configs:
+    - linkerd-config:/var/run/linkerd/config
+    containers:
+{{- if .Values.PROXY_INJECT }}
+{{ indent 4 .Values.PROXY_INJECT }}
+{{- end}}
+  linkerd-prometheus:
+    disableServiceMesh: true
+    global_permissions:
+    - 'get,list,watch nodes'
+    - 'get,list,watch /nodes/proxy'
+    - 'get,list,watch pods'
+    annotations:
+      linkerd.io/created-by: linkerd/cli ${TAG}
+      linkerd.io/identity-mode: default
+      linkerd.io/proxy-version: ${TAG}
+    labels:
+      linkerd.io/control-plane-component: prometheus
+      linkerd.io/control-plane-ns: ${NAMESPACE}
+      linkerd.io/proxy-deployment: linkerd-prometheus
+    containers:
+    - args:
+      - --storage.tsdb.path=/data
+      - --storage.tsdb.retention.time=6h
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --log.level=info
+      image: prom/prometheus:v2.11.1
+      name: prometheus
+      ports:
+      - 9090/http,admin-http,internal=true
+      livenessProbe:
+        httpGet:
+          path: /-/healthy
+          port: 9090
+        initialDelaySeconds: 30
+        timeoutSeconds: 30
+      readinessProbe:
+        httpGet:
+          path: /-/ready
+          port: 9090
+        initialDelaySeconds: 30
+        timeoutSeconds: 30
+      runAsUser: 65534
+      configs:
+      - linkerd-prometheus-config/prometheus.yml:/etc/prometheus/prometheus.yml
+      volumes:
+      - data:/data
+{{- if .Values.PROXY_INJECT }}
+{{ indent 4 .Values.PROXY_INJECT }}
+{{- end}}
+  linkerd-grafana:
+    disableServiceMesh: true
+    annotations:
+      linkerd.io/created-by: linkerd/cli ${TAG}
+      linkerd.io/identity-mode: default
+      linkerd.io/proxy-version: ${TAG}
+    labels:
+      linkerd.io/control-plane-component: grafana
+      linkerd.io/control-plane-ns: ${NAMESPACE}
+      linkerd.io/proxy-deployment: linkerd-grafana
+    env:
+    - GF_PATHS_DATA=/data
+    image: "gcr.io/linkerd-io/grafana:${TAG}"
+    name: grafana
+    livenessProbe:
+      httpGet:
+        path: /api/health
+        port: 3000
+      initialDelaySeconds: 30
+    readinessProbe:
+      httpGet:
+        path: /api/health
+        port: 3000
+    user: 472
+    volumes:
+    - data:/data
+    configs:
+    - linkerd-grafana-config/grafana.ini:/etc/grafana/grafana.ini
+    - linkerd-grafana-config/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+    - linkerd-grafana-config/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+    containers:
+{{- if .Values.PROXY_INJECT }}
+{{ indent 4 .Values.PROXY_INJECT }}
+{{- end}}
+  linkerd-proxy-injector:
+    disableServiceMesh: true
+    global_permissions:
+    - 'get,list,watch namespaces'
+    - 'list pods'
+    - 'get,list,watch apps/replicasets'
+    annotations:
+      linkerd.io/created-by: linkerd/cli ${TAG}
+      linkerd.io/identity-mode: default
+      linkerd.io/proxy-version: ${TAG}
+    labels:
+      linkerd.io/control-plane-component: proxy-injector
+      linkerd.io/control-plane-ns: ${NAMESPACE}
+      linkerd.io/proxy-deployment: linkerd-proxy-injector
+    containers:
+    - args:
+      - proxy-injector
+      - -log-level=info
+      image: "gcr.io/linkerd-io/controller:${TAG}"
+      name: proxy-injector
+      livenessProbe:
+        httpGet:
+          path: /ping
+          port: 9995
+        initialDelaySeconds: 10
+      readinessProbe:
+        failureThreshold: 7
+        httpGet:
+          path: /ready
+          port: 9995
+      user: 2103
+      ports:
+      - 443:8443/http,proxy-injector,internal=true
+      - 9995/http,admin-http,internal=true
+      configs:
+      - linkerd-config:/var/run/linkerd/config
+      secrets:
+      - linkerd-proxy-injector-tls:/var/run/linkerd/tls
+{{- if .Values.PROXY_INJECT }}
+{{ indent 4 .Values.PROXY_INJECT }}
+{{- end}}
+
+  linkerd-sp-validator:
+    disableServiceMesh: true
+    global_permissions:
+    - 'list pods'
+    annotations:
+      linkerd.io/created-by: linkerd/cli ${TAG}
+      linkerd.io/identity-mode: default
+      linkerd.io/proxy-version: ${TAG}
+    labels:
+      linkerd.io/control-plane-component: sp-validator
+      linkerd.io/control-plane-ns: ${NAMESPACE}
+      linkerd.io/proxy-deployment: linkerd-sp-validator
+    containers:
+    - args:
+      - sp-validator
+      - -log-level=info
+      image: "gcr.io/linkerd-io/controller:${TAG}"
+      name: sp-validator
+      livenessProbe:
+        httpGet:
+          path: /ping
+          port: 9997
+        initialDelaySeconds: 10
+      readinessProbe:
+        failureThreshold: 7
+        httpGet:
+          path: /ready
+          port: 9997
+      ports:
+      - 443:8443/http,sp-validator,internal=true
+      - 9997/http,admin-http,internal=true
+      user: 2103
+      secrets:
+      - linkerd-sp-validator-tls:/var/run/linkerd/tls
+{{- if .Values.PROXY_INJECT }}
+{{ indent 4 .Values.PROXY_INJECT }}
+{{- end}}
+  linkerd-tap:
+    disableServiceMesh: true
+    global_permissions:
+    - 'list,get,watch pods'
+    - 'list,get,watch services'
+    - 'list,get,watch replicationcontrollers'
+    - 'list,get,watch namespaces'
+    - 'list,get,watch extensions/daemonsets'
+    - 'list,get,watch apps/daemonsets'
+    - 'list,get,watch extensions/deployments'
+    - 'list,get,watch apps/deployments'
+    - 'list,get,watch extensions/replicasets'
+    - 'list,get,watch apps/replicasets'
+    - 'list,get,watch extensions/statefulsets'
+    - 'list,get,watch apps/statefulsets'
+    - 'list,get,watch extensions/jobs'
+    - 'list,get,watch batch/jobs'
+    - 'watch tap.linkerd.io/*'
+    - role=system:auth-delegator
+    annotations:
+      linkerd.io/created-by: linkerd/cli ${TAG}
+      linkerd.io/identity-mode: default
+      linkerd.io/proxy-version: ${TAG}
+    labels:
+      linkerd.io/control-plane-component: tap
+      linkerd.io/control-plane-ns: ${NAMESPACE}
+      linkerd.io/proxy-deployment: linkerd-tap
+    containers:
+    - args:
+      - tap
+      - -controller-namespace=${NAMESPACE}
+      - -log-level=info
+      image: "gcr.io/linkerd-io/controller:${TAG}"
+      name: tap
+      livenessProbe:
+        httpGet:
+          path: /ping
+          port: 9998
+        initialDelaySeconds: 10
+      readinessProbe:
+        failureThreshold: 7
+        httpGet:
+          path: /ready
+          port: 9998
+      user: 2103
+      secrets:
+      - linkerd-tap-tls:/var/run/linkerd/tls
+      ports:
+      - 8088/grpc,grpc,internal=true
+      - 443:8089/http,apiserver,internal=true
+      - 9998/http,admin-http,internal=true
+{{- if .Values.PROXY_INJECT }}
+{{ indent 4 .Values.PROXY_INJECT }}
+{{- end}}
+
+kubernetes:
+  manifest: |-
+    ---
+    kind: Secret
+    apiVersion: v1
+    metadata:
+      name: linkerd-sp-validator-tls
+      namespace: ${NAMESPACE}
+      labels:
+        linkerd.io/control-plane-component: sp-validator
+        linkerd.io/control-plane-ns: ${NAMESPACE}
+      annotations:
+        linkerd.io/created-by: linkerd/cli ${TAG}
+    type: Opaque
+    data:
+      crt.pem: ${SP_CRT}
+      key.pem: ${SP_KEY}
+    ---
+    kind: Secret
+    apiVersion: v1
+    metadata:
+      name: linkerd-proxy-injector-tls
+      namespace: ${NAMESPACE}
+      labels:
+        linkerd.io/control-plane-component: proxy-injector
+        linkerd.io/control-plane-ns: ${NAMESPACE}
+      annotations:
+        linkerd.io/created-by: linkerd/cli ${TAG}
+    type: Opaque
+    data:
+      crt.pem: ${INJECTOR_CRT}
+      key.pem: ${INJECTOR_KEY}
+    ---
+    apiVersion: admissionregistration.k8s.io/v1beta1
+    kind: ValidatingWebhookConfiguration
+    metadata:
+      name: linkerd-sp-validator-webhook-config
+      labels:
+        linkerd.io/control-plane-component: sp-validator
+        linkerd.io/control-plane-ns: ${NAMESPACE}
+    webhooks:
+    - name: linkerd-sp-validator.linkerd.io
+      clientConfig:
+        service:
+          name: linkerd-sp-validator
+          namespace: ${NAMESPACE}
+          path: "/"
+        caBundle: ${SP_CA}
+      failurePolicy: Ignore
+      rules:
+      - operations: [ "CREATE" , "UPDATE" ]
+        apiGroups: ["linkerd.io"]
+        apiVersions: ["v1alpha1", "v1alpha2"]
+        resources: ["serviceprofiles"]
+      sideEffects: None
+    ---
+    ---
+    kind: Secret
+    apiVersion: v1
+    metadata:
+      name: linkerd-identity-issuer
+      namespace: ${NAMESPACE}
+      labels:
+        linkerd.io/control-plane-component: identity
+        linkerd.io/control-plane-ns: ${NAMESPACE}
+      annotations:
+        linkerd.io/created-by: linkerd/cli ${TAG}
+        linkerd.io/identity-issuer-expiry: ${CRT_EXPIRE}
+    data:
+      crt.pem: ${CRT_PEM}
+      key.pem: ${KEY_PEM}
+    ---
+    apiVersion: batch/v1beta1
+    kind: CronJob
+    metadata:
+      name: linkerd-heartbeat
+      namespace: ${NAMESPACE}
+      labels:
+        linkerd.io/control-plane-component: heartbeat
+        linkerd.io/control-plane-ns: ${NAMESPACE}
+      annotations:
+        linkerd.io/created-by: linkerd/cli ${TAG}
+    spec:
+      schedule: "36 23 * * * "
+      successfulJobsHistoryLimit: 0
+      jobTemplate:
+        spec:
+          template:
+            metadata:
+              labels:
+                linkerd.io/control-plane-component: heartbeat
+              annotations:
+                linkerd.io/created-by: linkerd/cli ${TAG}
+            spec:
+              serviceAccountName: linkerd-heartbeat
+              restartPolicy: Never
+              containers:
+              - name: heartbeat
+                image: gcr.io/linkerd-io/controller:${TAG}
+                imagePullPolicy: IfNotPresent
+                args:
+                - "heartbeat"
+                - "-prometheus-url=http://linkerd-prometheus.${NAMESPACE}.svc.cluster.local:9090"
+                - "-controller-namespace=${NAMESPACE}"
+                - "-log-level=info"
+                resources:
+                securityContext:
+                  runAsUser: 2103
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: Role
+    metadata:
+      name: linkerd-heartbeat
+      namespace: ${NAMESPACE}
+      labels:
+        linkerd.io/control-plane-ns: ${NAMESPACE}
+    rules:
+    - apiGroups: [""]
+      resources: ["configmaps"]
+      verbs: ["get"]
+      resourceNames: ["linkerd-config"]
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: linkerd-heartbeat
+      namespace: ${NAMESPACE}
+      labels:
+        linkerd.io/control-plane-ns: ${NAMESPACE}
+    roleRef:
+      kind: Role
+      name: linkerd-heartbeat
+      apiGroup: rbac.authorization.k8s.io
+    subjects:
+    - kind: ServiceAccount
+      name: linkerd-heartbeat
+      namespace: ${NAMESPACE}
+    ---
+    kind: ServiceAccount
+    apiVersion: v1
+    metadata:
+      name: linkerd-heartbeat
+      namespace: ${NAMESPACE}
+      labels:
+        linkerd.io/control-plane-component: heartbeat
+        linkerd.io/control-plane-ns: ${NAMESPACE}
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: linkerd-${NAMESPACE}-tap-auth-reader
+      namespace: kube-system
+      labels:
+        linkerd.io/control-plane-component: tap
+        linkerd.io/control-plane-ns: ${NAMESPACE}
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: Role
+      name: extension-apiserver-authentication-reader
+    subjects:
+    - kind: ServiceAccount
+      name: linkerd-tap
+      namespace: ${NAMESPACE}
+    ---
+    apiVersion: apiregistration.k8s.io/v1
+    kind: APIService
+    metadata:
+      name: v1alpha1.tap.linkerd.io
+      labels:
+        linkerd.io/control-plane-component: tap
+        linkerd.io/control-plane-ns: ${NAMESPACE}
+    spec:
+      group: tap.linkerd.io
+      version: v1alpha1
+      groupPriorityMinimum: 1000
+      versionPriority: 100
+      service:
+        name: linkerd-tap
+        namespace: ${NAMESPACE}
+      caBundle: ${TAP_CA}
+    ---
+    kind: Secret
+    apiVersion: v1
+    metadata:
+      name: linkerd-tap-tls
+      namespace: ${NAMESPACE}
+      labels:
+        linkerd.io/control-plane-component: tap
+        linkerd.io/control-plane-ns: ${NAMESPACE}
+      annotations:
+        linkerd.io/created-by: linkerd/cli ${TAG}
+    type: Opaque
+    data:
+      crt.pem: ${TAP_CRT}
+      key.pem: ${TAP_KEY}
+    ---
+    apiVersion: admissionregistration.k8s.io/v1beta1
+    kind: MutatingWebhookConfiguration
+    metadata:
+      name: linkerd-proxy-injector-webhook-config
+      labels:
+        linkerd.io/control-plane-component: proxy-injector
+        linkerd.io/control-plane-ns: ${NAMESPACE}
+    webhooks:
+    - name: linkerd-proxy-injector.linkerd.io
+      namespaceSelector:
+        matchExpressions:
+        - key: linkerd.io/is-control-plane
+          operator: DoesNotExist
+      clientConfig:
+        service:
+          name: linkerd-proxy-injector
+          namespace: ${NAMESPACE}
+          path: "/"
+        caBundle: ${INJECTOR_CA}
+      failurePolicy: Ignore
+      rules:
+      - operations: [ "CREATE" ]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["pods"]
+      sideEffects: None
+    ---
+    kind: Service
+    apiVersion: v1
+    metadata:
+      name: linkerd-destination
+      namespace: ${NAMESPACE}
+    spec:
+      type: ClusterIP
+      selector:
+        app: linkerd-controller
+      ports:
+      - name: grpc
+        port: 8086
+        targetPort: 8086
+    ---
+
+
+template:
+  questions:
+  - variable: CA_PEM
+  - variable: PROXY_INJECT_IDENTITY
+  - variable: PROXY_INJECT_CONTROL
+  - variable: PROXY_INJECT
+  - variable: TAG

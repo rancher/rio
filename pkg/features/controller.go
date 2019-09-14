@@ -110,10 +110,6 @@ func (f *FeatureController) Start(ctx context.Context, feature *v1.Feature) erro
 			return err
 		}
 	}
-	// todo: make boot faster
-	go func() {
-		rContext.Start(ctx)
-	}()
 
 	if f.OnStart != nil {
 		if err := f.OnStart(feature); err != nil {

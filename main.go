@@ -92,6 +92,13 @@ func main() {
 			Destination: &constants.ServiceCidr,
 		},
 		cli.StringFlag{
+			Name:        "service-mesh-mode",
+			Usage:       "Specify service mesh mode",
+			EnvVar:      "SM_MODE",
+			Value:       constants.ServiceMeshMode,
+			Destination: &constants.ServiceMeshMode,
+		},
+		cli.StringFlag{
 			Name:   "disable-features",
 			Usage:  "Manually specify features to disable",
 			EnvVar: "DISABLE_FEATURES",

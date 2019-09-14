@@ -15,6 +15,7 @@ import (
 	networkingv1beta1 "github.com/rancher/wrangler-api/pkg/generated/controllers/networking"
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/networking.istio.io"
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/rbac"
+	smi "github.com/rancher/wrangler-api/pkg/generated/controllers/split.smi-spec.io"
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/storage"
 	build "github.com/rancher/wrangler-api/pkg/generated/controllers/tekton.dev"
 	"github.com/rancher/wrangler/pkg/apply"
@@ -35,11 +36,12 @@ type Context struct {
 	Core          *core.Factory
 	Ext           *apiextensions.Factory
 	K8sNetworking *networkingv1beta1.Factory
+	Networking    *networking.Factory
 	Global        *admin.Factory
 	K8s           kubernetes.Interface
-	Networking    *networking.Factory
 	RBAC          *rbac.Factory
 	Rio           *rio.Factory
+	SMI           *smi.Factory
 	Serving       *serving.Factory
 	Storage       *storage.Factory
 	Webhook       *webhookinator.Factory
@@ -61,12 +63,13 @@ func NewContext(namespace string, config *rest.Config) *Context {
 		Core:          core.NewFactoryFromConfigOrDie(config),
 		Ext:           apiextensions.NewFactoryFromConfigOrDie(config),
 		K8sNetworking: networkingv1beta1.NewFactoryFromConfigOrDie(config),
-		Global:        admin.NewFactoryFromConfigOrDie(config),
 		Networking:    networking.NewFactoryFromConfigOrDie(config),
+		Global:        admin.NewFactoryFromConfigOrDie(config),
 		RBAC:          rbac.NewFactoryFromConfigOrDie(config),
 		Rio:           rio.NewFactoryFromConfigOrDie(config),
 		Serving:       serving.NewFactoryFromConfigOrDie(config),
 		Storage:       storage.NewFactoryFromConfigOrDie(config),
+		SMI:           smi.NewFactoryFromConfigOrDie(config),
 		Webhook:       webhookinator.NewFactoryFromConfigOrDie(config),
 		K8s:           kubernetes.NewForConfigOrDie(config),
 	}
@@ -76,22 +79,7 @@ func NewContext(namespace string, config *rest.Config) *Context {
 }
 
 func (c *Context) Start(ctx context.Context) error {
-	return start.All(ctx, 5,
-		c.Global,
-		c.Apps,
-		c.AutoScale,
-		c.Build,
-		c.CertManager,
-		c.Core,
-		c.K8sNetworking,
-		c.Ext,
-		c.Networking,
-		c.RBAC,
-		c.Rio,
-		c.Serving,
-		c.Storage,
-		c.Webhook,
-	)
+	return start.All(ctx, 5, c.Global)
 }
 
 func BuildContext(ctx context.Context, namespace string, config *rest.Config) (context.Context, *Context) {

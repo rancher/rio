@@ -103,6 +103,16 @@ func (t *Template) parseContent(answersCB AnswerCallback) ([]byte, error) {
 		answers[key] = val
 		return val
 	})
+	for _, q := range template.Meta.Questions {
+		if answersCB == nil {
+			break
+		}
+		val, err := answersCB(q.Variable, template.Meta.Questions)
+		if err != nil {
+			callbackErrs = append(callbackErrs, err)
+		}
+		answers[q.Variable] = val
+	}
 	if err != nil {
 		return nil, err
 	} else if len(callbackErrs) > 0 {
