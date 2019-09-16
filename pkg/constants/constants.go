@@ -15,9 +15,9 @@ var (
 	ControllerImage       = "rancher/rio-controller"
 	ControllerImageTag    = "dev"
 	ClusterDomainName     = "cluster-domain"
-	DefaultHTTPOpenPort   = "80"
-	DefaultHTTPSOpenPort  = "443"
-	InstallMode           = InstallModeIngress
+	DefaultHTTPOpenPort   = "9080"
+	DefaultHTTPSOpenPort  = "9443"
+	InstallMode           = InstallModeSvclb
 	UseIPAddress          = ""
 	ServiceCidr           = ""
 	DefaultServiceVersion = "v0"

@@ -116,7 +116,7 @@ type Install struct {
 	Yaml            bool     `desc:"Only print out k8s yaml manifest"`
 	Check           bool     `desc:"Only check status, don't deploy controller"`
 	Lite            bool     `desc:"Only install lite version of Rio(monitoring will be disabled, will be ignored if --disable-features is set)"`
-	Mode            string   `desc:"Install mode to expose gateway. Available options are ingress, svclb and hostport" default:"ingress"`
+	Mode            string   `desc:"Install mode to expose gateway. Available options are svclb and hostport" default:"svclb"`
 	MeshMode        string   `desc:"Service mesh mode. Options: (linkerd/istio)" default:"linkerd"`
 }
 

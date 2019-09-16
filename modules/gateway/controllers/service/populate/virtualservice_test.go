@@ -70,14 +70,14 @@ func TestVirtualServices(t *testing.T) {
 								"mesh",
 								"rio-gateway.rio-system-fake.svc.cluster.local",
 							},
-							Port: 80,
+							Port: 9080,
 						},
 						{
 							Gateways: []string{
 								"mesh",
 								"rio-gateway.rio-system-fake.svc.cluster.local",
 							},
-							Port: 443,
+							Port: 9443,
 						},
 						{
 							Gateways: []string{
