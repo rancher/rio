@@ -111,6 +111,8 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 	spec.Version = c.Version
 	spec.Weight = c.Weight
 
+	spec.DisableServiceMesh = c.DisableServiceMesh
+
 	spec.RolloutConfig.RolloutInterval = c.RolloutInterval
 	spec.RolloutConfig.RolloutIncrement = c.RolloutIncrement
 	if c.RolloutIncrement != 0 && c.RolloutInterval != 0 {
