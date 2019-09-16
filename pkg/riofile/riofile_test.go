@@ -52,7 +52,7 @@ services:
     - '* events'
     - '* serviceaccounts'
     - '* configmaps'
-    - '* extentions/deployments'
+    - '* extensions/deployments'
     - 'create,get,list,watch,patch,update,delete build.knative.dev/builds'
     - 'create,get,list,watch,patch,update,delete build.knative.dev/builds/status'
     - 'create,get,list,watch,patch,update,delete build.knative.dev/buildtemplates'

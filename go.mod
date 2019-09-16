@@ -64,7 +64,6 @@ require (
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/natefinch/lumberjack v2.0.0+incompatible // indirect
 	github.com/onsi/ginkgo v1.8.0
-	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/opencontainers/runc v1.0.1-0.20190307181833-2b18fe1d885e // indirect
 	github.com/openshift/api v0.0.0-20190322043348-8741ff068a47 // indirect
 	github.com/opentracing/opentracing-go v1.0.2 // indirect

@@ -51,7 +51,7 @@ type Editor interface {
 
 func (edit *Edit) edit(ctx *clicontext.CLIContext) error {
 	if len(ctx.CLI.Args()) != 1 {
-		return fmt.Errorf("exactly one Name (not name) arguement is required for raw edit")
+		return fmt.Errorf("exactly one Name (not name) argument is required for raw edit")
 	}
 
 	var (
