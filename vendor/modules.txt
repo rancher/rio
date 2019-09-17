@@ -44,8 +44,6 @@ github.com/PuerkitoBio/purell
 github.com/PuerkitoBio/urlesc
 # github.com/aokoli/goutils v1.1.0
 github.com/aokoli/goutils
-# github.com/beorn7/perks v1.0.0
-github.com/beorn7/perks/quantile
 # github.com/chai2010/gettext-go v0.0.0-20170215093142-bf70f2a70fb1
 github.com/chai2010/gettext-go/gettext
 github.com/chai2010/gettext-go/gettext/mo
@@ -173,18 +171,6 @@ github.com/drone/envsubst/parse
 # github.com/emicklei/go-restful v0.0.0-20170410110728-ff4f55a20633
 github.com/emicklei/go-restful
 github.com/emicklei/go-restful/log
-# github.com/envoyproxy/go-control-plane v0.8.6
-github.com/envoyproxy/go-control-plane/envoy/api/v2
-github.com/envoyproxy/go-control-plane/envoy/api/v2/auth
-github.com/envoyproxy/go-control-plane/envoy/api/v2/core
-github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint
-github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha
-github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster
-github.com/envoyproxy/go-control-plane/envoy/api/v2/listener
-github.com/envoyproxy/go-control-plane/envoy/api/v2/route
-github.com/envoyproxy/go-control-plane/envoy/type
-# github.com/envoyproxy/protoc-gen-validate v0.0.14
-github.com/envoyproxy/protoc-gen-validate/validate
 # github.com/evanphx/json-patch v4.2.0+incompatible
 github.com/evanphx/json-patch
 # github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d
@@ -218,7 +204,6 @@ github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
 github.com/gogo/protobuf/types
 github.com/gogo/protobuf/gogoproto
-github.com/gogo/protobuf/jsonpb
 github.com/gogo/protobuf/protoc-gen-gogo/descriptor
 # github.com/golang/protobuf v1.3.2
 github.com/golang/protobuf/proto
@@ -226,7 +211,6 @@ github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/timestamp
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
-github.com/golang/protobuf/protoc-gen-go/descriptor
 # github.com/google/btree v1.0.0
 github.com/google/btree
 # github.com/google/go-cmp v0.3.0
@@ -255,22 +239,14 @@ github.com/gophercloud/gophercloud/openstack/identity/v3/tokens
 github.com/gophercloud/gophercloud/openstack/utils
 github.com/gophercloud/gophercloud/openstack/identity/v2/tenants
 github.com/gophercloud/gophercloud/pagination
-# github.com/gorilla/mux v1.7.2
-github.com/gorilla/mux
 # github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
 github.com/gregjones/httpcache
 github.com/gregjones/httpcache/diskcache
 # github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
 github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc
-# github.com/hashicorp/errwrap v1.0.0
-github.com/hashicorp/errwrap
-# github.com/hashicorp/go-multierror v1.0.0
-github.com/hashicorp/go-multierror
 # github.com/hashicorp/golang-lru v0.5.1
 github.com/hashicorp/golang-lru
 github.com/hashicorp/golang-lru/simplelru
-# github.com/howeyc/fsnotify v0.9.0
-github.com/howeyc/fsnotify
 # github.com/huandu/xstrings v1.2.0
 github.com/huandu/xstrings
 # github.com/imdario/mergo v0.3.7
@@ -364,8 +340,6 @@ github.com/mattbaird/jsonpatch
 github.com/mattn/go-runewidth
 # github.com/mattn/go-shellwords v1.0.5
 github.com/mattn/go-shellwords
-# github.com/matttproud/golang_protobuf_extensions v1.0.1
-github.com/matttproud/golang_protobuf_extensions/pbutil
 # github.com/mitchellh/go-wordwrap v1.0.0
 github.com/mitchellh/go-wordwrap
 # github.com/moby/buildkit v0.6.0
@@ -404,8 +378,6 @@ github.com/modern-go/concurrent
 github.com/modern-go/reflect2
 # github.com/morikuni/aec v0.0.0-20170113033406-39771216ff4c
 github.com/morikuni/aec
-# github.com/natefinch/lumberjack v2.0.0+incompatible
-github.com/natefinch/lumberjack
 # github.com/onsi/ginkgo v1.8.0
 github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty
 # github.com/opencontainers/go-digest v1.0.0-rc1
@@ -419,8 +391,6 @@ github.com/opencontainers/runc/libcontainer/system
 github.com/opencontainers/runc/libcontainer/user
 # github.com/opencontainers/runtime-spec v0.0.0-20180909173843-eba862dc2470
 github.com/opencontainers/runtime-spec/specs-go
-# github.com/openshift/api v0.0.0-20190322043348-8741ff068a47
-github.com/openshift/api/apps/v1
 # github.com/opentracing/opentracing-go v1.0.2
 github.com/opentracing/opentracing-go
 github.com/opentracing/opentracing-go/ext
@@ -431,17 +401,6 @@ github.com/peterbourgon/diskv
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/prometheus/client_golang v0.9.3-0.20190127221311-3c4408c8b829
-github.com/prometheus/client_golang/prometheus
-github.com/prometheus/client_golang/prometheus/internal
-# github.com/prometheus/client_model v0.0.0-20190129233127-fd36f4220a90
-github.com/prometheus/client_model/go
-# github.com/prometheus/common v0.4.0
-github.com/prometheus/common/expfmt
-github.com/prometheus/common/model
-github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
-# github.com/prometheus/procfs v0.0.0-20190425082905-87a4384529e0
-github.com/prometheus/procfs
 # github.com/rancher/axe v0.0.0-20190531011056-59fcf8b44147
 github.com/rancher/axe/throwing
 github.com/rancher/axe/throwing/datafeeder
@@ -557,18 +516,6 @@ github.com/tonistiigi/fsutil
 github.com/tonistiigi/units
 # github.com/urfave/cli v1.20.1-0.20190203184040-693af58b4d51
 github.com/urfave/cli
-# go.uber.org/atomic v1.4.0
-go.uber.org/atomic
-# go.uber.org/multierr v1.1.0
-go.uber.org/multierr
-# go.uber.org/zap v1.10.0
-go.uber.org/zap
-go.uber.org/zap/zapcore
-go.uber.org/zap/zapgrpc
-go.uber.org/zap/internal/bufferpool
-go.uber.org/zap/buffer
-go.uber.org/zap/internal/color
-go.uber.org/zap/internal/exit
 # golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
 golang.org/x/crypto/ssh/terminal
 golang.org/x/crypto/scrypt
@@ -689,28 +636,6 @@ gotest.tools/internal/source
 gotest.tools/internal/difflib
 # istio.io/api v0.0.0-20190902114838-92e636208314
 istio.io/api/networking/v1alpha3
-istio.io/api/mesh/v1alpha1
-istio.io/api/authentication/v1alpha1
-istio.io/api/mixer/v1
-istio.io/api/mixer/v1/config/client
-istio.io/api/rbac/v1alpha1
-istio.io/api/policy/v1beta1
-# istio.io/gogo-genproto v0.0.0-20190731221249-06e20ada0df2
-istio.io/gogo-genproto/googleapis/google/api
-istio.io/gogo-genproto/googleapis/google/rpc
-# istio.io/istio v0.0.0-20190412222632-d19179769183
-istio.io/istio/pilot/pkg/kube/inject
-istio.io/istio/pilot/pkg/model
-istio.io/istio/pilot/cmd
-istio.io/istio/pilot/cmd/pilot-agent/status
-istio.io/istio/pkg/log
-istio.io/istio/galley/pkg/metadata
-istio.io/istio/pilot/pkg/model/test
-istio.io/istio/pkg/cache
-istio.io/istio/pkg/features/pilot
-istio.io/istio/pilot/cmd/pilot-agent/status/ready
-istio.io/istio/galley/pkg/runtime/resource
-istio.io/istio/pilot/cmd/pilot-agent/status/util
 # k8s.io/api v0.0.0-20190409021203-6e4e0e4f393b
 k8s.io/api/core/v1
 k8s.io/api/apps/v1

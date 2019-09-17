@@ -92,7 +92,7 @@ require (
 	gopkg.in/yaml.v2 v2.2.2
 	gotest.tools v2.2.0+incompatible
 	istio.io/api v0.0.0-20190902114838-92e636208314
-	istio.io/istio v0.0.0-20190412222632-d19179769183
+	istio.io/istio v0.0.0-20190412222632-d19179769183 // indirect
 	k8s.io/api v0.0.0-20190409021203-6e4e0e4f393b
 	k8s.io/apiextensions-apiserver v0.0.0-20190409022649-727a075fdec8
 	k8s.io/apimachinery v0.0.0-20190404173353-6a84e37a896d
