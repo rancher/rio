@@ -25,6 +25,7 @@ import (
 	genericcondition "github.com/rancher/wrangler/pkg/genericcondition"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -522,6 +523,11 @@ func (in *ImageBuild) DeepCopyInto(out *ImageBuild) {
 		in, out := &in.BuildArgs, &out.BuildArgs
 		*out = make([]string, len(*in))
 		copy(*out, *in)
+	}
+	if in.BuildTimeout != nil {
+		in, out := &in.BuildTimeout, &out.BuildTimeout
+		*out = new(metav1.Duration)
+		**out = **in
 	}
 	return
 }

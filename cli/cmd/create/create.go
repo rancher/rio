@@ -68,6 +68,7 @@ type Create struct {
 	Secret                 []string          `desc:"Secrets to inject to the service (format: name:target)"`
 	StageOnly              bool              `desc:"Whether to stage new created revision for build"`
 	T_Tty                  bool              `desc:"Allocate a pseudo-TTY"`
+	BuildTimeout           string            `desc:"BuildTimeout for build, default to 10m (ms|s|m|h)"`
 	Version                string            `desc:"Specify the revision"`
 	U_User                 string            `desc:"UID[:GID] Sets the UID used and optionally GID for entrypoint process (format: <uid>[:<gid>])"`
 	Weight                 int               `desc:"Specify the weight for the revision" default:"100"`
@@ -190,6 +191,9 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 		service.Spec.Build.EnablePR = c.BuildEnablePr
 	} else {
 		service.Spec.Image = args[0]
+	}
+	if err := populateTimeout(c, service); err != nil {
+		return nil, err
 	}
 
 	service.Spec.RunAsUser, service.Spec.RunAsGroup, err = stringers.ParseUserGroup(c.U_User, c.Group)

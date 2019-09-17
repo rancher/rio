@@ -171,6 +171,7 @@ func (p populator) populateBuild(service *riov1.Service, systemNamespace string,
 		},
 		Spec: tektonv1alpha1.TaskRunSpec{
 			ServiceAccount: sa.Name,
+			Timeout:        service.Spec.Build.BuildTimeout,
 			TaskSpec: &tektonv1alpha1.TaskSpec{
 				Inputs: &tektonv1alpha1.Inputs{
 					Params: []tektonv1alpha1.TaskParam{
