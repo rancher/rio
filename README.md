@@ -38,6 +38,9 @@ $ rio info
 ## Documentation
 Detailed documentation can be found in [here](/docs/README.md).
 
+## Development
+For developer documentation [see the wiki](https://github.com/rancher/rio/wiki).
+
 ## License
 
 Copyright (c) 2014 - 2019 [Rancher Labs, Inc.](http://rancher.com)
