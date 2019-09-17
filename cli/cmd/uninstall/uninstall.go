@@ -27,7 +27,7 @@ type Uninstall struct {
 
 func (u Uninstall) Run(ctx *clicontext.CLIContext) error {
 	if ctx.K8s == nil {
-		return fmt.Errorf("can't contact Kubernetes cluster. Please make sure your cluster is accessable")
+		return fmt.Errorf("can't contact Kubernetes cluster. Please make sure your cluster is accessible")
 	}
 
 	var systemNamespace string

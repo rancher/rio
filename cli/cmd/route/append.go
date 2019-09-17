@@ -61,7 +61,7 @@ func (a *Create) Run(ctx *clicontext.CLIContext) error {
 func insertRoute(ctx *clicontext.CLIContext, insert bool, a Action) error {
 	args := ctx.CLI.Args()
 	if len(args) < 3 {
-		return fmt.Errorf("at least 3 arguements are required: HOST[/PATH] to|redirect|mirror|rewrite TARGET")
+		return fmt.Errorf("at least 3 arguments are required: HOST[/PATH] to|redirect|mirror|rewrite TARGET")
 	}
 
 	if err := a.validateServiceStack(ctx, args); err != nil {
