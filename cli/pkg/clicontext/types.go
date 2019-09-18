@@ -417,6 +417,9 @@ func (c *CLIContext) listNamespace(namespace, typeName string) (ret []runtime.Ob
 		}
 		return ret, err
 	case clitypes.SecretType:
+		opts = metav1.ListOptions{
+			FieldSelector: "type!=kubernetes.io/service-account-token,type!=istio.io/key-and-cert",
+		}
 		objs, err := c.Core.Secrets(namespace).List(opts)
 		for i := range objs.Items {
 			ret = append(ret, &objs.Items[i])
