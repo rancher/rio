@@ -26,6 +26,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -165,7 +166,10 @@ func (h handler) updateClusterDomain(addresses []string) error {
 	}
 
 	if clusterDomain == nil {
-		return err
+		clusterDomain, err = h.clusterDomain.Get(h.namespace, constants.ClusterDomainName, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
 	}
 
 	deepcopy := clusterDomain.DeepCopy()
