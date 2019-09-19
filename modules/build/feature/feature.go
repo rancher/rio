@@ -58,7 +58,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		},
 		OnStart: func(feature *v1.Feature) error {
 			return start.All(ctx, 5,
+				rContext.Global,
 				rContext.Build,
+				rContext.Core,
 				rContext.Webhook,
 			)
 		},
