@@ -151,8 +151,6 @@ func (h handler) populateRouter(obj runtime.Object, ns *corev1.Namespace, os *ob
 
 func (h handler) populatePublicDomain(obj runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) error {
 	pd := obj.(*adminv1.PublicDomain)
-	if constants.InstallMode == constants.InstallModeIngress {
-		populate.IngressForPublicDomain(h.systemNamespace, pd, os)
-	}
+	populate.IngressForPublicDomain(h.systemNamespace, pd, os)
 	return nil
 }
