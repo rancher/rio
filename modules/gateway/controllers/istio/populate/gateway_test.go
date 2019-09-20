@@ -26,16 +26,16 @@ func TestGatewayWithoutPublicdomains(t *testing.T) {
 				{
 					Port: v1alpha3.Port{
 						Protocol: v1alpha3.ProtocolHTTP,
-						Number:   80,
-						Name:     "http-80",
+						Number:   9080,
+						Name:     "http-9080",
 					},
 					Hosts: []string{"*"},
 				},
 				{
 					Port: v1alpha3.Port{
 						Protocol: v1alpha3.ProtocolHTTPS,
-						Number:   443,
-						Name:     "https-443",
+						Number:   9443,
+						Name:     "https-9443",
 					},
 					Hosts: []string{"*"},
 					TLS: &v1alpha3.TLSOptions{
@@ -87,16 +87,16 @@ func TestGatewayWithPublicdomains(t *testing.T) {
 				{
 					Port: v1alpha3.Port{
 						Protocol: v1alpha3.ProtocolHTTP,
-						Number:   80,
-						Name:     "http-80",
+						Number:   9080,
+						Name:     "http-9080",
 					},
 					Hosts: []string{"*"},
 				},
 				{
 					Port: v1alpha3.Port{
 						Protocol: v1alpha3.ProtocolHTTPS,
-						Number:   443,
-						Name:     "https-443",
+						Number:   9443,
+						Name:     "https-9443",
 					},
 					Hosts: []string{"*"},
 					TLS: &v1alpha3.TLSOptions{
@@ -107,8 +107,8 @@ func TestGatewayWithPublicdomains(t *testing.T) {
 				{
 					Port: v1alpha3.Port{
 						Protocol: v1alpha3.ProtocolHTTPS,
-						Number:   443,
-						Name:     "pd1-https-443",
+						Number:   9443,
+						Name:     "pd1-https-9443",
 					},
 					Hosts: []string{"www.foo.com"},
 					TLS: &v1alpha3.TLSOptions{
@@ -119,8 +119,8 @@ func TestGatewayWithPublicdomains(t *testing.T) {
 				{
 					Port: v1alpha3.Port{
 						Protocol: v1alpha3.ProtocolHTTPS,
-						Number:   443,
-						Name:     "pd2-https-443",
+						Number:   9443,
+						Name:     "pd2-https-9443",
 					},
 					Hosts: []string{"www.bar.com"},
 					TLS: &v1alpha3.TLSOptions{
