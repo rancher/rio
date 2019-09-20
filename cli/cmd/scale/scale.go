@@ -39,7 +39,11 @@ func (s *Scale) Run(ctx *clicontext.CLIContext) error {
 				}
 				service.Spec.AutoscaleConfig.MinScale = &minScale
 				service.Spec.AutoscaleConfig.MaxScale = &maxScale
-				service.Spec.Scale = &minScale
+				if minScale != 0 {
+					service.Spec.Scale = &minScale
+				} else {
+					service.Spec.Scale = &[]int{1}[0]
+				}
 			} else {
 				scale, err := strconv.Atoi(scaleStr)
 				if err != nil {
