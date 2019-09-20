@@ -3,6 +3,7 @@ module github.com/rancher/rio
 go 1.12
 
 replace (
+	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.0.0+incompatible
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.1
 	github.com/docker/distribution => github.com/docker/distribution v2.7.1-0.20190104202606-0ac367fd6bee+incompatible
 	github.com/jaguilar/vt100 => github.com/tonistiigi/vt100 v0.0.0-20190402012908-ad4c4a574305
@@ -60,7 +61,6 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	github.com/moby/buildkit v0.6.0
 	github.com/onsi/ginkgo v1.8.0
-	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/opencontainers/runc v1.0.1-0.20190307181833-2b18fe1d885e // indirect
 	github.com/opentracing/opentracing-go v1.0.2 // indirect
 	github.com/pkg/errors v0.8.1
