@@ -10,6 +10,7 @@ RUN pip3 install 'tox==3.6.0'
 RUN go get -d golang.org/x/lint/golint && \
     git -C /go/src/golang.org/x/lint/golint checkout -b current 06c8688daad7faa9da5a0c2f163a3d14aac986ca && \
     go install golang.org/x/lint/golint && \
+    go get github.com/onsi/ginkgo/ginkgo && \
     rm -rf /go/src /go/pkg
 RUN mkdir -p /go/src/golang.org/x && \
     cd /go/src/golang.org/x && git clone https://github.com/golang/tools && \

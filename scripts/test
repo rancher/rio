@@ -6,7 +6,6 @@ cd $(dirname $0)/..
 if [[ ${ARCH} == amd64 ]]; then
     echo Running tests
 
-    go test -cover -tags=test ./...
 
     k3s server >/dev/null 2>&1 &
     sleep 10
@@ -18,15 +17,6 @@ if [[ ${ARCH} == amd64 ]]; then
     rio-controller >/dev/null 2>&1 &
     rio install --check >/dev/null 2>&1
 
-    cd ./tests
-    PROC=$(nproc)
-    if [ "$PROC" > 8 ]; then
-    PROC=8
-    fi
-    # todo: set $PROC=1, figure out how to run test in parallel
-    PROC=1
-    tox -- -n $PROC
-    cd ..
+    ginkgo ./...
+
 fi
-
-
