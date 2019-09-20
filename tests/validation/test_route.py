@@ -20,8 +20,6 @@ def stage_service(image, fullName, version):
 
 
 def get_app_info(fullName, field):
-
-    time.sleep(10)
     inspect = util.rioInspect(fullName, field)
 
     return inspect
@@ -42,6 +40,7 @@ def test_rio_svc_route(nspc):
     rName = "route1"
 
     fullName = create_service(nspc, image)
+    util.wait_for_app(fullName)
     stage_service(image2, fullName, "v3")
 
     sName = get_app_info(fullName, "metadata.name")
@@ -52,19 +51,13 @@ def test_rio_svc_route(nspc):
     sName = get_app_info(fullName, "metadata.name")
     print(f"{sName}")
     nsproute = (f"{nspc}/{rName}")
-    result = get_app_info(nsproute, "status.endpoints[0]")
+    result = ""
+    for i in range(1, 120):
+        result = get_app_info(nsproute, "status.endpoints[0]")
+        if result != "null":
+            break
+        time.sleep(1)
     print(f"{result}")
 
-    time.sleep(2)
-
-    cmd = (f"curl -s {result}/to-{sName}-v0")
-    print(f"{cmd}")
-    cmd2 = (f"curl -s {result}/to-{sName}-v3")
-    print(f"{cmd2}")
-
-    results1 = util.run(cmd)
-    results2 = util.run(cmd2)
-    print(f"{results1}")
-
-    assert results1 == 'Hello World'
-    assert results2 == 'Hello World v3'
+    util.assert_endpoint(f"{result}/to-{sName}-v0", 'Hello World')
+    util.assert_endpoint(f"{result}/to-{sName}-v3", 'Hello World v3')

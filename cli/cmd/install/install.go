@@ -110,7 +110,6 @@ type Install struct {
 	HTTPPort        string   `desc:"Http port service mesh gateway will listen to" default:"9080" name:"http-port"`
 	HTTPSPort       string   `desc:"Https port service mesh gateway will listen to" default:"9443" name:"https-port"`
 	IPAddress       []string `desc:"Manually specify IP addresses to generate rdns domain, supports comma separated values" name:"ip-address"`
-	ServiceCidr     string   `desc:"Manually specify service CIDR for service mesh to intercept"`
 	DisableFeatures []string `desc:"Manually specify features to disable, supports comma separated values"`
 	HTTPProxy       string   `desc:"Set HTTP_PROXY environment variable for control plane"`
 	Yaml            bool     `desc:"Only print out k8s yaml manifest"`
@@ -179,16 +178,6 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		i.Lite = true
 	}
 
-	if i.ServiceCidr == "" {
-		svc, err := ctx.Core.Services("default").Get("kubernetes", metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
-		clusterCIDR := svc.Spec.ClusterIP + "/16"
-		fmt.Fprintf(out, "Defaulting cluster CIDR to %s\n", clusterCIDR)
-		i.ServiceCidr = clusterCIDR
-	}
-
 	if i.Lite && len(i.DisableFeatures) == 0 {
 		fmt.Fprintf(out, "Setting install mode to lite, monitoring features will be disabled\n")
 		i.DisableFeatures = []string{"mixer", "grafana", "kiali", "prometheus"}
@@ -207,7 +196,6 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		"HTTP_PORT":        i.HTTPPort,
 		"INSTALL_MODE":     i.Mode,
 		"IP_ADDRESSES":     strings.Join(i.IPAddress, ","),
-		"SERVICE_CIDR":     i.ServiceCidr,
 		"DISABLE_FEATURES": strings.Join(i.DisableFeatures, ","),
 		"HTTP_PROXY":       i.HTTPProxy,
 		"SM_MODE":          i.MeshMode,
@@ -327,9 +315,7 @@ func allReady(info *adminv1.RioInfo, smMode string, disabledFeatures []string) (
 	var l list
 	ready := true
 	components := SystemComponents
-	if smMode == "linkerd" {
-		components = append(components, linkerdComponents...)
-	} else if smMode == "istio" {
+	if smMode == "istio" {
 		components = append(components, istioComponents...)
 	}
 	for _, c := range components {
@@ -428,9 +414,6 @@ func (i *Install) reinstall(mode string) error {
 	}
 	for _, df := range i.DisableFeatures {
 		args = append(args, "--disable-features", df)
-	}
-	if i.ServiceCidr != "" {
-		args = append(args, "--service-cidr", i.ServiceCidr)
 	}
 	if i.HTTPProxy != "" {
 		args = append(args, "--httpproxy", i.HTTPProxy)

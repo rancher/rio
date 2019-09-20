@@ -42,8 +42,9 @@ var (
 	StagingIssuerName              = "letsencrypt-staging-issuer"
 	StagingType                    = "staging"
 
-	IstioVersion   = "1.2.5"
-	LinkerdVersion = "stable-2.5.0"
+	IstioVersion        = "1.2.5"
+	LinkerdVersion      = "stable-2.5.0"
+	LinkerdInstallImage = "rancher/linkerd-install:stable-2.5.0"
 
 	DisableAutoscaling = false
 	DisableBuild       = false

@@ -1,6 +1,5 @@
 services:
   cert-manager:
-    disableServiceMesh: true
     global_permissions:
     - '* certmanager.k8s.io/*'
     - '* extensions/ingresses'

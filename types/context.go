@@ -3,6 +3,8 @@ package types
 import (
 	"context"
 
+	"github.com/rancher/wrangler-api/pkg/generated/controllers/batch"
+
 	webhookinator "github.com/rancher/gitwatcher/pkg/generated/controllers/gitwatcher.cattle.io"
 	"github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io"
 	"github.com/rancher/rio/pkg/generated/controllers/autoscale.rio.cattle.io"
@@ -31,6 +33,7 @@ type Context struct {
 
 	Apps          *apps.Factory
 	AutoScale     *autoscale.Factory
+	Batch         *batch.Factory
 	Build         *build.Factory
 	CertManager   *certmanager.Factory
 	Core          *core.Factory
@@ -58,6 +61,7 @@ func NewContext(namespace string, config *rest.Config) *Context {
 		Namespace:     namespace,
 		Apps:          apps.NewFactoryFromConfigOrDie(config),
 		AutoScale:     autoscale.NewFactoryFromConfigOrDie(config),
+		Batch:         batch.NewFactoryFromConfigOrDie(config),
 		Build:         build.NewFactoryFromConfigOrDie(config),
 		CertManager:   certmanager.NewFactoryFromConfigOrDie(config),
 		Core:          core.NewFactoryFromConfigOrDie(config),

@@ -23,7 +23,6 @@ configs:
 
 services:
   istio-pilot:
-    disableServiceMesh: true
     labels:
       istio: pilot
     global_permissions:
@@ -67,7 +66,6 @@ services:
       - PILOT_TRACE_SAMPLING=100
       image: "istio/pilot:${TAG}"
       imagePullPolicy: always
-      secrets: identity:/etc/certs
       readinessProbe:
         failureThreshold: 3
         httpGet:
@@ -78,38 +76,10 @@ services:
         periodSeconds: 30
         successThreshold: 1
         timeoutSeconds: 5
-    - name: istio-proxy
-      ports:
-      - 15011/https,https-xds
-      image: "istio/proxyv2:${TAG}"
-      imagePullPolicy: always
-      args:
-      - proxy
-      - --domain
-      - $(POD_NAMESPACE).svc.cluster.local
-      - --serviceCluster
-      - istio-pilot
-      - --templateFile
-      - /etc/istio/proxy/envoy_pilot.yaml.tmpl
-      - --controlPlaneAuthPolicy
-      - NONE
-      env:
-      - POD_NAME=$(self/name)
-      - POD_NAMESPACE=$(self/namespace)
-      - INSTANCE_IP=$(self/ip)
-      secrets: identity:/etc/certs
   gateway:
-    disableServiceMesh: true
     labels:
       "gateway": "external"
       "istio": "gateway"
-      linkerd.io/control-plane-component: gateway
-      linkerd.io/control-plane-ns: ${NAMESPACE}
-      linkerd.io/proxy-deployment: linkerd-gateway
-    annotations:
-      linkerd.io/created-by: linkerd/cli ${LINKERD_TAG}
-      linkerd.io/identity-mode: default
-      linkerd.io/proxy-version: ${LINKERD_TAG}
     global_permissions:
     - "get,watch,list,update extensions/thirdpartyresources"
     - "get,watch,list,update */virtualservices"
@@ -143,7 +113,7 @@ services:
     - --connectTimeout
     - '10s' #connectTimeout
     - --serviceCluster
-    - istio-gateway
+    - gateway
     - --zipkinAddress
     - ""
     - --statsdUdpAddress
@@ -164,8 +134,6 @@ services:
     - ISTIO_META_POD_NAME=$(self/name)
     - ISTIO_META_CONFIG_NAMESPACE=$(self/namespace)
     - ISTIO_META_USER_SDS=true
-    secrets:
-    - identity:/etc/certs
     volumes:
     - ingressgatewaysdsudspath:/var/run/ingress_gateway
     readinessProbe:
@@ -187,10 +155,3 @@ services:
       - INGRESS_GATEWAY_NAMESPACE=$(self/namespace)
       volumes:
       - ingressgatewaysdsudspath:/var/run/ingress_gateway
-{{- if .Values.PROXY_INJECT }}
-{{ indent 4 .Values.PROXY_INJECT }}
-{{- end}}
-
-template:
-  questions:
-  - variable: PROXY_INJECT

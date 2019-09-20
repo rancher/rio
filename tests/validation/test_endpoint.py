@@ -12,29 +12,29 @@ def create_service(nspc, image):
 
 
 def stage_service(image, fullName, version):
-
     util.rioStage(image, fullName, version)
 
     return
 
 
 def get_app_info(fullName, field):
-
-    time.sleep(10)
     inspect = util.rioInspect(fullName, field)
 
     return inspect
 
 
 def get_version_endpoint(fullName, version):
+    inspect = ""
+    for i in range(1, 120):
+        fullNameVersion = f"{fullName}:{version}"
 
-    fullNameVersion = (f"{fullName}:{version}")
+        endpoint = "status.endpoints[0]"
+        print(f"{fullNameVersion}")
 
-    time.sleep(10)
-    endpoint = "status.endpoints[0]"
-    print(f"{fullNameVersion}")
-
-    inspect = util.rioInspect(fullNameVersion, endpoint)
+        inspect = util.rioInspect(fullNameVersion, endpoint)
+        if inspect != "null":
+            break
+        time.sleep(1)
 
     return inspect
 
@@ -46,16 +46,18 @@ def test_rio_app_endpoint(nspc):
     srv = create_service(nspc, image)
     fullName = (f"{nspc}/{srv}")
     print(fullName)
-    time.sleep(5)
+
+    util.wait_for_app(fullName)
     stage_service(image2, fullName, "v3")
 
-    appEndpoint = get_app_info(fullName, "status.endpoints[0]")
+    for i in range(1, 120):
+        appEndpoint = get_app_info(fullName, "status.endpoints[0]")
+        if appEndpoint != "null":
+            break
+        time.sleep(1)
     print(f"{appEndpoint}")
 
-    results = util.run(f"curl -s {appEndpoint}")
-    print(f"{results}")
-
-    assert results == 'Hello World'
+    util.assert_endpoint(appEndpoint, 'Hello World')
 
 
 def test_rio_svc_endpoint1(nspc):
@@ -65,14 +67,13 @@ def test_rio_svc_endpoint1(nspc):
     srv = create_service(nspc, image)
     fullName = (f"{nspc}/{srv}")
 
+    util.wait_for_app(fullName)
     stage_service(image2, fullName, "v3")
 
     svcEndpoint = get_version_endpoint(fullName, "v0")
     svcEndpoint2 = get_version_endpoint(fullName, "v3")
+    print(svcEndpoint)
+    print(svcEndpoint2)
 
-    results1 = util.run(f"curl {svcEndpoint}")
-    results2 = util.run(f'curl {svcEndpoint2}')
-    print(f"{results1}")
-
-    assert results1 == 'Hello World'
-    assert results2 == 'Hello World v3'
+    util.assert_endpoint(svcEndpoint, 'Hello World')
+    util.assert_endpoint(svcEndpoint2, 'Hello World v3')

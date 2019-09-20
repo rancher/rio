@@ -9,6 +9,8 @@ configs:
         port: 20001
         web_root: /kiali
       external_services:
+        grafana:
+          url: http://grafana:3000
         prometheus:
           url: http://prometheus:9090
   {{- end}}
@@ -344,6 +346,7 @@ services:
     image: quay.io/kiali/kiali:v0.20
     env:
     - ACTIVE_NAMESPACE=$(self/namespace}
+    - GRAFANA_SERVICE_NAMESPACE=${NAMESPACE}
     args:
     - -config
     - /kiali-configuration/config.yaml

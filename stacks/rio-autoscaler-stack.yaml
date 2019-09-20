@@ -64,7 +64,6 @@ configs:
 
 services:
   autoscaler:
-    disableServiceMesh: true
     global_permissions:
     - '* configmaps'
     - '* events'
@@ -100,7 +99,6 @@ services:
     env:
     - SYSTEM_NAMESPACE=$(self/namespace)
   activator:
-    disableServiceMesh: true
     global_permissions:
     - '* configmaps'
     - '* events'
@@ -146,7 +144,6 @@ services:
     - config-logging:/etc/config-logging
     - config-observability:/etc/config-observability
   controller:
-    disableServiceMesh: true
     global_permissions:
     - '* configmaps'
     - '* events'

@@ -263,9 +263,12 @@ func TestRouterForVirtualServices1(t *testing.T) {
 							},
 							Remove: []string{
 								"FOO1",
+								"l5d-remote-ip",
+								"l5d-server-id",
 							},
 							Set: map[string]string{
-								"FOO2": "BAR2",
+								"FOO2":             "BAR2",
+								"l5d-dst-override": "externalservice-foo-service.default.svc.cluster.local:8080",
 							},
 						},
 					},

@@ -64,6 +64,12 @@ func TestVirtualServices(t *testing.T) {
 			},
 			HTTP: []v1alpha3.HTTPRoute{
 				{
+					Headers: &v1alpha3.Headers{
+						Request: &v1alpha3.HeaderOperations{
+							Set:    map[string]string{"l5d-dst-override": "foo-v0.default.svc.cluster.local:80"},
+							Remove: []string{"l5d-remote-ip", "l5d-server-id"},
+						},
+					},
 					Match: []v1alpha3.HTTPMatchRequest{
 						{
 							Gateways: []string{
