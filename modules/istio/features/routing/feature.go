@@ -39,7 +39,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	feature := &features.FeatureController{
 		FeatureName: "istio",
 		FeatureSpec: projectv1.FeatureSpec{
-			Description: "Service routing using Istio",
+			Description: "Istio service mesh",
 			Enabled:     constants.ServiceMeshMode == constants.ServiceMeshModeIstio,
 			Answers: map[string]string{
 				"DISABLE_KIALI":      disableKiali,

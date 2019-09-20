@@ -19,7 +19,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	feature := &features.FeatureController{
 		FeatureName: "linkerd",
 		FeatureSpec: v1.FeatureSpec{
-			Description: "linkerd service mesh",
+			Description: "Linkerd service mesh",
 			Enabled:     constants.ServiceMeshMode == constants.ServiceMeshModeLinkerd,
 		},
 		SystemStacks: []*stack.SystemStack{
