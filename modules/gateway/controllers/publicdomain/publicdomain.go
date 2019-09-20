@@ -28,6 +28,6 @@ type populator struct {
 
 func (p populator) populate(obj runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) error {
 	pd := obj.(*adminv1.PublicDomain)
-	populate.DestionationRule(pd, p.systemNamespace, os)
+	populate.DestinationRule(pd, p.systemNamespace, os)
 	return nil
 }

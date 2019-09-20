@@ -2,9 +2,12 @@ package populate
 
 import (
 	"fmt"
+	"hash/adler32"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/rancher/rio/modules/gateway/controllers/service/populate"
 
 	"github.com/knative/pkg/apis/istio/common/v1alpha1"
 	"github.com/knative/pkg/apis/istio/v1alpha3"
@@ -42,8 +45,28 @@ func virtualServiceFromRoutesets(systemNamespace string, clusterDomain *projectv
 		Hosts: []string{routeSet.Name, domains.GetExternalDomain(routeSet.Name, routeSet.Namespace, clusterDomain.Status.ClusterDomain)},
 	}
 
-	for _, pd := range routeSet.Status.PublicDomains {
-		spec.Hosts = append(spec.Hosts, pd)
+	pb := v1.ContainerPort{
+		Port:       8089,
+		TargetPort: 8089,
+		Protocol:   v1.ProtocolHTTP,
+	}
+	for _, publicDomain := range routeSet.Status.PublicDomains {
+		spec.Hosts = append(spec.Hosts, publicDomain)
+		ds := []populate.Dest{
+			{
+				Host:   fmt.Sprintf("cm-acme-http-solver-%d", adler32.Checksum([]byte(publicDomain))),
+				Subset: constants.AcmeVersion,
+				Weight: 100,
+			},
+		}
+		_, route := populate.NewRoute(true, systemNamespace, domains.GetPublicGateway(systemNamespace), true, pb, ds, false, false, nil)
+		route.Match[0].URI = &v1alpha1.StringMatch{
+			Prefix: "/.well-known/acme-challenge/",
+		}
+		route.Match[0].Authority = &v1alpha1.StringMatch{
+			Prefix: publicDomain,
+		}
+		spec.HTTP = append(spec.HTTP, route)
 	}
 
 	// populate http routing
