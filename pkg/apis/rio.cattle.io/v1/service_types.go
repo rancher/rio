@@ -415,4 +415,7 @@ type ImageBuild struct {
 
 	// Push image
 	Push bool `json:"push,omitempty"`
+
+	// BuildTimeout describes how long the build can run
+	BuildTimeout *metav1.Duration
 }
