@@ -15,13 +15,14 @@ import (
 
 func (h Handler) onChangeService(key string, obj *webhookv1.GitCommit, gitWatcher *webhookv1.GitWatcher) (*webhookv1.GitCommit, error) {
 	if gitWatcher.Status.FirstCommit == "" {
-		gitWatcher, err := h.gitWatcherClient.Get(gitWatcher.Namespace, gitWatcher.Name, v1.GetOptions{})
+		gw, err := h.gitWatcherClient.Get(gitWatcher.Namespace, gitWatcher.Name, v1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
-		if gitWatcher.Status.FirstCommit == "" {
+		if gw.Status.FirstCommit == "" {
 			return obj, fmt.Errorf("waiting for gitWatcher first commit on %s/%s", gitWatcher.Namespace, gitWatcher.Name)
 		}
+		gitWatcher = gw
 	}
 
 	service, err := h.services.Cache().Get(obj.Namespace, obj.Spec.GitWatcherName)
