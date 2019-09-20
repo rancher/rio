@@ -4,10 +4,6 @@ kubernetes:
     kind: Namespace
     metadata:
       name: ${NAMESPACE}
-      annotations:
-        linkerd.io/inject: disabled
-      labels:
-        linkerd.io/is-control-plane: "true"
     ---
     apiVersion: rbac.authorization.k8s.io/v1
     kind: ClusterRole
@@ -41,6 +37,7 @@ kubernetes:
       - "extensions"
       - "apps"
       resources:
+      - "replicasets"
       - "deployments"
       - "daemonsets"
       verbs:
@@ -108,6 +105,12 @@ kubernetes:
       verbs:
       - "*"
     - apiGroups:
+      - "linkerd.io"
+      resources:
+      - "serviceprofiles"
+      verbs:
+      - "*"
+    - apiGroups:
       - "apiextensions.k8s.io"
       resources:
       - "customresourcedefinitions"
@@ -126,15 +129,15 @@ kubernetes:
       verbs:
       - "*"
     - apiGroups:
-      - "admissionregistration.k8s.io"
-      resources:
-      - "validatingwebhookconfigurations"
-      verbs:
-      - "get"
-    - apiGroups:
       - "config.istio.io"
       resources:
       - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "policy"
+      resources:
+      - "podsecuritypolicies"
       verbs:
       - "*"
     - apiGroups:
@@ -149,6 +152,12 @@ kubernetes:
       - "autoscaling.internal.knative.dev"
       resources:
       - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "split.smi-spec.io"
+      resources:
+      - "trafficsplits"
       verbs:
       - "*"
     - apiGroups:
@@ -275,8 +284,6 @@ kubernetes:
               value: "${HTTP_PORT}"
             - name: IP_ADDRESSES
               value: ${IP_ADDRESSES}
-            - name: SERVICE_CIDR
-              value: ${SERVICE_CIDR}
             - name: DISABLE_FEATURES
               value: ${DISABLE_FEATURES}
             - name: HTTP_PROXY

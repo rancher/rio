@@ -37,7 +37,6 @@ configs:
 
 services:
   registry:
-    disableServiceMesh: true
     image: registry:2
     env:
     - REGISTRY_HTTP_ADDR=0.0.0.0:80
@@ -46,7 +45,6 @@ services:
     volumes:
     - storage-registry:/var/lib/registry
   webhook:
-    disableServiceMesh: true
     global_permissions:
     - "* gitwatcher.cattle.io/gitwatchers"
     - "* gitwatcher.cattle.io/gitcommits"
@@ -64,7 +62,6 @@ services:
     ports:
     - 8090/http,http-webhook
   build-controller:
-    disableServiceMesh: true
     global_permissions:
     - '* pods'
     - '* namespaces'

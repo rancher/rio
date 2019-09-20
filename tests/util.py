@@ -6,9 +6,6 @@ import hashlib
 import tempfile
 import os
 
-# runAndExpect("rio asldfkhsldkfj", 3)
-# output = runAndExpect("rio ps")
-
 
 def run(cmd, status=0):
     # @TODO actually check status
@@ -33,8 +30,29 @@ def runToJson(cmd, status=0):
     return json.loads(result)
 
 
-def rioRun(nspc, *args):
+def wait_for_app(full_name):
+    for i in range(1, 120):
+        cmd = f"rio inspect --type app {full_name}"
+        try:
+            run(cmd)
+            break
+        except subprocess.CalledProcessError:
+            print("waiting")
+        time.sleep(1)
 
+
+def wait_for_service(full_name):
+    for i in range(1, 120):
+        cmd = f"rio inspect --type service {full_name}"
+        try:
+            run(cmd)
+            break
+        except subprocess.CalledProcessError:
+            print("waiting")
+        time.sleep(1)
+
+
+def rioRun(nspc, *args):
     srv = "tsrv" + str(random.randint(1000, 5000))
     fullName = (f"{nspc}/{srv}")
     print(f"{fullName}")
@@ -43,17 +61,26 @@ def rioRun(nspc, *args):
     print(cmd)
 
     run(cmd)
-    time.sleep(5)
 
     return srv
 
 
 def rioStage(image, srv, version):
-
     cmd = (f"rio stage --image={image} {srv}:{version}")
     run(cmd)
 
     return
+
+
+def assert_endpoint(endpoint, result):
+    for i in range(1, 120):
+        try:
+            output = run(f"curl -s {endpoint}")
+        except subprocess.CalledProcessError:
+            pass
+        if output == result:
+            break
+        time.sleep(1)
 
 
 def rioConfigCreate(nspc, *configs):

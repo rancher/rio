@@ -34,14 +34,27 @@ def change_weight(fullName, version, percent):
     return
 
 
+def wait_for_revision(fullName, number):
+    for i in range(1, 120):
+        length = util.run(f"rio inspect --type app --format json {fullName} "
+                          f"| jq -r .spec.revisions | jq length")
+        print(length)
+        if length == number:
+            break
+        time.sleep(1)
+
+
 def test_rio_svc_weight(nspc):
     image = "ibuildthecloud/demo:v1"
     image2 = "ibuildthecloud/demo:v3"
 
     fullName = create_service(nspc, image)
+    util.wait_for_app(fullName)
     stage_service(image2, fullName, "v3")
     fullName1 = (f"{fullName}:v0")
     fullName2 = (f"{fullName}:v3")
+
+    wait_for_revision(fullName, "2")
 
     results1 = get_app_info(fullName1, "spec.weight")
     results2 = get_app_info(fullName2, "spec.weight")
@@ -58,15 +71,14 @@ def test_rio_svc_weight2(nspc):
     image2 = "ibuildthecloud/demo:v3"
 
     fullName = create_service(nspc, image)
+    util.wait_for_app(fullName)
     stage_service(image2, fullName, "v3")
-    fullName1 = (f"{fullName}:v0")
-    fullName2 = (f"{fullName}:v3")
+    fullName1 = f"{fullName}:v0"
+    fullName2 = f"{fullName}:v3"
 
-    time.sleep(5)
+    wait_for_revision(fullName, "2")
 
     change_weight(fullName, "v3", "5%")
-
-    time.sleep(5)
 
     results1 = get_app_info(fullName1, "spec.weight")
     results2 = get_app_info(fullName2, "spec.weight")

@@ -103,6 +103,29 @@ func httpRoutes(systemNamespace string, service *v1.Service, dests []Dest) ([]v1
 func newRoute(systemNamespace, externalGW string, published bool, portBinding v1.ContainerPort, dests []Dest, appendHTTPS bool, autoscale bool, svc *v1.Service) (string, v1alpha3.HTTPRoute) {
 	route := v1alpha3.HTTPRoute{}
 
+	// linkerd header for gateway
+	if len(dests) > 0 && constants.ServiceMeshMode == constants.ServiceMeshModeLinkerd {
+		ns := systemNamespace
+		if svc != nil {
+			ns = svc.Namespace
+		}
+		host := dests[0].Host
+		if dests[0].Subset != "" {
+			host = host + "-" + dests[0].Subset
+		}
+		route.Headers = &v1alpha3.Headers{
+			Request: &v1alpha3.HeaderOperations{
+				Set: map[string]string{
+					"l5d-dst-override": fmt.Sprintf("%v.%s.svc.cluster.local:%v", host, ns, portBinding.Port),
+				},
+				Remove: []string{
+					"l5d-remote-ip",
+					"l5d-server-id",
+				},
+			},
+		}
+	}
+
 	if portBinding.Protocol == "" {
 		portBinding.Protocol = v1.ProtocolHTTP
 	}

@@ -5,6 +5,7 @@ import (
 
 	"github.com/rancher/rio/modules/service/controllers/service/populate"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
@@ -57,7 +58,8 @@ func (s *serviceHandler) populate(obj runtime.Object, ns *corev1.Namespace, os *
 	if err != nil {
 		return err
 	}
-	if ns.Name != s.namespace {
+
+	if ns.Name != s.namespace && constants.ServiceMeshMode == constants.ServiceMeshModeIstio {
 		ns = ns.DeepCopy()
 		if ns.Labels == nil {
 			ns.Labels = map[string]string{}

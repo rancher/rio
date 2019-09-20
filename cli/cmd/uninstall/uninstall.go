@@ -5,19 +5,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rancher/rio/cli/cmd/install"
-
-	"k8s.io/apimachinery/pkg/api/errors"
-
 	certmanagerv1alpha1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	gitwatcherv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
+	"github.com/rancher/rio/cli/cmd/install"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/up/questions"
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	autoscalev1 "github.com/rancher/rio/pkg/apis/autoscale.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
+	batchv1 "k8s.io/api/batch/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -28,6 +29,56 @@ type Uninstall struct {
 func (u Uninstall) Run(ctx *clicontext.CLIContext) error {
 	if ctx.K8s == nil {
 		return fmt.Errorf("can't contact Kubernetes cluster. Please make sure your cluster is accessible")
+	}
+
+	job := &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace:    u.Namespace,
+			GenerateName: "linkerd-uninstall-",
+		},
+		Spec: batchv1.JobSpec{
+			TTLSecondsAfterFinished: &[]int32{120}[0],
+			BackoffLimit:            &[]int32{1}[0],
+			Template: v1.PodTemplateSpec{
+				Spec: v1.PodSpec{
+					ServiceAccountName: "rio-controller-serviceaccount",
+					RestartPolicy:      v1.RestartPolicyNever,
+					Containers: []v1.Container{
+						{
+							Name:            "linkerd-install",
+							Image:           constants.LinkerdInstallImage,
+							ImagePullPolicy: v1.PullAlways,
+							Env: []v1.EnvVar{
+								{
+									Name:  "LINKERD_UNINSTALL",
+									Value: "TRUE",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	existingJob, err := ctx.K8s.BatchV1().Jobs(u.Namespace).Create(job)
+	if err != nil {
+		return err
+	}
+	startTime := time.Now()
+	fmt.Println("Waiting for linkerd uninstall job to be finished")
+	for {
+		job, err := ctx.K8s.BatchV1().Jobs(u.Namespace).Get(existingJob.Name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		if time.Now().After(startTime.Add(time.Minute * 2)) {
+			return fmt.Errorf("Timeout waiting for linkerd uninstall job")
+		}
+		if job.Status.CompletionTime == nil {
+			time.Sleep(time.Second * 5)
+			continue
+		}
+		break
 	}
 
 	var systemNamespace string

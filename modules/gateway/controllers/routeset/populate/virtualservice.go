@@ -47,9 +47,37 @@ func virtualServiceFromRoutesets(systemNamespace string, clusterDomain *projectv
 
 	// populate http routing
 	for _, routeSpec := range routeSet.Spec.Routes {
-		httpRoute := v1alpha3.HTTPRoute{}
+		httpRoute := v1alpha3.HTTPRoute{
+			Headers: &v1alpha3.Headers{
+				Request: routeSpec.Headers,
+			},
+		}
+
 		// populate destinations
-		for _, dest := range routeSpec.To {
+		for i, dest := range routeSpec.To {
+			if httpRoute.Headers.Request == nil {
+				httpRoute.Headers.Request = &v1alpha3.HeaderOperations{}
+			}
+			if httpRoute.Headers.Request.Set == nil {
+				httpRoute.Headers.Request.Set = map[string]string{}
+			}
+			port := 80
+			if dest.Port != nil {
+				port = int(*dest.Port)
+			}
+
+			if i == len(routeSpec.To)-1 && constants.ServiceMeshMode == constants.ServiceMeshModeLinkerd {
+				host := dest.Service
+				if dest.Revision != "" {
+					host = host + "-" + dest.Revision
+				}
+				httpRoute.Headers.Request.Set["l5d-dst-override"] = fmt.Sprintf("%v.%s.svc.cluster.local:%v", host, dest.Namespace, port)
+				httpRoute.Headers.Request.Remove = append(httpRoute.Headers.Request.Remove, []string{
+					"l5d-remote-ip",
+					"l5d-server-id",
+				}...)
+			}
+
 			if dest.Destination.Namespace == "" {
 				dest.Destination.Namespace = routeSet.Namespace
 			}
@@ -118,10 +146,6 @@ func virtualServiceFromRoutesets(systemNamespace string, clusterDomain *projectv
 					Port:     uint32(httpsPort),
 				},
 			}
-		}
-
-		httpRoute.Headers = &v1alpha3.Headers{
-			Request: routeSpec.Headers,
 		}
 
 		if routeSpec.Redirect != nil {
