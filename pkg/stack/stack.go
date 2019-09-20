@@ -2,8 +2,10 @@ package stack
 
 import (
 	"encoding/json"
+	"os"
 	"strings"
 
+	"github.com/pkg/errors"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/riofile"
@@ -94,6 +96,20 @@ func (s *Stack) GetImageBuilds() (map[string]riov1.ImageBuild, error) {
 				}
 
 				buildConfig[svc.Name] = *svc.Spec.Build
+			} else {
+				// check if the image points toward a local path
+				if strings.HasPrefix(svc.Spec.Image, "./") || strings.HasPrefix(svc.Spec.Image, "/") {
+					fileInfo, err := os.Stat(svc.Spec.Image)
+					if err != nil {
+						return nil, errors.Wrap(err, "error parsing image field")
+					}
+					if fileInfo.IsDir() {
+						buildConfig[svc.Name] = riov1.ImageBuild{BuildContext: svc.Spec.Image}
+						svc.Spec.Image = ""
+					} else {
+						return nil, errors.Wrap(err, "image field is not a directory")
+					}
+				}
 			}
 		}
 	}
