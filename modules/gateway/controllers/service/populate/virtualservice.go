@@ -34,7 +34,7 @@ func VirtualServices(namespace string, clusterDomain *projectv1.ClusterDomain, s
 	return nil
 }
 
-func httpRoutes(systemNamespace string, service *v1.Service, dests []Dest) ([]v1alpha3.HTTPRoute, bool) {
+func httpRoutes(aggregated bool, systemNamespace string, service *v1.Service, dests []Dest) ([]v1alpha3.HTTPRoute, bool) {
 	external := false
 	var result []v1alpha3.HTTPRoute
 
@@ -52,7 +52,7 @@ func httpRoutes(systemNamespace string, service *v1.Service, dests []Dest) ([]v1
 				Weight: 100,
 			},
 		}
-		_, route := newRoute(systemNamespace, domains.GetPublicGateway(systemNamespace), true, pb, ds, false, false, nil)
+		_, route := newRoute(aggregated, systemNamespace, domains.GetPublicGateway(systemNamespace), true, pb, ds, false, false, nil)
 		route.Match[0].URI = &v1alpha1.StringMatch{
 			Prefix: "/.well-known/acme-challenge/",
 		}
@@ -71,7 +71,7 @@ func httpRoutes(systemNamespace string, service *v1.Service, dests []Dest) ([]v1
 			if port.InternalOnly {
 				continue
 			}
-			publicPort, route := newRoute(systemNamespace, domains.GetPublicGateway(systemNamespace), !port.InternalOnly, port, dests, true, false, service)
+			publicPort, route := newRoute(aggregated, systemNamespace, domains.GetPublicGateway(systemNamespace), !port.InternalOnly, port, dests, true, false, service)
 			if publicPort != "" {
 				route.Match = []v1alpha3.HTTPMatchRequest{
 					{
@@ -91,7 +91,7 @@ func httpRoutes(systemNamespace string, service *v1.Service, dests []Dest) ([]v1
 		if port.InternalOnly {
 			continue
 		}
-		publicPort, route := newRoute(systemNamespace, domains.GetPublicGateway(systemNamespace), !port.InternalOnly, port, dests, true, autoscale, service)
+		publicPort, route := newRoute(aggregated, systemNamespace, domains.GetPublicGateway(systemNamespace), !port.InternalOnly, port, dests, true, autoscale, service)
 		if publicPort != "" {
 			external = true
 			result = append(result, route)
@@ -100,17 +100,20 @@ func httpRoutes(systemNamespace string, service *v1.Service, dests []Dest) ([]v1
 
 	return result, external
 }
-func newRoute(systemNamespace, externalGW string, published bool, portBinding v1.ContainerPort, dests []Dest, appendHTTPS bool, autoscale bool, svc *v1.Service) (string, v1alpha3.HTTPRoute) {
+
+// Use aggregated flag to control if we should override header with subset or not
+func newRoute(aggregated bool, systemNamespace, externalGW string, published bool, portBinding v1.ContainerPort, dests []Dest, appendHTTPS bool, autoscale bool, svc *v1.Service) (string, v1alpha3.HTTPRoute) {
 	route := v1alpha3.HTTPRoute{}
 
 	// linkerd header for gateway
 	if len(dests) > 0 && constants.ServiceMeshMode == constants.ServiceMeshModeLinkerd {
+		// https://linkerd.io/2/tasks/using-ingress/ In linkerd we override header to make sure traffic is sent to the desired target.
 		ns := systemNamespace
 		if svc != nil {
 			ns = svc.Namespace
 		}
 		host := dests[0].Host
-		if dests[0].Subset != "" {
+		if dests[0].Subset != "" && !aggregated {
 			host = host + "-" + dests[0].Subset
 		}
 		route.Headers = &v1alpha3.Headers{
@@ -264,7 +267,7 @@ func isProtocolSupported(protocol v1.Protocol) bool {
 }
 
 func VirtualServiceFromSpec(aggregated bool, systemNamespace string, name, namespace string, clusterDomain *projectv1.ClusterDomain, service *v1.Service, dests ...Dest) *v1alpha3.VirtualService {
-	routes, external := httpRoutes(systemNamespace, service, dests)
+	routes, external := httpRoutes(aggregated, systemNamespace, service, dests)
 	if len(routes) == 0 {
 		return nil
 	}

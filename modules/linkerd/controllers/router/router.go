@@ -1,4 +1,4 @@
-package app
+package router
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 
 	splitv1alpha1 "github.com/deislabs/smi-sdk-go/pkg/apis/split/v1alpha1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
 	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
@@ -21,11 +20,11 @@ import (
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
-	c := stackobject.NewGeneratingController(ctx, rContext, "routing-serviceset", rContext.Rio.Rio().V1().App())
+	c := stackobject.NewGeneratingController(ctx, rContext, "routing-routers", rContext.Rio.Rio().V1().Router())
 	c.Apply = c.Apply.WithStrictCaching().
 		WithCacheTypes(rContext.SMI.Split().V1alpha1().TrafficSplit()).WithRateLimiting(10)
 
-	sh := &appHandler{
+	sh := &routeHandler{
 		systemNamespace:    rContext.Namespace,
 		clusterDomainCache: rContext.Global.Admin().V1().ClusterDomain().Cache(),
 		serviceCache:       rContext.Rio.Rio().V1().Service().Cache(),
@@ -36,38 +35,47 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	return nil
 }
 
-type appHandler struct {
+type routeHandler struct {
 	systemNamespace    string
 	clusterDomainCache projectv1controller.ClusterDomainCache
 	serviceCache       v1.ServiceCache
 	secrets            corev1controller.SecretController
 }
 
-func (a appHandler) populate(obj runtime.Object, namespace *corev1.Namespace, os *objectset.ObjectSet) error {
-	app := obj.(*riov1.App)
+func (r routeHandler) populate(obj runtime.Object, namespace *corev1.Namespace, os *objectset.ObjectSet) error {
+	router := obj.(*riov1.Router)
 
-	clusterDomain, err := a.clusterDomainCache.Get(a.systemNamespace, constants.ClusterDomainName)
-	if err != nil {
-		return err
-	}
-
-	if clusterDomain.Status.ClusterDomain == "" {
+	if router == nil || router.DeletionTimestamp != nil {
 		return nil
 	}
 
-	if app.Namespace != a.systemNamespace {
-		split := constructors.NewTrafficSplit(app.Namespace, app.Name, splitv1alpha1.TrafficSplit{
-			Spec: splitv1alpha1.TrafficSplitSpec{
-				Service: app.Name,
-			},
-		})
-		for ver, rev := range app.Status.RevisionWeight {
-			split.Spec.Backends = append(split.Spec.Backends, splitv1alpha1.TrafficSplitBackend{
-				Service: fmt.Sprintf("%s-%s", app.Name, ver),
-				Weight:  resource.MustParse(strconv.Itoa(rev.Weight)),
-			})
-		}
+	for i, route := range router.Spec.Routes {
+		name := fmt.Sprintf("%s-%v", router.Name, i)
+		split := createSplit(name, router, route)
 		os.Add(split)
 	}
+
 	return nil
+}
+
+func createSplit(name string, router *riov1.Router, routerSpec riov1.RouteSpec) *splitv1alpha1.TrafficSplit {
+	split := constructors.NewTrafficSplit(router.Namespace, name, splitv1alpha1.TrafficSplit{
+		Spec: splitv1alpha1.TrafficSplitSpec{
+			Service: name,
+		},
+	})
+	for _, to := range routerSpec.To {
+		if len(routerSpec.To) == 1 {
+			to.Weight = 100
+		}
+		dest := to.Service
+		if to.Revision != "" {
+			dest = dest + "-" + to.Revision
+		}
+		split.Spec.Backends = append(split.Spec.Backends, splitv1alpha1.TrafficSplitBackend{
+			Service: dest,
+			Weight:  resource.MustParse(strconv.Itoa(to.Weight)),
+		})
+	}
+	return split
 }

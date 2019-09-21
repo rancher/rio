@@ -302,8 +302,14 @@ func FormatURL() func(obj interface{}) (string, error) {
 			return "", nil
 		}
 		hostBuf := strings.Builder{}
-		hostBuf.WriteString(data.RouteSet.Status.Endpoints[0])
-		hostBuf.WriteString(data.path())
+		for i, endpoint := range data.RouteSet.Status.Endpoints {
+			hostBuf.WriteString(endpoint)
+			hostBuf.WriteString(data.path())
+			if i != len(data.RouteSet.Status.Endpoints)-1 {
+				hostBuf.WriteString(", ")
+			}
+		}
+
 		return hostBuf.String(), nil
 	}
 }

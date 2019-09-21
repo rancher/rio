@@ -268,7 +268,7 @@ func TestRouterForVirtualServices1(t *testing.T) {
 							},
 							Set: map[string]string{
 								"FOO2":             "BAR2",
-								"l5d-dst-override": "externalservice-foo-service.default.svc.cluster.local:8080",
+								"l5d-dst-override": "test-0.default.svc.cluster.local:8080",
 							},
 						},
 					},
