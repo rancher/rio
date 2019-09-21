@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"strconv"
 
+	"k8s.io/apimachinery/pkg/util/intstr"
+
 	"github.com/rancher/wrangler/pkg/condition"
 	"github.com/rancher/wrangler/pkg/genericcondition"
 	appsv1 "k8s.io/api/apps/v1"
@@ -19,41 +21,14 @@ var (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Service acts as a top level resource for a container and its sidecarsm and routing resources.
+// Service acts as a top level resource for a container and its sidecars and routing resources.
 // Each service represents an individual revision, group by Spec.App(defaults to Service.Name), and Spec.Version(defaults to v0)
 type Service struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec       ServiceSpec        `json:"spec,omitempty"`
-	SystemSpec *SystemServiceSpec `json:"systemSpec,omitempty"`
-	Status     ServiceStatus      `json:"status,omitempty"`
-}
-
-// ServiceRevision specifies the APP name, Version and Weight to uniquely identify each Revision
-type ServiceRevision struct {
-	// Revision Version
-	Version string `json:"version,omitempty"`
-
-	// Revision Weight
-	Weight int `json:"weight,omitempty"`
-
-	// Revision App name
-	App string `json:"app,omitempty"`
-}
-
-// ServiceScale Specifies the scale parameters for Service
-type ServiceScale struct {
-	// Number of desired pods. This is a pointer to distinguish between explicit zero and not specified. Defaults to 1.
-	Scale *int `json:"scale,omitempty"`
-
-	// The maximum number of pods that can be scheduled above the desired number of pods. Value can be an absolute number (ex: 5) or a percentage of desired pods (ex: 10%).
-	// This can not be 0 if MaxUnavailable is 0. Absolute number is calculated from percentage by rounding up.
-	// Defaults to 25%. Example: when this is set to 30%, the new ReplicaSet can be scaled up immediately when the rolling update starts, such that the total number of old and new pods do not exceed 130% of desired pods.
-	// Once old pods have been killed, new ReplicaSet can be scaled up further, ensuring that total number of pods running at any time during the update is at most 130% of desired pods.
-	//
-	// +optional
-	UpdateBatchSize int `json:"updateBatchSize,omitempty"`
+	Spec   ServiceSpec   `json:"spec,omitempty"`
+	Status ServiceStatus `json:"status,omitempty"`
 }
 
 type AutoscaleConfig struct {
@@ -62,39 +37,76 @@ type AutoscaleConfig struct {
 	Concurrency *int `json:"concurrency,omitempty"`
 
 	// The minimal scale Service can be scaled
-	MinScale *int `json:"minScale,omitempty"`
+	MinReplicas *int `json:"minReplicas,omitempty"`
 
 	// The maximum scale Service can be scaled
-	MaxScale *int `json:"maxScale,omitempty"`
-}
-
-type SystemServiceSpec struct {
-	UpdateOrder        string                     `json:"updateOrder,omitempty"`
-	UpdateStrategy     string                     `json:"updateStrategy,omitempty"`
-	DeploymentStrategy string                     `json:"deploymentStrategy,omitempty"`
-	VolumeTemplates    []v1.PersistentVolumeClaim `json:"volumeClaimTemplates,omitempty"`
-	PodSpec            v1.PodSpec                 `json:"podSpec,omitempty"`
+	MaxReplicas *int `json:"maxReplicas,omitempty"`
 }
 
 // RolloutConfig specifies the configuration when promoting a new revision
 type RolloutConfig struct {
-	// Whether to turn on Rollout(changing the weight gradually)
-	Rollout bool `json:"rollout,omitempty"`
-
 	// Increment Value each Rollout can scale up or down
-	RolloutIncrement int `json:"rolloutIncrement,omitempty"`
+	Increment int `json:"increment,omitempty"`
 
-	// Increment Interval between each Rollout
-	RolloutInterval int `json:"rolloutInterval,omitempty"`
+	// Interval between each Rollout
+	Interval metav1.Duration `json:"interval,omitempty"`
+
+	// Pause if true the rollout will stop in place until set to false.
+	Pause bool `json:"pause,omitempty"`
 }
 
 // ServiceSpec represents spec for Service
 type ServiceSpec struct {
-	ServiceScale
-	ServiceRevision
-	AutoscaleConfig
-	RolloutConfig
 	PodConfig
+
+	// Template this service is a template for new versions to be created base on changes
+	// from the build.repo
+	Template bool `json:"template,omitempty"`
+
+	// Version version of this service
+	Version string `json:"version,omitempty"`
+
+	// App The exposed app name, if no value is set, then metadata.name of the Service is used
+	App string `json:"app,omitempty"`
+
+	// Weight The weight among services with matching app field to determine how much traffic is load balanced
+	// to this service.  If rollout is set, the weight become the target weight of the rollout.
+	Weight *int `json:"weight,omitempty"`
+
+	// Number of desired pods. This is a pointer to distinguish between explicit zero and not specified. Defaults to 1.
+	Replicas *int `json:"Replicas,omitempty"`
+
+	// The maximum number of pods that can be unavailable during the update.
+	// Value can be an absolute number (ex: 5) or a percentage of desired pods (ex: 10%).
+	// Absolute number is calculated from percentage by rounding down.
+	// This can not be 0 if MaxSurge is 0.
+	// Defaults to 25%.
+	// Example: when this is set to 30%, the old ReplicaSet can be scaled down to 70% of desired pods
+	// immediately when the rolling update starts. Once new pods are ready, old ReplicaSet
+	// can be scaled down further, followed by scaling up the new ReplicaSet, ensuring
+	// that the total number of pods available at all times during the update is at
+	// least 70% of desired pods.
+	// +optional
+	MaxUnavailable *intstr.IntOrString `json:"maxUnavailable,omitempty" protobuf:"bytes,1,opt,name=maxUnavailable"`
+
+	// The maximum number of pods that can be scheduled above the desired number of
+	// pods.
+	// Value can be an absolute number (ex: 5) or a percentage of desired pods (ex: 10%).
+	// This can not be 0 if MaxUnavailable is 0.
+	// Absolute number is calculated from percentage by rounding up.
+	// Defaults to 25%.
+	// Example: when this is set to 30%, the new ReplicaSet can be scaled up immediately when
+	// the rolling update starts, such that the total number of old and new pods do not exceed
+	// 130% of desired pods. Once old pods have been killed,
+	// new ReplicaSet can be scaled up further, ensuring that total number of pods running
+	// at any time during the update is at most 130% of desired pods.
+	// +optional
+	MaxSurge *intstr.IntOrString `json:"maxSurge,omitempty" protobuf:"bytes,2,opt,name=maxSurge"`
+
+	Autoscale *AutoscaleConfig `json:"autoscale,omitempty"`
+
+	// RolloutConfig If more than one rollout config exist for a given App name then the first created will be used
+	RolloutConfig *RolloutConfig `json:"rollout,omitempty"`
 
 	Global bool `json:"global,omitempty"`
 
@@ -106,19 +118,6 @@ type ServiceSpec struct {
 
 	// GlobalPermissions to the Services. It will create corresponding ServiceAccounts, ClusterRoles and ClusterRoleBinding.
 	GlobalPermissions []Permission `json:"globalPermissions,omitempty"`
-}
-
-// PodDNSConfig Specifies the DNS parameters of a pod. Parameters specified here will be merged to the generated DNS configuration based on DNSPolicy.
-type PodDNSConfig struct {
-	// A list of DNS name server IP addresses. This will be appended to the base nameservers generated from DNSPolicy. Duplicated nameservers will be removed.
-	Nameservers []string `json:"dnsNameservers,omitempty"`
-
-	// A list of DNS search domains for host-name lookup. This will be appended to the base search paths generated from DNSPolicy. Duplicated search paths will be removed.
-	Searches []string `json:"dnsSearches,omitempty"`
-
-	// A list of DNS resolver options. This will be merged with the base options generated from DNSPolicy.
-	// Duplicated entries will be removed. Resolution options given in Options will override those that appear in the base DNSPolicy.
-	Options []PodDNSConfigOption `json:"dnsOptions,omitempty"`
 }
 
 type PodDNSConfigOption struct {
@@ -161,7 +160,7 @@ type Container struct {
 	Image string `json:"image,omitempty"`
 
 	// ImageBuild Specify the build parameter
-	Build *ImageBuild `json:"build,omitempty"`
+	Build *ImageBuildSpec `json:"build,omitempty"`
 
 	// Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided.
 	// Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged.
@@ -220,8 +219,6 @@ type Container struct {
 	// Pod volumes to mount into the container's filesystem. Cannot be updated.
 	Volumes []Volume `json:"volumes,omitempty"`
 
-	SecurityContext *v1.SecurityContext `json:"securityContext,omitempty"`
-
 	ContainerSecurityContext
 }
 
@@ -266,10 +263,21 @@ type PodConfig struct {
 	HostNetwork bool `json:"hostNetwork,omitempty"`
 
 	// Image pull secret
-	ImagePullSecrets []v1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
+	ImagePullSecrets []string `json:"imagePullSecrets,omitempty"`
 
+	SecurityContext *v1.SecurityContext `json:"securityContext,omitempty"`
+
+	// A list of DNS name server IP addresses. This will be appended to the base nameservers generated from DNSPolicy. Duplicated nameservers will be removed.
+	Nameservers []string `json:"dnsNameservers,omitempty"`
+
+	// A list of DNS search domains for host-name lookup. This will be appended to the base search paths generated from DNSPolicy. Duplicated search paths will be removed.
+	Searches []string `json:"dnsSearches,omitempty"`
+
+	// A list of DNS resolver options. This will be merged with the base options generated from DNSPolicy.
+	// Duplicated entries will be removed. Resolution options given in Options will override those that appear in the base DNSPolicy.
+	Options []PodDNSConfigOption `json:"dnsOptions,omitempty"`
 	*v1.Affinity
-	PodDNSConfig
+
 	Container
 }
 
@@ -285,12 +293,14 @@ const (
 )
 
 type ContainerPort struct {
-	Name         string   `json:"name,omitempty"`
-	InternalOnly bool     `json:"internalOnly,omitempty"`
-	Protocol     Protocol `json:"protocol,omitempty"`
-	Port         int32    `json:"port"`
-	TargetPort   int32    `json:"targetPort,omitempty"`
-	HostPort     bool     `json:"hostport,omitempty"`
+	Name string `json:"name,omitempty"`
+	// Expose will make the port available outside the cluster. All http/https ports will be set to true by default
+	// if Expose is nil.  All other protocols are set to false by default
+	Expose     *bool    `json:"expose,omitempty"`
+	Protocol   Protocol `json:"protocol,omitempty"`
+	Port       int32    `json:"port"`
+	TargetPort int32    `json:"targetPort,omitempty"`
+	HostPort   bool     `json:"hostport,omitempty"`
 }
 
 func (c ContainerPort) MaybeString() interface{} {
@@ -315,9 +325,6 @@ type ServiceStatus struct {
 	// Most recently observed status of the Deployment.
 	DeploymentStatus *appsv1.DeploymentStatus `json:"deploymentStatus,omitempty"`
 
-	// The first observed commit for the build
-	FirstRevision string `json:"firstRevision,omitempty"`
-
 	// ScaleStatus for the Service
 	ScaleStatus *ScaleStatus `json:"scaleStatus,omitempty"`
 
@@ -338,15 +345,10 @@ type ServiceStatus struct {
 	// The list of publicdomains pointing to the service
 	PublicDomains []string `json:"publicDomains,omitempty"`
 
-	// gitwatcher name
-	GitCommitName string `json:"gitCommitName,omitempty"`
+	ImageBuilds map[string]string `json:"imageBuilds,omitempty"`
 
 	// log token to access build log
 	BuildLogToken string `json:"buildLogToken,omitempty"`
-}
-
-type GithubStatus struct {
-	PR string `json:"pr,omitempty"`
 }
 
 type ScaleStatus struct {
@@ -362,60 +364,4 @@ type ScaleStatus struct {
 
 	// Total number of non-terminated pods targeted by this deployment that have the desired template spec.
 	Updated int `json:"updated,omitempty"`
-}
-
-type ImageBuild struct {
-	// Repository url
-	Repo string `json:"repo,omitempty"`
-
-	// Repo Revision. Can be a git commit or tag
-	Revision string `json:"revision,omitempty"`
-
-	// Repo Branch. If specified, a gitmodule will be created to watch the repo and creating new revision if new commit or tag is pushed.
-	Branch string `json:"branch,omitempty"`
-
-	// Whether to only stage the new revision. If true, the new created service will not be allocating any traffic automatically.
-	StageOnly bool `json:"stageOnly,omitempty"`
-
-	// Specify the name of the Dockerfile in the Repo. Defaults to `Dockerfile`.
-	DockerFile string `json:"dockerFile,omitempty"`
-
-	// Specify the path of the Dockerfile in the Repo. Defaults to spec.BuildContext.
-	DockerFilePath string `json:"dockerFilePath,omitempty"`
-
-	// Specify build context. Defaults to "."
-	BuildContext string `json:"buildContext,omitempty"`
-
-	// Specify build args
-	BuildArgs []string `json:"buildArgs,omitempty"`
-
-	// Specify the build template. Defaults to `buildkit`.
-	Template string `json:"template,omitempty"`
-
-	// Specify the github secret name. Used to create Github webhook, the secret key has to be `accessToken`
-	GithubSecretName string `json:"githubSecretName,omitempty"`
-
-	// Specify secret name for checking our git resources
-	GitSecretName string `json:"gitSecretName,omitempty"`
-
-	// Specify custom registry to push the image instead of built-in one
-	PushRegistry string `json:"pushRegistry,omitempty"`
-
-	// Specify secret for pushing to custom registry
-	PushRegistrySecretName string `json:"pushRegistrySecretName,omitempty"`
-
-	// Specify image name instead of the one generated from service name, format: $registry/$imageName:$revision
-	BuildImageName string `json:"buildImageName,omitempty"`
-
-	// Whether to enable builds for pull requests
-	EnablePR bool `json:"enablePr,omitempty"`
-
-	// Build image with no cache
-	NoCache bool `json:"noCache,omitempty"`
-
-	// Push image
-	Push bool `json:"push,omitempty"`
-
-	// BuildTimeout describes how long the build can run
-	BuildTimeout *metav1.Duration
 }
