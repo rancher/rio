@@ -17,6 +17,6 @@ if [[ ${ARCH} == amd64 ]]; then
     rio-controller >/dev/null 2>&1 &
     rio install --check >/dev/null 2>&1
 
-    ginkgo ./...
+    ginkgo -p -v -tags integration ./cli/...
 
 fi
