@@ -3,6 +3,8 @@ package systemstatus
 import (
 	"context"
 
+	"github.com/rancher/rio/pkg/constants"
+
 	"github.com/rancher/rio/modules/service/controllers/serviceset"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	adminv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
@@ -39,9 +41,6 @@ func (h handler) sync(key string, obj *riov1.Service) (*riov1.Service, error) {
 		return obj, err
 	}
 
-	if !serviceset.IsReady(obj.Status.DeploymentStatus) {
-		return obj, nil
-	}
 	info := infoObj.DeepCopy()
 	readyMap := info.Status.SystemComponentReadyMap
 	if readyMap == nil {
@@ -49,6 +48,12 @@ func (h handler) sync(key string, obj *riov1.Service) (*riov1.Service, error) {
 	}
 	if serviceset.IsReady(obj.Status.DeploymentStatus) {
 		readyMap[obj.Name] = "running"
+	}
+	if obj.Name == constants.GatewayName && obj.Status.ScaleStatus != nil {
+		// it is hard to tell the exact ready number since gateway can be deployed per node label, assume if it is
+		if obj.Status.ScaleStatus.Ready > 0 {
+			readyMap[obj.Name] = "running"
+		}
 	}
 
 	info.Status.SystemComponentReadyMap = readyMap
