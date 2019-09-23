@@ -31,54 +31,11 @@ func (u Uninstall) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("can't contact Kubernetes cluster. Please make sure your cluster is accessible")
 	}
 
-	job := &batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace:    u.Namespace,
-			GenerateName: "linkerd-uninstall-",
-		},
-		Spec: batchv1.JobSpec{
-			TTLSecondsAfterFinished: &[]int32{120}[0],
-			BackoffLimit:            &[]int32{1}[0],
-			Template: v1.PodTemplateSpec{
-				Spec: v1.PodSpec{
-					ServiceAccountName: "rio-controller-serviceaccount",
-					RestartPolicy:      v1.RestartPolicyNever,
-					Containers: []v1.Container{
-						{
-							Name:            "linkerd-install",
-							Image:           constants.LinkerdInstallImage,
-							ImagePullPolicy: v1.PullAlways,
-							Env: []v1.EnvVar{
-								{
-									Name:  "LINKERD_UNINSTALL",
-									Value: "TRUE",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-	existingJob, err := ctx.K8s.BatchV1().Jobs(u.Namespace).Create(job)
-	if err != nil {
-		return err
-	}
-	startTime := time.Now()
-	fmt.Println("Waiting for linkerd uninstall job to be finished")
-	for {
-		job, err := ctx.K8s.BatchV1().Jobs(u.Namespace).Get(existingJob.Name, metav1.GetOptions{})
-		if err != nil {
+	_, err := ctx.Core.ConfigMaps("linkerd").Get("linkerd-config", metav1.GetOptions{})
+	if err == nil {
+		if err := u.uninstallLinkerd(ctx); err != nil {
 			return err
 		}
-		if time.Now().After(startTime.Add(time.Minute * 2)) {
-			return fmt.Errorf("Timeout waiting for linkerd uninstall job")
-		}
-		if job.Status.CompletionTime == nil {
-			time.Sleep(time.Second * 5)
-			continue
-		}
-		break
 	}
 
 	var systemNamespace string
@@ -397,4 +354,57 @@ func confirmDelete(resource string) (bool, error) {
 		return true, nil
 	}
 	return false, err
+}
+
+func (u Uninstall) uninstallLinkerd(ctx *clicontext.CLIContext) error {
+	job := &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace:    u.Namespace,
+			GenerateName: "linkerd-uninstall-",
+		},
+		Spec: batchv1.JobSpec{
+			TTLSecondsAfterFinished: &[]int32{120}[0],
+			BackoffLimit:            &[]int32{1}[0],
+			Template: v1.PodTemplateSpec{
+				Spec: v1.PodSpec{
+					ServiceAccountName: "rio-controller-serviceaccount",
+					RestartPolicy:      v1.RestartPolicyNever,
+					Containers: []v1.Container{
+						{
+							Name:            "linkerd-install",
+							Image:           constants.LinkerdInstallImage,
+							ImagePullPolicy: v1.PullAlways,
+							Env: []v1.EnvVar{
+								{
+									Name:  "LINKERD_UNINSTALL",
+									Value: "TRUE",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	existingJob, err := ctx.K8s.BatchV1().Jobs(u.Namespace).Create(job)
+	if err != nil {
+		return err
+	}
+	startTime := time.Now()
+	fmt.Println("Waiting for linkerd uninstall job to be finished")
+	for {
+		job, err := ctx.K8s.BatchV1().Jobs(u.Namespace).Get(existingJob.Name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		if time.Now().After(startTime.Add(time.Minute * 2)) {
+			return fmt.Errorf("Timeout waiting for linkerd uninstall job")
+		}
+		if job.Status.CompletionTime == nil {
+			time.Sleep(time.Second * 5)
+			continue
+		}
+		break
+	}
+	return nil
 }
