@@ -1,5 +1,3 @@
-// +build validation
-
 package validation
 
 import (
@@ -24,8 +22,8 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 		testutil.CleanupService(serviceName)
 	})
 
-	when("rio run", func() {
-		it("should do one thing up", func() {
+	when("rio run is called", func() {
+		it("should bring up a service", func() {
 			s, err := testutil.InspectService(serviceName)
 			if err != nil {
 				t.Error(err.Error())

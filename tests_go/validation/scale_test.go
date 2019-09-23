@@ -1,5 +1,3 @@
-// +build validation
-
 package validation
 
 import (

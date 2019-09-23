@@ -2,6 +2,9 @@ package testutil
 
 import (
 	"errors"
+	"flag"
+	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -20,4 +23,13 @@ func RioCmd(name string, args []string) (string, error) {
 		return outBuffer.String(), errors.New(errBuffer.String())
 	}
 	return outBuffer.String(), nil
+}
+
+func PreCheck() {
+	runTests := flag.Bool("validation-tests", false, "must be provided to run the validation tests")
+	flag.Parse()
+	if !*runTests {
+		fmt.Fprintln(os.Stderr, "validation test must be enabled with -validation-tests")
+		os.Exit(0)
+	}
 }
