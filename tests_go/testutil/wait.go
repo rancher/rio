@@ -1,7 +1,6 @@
 package testutil
 
 import (
-	"errors"
 	"time"
 )
 
@@ -19,21 +18,4 @@ func WaitFor(f waitForMe, timeout int) bool {
 		sleepSeconds++
 	}
 	return false
-}
-
-func WaitForService(name string) error {
-	f := func() bool {
-		s, err := InspectService(name)
-		if err == nil {
-			if s.Status.DeploymentStatus != nil && s.Status.DeploymentStatus.AvailableReplicas > 0 {
-				return true
-			}
-		}
-		return false
-	}
-	ok := WaitFor(f, 120)
-	if ok == false {
-		return errors.New("service failed to initiate")
-	}
-	return nil
 }
