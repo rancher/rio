@@ -23,30 +23,32 @@ func scaleTests(t *testing.T, when spec.G, it spec.S) {
 		testutil.CleanupService(serviceName)
 	})
 
-	when("A service is already running", func() {
-		it("should scale up correctly", func() {
-			currScale, _ := getScale(serviceName)
-			assert.Equal(t, currScale, 1)
-			setScale(serviceName, 2)
-			waitForScale(t, serviceName, 2)
-			currScale, err := getScale(serviceName)
-			if err != nil {
-				t.Logf(err.Error())
-				t.Fail()
-			}
-			assert.Equal(t, currScale, 2)
-		})
-		it("should scale down correctly", func() {
-			currScale, _ := getScale(serviceName)
-			assert.Equal(t, currScale, 1)
-			setScale(serviceName, 0)
-			waitForScale(t, serviceName, 0)
-			currScale, err := getScale(serviceName)
-			if err != nil {
-				t.Logf(err.Error())
-				t.Fail()
-			}
-			assert.Equal(t, currScale, 0)
+	when("rio scale is called", func() {
+		when("A service is already running", func() {
+			it("should scale up correctly", func() {
+				currScale, _ := getScale(serviceName)
+				assert.Equal(t, currScale, 1)
+				setScale(serviceName, 2)
+				waitForScale(t, serviceName, 2)
+				currScale, err := getScale(serviceName)
+				if err != nil {
+					t.Logf(err.Error())
+					t.Fail()
+				}
+				assert.Equal(t, currScale, 2)
+			})
+			it("should scale down correctly", func() {
+				currScale, _ := getScale(serviceName)
+				assert.Equal(t, currScale, 1)
+				setScale(serviceName, 0)
+				waitForScale(t, serviceName, 0)
+				currScale, err := getScale(serviceName)
+				if err != nil {
+					t.Logf(err.Error())
+					t.Fail()
+				}
+				assert.Equal(t, currScale, 0)
+			})
 		})
 	}, spec.Parallel())
 }

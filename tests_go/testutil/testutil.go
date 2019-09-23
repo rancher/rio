@@ -25,6 +25,8 @@ func RioCmd(name string, args []string) (string, error) {
 	return outBuffer.String(), nil
 }
 
+// Ensure CLI flag is passed
+// Can turn this into a context container in the future if needed
 func PreCheck() {
 	runTests := flag.Bool("validation-tests", false, "must be provided to run the validation tests")
 	flag.Parse()
