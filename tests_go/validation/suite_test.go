@@ -1,4 +1,6 @@
-package run_test
+// +build validation
+
+package validation
 
 import (
 	"testing"
@@ -9,5 +11,5 @@ import (
 
 func TestRun(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Run Suite")
+	RunSpecs(t, "Run Validation Suite")
 }
