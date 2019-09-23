@@ -53,7 +53,7 @@ def wait_for_service(full_name):
 
 
 def rioRun(nspc, *args):
-    srv = "tsrv" + str(random.randint(1000, 5000))
+    srv = "tsrv" + str(random.randint(1000000, 9999999))
     fullName = (f"{nspc}/{srv}")
     print(f"{fullName}")
 
@@ -73,6 +73,7 @@ def rioStage(image, srv, version):
 
 
 def assert_endpoint(endpoint, result):
+    output = ""
     for i in range(1, 120):
         try:
             output = run(f"curl -s {endpoint}")

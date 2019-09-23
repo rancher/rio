@@ -61,6 +61,7 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	github.com/moby/buildkit v0.6.0
 	github.com/onsi/ginkgo v1.8.0
+	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/opencontainers/runc v1.0.1-0.20190307181833-2b18fe1d885e // indirect
 	github.com/opentracing/opentracing-go v1.0.2 // indirect
 	github.com/pkg/errors v0.8.1
