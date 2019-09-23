@@ -7,8 +7,6 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/onsi/ginkgo"
-
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 )
 
@@ -25,13 +23,13 @@ func SetupService() string {
 	out, err := RioCmd("run", []string{"-n", name, "nginx"})
 	if err != nil {
 		if err.Error() == "" {
-			ginkgo.Fail(out)
+			panic(out)
 		}
-		ginkgo.Fail(err.Error())
+		panic(err.Error())
 	}
 	err = WaitForService(name)
 	if err != nil {
-		ginkgo.Fail(err.Error())
+		panic(err.Error())
 	}
 	return name
 }
@@ -39,7 +37,7 @@ func SetupService() string {
 func CleanupService(name string) {
 	_, err := RioCmd("rm", []string{name})
 	if err != nil {
-		ginkgo.Fail(err.Error())
+		panic(err.Error())
 	}
 }
 

@@ -5,40 +5,53 @@ package validation
 import (
 	"errors"
 	"fmt"
+	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/sclevine/spec"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/rancher/rio/tests_go/testutil"
 )
 
-var _ = Describe("Scale", func() {
+func scaleTests(t *testing.T, when spec.G, it spec.S) {
+
 	var serviceName string
 
-	BeforeEach(func() {
+	it.Before(func() {
 		serviceName = testutil.SetupService()
 	})
 
-	Describe("Service", func() {
-		Context("With an already running service", func() {
-			It("Should scale up correctly", func() {
-				Expect(getScale(serviceName)).To(Equal(1))
-				setScale(serviceName, 2)
-				waitForScale(serviceName, 2)
-				Expect(getScale(serviceName)).To(Equal(2))
-			})
-			It("Should scale down correctly", func() {
-				Expect(getScale(serviceName)).To(Equal(1))
-				setScale(serviceName, 0)
-				waitForScale(serviceName, 0)
-				Expect(getScale(serviceName)).To(Equal(0))
-			})
-		})
-	})
-
-	AfterEach(func() {
+	it.After(func() {
 		testutil.CleanupService(serviceName)
 	})
-})
+
+	when("A service is already running", func() {
+		it("should scale up correctly", func() {
+			currScale, _ := getScale(serviceName)
+			assert.Equal(t, currScale, 1)
+			setScale(serviceName, 2)
+			waitForScale(t, serviceName, 2)
+			currScale, err := getScale(serviceName)
+			if err != nil {
+				t.Logf(err.Error())
+				t.Fail()
+			}
+			assert.Equal(t, currScale, 2)
+		})
+		it("should scale down correctly", func() {
+			currScale, _ := getScale(serviceName)
+			assert.Equal(t, currScale, 1)
+			setScale(serviceName, 0)
+			waitForScale(t, serviceName, 0)
+			currScale, err := getScale(serviceName)
+			if err != nil {
+				t.Logf(err.Error())
+				t.Fail()
+			}
+			assert.Equal(t, currScale, 0)
+		})
+	}, spec.Parallel())
+}
 
 func setScale(serviceName string, scaleTo int) (string, error) {
 	args := []string{
@@ -59,7 +72,7 @@ func getScale(serviceName string) (int, error) {
 	return -1, errors.New("unable to get scale")
 }
 
-func waitForScale(serviceName string, wantScale int) {
+func waitForScale(t *testing.T, serviceName string, wantScale int) {
 	f := func() bool {
 		count, err := getScale(serviceName)
 		if err == nil && count == wantScale {
@@ -69,6 +82,7 @@ func waitForScale(serviceName string, wantScale int) {
 	}
 	o := testutil.WaitFor(f, 30)
 	if o == false {
-		Fail("Timed out scaling service")
+		t.Logf("Timed out scaling service")
+		t.Fail()
 	}
 }

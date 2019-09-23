@@ -3,16 +3,16 @@
 package validation
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"testing"
+
+	"github.com/sclevine/spec"
 )
 
-var _ = Describe("Logs", func() {
-	Describe("", func() {
-		Context("With more than 100 lines", func() {
-			It("should equal 1", func() {
-				Expect(1).To(Equal(1))
-			})
-		})
+func logTests(t *testing.T, when spec.G, it spec.S) {
+
+	it("should have a test", func() {
+		if 1 == 2 {
+			t.Error("bad")
+		}
 	})
-})
+}

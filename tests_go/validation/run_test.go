@@ -4,33 +4,34 @@ package validation
 
 import (
 	"fmt"
+	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/sclevine/spec"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/rancher/rio/tests_go/testutil"
 )
 
-var serviceName string
+func runTests(t *testing.T, when spec.G, it spec.S) {
 
-var _ = Describe("Run", func() {
-	BeforeEach(func() {
+	var serviceName string
+
+	it.Before(func() {
 		serviceName = testutil.SetupService()
 	})
 
-	Describe("service", func() {
-		Context("From scrach", func() {
-			It("Should work", func() {
-				s, err := testutil.InspectService(serviceName)
-				if err != nil {
-					Fail(err.Error())
-				}
-				generatedName := fmt.Sprintf("%s/%s", s.ObjectMeta.Namespace, s.ObjectMeta.Name)
-				Expect(generatedName).To(Equal(serviceName))
-			})
-		})
-	})
-
-	AfterEach(func() {
+	it.After(func() {
 		testutil.CleanupService(serviceName)
 	})
-})
+
+	when("rio run", func() {
+		it("should do one thing up", func() {
+			s, err := testutil.InspectService(serviceName)
+			if err != nil {
+				t.Error(err.Error())
+			}
+			generatedName := fmt.Sprintf("%s/%s", s.ObjectMeta.Namespace, s.ObjectMeta.Name)
+			assert.Equal(t, generatedName, serviceName)
+		})
+	})
+}

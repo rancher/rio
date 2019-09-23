@@ -18,6 +18,6 @@ if [[ ${ARCH} == amd64 ]]; then
     rio-controller >/dev/null 2>&1 &
     rio install --check >/dev/null 2>&1
 
-    ginkgo -p -v -tags validation ./tests_go/...
+    go test -tags=validation ./tests_go/...  -count=1
 
 fi
