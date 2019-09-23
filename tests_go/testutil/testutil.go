@@ -1,4 +1,4 @@
-package tests
+package testutil
 
 import (
 	"encoding/json"
@@ -13,6 +13,8 @@ import (
 
 	"github.com/onsi/ginkgo"
 )
+
+const testing_namespace = "testing-ns"
 
 // RioCmd func calls the rio command with your arguments
 // name=run and args=["-n", "test"] would run: "rio run -n test"
@@ -30,9 +32,10 @@ func RioCmd(name string, args []string) (string, error) {
 	return outBuffer.String(), nil
 }
 
-func SetupWorkload() string {
+func SetupService() string {
 	rand.Seed(time.Now().UnixNano())
-	name := fmt.Sprintf("test-workload-%v", rand.Intn(99999))
+	name := fmt.Sprintf("test-service-%v", rand.Intn(99999))
+	name = GetFullServiceName(name)
 	args := []string{"-n", name, "nginx"}
 	out, err := RioCmd("run", args)
 	if err != nil {
@@ -41,14 +44,14 @@ func SetupWorkload() string {
 		}
 		ginkgo.Fail(err.Error())
 	}
-	err = WaitForWorkload(name)
+	err = WaitForService(name)
 	if err != nil {
 		ginkgo.Fail(err.Error())
 	}
 	return name
 }
 
-func CleanupWorkload(name string) {
+func CleanupService(name string) {
 	_, err := RioCmd("rm", []string{name})
 	if err != nil {
 		ginkgo.Fail(err.Error())
@@ -68,37 +71,6 @@ func InspectService(name string) (riov1.Service, error) {
 	return r, nil
 }
 
-///////// Wait Methods
-
-type waitForMe = func() bool
-
-// WaitFor takes a method and waits until it returns true, see WaitForWorkload
-func WaitFor(f waitForMe, timeout int) bool {
-	sleepSeconds := 1
-	for start := time.Now(); time.Since(start) < time.Second*time.Duration(timeout); {
-		out := f()
-		if out == true {
-			return out
-		}
-		time.Sleep(time.Second * time.Duration(sleepSeconds))
-		sleepSeconds++
-	}
-	return false
-}
-
-func WaitForWorkload(name string) error {
-	f := func() bool {
-		s, err := InspectService(name)
-		if err == nil {
-			if s.Status.DeploymentStatus != nil && s.Status.DeploymentStatus.AvailableReplicas > 0 {
-				return true
-			}
-		}
-		return false
-	}
-	ok := WaitFor(f, 120)
-	if ok == false {
-		return errors.New("workload failed to initiate")
-	}
-	return nil
+func GetFullServiceName(name string) string {
+	return fmt.Sprintf("%s/%s", testing_namespace, name)
 }

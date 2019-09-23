@@ -1,4 +1,6 @@
-package logs_test
+// +build validation
+
+package validation
 
 import (
 	. "github.com/onsi/ginkgo"
