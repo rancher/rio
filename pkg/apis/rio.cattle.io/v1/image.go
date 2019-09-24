@@ -5,7 +5,11 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
+// ImageBuild is used to build an image from a Git source and optionally push it
 type ImageBuild struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
 	Spec   ImageBuildSpec   `json:"spec,omitempty"`
 	Status ImageBuildStatus `json:"status,omitempty"`
 }
@@ -21,22 +25,22 @@ type ImageBuildSpec struct {
 	Branch string `json:"branch,omitempty"`
 
 	// Specify the name of the Dockerfile in the Repo. This is the full path relative to the repo root. Defaults to `Dockerfile`.
-	DockerFile string `json:"dockerFile,omitempty"`
+	Dockerfile string `json:"dockerfile,omitempty"`
 
 	// Specify build context. Defaults to "."
-	BuildContext string `json:"buildContext,omitempty"`
+	Context string `json:"context,omitempty"`
 
 	// Specify build args
-	BuildArgs []string `json:"buildArgs,omitempty"`
+	Args []string `json:"args,omitempty"`
 
 	// Specify the build template. Defaults to `buildkit`.
 	Template string `json:"template,omitempty"`
 
 	// Specify the github secret name. Used to create Github webhook, the secret key has to be `accessToken`
-	GithubSecretName string `json:"githubSecretName,omitempty"`
+	WebhookSecretName string `json:"webhookSecretName,omitempty"`
 
 	// Specify secret name for checking our git resources
-	GitSecretName string `json:"gitSecretName,omitempty"`
+	PullSecretName string `json:"pullSecretName,omitempty"`
 
 	// Specify custom registry to push the image instead of built-in one
 	PushRegistry string `json:"pushRegistry,omitempty"`
@@ -45,23 +49,21 @@ type ImageBuildSpec struct {
 	PushRegistrySecretName string `json:"pushRegistrySecretName,omitempty"`
 
 	// Specify image name instead of the one generated from service name, format: $registry/$imageName:$revision
-	BuildImageName string `json:"buildImageName,omitempty"`
+	ImageName string `json:"imageName,omitempty"`
 
 	// Whether to enable builds for pull requests
 	PR bool `json:"pr,omitempty"`
 
-	// Whether to enable builds for pull requests
+	// Whether to enable builds for tags
 	Tag bool `json:"tag,omitempty"`
 
 	// Build image with no cache
 	NoCache bool `json:"noCache,omitempty"`
 
-	// BuildTimeout describes how long the build can run
-	BuildTimeout *metav1.Duration
-
-	// ServiceName The service to update when the build succeeds or fails.  If blank do not update any service.
-	ServiceName string `json:"serviceName,omitempty"`
+	// Timeout describes how long the build can run
+	Timeout *metav1.Duration
 }
 
 type ImageBuildStatus struct {
+	ImageName string
 }
