@@ -200,79 +200,79 @@ and other rules.
 
 Create router in a different namespace:
 ```bash
-$ rio route add $namespace.$name to $target_namespace/target_service 
+$ rio route add $name.$namespace to $target_namespace/target_service
 ```
 
 Insert a router rule
 ```bash
-$ rio route insert $namespace.$name to $target_namespace/target_service  
+$ rio route insert $name.$namespace to $target_namespace/target_service
 ```
 
 Create a route based path match
 ```bash
-$ rio route add $namespace.$name/path to $target_namespace/target_service 
+$ rio route add $name.$namespace/path to $target_namespace/target_service
 ```
 
 Create a route to a different port:
 ```bash
-$ rio route add $namespace.$name to $target_namespace/target_service ,port=8080
+$ rio route add $name.$namespace to $target_namespace/target_service,port=8080
 ```
 
 Create router based on header (supports exact match: `foo`, prefix match: `foo*`, and regular expression match: `regexp(foo.*)`)
 ```bash
-$ rio route add --header USER=$format $namespace.$name to $target_namespace/target_service 
+$ rio route add --header USER=$format $name.$namespace to $target_namespace/target_service
 ```
 
 Create router based on cookies (supports exact match: `foo`, prefix match: `foo*`, and regular expression match: `regexp(foo.*)`)
 ```bash
-$ rio route add --cookie USER=$format $namespace.$name to $target_namespace/target_service 
+$ rio route add --cookie USER=$format $name.$namespace to $target_namespace/target_service
 ```
 
 Create route based on HTTP method (supports exact match: `foo`, prefix match: `foo*`, and regular expression match: `regexp(foo.*)`)
 ```bash
-$ rio route add --method GET $namespace.$name to $target_namespace/target_service
+$ rio route add --method GET $name.$namespace to $target_namespace/target_service
 ```
 
 Add, set or remove headers:
 ```bash
-$ rio route add --add-header FOO=BAR $namespace.$name to $target_namespace/target_service   
-$ rio route add --set-header FOO=BAR $namespace.$name to $target_namespace/target_service  
-$ rio route add --remove-header FOO=BAR $namespace.$name to $target_namespace/target_service  
+$ rio route add --add-header FOO=BAR $name.$namespace to $target_namespace/target_service
+$ rio route add --set-header FOO=BAR $name.$namespace to $target_namespace/target_service
+$ rio route add --remove-header FOO=BAR $name.$namespace to $target_namespace/target_service
 ```
 
 Mirror traffic:
 ```bash
-$ rio route add $namespace.$name mirror $target_namespace/target_service 
+$ rio route add $name.$namespace mirror $target_namespace/target_service
 ```
 
 Rewrite host header and path
 ```bash
-$ rio route add $namespace.$name rewrite $target_namespace/target_service 
+$ rio route add $name.$namespace rewrite $target_namespace/target_service
 ```
 
 Redirect to another service
 ```bash
-$ rio route add $namespace.$name redirect $target_namespace/target_service/path  
+$ rio route add $name.$namespace redirect $target_namespace/target_service/path
 ```
 
 Add timeout
 ```bash
-$ rio route add --timeout $namespace.$name to $target_namespace/target_service  
+$ rio route add --timeout $name.$namespace to $target_namespace/target_service
 ```
 
 Add fault injection
 ```bash
-$ rio route add --fault-httpcode 502 --fault-delay 1s --fault-percentage 80 $namespace.$name to $target_namespace/target_service 
+$ rio route add --fault-httpcode 502 --fault-delay 1s --fault-percentage 80 $name.$namespace to $target_namespace/target_service
 ```
 
 Add retry logic
 ```bash
-$ rio route add --retry-attempts 5 --retry-timeout 1s $namespace.$name to $target_namespace/target_service 
+$ rio route add --retry-attempts 5 --retry-timeout 1s $name.$namespace to $target_namespace/target_service
 ```
 
 Create router to different revision and different weight
 ```bash
-$ rio route add $namespace.$name to $service:v0,weight=50 $service:v1,weight=50 
+$ rio route add $name.$namespace to $service:v0,weight=50 $service:v1,weight=50
 ```
 
 ### Adding Public domain
