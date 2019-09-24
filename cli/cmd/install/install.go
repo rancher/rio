@@ -68,7 +68,7 @@ var (
 	IstioGrafana         = "grafana"
 	IstioCitadel         = "istio-citadel"
 	IstioPilot           = "istio-pilot"
-	IstioTelemetry       = "mixer"
+	IstioTelemetry       = "istio-telemetry"
 	IstioKiali           = "kiali"
 	IstioSidecarInjector = "istio-sidecar-injector"
 	IstioPrometheus      = "prometheus"
