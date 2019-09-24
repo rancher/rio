@@ -116,15 +116,22 @@ func NewRoute(aggregated bool, systemNamespace, externalGW string, published boo
 		if dests[0].Subset != "" && !aggregated && dests[0].Subset != constants.AcmeVersion {
 			host = host + "-" + dests[0].Subset
 		}
+		port := portBinding.Port
+		if autoscale && deployIsZero(svc) {
+			host = "activator"
+			ns = systemNamespace
+			port = 8012
+		}
 		route.Headers = &v1alpha3.Headers{
 			Request: &v1alpha3.HeaderOperations{
 				Set: map[string]string{
-					"l5d-dst-override": fmt.Sprintf("%v.%s.svc.cluster.local:%v", host, ns, portBinding.Port),
+					constants.L5dOverrideHeader: fmt.Sprintf("%v.%s.svc.cluster.local:%v", host, ns, port),
 				},
 				Remove: []string{
-					"l5d-remote-ip",
-					"l5d-server-id",
+					constants.L5dRemoteIPHeader,
+					constants.L5dServerIDHeader,
 				},
+				Add: map[string]string{},
 			},
 		}
 	}
@@ -167,12 +174,13 @@ func NewRoute(aggregated bool, systemNamespace, externalGW string, published boo
 		if route.Headers == nil {
 			route.Headers = &v1alpha3.Headers{
 				Request: &v1alpha3.HeaderOperations{
-					Add: map[string]string{
-						RevisionHeaderName:      svc.Name,
-						RevisionHeaderNamespace: svc.Namespace,
-					},
+					Add: map[string]string{},
 				},
 			}
+		}
+		if svc != nil {
+			route.Headers.Request.Add[RevisionHeaderName] = svc.Name
+			route.Headers.Request.Add[RevisionHeaderNamespace] = svc.Namespace
 		}
 	}
 

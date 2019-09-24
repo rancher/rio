@@ -3,6 +3,8 @@ package populate
 import (
 	"testing"
 
+	"github.com/rancher/rio/pkg/constants"
+
 	"github.com/knative/pkg/apis/istio/common/v1alpha1"
 	"github.com/knative/pkg/apis/istio/v1alpha3"
 	"github.com/rancher/rio/modules/test"
@@ -263,12 +265,12 @@ func TestRouterForVirtualServices1(t *testing.T) {
 							},
 							Remove: []string{
 								"FOO1",
-								"l5d-remote-ip",
-								"l5d-server-id",
+								constants.L5dRemoteIPHeader,
+								constants.L5dServerIDHeader,
 							},
 							Set: map[string]string{
-								"FOO2":             "BAR2",
-								"l5d-dst-override": "test-0.default.svc.cluster.local:8080",
+								"FOO2":                      "BAR2",
+								constants.L5dOverrideHeader: "test-0.default.svc.cluster.local:8080",
 							},
 						},
 					},

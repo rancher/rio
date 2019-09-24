@@ -92,11 +92,11 @@ func virtualServiceFromRoutesets(systemNamespace string, clusterDomain *projectv
 
 			if constants.ServiceMeshMode == constants.ServiceMeshModeLinkerd {
 				// https://linkerd.io/2/tasks/using-ingress/ In linkerd we override header to make sure traffic is sent to the desired target. For router it is going to be ${name}-${route-index}.${namespace}.svc.cluster.local
-				httpRoute.Headers.Request.Set["l5d-dst-override"] = fmt.Sprintf("%s-%v.%s.svc.cluster.local:%v", routeSet.Name, index, routeSet.Namespace, port)
-				if !slice.ContainsString(httpRoute.Headers.Request.Remove, "l5d-remote-ip") || !slice.ContainsString(httpRoute.Headers.Request.Remove, "l5d-remote-ip") {
+				httpRoute.Headers.Request.Set[constants.L5dOverrideHeader] = fmt.Sprintf("%s-%v.%s.svc.cluster.local:%v", routeSet.Name, index, routeSet.Namespace, port)
+				if !slice.ContainsString(httpRoute.Headers.Request.Remove, constants.L5dRemoteIPHeader) || !slice.ContainsString(httpRoute.Headers.Request.Remove, constants.L5dServerIDHeader) {
 					httpRoute.Headers.Request.Remove = append(httpRoute.Headers.Request.Remove, []string{
-						"l5d-remote-ip",
-						"l5d-server-id",
+						constants.L5dRemoteIPHeader,
+						constants.L5dServerIDHeader,
 					}...)
 				}
 			}
