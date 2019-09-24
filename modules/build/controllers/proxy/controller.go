@@ -47,58 +47,6 @@ func (h *Handler) onChange(key string, svc *corev1.Service) (*corev1.Service, er
 		return svc, nil
 	}
 
-	deploy := constructors.NewDaemonset(svc.Namespace, svc.Name+"-proxy", v1.Deployment{
-		ObjectMeta: v12.ObjectMeta{
-			OwnerReferences: []v12.OwnerReference{
-				{
-					Name:       svc.Name,
-					UID:        svc.UID,
-					Kind:       "Service",
-					APIVersion: "v1",
-				},
-			},
-		},
-		Spec: v1.DeploymentSpec{
-			Selector: &v12.LabelSelector{
-				MatchLabels: map[string]string{
-					"app": svc.Name + "-proxy",
-				},
-			},
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: v12.ObjectMeta{
-					Labels: map[string]string{
-						"app": svc.Name + "-proxy",
-					},
-				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Name:  svc.Name + "-proxy",
-							Image: proxyImage,
-							Env: []corev1.EnvVar{
-								{Name: "SRC_PORT", Value: "80"},
-								{Name: "DEST_PROTO", Value: "TCP"},
-								{Name: "DEST_PORT", Value: "80"},
-								{Name: "DEST_IP", Value: svc.Spec.ClusterIP},
-							},
-							Ports: []corev1.ContainerPort{
-								{
-									HostPort:      5442,
-									ContainerPort: 80,
-									HostIP:        "127.0.0.1",
-									Protocol:      corev1.ProtocolTCP,
-								},
-							},
-							SecurityContext: &corev1.SecurityContext{
-								Privileged: &T,
-							},
-						},
-					},
-				},
-			},
-		},
-	})
-
 	socatDeploy := constructors.NewDaemonset(svc.Namespace, "socat", v1.Deployment{
 		ObjectMeta: v12.ObjectMeta{
 			OwnerReferences: []v12.OwnerReference{
@@ -144,6 +92,6 @@ func (h *Handler) onChange(key string, svc *corev1.Service) (*corev1.Service, er
 	})
 
 	os := objectset.NewObjectSet()
-	os.Add(deploy, socatDeploy)
+	os.Add(socatDeploy)
 	return svc, h.apply.WithSetID(svc.Name + "-proxy").WithOwner(svc).Apply(os)
 }
