@@ -60,5 +60,6 @@ var (
 	ServiceMeshMode = "linkerd"
 	GatewayName     = "gateway"
 
+	AcmeVersion = "cm-acme"
 	InstallUUID = ""
 )

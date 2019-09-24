@@ -48,11 +48,11 @@ func httpRoutes(aggregated bool, systemNamespace string, service *v1.Service, de
 		ds := []Dest{
 			{
 				Host:   fmt.Sprintf("cm-acme-http-solver-%d", adler32.Checksum([]byte(publicDomain))),
-				Subset: "latest",
+				Subset: constants.AcmeVersion,
 				Weight: 100,
 			},
 		}
-		_, route := newRoute(aggregated, systemNamespace, domains.GetPublicGateway(systemNamespace), true, pb, ds, false, false, nil)
+		_, route := NewRoute(aggregated, systemNamespace, domains.GetPublicGateway(systemNamespace), true, pb, ds, false, false, nil)
 		route.Match[0].URI = &v1alpha1.StringMatch{
 			Prefix: "/.well-known/acme-challenge/",
 		}
@@ -71,7 +71,7 @@ func httpRoutes(aggregated bool, systemNamespace string, service *v1.Service, de
 			if port.InternalOnly {
 				continue
 			}
-			publicPort, route := newRoute(aggregated, systemNamespace, domains.GetPublicGateway(systemNamespace), !port.InternalOnly, port, dests, true, false, service)
+			publicPort, route := NewRoute(aggregated, systemNamespace, domains.GetPublicGateway(systemNamespace), !port.InternalOnly, port, dests, true, false, service)
 			if publicPort != "" {
 				route.Match = []v1alpha3.HTTPMatchRequest{
 					{
@@ -91,7 +91,7 @@ func httpRoutes(aggregated bool, systemNamespace string, service *v1.Service, de
 		if port.InternalOnly {
 			continue
 		}
-		publicPort, route := newRoute(aggregated, systemNamespace, domains.GetPublicGateway(systemNamespace), !port.InternalOnly, port, dests, true, autoscale, service)
+		publicPort, route := NewRoute(aggregated, systemNamespace, domains.GetPublicGateway(systemNamespace), !port.InternalOnly, port, dests, true, autoscale, service)
 		if publicPort != "" {
 			external = true
 			result = append(result, route)
@@ -102,7 +102,7 @@ func httpRoutes(aggregated bool, systemNamespace string, service *v1.Service, de
 }
 
 // Use aggregated flag to control if we should override header with subset or not
-func newRoute(aggregated bool, systemNamespace, externalGW string, published bool, portBinding v1.ContainerPort, dests []Dest, appendHTTPS bool, autoscale bool, svc *v1.Service) (string, v1alpha3.HTTPRoute) {
+func NewRoute(aggregated bool, systemNamespace, externalGW string, published bool, portBinding v1.ContainerPort, dests []Dest, appendHTTPS bool, autoscale bool, svc *v1.Service) (string, v1alpha3.HTTPRoute) {
 	route := v1alpha3.HTTPRoute{}
 
 	// linkerd header for gateway
@@ -113,7 +113,7 @@ func newRoute(aggregated bool, systemNamespace, externalGW string, published boo
 			ns = svc.Namespace
 		}
 		host := dests[0].Host
-		if dests[0].Subset != "" && !aggregated {
+		if dests[0].Subset != "" && !aggregated && dests[0].Subset != constants.AcmeVersion {
 			host = host + "-" + dests[0].Subset
 		}
 		route.Headers = &v1alpha3.Headers{
