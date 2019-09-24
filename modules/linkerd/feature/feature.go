@@ -3,6 +3,8 @@ package feature
 import (
 	"context"
 
+	"github.com/rancher/rio/modules/linkerd/controllers/router"
+
 	"github.com/rancher/rio/modules/linkerd/controllers/app"
 	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
@@ -21,10 +23,11 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			Enabled:     constants.ServiceMeshMode == constants.ServiceMeshModeLinkerd,
 		},
 		SystemStacks: []*stack.SystemStack{
-			stack.NewSystemStack(apply, rContext.Namespace, "linkerd"),
+			stack.NewSystemStack(apply, "linkerd", "linkerd"),
 		},
 		Controllers: []features.ControllerRegister{
 			app.Register,
+			router.Register,
 		},
 		OnStart: func(feature *v1.Feature) error {
 			return start.All(ctx, 5,

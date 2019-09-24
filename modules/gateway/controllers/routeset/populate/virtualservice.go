@@ -8,6 +8,7 @@ import (
 
 	"github.com/knative/pkg/apis/istio/common/v1alpha1"
 	"github.com/knative/pkg/apis/istio/v1alpha3"
+	"github.com/rancher/mapper/slice"
 	"github.com/rancher/rio/modules/istio/pkg/domains"
 	"github.com/rancher/rio/modules/istio/pkg/parse"
 	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
@@ -46,7 +47,7 @@ func virtualServiceFromRoutesets(systemNamespace string, clusterDomain *projectv
 	}
 
 	// populate http routing
-	for _, routeSpec := range routeSet.Spec.Routes {
+	for index, routeSpec := range routeSet.Spec.Routes {
 		httpRoute := v1alpha3.HTTPRoute{
 			Headers: &v1alpha3.Headers{
 				Request: routeSpec.Headers,
@@ -54,7 +55,7 @@ func virtualServiceFromRoutesets(systemNamespace string, clusterDomain *projectv
 		}
 
 		// populate destinations
-		for i, dest := range routeSpec.To {
+		for _, dest := range routeSpec.To {
 			if httpRoute.Headers.Request == nil {
 				httpRoute.Headers.Request = &v1alpha3.HeaderOperations{}
 			}
@@ -66,16 +67,15 @@ func virtualServiceFromRoutesets(systemNamespace string, clusterDomain *projectv
 				port = int(*dest.Port)
 			}
 
-			if i == len(routeSpec.To)-1 && constants.ServiceMeshMode == constants.ServiceMeshModeLinkerd {
-				host := dest.Service
-				if dest.Revision != "" {
-					host = host + "-" + dest.Revision
+			if constants.ServiceMeshMode == constants.ServiceMeshModeLinkerd {
+				// https://linkerd.io/2/tasks/using-ingress/ In linkerd we override header to make sure traffic is sent to the desired target. For router it is going to be ${name}-${route-index}.${namespace}.svc.cluster.local
+				httpRoute.Headers.Request.Set["l5d-dst-override"] = fmt.Sprintf("%s-%v.%s.svc.cluster.local:%v", routeSet.Name, index, routeSet.Namespace, port)
+				if !slice.ContainsString(httpRoute.Headers.Request.Remove, "l5d-remote-ip") || !slice.ContainsString(httpRoute.Headers.Request.Remove, "l5d-remote-ip") {
+					httpRoute.Headers.Request.Remove = append(httpRoute.Headers.Request.Remove, []string{
+						"l5d-remote-ip",
+						"l5d-server-id",
+					}...)
 				}
-				httpRoute.Headers.Request.Set["l5d-dst-override"] = fmt.Sprintf("%v.%s.svc.cluster.local:%v", host, dest.Namespace, port)
-				httpRoute.Headers.Request.Remove = append(httpRoute.Headers.Request.Remove, []string{
-					"l5d-remote-ip",
-					"l5d-server-id",
-				}...)
 			}
 
 			if dest.Destination.Namespace == "" {

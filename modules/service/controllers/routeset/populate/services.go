@@ -1,7 +1,10 @@
 package populate
 
 import (
+	"fmt"
+
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/wrangler/pkg/objectset"
 	v1 "k8s.io/api/core/v1"
@@ -30,6 +33,26 @@ func ServiceForRouteSet(r *riov1.Router, os *objectset.ObjectSet) error {
 				},
 			},
 		})
+
+	if constants.ServiceMeshMode == constants.ServiceMeshModeLinkerd {
+		for i := range r.Spec.Routes {
+			os.Add(constructors.NewService(r.Namespace, fmt.Sprintf("%s-%v", r.Name, i),
+				v1.Service{
+					ObjectMeta: metav1.ObjectMeta{},
+					Spec: v1.ServiceSpec{
+						Type: v1.ServiceTypeClusterIP,
+						Ports: []v1.ServicePort{
+							{
+								Name:       "http-80-80",
+								Protocol:   v1.ProtocolTCP,
+								Port:       80,
+								TargetPort: intstr.FromInt(80),
+							},
+						},
+					},
+				}))
+		}
+	}
 	os.Add(service)
 	return nil
 }
