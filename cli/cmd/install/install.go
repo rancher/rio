@@ -42,68 +42,39 @@ var (
 		IstioSidecarInjector,
 	}
 
-	linkerdComponents = []string{
-		LinkerdController,
-		LinkerdIdentity,
-		LinkerdGrafana,
-		LinkerdPrometheus,
-		LinkerdSidecarInjector,
-		LinkerdSpValidator,
-		LinkerdTap,
-		LinkerdWeb,
-	}
-
 	featureMap = map[string]string{
-		Autoscaler: "autoscaling",
+		Autoscaler: constants.FeatureAutoscaling,
 
-		BuildController: "build",
+		CertManager: constants.FeatureLetsencrypts,
 
-		CertManager: "letsencrypt",
+		Gateway:    constants.FeatureGateway,
+		IstioPilot: constants.FeatureGateway,
 
-		Gateway:    "gateway",
-		IstioPilot: "gateway",
+		IstioSidecarInjector: constants.FeatureIstio,
+		IstioCitadel:         constants.FeatureIstio,
+		IstioGrafana:         constants.FeatureGrafana,
+		IstioTelemetry:       constants.FeatureMixer,
+		IstioKiali:           constants.FeatureKiali,
+		IstioPrometheus:      constants.FeaturePromethues,
 
-		IstioGrafana:         "istio",
-		IstioCitadel:         "istio",
-		IstioTelemetry:       "istio",
-		IstioKiali:           "istio",
-		IstioSidecarInjector: "istio",
-		IstioPrometheus:      "istio",
-
-		LinkerdController:      "linkerd",
-		LinkerdIdentity:        "linkerd",
-		LinkerdGrafana:         "linkerd",
-		LinkerdPrometheus:      "linkerd",
-		LinkerdSidecarInjector: "linkerd",
-		LinkerdSpValidator:     "linkerd",
-		LinkerdTap:             "linkerd",
-		LinkerdWeb:             "linkerd",
-
-		Registry: "build",
-		Webhook:  "build",
+		BuildController: constants.FeatureBuild,
+		Registry:        constants.FeatureBuild,
+		Webhook:         constants.FeatureBuild,
 	}
 
-	Autoscaler             = "autoscaler"
-	BuildController        = "build-controller"
-	CertManager            = "cert-manager"
-	IstioGrafana           = "grafana"
-	IstioCitadel           = "istio-citadel"
-	IstioPilot             = "istio-pilot"
-	IstioTelemetry         = "istio-telemetry"
-	IstioKiali             = "kiali"
-	IstioSidecarInjector   = "istio-sidecar-injector"
-	IstioPrometheus        = "prometheus"
-	LinkerdController      = "linkerd-controller"
-	LinkerdIdentity        = "linkerd-identity"
-	LinkerdWeb             = "linkerd-web"
-	LinkerdTap             = "linkerd-tap"
-	LinkerdPrometheus      = "linkerd-prometheus"
-	LinkerdGrafana         = "linkerd-grafana"
-	LinkerdSidecarInjector = "linkerd-proxy-injector"
-	LinkerdSpValidator     = "linkerd-sp-validator"
-	Gateway                = "gateway"
-	Registry               = "registry"
-	Webhook                = "webhook"
+	Autoscaler           = "autoscaler"
+	BuildController      = "build-controller"
+	CertManager          = "cert-manager"
+	IstioGrafana         = "grafana"
+	IstioCitadel         = "istio-citadel"
+	IstioPilot           = "istio-pilot"
+	IstioTelemetry       = "mixer"
+	IstioKiali           = "kiali"
+	IstioSidecarInjector = "istio-sidecar-injector"
+	IstioPrometheus      = "prometheus"
+	Gateway              = "gateway"
+	Registry             = "registry"
+	Webhook              = "webhook"
 )
 
 type Install struct {
@@ -114,7 +85,7 @@ type Install struct {
 	HTTPProxy       string   `desc:"Set HTTP_PROXY environment variable for control plane"`
 	Yaml            bool     `desc:"Only print out k8s yaml manifest"`
 	Check           bool     `desc:"Only check status, don't deploy controller"`
-	Lite            bool     `desc:"Only install lite version of Rio(monitoring will be disabled, will be ignored if --disable-features is set)"`
+	Lite            bool     `desc:"Only install lite version of Rio istio install(only works if mesh-mode is istio, monitoring will be disabled, will be ignored if --disable-features is set)"`
 	Mode            string   `desc:"Install mode to expose gateway. Available options are svclb and hostport" default:"svclb"`
 	MeshMode        string   `desc:"Service mesh mode. Options: (linkerd/istio)" default:"linkerd"`
 }
@@ -180,7 +151,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 
 	if i.Lite && len(i.DisableFeatures) == 0 {
 		fmt.Fprintf(out, "Setting install mode to lite, monitoring features will be disabled\n")
-		i.DisableFeatures = []string{"mixer", "grafana", "kiali", "prometheus"}
+		i.DisableFeatures = []string{IstioTelemetry, IstioGrafana, IstioKiali, IstioPrometheus}
 	}
 
 	if i.Mode == constants.InstallModeIngress {

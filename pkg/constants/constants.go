@@ -13,6 +13,16 @@ const (
 	L5dOverrideHeader = "l5d-dst-override"
 	L5dRemoteIPHeader = "l5d-remote-ip"
 	L5dServerIDHeader = "l5d-server-id"
+
+	FeatureBuild        = "build"
+	FeatureIstio        = "istio"
+	FeatureGrafana      = "grafana"
+	FeatureMixer        = "mixer"
+	FeatureKiali        = "kiali"
+	FeaturePromethues   = "prometheus"
+	FeatureGateway      = "gateway"
+	FeatureLetsencrypts = "letsencrypt"
+	FeatureAutoscaling  = "autoscaling"
 )
 
 var (

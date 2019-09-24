@@ -1547,7 +1547,8 @@ kubernetes:
             maxRequestsPerConnection: 10000
 {{- end}}
 
-questions:
+template:
+  questions:
   - variable: DISABLE_KIALI
   - variable: DISABLE_MIXER
   - variable: DISABLE_PROMETHEUS
