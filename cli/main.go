@@ -230,7 +230,15 @@ func main() {
 	}
 	app.ExitErrHandler = func(context *cli.Context, err error) {
 		if err != nil && strings.Contains(err.Error(), clicontext.ErrNoConfig.Error()) {
-			printConfigUsage()
+			if context.Args().Get(context.NArg()-1) == "--help" {
+				err = cli.ShowCommandHelp(context, context.Args().First())
+				if err != nil {
+					cli.HandleExitCoder(err)
+				}
+			} else {
+				printConfigUsage()
+			}
+			os.Exit(0)
 		} else {
 			cli.HandleExitCoder(err)
 		}
