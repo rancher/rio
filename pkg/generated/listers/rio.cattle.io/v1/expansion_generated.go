@@ -18,14 +18,6 @@ limitations under the License.
 
 package v1
 
-// AppListerExpansion allows custom methods to be added to
-// AppLister.
-type AppListerExpansion interface{}
-
-// AppNamespaceListerExpansion allows custom methods to be added to
-// AppNamespaceLister.
-type AppNamespaceListerExpansion interface{}
-
 // ExternalServiceListerExpansion allows custom methods to be added to
 // ExternalServiceLister.
 type ExternalServiceListerExpansion interface{}
@@ -33,6 +25,14 @@ type ExternalServiceListerExpansion interface{}
 // ExternalServiceNamespaceListerExpansion allows custom methods to be added to
 // ExternalServiceNamespaceLister.
 type ExternalServiceNamespaceListerExpansion interface{}
+
+// ImageBuildListerExpansion allows custom methods to be added to
+// ImageBuildLister.
+type ImageBuildListerExpansion interface{}
+
+// ImageBuildNamespaceListerExpansion allows custom methods to be added to
+// ImageBuildNamespaceLister.
+type ImageBuildNamespaceListerExpansion interface{}
 
 // RouterListerExpansion allows custom methods to be added to
 // RouterLister.
