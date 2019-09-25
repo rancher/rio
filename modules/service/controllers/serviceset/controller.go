@@ -102,7 +102,7 @@ func (h *handler) onChange(key string, service *riov1.Service) (*riov1.Service, 
 		_, version := services2.AppAndVersion(service)
 		public := false
 		for _, port := range service.Spec.Ports {
-			if !port.InternalOnly {
+			if port.Expose != nil && *port.Expose {
 				public = true
 				break
 			}

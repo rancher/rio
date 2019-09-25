@@ -7,10 +7,11 @@ import (
 	"github.com/rancher/rio/pkg/constants"
 )
 
+// IsPublic returns true if any port of the svc is exposed
 func IsPublic(svc *riov1.Service) bool {
 	public := false
 	for _, port := range svc.Spec.Ports {
-		if !port.InternalOnly {
+		if port.Expose != nil && *port.Expose {
 			public = true
 			break
 		}
