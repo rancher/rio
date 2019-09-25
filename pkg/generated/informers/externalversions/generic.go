@@ -69,10 +69,10 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Autoscale().V1().ServiceScaleRecommendations().Informer()}, nil
 
 		// Group=rio.cattle.io, Version=v1
-	case riocattleiov1.SchemeGroupVersion.WithResource("apps"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Rio().V1().Apps().Informer()}, nil
 	case riocattleiov1.SchemeGroupVersion.WithResource("externalservices"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rio().V1().ExternalServices().Informer()}, nil
+	case riocattleiov1.SchemeGroupVersion.WithResource("imagebuilds"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Rio().V1().ImageBuilds().Informer()}, nil
 	case riocattleiov1.SchemeGroupVersion.WithResource("routers"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rio().V1().Routers().Informer()}, nil
 	case riocattleiov1.SchemeGroupVersion.WithResource("services"):

@@ -28,12 +28,12 @@ type FakeRioV1 struct {
 	*testing.Fake
 }
 
-func (c *FakeRioV1) Apps(namespace string) v1.AppInterface {
-	return &FakeApps{c, namespace}
-}
-
 func (c *FakeRioV1) ExternalServices(namespace string) v1.ExternalServiceInterface {
 	return &FakeExternalServices{c, namespace}
+}
+
+func (c *FakeRioV1) ImageBuilds(namespace string) v1.ImageBuildInterface {
+	return &FakeImageBuilds{c, namespace}
 }
 
 func (c *FakeRioV1) Routers(namespace string) v1.RouterInterface {

@@ -26,8 +26,8 @@ import (
 )
 
 type Interface interface {
-	App() AppController
 	ExternalService() ExternalServiceController
+	ImageBuild() ImageBuildController
 	Router() RouterController
 	Service() ServiceController
 	Stack() StackController
@@ -48,11 +48,11 @@ type version struct {
 	client            clientset.RioV1Interface
 }
 
-func (c *version) App() AppController {
-	return NewAppController(v1.SchemeGroupVersion.WithKind("App"), c.controllerManager, c.client, c.informers.Apps())
-}
 func (c *version) ExternalService() ExternalServiceController {
 	return NewExternalServiceController(v1.SchemeGroupVersion.WithKind("ExternalService"), c.controllerManager, c.client, c.informers.ExternalServices())
+}
+func (c *version) ImageBuild() ImageBuildController {
+	return NewImageBuildController(v1.SchemeGroupVersion.WithKind("ImageBuild"), c.controllerManager, c.client, c.informers.ImageBuilds())
 }
 func (c *version) Router() RouterController {
 	return NewRouterController(v1.SchemeGroupVersion.WithKind("Router"), c.controllerManager, c.client, c.informers.Routers())

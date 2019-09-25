@@ -24,10 +24,10 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-	// Apps returns a AppInformer.
-	Apps() AppInformer
 	// ExternalServices returns a ExternalServiceInformer.
 	ExternalServices() ExternalServiceInformer
+	// ImageBuilds returns a ImageBuildInformer.
+	ImageBuilds() ImageBuildInformer
 	// Routers returns a RouterInformer.
 	Routers() RouterInformer
 	// Services returns a ServiceInformer.
@@ -47,14 +47,14 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// Apps returns a AppInformer.
-func (v *version) Apps() AppInformer {
-	return &appInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
 // ExternalServices returns a ExternalServiceInformer.
 func (v *version) ExternalServices() ExternalServiceInformer {
 	return &externalServiceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// ImageBuilds returns a ImageBuildInformer.
+func (v *version) ImageBuilds() ImageBuildInformer {
+	return &imageBuildInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // Routers returns a RouterInformer.
