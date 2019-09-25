@@ -157,7 +157,7 @@ func populatePodAutoscaler(object runtime.Object, ns *corev1.Namespace, os *obje
 	}
 	var portValue string
 	for _, port := range service.Spec.Ports {
-		if !port.InternalOnly {
+		if port.Expose != nil && *port.Expose {
 			portValue = strconv.Itoa(int(port.TargetPort))
 			break
 		}

@@ -68,10 +68,11 @@ func httpRoutes(systemNamespace string, service *v1.Service, dests []Dest) ([]v1
 	}
 	if autoscale && service.Status.ObservedScale != nil && *service.Status.ObservedScale == 0 {
 		for _, port := range service.Spec.Ports {
-			if port.InternalOnly {
+			if port.Expose == nil || *port.Expose == false {
 				continue
 			}
-			publicPort, route := newRoute(systemNamespace, domains.GetPublicGateway(systemNamespace), !port.InternalOnly, port, dests, true, false, service)
+			publicPort, route := newRoute(systemNamespace, domains.GetPublicGateway(systemNamespace),
+				true, port, dests, true, false, service)
 			if publicPort != "" {
 				route.Match = []v1alpha3.HTTPMatchRequest{
 					{
@@ -88,10 +89,11 @@ func httpRoutes(systemNamespace string, service *v1.Service, dests []Dest) ([]v1
 	}
 
 	for _, port := range service.Spec.Ports {
-		if port.InternalOnly {
+		if port.Expose == nil || *port.Expose == false {
 			continue
 		}
-		publicPort, route := newRoute(systemNamespace, domains.GetPublicGateway(systemNamespace), !port.InternalOnly, port, dests, true, autoscale, service)
+		publicPort, route := newRoute(systemNamespace, domains.GetPublicGateway(systemNamespace),
+			true, port, dests, true, autoscale, service)
 		if publicPort != "" {
 			external = true
 			result = append(result, route)

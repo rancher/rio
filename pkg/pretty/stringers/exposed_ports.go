@@ -53,7 +53,8 @@ func (e ContainerPortStringer) MaybeString() interface{} {
 		buf.WriteString(strings.ToLower(string(protocol)))
 	}
 
-	if e.InternalOnly {
+	if e.Expose == nil || *e.Expose == false {
+		//TODO where this writes, do we need to change this to Expose?
 		buf.WriteString(",internal")
 	}
 
@@ -113,8 +114,10 @@ func parsePortBinding(spec string) (result v1.ContainerPort, err error) {
 		result.TargetPort = int32(n)
 	}
 
+	//TODO: Does this parsing flag need to change?
 	if v, ok := opts["internal"]; ok && v != "false" {
-		result.InternalOnly = true
+		result.Expose = new(bool)
+		*result.Expose = true
 	}
 
 	if v, ok := opts["hostport"]; ok && v != "false" {
