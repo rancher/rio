@@ -73,9 +73,10 @@ require (
 	github.com/rancher/wrangler-api v0.2.1-0.20190905172212-0efb8da386d3
 	github.com/rivo/tview v0.0.0-20190319111340-8d5eba0c2f51
 	github.com/rivo/uniseg v0.0.0-20190313204849-f699dde9c340 // indirect
+	github.com/sclevine/spec v1.3.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.5 // indirect
-	github.com/stretchr/testify v1.3.0
+	github.com/stretchr/testify v1.4.0
 	github.com/tektoncd/pipeline v0.4.0
 	github.com/urfave/cli v1.20.1-0.20190203184040-693af58b4d51
 	go.uber.org/atomic v1.4.0 // indirect

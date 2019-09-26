@@ -484,13 +484,16 @@ github.com/rivo/tview
 github.com/rivo/uniseg
 # github.com/russross/blackfriday v1.5.2
 github.com/russross/blackfriday
+# github.com/sclevine/spec v1.3.0
+github.com/sclevine/spec
+github.com/sclevine/spec/report
 # github.com/sirupsen/logrus v1.4.2
 github.com/sirupsen/logrus
 # github.com/spf13/cobra v0.0.5
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.3
 github.com/spf13/pflag
-# github.com/stretchr/testify v1.3.0
+# github.com/stretchr/testify v1.4.0
 github.com/stretchr/testify/assert
 # github.com/syndtr/gocapability v0.0.0-20180916011248-d98352740cb2
 github.com/syndtr/gocapability/capability
