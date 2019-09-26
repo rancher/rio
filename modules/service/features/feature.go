@@ -3,11 +3,12 @@ package features
 import (
 	"context"
 
+	"github.com/rancher/rio/modules/service/controllers/rollout"
+
 	"github.com/rancher/rio/modules/service/controllers/ingress"
 
 	"github.com/rancher/rio/modules/service/controllers/clusterdomain"
 
-	"github.com/rancher/rio/modules/service/controllers/appweight"
 	"github.com/rancher/rio/modules/service/controllers/externalservice"
 	"github.com/rancher/rio/modules/service/controllers/publicdomain"
 	"github.com/rancher/rio/modules/service/controllers/routeset"
@@ -34,7 +35,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			service.Register,
 			serviceset.Register,
 			servicestatus.Register,
-			appweight.Register,
+			rollout.Register,
 			publicdomain.Register,
 			stack.Register,
 			clusterdomain.Register,

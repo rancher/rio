@@ -1,4 +1,4 @@
-package appweight
+package rollout
 
 import (
 	"testing"
