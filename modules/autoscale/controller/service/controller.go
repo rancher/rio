@@ -25,6 +25,7 @@ import (
 )
 
 const (
+	//TODO Keep in sync with vendor/github.com/knative/serving/pkg/apis/autoscaling?
 	GroupName = "autoscaling.knative.dev"
 
 	// MinScaleAnnotationKey is the annotation to specify the minimum number of Pods
@@ -147,8 +148,8 @@ func populatePodAutoscaler(object runtime.Object, ns *corev1.Namespace, os *obje
 	app, version := services.AppAndVersion(service)
 	annotation := map[string]string{
 		ReferingLabel:         "kpa.autoscaling.knative.dev",
-		MinScaleAnnotationKey: strconv.Itoa(*service.Spec.MinScale),
-		MaxScaleAnnotationKey: strconv.Itoa(*service.Spec.MaxScale),
+		MinScaleAnnotationKey: strconv.Itoa(*service.Spec.Autoscale.MinReplicas),
+		MaxScaleAnnotationKey: strconv.Itoa(*service.Spec.Autoscale.MaxReplicas),
 	}
 	if constants.ServiceMeshMode == constants.ServiceMeshModeLinkerd {
 		annotation[ScrapeKey] = "linkerd"
@@ -175,7 +176,7 @@ func populatePodAutoscaler(object runtime.Object, ns *corev1.Namespace, os *obje
 			},
 		},
 		Spec: v1alpha1.PodAutoscalerSpec{
-			ContainerConcurrency: servingv1beta1.RevisionContainerConcurrencyType(*service.Spec.AutoscaleConfig.Concurrency),
+			ContainerConcurrency: servingv1beta1.RevisionContainerConcurrencyType(*service.Spec.Autoscale.Concurrency),
 			ScaleTargetRef: corev1.ObjectReference{
 				Kind:       "ServiceScaleRecommendation",
 				APIVersion: autoscalev1.SchemeGroupVersion.String(),
@@ -190,5 +191,6 @@ func populatePodAutoscaler(object runtime.Object, ns *corev1.Namespace, os *obje
 }
 
 func AutoscaleEnabled(service *v1.Service) bool {
-	return service.Spec.MinScale != nil && service.Spec.MaxScale != nil && service.Spec.Concurrency != nil && *service.Spec.MinScale != *service.Spec.MaxScale
+	return service.Spec.Autoscale.MinReplicas != nil && service.Spec.Autoscale.MaxReplicas != nil &&
+		service.Spec.Autoscale.Concurrency != nil && *service.Spec.Autoscale.MinReplicas != *service.Spec.Autoscale.MaxReplicas
 }

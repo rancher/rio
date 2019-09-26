@@ -9,35 +9,21 @@ type scaleParams struct {
 	Scale          int32
 	MaxSurge       *intstr.IntOrString
 	MaxUnavailable *intstr.IntOrString
-	BatchSize      int
 }
 
 func parseScaleParams(service *riov1.ServiceSpec) scaleParams {
 	scaleNum := 0
-	if service.Scale == nil {
+	if service.Replicas == nil {
 		scaleNum = 1
 	}
-	if service.Scale != nil {
-		scaleNum = *service.Scale
+	if service.Replicas != nil {
+		scaleNum = *service.Replicas
 	}
 	scale := int32(scaleNum)
-	batchSize := service.UpdateBatchSize
-
-	if batchSize == 0 {
-		batchSize = 1
-	}
-
-	if int32(batchSize) > scale {
-		batchSize = int(scale)
-	}
-
-	maxSurge := intstr.FromInt(batchSize)
-	maxUnavailable := intstr.FromInt(0)
 
 	return scaleParams{
 		Scale:          scale,
-		MaxSurge:       &maxSurge,
-		MaxUnavailable: &maxUnavailable,
-		BatchSize:      batchSize,
+		MaxSurge:       service.MaxSurge,
+		MaxUnavailable: service.MaxUnavailable,
 	}
 }

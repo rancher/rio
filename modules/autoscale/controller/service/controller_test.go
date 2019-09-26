@@ -21,15 +21,13 @@ func TestPopulateServiceRecommendationMinMaxNotEqual(t *testing.T) {
 	os := objectset.NewObjectSet()
 	input := riov1.NewService("default", "test", riov1.Service{
 		Spec: riov1.ServiceSpec{
-			AutoscaleConfig: riov1.AutoscaleConfig{
-				MinScale:    &[]int{0}[0],
-				MaxScale:    &[]int{10}[0],
+			Autoscale: &riov1.AutoscaleConfig{
+				MinReplicas: &[]int{0}[0],
+				MaxReplicas: &[]int{10}[0],
 				Concurrency: &[]int{10}[0],
 			},
-			ServiceRevision: riov1.ServiceRevision{
-				App:     "foo",
-				Version: "v0",
-			},
+			App:     "foo",
+			Version: "v0",
 		},
 	})
 
@@ -54,15 +52,13 @@ func TestPopulateServiceRecommendationMinMaxEqual(t *testing.T) {
 	os := objectset.NewObjectSet()
 	service := riov1.NewService("default", "test", riov1.Service{
 		Spec: riov1.ServiceSpec{
-			AutoscaleConfig: riov1.AutoscaleConfig{
-				MinScale:    &[]int{10}[0],
-				MaxScale:    &[]int{10}[0],
+			Autoscale: &riov1.AutoscaleConfig{
+				MinReplicas: &[]int{10}[0],
+				MaxReplicas: &[]int{10}[0],
 				Concurrency: &[]int{10}[0],
 			},
-			ServiceRevision: riov1.ServiceRevision{
-				App:     "foo",
-				Version: "v0",
-			},
+			App:     "foo",
+			Version: "v0",
 		},
 	})
 
@@ -75,14 +71,12 @@ func TestPopulateServiceRecommendationMinNil(t *testing.T) {
 	os := objectset.NewObjectSet()
 	service := riov1.NewService("default", "test", riov1.Service{
 		Spec: riov1.ServiceSpec{
-			AutoscaleConfig: riov1.AutoscaleConfig{
-				MaxScale:    &[]int{10}[0],
+			Autoscale: &riov1.AutoscaleConfig{
+				MaxReplicas: &[]int{10}[0],
 				Concurrency: &[]int{10}[0],
 			},
-			ServiceRevision: riov1.ServiceRevision{
-				App:     "foo",
-				Version: "v0",
-			},
+			App:     "foo",
+			Version: "v0",
 		},
 	})
 
@@ -95,14 +89,12 @@ func TestPopulateServiceRecommendationMaxNil(t *testing.T) {
 	os := objectset.NewObjectSet()
 	service := riov1.NewService("default", "test", riov1.Service{
 		Spec: riov1.ServiceSpec{
-			AutoscaleConfig: riov1.AutoscaleConfig{
-				MinScale:    &[]int{10}[0],
+			Autoscale: &riov1.AutoscaleConfig{
+				MinReplicas: &[]int{10}[0],
 				Concurrency: &[]int{10}[0],
 			},
-			ServiceRevision: riov1.ServiceRevision{
-				App:     "foo",
-				Version: "v0",
-			},
+			App:     "foo",
+			Version: "v0",
 		},
 	})
 
@@ -115,13 +107,11 @@ func TestPopulateServiceRecommendationMinMaxNil(t *testing.T) {
 	os := objectset.NewObjectSet()
 	service := riov1.NewService("default", "test", riov1.Service{
 		Spec: riov1.ServiceSpec{
-			AutoscaleConfig: riov1.AutoscaleConfig{
+			Autoscale: &riov1.AutoscaleConfig{
 				Concurrency: &[]int{10}[0],
 			},
-			ServiceRevision: riov1.ServiceRevision{
-				App:     "foo",
-				Version: "v0",
-			},
+			App:     "foo",
+			Version: "v0",
 		},
 	})
 
@@ -134,15 +124,13 @@ func TestPopulateAutoscalerMinMaxNotEqual(t *testing.T) {
 	os := objectset.NewObjectSet()
 	input := riov1.NewService("default", "test", riov1.Service{
 		Spec: riov1.ServiceSpec{
-			AutoscaleConfig: riov1.AutoscaleConfig{
-				MinScale:    &[]int{0}[0],
-				MaxScale:    &[]int{10}[0],
+			Autoscale: &riov1.AutoscaleConfig{
+				MinReplicas: &[]int{0}[0],
+				MaxReplicas: &[]int{10}[0],
 				Concurrency: &[]int{10}[0],
 			},
-			ServiceRevision: riov1.ServiceRevision{
-				App:     "foo",
-				Version: "v0",
-			},
+			App:     "foo",
+			Version: "v0",
 			PodConfig: riov1.PodConfig{
 				Container: riov1.Container{
 					Ports: []riov1.ContainerPort{
@@ -159,8 +147,8 @@ func TestPopulateAutoscalerMinMaxNotEqual(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				ReferingLabel:         "kpa.autoscaling.knative.dev",
-				MinScaleAnnotationKey: strconv.Itoa(*input.Spec.MinScale),
-				MaxScaleAnnotationKey: strconv.Itoa(*input.Spec.MaxScale),
+				MinScaleAnnotationKey: strconv.Itoa(*input.Spec.Autoscale.MinReplicas),
+				MaxScaleAnnotationKey: strconv.Itoa(*input.Spec.Autoscale.MaxReplicas),
 				ScrapeKey:             "linkerd",
 			},
 			Labels: map[string]string{
@@ -173,7 +161,7 @@ func TestPopulateAutoscalerMinMaxNotEqual(t *testing.T) {
 			},
 		},
 		Spec: v1alpha1.PodAutoscalerSpec{
-			ContainerConcurrency: servingv1beta1.RevisionContainerConcurrencyType(*input.Spec.AutoscaleConfig.Concurrency),
+			ContainerConcurrency: servingv1beta1.RevisionContainerConcurrencyType(*input.Spec.Autoscale.Concurrency),
 			ScaleTargetRef: corev1.ObjectReference{
 				Kind:       "ServiceScaleRecommendation",
 				APIVersion: autoscalev1.SchemeGroupVersion.String(),
@@ -192,15 +180,13 @@ func TestPopulateAutoscalerMinMaxEqual(t *testing.T) {
 	os := objectset.NewObjectSet()
 	service := riov1.NewService("default", "test", riov1.Service{
 		Spec: riov1.ServiceSpec{
-			AutoscaleConfig: riov1.AutoscaleConfig{
-				MinScale:    &[]int{10}[0],
-				MaxScale:    &[]int{10}[0],
+			Autoscale: &riov1.AutoscaleConfig{
+				MinReplicas: &[]int{10}[0],
+				MaxReplicas: &[]int{10}[0],
 				Concurrency: &[]int{10}[0],
 			},
-			ServiceRevision: riov1.ServiceRevision{
-				App:     "foo",
-				Version: "v0",
-			},
+			App:     "foo",
+			Version: "v0",
 			PodConfig: riov1.PodConfig{
 				Container: riov1.Container{
 					Ports: []riov1.ContainerPort{

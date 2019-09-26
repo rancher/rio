@@ -5,6 +5,8 @@ import (
 	"hash/adler32"
 	"strconv"
 
+	service2 "github.com/rancher/rio/modules/autoscale/controller/service"
+
 	"github.com/knative/pkg/apis/istio/common/v1alpha1"
 	"github.com/knative/pkg/apis/istio/v1alpha3"
 	"github.com/rancher/rio/modules/istio/pkg/domains"
@@ -63,7 +65,7 @@ func httpRoutes(systemNamespace string, service *v1.Service, dests []Dest) ([]v1
 	}
 
 	autoscale := false
-	if service.Spec.MaxScale != nil && service.Spec.Concurrency != nil && service.Spec.MinScale != nil && *service.Spec.MaxScale != *service.Spec.MinScale {
+	if service2.AutoscaleEnabled(service) {
 		autoscale = true
 	}
 	if autoscale && service.Status.ObservedScale != nil && *service.Status.ObservedScale == 0 {

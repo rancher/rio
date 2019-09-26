@@ -34,24 +34,24 @@ func (s *Scale) Run(ctx *clicontext.CLIContext) error {
 				if err != nil {
 					return err
 				}
-				if service.Spec.AutoscaleConfig.Concurrency == nil {
-					service.Spec.AutoscaleConfig.Concurrency = &[]int{10}[0]
+				if service.Spec.Autoscale.Concurrency == nil {
+					service.Spec.Autoscale.Concurrency = &[]int{10}[0]
 				}
-				service.Spec.AutoscaleConfig.MinScale = &minScale
-				service.Spec.AutoscaleConfig.MaxScale = &maxScale
+				service.Spec.Autoscale.MinReplicas = &minScale
+				service.Spec.Autoscale.MaxReplicas = &maxScale
 				if minScale != 0 {
-					service.Spec.Scale = &minScale
+					service.Spec.Replicas = &minScale
 				} else {
-					service.Spec.Scale = &[]int{1}[0]
+					service.Spec.Replicas = &[]int{1}[0]
 				}
 			} else {
 				scale, err := strconv.Atoi(scaleStr)
 				if err != nil {
 					return fmt.Errorf("failed to parse %s: %v", arg, err)
 				}
-				service.Spec.Scale = &scale
-				service.Spec.MinScale = nil
-				service.Spec.MaxScale = nil
+				service.Spec.Replicas = &scale
+				service.Spec.Autoscale.MinReplicas = nil
+				service.Spec.Autoscale.MaxReplicas = nil
 				service.Status.ObservedScale = nil
 			}
 
