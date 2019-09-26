@@ -27,13 +27,13 @@ func (r *Run) Run(ctx *clicontext.CLIContext) error {
 			if min != "" && max != "" {
 				minScale, _ := strconv.Atoi(min)
 				maxScale, _ := strconv.Atoi(max)
-				service.Spec.AutoscaleConfig.MinScale = &minScale
-				service.Spec.AutoscaleConfig.MaxScale = &maxScale
-				service.Spec.AutoscaleConfig.Concurrency = &r.Concurrency
+				service.Spec.Autoscale.MinReplicas = &minScale
+				service.Spec.Autoscale.MaxReplicas = &maxScale
+				service.Spec.Autoscale.Concurrency = &r.Concurrency
 				if minScale != 0 {
-					service.Spec.Scale = &minScale
+					service.Spec.Replicas = &minScale
 				} else {
-					service.Spec.Scale = &[]int{1}[0]
+					service.Spec.Replicas = &[]int{1}[0]
 				}
 
 				return service
@@ -42,9 +42,9 @@ func (r *Run) Run(ctx *clicontext.CLIContext) error {
 
 		// disable autoscaling
 		scale, _ := strconv.Atoi(r.Scale)
-		service.Spec.Scale = &scale
-		service.Spec.AutoscaleConfig.MinScale = &scale
-		service.Spec.AutoscaleConfig.MaxScale = &scale
+		service.Spec.Replicas = &scale
+		service.Spec.Autoscale.MinReplicas = &scale
+		service.Spec.Autoscale.MaxReplicas = &scale
 		return service
 	})
 	if err != nil {

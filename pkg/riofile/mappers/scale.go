@@ -13,6 +13,7 @@ type Scale struct {
 	mappers.DefaultMapper
 }
 
+// TODO: Refactor this to match up with types
 func (d Scale) FromInternal(data map[string]interface{}) {
 	min, minOk := data["minScale"]
 	max, maxOk := data["maxScale"]

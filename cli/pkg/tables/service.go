@@ -34,7 +34,7 @@ func NewService(cfg Config) TableWriter {
 }
 
 func formatRevisionScale(svc *riov1.Service, scaleStatus *v1.ScaleStatus) (string, error) {
-	scale := svc.Spec.Scale
+	scale := svc.Spec.Replicas
 	if svc.Status.ObservedScale != nil {
 		scale = svc.Status.ObservedScale
 	}

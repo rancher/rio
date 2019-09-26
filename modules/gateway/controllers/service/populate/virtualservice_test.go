@@ -30,15 +30,13 @@ func TestVirtualServices(t *testing.T) {
 
 	input := riov1.NewService("default", "test", riov1.Service{
 		Spec: riov1.ServiceSpec{
-			AutoscaleConfig: riov1.AutoscaleConfig{
-				MaxScale:    &[]int{10}[0],
-				MinScale:    &[]int{0}[0],
+			Autoscale: &riov1.AutoscaleConfig{
+				MinReplicas: &[]int{0}[0],
+				MaxReplicas: &[]int{10}[0],
 				Concurrency: &[]int{10}[0],
 			},
-			ServiceRevision: riov1.ServiceRevision{
-				App:     "foo",
-				Version: "v0",
-			},
+			App:     "foo",
+			Version: "v0",
 			PodConfig: riov1.PodConfig{
 				Container: riov1.Container{
 					Image: "test",
