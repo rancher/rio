@@ -43,6 +43,23 @@ func NewExternalService(namespace, name string, obj ExternalService) *ExternalSe
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
+// ImageBuildList is a list of ImageBuild resources
+type ImageBuildList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []ImageBuild `json:"items"`
+}
+
+func NewImageBuild(namespace, name string, obj ImageBuild) *ImageBuild {
+	obj.APIVersion, obj.Kind = SchemeGroupVersion.WithKind("ImageBuild").ToAPIVersionAndKind()
+	obj.Name = name
+	obj.Namespace = namespace
+	return &obj
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
 // RouterList is a list of Router resources
 type RouterList struct {
 	metav1.TypeMeta `json:",inline"`
@@ -70,23 +87,6 @@ type ServiceList struct {
 
 func NewService(namespace, name string, obj Service) *Service {
 	obj.APIVersion, obj.Kind = SchemeGroupVersion.WithKind("Service").ToAPIVersionAndKind()
-	obj.Name = name
-	obj.Namespace = namespace
-	return &obj
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// AppList is a list of App resources
-type AppList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata"`
-
-	Items []App `json:"items"`
-}
-
-func NewApp(namespace, name string, obj App) *App {
-	obj.APIVersion, obj.Kind = SchemeGroupVersion.WithKind("App").ToAPIVersionAndKind()
 	obj.Name = name
 	obj.Namespace = namespace
 	return &obj

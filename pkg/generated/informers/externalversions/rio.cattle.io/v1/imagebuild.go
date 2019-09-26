@@ -31,59 +31,59 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// AppInformer provides access to a shared informer and lister for
-// Apps.
-type AppInformer interface {
+// ImageBuildInformer provides access to a shared informer and lister for
+// ImageBuilds.
+type ImageBuildInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1.AppLister
+	Lister() v1.ImageBuildLister
 }
 
-type appInformer struct {
+type imageBuildInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 	namespace        string
 }
 
-// NewAppInformer constructs a new informer for App type.
+// NewImageBuildInformer constructs a new informer for ImageBuild type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewAppInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredAppInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewImageBuildInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredImageBuildInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredAppInformer constructs a new informer for App type.
+// NewFilteredImageBuildInformer constructs a new informer for ImageBuild type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredAppInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredImageBuildInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.RioV1().Apps(namespace).List(options)
+				return client.RioV1().ImageBuilds(namespace).List(options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.RioV1().Apps(namespace).Watch(options)
+				return client.RioV1().ImageBuilds(namespace).Watch(options)
 			},
 		},
-		&riocattleiov1.App{},
+		&riocattleiov1.ImageBuild{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *appInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredAppInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *imageBuildInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredImageBuildInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *appInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&riocattleiov1.App{}, f.defaultInformer)
+func (f *imageBuildInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&riocattleiov1.ImageBuild{}, f.defaultInformer)
 }
 
-func (f *appInformer) Lister() v1.AppLister {
-	return v1.NewAppLister(f.Informer().GetIndexer())
+func (f *imageBuildInformer) Lister() v1.ImageBuildLister {
+	return v1.NewImageBuildLister(f.Informer().GetIndexer())
 }

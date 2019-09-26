@@ -38,9 +38,9 @@ func main() {
 			"rio.cattle.io": {
 				Types: []interface{}{
 					riov1.ExternalService{},
+					riov1.ImageBuild{},
 					riov1.Router{},
 					riov1.Service{},
-					riov1.App{},
 					riov1.Stack{},
 				},
 				GenerateTypes: true,
