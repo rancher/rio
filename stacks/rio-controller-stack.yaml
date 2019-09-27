@@ -63,6 +63,7 @@ kubernetes:
       - "*"
     - apiGroups:
       - "networking.k8s.io"
+      - "extensions"
       resources:
       - "ingresses"
       - "ingresses/status"
