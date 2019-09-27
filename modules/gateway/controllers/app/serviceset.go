@@ -25,7 +25,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	c := stackobject.NewGeneratingController(ctx, rContext, "routing-serviceset", rContext.Rio.Rio().V1().App())
 	c.Apply = c.Apply.WithStrictCaching().
 		WithCacheTypes(rContext.Networking.Networking().V1alpha3().DestinationRule(),
-			rContext.K8sNetworking.Networking().V1beta1().Ingress(),
+			rContext.K8sNetworking.Extensions().V1beta1().Ingress(),
 			rContext.Networking.Networking().V1alpha3().VirtualService()).WithRateLimiting(10)
 
 	sh := &serviceHandler{

@@ -8,7 +8,7 @@ import (
 	tektonv1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
-	networkingv1beta1 "k8s.io/api/networking/v1beta1"
+	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 )
 
@@ -114,8 +114,8 @@ func NewPersistentVolumeClaim(namespace, name string, obj v1.PersistentVolumeCla
 	return &obj
 }
 
-func NewIngress(namespace, name string, obj networkingv1beta1.Ingress) *networkingv1beta1.Ingress {
-	obj.APIVersion = "networking.k8s.io/v1beta1"
+func NewIngress(namespace, name string, obj extensionsv1beta1.Ingress) *extensionsv1beta1.Ingress {
+	obj.APIVersion = "extensions/v1beta1"
 	obj.Kind = "Ingress"
 	obj.Name = name
 	obj.Namespace = namespace

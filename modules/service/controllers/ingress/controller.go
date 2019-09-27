@@ -22,19 +22,19 @@ import (
 func Register(ctx context.Context, rContext *types.Context) error {
 	serviceController := stackobject.NewGeneratingController(ctx, rContext, "ingress-service", rContext.Rio.Rio().V1().Service())
 	serviceController.Apply = serviceController.Apply.WithStrictCaching().
-		WithCacheTypes(rContext.K8sNetworking.Networking().V1beta1().Ingress())
+		WithCacheTypes(rContext.K8sNetworking.Extensions().V1beta1().Ingress())
 
 	appController := stackobject.NewGeneratingController(ctx, rContext, "ingress-app", rContext.Rio.Rio().V1().App())
 	appController.Apply = appController.Apply.WithStrictCaching().
-		WithCacheTypes(rContext.K8sNetworking.Networking().V1beta1().Ingress())
+		WithCacheTypes(rContext.K8sNetworking.Extensions().V1beta1().Ingress())
 
 	routerController := stackobject.NewGeneratingController(ctx, rContext, "ingress-routeset", rContext.Rio.Rio().V1().Router())
 	routerController.Apply = routerController.Apply.WithStrictCaching().
-		WithCacheTypes(rContext.K8sNetworking.Networking().V1beta1().Ingress())
+		WithCacheTypes(rContext.K8sNetworking.Extensions().V1beta1().Ingress())
 
 	publicdomainController := stackobject.NewGeneratingController(ctx, rContext, "ingress-publicdomain", rContext.Global.Admin().V1().PublicDomain())
 	publicdomainController.Apply = publicdomainController.Apply.WithCacheTypes(rContext.Networking.Networking().V1alpha3().DestinationRule(),
-		rContext.K8sNetworking.Networking().V1beta1().Ingress())
+		rContext.K8sNetworking.Extensions().V1beta1().Ingress())
 
 	sh := &handler{
 		systemNamespace:      rContext.Namespace,

@@ -24,7 +24,7 @@ import (
 	"github.com/rancher/wrangler/pkg/trigger"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	networkingv1beta1 "k8s.io/api/networking/v1beta1"
+	extensionv1beta1 "k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -53,7 +53,7 @@ var (
 func Register(ctx context.Context, rContext *types.Context) error {
 	h := handler{
 		apply: rContext.Apply.WithSetID(gatewayIngress).WithStrictCaching().
-			WithCacheTypes(rContext.K8sNetworking.Networking().V1beta1().Ingress()),
+			WithCacheTypes(rContext.K8sNetworking.Extensions().V1beta1().Ingress()),
 		namespace:         rContext.Namespace,
 		apps:              rContext.Rio.Rio().V1().App(),
 		services:          rContext.Rio.Rio().V1().Service(),
@@ -88,7 +88,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		case constants.InstallModeHostport:
 			rContext.Core.Core().V1().Endpoints().OnChange(ctx, "endpoints", h.syncEndpoint)
 		case constants.InstallModeIngress:
-			rContext.K8sNetworking.Networking().V1beta1().Ingress().OnChange(ctx, "ingress-endpoints", h.syncIngress)
+			rContext.K8sNetworking.Extensions().V1beta1().Ingress().OnChange(ctx, "ingress-endpoints", h.syncIngress)
 		}
 	} else {
 		addresses := strings.Split(constants.UseIPAddress, ",")
@@ -131,17 +131,17 @@ func (h handler) syncClusterIngress(key string, obj *adminv1.ClusterDomain) (*ad
 	}
 
 	if constants.InstallMode == constants.InstallModeIngress {
-		ingress := constructors.NewIngress(h.namespace, constants.ClusterIngressName, networkingv1beta1.Ingress{
-			Spec: networkingv1beta1.IngressSpec{
-				Rules: []networkingv1beta1.IngressRule{
+		ingress := constructors.NewIngress(h.namespace, constants.ClusterIngressName, extensionv1beta1.Ingress{
+			Spec: extensionv1beta1.IngressSpec{
+				Rules: []extensionv1beta1.IngressRule{
 					{
 						Host: domain,
-						IngressRuleValue: networkingv1beta1.IngressRuleValue{
-							HTTP: &networkingv1beta1.HTTPIngressRuleValue{
-								Paths: []networkingv1beta1.HTTPIngressPath{
+						IngressRuleValue: extensionv1beta1.IngressRuleValue{
+							HTTP: &extensionv1beta1.HTTPIngressRuleValue{
+								Paths: []extensionv1beta1.HTTPIngressPath{
 									{
 										Path: "/rio-gateway",
-										Backend: networkingv1beta1.IngressBackend{
+										Backend: extensionv1beta1.IngressBackend{
 											ServiceName: constants.GatewayName,
 											ServicePort: intstr.FromInt(80),
 										},
@@ -256,7 +256,7 @@ func getNodeIP(node *v1.Node) string {
 	return ""
 }
 
-func (h handler) syncIngress(key string, ingress *networkingv1beta1.Ingress) (*networkingv1beta1.Ingress, error) {
+func (h handler) syncIngress(key string, ingress *extensionv1beta1.Ingress) (*extensionv1beta1.Ingress, error) {
 	if ingress == nil {
 		return ingress, nil
 	}

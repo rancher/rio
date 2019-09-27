@@ -10,7 +10,7 @@ import (
 	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/wrangler/pkg/objectset"
 	v1 "k8s.io/api/core/v1"
-	networkingv1beta1 "k8s.io/api/networking/v1beta1"
+	extensionv1beta1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -40,16 +40,16 @@ func TestIngressWithVersion(t *testing.T) {
 		},
 	})
 
-	expected := constructors.NewIngress(systemNs, "foo-v0-default", networkingv1beta1.Ingress{
-		Spec: networkingv1beta1.IngressSpec{
-			Rules: []networkingv1beta1.IngressRule{
+	expected := constructors.NewIngress(systemNs, "foo-v0-default", extensionv1beta1.Ingress{
+		Spec: extensionv1beta1.IngressSpec{
+			Rules: []extensionv1beta1.IngressRule{
 				{
 					Host: "foo-v0-default.foo.on-rio.io",
-					IngressRuleValue: networkingv1beta1.IngressRuleValue{
-						HTTP: &networkingv1beta1.HTTPIngressRuleValue{
-							Paths: []networkingv1beta1.HTTPIngressPath{
+					IngressRuleValue: extensionv1beta1.IngressRuleValue{
+						HTTP: &extensionv1beta1.HTTPIngressRuleValue{
+							Paths: []extensionv1beta1.HTTPIngressPath{
 								{
-									Backend: networkingv1beta1.IngressBackend{
+									Backend: extensionv1beta1.IngressBackend{
 										ServiceName: constants.GatewayName,
 										ServicePort: intstr.FromInt(80),
 									},
@@ -59,7 +59,7 @@ func TestIngressWithVersion(t *testing.T) {
 					},
 				},
 			},
-			TLS: []networkingv1beta1.IngressTLS{
+			TLS: []extensionv1beta1.IngressTLS{
 				{
 					Hosts:      []string{"*.foo.on-rio.io"},
 					SecretName: certName,
@@ -98,16 +98,16 @@ func TestIngressWithoutVersion(t *testing.T) {
 		},
 	})
 
-	expected := constructors.NewIngress(systemNs, "foo-default", networkingv1beta1.Ingress{
-		Spec: networkingv1beta1.IngressSpec{
-			Rules: []networkingv1beta1.IngressRule{
+	expected := constructors.NewIngress(systemNs, "foo-default", extensionv1beta1.Ingress{
+		Spec: extensionv1beta1.IngressSpec{
+			Rules: []extensionv1beta1.IngressRule{
 				{
 					Host: "foo-default.foo.on-rio.io",
-					IngressRuleValue: networkingv1beta1.IngressRuleValue{
-						HTTP: &networkingv1beta1.HTTPIngressRuleValue{
-							Paths: []networkingv1beta1.HTTPIngressPath{
+					IngressRuleValue: extensionv1beta1.IngressRuleValue{
+						HTTP: &extensionv1beta1.HTTPIngressRuleValue{
+							Paths: []extensionv1beta1.HTTPIngressPath{
 								{
-									Backend: networkingv1beta1.IngressBackend{
+									Backend: extensionv1beta1.IngressBackend{
 										ServiceName: constants.GatewayName,
 										ServicePort: intstr.FromInt(80),
 									},
@@ -117,7 +117,7 @@ func TestIngressWithoutVersion(t *testing.T) {
 					},
 				},
 			},
-			TLS: []networkingv1beta1.IngressTLS{
+			TLS: []extensionv1beta1.IngressTLS{
 				{
 					Hosts:      []string{"*.foo.on-rio.io"},
 					SecretName: certName,
@@ -144,16 +144,16 @@ func TestRouterIngress(t *testing.T) {
 		},
 	})
 
-	expected := constructors.NewIngress(systemNs, "test-default", networkingv1beta1.Ingress{
-		Spec: networkingv1beta1.IngressSpec{
-			Rules: []networkingv1beta1.IngressRule{
+	expected := constructors.NewIngress(systemNs, "test-default", extensionv1beta1.Ingress{
+		Spec: extensionv1beta1.IngressSpec{
+			Rules: []extensionv1beta1.IngressRule{
 				{
 					Host: "test-default.foo.on-rio.io",
-					IngressRuleValue: networkingv1beta1.IngressRuleValue{
-						HTTP: &networkingv1beta1.HTTPIngressRuleValue{
-							Paths: []networkingv1beta1.HTTPIngressPath{
+					IngressRuleValue: extensionv1beta1.IngressRuleValue{
+						HTTP: &extensionv1beta1.HTTPIngressRuleValue{
+							Paths: []extensionv1beta1.HTTPIngressPath{
 								{
-									Backend: networkingv1beta1.IngressBackend{
+									Backend: extensionv1beta1.IngressBackend{
 										ServiceName: constants.GatewayName,
 										ServicePort: intstr.FromInt(80),
 									},
@@ -163,7 +163,7 @@ func TestRouterIngress(t *testing.T) {
 					},
 				},
 			},
-			TLS: []networkingv1beta1.IngressTLS{
+			TLS: []extensionv1beta1.IngressTLS{
 				{
 					Hosts:      []string{"*.foo.on-rio.io"},
 					SecretName: certName,
@@ -194,21 +194,21 @@ func TestPublicDomainIngress(t *testing.T) {
 
 	systemNs := "rio-system-fake"
 	ingressName := "pd1-41cf6"
-	expected := constructors.NewIngress(systemNs, ingressName, networkingv1beta1.Ingress{
+	expected := constructors.NewIngress(systemNs, ingressName, extensionv1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				"certmanager.k8s.io/cluster-issuer": "fake-issuer",
 			},
 		},
-		Spec: networkingv1beta1.IngressSpec{
-			Rules: []networkingv1beta1.IngressRule{
+		Spec: extensionv1beta1.IngressSpec{
+			Rules: []extensionv1beta1.IngressRule{
 				{
 					Host: "www.foo.com",
-					IngressRuleValue: networkingv1beta1.IngressRuleValue{
-						HTTP: &networkingv1beta1.HTTPIngressRuleValue{
-							Paths: []networkingv1beta1.HTTPIngressPath{
+					IngressRuleValue: extensionv1beta1.IngressRuleValue{
+						HTTP: &extensionv1beta1.HTTPIngressRuleValue{
+							Paths: []extensionv1beta1.HTTPIngressPath{
 								{
-									Backend: networkingv1beta1.IngressBackend{
+									Backend: extensionv1beta1.IngressBackend{
 										ServiceName: constants.GatewayName,
 										ServicePort: intstr.FromInt(80),
 									},
@@ -218,7 +218,7 @@ func TestPublicDomainIngress(t *testing.T) {
 					},
 				},
 			},
-			TLS: []networkingv1beta1.IngressTLS{
+			TLS: []extensionv1beta1.IngressTLS{
 				{
 					Hosts:      []string{"www.foo.com"},
 					SecretName: "pd1-secret",

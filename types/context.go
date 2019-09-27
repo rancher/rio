@@ -3,8 +3,6 @@ package types
 import (
 	"context"
 
-	"github.com/rancher/wrangler-api/pkg/generated/controllers/batch"
-
 	webhookinator "github.com/rancher/gitwatcher/pkg/generated/controllers/gitwatcher.cattle.io"
 	"github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io"
 	"github.com/rancher/rio/pkg/generated/controllers/autoscale.rio.cattle.io"
@@ -12,9 +10,10 @@ import (
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/apiextensions.k8s.io"
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/apps"
 	serving "github.com/rancher/wrangler-api/pkg/generated/controllers/autoscaling.internal.knative.dev"
+	"github.com/rancher/wrangler-api/pkg/generated/controllers/batch"
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/certmanager.k8s.io"
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/core"
-	networkingv1beta1 "github.com/rancher/wrangler-api/pkg/generated/controllers/networking"
+	extensionsv1beta1 "github.com/rancher/wrangler-api/pkg/generated/controllers/extensions"
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/networking.istio.io"
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/rbac"
 	smi "github.com/rancher/wrangler-api/pkg/generated/controllers/split.smi-spec.io"
@@ -38,7 +37,7 @@ type Context struct {
 	CertManager   *certmanager.Factory
 	Core          *core.Factory
 	Ext           *apiextensions.Factory
-	K8sNetworking *networkingv1beta1.Factory
+	K8sNetworking *extensionsv1beta1.Factory
 	Networking    *networking.Factory
 	Global        *admin.Factory
 	K8s           kubernetes.Interface
@@ -66,7 +65,7 @@ func NewContext(namespace string, config *rest.Config) *Context {
 		CertManager:   certmanager.NewFactoryFromConfigOrDie(config),
 		Core:          core.NewFactoryFromConfigOrDie(config),
 		Ext:           apiextensions.NewFactoryFromConfigOrDie(config),
-		K8sNetworking: networkingv1beta1.NewFactoryFromConfigOrDie(config),
+		K8sNetworking: extensionsv1beta1.NewFactoryFromConfigOrDie(config),
 		Networking:    networking.NewFactoryFromConfigOrDie(config),
 		Global:        admin.NewFactoryFromConfigOrDie(config),
 		RBAC:          rbac.NewFactoryFromConfigOrDie(config),
