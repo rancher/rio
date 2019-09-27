@@ -31,12 +31,18 @@ type CRD struct {
 	PluralName   string
 	NonNamespace bool
 	Schema       *v1beta1.JSONSchemaProps
+	Columns      []v1beta1.CustomResourceColumnDefinition
 	Status       bool
 	Scale        bool
 }
 
 func (c CRD) WithSchema(schema *v1beta1.JSONSchemaProps) CRD {
 	c.Schema = schema
+	return c
+}
+
+func (c CRD) WithCustomColumn(columns []v1beta1.CustomResourceColumnDefinition) CRD {
+	c.Columns = columns
 	return c
 }
 
@@ -63,8 +69,9 @@ func (c CRD) ToCustomResourceDefinition() apiext.CustomResourceDefinition {
 			Name: name,
 		},
 		Spec: apiext.CustomResourceDefinitionSpec{
-			Group:   c.GVK.Group,
-			Version: c.GVK.Version,
+			AdditionalPrinterColumns: c.Columns,
+			Group:                    c.GVK.Group,
+			Version:                  c.GVK.Version,
 			Versions: []apiext.CustomResourceDefinitionVersion{
 				{
 					Name:    c.GVK.Version,

@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/rancher/rio/cli/cmd/install"
+
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/rio/cli/cmd/attach"
 	"github.com/rancher/rio/cli/cmd/builds"
@@ -15,13 +17,11 @@ import (
 	"github.com/rancher/rio/cli/cmd/exec"
 	"github.com/rancher/rio/cli/cmd/export"
 	"github.com/rancher/rio/cli/cmd/externalservice"
-	"github.com/rancher/rio/cli/cmd/feature"
 	"github.com/rancher/rio/cli/cmd/info"
 	"github.com/rancher/rio/cli/cmd/inspect"
 
 	//"github.com/rancher/rio/cli/cmd/install"
 	"github.com/rancher/rio/cli/cmd/logs"
-	"github.com/rancher/rio/cli/cmd/pods"
 	"github.com/rancher/rio/cli/cmd/promote"
 	"github.com/rancher/rio/cli/cmd/ps"
 	"github.com/rancher/rio/cli/cmd/publicdomain"
@@ -34,7 +34,6 @@ import (
 	"github.com/rancher/rio/cli/cmd/stacks"
 	"github.com/rancher/rio/cli/cmd/stage"
 	"github.com/rancher/rio/cli/cmd/systemlogs"
-	"github.com/rancher/rio/cli/cmd/tui"
 	"github.com/rancher/rio/cli/cmd/uninstall"
 	"github.com/rancher/rio/cli/cmd/up"
 	"github.com/rancher/rio/cli/cmd/weight"
@@ -106,15 +105,15 @@ func main() {
 			EnvVar:      "NAMESPACE",
 			Destination: &cfg.DefaultNamespace,
 		},
+		cli.BoolFlag{
+			Name:        "all-namespaces,A",
+			Usage:       "Whether to show all namespaces resources",
+			Destination: &cfg.AllNamespace,
+		},
 		cli.StringFlag{
 			Name:        "kubeconfig",
 			Usage:       "kubeconfig file to use",
 			Destination: &cfg.Kubeconfig,
-		},
-		cli.BoolFlag{
-			Name:        "system,s",
-			Usage:       "Only show system resources",
-			Destination: &cfg.ShowSystem,
 		},
 	}
 
@@ -122,10 +121,8 @@ func main() {
 		config.Config(app),
 		publicdomain.PublicDomain(app),
 		externalservice.ExternalService(app),
-		feature.Feature(app),
 		secrets.Secrets(app),
 		builds.Builds(app),
-		pods.Pods(app),
 		stacks.Stacks(app),
 
 		builder.Command(&ps.Ps{},
@@ -136,7 +133,7 @@ func main() {
 		builder.Command(&run.Run{},
 			"Create and run a new service",
 			appName+" run [OPTIONS] IMAGE [COMMAND] [ARG...]",
-			desc),
+			""),
 
 		builder.Command(&scale.Scale{},
 			"Scale a service",
@@ -176,10 +173,10 @@ func main() {
 			appName+" logs [OPTIONS] [CONTAINER_OR_SERVICE_OR_BUILD...]",
 			""),
 
-		//builder.Command(&install.Install{},
-		//	"Install rio management plane",
-		//	appName+" install [OPTIONS]",
-		//	""),
+		builder.Command(&install.Install{},
+			"Install rio management plane",
+			appName+" install [OPTIONS]",
+			""),
 		builder.Command(&uninstall.Uninstall{},
 			"Uninstall rio",
 			appName+" uninstall [OPTIONS]",
@@ -200,10 +197,6 @@ func main() {
 		builder.Command(&weight.Weight{},
 			"Weight a percentage of traffic to a staged service",
 			appName+" weight [OPTIONS] [SERVICE_REVISION=PERCENTAGE...]",
-			""),
-		builder.Command(&tui.Console{},
-			"Terminal interactive UI",
-			appName+" console",
 			""),
 		builder.Command(&systemlogs.SystemLogs{},
 			"View system log for Rio management plane",

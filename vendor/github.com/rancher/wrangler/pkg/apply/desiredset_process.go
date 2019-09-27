@@ -85,15 +85,15 @@ func (o *desiredSet) assignOwnerReference(gvk schema.GroupVersionKind, objs map[
 			meta.SetNamespace(ownerMeta.GetNamespace())
 		}
 
-		apiVersion, kind := o.owner.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 		meta.SetOwnerReferences(append(meta.GetOwnerReferences(), v1.OwnerReference{
-			APIVersion:         apiVersion,
-			Kind:               kind,
+			APIVersion:         ownerGVK.GroupVersion().String(),
+			Kind:               ownerGVK.Kind,
 			Name:               ownerMeta.GetName(),
 			UID:                ownerMeta.GetUID(),
 			Controller:         &o.ownerReferenceController,
 			BlockOwnerDeletion: &o.ownerReferenceBlock,
 		}))
+		objs[k] = v
 
 		if assignNS {
 			delete(objs, k)

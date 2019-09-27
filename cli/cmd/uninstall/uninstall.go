@@ -8,11 +8,9 @@ import (
 	certmanagerv1alpha1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	gitwatcherv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
-	"github.com/rancher/rio/cli/cmd/install"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/up/questions"
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
-	autoscalev1 "github.com/rancher/rio/pkg/apis/autoscale.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	batchv1 "k8s.io/api/batch/v1"
@@ -69,48 +67,25 @@ func (u Uninstall) Run(ctx *clicontext.CLIContext) error {
 	}
 
 	fmt.Println("Deleting system component services")
-	for _, systemSvc := range install.SystemComponents {
+	for systemSvc := range rioInfo.Status.SystemComponentReadyMap {
 		if err := ctx.K8s.AppsV1().Deployments(systemNamespace).Delete(systemSvc, &metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
 			return err
 		}
 	}
 
-	fmt.Println("Cleaning up finalizers for resource Feature, group admin.rio.cattle.io...")
-	features, err := ctx.Project.Features("").List(metav1.ListOptions{})
-	if err != nil && !errors.IsNotFound(err) {
-		return err
-	}
-	for _, f := range features.Items {
-		f.Finalizers = nil
-		if _, err := ctx.Project.Features(systemNamespace).Update(&f); err != nil && !errors.IsNotFound(err) {
-			return err
-		}
-	}
 	fmt.Println("Cleaning up finalizers for resource PublicDomain, group admin.rio.cattle.io...")
-	pds, err := ctx.Project.PublicDomains("").List(metav1.ListOptions{})
+	pds, err := ctx.Project.PublicDomains().List(metav1.ListOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	}
 	for _, pd := range pds.Items {
 		pd.Finalizers = nil
-		if _, err := ctx.Project.PublicDomains(pd.Namespace).Update(&pd); err != nil && !errors.IsNotFound(err) {
+		if _, err := ctx.Project.PublicDomains().Update(&pd); err != nil && !errors.IsNotFound(err) {
 			return err
 		}
 	}
 
 	// rio.cattle.io
-	fmt.Println("Cleaning up finalizers for resource App, group rio.cattle.io...")
-	apps, err := ctx.Rio.Apps("").List(metav1.ListOptions{})
-	if err != nil && !errors.IsNotFound(err) {
-		return err
-	}
-	for _, app := range apps.Items {
-		app.Finalizers = nil
-		if _, err := ctx.Rio.Apps(app.Namespace).Update(&app); err != nil && !errors.IsNotFound(err) {
-			return err
-		}
-	}
-
 	fmt.Println("Cleaning up finalizers for resource Service, group rio.cattle.io...")
 	services, err := ctx.Rio.Services("").List(metav1.ListOptions{})
 	if err != nil && !errors.IsNotFound(err) {
@@ -143,18 +118,6 @@ func (u Uninstall) Run(ctx *clicontext.CLIContext) error {
 	for _, es := range ess.Items {
 		es.Finalizers = nil
 		if _, err := ctx.Rio.ExternalServices(es.Namespace).Update(&es); err != nil && !errors.IsNotFound(err) {
-			return err
-		}
-	}
-
-	fmt.Println("Cleaning up finalizers for resource ServiceRecommendation, group autoscale.rio.cattle.io...")
-	ssrs, err := ctx.Autoscale.ServiceScaleRecommendations("").List(metav1.ListOptions{})
-	if err != nil && !errors.IsNotFound(err) {
-		return err
-	}
-	for _, ssr := range ssrs.Items {
-		ssr.Finalizers = nil
-		if _, err := ctx.Autoscale.ServiceScaleRecommendations(ssr.Namespace).Update(&ssr); err != nil && !errors.IsNotFound(err) {
 			return err
 		}
 	}
@@ -305,16 +268,6 @@ func (u Uninstall) Run(ctx *clicontext.CLIContext) error {
 	if gitwatcherresources != nil {
 		for _, resource := range gitwatcherresources.APIResources {
 			toDelete = append(toDelete, fmt.Sprintf("%s.%s", resource.Name, gitwatcherv1.SchemeGroupVersion.Group))
-		}
-	}
-
-	autoscalerresources, err := ctx.K8s.Discovery().ServerResourcesForGroupVersion(autoscalev1.SchemeGroupVersion.String())
-	if err != nil && !errors.IsNotFound(err) {
-		return err
-	}
-	if autoscalerresources != nil {
-		for _, resource := range autoscalerresources.APIResources {
-			toDelete = append(toDelete, fmt.Sprintf("%s.%s", resource.Name, autoscalev1.SchemeGroupVersion.Group))
 		}
 	}
 

@@ -4,7 +4,10 @@ services:
     - '* pods'
     - '* configmaps'
     - '* autoscale.rio.cattle.io/servicescalerecommendations'
+    - '* rio.cattle.io/services'
+    - '* rio.cattle.io/services/status'
     image: strongmonkey1992/autoscaler:dev
+    imagePullPolicy: always
     env:
     - NAMESPACE=${NAMESPACE}
     ports:

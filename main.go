@@ -1,5 +1,5 @@
 //go:generate go run pkg/codegen/cleanup/main.go
-//go:generate go run ./vendor/github.com/go-bindata/go-bindata/go-bindata -o ./stacks/bindata.go -ignore bindata.go -pkg stacks -modtime 1557785965 -mode 0644 ./stacks/
+//1go:generate go run ./vendor/github.com/go-bindata/go-bindata/go-bindata -o ./stacks/bindata.go -ignore bindata.go -pkg stacks -modtime 1557785965 -mode 0644 ./stacks/
 //go:generate go fmt stacks/bindata.go
 //go:generate go run pkg/codegen/main.go
 
@@ -18,6 +18,7 @@ import (
 	"github.com/rancher/wrangler/pkg/signals"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 var (

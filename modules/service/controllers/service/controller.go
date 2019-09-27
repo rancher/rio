@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 
+	"github.com/rancher/rio/pkg/constants"
+
 	"github.com/rancher/rio/modules/service/controllers/service/populate"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	adminv1 "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
@@ -10,11 +12,23 @@ import (
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/generic"
 	"github.com/rancher/wrangler/pkg/objectset"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
 	sc := rContext.Rio.Rio().V1().Service()
+	scs, err := rContext.Storage.Storage().V1().StorageClass().List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	for _, sc := range scs.Items {
+		if sc.Annotations["storageclass.kubernetes.io/is-default-class"] == "true" {
+			constants.DefaultStorageClass = true
+			break
+		}
+	}
+
 	sh := &serviceHandler{
 		namespace:          rContext.Namespace,
 		publicDomainCache:  rContext.Admin.Admin().V1().PublicDomain().Cache(),

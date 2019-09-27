@@ -4,31 +4,11 @@ import (
 	"errors"
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/table"
-	clitypes "github.com/rancher/rio/cli/pkg/types"
 	"github.com/urfave/cli"
 )
 
-var (
-	InspectTypes = []string{
-		clitypes.ServiceType,
-		clitypes.AppType,
-		clitypes.ConfigType,
-		clitypes.NamespaceType,
-		clitypes.RouterType,
-		clitypes.ExternalServiceType,
-		clitypes.PodType,
-		clitypes.FeatureType,
-		clitypes.PublicDomainType,
-		clitypes.BuildType,
-		clitypes.SecretType,
-		clitypes.StackType,
-	}
-)
-
 type Inspect struct {
-	T_Type string `desc:"The specific type to inspect"`
 }
 
 func (i *Inspect) Customize(cmd *cli.Command) {
@@ -46,33 +26,7 @@ func (i *Inspect) Run(ctx *clicontext.CLIContext) error {
 		return errors.New("at least one argument is required")
 	}
 
-	types := InspectTypes
-	if i.T_Type != "" {
-		types = []string{i.T_Type}
-	}
-
-	for _, arg := range ctx.CLI.Args() {
-		if i.T_Type == "" {
-			types = []string{}
-			for _, t := range InspectTypes {
-				if t == clitypes.AppType {
-					continue
-				}
-				types = append(types, t)
-			}
-		}
-
-		r, err := lookup.Lookup(ctx, arg, types...)
-		if err != nil {
-			return err
-		}
-
-		t := table.NewWriter(nil, ctx)
-		t.Write(r.Object)
-		if err := t.Close(); err != nil {
-			return err
-		}
-	}
+	ctx.ByID()
 
 	return nil
 }

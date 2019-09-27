@@ -10,7 +10,6 @@ import (
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
-	tektonv1alpha1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/tekton.dev/v1alpha1"
 	tektonv1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 )
 
@@ -22,7 +21,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		gitcommits:      rContext.Webhook.Gitwatcher().V1().GitCommit(),
 	}
 
-	rContext.Build.Tekton().V1alpha1().TaskRun().OnChange(ctx, "build-service-update", tektonv1alpha1controller.UpdateTaskRunOnChange(rContext.Build.Tekton().V1alpha1().TaskRun().Updater(), h.updateService))
+	rContext.Build.Tekton().V1alpha1().TaskRun().OnChange(ctx, "build-service-update", h.updateService)
 	rContext.Build.Tekton().V1alpha1().TaskRun().OnRemove(ctx, "build-service-remove", h.updateOnRemove)
 	return nil
 }
@@ -71,7 +70,7 @@ func (h handler) updateService(key string, build *tektonv1alpha1.TaskRun) (*tekt
 	}
 
 	if build.IsSuccessful() {
-		rev := svc.Spec.Build.Revision
+		rev := svc.Spec.ImageBuildBuild.Revision
 		if rev == "" {
 			rev = svc.Status.FirstRevision
 		}

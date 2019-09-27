@@ -9,6 +9,7 @@ import (
 
 	"github.com/rancher/rio/modules/service/controllers/service/populate/serviceports"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/indexes"
 	"github.com/rancher/rio/pkg/services"
 	"github.com/rancher/wrangler/pkg/name"
@@ -16,18 +17,23 @@ import (
 )
 
 type target struct {
-	Hosts     []string
-	Port      int32
-	Name      string
-	Namespace string
-	Weight    int
+	Hosts          []string
+	Port           int32
+	Name           string
+	Namespace      string
+	Weight         int
+	ScaleIsZero    bool
+	OriginalTarget struct {
+		Name      string
+		Namespace string
+	}
 }
 
 func (t target) valid() bool {
 	return t.Port != 0 && len(t.Hosts) > 0
 }
 
-func getTarget(obj *riov1.Service) (result target, err error) {
+func getTarget(obj *riov1.Service, systemNamespace string) (result target, err error) {
 	app, version := services.AppAndVersion(obj)
 	result.Name = name.SafeConcatName(app, version)
 	result.Namespace = obj.Namespace
@@ -42,6 +48,17 @@ func getTarget(obj *riov1.Service) (result target, err error) {
 			result.Port = port.Port
 			continue
 		}
+	}
+
+	if obj.Status.ComputedReplicas != nil && *obj.Status.ComputedReplicas == 0 {
+		result.ScaleIsZero = true
+		result.Port = 80
+		result.OriginalTarget = struct {
+			Name      string
+			Namespace string
+		}{Name: obj.Name, Namespace: result.Namespace}
+		result.Name = constants.AutoscalerServiceName
+		result.Namespace = systemNamespace
 	}
 
 	seen := map[string]bool{}
@@ -103,14 +120,14 @@ func (f *VirtualServiceFactory) findTLS(namespace, app, version string, hostname
 	return result, nil
 }
 
-func getTargetsForApp(svcs []*riov1.Service) (hostnames []string, targets []target, err error) {
+func getTargetsForApp(svcs []*riov1.Service, systemNamespace string) (hostnames []string, targets []target, err error) {
 	var (
 		seen = map[string]bool{}
 	)
 
 	weightSet := false
 	for _, svc := range svcs {
-		target, err := getTarget(svc)
+		target, err := getTarget(svc, systemNamespace)
 		if err != nil {
 			return nil, nil, err
 		}

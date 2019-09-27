@@ -137,23 +137,24 @@ func (c *Create) setScale(spec *riov1.ServiceSpec) (err error) {
 	}
 
 	minStr, maxStr := kv.Split(c.Scale, "-")
-	min, err := strconv.ParseInt(minStr, 10, 64)
+	minValue, err := strconv.ParseInt(minStr, 10, 64)
 	if err != nil {
 		return errors.Wrapf(err, "invalid scale %s", c.Scale)
 	}
 
-	max := int64(0)
+	min := int32(minValue)
 	if maxStr == "" {
 		spec.Replicas = &[]int{int(min)}[0]
 	} else {
-		max, err = strconv.ParseInt(maxStr, 10, 64)
+		maxValue, err := strconv.ParseInt(maxStr, 10, 64)
 		if err != nil {
 			return errors.Wrapf(err, "invalid scale %s", c.Scale)
 		}
+		max := int32(maxValue)
 		spec.Autoscale = &riov1.AutoscaleConfig{
 			Concurrency: c.Concurrency,
-			MinReplicas: int(min),
-			MaxReplicas: &[]int{int(max)}[0],
+			MinReplicas: &min,
+			MaxReplicas: &[]int32{max}[0],
 		}
 	}
 
@@ -173,13 +174,17 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 
 	spec.App = c.App
 	spec.Args = args[1:]
-	spec.DisableServiceMesh = c.NoMesh
+	spec.ServiceMesh = &c.NoMesh
 	spec.Hostname = c.Hostname
 	spec.HostNetwork = c.Net == "host"
 	spec.Stdin = c.I_Interactive
 	spec.TTY = c.T_Tty
 	spec.Version = c.Version
 	spec.WorkingDir = c.W_Workdir
+
+	if c.NoMesh {
+		spec.ServiceMesh = &c.NoMesh
+	}
 
 	if c.Weight > 0 {
 		spec.Weight = &c.Weight

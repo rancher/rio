@@ -1,6 +1,7 @@
 package tables
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/rancher/rio/cli/pkg/table"
@@ -25,8 +26,8 @@ func FormatTarget(obj interface{}) (string, error) {
 	switch item := obj.(*v1.ExternalService); {
 	case item.Spec.FQDN != "":
 		return item.Spec.FQDN, nil
-	case item.Spec.Service != "":
-		return item.Spec.Service, nil
+	case item.Spec.TargetServiceName != "":
+		return fmt.Sprintf("%s/%s", item.Spec.TargetServiceNamespace, item.Spec.TargetServiceName), nil
 	case len(item.Spec.IPAddresses) > 0:
 		return strings.Join(item.Spec.IPAddresses, ","), nil
 	default:

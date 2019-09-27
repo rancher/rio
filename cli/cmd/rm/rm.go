@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/lookup"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 )
@@ -18,12 +17,8 @@ func (r *Rm) Run(ctx *clicontext.CLIContext) error {
 	if len(ctx.CLI.Args()) == 0 {
 		return errors.New("at least one argument is needed")
 	}
-	types := []string{clitypes.ServiceType, clitypes.ConfigType, clitypes.RouterType, clitypes.PublicDomainType, clitypes.ExternalServiceType, clitypes.AppType, clitypes.SecretType, clitypes.BuildType, clitypes.StackType}
-	if len(r.T_Type) > 0 {
-		types = []string{r.T_Type}
-	}
 
-	return Remove(ctx, types...)
+	return Remove(ctx)
 }
 
 func Remove(ctx *clicontext.CLIContext, types ...string) error {
@@ -38,7 +33,7 @@ func Remove(ctx *clicontext.CLIContext, types ...string) error {
 				}
 			}
 		}
-		resource, err := lookup.Lookup(ctx, arg, types...)
+		resource, err := ctx.ByID(arg)
 		if err != nil {
 			return err
 		}

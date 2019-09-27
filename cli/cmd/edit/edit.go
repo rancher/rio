@@ -7,9 +7,7 @@ import (
 	"github.com/rancher/rio/cli/cmd/edit/pretty"
 	"github.com/rancher/rio/cli/cmd/edit/raw"
 	"github.com/rancher/rio/cli/cmd/edit/stack"
-	"github.com/rancher/rio/cli/cmd/inspect"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/lookup"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
 	"github.com/rancher/wrangler/pkg/gvk"
 	name2 "github.com/rancher/wrangler/pkg/name"
@@ -55,18 +53,10 @@ func (edit *Edit) edit(ctx *clicontext.CLIContext) error {
 	}
 
 	var (
-		name  = ctx.CLI.Args()[0]
-		types []string
+		name = ctx.CLI.Args()[0]
 	)
 
-	for _, t := range inspect.InspectTypes {
-		if t == clitypes.AppType {
-			continue
-		}
-		types = append(types, t)
-	}
-
-	r, err := lookup.Lookup(ctx, name, types...)
+	r, err := ctx.ByID(name)
 	if err != nil {
 		return err
 	}

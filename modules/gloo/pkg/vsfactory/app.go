@@ -6,7 +6,7 @@ import (
 )
 
 func (f *VirtualServiceFactory) ForApp(namespace, appName string, svcs []*riov1.Service) ([]*solov1.VirtualService, error) {
-	hostnames, targets, err := getTargetsForApp(svcs)
+	hostnames, targets, err := getTargetsForApp(svcs, f.systemNamespace)
 	if err != nil {
 		return nil, err
 	}
@@ -17,6 +17,7 @@ func (f *VirtualServiceFactory) ForApp(namespace, appName string, svcs []*riov1.
 
 	vs := newVirtualService(namespace, appName, hostnames)
 	vs.Spec.VirtualHost.Routes[0].Action = newRouteAction(targets...)
+	vs.Spec.VirtualHost.Routes[0].RoutePlugins = newRoutePlugin(targets...)
 
 	result := []*solov1.VirtualService{
 		vs,

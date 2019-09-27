@@ -2,7 +2,6 @@ package clicontext
 
 import (
 	"github.com/rancher/mapper"
-	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/types"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -33,7 +32,7 @@ func (c *CLIContext) UpdateResource(r types.Resource, updater func(obj runtime.O
 }
 
 func (c *CLIContext) Update(name, typeName string, updater func(obj runtime.Object) error) error {
-	r, err := lookup.Lookup(c, name, typeName)
+	r, err := c.ByID(name)
 	if err != nil {
 		return err
 	}

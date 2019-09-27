@@ -8,8 +8,6 @@ import (
 
 	"github.com/rancher/mapper/slice"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/lookup"
-	"github.com/rancher/rio/cli/pkg/types"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -23,7 +21,7 @@ func (c *Cat) Run(ctx *clicontext.CLIContext) error {
 	}
 
 	for _, arg := range ctx.CLI.Args() {
-		r, err := lookup.Lookup(ctx, arg, types.ConfigType)
+		r, err := ctx.ByID(arg)
 		if err != nil {
 			return err
 		}

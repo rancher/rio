@@ -9,13 +9,14 @@ import (
 func (f *VirtualServiceFactory) ForRevision(svc *riov1.Service) ([]*solov1.VirtualService, error) {
 	app, version := services.AppAndVersion(svc)
 
-	target, err := getTarget(svc)
+	target, err := getTarget(svc, f.systemNamespace)
 	if err != nil || !target.valid() {
 		return nil, err
 	}
 
 	vs := newVirtualService(target.Namespace, target.Name, target.Hosts)
 	vs.Spec.VirtualHost.Routes[0].Action = newRouteAction(target)
+	vs.Spec.VirtualHost.Routes[0].RoutePlugins = newRoutePlugin(target)
 
 	result := []*solov1.VirtualService{
 		vs,

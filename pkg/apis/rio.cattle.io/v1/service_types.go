@@ -31,10 +31,10 @@ type AutoscaleConfig struct {
 	Concurrency int `json:"concurrency,omitempty"`
 
 	// The minimal number of replicas Service can be scaled
-	MinReplicas *int `json:"minReplicas,omitempty" mapper:"alias=minScale|min" column:"name=MinScale,type=integer,format=int32,jsonpath=.spec.autoscale.minReplicas"`
+	MinReplicas *int32 `json:"minReplicas,omitempty" mapper:"alias=minScale|min"`
 
 	// The maximum number of replicas Service can be scaled
-	MaxReplicas *int `json:"maxReplicas,omitempty" mapper:"alias=maxScale|max" column:"name=MaxScale,type=integer,format=int32,jsonpath=.spec.autoscale.maxReplicas"`
+	MaxReplicas *int32 `json:"maxReplicas,omitempty" mapper:"alias=maxScale|max"`
 }
 
 // RolloutConfig specifies the configuration when promoting a new revision
@@ -376,7 +376,7 @@ type ServiceStatus struct {
 	ScaleStatus *ScaleStatus `json:"scaleStatus,omitempty"`
 
 	// ComputedReplicas is calculated from autoscaling component to make sure pod has the desired load
-	ComputedReplicas *int `json:"computedReplicas,omitempty" column:"name=ComputedReplicas,type=integer,jsonpath=.status.computedReplicas"`
+	ComputedReplicas *int `json:"computedReplicas,omitempty"`
 
 	// ComputedWeight is the weight calculated from the rollout revision
 	ComputedWeight *int `json:"computedWeight,omitempty"`

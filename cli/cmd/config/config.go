@@ -22,8 +22,8 @@ func Config(app *cli.App) cli.Command {
 		app.Name+" config ls",
 		"")
 	return cli.Command{
-		Name:      "configs",
-		ShortName: "config",
+		Name:      "configmaps",
+		ShortName: "configmap",
 		Usage:     "Operations on configs",
 		Category:  "SUB COMMANDS",
 		Action:    clicontext.DefaultAction(ls.Action),

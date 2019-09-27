@@ -7,6 +7,7 @@ import (
 	"github.com/rancher/rio/pkg/features"
 	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/rio/types"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
@@ -23,9 +24,15 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		Controllers: []features.ControllerRegister{},
 		OnStart: func() error {
 			injector.RegisterInjector()
-
 			rContext.Rio.Rio().V1().Service().Enqueue("*", "*")
-			return nil
+
+			settings, err := rContext.Gloo.Gloo().V1().Settings().Get(rContext.Namespace, "default", metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			settings.Spec.Linkerd = true
+			_, err = rContext.Gloo.Gloo().V1().Settings().Update(settings)
+			return err
 		},
 	}
 	return feature.Register()

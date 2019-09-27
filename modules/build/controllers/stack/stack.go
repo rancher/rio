@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
+
 	webhookv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
 	"github.com/rancher/rio/modules/service/controllers/service/populate/rbac"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
@@ -13,6 +16,7 @@ import (
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
+	corev1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/name"
 	"github.com/rancher/wrangler/pkg/objectset"
@@ -42,6 +46,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		systemNamespace: rContext.Namespace,
 		appCache:        rContext.Rio.Rio().V1().App().Cache(),
 		info:            rContext.Global.Admin().V1().RioInfo().Cache(),
+		pods:            rContext.Core.Core().V1().Pod().Cache(),
 	}
 
 	c.Populator = p.populate
@@ -54,6 +59,7 @@ type populator struct {
 	systemNamespace string
 	appCache        riov1controller.AppCache
 	info            adminv1controller.RioInfoCache
+	pods            corev1controller.PodCache
 }
 
 func (p populator) populate(obj runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) error {
@@ -96,11 +102,25 @@ func (p populator) populateBuild(stack *riov1.Stack, systemNamespace string, os 
 	}
 	os.Add(sa)
 
-	info, err := p.info.Get("rio")
+	selector := labels.NewSelector()
+	r, err := labels.NewRequirement("app", selection.In, []string{constants.BuildkitdService})
 	if err != nil {
 		return err
 	}
-	rbacs := populateRbac(stack, sa.Name, p.systemNamespace, info.Status.BuildkitPodName, info.Status.SocatPodName)
+	selector.Add(*r)
+	pods, err := p.pods.List(p.systemNamespace, selector)
+	if err != nil {
+		return err
+	}
+	var pod corev1.Pod
+	for _, p := range pods {
+		if p.Status.Phase == corev1.PodRunning {
+			pod = *p
+			break
+		}
+	}
+
+	rbacs := populateRbac(stack, sa.Name, p.systemNamespace, pod.Name)
 	os.Add(rbacs...)
 
 	build := constructors.NewTaskRun(stack.Namespace, trName, tektonv1alpha1.TaskRun{
@@ -172,7 +192,7 @@ func (p populator) populateBuild(stack *riov1.Stack, systemNamespace string, os 
 	return nil
 }
 
-func populateRbac(stack *riov1.Stack, saName, systemNamespace, buildKitPodName, socatPodName string) []runtime.Object {
+func populateRbac(stack *riov1.Stack, saName, systemNamespace, buildKitPodName string) []runtime.Object {
 	role1 := rbac.NewRole(systemNamespace, fmt.Sprintf("%s-%s-stack", stack.Namespace, stack.Name), nil)
 	role1.Rules = []v1.PolicyRule{
 		{
@@ -183,7 +203,7 @@ func populateRbac(stack *riov1.Stack, saName, systemNamespace, buildKitPodName, 
 		{
 			APIGroups:     []string{""},
 			Resources:     []string{"pods/portforward"},
-			ResourceNames: []string{buildKitPodName, socatPodName},
+			ResourceNames: []string{buildKitPodName},
 			Verbs:         []string{"create", "get"},
 		},
 	}

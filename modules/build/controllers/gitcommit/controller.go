@@ -16,7 +16,6 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	h := Handler{
 		ctx:              ctx,
 		namespace:        rContext.Namespace,
-		appsCache:        rContext.Rio.Rio().V1().App().Cache(),
 		services:         rContext.Rio.Rio().V1().Service(),
 		stacks:           rContext.Rio.Rio().V1().Stack(),
 		gitWatcherCache:  rContext.Webhook.Gitwatcher().V1().GitWatcher().Cache(),

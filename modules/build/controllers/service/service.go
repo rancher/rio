@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/rancher/rio/pkg/randomtoken"
-
 	webhookv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
 	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/randomtoken"
 	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
 	corev1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/core/v1"
@@ -43,9 +43,8 @@ func Register(ctx context.Context, rContext *types.Context) error {
 
 	p := populator{
 		systemNamespace:    rContext.Namespace,
-		appCache:           rContext.Rio.Rio().V1().App().Cache(),
 		secretsCache:       rContext.Core.Core().V1().Secret().Cache(),
-		clusterDomainCache: rContext.Global.Admin().V1().ClusterDomain().Cache(),
+		clusterDomainCache: rContext.Admin.Admin().V1().ClusterDomain().Cache(),
 		serviceCache:       rContext.Rio.Rio().V1().Service().Cache(),
 		services:           rContext.Rio.Rio().V1().Service(),
 	}
@@ -159,7 +158,6 @@ func (p populator) populateBuild(service *riov1.Service, systemNamespace string,
 		})
 	}
 
-	hostpathType := corev1.HostPathDirectoryOrCreate
 	build := constructors.NewTaskRun(service.Namespace, trName, tektonv1alpha1.TaskRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
@@ -204,11 +202,16 @@ func (p populator) populateBuild(service *riov1.Service, systemNamespace string,
 						{
 							Name:        "buildkit-image",
 							Description: "The name of the BuildKit client (buildctl) image",
-							Default:     "moby/buildkit:master",
+							Default:     "moby/buildkit:v0.6.1",
 						},
 						{
 							Name:        "insecure-registry",
 							Description: "Whether to use insecure registry",
+						},
+						{
+							Name:        "buildkit-daemon-address",
+							Description: "The address of the BuildKit daemon (buildkitd) service",
+							Default:     fmt.Sprintf("tcp://%s.%s:8080", constants.BuildkitdService, systemNamespace),
 						},
 					},
 					Resources: []tektonv1alpha1.TaskResource{
@@ -218,33 +221,17 @@ func (p populator) populateBuild(service *riov1.Service, systemNamespace string,
 						},
 					},
 				},
-				Volumes: []corev1.Volume{
-					{
-						Name: "buildkit-cache",
-						VolumeSource: corev1.VolumeSource{
-							HostPath: &corev1.HostPathVolumeSource{
-								Path: fmt.Sprintf("/var/lib/buildkit/%s/runc-overlayfs/content", service.Namespace),
-								Type: &hostpathType,
-							},
-						},
-					},
-				},
 				Steps: []corev1.Container{
 					{
 						Name:       "build-and-push",
 						Image:      "${inputs.params.buildkit-image}",
-						Command:    []string{"buildctl-daemonless.sh"},
+						Command:    []string{"buildctl"},
 						WorkingDir: "/workspace/source",
 						SecurityContext: &corev1.SecurityContext{
 							Privileged: &[]bool{true}[0],
 						},
-						VolumeMounts: []corev1.VolumeMount{
-							{
-								Name:      "buildkit-cache",
-								MountPath: "/var/lib/buildkit/runc-overlayfs/content",
-							},
-						},
 						Args: []string{
+							"--addr=${inputs.params.buildkit-daemon-address}",
 							"build",
 							"--progress=plain",
 							"--frontend=dockerfile.v0",
@@ -260,7 +247,7 @@ func (p populator) populateBuild(service *riov1.Service, systemNamespace string,
 				Params: []tektonv1alpha1.Param{
 					{
 						Name:  "image",
-						Value: ImageName(systemNamespace, rev, service),
+						Value: ImageName(rev, service),
 					},
 					{
 						Name:  "insecure-registry",
@@ -361,8 +348,8 @@ func (p populator) setDefaults(service *riov1.Service) {
 	}
 }
 
-func ImageName(systemNs string, rev string, service *riov1.Service) string {
-	registry := fmt.Sprintf("registry.%s", systemNs)
+func ImageName(rev string, service *riov1.Service) string {
+	registry := constants.RegistryService
 	if service.Spec.Build.PushRegistry != "" {
 		registry = service.Spec.Build.PushRegistry
 	}

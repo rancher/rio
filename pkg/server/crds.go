@@ -67,7 +67,11 @@ func customColumn(obj interface{}) []v1beta1.CustomResourceColumnDefinition {
 	var r customResourceColumnDefinitionList
 	t := reflect.TypeOf(obj)
 	readCustomColumn(t, &r)
-	return r.list
+	return append(r.list, v1beta1.CustomResourceColumnDefinition{
+		Name:     "Age",
+		Type:     "date",
+		JSONPath: ".metadata.creationTimestamp",
+	})
 }
 
 func readCustomColumn(t reflect.Type, r *customResourceColumnDefinitionList) {

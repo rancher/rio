@@ -45,12 +45,6 @@ kubernetes:
       verbs:
       - '*'
     - apiGroups:
-      - "autoscale.rio.cattle.io"
-      resources:
-      - "*"
-      verbs:
-      - "*"
-    - apiGroups:
       - "build.knative.dev"
       - "caching.internal.knative.dev"
       resources:
@@ -491,25 +485,14 @@ kubernetes:
             name: rio-controller
             args:
             - rio-controller
+            {{- if .Values.RIO_DEBUG}}
+            - --debug
+            {{- end}}
             env:
             - name: RIO_NAMESPACE
               value: ${NAMESPACE}
-            - name: RIO_DEBUG
-              value: ${RIO_DEBUG}
-            - name: HTTPS_PORT
-              value: "${HTTPS_PORT}"
-            - name: HTTP_PORT
-              value: "${HTTP_PORT}"
-            - name: IP_ADDRESSES
-              value: ${IP_ADDRESSES}
-            - name: DISABLE_FEATURES
-              value: ${DISABLE_FEATURES}
             - name: HTTP_PROXY
               value: ${HTTP_PROXY}
-            - name: INSTALL_MODE
-              value: ${INSTALL_MODE}
-            - name: SM_MODE
-              value: ${SM_MODE}
             volumeMounts:
             - mountPath: /var/run/rio/ssl
               name: secret-auth-webhook
@@ -518,26 +501,8 @@ kubernetes:
 
 template:
   questions:
-  - variable: IMAGE
-    description: "rio-controller image"
   - variable: NAMESPACE
     description: "namespace to deploy to"
-  - variable: RIO_DEBUG
-    description: "set to true to enable debug logging"
-  - variable: HTTPS_PORT
-    description: "https port gateway will listen to"
-  - variable: HTTP_PORT
-    description: "http port gateway will listen to"
-  - variable: IP_ADDRESSES
-    description: "whether to manually specify ip addresses to generate"
-  - variable: SERVICE_CIDR
-    description: "manually specify service CIDR for service mesh to intercept"
-  - variable: DISABLE_FEATURES
-    description: "manually specify features to disable"
   - variable: HTTP_PROXY
     description: "specify http proxy setting"
-  - variable: INSTALL_MODE
-    description: "install mode"
-  - variable: SM_MODE
-    description: "service mesh mode"
   - variable: RUN_CONTROLLER

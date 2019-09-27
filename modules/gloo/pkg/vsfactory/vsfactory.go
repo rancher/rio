@@ -7,8 +7,15 @@ import (
 	soloapiv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	solov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/headers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+const (
+	rioNameHeader      = "X-Rio-ServiceName"
+	rioNamespaceHeader = "X-Rio-Namespace"
 )
 
 type VirtualServiceFactory struct {
@@ -114,4 +121,30 @@ func single(target target) *soloapiv1.Route_RouteAction {
 			},
 		},
 	}
+}
+
+func newRoutePlugin(targets ...target) *v1.RoutePlugins {
+	for _, t := range targets {
+		if t.ScaleIsZero {
+			return &v1.RoutePlugins{
+				HeaderManipulation: &headers.HeaderManipulation{
+					RequestHeadersToAdd: []*headers.HeaderValueOption{
+						{
+							Header: &headers.HeaderValue{
+								Key:   rioNameHeader,
+								Value: t.OriginalTarget.Name,
+							},
+						},
+						{
+							Header: &headers.HeaderValue{
+								Key:   rioNamespaceHeader,
+								Value: t.OriginalTarget.Namespace,
+							},
+						},
+					},
+				},
+			}
+		}
+	}
+	return nil
 }

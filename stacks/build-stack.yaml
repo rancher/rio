@@ -1,49 +1,36 @@
 configs:
-  config-logging:
-    content: |-
-      loglevel.controller: info
-        loglevel.creds-init: info
-        loglevel.git-init: info
-        loglevel.webhook: info
-        zap-logger-config: |
-          {
-            "level": "info",
-            "development": false,
-            "sampling": {
-              "initial": 100,
-              "thereafter": 100
-            },
-            "outputPaths": ["stdout"],
-            "errorOutputPaths": ["stderr"],
-            "encoding": "json",
-            "encoderConfig": {
-              "timeKey": "",
-              "levelKey": "level",
-              "nameKey": "logger",
-              "callerKey": "caller",
-              "messageKey": "msg",
-              "stacktraceKey": "stacktrace",
-              "lineEnding": "",
-              "levelEncoder": "",
-              "timeEncoder": "",
-              "durationEncoder": "",
-              "callerEncoder": ""
-            }
-          }
-  config-artifact-bucket:
-    {}
-  config-artifact-pvc:
-    {}
+  buildkitd-config:
+    buildkitd.toml: |
+      debug=true
+      [gc]
+        enabled=false
+      [worker.oci]
+        enabled=true
+        gc=false
+        gckeepstorage=1073741824
+      [grpc]
+        address = [ "tcp://0.0.0.0:8080" ]
+        # debugAddress is address for attaching go profiles and debuggers.
+        debugAddress = "0.0.0.0:6060"
 
 services:
-  registry:
-    image: registry:2
-    env:
-    - REGISTRY_HTTP_ADDR=0.0.0.0:80
+  buildkitd:
+    image: "moby/buildkit:v0.6.1"
     ports:
-    - 80:80/tcp,registry,internal=true
-    volumes:
-    - storage-registry:/var/lib/registry
+    - 8080/http,internal=true
+    securityContext:
+      privileged: true
+    configs:
+    - buildkitd-config:/etc/buildkit
+    containers:
+    - name: registry
+      image: "registry:2"
+      env:
+      - REGISTRY_HTTP_ADDR=0.0.0.0:80
+      ports:
+      - 80:80/tcp,registry,internal=true
+      volumes:
+      - storage-registry:/var/lib/registry,persistent
   webhook:
     global_permissions:
     - "* gitwatcher.cattle.io/gitwatchers"
@@ -61,205 +48,3 @@ services:
     imagePullPolicy: always
     ports:
     - 8090/http,http-webhook
-  build-controller:
-    global_permissions:
-    - '* pods'
-    - '* namespaces'
-    - '* secrets'
-    - '* events'
-    - '* serviceaccounts'
-    - '* configmaps'
-    - '* extensions/deployments'
-    - 'create,get,list,watch,patch,update,delete tekton.dev/*'
-    - '* apiextensions.k8s.io/customresourcedefinitions'
-    image: index.docker.io/rancher/controller-10a3e32792f33651396d02b6855a6e36@sha256:7eedd62fb41a51b63683c8c00ad15ad319e75af13d74168af637f046875381a4
-    configs:
-    - config-logging/content:/etc/config-logging
-    env:
-    - SYSTEM_NAMESPACE=${NAMESPACE}
-    args:
-    - -logtostderr
-    - -stderrthreshold
-    - INFO
-    - -kubeconfig-writer-image
-    - index.docker.io/rancher/kubeconfigwriter-3d37fea0b053ea82d66b7c0bae03dcb0@sha256:d81f3f833d19a66496892957fa1fe2bb44529ec62a7a6bb86aa66ca525535b17
-    - -creds-image
-    - index.docker.io/rancher/creds-init-c761f275af7b3d8bea9d50cc6cb0106f@sha256:e9c66fd7fd656b0275070c09761c7709d90b756202fcd1a4d0f3b766bb5acd31
-    - -git-image
-    - index.docker.io/rancher/git-init-4874978a9786b6625dd8b6ef2a21aa70@sha256:772b459f8fea6aea23cb40068c626cd45ac55ed6e1992c0bff2a312ee3d13a2a
-    - -nop-image
-    - index.docker.io/rancher/nop-8eac7c133edad5df719dc37b36b62482@sha256:c1ca221fccf9d9b408a8791393186b7997659623989dbafaf4baae5c3635aa99
-    - -bash-noop-image
-    - index.docker.io/rancher/bash-e1b682803c23c6bfb91968c476bcb2ec@sha256:843ea9a5f36d16ef056b7fd66f92ce2c7089f550cfedfa99e5131d647934a8fa
-    - -gsutil-image
-    - index.docker.io/rancher/gsutil-ade3fdebb791c88e47d4458ec641d9a2@sha256:51b3955fbabbb41ff416f442556ce0335c291b8bbf64997e1ed886d08889d979
-    - -entrypoint-image
-    - index.docker.io/rancher/entrypoint-bff0a22da108bc2f16c818c97641a296@sha256:ca31d2458e485e9a8b04f6b8b6cc7e72e6a4e8e529755095ed7e3832b948c95d
-    - -imagedigest-exporter-image
-    - index.docker.io/rancher/imagedigestexporter-6e7c518e6125f31761ebe0b96cc63971@sha256:fad414db6a91b884a2ac7571acfc84b218f1ce3972b3d1ad6f5d5cf0fdbee913
-
-
-kubernetes:
-  manifest: |-
-    ---
-    apiVersion: apiextensions.k8s.io/v1beta1
-    kind: CustomResourceDefinition
-    metadata:
-      name: clustertasks.tekton.dev
-    spec:
-      group: tekton.dev
-      names:
-        categories:
-        - all
-        - tekton-pipelines
-        kind: ClusterTask
-        plural: clustertasks
-      scope: Cluster
-      subresources:
-        status: {}
-      version: v1alpha1
-
-    ---
-    apiVersion: apiextensions.k8s.io/v1beta1
-    kind: CustomResourceDefinition
-    metadata:
-      name: images.caching.internal.knative.dev
-    spec:
-      group: caching.internal.knative.dev
-      names:
-        categories:
-        - all
-        - knative-internal
-        - caching
-        kind: Image
-        plural: images
-        shortNames:
-        - img
-        singular: image
-      scope: Namespaced
-      subresources:
-        status: {}
-      version: v1alpha1
-
-    ---
-    apiVersion: apiextensions.k8s.io/v1beta1
-    kind: CustomResourceDefinition
-    metadata:
-      name: pipelines.tekton.dev
-    spec:
-      group: tekton.dev
-      names:
-        categories:
-        - all
-        - tekton-pipelines
-        kind: Pipeline
-        plural: pipelines
-      scope: Namespaced
-      subresources:
-        status: {}
-      version: v1alpha1
-
-    ---
-    apiVersion: apiextensions.k8s.io/v1beta1
-    kind: CustomResourceDefinition
-    metadata:
-      name: pipelineruns.tekton.dev
-    spec:
-      additionalPrinterColumns:
-      - JSONPath: .status.conditions[?(@.type=="Succeeded")].status
-        name: Succeeded
-        type: string
-      - JSONPath: .status.conditions[?(@.type=="Succeeded")].reason
-        name: Reason
-        type: string
-      - JSONPath: .status.startTime
-        name: StartTime
-        type: date
-      - JSONPath: .status.completionTime
-        name: CompletionTime
-        type: date
-      group: tekton.dev
-      names:
-        categories:
-        - all
-        - tekton-pipelines
-        kind: PipelineRun
-        plural: pipelineruns
-        shortNames:
-        - pr
-        - prs
-      scope: Namespaced
-      subresources:
-        status: {}
-      version: v1alpha1
-
-    ---
-    apiVersion: apiextensions.k8s.io/v1beta1
-    kind: CustomResourceDefinition
-    metadata:
-      name: pipelineresources.tekton.dev
-    spec:
-      group: tekton.dev
-      names:
-        categories:
-        - all
-        - tekton-pipelines
-        kind: PipelineResource
-        plural: pipelineresources
-      scope: Namespaced
-      subresources:
-        status: {}
-      version: v1alpha1
-
-    ---
-    apiVersion: apiextensions.k8s.io/v1beta1
-    kind: CustomResourceDefinition
-    metadata:
-      name: tasks.tekton.dev
-    spec:
-      group: tekton.dev
-      names:
-        categories:
-        - all
-        - tekton-pipelines
-        kind: Task
-        plural: tasks
-      scope: Namespaced
-      subresources:
-        status: {}
-      version: v1alpha1
-
-    ---
-    apiVersion: apiextensions.k8s.io/v1beta1
-    kind: CustomResourceDefinition
-    metadata:
-      name: taskruns.tekton.dev
-    spec:
-      additionalPrinterColumns:
-      - JSONPath: .status.conditions[?(@.type=="Succeeded")].status
-        name: Succeeded
-        type: string
-      - JSONPath: .status.conditions[?(@.type=="Succeeded")].reason
-        name: Reason
-        type: string
-      - JSONPath: .status.startTime
-        name: StartTime
-        type: date
-      - JSONPath: .status.completionTime
-        name: CompletionTime
-        type: date
-      group: tekton.dev
-      names:
-        categories:
-        - all
-        - tekton-pipelines
-        kind: TaskRun
-        plural: taskruns
-        shortNames:
-        - tr
-        - trs
-      scope: Namespaced
-      subresources:
-        status: {}
-      version: v1alpha1
-    ---

@@ -4,11 +4,9 @@ import (
 	"os"
 
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
-	autoscalev1 "github.com/rancher/rio/pkg/apis/autoscale.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	controllergen "github.com/rancher/wrangler/pkg/controller-gen"
 	"github.com/rancher/wrangler/pkg/controller-gen/args"
-
 	solov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 )
@@ -31,12 +29,6 @@ func main() {
 				},
 				GenerateTypes: true,
 			},
-			"autoscale.rio.cattle.io": {
-				Types: []interface{}{
-					autoscalev1.ServiceScaleRecommendation{},
-				},
-				GenerateTypes: true,
-			},
 			"rio.cattle.io": {
 				Types: []interface{}{
 					riov1.ExternalService{},
@@ -50,7 +42,6 @@ func main() {
 				Types: []interface{}{
 					solov1.VirtualService{},
 				},
-				//GenerateTypes: true,
 				ClientSetPackage: "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/clientset/versioned",
 				InformersPackage: "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/informers/externalversions",
 				ListersPackage:   "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/listers",
@@ -59,7 +50,6 @@ func main() {
 				Types: []interface{}{
 					gloov1.Settings{},
 				},
-				//GenerateTypes: true,
 				ClientSetPackage: "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/client/clientset/versioned",
 				InformersPackage: "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/client/informers/externalversions",
 				ListersPackage:   "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/client/listers",

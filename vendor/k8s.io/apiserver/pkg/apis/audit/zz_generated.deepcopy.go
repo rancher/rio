@@ -94,11 +94,7 @@ func (in *Event) DeepCopyObject() runtime.Object {
 func (in *EventList) DeepCopyInto(out *EventList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-<<<<<<< HEAD
 	in.ListMeta.DeepCopyInto(&out.ListMeta)
-=======
-	out.ListMeta = in.ListMeta
->>>>>>> 4e1125d8... Go module changes
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Event, len(*in))
@@ -231,11 +227,7 @@ func (in *Policy) DeepCopyObject() runtime.Object {
 func (in *PolicyList) DeepCopyInto(out *PolicyList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-<<<<<<< HEAD
 	in.ListMeta.DeepCopyInto(&out.ListMeta)
-=======
-	out.ListMeta = in.ListMeta
->>>>>>> 4e1125d8... Go module changes
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Policy, len(*in))

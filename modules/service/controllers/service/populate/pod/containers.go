@@ -119,6 +119,7 @@ func normalizeVolumes(containerName string, volumes []riov1.Volume) (result []ri
 			}
 			volume.Name = fmt.Sprintf("%s-%d", containerName, i)
 		}
+
 		if volume.HostPath != "" {
 			volume.Name = "host-" + name.Hex(volume.HostPath, 8)
 		}

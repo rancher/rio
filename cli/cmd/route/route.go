@@ -9,17 +9,17 @@ import (
 
 func Route(app *cli.App) cli.Command {
 	ls := builder.Command(&Ls{},
-		"List routes",
-		app.Name+" route ls",
+		"List router",
+		app.Name+" router ls",
 		"")
 	create := builder.Command(&Create{},
-		"Create a route at the end",
-		app.Name+" route create/add MATCH ACTION [TARGET...]",
-		"To append a rule at the end, run `rio route add [$NAMESPACE/]$ROUTE_NAME to|redirect|mirror|rewrite [$NAMESPACE/]$SERVICE_NAME")
+		"Create a router at the end",
+		app.Name+" router create/add MATCH ACTION [TARGET...]",
+		"To append a rule at the end, run `rio router add [$NAMESPACE/]$ROUTE_NAME to|redirect|mirror|rewrite [$NAMESPACE/]$SERVICE_NAME")
 	create.Aliases = []string{"add"}
 	return cli.Command{
-		Name:      "routes",
-		ShortName: "route",
+		Name:      "routers",
+		ShortName: "router",
 		Usage:     "Route traffic across the mesh",
 		Action:    clicontext.DefaultAction(ls.Action),
 		Flags:     table.WriterFlags(),

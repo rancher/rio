@@ -46,7 +46,7 @@ require (
 	github.com/drone/envsubst v0.0.0-20171016184023-f4d1a8ef8670
 	github.com/envoyproxy/go-control-plane v0.8.7-0.20190906190023-ba541bc36302 // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.1.0 // indirect
-	github.com/gdamore/tcell v0.0.0-20190319073105-ec71b09872d7
+	github.com/gdamore/tcell v0.0.0-20190319073105-ec71b09872d7 // indirect
 	github.com/go-bindata/go-bindata v3.1.2+incompatible
 	github.com/gogo/googleapis v1.2.0 // indirect
 	github.com/gogo/protobuf v1.3.0
@@ -72,14 +72,14 @@ require (
 	github.com/prometheus/common v0.6.0 // indirect
 	github.com/prometheus/procfs v0.0.3 // indirect
 	github.com/radovskyb/watcher v1.0.7 // indirect
-	github.com/rancher/axe v0.0.0-20190531011056-59fcf8b44147
+	github.com/rancher/axe v0.0.0-20190531011056-59fcf8b44147 // indirect
 	github.com/rancher/gitwatcher v0.4.2-0.20191015052408-00ce0a8a61c1
 	github.com/rancher/mapper v0.0.0-20190814232720-058a8b7feb99
 	github.com/rancher/norman v0.0.0-20191015045353-cc004d32fcc9
 	github.com/rancher/rdns-server v0.5.7-0.20190927164127-7128efe7d065
 	github.com/rancher/wrangler v0.2.1-0.20191015042916-f2a6ecca4f20
 	github.com/rancher/wrangler-api v0.2.1-0.20191015045805-d3635aa0853a
-	github.com/rivo/tview v0.0.0-20190319111340-8d5eba0c2f51
+	github.com/rivo/tview v0.0.0-20190319111340-8d5eba0c2f51 // indirect
 	github.com/rivo/uniseg v0.0.0-20190313204849-f699dde9c340 // indirect
 	github.com/sclevine/spec v1.3.0
 	github.com/sirupsen/logrus v1.4.2
@@ -91,8 +91,7 @@ require (
 	github.com/urfave/cli v1.22.1
 	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
-	golang.org/x/tools v0.0.0-20190907020128-2ca718005c18
-	google.golang.org/grpc v1.23.1
+	google.golang.org/grpc v1.23.1 // indirect
 	gopkg.in/yaml.v2 v2.2.2
 	gotest.tools v2.2.0+incompatible
 	k8s.io/api v0.0.0-20190918195907-bd6ac527cfd2

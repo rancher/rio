@@ -21,7 +21,11 @@ import (
 
 var (
 	idsHeader = [][]string{
-		{"Name", "Name"},
+		{"NAME", "NAME"},
+	}
+
+	nsHeader = [][]string{
+		{"NAMESPACE", "NAMESPACE"},
 	}
 
 	localFuncMap = map[string]interface{}{
@@ -60,6 +64,7 @@ type FormatFunc interface{}
 
 type WriterConfig interface {
 	IDs() bool
+	AllNamespaceSet() bool
 	Quiet() bool
 	Format() string
 	Writer() io.Writer
@@ -69,6 +74,10 @@ type WriterConfig interface {
 func NewWriter(values [][]string, config WriterConfig) Writer {
 	if config.IDs() {
 		values = append(idsHeader, values...)
+	}
+
+	if config.AllNamespaceSet() {
+		values = append(nsHeader, values...)
 	}
 
 	funcMap := sprig.TxtFuncMap()

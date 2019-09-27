@@ -8,14 +8,14 @@ import (
 	"github.com/urfave/cli"
 )
 
-type Ls struct {
+type History struct {
 }
 
-func (l *Ls) Customize(cmd *cli.Command) {
+func (h *History) Customize(cmd *cli.Command) {
 	cmd.Flags = append(table.WriterFlags(), cmd.Flags...)
 }
 
-func (l Ls) Run(ctx *clicontext.CLIContext) error {
+func (h History) Run(ctx *clicontext.CLIContext) error {
 	objs, err := ctx.List(types.BuildType)
 	if err != nil {
 		return err
