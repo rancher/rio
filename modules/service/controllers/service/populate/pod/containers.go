@@ -9,6 +9,7 @@ import (
 
 	"github.com/rancher/rio/modules/service/controllers/service/populate/serviceports"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -131,8 +132,12 @@ func volumeMount(name string, volumes []riov1.Volume) (result []v1.VolumeMount) 
 		if volume.Name == "" {
 			volume.Name = strconv.Itoa(i)
 		}
+		name := fmt.Sprintf("%s-%s", name, volume.Name)
+		if strings.HasPrefix(volume.Name, "pv") && constants.DefaultStorageClass {
+			name = volume.Name
+		}
 		mount := v1.VolumeMount{
-			Name:      fmt.Sprintf("%s-%s", name, volume.Name),
+			Name:      name,
 			MountPath: volume.Path,
 		}
 		result = append(result, mount)

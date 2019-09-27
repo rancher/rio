@@ -12,6 +12,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/localbuilder"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/stack"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -104,8 +105,7 @@ func (u *Up) Run(c *clicontext.CLIContext) error {
 	}
 
 	if len(imageBuilds) > 0 {
-		pushLocal := os.Getenv("PUSH_LOCAL") == "TRUE"
-		localBuilder, err := localbuilder.NewLocalBuilder(c.Ctx, c.BuildkitPodName, c.SocatPodName, c.SystemNamespace, pushLocal, c.Apply, c.K8s)
+		localBuilder, err := localbuilder.NewLocalBuilder(c.Ctx, c.SystemNamespace, c.Apply, c.K8s)
 		if err != nil {
 			return err
 		}
@@ -115,7 +115,7 @@ func (u *Up) Run(c *clicontext.CLIContext) error {
 			return err
 		}
 		for k, i := range images {
-			localRegsitry := fmt.Sprintf("registry.%s", c.SystemNamespace)
+			localRegsitry := constants.RegistryService
 			if strings.HasPrefix(i, localRegsitry) {
 				images[k] = strings.Replace(i, localRegsitry, "localhost:5442", -1)
 			}

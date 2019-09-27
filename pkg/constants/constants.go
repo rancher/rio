@@ -23,6 +23,9 @@ const (
 	FeatureGateway      = "gateway"
 	FeatureLetsencrypts = "letsencrypt"
 	FeatureAutoscaling  = "autoscaling"
+
+	RegistryService  = "localhost:80"
+	BuildkitdService = "buildkitd"
 )
 
 var (
@@ -76,4 +79,7 @@ var (
 
 	AcmeVersion = "cm-acme"
 	InstallUUID = ""
+
+	DefaultStorageClass = false
+	RegistryStorageSize = "20Gi"
 )

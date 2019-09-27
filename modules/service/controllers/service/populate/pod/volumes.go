@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -73,6 +75,17 @@ func volumes(service *riov1.Service) (result []v1.Volume) {
 		if volume.Name == "" {
 			volume.Name = strconv.Itoa(index)
 			index++
+		}
+		if strings.HasPrefix(volume.Name, "pv-") && constants.DefaultStorageClass {
+			result = append(result, v1.Volume{
+				Name: volume.Name,
+				VolumeSource: v1.VolumeSource{
+					PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+						ClaimName: volume.Name,
+					},
+				},
+			})
+			continue
 		}
 		result = append(result, v1.Volume{
 			Name: fmt.Sprintf("emptydir-%s", volume.Name),

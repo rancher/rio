@@ -34,16 +34,38 @@ configs:
     {}
   config-artifact-pvc:
     {}
+  buildkitd-config:
+    buildkitd.toml: |
+      debug=true
+      [gc]
+        enabled=false
+      [worker.oci]
+        enabled=true
+        gc=false
+        gckeepstorage=1073741824
+      [grpc]
+        address = [ "tcp://0.0.0.0:8080" ]
+        # debugAddress is address for attaching go profiles and debuggers.
+        debugAddress = "0.0.0.0:6060"
 
 services:
-  registry:
-    image: registry:2
-    env:
-    - REGISTRY_HTTP_ADDR=0.0.0.0:80
+  buildkitd:
+    image: "moby/buildkit:v0.6.1"
     ports:
-    - 80:80/tcp,registry,internal=true
-    volumes:
-    - storage-registry:/var/lib/registry
+    - 8080/http,internal=true
+    securityContext:
+      privileged: true
+    configs:
+    - buildkitd-config:/etc/buildkit
+    containers:
+    - name: registry
+      image: "registry:2"
+      env:
+      - REGISTRY_HTTP_ADDR=0.0.0.0:80
+      ports:
+      - 80:80/tcp,registry,internal=true
+      volumes:
+      - pv-storage-registry:/var/lib/registry
   webhook:
     global_permissions:
     - "* gitwatcher.cattle.io/gitwatchers"

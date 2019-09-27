@@ -12,10 +12,22 @@ import (
 	corev1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/pkg/objectset"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
+	scs, err := rContext.Storage.Storage().V1().StorageClass().List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	for _, sc := range scs.Items {
+		if sc.Annotations["storageclass.kubernetes.io/is-default-class"] == "true" {
+			constants.DefaultStorageClass = true
+			break
+		}
+	}
+
 	c := stackobject.NewGeneratingController(ctx, rContext, "stack-service", rContext.Rio.Rio().V1().Service())
 	c.Apply = c.Apply.WithCacheTypes(
 		rContext.Build.Tekton().V1alpha1().TaskRun(),
@@ -28,6 +40,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		rContext.Core.Core().V1().ServiceAccount(),
 		rContext.Core.Core().V1().Service(),
 		rContext.Core.Core().V1().Secret(),
+		rContext.Core.Core().V1().PersistentVolumeClaim(),
 		rContext.AutoScale.Autoscale().V1().ServiceScaleRecommendation(),
 		rContext.Webhook.Gitwatcher().V1().GitWatcher()).
 		WithRateLimiting(5).

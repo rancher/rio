@@ -48,9 +48,6 @@ type Config struct {
 	Writer   io.Writer
 
 	DebugLevel string
-
-	BuildkitPodName string
-	SocatPodName    string
 }
 
 func (c *Config) Validate() error {
@@ -115,8 +112,6 @@ func (c *Config) Validate() error {
 		}
 	} else {
 		c.SystemNamespace = info.Status.SystemNamespace
-		c.BuildkitPodName = info.Status.BuildkitPodName
-		c.SocatPodName = info.Status.SocatPodName
 	}
 
 	if c.DefaultNamespace == c.SystemNamespace {

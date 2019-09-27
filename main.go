@@ -20,6 +20,7 @@ import (
 	"github.com/rancher/wrangler/pkg/signals"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/klog"
 )
 
