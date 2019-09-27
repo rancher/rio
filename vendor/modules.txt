@@ -425,7 +425,7 @@ github.com/rancher/mapper/builder
 github.com/rancher/mapper/definition
 github.com/rancher/mapper/values
 github.com/rancher/mapper/httperror
-# github.com/rancher/rdns-server v0.4.2
+# github.com/rancher/rdns-server v0.5.7-0.20190927164127-7128efe7d065
 github.com/rancher/rdns-server/client
 github.com/rancher/rdns-server/model
 # github.com/rancher/wrangler v0.2.0
@@ -516,7 +516,7 @@ github.com/tonistiigi/fsutil
 github.com/tonistiigi/units
 # github.com/urfave/cli v1.20.1-0.20190203184040-693af58b4d51
 github.com/urfave/cli
-# golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
+# golang.org/x/crypto v0.0.0-20190618222545-ea8f1a30c443
 golang.org/x/crypto/ssh/terminal
 golang.org/x/crypto/scrypt
 golang.org/x/crypto/ssh
@@ -650,7 +650,6 @@ k8s.io/api/batch/v1beta1
 k8s.io/api/batch/v2alpha1
 k8s.io/api/rbac/v1beta1
 k8s.io/api/scheduling/v1beta1
-k8s.io/api/networking/v1beta1
 k8s.io/api/admission/v1beta1
 k8s.io/api/admissionregistration/v1beta1
 k8s.io/api/apps/v1beta2
@@ -671,6 +670,7 @@ k8s.io/api/autoscaling/v2beta2
 k8s.io/api/coordination/v1
 k8s.io/api/coordination/v1beta1
 k8s.io/api/events/v1beta1
+k8s.io/api/networking/v1beta1
 k8s.io/api/node/v1alpha1
 k8s.io/api/node/v1beta1
 k8s.io/api/scheduling/v1

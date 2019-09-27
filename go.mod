@@ -63,12 +63,11 @@ require (
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/opencontainers/runc v1.0.1-0.20190307181833-2b18fe1d885e // indirect
-	github.com/opentracing/opentracing-go v1.0.2 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/rancher/axe v0.0.0-20190531011056-59fcf8b44147
 	github.com/rancher/gitwatcher v0.4.1
 	github.com/rancher/mapper v0.0.0-20190814232720-058a8b7feb99
-	github.com/rancher/rdns-server v0.4.2
+	github.com/rancher/rdns-server v0.5.7-0.20190927164127-7128efe7d065
 	github.com/rancher/wrangler v0.2.0
 	github.com/rancher/wrangler-api v0.2.1-0.20190927043440-45392ea2688b
 	github.com/rivo/tview v0.0.0-20190319111340-8d5eba0c2f51
@@ -79,9 +78,8 @@ require (
 	github.com/tektoncd/pipeline v0.4.0
 	github.com/urfave/cli v1.20.1-0.20190203184040-693af58b4d51
 	go.uber.org/atomic v1.4.0 // indirect
-	go.uber.org/multierr v1.1.0 // indirect
 	go.uber.org/zap v1.10.0 // indirect
-	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
+	golang.org/x/crypto v0.0.0-20190618222545-ea8f1a30c443
 	golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297 // indirect
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45 // indirect
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58

@@ -11,8 +11,9 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/pkg/errors"
 	"github.com/rancher/rdns-server/model"
+
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	k8scorev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -23,6 +24,7 @@ const (
 	contentType     = "Content-Type"
 	jsonContentType = "application/json"
 	secretKey       = "rdns-token"
+	cnamePath = "/cname"
 )
 
 func jsonBody(payload interface{}) (io.Reader, error) {
@@ -40,6 +42,7 @@ type SecretLister interface {
 
 type SecretCreator interface {
 	Create(*k8scorev1.Secret) (*k8scorev1.Secret, error)
+	Update(*k8scorev1.Secret) (*k8scorev1.Secret, error)
 }
 
 type Client struct {
@@ -72,51 +75,51 @@ func (c *Client) do(req *http.Request) (model.Response, error) {
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return data, errors.Wrap(err, "Read response body error")
+		return data, errors.Wrap(err, "read response body error")
 	}
 
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		return data, errors.Wrapf(err, "Decode response error: %s", string(body))
+		return data, errors.Wrapf(err, "decode response error: %s", string(body))
 	}
-	logrus.Debugf("Got response entry: %+v", data)
+	logrus.Debugf("got response entry: %+v", data)
 	if code := resp.StatusCode; code < 200 || code > 300 {
 		if data.Message != "" {
-			return data, errors.Errorf("Got request error: %s", data.Message)
+			return data, errors.Errorf("got request error: %s", data.Message)
 		}
 	}
 
 	return data, nil
 }
 
-func (c *Client) ApplyDomain(hosts []string, subDomain map[string][]string) (bool, string, error) {
+func (c *Client) ApplyDomain(hosts []string, subDomain map[string][]string, cname bool) (bool, string, error) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
-	d, err := c.GetDomain()
+	d, err := c.GetDomain(cname)
 	if err != nil {
 		return false, "", err
 	}
 
 	if d == nil {
-		logrus.Debugf("Fqdn configuration does not exist, need to create a new one")
-		fqdn, err := c.CreateDomain(hosts)
+		logrus.Debugf("fqdn configuration does not exist, need to create a new one")
+		fqdn, err := c.CreateDomain(hosts, cname)
 		return true, fqdn, err
 	}
 
 	sort.Strings(d.Hosts)
 	sort.Strings(hosts)
 	if !reflect.DeepEqual(d.Hosts, hosts) || !reflect.DeepEqual(d.SubDomain, subDomain) {
-		logrus.Debugf("Fqdn %s or Subdomains %+v has some changes, need to update", d.Fqdn, d.SubDomain)
-		fqdn, err := c.UpdateDomain(hosts, subDomain)
+		logrus.Debugf("fqdn %s or subdomains %+v has some changes, need to update", d.Fqdn, d.SubDomain)
+		fqdn, err := c.UpdateDomain(hosts, subDomain, cname)
 		return false, fqdn, err
 	}
-	logrus.Debugf("Fqdn %s has no changes, no need to update", d.Fqdn)
+	logrus.Debugf("fqdn %s has no changes, no need to update", d.Fqdn)
 	fqdn, _, _ := c.getSecret()
 
 	return false, fqdn, nil
 }
 
-func (c *Client) GetDomain() (d *model.Domain, err error) {
+func (c *Client) GetDomain(cname bool) (d *model.Domain, err error) {
 	fqdn, token, err := c.getSecret()
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
@@ -125,7 +128,11 @@ func (c *Client) GetDomain() (d *model.Domain, err error) {
 		return nil, errors.Wrap(err, "GetDomain: failed to get stored secret")
 	}
 
-	url := buildURL(c.base, "/"+fqdn, "")
+	path := ""
+	if cname {
+		path = cnamePath
+	}
+	url := buildURL(c.base, "/"+fqdn, path)
 	req, err := c.request(http.MethodGet, url, nil)
 	if err != nil {
 		return d, errors.Wrap(err, "GetDomain: failed to build a request")
@@ -138,14 +145,26 @@ func (c *Client) GetDomain() (d *model.Domain, err error) {
 		return d, errors.Wrap(err, "GetDomain: failed to execute a request")
 	}
 
+	if o.Data.Fqdn == "" {
+		return nil, nil
+	}
+
 	return &o.Data, nil
 }
 
-func (c *Client) CreateDomain(hosts []string) (string, error) {
+func (c *Client) CreateDomain(hosts []string, cname bool) (string, error) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
-	url := buildURL(c.base, "", "")
-	body, err := jsonBody(&model.DomainOptions{Hosts: hosts})
+	path := ""
+	options := &model.DomainOptions{}
+	if cname {
+		options.CNAME = hosts[0]
+		path = cnamePath
+	} else {
+		options.Hosts = hosts
+	}
+	url := buildURL(c.base, "", path)
+	body, err := jsonBody(options)
 	if err != nil {
 		return "", err
 	}
@@ -160,21 +179,14 @@ func (c *Client) CreateDomain(hosts []string) (string, error) {
 		return "", errors.Wrap(err, "CreateDomain: failed to execute a request")
 	}
 
-	//to find token in management cluster namespace
-	if _, _, err = c.getSecret(); err != nil {
-		if !k8serrors.IsNotFound(err) {
-			return "", err
-		}
-		//if token not found, create a new one
-		if err = c.setSecret(&resp); err != nil {
-			return "", err
-		}
+	if err = c.setSecret(&resp); err != nil {
+		return "", err
 	}
 
 	return resp.Data.Fqdn, err
 }
 
-func (c *Client) UpdateDomain(hosts []string, subDomain map[string][]string) (string, error) {
+func (c *Client) UpdateDomain(hosts []string, subDomain map[string][]string, cname bool) (string, error) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
@@ -183,8 +195,19 @@ func (c *Client) UpdateDomain(hosts []string, subDomain map[string][]string) (st
 		return "", errors.Wrap(err, "UpdateDomain: failed to get stored secret")
 	}
 
-	url := buildURL(c.base, "/"+fqdn, "")
-	body, err := jsonBody(&model.DomainOptions{Hosts: hosts, SubDomain: subDomain})
+	path := ""
+	options := &model.DomainOptions{
+		SubDomain: subDomain,
+	}
+	if cname {
+		options.CNAME = hosts[0]
+		path = cnamePath
+	} else {
+		options.Hosts = hosts
+	}
+	
+	url := buildURL(c.base, "/"+fqdn, path)
+	body, err := jsonBody(options)
 	if err != nil {
 		return "", err
 	}
@@ -263,7 +286,7 @@ func (c *Client) SetBaseURL(base string) {
 }
 
 func (c *Client) setSecret(resp *model.Response) error {
-	_, err := c.secrets.Create(&k8scorev1.Secret{
+	s := &k8scorev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretKey,
 			Namespace: c.clusterName,
@@ -273,12 +296,18 @@ func (c *Client) setSecret(resp *model.Response) error {
 			"token": resp.Token,
 			"fqdn":  resp.Data.Fqdn,
 		},
-	})
-	if err != nil {
-		if k8serrors.IsAlreadyExists(err) {
-			return nil
-		}
+	}
+	_, err := c.secrets.Create(s)
+
+	if err != nil && !k8serrors.IsAlreadyExists(err) {
 		return err
+	}
+
+	if err != nil && k8serrors.IsAlreadyExists(err) {
+		if _, err := c.secrets.Update(s); err != nil {
+			return err
+		}
+		return nil
 	}
 
 	return nil
