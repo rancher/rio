@@ -91,7 +91,13 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			rContext.K8sNetworking.Extensions().V1beta1().Ingress().OnChange(ctx, "ingress-endpoints", h.syncIngress)
 		}
 	} else {
-		addresses := strings.Split(constants.UseIPAddress, ",")
+		ips := strings.Split(constants.UseIPAddress, ",")
+		var addresses []adminv1.Address
+		for _, ip := range ips {
+			addresses = append(addresses, adminv1.Address{
+				IP: ip,
+			})
+		}
 		if err := h.updateClusterDomain(addresses); err != nil {
 			return err
 		}
@@ -159,7 +165,7 @@ func (h handler) syncClusterIngress(key string, obj *adminv1.ClusterDomain) (*ad
 	return obj, h.apply.Apply(os)
 }
 
-func (h handler) updateClusterDomain(addresses []string) error {
+func (h handler) updateClusterDomain(addresses []adminv1.Address) error {
 	clusterDomain, err := h.clusterDomain.Cache().Get(h.namespace, constants.ClusterDomainName)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
@@ -174,8 +180,8 @@ func (h handler) updateClusterDomain(addresses []string) error {
 
 	deepcopy := clusterDomain.DeepCopy()
 	var address []adminv1.Address
-	for _, ip := range addresses {
-		address = append(address, adminv1.Address{IP: ip})
+	for _, addr := range addresses {
+		address = append(address, addr)
 	}
 	if !reflect.DeepEqual(deepcopy.Spec.Addresses, address) {
 		logrus.Infof("Updating cluster domain to address %v", addresses)
@@ -198,15 +204,27 @@ func (h handler) syncServiceLoadbalancer(key string, obj *v1.Service) (*v1.Servi
 		return obj, nil
 	}
 
-	var address []string
+	var addresses []adminv1.Address
 	for _, ingress := range obj.Status.LoadBalancer.Ingress {
-		if ingress.Hostname == "localhost" {
-			ingress.IP = "127.0.0.1"
+		if ingress.IP != "" {
+			addresses = append(addresses, adminv1.Address{
+				IP: ingress.IP,
+			})
 		}
-		address = append(address, ingress.IP)
+		if ingress.Hostname != "" {
+			if ingress.Hostname == "localhost" {
+				addresses = append(addresses, adminv1.Address{
+					IP: "127.0.0.1",
+				})
+			} else {
+				addresses = append(addresses, adminv1.Address{
+					Hostname: ingress.Hostname,
+				})
+			}
+		}
 	}
 
-	if err := h.updateClusterDomain(address); err != nil {
+	if err := h.updateClusterDomain(addresses); err != nil {
 		return obj, err
 	}
 	return obj, nil
@@ -220,7 +238,7 @@ func (h handler) syncEndpoint(key string, endpoint *v1.Endpoints) (*v1.Endpoints
 		return endpoint, nil
 	}
 
-	var ips []string
+	var addresses []adminv1.Address
 	for _, subset := range endpoint.Subsets {
 		for _, addr := range subset.Addresses {
 			if addr.NodeName == nil {
@@ -234,11 +252,13 @@ func (h handler) syncEndpoint(key string, endpoint *v1.Endpoints) (*v1.Endpoints
 
 			nodeIP := getNodeIP(node)
 			if nodeIP != "" {
-				ips = append(ips, nodeIP)
+				addresses = append(addresses, adminv1.Address{
+					IP: nodeIP,
+				})
 			}
 		}
 	}
-	if err := h.updateClusterDomain(ips); err != nil {
+	if err := h.updateClusterDomain(addresses); err != nil {
 		return endpoint, err
 	}
 	return endpoint, nil
@@ -262,13 +282,20 @@ func (h handler) syncIngress(key string, ingress *extensionv1beta1.Ingress) (*ex
 	}
 
 	if ingress.Namespace == h.namespace && ingress.Name == constants.ClusterIngressName {
-		var ips []string
-		for _, ip := range ingress.Status.LoadBalancer.Ingress {
-			if ip.IP != "" {
-				ips = append(ips, ip.IP)
+		var addresses []adminv1.Address
+		for _, ingress := range ingress.Status.LoadBalancer.Ingress {
+			if ingress.IP != "" {
+				addresses = append(addresses, adminv1.Address{
+					IP: ingress.IP,
+				})
+			}
+			if ingress.Hostname != "" {
+				addresses = append(addresses, adminv1.Address{
+					Hostname: ingress.Hostname,
+				})
 			}
 		}
-		return ingress, h.updateClusterDomain(ips)
+		return ingress, h.updateClusterDomain(addresses)
 	}
 	return ingress, nil
 }

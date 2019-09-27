@@ -13,6 +13,7 @@ import (
 	"github.com/rancher/wrangler/pkg/ticker"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 type Controller struct {
@@ -58,18 +59,21 @@ func (g *Controller) onChange(key string, obj *projectv1.ClusterDomain) (*projec
 }
 
 func (g *Controller) getDomain(obj *projectv1.ClusterDomain) (string, error) {
-	var ips []string
+	var hosts []string
+	var cname bool
+
 	for _, addr := range obj.Spec.Addresses {
+		if addr.Hostname != "" {
+			cname = true
+			hosts = append(hosts, addr.Hostname)
+			break
+		}
 		if addr.IP != "" {
-			ips = append(ips, addr.IP)
+			hosts = append(hosts, addr.IP)
 		}
 	}
 
-	if len(ips) == 0 {
-		return "", nil
-	}
-
-	if err := g.ensureDomainExists(ips); err != nil {
+	if err := g.ensureDomainExists(hosts, cname); err != nil {
 		return "", err
 	}
 
@@ -83,22 +87,27 @@ func (g *Controller) getDomain(obj *projectv1.ClusterDomain) (string, error) {
 		}
 	}
 
-	return g.rdnsClient.UpdateDomain(ips, subDomains)
+	return g.rdnsClient.UpdateDomain(hosts, subDomains, cname)
 }
 
-func (g *Controller) ensureDomainExists(ips []string) error {
-	domain, err := g.rdnsClient.GetDomain()
+func (g *Controller) ensureDomainExists(hosts []string, cname bool) error {
+	domain, err := g.rdnsClient.GetDomain(cname)
 	if err != nil || domain != nil {
 		return err
 	}
 
-	if _, err := g.rdnsClient.CreateDomain(ips); err != nil {
+	if _, err := g.rdnsClient.CreateDomain(hosts, cname); err != nil {
 		return err
 	}
 
-	if domain, err = g.rdnsClient.GetDomain(); err != nil {
-		return err
-	}
+	ctx, cancel := context.WithTimeout(g.ctx, time.Second*5)
+	defer cancel()
+	wait.JitterUntil(func() {
+		domain, err = g.rdnsClient.GetDomain(cname)
+		if err != nil {
+			logrus.Debug("failed to get domain")
+		}
+	}, time.Second, 1.3, true, ctx.Done())
 
 	if domain == nil {
 		return fmt.Errorf("failed to create domain")

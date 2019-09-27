@@ -30,7 +30,8 @@ type ClusterDomainSpec struct {
 }
 
 type Address struct {
-	IP string `json:"ip,omitempty"`
+	IP       string `json:"ip,omitempty"`
+	Hostname string `json:"hostname,omitempty"`
 }
 
 type Subdomain struct {
