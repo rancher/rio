@@ -25,34 +25,31 @@
 ## Install Options
 Rio provides a number of options when installed using `rio install`.
 
-* `mode`: How Rio exposes the service mesh gateway. All HTTP requests to Rio services go through the gateway. There are three options:
+* `mode`: How Rio exposes the service mesh gateway. All HTTP requests to Rio services go through the gateway. There are two options:
 
 | Mode | Description |
 |------|-------------|
-| `ingress` | Rio will use existing ingress controller and ingress resource to expose gateway services. All the traffic will go through ingress. Starting v0.4.0 this is the default mode. |
-| `svclb` | Rio will use service loadbalancer to expose gateway services. | 
+| `svclb` | Rio will use service loadbalancer to expose gateway services. Starting at v0.5.0 this will be the default mode. | 
 | `hostport` | Rio will expose hostport for gateway services. |
 
-* `http-port`: HTTP port gateway service will listen. You can only set the HTTP port if install mode is svclb or hostport. Default HTTP port for svclb and hostport mode is 9080. If install mode is ingress, HTTP port is determined by ingress and cannot be changed by Rio installer. Ingress controllers typically expose HTTP port 80, although some ingress controllers allow you to specify custom HTTP ports.
-* `https-port`: HTTPS port gateway service will listen. You can only set the HTTPS port if install mode is svclb or hostport. Default HTTPS port for svclb and hostport mode is 9443. If install mode is ingress, HTTPS port is determined by ingress and cannot be changed by Rio installer. Ingress controllers typically expose HTTPS port 443, although some ingress controllers allow you to specify custom HTTPS ports.
+* `--mesh-mode`: Starting v0.5.0 Rio supports two service mesh mode: istio and linkerd. Linkerd will be default.
+* `http-port`: HTTP port gateway service will listen. You can only set the HTTP port if install mode is svclb or hostport. Default HTTP port for svclb and hostport mode is 9080..
+* `https-port`: HTTPS port gateway service will listen. You can only set the HTTPS port if install mode is svclb or hostport. Default HTTPS port for svclb and hostport mode is 9443.
 * `ip-address`: Rio generates DNS domains that map to IP address of the gateway. Rio will attempt to detect gateway IP addresses automatically, and you can override by manually specify comma-separated IP addresses.
-* `service-cidr`: Rio will attempt to detect service CIDR for service mesh intercept traffic. You can override by manually specify a service CIDR.
 * `disable-features`: Specify feature to disable during install. Here are the available feature list.
 
 | Feature | Description |
 |----------|----------------|
 | autoscaling | Auto-scaling services based on QPS and requests load
 | build | Rio Build, from source code to deployment
-| grafana | Grafana Dashboard
-| istio | Service routing using Istio
-| kiali | Kiali Dashboard
+| gateway | Gateway service based on pilot and envoy
+| istio | Istio service mesh
+| linkerd | Linkerd service mesh
 | letsencrypt | Let's Encrypt
-| mixer | Istio Mixer telemetry
-| prometheus | Enable prometheus
 | rdns | Assign cluster a hostname from public Rancher DNS service
 
 * `httpproxy`: Specify HTTP_PROXY environment variable for Rio control plane. This is useful when Rio is installed behind an HTTP firewall.
-* `lite`: Disable all monitoring features including prometheus, mixer, grafana and kiali.
+* `lite`: Disable all monitoring features including prometheus, mixer, grafana and kiali. Only works in istio mesh mode.
 
 ## Concepts
 
@@ -410,6 +407,7 @@ services:
       gitSecretName: secretGit # Specify git secret name for private git repository. Defaults to global secret that is configured by rio cli. [link](#setup-credential-for-private-repository)
       pushRegistrySecretName: secretDocker # Specify secret name for pushing to docker registry. [link](#set-custom-build-arguments-and-docker-registry)
       enablePr: true # Enable pull request feature. Defaults to false
+      buildTimeout: 10m # build timeout setting (s|m|h)
     command: # Container entrypoint, not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided.
     - echo
     args: # Arguments to the entrypoint. The docker image's CMD is used if this is not provided.
@@ -554,6 +552,20 @@ If you want to setup webhook to watch, go to [here](#setup-github-webhook-experi
 
 
 ## Monitoring
+
+Rio has two built-in mesh mode: linkerd and istio. Each mesh mode will have different tools to visualize service mesh.
+
+**Linkerd**:
+
+Rio will automatically create a route called `linkerd/web` that route to [linkerd dashboard](https://linkerd.io/2/features/dashboard/). Run `rio ps -a` or `rio route` to get dashboard links
+
+```bash
+NAME          URL                                         OPTS      ACTION    TARGET
+linkerd/web   https://web-linkerd.1bego3.on-rio.io:9443             to        linkerd-web,port=8084
+```
+
+**Istio**:
+
 By default, Rio will deploy [Grafana](https://grafana.com/) and [Kiali](https://www.kiali.io/) to give users the ability to watch all metrics of the service mesh.
 You can find endpoints of both services by running `rio -s ps`, and then access these services through their endpoint URLs.
 
@@ -751,6 +763,8 @@ $ rio run --build-enable-pr $(repo)
 After this, if there is any pull request, Rio will create a deployment based on this pull request, and you will get a unique link
 to see the change this pull request introduced in the actual deployment.
 
+Starting at v0.5.0, Rio has added integration with Github deployment api. You are able to see deployment status on your branch and each PR.
+
 ### View build logs
 To view logs from your builds
 ```bash
@@ -827,5 +841,10 @@ Rio only supports stateless workloads at this point.
 Rio will automatically detect work node ip addresses based on install mode. If your host has multiple IP addresses, you can manually specify which IP address Rio should use for creating external DNS records with the `--ip-address` flag. 
 For instance to advertise the external IP of an AWS instance: `rio install --ip-address $(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)`
 By doing this, you lose the ability to dynamic updating IP addresses to DNS.
+```
+
+* How to uninstall Rio?
+```
+Run `rio uninstall` and it should clean up all the CRDs and resources in system namespace(rio-system by default)
 ```
 
