@@ -201,7 +201,7 @@ $ rio route add $name.$namespace to $target_namespace/target_service
 
 Insert a router rule
 ```bash
-$ rio route insert $name.$namespace to $target_namespace/target_service
+$ rio route add --insert $name.$namespace to $target_namespace/target_service
 ```
 
 Create a route based path match
