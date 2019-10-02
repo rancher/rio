@@ -694,7 +694,7 @@ Hi there, I am StrongMonkey:v3
 ```
 
 ### Setup credential for private repository
-1. Set up git basic auth. (Currently ssh key is not supported and will be added soon.) Here is an exmaple of adding Github repo.
+1. Set up git basic auth. (Currently ssh key is not supported and will be added soon.) Here is an example of adding Github repo.
 ```bash
 $ rio secret add --git-basic-auth
 Select namespace[default]: $(put the same namespace with your workload)
