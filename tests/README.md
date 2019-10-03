@@ -11,7 +11,7 @@ All commands run from root dir
 ### Unit tests
 
 ```
-go test -cover -tags=test ./...
+go test -race -cover -tags=test ./...
 ```
 
 
@@ -20,7 +20,7 @@ go test -cover -tags=test ./...
 Integration tests live inside the /tests/integration dir. They require a working cluster with KUBECONFIG env var set, and rio already installed.
 
 ```
-go test -v ./tests/integration/... -integration-tests
+go test -v -race ./tests/integration/... -integration-tests
 ```
 
 Every spec should be in the `when x, it should y` format.
