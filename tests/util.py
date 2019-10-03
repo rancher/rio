@@ -3,8 +3,6 @@ import json
 import time
 import random
 import hashlib
-import tempfile
-import os
 
 
 def run(cmd, status=0):
@@ -82,22 +80,6 @@ def assert_endpoint(endpoint, result):
         if output == result:
             break
         time.sleep(1)
-
-
-def rioConfigCreate(nspc, *configs):
-    config_name = "tconfig" + str(random.randint(1000, 5000))
-
-    fp = tempfile.NamedTemporaryFile(delete=False)
-
-    for c in configs:
-        fp.write(bytes(c + " ", 'utf8'))
-
-    fp.close()
-
-    run(f"rio config create {nspc}/{config_name} {fp.name}")
-    os.unlink(fp.name)
-
-    return config_name
 
 
 def rioInspect(resource, field=None):

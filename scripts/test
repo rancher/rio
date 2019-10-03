@@ -18,6 +18,8 @@ if [[ ${ARCH} == amd64 ]]; then
     rio-controller >/dev/null 2>&1 &
     rio install --check >/dev/null 2>&1
 
+    go test -v ./tests/integration/... --integration-tests
+
     cd ./tests
     PROC=$(nproc)
     if [ "$PROC" > 8 ]; then
@@ -28,5 +30,3 @@ if [[ ${ARCH} == amd64 ]]; then
     tox -- -n $PROC
     cd ..
 fi
-
-
