@@ -3,10 +3,10 @@ package integration
 import (
 	"testing"
 
-	"github.com/rancher/rio/tests/testutil"
+	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/sclevine/spec"
+	"github.com/rancher/rio/tests/testutil"
 )
 
 func endpointTests(t *testing.T, when spec.G, it spec.S) {

@@ -256,7 +256,7 @@ func (ts *TestService) waitForScale(want int) error {
 		}
 		return false
 	}
-	o := WaitFor(f, 45)
+	o := WaitFor(f, 60)
 	if o == false {
 		return errors.New("service failed to scale")
 	}
@@ -274,7 +274,7 @@ func (ts *TestService) waitForWeight(percentage int) error {
 		}
 		return false
 	}
-	ok := WaitFor(f, 30)
+	ok := WaitFor(f, 60)
 	if ok == false {
 		return errors.New("service revision never reached goal weight")
 	}
