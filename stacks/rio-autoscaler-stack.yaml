@@ -1,7 +1,7 @@
 configs:
   config-autoscaler:
     enable-scale-to-zero: "true"
-    max-scale-up-rate: "10"
+    max-scale-up-rate: "1000"
     container-concurrency-target-percentage: "1.0"
     container-concurrency-target-default: "1"
     stable-window: 60s
