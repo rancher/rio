@@ -24,10 +24,8 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 	when("rio run is called", func() {
 		it("should create a service with default specifications", func() {
 			assert.Equal(t, 1, service.GetAvailableReplicas(), "should have one available replica")
-			// TODO: check the following and then remove test_run.py
-			// scale of 1
-			// weight of 100 in spec
-			// image == "nginx"
+			assert.Equal(t, 100, service.GetCurrentWeight())
+			assert.Equal(t, "nginx", service.GetImage())
 		})
 	})
 }
