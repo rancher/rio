@@ -4,7 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"testing"
+	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 )
@@ -62,7 +66,13 @@ func (ts *TestService) Scale(scaleTo int) {
 	if err != nil {
 		ts.T.Fatalf("scale command failed:  %v", err.Error())
 	}
+	// First wait for scale on service to update
 	err = ts.waitForScale(scaleTo)
+	if err != nil {
+		ts.T.Fatal(err.Error())
+	}
+	// Then wait for actual replicas to come up
+	err = ts.waitForAvailableReplicas(scaleTo)
 	if err != nil {
 		ts.T.Fatal(err.Error())
 	}
@@ -142,9 +152,18 @@ func (ts *TestService) ExportRaw() TestService {
 // Getters
 //////////
 
+// Returns count of ready and available pods
 func (ts *TestService) GetAvailableReplicas() int {
 	if ts.Service.Status.DeploymentStatus != nil {
 		return int(ts.Service.Status.DeploymentStatus.AvailableReplicas)
+	}
+	return 0
+}
+
+// Returns desired scale, different from current available replicas
+func (ts *TestService) GetScale() int {
+	if ts.Service.Spec.Scale != nil {
+		return *ts.Service.Spec.Scale
 	}
 	return 0
 }
@@ -165,10 +184,6 @@ func (ts *TestService) GetCurrentWeight() int {
 
 func (ts *TestService) GetImage() string {
 	return ts.Service.Spec.Image
-}
-
-func (ts *TestService) GetScale() int {
-	return *ts.Service.Spec.Scale
 }
 
 //////////////////
@@ -222,42 +237,66 @@ func (ts *TestService) loadExport(args []string) (TestService, error) {
 	return stagedService, nil
 }
 
+// Wait longer for higher scale, always wait at least 120 seconds
+func (ts *TestService) getScalingTimeout() time.Duration {
+	scalingTimeout := time.Duration(math.Max(float64(ts.GetScale())*20, 120))
+	return time.Second * scalingTimeout
+}
+
 //////////////////
 // Wait helpers
 //////////////////
 
 // Wait until a service hits ready state, or error out
 func (ts *TestService) waitForReadyService() error {
-	f := func() bool {
+	f := wait.ConditionFunc(func() (bool, error) {
 		err := ts.reload()
 		if err == nil {
 			if ts.Service.Status.DeploymentStatus != nil && ts.Service.Status.DeploymentStatus.AvailableReplicas > 0 {
-				return true
+				return true, nil
 			}
 		}
-		return false
-	}
-	ok := WaitFor(f, 120)
-	if ok == false {
+		return false, nil
+	})
+	err := wait.Poll(2*time.Second, ts.getScalingTimeout(), f)
+	if err != nil {
 		return errors.New("service never reached ready status")
 	}
 	ts.reload()
 	return nil
 }
 
-// Wait until a service hits a given scale, or error out
-func (ts *TestService) waitForScale(want int) error {
-	f := func() bool {
+// Wait until a service hits wanted number of available replicas, or error out
+func (ts *TestService) waitForAvailableReplicas(want int) error {
+	f := wait.ConditionFunc(func() (bool, error) {
 		err := ts.reload()
 		if err == nil {
 			if ts.GetAvailableReplicas() == want {
-				return true
+				return true, nil
 			}
 		}
-		return false
+		return false, nil
+	})
+	err := wait.Poll(2*time.Second, ts.getScalingTimeout(), f)
+	if err != nil {
+		return errors.New("service failed to scale up available replicas")
 	}
-	o := WaitFor(f, 60)
-	if o == false {
+	return nil
+}
+
+// Wait until a service's scale field hits wanted int, or error out
+func (ts *TestService) waitForScale(want int) error {
+	f := wait.ConditionFunc(func() (bool, error) {
+		err := ts.reload()
+		if err == nil {
+			if ts.GetScale() == want {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
+	err := wait.Poll(2*time.Second, 60*time.Second, f)
+	if err != nil {
 		return errors.New("service failed to scale")
 	}
 	return nil
@@ -265,17 +304,17 @@ func (ts *TestService) waitForScale(want int) error {
 
 // Wait until a service has actual weight we want, note this is not spec weight which changes immediately
 func (ts *TestService) waitForWeight(percentage int) error {
-	f := func() bool {
+	f := wait.ConditionFunc(func() (bool, error) {
 		ts.reloadApp()
 		if val, ok := ts.App.Status.RevisionWeight[ts.Version]; ok {
 			if val.Weight == percentage {
-				return true
+				return true, nil
 			}
 		}
-		return false
-	}
-	ok := WaitFor(f, 60)
-	if ok == false {
+		return false, nil
+	})
+	err := wait.Poll(2*time.Second, 60*time.Second, f)
+	if err != nil {
 		return errors.New("service revision never reached goal weight")
 	}
 	return nil
@@ -285,17 +324,17 @@ func (ts *TestService) waitForEndpointDNS() (string, error) {
 	if len(ts.Service.Status.Endpoints) > 0 {
 		return ts.Service.Status.Endpoints[0], nil
 	}
-	f := func() bool {
+	f := wait.ConditionFunc(func() (bool, error) {
 		err := ts.reload()
 		if err == nil {
 			if len(ts.Service.Status.Endpoints) > 0 {
-				return true
+				return true, nil
 			}
 		}
-		return false
-	}
-	ok := WaitFor(f, 60)
-	if ok == false {
+		return false, nil
+	})
+	err := wait.Poll(2*time.Second, 60*time.Second, f)
+	if err != nil {
 		return "", errors.New("service endpoint never created")
 	}
 	return ts.Service.Status.Endpoints[0], nil
