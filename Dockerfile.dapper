@@ -2,7 +2,7 @@ FROM golang:1.12.6-alpine3.9
 
 ARG DAPPER_HOST_ARCH
 ENV ARCH $DAPPER_HOST_ARCH
-ENV K3S_VERSION v0.8.0
+ENV K3S_VERSION v0.9.1
 ENV KUBECTL_VERSION v1.15.0
 
 RUN apk -U add bash git gcc musl-dev docker vim less file curl wget ca-certificates python3 py3-pip python3-dev openssl-dev libffi-dev jq
@@ -21,7 +21,7 @@ RUN if [ "${ARCH}" == "amd64" ]; then \
     fi
 RUN curl -sL https://github.com/rancher/k3s/releases/download/${K3S_VERSION}/k3s > /usr/bin/k3s && \
     chmod +x /usr/bin/k3s
-RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl > /usr/bin/kubectl && \
+RUN curl -sL https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl > /usr/bin/kubectl && \
     chmod +x /usr/bin/kubectl
 
 ENV DAPPER_ENV REPO TAG DRONE_TAG CROSS

@@ -55,17 +55,24 @@ func (tc *TestConfig) Remove() {
 
 // GetContent returns the configs Data.Content as list of strings, newline separated
 func (tc *TestConfig) GetContent() []string {
-	var data []string
-	if val, ok := tc.ConfigMap.Data["content"]; ok {
-		if val != "" {
-			for _, s := range strings.Split(val, "\n") {
-				if s != "" {
-					data = append(data, s)
-				}
-			}
-		}
+	return getContentData(tc.ConfigMap)
+}
+
+// GetKubeContent returns the kubectl configmap's Data.Content as list of strings, newline separated
+// CLI Command Run: kubectl get cm testname -n testing-ns -o json
+func (tc *TestConfig) GetKubeContent() []string {
+	args := []string{"get", "cm", tc.ConfigMap.Name, "-n", testingNamespace, "-o", "json"}
+	resultString, err := KubectlCmd(args)
+	if err != nil {
+		tc.T.Fatalf("Failed to get ConfigMaps:  %v", err.Error())
 	}
-	return data
+	var results corev1.ConfigMap
+	err = json.Unmarshal([]byte(resultString), &results)
+	if err != nil {
+		tc.T.Fatalf("Failed to unmarshal ConfigMaps result: %s with error: %v", resultString, err.Error())
+	}
+
+	return getContentData(results)
 }
 
 //////////////////
@@ -115,4 +122,19 @@ func (tc *TestConfig) waitForConfig() error {
 		return errors.New("config not successfully created")
 	}
 	return nil
+}
+
+// getContentData returns the configs Data.Content as list of strings, newline separated
+func getContentData(cm corev1.ConfigMap) []string {
+	var data []string
+	if val, ok := cm.Data["content"]; ok {
+		if val != "" {
+			for _, s := range strings.Split(val, "\n") {
+				if s != "" {
+					data = append(data, s)
+				}
+			}
+		}
+	}
+	return data
 }

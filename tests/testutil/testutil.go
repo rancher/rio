@@ -44,6 +44,17 @@ func RioCmd(name string, args []string) (string, error) {
 	return string(stdOutErr), nil
 }
 
+// KubectlCmd executes kubectl CLI commands with your arguments
+// Example: args=["get", "-n", "test", "services"] would run: "kubectl get -n test services"
+func KubectlCmd(args []string) (string, error) {
+	cmd := exec.Command("kubectl", args...)
+	stdOutErr, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("%s: %s", err.Error(), stdOutErr)
+	}
+	return string(stdOutErr), nil
+}
+
 // Wait until a URL has a response that returns 200 status code, else return error
 func WaitForURLResponse(endpoint string) (string, error) {
 	f := wait.ConditionFunc(func() (bool, error) {

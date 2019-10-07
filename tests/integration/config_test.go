@@ -22,6 +22,7 @@ func configTests(t *testing.T, when spec.G, it spec.S) {
 			testText := []string{"a=b", "foo=bar"}
 			config.Create(t, testText)
 			assert.Equal(t, testText, config.GetContent())
+			assert.Equal(t, testText, config.GetKubeContent())
 		})
 	}, spec.Parallel())
 }
