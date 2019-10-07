@@ -34,7 +34,23 @@ func scaleTests(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, 0, service.GetAvailableReplicas())
 			assert.Equal(t, 0, service.GetScale())
 		})
-		it.Pend("should scale to x,y,z....", func() {
+		it("should scale to 3", func() {
+			assert.Equal(t, 1, service.GetAvailableReplicas())
+			service.Scale(3)
+			assert.Equal(t, 3, service.GetAvailableReplicas())
+			assert.Equal(t, 3, service.GetScale())
+		})
+		it("should scale to 5", func() {
+			assert.Equal(t, 1, service.GetAvailableReplicas())
+			service.Scale(5)
+			assert.Equal(t, 5, service.GetAvailableReplicas())
+			assert.Equal(t, 5, service.GetScale())
+		})
+		it("should scale to 10", func() {
+			assert.Equal(t, 1, service.GetAvailableReplicas())
+			service.Scale(10)
+			assert.Equal(t, 10, service.GetAvailableReplicas())
+			assert.Equal(t, 10, service.GetScale())
 		})
 	}, spec.Parallel())
 }

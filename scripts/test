@@ -19,14 +19,4 @@ if [[ ${ARCH} == amd64 ]]; then
     rio install --check >/dev/null 2>&1
 
     go test -v ./tests/integration/... --integration-tests
-
-    cd ./tests
-    PROC=$(nproc)
-    if [ "$PROC" > 8 ]; then
-    PROC=8
-    fi
-    # todo: set $PROC=1, figure out how to run test in parallel
-    PROC=1
-    tox -- -n $PROC
-    cd ..
 fi
