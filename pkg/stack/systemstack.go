@@ -4,16 +4,13 @@ import (
 	"io/ioutil"
 	"os"
 
-	"k8s.io/client-go/dynamic"
-
-	"github.com/sirupsen/logrus"
-
-	"github.com/rancher/rio/stacks"
-
 	"github.com/rancher/rio/pkg/riofile"
 	"github.com/rancher/rio/pkg/template"
+	"github.com/rancher/rio/stacks"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/objectset"
+	"github.com/sirupsen/logrus"
+	"k8s.io/client-go/dynamic"
 )
 
 type SystemStack struct {
@@ -26,7 +23,7 @@ type SystemStack struct {
 func NewSystemStack(apply apply.Apply, systemNamespace string, name string) *SystemStack {
 	setID := "system-stack-" + name
 	s := &SystemStack{
-		apply: apply.WithSetID(setID).WithDefaultNamespace(systemNamespace),
+		apply: apply.WithSetID(setID).WithDefaultNamespace(systemNamespace).WithDynamicLookup(),
 		name:  name,
 		Stack: Stack{},
 	}

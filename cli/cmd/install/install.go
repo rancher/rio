@@ -55,7 +55,7 @@ var (
 		IstioGrafana:         constants.FeatureGrafana,
 		IstioTelemetry:       constants.FeatureMixer,
 		IstioKiali:           constants.FeatureKiali,
-		IstioPrometheus:      constants.FeaturePromethues,
+		IstioPrometheus:      constants.Prometheus,
 
 		BuildController: constants.FeatureBuild,
 		Registry:        constants.FeatureBuild,

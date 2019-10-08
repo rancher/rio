@@ -3,132 +3,155 @@ package servicestatus
 import (
 	"context"
 
+	"github.com/rancher/rio/modules/service/pkg/endpoints"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
-	"github.com/rancher/wrangler/pkg/condition"
+	appsv1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/apps/v1"
+	"github.com/rancher/wrangler/pkg/relatedresource"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-var (
-	progressing = condition.Cond("Progressing")
-	updated     = condition.Cond("Updated")
-	upgrading   = map[string]bool{
-		"ReplicaSetUpdated":    true,
-		"NewReplicaSetCreated": true,
-	}
-)
-
 func Register(ctx context.Context, rContext *types.Context) error {
-	s := &subServiceController{
-		serviceLister: rContext.Rio.Rio().V1().Service().Cache(),
-		services:      rContext.Rio.Rio().V1().Service(),
+	s := &statusHandler{
+		daemonSetCache:   rContext.Apps.Apps().V1().DaemonSet().Cache(),
+		deploymentCache:  rContext.Apps.Apps().V1().Deployment().Cache(),
+		statefulSetCache: rContext.Apps.Apps().V1().StatefulSet().Cache(),
+		resolver: endpoints.NewResolver(ctx, rContext.Namespace,
+			rContext.Rio.Rio().V1().Service(),
+			rContext.Rio.Rio().V1().Service().Cache(),
+			rContext.Admin.Admin().V1().ClusterDomain(),
+			rContext.Admin.Admin().V1().PublicDomain(),
+		),
 	}
 
-	rContext.Apps.Apps().V1().Deployment().OnChange(ctx, "sub-service-deploy-controller", s.deploymentChanged)
+	relatedresource.Watch(ctx, "service-status", findService,
+		rContext.Rio.Rio().V1().Service(),
+		rContext.Apps.Apps().V1().Deployment(),
+		rContext.Apps.Apps().V1().DaemonSet(),
+		rContext.Apps.Apps().V1().StatefulSet())
 
-	rContext.Apps.Apps().V1().DaemonSet().OnChange(ctx, "sub-service-deploy-daemonset-controller", s.daemonsetChanged)
+	v1.RegisterServiceStatusHandler(ctx,
+		rContext.Rio.Rio().V1().Service(),
+		"",
+		"service",
+		s.handle)
 
 	return nil
 }
 
-type subServiceController struct {
-	services      v1.ServiceController
-	serviceLister v1.ServiceCache
-}
-
-func (s *subServiceController) updateStatus(service, newService *riov1.Service, dep runtime.Object, generation, observedGeneration int64) error {
-	isUpgrading := false
-
-	if upgrading[progressing.GetReason(dep)] || generation != observedGeneration {
-		isUpgrading = true
-	}
-
-	if isUpgrading {
-		updated.Unknown(newService)
-	} else if hasAvailable(newService.Status.DeploymentStatus) {
-		newService.Status.Conditions = nil
-	}
-
-	if !equality.Semantic.DeepEqual(service.Status, newService.Status) {
-		_, err := s.services.Update(newService)
-		return err
-	}
-
-	return nil
-}
-
-func (s *subServiceController) daemonsetChanged(key string, ds *appsv1.DaemonSet) (*appsv1.DaemonSet, error) {
-	if ds == nil {
-		return ds, nil
-	}
-	if ds.DeletionTimestamp != nil {
-		return ds, nil
-	}
-	service, err := s.serviceLister.Get(ds.Namespace, ds.Name)
-	if errors.IsNotFound(err) {
-		return ds, nil
-	} else if err != nil {
-		return ds, err
-	}
-
-	if service.DeletionTimestamp != nil {
-		return ds, nil
-	}
-
-	newService := service.DeepCopy()
-	newService.Status.ScaleStatus = &riov1.ScaleStatus{
-		Ready:       int(ds.Status.NumberReady),
-		Unavailable: int(ds.Status.NumberUnavailable),
-		Available:   int(ds.Status.NumberUnavailable),
-		Updated:     int(ds.Status.NumberReady),
-	}
-
-	_, err = s.services.Update(newService)
-	return ds, err
-}
-
-func (s *subServiceController) deploymentChanged(key string, dep *appsv1.Deployment) (*appsv1.Deployment, error) {
-	if dep == nil {
-		return nil, nil
-	}
-	if dep.DeletionTimestamp != nil {
-		return nil, nil
-	}
-	service, err := s.serviceLister.Get(dep.Namespace, dep.Name)
-	if errors.IsNotFound(err) {
-		return nil, nil
-	} else if err != nil {
+func findService(namespace, name string, obj runtime.Object) ([]relatedresource.Key, error) {
+	meta, err := meta.Accessor(obj)
+	if err != nil {
 		return nil, err
 	}
-	if service.DeletionTimestamp != nil {
-		return dep, nil
+	serviceName := meta.GetLabels()["rio.cattle.io/service"]
+	if serviceName == "" {
+		return nil, nil
 	}
-
-	newService := service.DeepCopy()
-	newService.Status.DeploymentStatus = dep.Status.DeepCopy()
-	newService.Status.DeploymentStatus.ObservedGeneration = 0
-	newService.Status.ScaleStatus = &riov1.ScaleStatus{
-		Ready:       int(dep.Status.ReadyReplicas),
-		Unavailable: int(dep.Status.UnavailableReplicas),
-		Available:   int(dep.Status.AvailableReplicas - dep.Status.ReadyReplicas),
-		Updated:     int(dep.Status.UpdatedReplicas),
-	}
-
-	return nil, s.updateStatus(service, newService, dep, dep.Generation, dep.Status.ObservedGeneration)
+	return []relatedresource.Key{
+		{
+			Namespace: namespace,
+			Name:      serviceName,
+		},
+	}, nil
 }
 
-func hasAvailable(status *appsv1.DeploymentStatus) bool {
-	if status != nil {
-		cond := status.Conditions
-		for _, c := range cond {
-			if c.Type == "Available" {
-				return true
-			}
-		}
+type statusHandler struct {
+	daemonSetCache   appsv1controller.DaemonSetCache
+	statefulSetCache appsv1controller.StatefulSetCache
+	deploymentCache  appsv1controller.DeploymentCache
+	resolver         *endpoints.Resolver
+}
+
+func (s *statusHandler) handle(obj *riov1.Service, status riov1.ServiceStatus) (riov1.ServiceStatus, error) {
+	owner, err := s.getOwner(obj)
+	if err != nil {
+		return status, err
 	}
-	return false
+
+	endpoints, err := s.resolver.ServiceEndpoints(obj)
+	if err != nil {
+		return status, err
+	}
+
+	appEndpoints, err := s.resolver.AppEndpoints(obj)
+	if err != nil {
+		return status, err
+	}
+
+	status.Endpoints = endpoints
+	status.AppEndpoints = appEndpoints
+	status.ScaleStatus = toScaleStatus(owner)
+	return status, nil
+}
+
+func toScaleStatus(owner runtime.Object) *riov1.ScaleStatus {
+	switch typed := owner.(type) {
+	case *appsv1.Deployment:
+		return &riov1.ScaleStatus{
+			Available:   int(typed.Status.AvailableReplicas),
+			Unavailable: int(typed.Status.UnavailableReplicas),
+		}
+	case *appsv1.DaemonSet:
+		return &riov1.ScaleStatus{
+			Available:   int(typed.Status.NumberAvailable),
+			Unavailable: int(typed.Status.NumberUnavailable),
+		}
+	case *appsv1.StatefulSet:
+		unavaliable := typed.Status.Replicas - typed.Status.ReadyReplicas
+		if unavaliable < 0 {
+			unavaliable = 0
+		}
+		return &riov1.ScaleStatus{
+			Available:   int(typed.Status.ReadyReplicas),
+			Unavailable: int(unavaliable),
+		}
+	default:
+		return nil
+	}
+}
+
+func (s *statusHandler) getOwner(obj *riov1.Service) (runtime.Object, error) {
+	deployment, err := s.deploymentCache.Get(obj.Namespace, obj.Name)
+	if owned, err := isOwner(obj, deployment, err); err != nil {
+		return nil, err
+	} else if owned {
+		return deployment, nil
+	}
+
+	daemonset, err := s.daemonSetCache.Get(obj.Namespace, obj.Name)
+	if owned, err := isOwner(obj, daemonset, err); err != nil {
+		return nil, err
+	} else if owned {
+		return daemonset, nil
+	}
+
+	statefulset, err := s.statefulSetCache.Get(obj.Namespace, obj.Name)
+	if owned, err := isOwner(obj, statefulset, err); err != nil {
+		return nil, err
+	} else if owned {
+		return statefulset, nil
+	}
+
+	return nil, nil
+}
+
+func isOwner(service *riov1.Service, object runtime.Object, err error) (bool, error) {
+	if errors.IsNotFound(err) {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	meta, err := meta.Accessor(object)
+	if err != nil {
+		return false, err
+	}
+
+	serviceName := meta.GetLabels()["rio.cattle.io/service"]
+	return service.Name == serviceName, nil
 }

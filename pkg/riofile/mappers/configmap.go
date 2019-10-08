@@ -1,35 +1,37 @@
 package mappers
 
 import (
-	"github.com/rancher/mapper/convert"
-	"github.com/rancher/mapper/mappers"
+	"github.com/rancher/norman/pkg/data"
+	"github.com/rancher/norman/pkg/types"
+	"github.com/rancher/norman/pkg/types/convert"
+	"github.com/rancher/norman/pkg/types/mapper"
 )
 
 type ConfigMapMapper struct {
-	mappers.DefaultMapper
+	mapper.DefaultMapper
 }
 
-func NewConfigMapMapper(field string) ConfigMapMapper {
+func NewConfigMapMapper(field string) types.Mapper {
 	return ConfigMapMapper{
-		DefaultMapper: mappers.DefaultMapper{
-			Field: "data",
+		DefaultMapper: mapper.DefaultMapper{
+			Field: field,
 		},
 	}
 }
 
-func (d ConfigMapMapper) FromInternal(data map[string]interface{}) {
-	newData, ok := data["data"]
+func (d ConfigMapMapper) FromInternal(data data.Object) {
+	newData, ok := data[d.Field]
 	if !ok {
 		return
 	}
 
-	delete(data, "data")
+	delete(data, d.Field)
 	for k, v := range convert.ToMapInterface(newData) {
 		data[k] = v
 	}
 }
 
-func (d ConfigMapMapper) ToInternal(data map[string]interface{}) error {
+func (d ConfigMapMapper) ToInternal(data data.Object) error {
 	newData := map[string]interface{}{}
 	for k, v := range data {
 		if k != "labels" && v != "annotations" {
@@ -39,7 +41,7 @@ func (d ConfigMapMapper) ToInternal(data map[string]interface{}) error {
 	}
 
 	if len(newData) > 0 {
-		data["data"] = newData
+		data[d.Field] = newData
 	}
 
 	return nil

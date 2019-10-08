@@ -1,0 +1,17 @@
+discovery:
+  enabled: false
+  
+gateway:
+  certGenJob: false
+  upgrade: false
+  validation: false
+  deployment:
+    stats: false
+
+gatewayProxies:
+  gatewayProxyV2:
+    stats: false
+    
+gloo:
+  deployment:
+    stats: false

@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rancher/rio/pkg/constants"
-
 	"github.com/rancher/rio/modules/linkerd/feature"
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/types"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
@@ -15,12 +14,6 @@ import (
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
-	if constants.ServiceMeshMode == constants.ServiceMeshModeLinkerd {
-		if err := installLinkerd(rContext); err != nil {
-			return err
-		}
-	}
-
 	return feature.Register(ctx, rContext)
 }
 

@@ -2,13 +2,13 @@ package pod
 
 import (
 	"fmt"
-	"path/filepath"
-	"reflect"
-	"strconv"
 	"strings"
 
 	"github.com/rancher/rio/modules/service/controllers/service/populate/serviceports"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/riofile/stringers"
+	"github.com/rancher/rio/pkg/services"
+	"github.com/rancher/wrangler/pkg/name"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -19,9 +19,9 @@ var (
 		"self/labels":         "metadata.labels",
 		"self/annotations":    "metadata.annotations",
 		"self/node":           "spec.nodeName",
-		"self/serviceAccount": "spec.serviceAccountName",
-		"self/hostIp":         "status.hostIP",
-		"self/nodeIp":         "status.hostIP",
+		"self/serviceaccount": "spec.serviceAccountName",
+		"self/hostip":         "status.hostIP",
+		"self/nodeip":         "status.hostIP",
 		"self/ip":             "status.podIP",
 	}
 	resourceRefs = map[string]string{
@@ -34,28 +34,21 @@ var (
 	}
 )
 
-func containers(service *riov1.Service, systemNamespace string, init bool) (result []v1.Container) {
-	system := service.Namespace == systemNamespace
-	if !init && !reflect.DeepEqual(service.Spec.Container, riov1.Container{}) {
-		c := toContainer(service.Name, &service.Spec.Container, system)
-		c.Name = service.Name
-		result = append(result, c)
-	}
-
-	for _, sidecar := range service.Spec.Sidecars {
-		if sidecar.Init != init {
+func containers(service *riov1.Service, init bool) (result []v1.Container) {
+	for _, container := range services.ToNamedContainers(service) {
+		if init != container.Init {
 			continue
 		}
 
-		c := toContainer(sidecar.Name, &sidecar.Container, system)
-		c.Name = sidecar.Name
+		c := toContainer(container.Name, &container.Container)
+		c.Name = container.Name
 		result = append(result, c)
 	}
 
 	return
 }
 
-func toContainer(containerName string, c *riov1.Container, system bool) v1.Container {
+func toContainer(containerName string, c *riov1.Container) v1.Container {
 	con := v1.Container{
 		Image:           c.Image,
 		Command:         c.Command,
@@ -68,39 +61,35 @@ func toContainer(containerName string, c *riov1.Container, system bool) v1.Conta
 		StdinOnce:       c.StdinOnce,
 		TTY:             c.TTY,
 		Resources:       resources(c),
-		Ports:           ports(c, system),
+		Ports:           ports(c),
 		Env:             envs(containerName, c),
-		VolumeMounts:    mounts(c),
+		VolumeMounts:    mounts(containerName, c),
 		SecurityContext: securityContext(c),
 	}
 
-	if system && c.SecurityContext != nil {
-		con.SecurityContext = c.SecurityContext
-	}
 	return con
 }
 
 func securityContext(c *riov1.Container) *v1.SecurityContext {
-	if c.RunAsUser != nil ||
-		c.RunAsGroup != nil ||
-		c.ReadOnlyRootFilesystem != nil {
-		return &v1.SecurityContext{
-			RunAsUser:              c.RunAsUser,
-			RunAsGroup:             c.RunAsGroup,
-			ReadOnlyRootFilesystem: c.ReadOnlyRootFilesystem,
-		}
+	if c.ContainerSecurityContext == nil {
+		return nil
 	}
-	return nil
+	return &v1.SecurityContext{
+		RunAsUser:              c.RunAsUser,
+		RunAsGroup:             c.RunAsGroup,
+		ReadOnlyRootFilesystem: c.ReadOnlyRootFilesystem,
+		Privileged:             c.Privileged,
+	}
 }
 
-func mounts(c *riov1.Container) (result []v1.VolumeMount) {
-	config := dataMounts("config", c.Configs)
-	secrets := dataMounts("secret", c.Secrets)
-	emptydirs := volumeMount("emptydir", c.Volumes)
+func mounts(containerName string, c *riov1.Container) (result []v1.VolumeMount) {
+	config := dataMounts(stringers.ConfigsDefaultPath, "config", c.Configs)
+	secrets := dataMounts(stringers.SecretsDefaultPath, "secret", c.Secrets)
+	emptydirs := volumeMount(containerName, c.Volumes)
 	return append(config, append(secrets, emptydirs...)...)
 }
 
-func dataMounts(name string, dataMounts []riov1.DataMount) (result []v1.VolumeMount) {
+func dataMounts(def, name string, dataMounts []riov1.DataMount) (result []v1.VolumeMount) {
 	readonly := false
 	if name == "secret" {
 		readonly = true
@@ -109,16 +98,11 @@ func dataMounts(name string, dataMounts []riov1.DataMount) (result []v1.VolumeMo
 		mount := v1.VolumeMount{
 			Name: fmt.Sprintf("%s-%s", name, config.Name),
 		}
-		if config.Key == "" {
-			mount.MountPath = config.Directory
-		} else {
-			if config.File == "" {
-				mount.MountPath = filepath.Join(config.Directory, config.Key)
-			} else {
-				mount.MountPath = filepath.Join(config.Directory, config.File)
-			}
-			mount.SubPath = config.Key
+		mount.MountPath = config.Target
+		if mount.MountPath == "" {
+			mount.MountPath = def
 		}
+		mount.SubPath = config.Key
 		mount.ReadOnly = readonly
 		result = append(result, mount)
 	}
@@ -126,13 +110,27 @@ func dataMounts(name string, dataMounts []riov1.DataMount) (result []v1.VolumeMo
 	return
 }
 
-func volumeMount(name string, volumes []riov1.Volume) (result []v1.VolumeMount) {
+func normalizeVolumes(containerName string, volumes []riov1.Volume) (result []riov1.Volume) {
 	for i, volume := range volumes {
 		if volume.Name == "" {
-			volume.Name = strconv.Itoa(i)
+			if volume.Persistent {
+				// name is required for persistent volumes, so ignore
+				continue
+			}
+			volume.Name = fmt.Sprintf("%s-%d", containerName, i)
 		}
+		if volume.HostPath != "" {
+			volume.Name = "host-" + name.Hex(volume.HostPath, 8)
+		}
+		result = append(result, volume)
+	}
+	return
+}
+
+func volumeMount(containerName string, volumes []riov1.Volume) (result []v1.VolumeMount) {
+	for _, volume := range normalizeVolumes(containerName, volumes) {
 		mount := v1.VolumeMount{
-			Name:      fmt.Sprintf("%s-%s", name, volume.Name),
+			Name:      fmt.Sprintf("vol-%s", volume.Name),
 			MountPath: volume.Path,
 		}
 		result = append(result, mount)
@@ -187,7 +185,7 @@ func envs(containerName string, c *riov1.Container) (result []v1.EnvVar) {
 			continue
 		}
 
-		key := value[2 : len(value)-1]
+		key := strings.ToLower(value[2 : len(value)-1])
 
 		if fieldRefValue, ok := fieldRefs[key]; ok {
 			result = append(result, v1.EnvVar{
@@ -219,14 +217,19 @@ func envs(containerName string, c *riov1.Container) (result []v1.EnvVar) {
 	return
 }
 
-func ports(c *riov1.Container, system bool) (result []v1.ContainerPort) {
+func ports(c *riov1.Container) (result []v1.ContainerPort) {
 	for _, port := range c.Ports {
+		port = serviceports.NormalizeContainerPort(port)
+		if port.Port == 0 {
+			continue
+		}
+
 		p := v1.ContainerPort{
 			Name:          port.Name,
 			ContainerPort: port.TargetPort,
 			Protocol:      serviceports.Protocol(port.Protocol),
 		}
-		if system && port.HostPort {
+		if port.HostPort {
 			p.HostPort = port.Port
 		}
 		result = append(result, p)

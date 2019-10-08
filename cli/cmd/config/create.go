@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"unicode/utf8"
 
-	"github.com/rancher/rio/pkg/constructors"
-
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/stack"
+	"github.com/rancher/rio/pkg/constructors"
 	corev1 "k8s.io/api/core/v1"
 )
 

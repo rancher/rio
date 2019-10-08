@@ -3,8 +3,6 @@ package server
 import (
 	"context"
 
-	"github.com/rancher/rio/modules/system/features/nodes"
-
 	"github.com/rancher/rio/modules"
 	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/rio/pkg/controllers"
@@ -18,32 +16,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/rest"
 )
-
-var Crds = append(crd.NonNamespacedTypes(
-	"ClusterIssuer.certmanager.k8s.io/v1alpha1",
-
-	"RioInfo.admin.rio.cattle.io/v1",
-), crd.NamespacedTypes(
-	"App.rio.cattle.io/v1",
-	"ExternalService.rio.cattle.io/v1",
-	"Router.rio.cattle.io/v1",
-	"Service.rio.cattle.io/v1",
-	"Stack.rio.cattle.io/v1",
-
-	"ClusterDomain.admin.rio.cattle.io/v1",
-	"Feature.admin.rio.cattle.io/v1",
-	"PublicDomain.admin.rio.cattle.io/v1",
-
-	"GitCommit.gitwatcher.cattle.io/v1",
-	"GitWatcher.gitwatcher.cattle.io/v1",
-
-	"ServiceScaleRecommendation.autoscale.rio.cattle.io/v1",
-
-	"Certificate.certmanager.k8s.io/v1alpha1",
-	"Challenge.certmanager.k8s.io/v1alpha1",
-	"Issuer.certmanager.k8s.io/v1alpha1",
-	"Order.certmanager.k8s.io/v1alpha1",
-)...)
 
 func Startup(ctx context.Context, systemNamespace, kubeConfig string) error {
 	loader := kubeconfig.GetInteractiveClientConfig(kubeConfig)
@@ -70,7 +42,6 @@ func Startup(ctx context.Context, systemNamespace, kubeConfig string) error {
 	}
 
 	leader.RunOrDie(ctx, systemNamespace, "rio", rioContext.K8s, func(ctx context.Context) {
-		runtime.Must(nodes.RegisterNodeEndpointIndexer(ctx, rioContext))
 		runtime.Must(controllers.Register(ctx, rioContext))
 		runtime.Must(modules.Register(ctx, rioContext))
 		runtime.Must(rioContext.Start(ctx))
@@ -86,7 +57,7 @@ func Types(ctx context.Context, config *rest.Config) error {
 		return err
 	}
 
-	factory.BatchCreateCRDs(ctx, Crds...)
+	factory.BatchCreateCRDs(ctx, getCRDs()...)
 
 	return factory.BatchWait()
 }

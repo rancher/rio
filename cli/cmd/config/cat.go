@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/rancher/mapper/slice"
-
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/types"

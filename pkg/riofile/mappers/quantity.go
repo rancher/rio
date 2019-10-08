@@ -1,24 +1,26 @@
 package mappers
 
 import (
-	"github.com/rancher/mapper/mappers"
-	"github.com/rancher/rio/pkg/pretty/stringers"
+	"github.com/rancher/norman/pkg/data"
+	"github.com/rancher/norman/pkg/types"
+	"github.com/rancher/norman/pkg/types/mapper"
+	"github.com/rancher/rio/pkg/riofile/stringers"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 type QuantityMapper struct {
-	mappers.DefaultMapper
+	mapper.DefaultMapper
 }
 
-func NewQuantity(field string) QuantityMapper {
+func NewQuantity(field string, args ...string) types.Mapper {
 	return QuantityMapper{
-		DefaultMapper: mappers.DefaultMapper{
+		DefaultMapper: mapper.DefaultMapper{
 			Field: field,
 		},
 	}
 }
 
-func (d QuantityMapper) FromInternal(data map[string]interface{}) {
+func (d QuantityMapper) FromInternal(data data.Object) {
 	v, ok := data[d.Field]
 	if !ok {
 		return
@@ -29,7 +31,7 @@ func (d QuantityMapper) FromInternal(data map[string]interface{}) {
 	}
 }
 
-func (d QuantityMapper) ToInternal(data map[string]interface{}) error {
+func (d QuantityMapper) ToInternal(data data.Object) error {
 	v, ok := data[d.Field]
 	if !ok {
 		return nil

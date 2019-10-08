@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/rancher/wrangler/pkg/yaml"
-
 	"github.com/rancher/rio/pkg/template"
+	"github.com/rancher/wrangler/pkg/yaml"
 )
 
 const (

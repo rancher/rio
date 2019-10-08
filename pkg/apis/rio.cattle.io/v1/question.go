@@ -72,9 +72,11 @@ type SubQuestion struct {
 }
 
 type TemplateMeta struct {
-	Name      string     `json:"name,omitempty"`
-	Version   string     `json:"version,omitempty"`
-	IconURL   string     `json:"iconUrl,omitempty"`
-	Readme    string     `json:"readme,omitempty"`
-	Questions []Question `json:"questions,omitempty"`
+	Name       string     `json:"name,omitempty"`
+	Version    string     `json:"version,omitempty"`
+	IconURL    string     `json:"iconUrl,omitempty"`
+	Readme     string     `json:"readme,omitempty"`
+	Questions  []Question `json:"questions,omitempty"`
+	GoTemplate *bool      `json:"goTemplate,omitempty"`
+	EnvSubst   *bool      `json:"envSubst,omitempty"`
 }

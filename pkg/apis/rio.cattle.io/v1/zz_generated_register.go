@@ -28,7 +28,6 @@ import (
 )
 
 var (
-	AppResourceName             = "apps"
 	ExternalServiceResourceName = "externalservices"
 	RouterResourceName          = "routers"
 	ServiceResourceName         = "services"
@@ -56,8 +55,6 @@ var (
 // Adds the list of known types to Scheme.
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
-		&App{},
-		&AppList{},
 		&ExternalService{},
 		&ExternalServiceList{},
 		&Router{},

@@ -18,7 +18,8 @@ import (
 	"github.com/rancher/rio/cli/cmd/feature"
 	"github.com/rancher/rio/cli/cmd/info"
 	"github.com/rancher/rio/cli/cmd/inspect"
-	"github.com/rancher/rio/cli/cmd/install"
+
+	//"github.com/rancher/rio/cli/cmd/install"
 	"github.com/rancher/rio/cli/cmd/logs"
 	"github.com/rancher/rio/cli/cmd/pods"
 	"github.com/rancher/rio/cli/cmd/promote"
@@ -175,10 +176,10 @@ func main() {
 			appName+" logs [OPTIONS] [CONTAINER_OR_SERVICE_OR_BUILD...]",
 			""),
 
-		builder.Command(&install.Install{},
-			"Install rio management plane",
-			appName+" install [OPTIONS]",
-			""),
+		//builder.Command(&install.Install{},
+		//	"Install rio management plane",
+		//	appName+" install [OPTIONS]",
+		//	""),
 		builder.Command(&uninstall.Uninstall{},
 			"Uninstall rio",
 			appName+" uninstall [OPTIONS]",
