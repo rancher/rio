@@ -20,10 +20,14 @@ package v1beta1
 
 import (
 	"context"
+	"time"
 
+	"github.com/rancher/wrangler/pkg/apply"
+	"github.com/rancher/wrangler/pkg/condition"
 	"github.com/rancher/wrangler/pkg/generic"
 	v1beta1 "k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -40,20 +44,15 @@ import (
 type IngressHandler func(string, *v1beta1.Ingress) (*v1beta1.Ingress, error)
 
 type IngressController interface {
+	generic.ControllerMeta
 	IngressClient
 
 	OnChange(ctx context.Context, name string, sync IngressHandler)
 	OnRemove(ctx context.Context, name string, sync IngressHandler)
 	Enqueue(namespace, name string)
+	EnqueueAfter(namespace, name string, duration time.Duration)
 
 	Cache() IngressCache
-
-	Informer() cache.SharedIndexInformer
-	GroupVersionKind() schema.GroupVersionKind
-
-	AddGenericHandler(ctx context.Context, name string, handler generic.Handler)
-	AddGenericRemoveHandler(ctx context.Context, name string, handler generic.Handler)
-	Updater() generic.Updater
 }
 
 type IngressClient interface {
@@ -118,26 +117,21 @@ func (c *ingressController) Updater() generic.Updater {
 	}
 }
 
-func UpdateIngressOnChange(updater generic.Updater, handler IngressHandler) IngressHandler {
-	return func(key string, obj *v1beta1.Ingress) (*v1beta1.Ingress, error) {
-		if obj == nil {
-			return handler(key, nil)
-		}
-
-		copyObj := obj.DeepCopy()
-		newObj, err := handler(key, copyObj)
-		if newObj != nil {
-			copyObj = newObj
-		}
-		if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
-			newObj, err := updater(copyObj)
-			if newObj != nil && err == nil {
-				copyObj = newObj.(*v1beta1.Ingress)
-			}
-		}
-
-		return copyObj, err
+func UpdateIngressDeepCopyOnChange(client IngressClient, obj *v1beta1.Ingress, handler func(obj *v1beta1.Ingress) (*v1beta1.Ingress, error)) (*v1beta1.Ingress, error) {
+	if obj == nil {
+		return obj, nil
 	}
+
+	copyObj := obj.DeepCopy()
+	newObj, err := handler(copyObj)
+	if newObj != nil {
+		copyObj = newObj
+	}
+	if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
+		return client.Update(copyObj)
+	}
+
+	return copyObj, err
 }
 
 func (c *ingressController) AddGenericHandler(ctx context.Context, name string, handler generic.Handler) {
@@ -160,6 +154,10 @@ func (c *ingressController) OnRemove(ctx context.Context, name string, sync Ingr
 
 func (c *ingressController) Enqueue(namespace, name string) {
 	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), namespace, name)
+}
+
+func (c *ingressController) EnqueueAfter(namespace, name string, duration time.Duration) {
+	c.controllerManager.EnqueueAfter(c.gvk, c.informer.Informer(), namespace, name, duration)
 }
 
 func (c *ingressController) Informer() cache.SharedIndexInformer {
@@ -239,4 +237,104 @@ func (c *ingressCache) GetByIndex(indexName, key string) (result []*v1beta1.Ingr
 		result = append(result, obj.(*v1beta1.Ingress))
 	}
 	return result, nil
+}
+
+type IngressStatusHandler func(obj *v1beta1.Ingress, status v1beta1.IngressStatus) (v1beta1.IngressStatus, error)
+
+type IngressGeneratingHandler func(obj *v1beta1.Ingress, status v1beta1.IngressStatus) ([]runtime.Object, v1beta1.IngressStatus, error)
+
+func RegisterIngressStatusHandler(ctx context.Context, controller IngressController, condition condition.Cond, name string, handler IngressStatusHandler) {
+	statusHandler := &ingressStatusHandler{
+		client:    controller,
+		condition: condition,
+		handler:   handler,
+	}
+	controller.AddGenericHandler(ctx, name, FromIngressHandlerToHandler(statusHandler.sync))
+}
+
+func RegisterIngressGeneratingHandler(ctx context.Context, controller IngressController, apply apply.Apply,
+	condition condition.Cond, name string, handler IngressGeneratingHandler, opts *generic.GeneratingHandlerOptions) {
+	statusHandler := &ingressGeneratingHandler{
+		IngressGeneratingHandler: handler,
+		apply:                    apply,
+		name:                     name,
+		gvk:                      controller.GroupVersionKind(),
+	}
+	if opts != nil {
+		statusHandler.opts = *opts
+	}
+	RegisterIngressStatusHandler(ctx, controller, condition, name, statusHandler.Handle)
+}
+
+type ingressStatusHandler struct {
+	client    IngressClient
+	condition condition.Cond
+	handler   IngressStatusHandler
+}
+
+func (a *ingressStatusHandler) sync(key string, obj *v1beta1.Ingress) (*v1beta1.Ingress, error) {
+	if obj == nil {
+		return obj, nil
+	}
+
+	status := obj.Status
+	obj = obj.DeepCopy()
+	newStatus, err := a.handler(obj, obj.Status)
+	if err != nil {
+		// Revert to old status on error
+		newStatus = *status.DeepCopy()
+	}
+
+	if a.condition != "" {
+		if errors.IsConflict(err) {
+			a.condition.SetError(obj, "", nil)
+		} else {
+			a.condition.SetError(obj, "", err)
+		}
+	}
+	if !equality.Semantic.DeepEqual(status, newStatus) {
+		var newErr error
+		obj.Status = newStatus
+		obj, newErr = a.client.UpdateStatus(obj)
+		if err == nil {
+			err = newErr
+		}
+	}
+	return obj, err
+}
+
+type ingressGeneratingHandler struct {
+	IngressGeneratingHandler
+	apply apply.Apply
+	opts  generic.GeneratingHandlerOptions
+	gvk   schema.GroupVersionKind
+	name  string
+}
+
+func (a *ingressGeneratingHandler) Handle(obj *v1beta1.Ingress, status v1beta1.IngressStatus) (v1beta1.IngressStatus, error) {
+	objs, newStatus, err := a.IngressGeneratingHandler(obj, status)
+	if err != nil {
+		return newStatus, err
+	}
+
+	apply := a.apply
+
+	if !a.opts.DynamicLookup {
+		apply = apply.WithStrictCaching()
+	}
+
+	if !a.opts.AllowCrossNamespace && !a.opts.AllowClusterScoped {
+		apply = apply.WithSetOwnerReference(true, false).
+			WithDefaultNamespace(obj.GetNamespace()).
+			WithListerNamespace(obj.GetNamespace())
+	}
+
+	if !a.opts.AllowClusterScoped {
+		apply = apply.WithRestrictClusterScoped()
+	}
+
+	return newStatus, apply.
+		WithOwner(obj).
+		WithSetID(a.name).
+		ApplyObjects(objs...)
 }

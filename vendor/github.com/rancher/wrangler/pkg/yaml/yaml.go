@@ -3,6 +3,7 @@ package yaml
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"io"
 
 	"github.com/ghodss/yaml"
@@ -44,6 +45,12 @@ func toObjects(bytes []byte) ([]runtime.Object, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	check := map[string]interface{}{}
+	if err := json.Unmarshal(bytes, &check); err != nil || len(check) == 0 {
+		return nil, err
+	}
+
 	obj, _, err := unstructured.UnstructuredJSONScheme.Decode(bytes, nil, nil)
 	if err != nil {
 		return nil, err

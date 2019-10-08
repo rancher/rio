@@ -3,47 +3,20 @@ package server
 import (
 	"context"
 
-	"github.com/rancher/rio/modules/system/features/nodes"
-
 	"github.com/rancher/rio/modules"
-	"github.com/rancher/rio/pkg/constructors"
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/controllers"
+	"github.com/rancher/rio/pkg/stack"
+	"github.com/rancher/rio/pkg/webhook"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/crd"
 	"github.com/rancher/wrangler/pkg/kubeconfig"
 	"github.com/rancher/wrangler/pkg/leader"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/rest"
 )
-
-var Crds = append(crd.NonNamespacedTypes(
-	"ClusterIssuer.certmanager.k8s.io/v1alpha1",
-
-	"RioInfo.admin.rio.cattle.io/v1",
-), crd.NamespacedTypes(
-	"App.rio.cattle.io/v1",
-	"ExternalService.rio.cattle.io/v1",
-	"Router.rio.cattle.io/v1",
-	"Service.rio.cattle.io/v1",
-	"Stack.rio.cattle.io/v1",
-
-	"ClusterDomain.admin.rio.cattle.io/v1",
-	"Feature.admin.rio.cattle.io/v1",
-	"PublicDomain.admin.rio.cattle.io/v1",
-
-	"GitCommit.gitwatcher.cattle.io/v1",
-	"GitWatcher.gitwatcher.cattle.io/v1",
-
-	"ServiceScaleRecommendation.autoscale.rio.cattle.io/v1",
-
-	"Certificate.certmanager.k8s.io/v1alpha1",
-	"Challenge.certmanager.k8s.io/v1alpha1",
-	"Issuer.certmanager.k8s.io/v1alpha1",
-	"Order.certmanager.k8s.io/v1alpha1",
-)...)
 
 func Startup(ctx context.Context, systemNamespace, kubeConfig string) error {
 	loader := kubeconfig.GetInteractiveClientConfig(kubeConfig)
@@ -58,19 +31,20 @@ func Startup(ctx context.Context, systemNamespace, kubeConfig string) error {
 
 	ctx, rioContext := types.BuildContext(ctx, systemNamespace, restConfig)
 
-	namespaceClient := rioContext.Core.Core().V1().Namespace()
-	if _, err := namespaceClient.Get(systemNamespace, metav1.GetOptions{}); err != nil {
-		if !errors.IsNotFound(err) {
-			return err
-		}
-		ns := constructors.NewNamespace(systemNamespace, v1.Namespace{})
-		if _, err := namespaceClient.Create(ns); err != nil {
-			return err
-		}
+	// detect and bootstrap developer environment
+	devMode, err := bootstrapResources(rioContext, systemNamespace)
+	if err != nil {
+		return err
+	}
+	constants.DevMode = devMode
+
+	// setting up auth webhook
+	w := webhook.New(rioContext, kubeConfig, devMode)
+	if err := w.Setup(); err != nil {
+		return err
 	}
 
 	leader.RunOrDie(ctx, systemNamespace, "rio", rioContext.K8s, func(ctx context.Context) {
-		runtime.Must(nodes.RegisterNodeEndpointIndexer(ctx, rioContext))
 		runtime.Must(controllers.Register(ctx, rioContext))
 		runtime.Must(modules.Register(ctx, rioContext))
 		runtime.Must(rioContext.Start(ctx))
@@ -80,13 +54,27 @@ func Startup(ctx context.Context, systemNamespace, kubeConfig string) error {
 	return nil
 }
 
+func bootstrapResources(rioContext *types.Context, systemNamespace string) (bool, error) {
+	if _, err := rioContext.Apps.Apps().V1().Deployment().Get(systemNamespace, "rio-controller", metav1.GetOptions{}); errors.IsNotFound(err) {
+		controllerStack := stack.NewSystemStack(rioContext.Apply, rioContext.Admin.Admin().V1().SystemStack(), systemNamespace, "rio-controller")
+		answer := map[string]string{
+			"NAMESPACE": systemNamespace,
+		}
+		if err := controllerStack.Deploy(answer); err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+	return false, nil
+}
+
 func Types(ctx context.Context, config *rest.Config) error {
 	factory, err := crd.NewFactoryFromClient(config)
 	if err != nil {
 		return err
 	}
 
-	factory.BatchCreateCRDs(ctx, Crds...)
+	factory.BatchCreateCRDs(ctx, getCRDs()...)
 
 	return factory.BatchWait()
 }

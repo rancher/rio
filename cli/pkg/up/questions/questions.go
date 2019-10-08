@@ -8,16 +8,14 @@ import (
 	"strings"
 	"syscall"
 
-	"golang.org/x/crypto/ssh/terminal"
-
-	"github.com/rancher/mapper"
-
 	"github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty"
 	"github.com/pkg/errors"
+	"github.com/rancher/mapper"
 	"github.com/rancher/mapper/builder"
 	"github.com/rancher/mapper/convert"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/kv"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 type Questions struct {

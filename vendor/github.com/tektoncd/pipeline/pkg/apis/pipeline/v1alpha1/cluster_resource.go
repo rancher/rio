@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors.
+Copyright 2019 The Tekton Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,17 +19,12 @@ package v1alpha1
 import (
 	b64 "encoding/base64"
 	"encoding/json"
-	"flag"
-	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/tektoncd/pipeline/pkg/names"
+	"golang.org/x/xerrors"
 	corev1 "k8s.io/api/core/v1"
-)
-
-var (
-	kubeconfigWriterImage = flag.String("kubeconfig-writer-image", "override-with-kubeconfig-writer:latest", "The container image containing our kubeconfig writer binary.")
 )
 
 // ClusterResource represents a cluster configuration (kubeconfig)
@@ -41,8 +36,9 @@ type ClusterResource struct {
 	URL      string `json:"url"`
 	Revision string `json:"revision"`
 	// Server requires Basic authentication
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username  string `json:"username"`
+	Password  string `json:"password"`
+	Namespace string `json:"namespace"`
 	// Server requires Bearer authentication. This client will not attempt to use
 	// refresh tokens for an OAuth2 flow.
 	// Token overrides userame and password
@@ -54,15 +50,18 @@ type ClusterResource struct {
 	CAData []byte `json:"cadata"`
 	//Secrets holds a struct to indicate a field name and corresponding secret name to populate it
 	Secrets []SecretParam `json:"secrets"`
+
+	KubeconfigWriterImage string `json:"-"`
 }
 
 // NewClusterResource create a new k8s cluster resource to pass to a pipeline task
-func NewClusterResource(r *PipelineResource) (*ClusterResource, error) {
+func NewClusterResource(kubeconfigWriterImage string, r *PipelineResource) (*ClusterResource, error) {
 	if r.Spec.Type != PipelineResourceTypeCluster {
-		return nil, fmt.Errorf("ClusterResource: Cannot create a Cluster resource from a %s Pipeline Resource", r.Spec.Type)
+		return nil, xerrors.Errorf("ClusterResource: Cannot create a Cluster resource from a %s Pipeline Resource", r.Spec.Type)
 	}
 	clusterResource := ClusterResource{
-		Type: r.Spec.Type,
+		Type:                  r.Spec.Type,
+		KubeconfigWriterImage: kubeconfigWriterImage,
 	}
 	for _, param := range r.Spec.Params {
 		switch {
@@ -74,6 +73,8 @@ func NewClusterResource(r *PipelineResource) (*ClusterResource, error) {
 			clusterResource.Revision = param.Value
 		case strings.EqualFold(param.Name, "Username"):
 			clusterResource.Username = param.Value
+		case strings.EqualFold(param.Name, "Namespace"):
+			clusterResource.Namespace = param.Value
 		case strings.EqualFold(param.Name, "Password"):
 			clusterResource.Password = param.Value
 		case strings.EqualFold(param.Name, "Token"):
@@ -118,21 +119,19 @@ func (s *ClusterResource) GetURL() string {
 	return s.URL
 }
 
-// GetParams returns the resource params
-func (s ClusterResource) GetParams() []Param { return []Param{} }
-
 // Replacements is used for template replacement on a ClusterResource inside of a Taskrun.
 func (s *ClusterResource) Replacements() map[string]string {
 	return map[string]string{
-		"name":     s.Name,
-		"type":     string(s.Type),
-		"url":      s.URL,
-		"revision": s.Revision,
-		"username": s.Username,
-		"password": s.Password,
-		"token":    s.Token,
-		"insecure": strconv.FormatBool(s.Insecure),
-		"cadata":   string(s.CAData),
+		"name":      s.Name,
+		"type":      string(s.Type),
+		"url":       s.URL,
+		"revision":  s.Revision,
+		"username":  s.Username,
+		"password":  s.Password,
+		"namespace": s.Namespace,
+		"token":     s.Token,
+		"insecure":  strconv.FormatBool(s.Insecure),
+		"cadata":    string(s.CAData),
 	}
 }
 
@@ -141,13 +140,13 @@ func (s ClusterResource) String() string {
 	return string(json)
 }
 
-func (s *ClusterResource) GetUploadContainerSpec() ([]corev1.Container, error) {
-	return nil, nil
+// GetOutputTaskModifier returns a No-op TaskModifier.
+func (s *ClusterResource) GetOutputTaskModifier(_ *TaskSpec, _ string) (TaskModifier, error) {
+	return &InternalTaskModifier{}, nil
 }
 
-func (s *ClusterResource) SetDestinationDirectory(path string) {
-}
-func (s *ClusterResource) GetDownloadContainerSpec() ([]corev1.Container, error) {
+// GetInputTaskModifier returns the TaskModifier to be used when this resource is an input.
+func (s *ClusterResource) GetInputTaskModifier(ts *TaskSpec, path string) (TaskModifier, error) {
 	var envVars []corev1.EnvVar
 	for _, sec := range s.Secrets {
 		ev := corev1.EnvVar{
@@ -163,16 +162,16 @@ func (s *ClusterResource) GetDownloadContainerSpec() ([]corev1.Container, error)
 		}
 		envVars = append(envVars, ev)
 	}
-
-	clusterContainer := corev1.Container{
+	step := Step{Container: corev1.Container{
 		Name:    names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("kubeconfig"),
-		Image:   *kubeconfigWriterImage,
+		Image:   s.KubeconfigWriterImage,
 		Command: []string{"/ko-app/kubeconfigwriter"},
 		Args: []string{
 			"-clusterConfig", s.String(),
 		},
 		Env: envVars,
-	}
-
-	return []corev1.Container{clusterContainer}, nil
+	}}
+	return &InternalTaskModifier{
+		StepsToPrepend: []Step{step},
+	}, nil
 }

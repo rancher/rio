@@ -3,8 +3,7 @@ package types
 import "k8s.io/apimachinery/pkg/runtime"
 
 const (
-	ConfigType          = "config"
-	AppType             = "app"
+	ConfigType          = "configmap"
 	ServiceType         = "service"
 	PodType             = "pod"
 	NamespaceType       = "namespace"
@@ -13,7 +12,7 @@ const (
 	FeatureType         = "feature"
 	PublicDomainType    = "publicdomain"
 	SecretType          = "secret"
-	BuildType           = "build"
+	BuildType           = "taskrun"
 	StackType           = "stack"
 )
 

@@ -22,8 +22,6 @@ import (
 	clientset "github.com/rancher/rio/pkg/generated/clientset/versioned"
 	adminv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/admin.rio.cattle.io/v1"
 	fakeadminv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/admin.rio.cattle.io/v1/fake"
-	autoscalev1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/autoscale.rio.cattle.io/v1"
-	fakeautoscalev1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/autoscale.rio.cattle.io/v1/fake"
 	riov1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/rio.cattle.io/v1"
 	fakeriov1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/rio.cattle.io/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -78,11 +76,6 @@ var _ clientset.Interface = &Clientset{}
 // AdminV1 retrieves the AdminV1Client
 func (c *Clientset) AdminV1() adminv1.AdminV1Interface {
 	return &fakeadminv1.FakeAdminV1{Fake: &c.Fake}
-}
-
-// AutoscaleV1 retrieves the AutoscaleV1Client
-func (c *Clientset) AutoscaleV1() autoscalev1.AutoscaleV1Interface {
-	return &fakeautoscalev1.FakeAutoscaleV1{Fake: &c.Fake}
 }
 
 // RioV1 retrieves the RioV1Client

@@ -20,13 +20,17 @@ package v1
 
 import (
 	"context"
+	"time"
 
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	clientset "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/rio.cattle.io/v1"
 	informers "github.com/rancher/rio/pkg/generated/informers/externalversions/rio.cattle.io/v1"
 	listers "github.com/rancher/rio/pkg/generated/listers/rio.cattle.io/v1"
+	"github.com/rancher/wrangler/pkg/apply"
+	"github.com/rancher/wrangler/pkg/condition"
 	"github.com/rancher/wrangler/pkg/generic"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -40,20 +44,15 @@ import (
 type ExternalServiceHandler func(string, *v1.ExternalService) (*v1.ExternalService, error)
 
 type ExternalServiceController interface {
+	generic.ControllerMeta
 	ExternalServiceClient
 
 	OnChange(ctx context.Context, name string, sync ExternalServiceHandler)
 	OnRemove(ctx context.Context, name string, sync ExternalServiceHandler)
 	Enqueue(namespace, name string)
+	EnqueueAfter(namespace, name string, duration time.Duration)
 
 	Cache() ExternalServiceCache
-
-	Informer() cache.SharedIndexInformer
-	GroupVersionKind() schema.GroupVersionKind
-
-	AddGenericHandler(ctx context.Context, name string, handler generic.Handler)
-	AddGenericRemoveHandler(ctx context.Context, name string, handler generic.Handler)
-	Updater() generic.Updater
 }
 
 type ExternalServiceClient interface {
@@ -118,26 +117,21 @@ func (c *externalServiceController) Updater() generic.Updater {
 	}
 }
 
-func UpdateExternalServiceOnChange(updater generic.Updater, handler ExternalServiceHandler) ExternalServiceHandler {
-	return func(key string, obj *v1.ExternalService) (*v1.ExternalService, error) {
-		if obj == nil {
-			return handler(key, nil)
-		}
-
-		copyObj := obj.DeepCopy()
-		newObj, err := handler(key, copyObj)
-		if newObj != nil {
-			copyObj = newObj
-		}
-		if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
-			newObj, err := updater(copyObj)
-			if newObj != nil && err == nil {
-				copyObj = newObj.(*v1.ExternalService)
-			}
-		}
-
-		return copyObj, err
+func UpdateExternalServiceDeepCopyOnChange(client ExternalServiceClient, obj *v1.ExternalService, handler func(obj *v1.ExternalService) (*v1.ExternalService, error)) (*v1.ExternalService, error) {
+	if obj == nil {
+		return obj, nil
 	}
+
+	copyObj := obj.DeepCopy()
+	newObj, err := handler(copyObj)
+	if newObj != nil {
+		copyObj = newObj
+	}
+	if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
+		return client.Update(copyObj)
+	}
+
+	return copyObj, err
 }
 
 func (c *externalServiceController) AddGenericHandler(ctx context.Context, name string, handler generic.Handler) {
@@ -160,6 +154,10 @@ func (c *externalServiceController) OnRemove(ctx context.Context, name string, s
 
 func (c *externalServiceController) Enqueue(namespace, name string) {
 	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), namespace, name)
+}
+
+func (c *externalServiceController) EnqueueAfter(namespace, name string, duration time.Duration) {
+	c.controllerManager.EnqueueAfter(c.gvk, c.informer.Informer(), namespace, name, duration)
 }
 
 func (c *externalServiceController) Informer() cache.SharedIndexInformer {
@@ -239,4 +237,104 @@ func (c *externalServiceCache) GetByIndex(indexName, key string) (result []*v1.E
 		result = append(result, obj.(*v1.ExternalService))
 	}
 	return result, nil
+}
+
+type ExternalServiceStatusHandler func(obj *v1.ExternalService, status v1.ExternalServiceStatus) (v1.ExternalServiceStatus, error)
+
+type ExternalServiceGeneratingHandler func(obj *v1.ExternalService, status v1.ExternalServiceStatus) ([]runtime.Object, v1.ExternalServiceStatus, error)
+
+func RegisterExternalServiceStatusHandler(ctx context.Context, controller ExternalServiceController, condition condition.Cond, name string, handler ExternalServiceStatusHandler) {
+	statusHandler := &externalServiceStatusHandler{
+		client:    controller,
+		condition: condition,
+		handler:   handler,
+	}
+	controller.AddGenericHandler(ctx, name, FromExternalServiceHandlerToHandler(statusHandler.sync))
+}
+
+func RegisterExternalServiceGeneratingHandler(ctx context.Context, controller ExternalServiceController, apply apply.Apply,
+	condition condition.Cond, name string, handler ExternalServiceGeneratingHandler, opts *generic.GeneratingHandlerOptions) {
+	statusHandler := &externalServiceGeneratingHandler{
+		ExternalServiceGeneratingHandler: handler,
+		apply:                            apply,
+		name:                             name,
+		gvk:                              controller.GroupVersionKind(),
+	}
+	if opts != nil {
+		statusHandler.opts = *opts
+	}
+	RegisterExternalServiceStatusHandler(ctx, controller, condition, name, statusHandler.Handle)
+}
+
+type externalServiceStatusHandler struct {
+	client    ExternalServiceClient
+	condition condition.Cond
+	handler   ExternalServiceStatusHandler
+}
+
+func (a *externalServiceStatusHandler) sync(key string, obj *v1.ExternalService) (*v1.ExternalService, error) {
+	if obj == nil {
+		return obj, nil
+	}
+
+	status := obj.Status
+	obj = obj.DeepCopy()
+	newStatus, err := a.handler(obj, obj.Status)
+	if err != nil {
+		// Revert to old status on error
+		newStatus = *status.DeepCopy()
+	}
+
+	if a.condition != "" {
+		if errors.IsConflict(err) {
+			a.condition.SetError(obj, "", nil)
+		} else {
+			a.condition.SetError(obj, "", err)
+		}
+	}
+	if !equality.Semantic.DeepEqual(status, newStatus) {
+		var newErr error
+		obj.Status = newStatus
+		obj, newErr = a.client.UpdateStatus(obj)
+		if err == nil {
+			err = newErr
+		}
+	}
+	return obj, err
+}
+
+type externalServiceGeneratingHandler struct {
+	ExternalServiceGeneratingHandler
+	apply apply.Apply
+	opts  generic.GeneratingHandlerOptions
+	gvk   schema.GroupVersionKind
+	name  string
+}
+
+func (a *externalServiceGeneratingHandler) Handle(obj *v1.ExternalService, status v1.ExternalServiceStatus) (v1.ExternalServiceStatus, error) {
+	objs, newStatus, err := a.ExternalServiceGeneratingHandler(obj, status)
+	if err != nil {
+		return newStatus, err
+	}
+
+	apply := a.apply
+
+	if !a.opts.DynamicLookup {
+		apply = apply.WithStrictCaching()
+	}
+
+	if !a.opts.AllowCrossNamespace && !a.opts.AllowClusterScoped {
+		apply = apply.WithSetOwnerReference(true, false).
+			WithDefaultNamespace(obj.GetNamespace()).
+			WithListerNamespace(obj.GetNamespace())
+	}
+
+	if !a.opts.AllowClusterScoped {
+		apply = apply.WithRestrictClusterScoped()
+	}
+
+	return newStatus, apply.
+		WithOwner(obj).
+		WithSetID(a.name).
+		ApplyObjects(objs...)
 }

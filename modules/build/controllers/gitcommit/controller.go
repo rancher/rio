@@ -6,7 +6,6 @@ import (
 
 	webhookv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
 	webhookv1controller "github.com/rancher/gitwatcher/pkg/generated/controllers/gitwatcher.cattle.io/v1"
-	"github.com/rancher/rio/modules/service/controllers/serviceset"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
@@ -16,7 +15,6 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	h := Handler{
 		ctx:              ctx,
 		namespace:        rContext.Namespace,
-		appsCache:        rContext.Rio.Rio().V1().App().Cache(),
 		services:         rContext.Rio.Rio().V1().Service(),
 		stacks:           rContext.Rio.Rio().V1().Stack(),
 		gitWatcherCache:  rContext.Webhook.Gitwatcher().V1().GitWatcher().Cache(),
@@ -24,9 +22,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		gitcommits:       rContext.Webhook.Gitwatcher().V1().GitCommit(),
 	}
 
-	wupdator := webhookv1controller.UpdateGitCommitOnChange(rContext.Webhook.Gitwatcher().V1().GitCommit().Updater(), h.onChange)
-
-	rContext.Webhook.Gitwatcher().V1().GitCommit().OnChange(ctx, "webhook-execution", wupdator)
+	rContext.Webhook.Gitwatcher().V1().GitCommit().OnChange(ctx, "webhook-execution", h.onChange)
 
 	rContext.Rio.Rio().V1().Service().OnChange(ctx, "service-update-gitcommit", h.updateGitcommit)
 
@@ -36,7 +32,6 @@ func Register(ctx context.Context, rContext *types.Context) error {
 type Handler struct {
 	ctx              context.Context
 	namespace        string
-	appsCache        riov1controller.AppCache
 	gitWatcherCache  webhookv1controller.GitWatcherCache
 	gitWatcherClient webhookv1controller.GitWatcherClient
 	gitcommits       webhookv1controller.GitCommitController
@@ -49,16 +44,29 @@ func (h Handler) onChange(key string, obj *webhookv1.GitCommit) (*webhookv1.GitC
 		return obj, nil
 	}
 
+	if webhookv1.GitWebHookExecutionConditionHandled.IsTrue(obj) {
+		return obj, nil
+	}
+
 	gitWatcher, err := h.gitWatcherCache.Get(obj.Namespace, obj.Spec.GitWatcherName)
 	if err != nil {
 		return nil, err
 	}
 
 	if isOwnedByStack(gitWatcher) {
-		return h.onChangeStack(key, obj, gitWatcher)
+		if _, err := h.onChangeStack(key, obj, gitWatcher); err != nil {
+			return nil, err
+		}
 	}
 
-	return h.onChangeService(key, obj, gitWatcher)
+	if _, err := h.onChangeService(key, obj, gitWatcher); err != nil {
+		return nil, err
+	}
+
+	obj = obj.DeepCopy()
+	webhookv1.GitWebHookExecutionConditionHandled.SetStatus(obj, "True")
+	_, err = h.gitcommits.Update(obj)
+	return obj, err
 }
 
 func (h Handler) updateGitcommit(key string, obj *riov1.Service) (*riov1.Service, error) {
@@ -70,10 +78,7 @@ func (h Handler) updateGitcommit(key string, obj *riov1.Service) (*riov1.Service
 		return obj, nil
 	}
 
-	rev := obj.Spec.Build.Revision
-	if rev == "" {
-		rev = obj.Status.FirstRevision
-	}
+	rev := obj.Spec.ImageBuild.Revision
 	if rev == "" {
 		return obj, nil
 	}
@@ -98,7 +103,7 @@ func (h Handler) updateGitcommit(key string, obj *riov1.Service) (*riov1.Service
 		endpoint = obj.Status.Endpoints[0]
 	}
 	state := "in_progress"
-	if serviceset.IsReady(obj.Status.DeploymentStatus) {
+	if obj.Status.DeploymentReady {
 		state = "success"
 	}
 	update := false

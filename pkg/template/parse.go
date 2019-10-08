@@ -1,6 +1,10 @@
 package template
 
 import (
+	"bufio"
+	"bytes"
+	"strings"
+
 	"github.com/drone/envsubst"
 	"github.com/rancher/mapper"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
@@ -76,8 +80,29 @@ func (t *Template) Validate() error {
 	return err
 }
 
+func (t *Template) afterTemplate(content []byte) []byte {
+	found := false
+
+	result := bytes.Buffer{}
+	scan := bufio.NewScanner(bytes.NewReader(content))
+	for scan.Scan() {
+		if strings.HasPrefix(string(scan.Bytes()), "template:") {
+			found = true
+		}
+		if found {
+			result.Write(scan.Bytes())
+			result.WriteRune('\n')
+		}
+	}
+
+	if found {
+		return result.Bytes()
+	}
+	return content
+}
+
 func (t *Template) parseContent(answersCB AnswerCallback) ([]byte, error) {
-	content, err := gotemplate.Apply(t.Content, nil)
+	content, err := gotemplate.Apply(t.afterTemplate(t.Content), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -90,19 +115,23 @@ func (t *Template) parseContent(answersCB AnswerCallback) ([]byte, error) {
 	var (
 		callbackErrs []error
 		answers      = map[string]string{}
+		evaled       = string(t.Content)
 	)
 
-	evaled, err := envsubst.Eval(string(t.Content), func(key string) string {
-		if answersCB == nil {
-			return ""
-		}
-		val, err := answersCB(key, template.Meta.Questions)
-		if err != nil {
-			callbackErrs = append(callbackErrs, err)
-		}
-		answers[key] = val
-		return val
-	})
+	if template.Meta.EnvSubst == nil || *template.Meta.EnvSubst {
+		evaled, err = envsubst.Eval(evaled, func(key string) string {
+			if answersCB == nil {
+				return ""
+			}
+			val, err := answersCB(key, template.Meta.Questions)
+			if err != nil {
+				callbackErrs = append(callbackErrs, err)
+			}
+			answers[key] = val
+			return val
+		})
+	}
+
 	for _, q := range template.Meta.Questions {
 		if answersCB == nil {
 			break
@@ -119,5 +148,9 @@ func (t *Template) parseContent(answersCB AnswerCallback) ([]byte, error) {
 		return nil, mapper.NewErrors(callbackErrs...)
 	}
 
-	return gotemplate.Apply([]byte(evaled), answers)
+	if template.Meta.GoTemplate == nil || *template.Meta.GoTemplate {
+		return gotemplate.Apply([]byte(evaled), answers)
+	}
+
+	return []byte(evaled), nil
 }

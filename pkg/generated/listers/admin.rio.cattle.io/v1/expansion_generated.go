@@ -22,26 +22,14 @@ package v1
 // ClusterDomainLister.
 type ClusterDomainListerExpansion interface{}
 
-// ClusterDomainNamespaceListerExpansion allows custom methods to be added to
-// ClusterDomainNamespaceLister.
-type ClusterDomainNamespaceListerExpansion interface{}
-
-// FeatureListerExpansion allows custom methods to be added to
-// FeatureLister.
-type FeatureListerExpansion interface{}
-
-// FeatureNamespaceListerExpansion allows custom methods to be added to
-// FeatureNamespaceLister.
-type FeatureNamespaceListerExpansion interface{}
-
 // PublicDomainListerExpansion allows custom methods to be added to
 // PublicDomainLister.
 type PublicDomainListerExpansion interface{}
 
-// PublicDomainNamespaceListerExpansion allows custom methods to be added to
-// PublicDomainNamespaceLister.
-type PublicDomainNamespaceListerExpansion interface{}
-
 // RioInfoListerExpansion allows custom methods to be added to
 // RioInfoLister.
 type RioInfoListerExpansion interface{}
+
+// SystemStackListerExpansion allows custom methods to be added to
+// SystemStackLister.
+type SystemStackListerExpansion interface{}

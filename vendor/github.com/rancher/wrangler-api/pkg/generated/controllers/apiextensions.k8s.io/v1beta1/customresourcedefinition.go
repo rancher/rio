@@ -20,13 +20,17 @@ package v1beta1
 
 import (
 	"context"
+	"time"
 
+	"github.com/rancher/wrangler/pkg/apply"
+	"github.com/rancher/wrangler/pkg/condition"
 	"github.com/rancher/wrangler/pkg/generic"
 	v1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	clientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	informers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions/apiextensions/v1beta1"
 	listers "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -40,20 +44,15 @@ import (
 type CustomResourceDefinitionHandler func(string, *v1beta1.CustomResourceDefinition) (*v1beta1.CustomResourceDefinition, error)
 
 type CustomResourceDefinitionController interface {
+	generic.ControllerMeta
 	CustomResourceDefinitionClient
 
 	OnChange(ctx context.Context, name string, sync CustomResourceDefinitionHandler)
 	OnRemove(ctx context.Context, name string, sync CustomResourceDefinitionHandler)
 	Enqueue(name string)
+	EnqueueAfter(name string, duration time.Duration)
 
 	Cache() CustomResourceDefinitionCache
-
-	Informer() cache.SharedIndexInformer
-	GroupVersionKind() schema.GroupVersionKind
-
-	AddGenericHandler(ctx context.Context, name string, handler generic.Handler)
-	AddGenericRemoveHandler(ctx context.Context, name string, handler generic.Handler)
-	Updater() generic.Updater
 }
 
 type CustomResourceDefinitionClient interface {
@@ -118,26 +117,21 @@ func (c *customResourceDefinitionController) Updater() generic.Updater {
 	}
 }
 
-func UpdateCustomResourceDefinitionOnChange(updater generic.Updater, handler CustomResourceDefinitionHandler) CustomResourceDefinitionHandler {
-	return func(key string, obj *v1beta1.CustomResourceDefinition) (*v1beta1.CustomResourceDefinition, error) {
-		if obj == nil {
-			return handler(key, nil)
-		}
-
-		copyObj := obj.DeepCopy()
-		newObj, err := handler(key, copyObj)
-		if newObj != nil {
-			copyObj = newObj
-		}
-		if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
-			newObj, err := updater(copyObj)
-			if newObj != nil && err == nil {
-				copyObj = newObj.(*v1beta1.CustomResourceDefinition)
-			}
-		}
-
-		return copyObj, err
+func UpdateCustomResourceDefinitionDeepCopyOnChange(client CustomResourceDefinitionClient, obj *v1beta1.CustomResourceDefinition, handler func(obj *v1beta1.CustomResourceDefinition) (*v1beta1.CustomResourceDefinition, error)) (*v1beta1.CustomResourceDefinition, error) {
+	if obj == nil {
+		return obj, nil
 	}
+
+	copyObj := obj.DeepCopy()
+	newObj, err := handler(copyObj)
+	if newObj != nil {
+		copyObj = newObj
+	}
+	if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
+		return client.Update(copyObj)
+	}
+
+	return copyObj, err
 }
 
 func (c *customResourceDefinitionController) AddGenericHandler(ctx context.Context, name string, handler generic.Handler) {
@@ -160,6 +154,10 @@ func (c *customResourceDefinitionController) OnRemove(ctx context.Context, name 
 
 func (c *customResourceDefinitionController) Enqueue(name string) {
 	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), "", name)
+}
+
+func (c *customResourceDefinitionController) EnqueueAfter(name string, duration time.Duration) {
+	c.controllerManager.EnqueueAfter(c.gvk, c.informer.Informer(), "", name, duration)
 }
 
 func (c *customResourceDefinitionController) Informer() cache.SharedIndexInformer {
@@ -239,4 +237,104 @@ func (c *customResourceDefinitionCache) GetByIndex(indexName, key string) (resul
 		result = append(result, obj.(*v1beta1.CustomResourceDefinition))
 	}
 	return result, nil
+}
+
+type CustomResourceDefinitionStatusHandler func(obj *v1beta1.CustomResourceDefinition, status v1beta1.CustomResourceDefinitionStatus) (v1beta1.CustomResourceDefinitionStatus, error)
+
+type CustomResourceDefinitionGeneratingHandler func(obj *v1beta1.CustomResourceDefinition, status v1beta1.CustomResourceDefinitionStatus) ([]runtime.Object, v1beta1.CustomResourceDefinitionStatus, error)
+
+func RegisterCustomResourceDefinitionStatusHandler(ctx context.Context, controller CustomResourceDefinitionController, condition condition.Cond, name string, handler CustomResourceDefinitionStatusHandler) {
+	statusHandler := &customResourceDefinitionStatusHandler{
+		client:    controller,
+		condition: condition,
+		handler:   handler,
+	}
+	controller.AddGenericHandler(ctx, name, FromCustomResourceDefinitionHandlerToHandler(statusHandler.sync))
+}
+
+func RegisterCustomResourceDefinitionGeneratingHandler(ctx context.Context, controller CustomResourceDefinitionController, apply apply.Apply,
+	condition condition.Cond, name string, handler CustomResourceDefinitionGeneratingHandler, opts *generic.GeneratingHandlerOptions) {
+	statusHandler := &customResourceDefinitionGeneratingHandler{
+		CustomResourceDefinitionGeneratingHandler: handler,
+		apply: apply,
+		name:  name,
+		gvk:   controller.GroupVersionKind(),
+	}
+	if opts != nil {
+		statusHandler.opts = *opts
+	}
+	RegisterCustomResourceDefinitionStatusHandler(ctx, controller, condition, name, statusHandler.Handle)
+}
+
+type customResourceDefinitionStatusHandler struct {
+	client    CustomResourceDefinitionClient
+	condition condition.Cond
+	handler   CustomResourceDefinitionStatusHandler
+}
+
+func (a *customResourceDefinitionStatusHandler) sync(key string, obj *v1beta1.CustomResourceDefinition) (*v1beta1.CustomResourceDefinition, error) {
+	if obj == nil {
+		return obj, nil
+	}
+
+	status := obj.Status
+	obj = obj.DeepCopy()
+	newStatus, err := a.handler(obj, obj.Status)
+	if err != nil {
+		// Revert to old status on error
+		newStatus = *status.DeepCopy()
+	}
+
+	if a.condition != "" {
+		if errors.IsConflict(err) {
+			a.condition.SetError(obj, "", nil)
+		} else {
+			a.condition.SetError(obj, "", err)
+		}
+	}
+	if !equality.Semantic.DeepEqual(status, newStatus) {
+		var newErr error
+		obj.Status = newStatus
+		obj, newErr = a.client.UpdateStatus(obj)
+		if err == nil {
+			err = newErr
+		}
+	}
+	return obj, err
+}
+
+type customResourceDefinitionGeneratingHandler struct {
+	CustomResourceDefinitionGeneratingHandler
+	apply apply.Apply
+	opts  generic.GeneratingHandlerOptions
+	gvk   schema.GroupVersionKind
+	name  string
+}
+
+func (a *customResourceDefinitionGeneratingHandler) Handle(obj *v1beta1.CustomResourceDefinition, status v1beta1.CustomResourceDefinitionStatus) (v1beta1.CustomResourceDefinitionStatus, error) {
+	objs, newStatus, err := a.CustomResourceDefinitionGeneratingHandler(obj, status)
+	if err != nil {
+		return newStatus, err
+	}
+
+	apply := a.apply
+
+	if !a.opts.DynamicLookup {
+		apply = apply.WithStrictCaching()
+	}
+
+	if !a.opts.AllowCrossNamespace && !a.opts.AllowClusterScoped {
+		apply = apply.WithSetOwnerReference(true, false).
+			WithDefaultNamespace(obj.GetNamespace()).
+			WithListerNamespace(obj.GetNamespace())
+	}
+
+	if !a.opts.AllowClusterScoped {
+		apply = apply.WithRestrictClusterScoped()
+	}
+
+	return newStatus, apply.
+		WithOwner(obj).
+		WithSetID(a.name).
+		ApplyObjects(objs...)
 }

@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/generated/clientset/versioned/scheme"
 	"github.com/rancher/wrangler/pkg/kubeconfig"
 	appv1 "k8s.io/api/apps/v1"
@@ -20,8 +21,21 @@ import (
 	"k8s.io/kubernetes/pkg/kubectl/cmd/portforward"
 )
 
-func portForward(podName, podNamespace string, k8s *kubernetes.Clientset, port, targetPort string, stopChan chan struct{}) error {
+func portForward(podNamespace string, k8s *kubernetes.Clientset, port, targetPort string, stopChan chan struct{}) error {
 	loader := kubeconfig.GetInteractiveClientConfig(os.Getenv("KUBECONFIG"))
+	pods, err := k8s.CoreV1().Pods(podNamespace).List(metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("app=%s", constants.BuildkitdService),
+	})
+	if err != nil {
+		return err
+	}
+	var pod v1.Pod
+	for _, p := range pods.Items {
+		if p.Status.Phase == v1.PodRunning {
+			pod = p
+			break
+		}
+	}
 
 	restConfig, err := loader.ClientConfig()
 	if err != nil {
@@ -38,7 +52,7 @@ func portForward(podName, podNamespace string, k8s *kubernetes.Clientset, port, 
 
 	portForwardOpt := portforward.PortForwardOptions{
 		Namespace:    podNamespace,
-		PodName:      podName,
+		PodName:      pod.Name,
 		RESTClient:   restClient,
 		Config:       restConfig,
 		PodClient:    k8s.CoreV1(),

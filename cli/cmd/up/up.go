@@ -5,13 +5,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/rancher/rio/cli/cmd/apply"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/localbuilder"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/stack"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,16 +32,13 @@ const (
 )
 
 func (u *Up) Run(c *clicontext.CLIContext) error {
-	if u.Name == "" {
-		u.Name = getCurrentDir()
-	}
 	namespace := c.GetSetNamespace()
 	if namespace == "" {
 		namespace = c.GetDefaultNamespace()
 	}
 
 	if len(c.CLI.Args()) > 0 {
-		s := riov1.NewStack(namespace, u.Name, riov1.Stack{
+		s := riov1.NewStack(namespace, c.CLI.Args()[0], riov1.Stack{
 			Spec: riov1.StackSpec{
 				Build: &riov1.StackBuild{
 					Repo:     c.CLI.Args()[0],
@@ -90,13 +87,6 @@ func (u *Up) Run(c *clicontext.CLIContext) error {
 		return err
 	}
 
-	s := riov1.NewStack(namespace, u.Name, riov1.Stack{
-		Spec: riov1.StackSpec{
-			Template: string(content),
-			Answers:  answers,
-		},
-	})
-
 	deployStack := stack.NewStack(content, answers)
 	imageBuilds, err := deployStack.GetImageBuilds()
 	if err != nil {
@@ -104,8 +94,7 @@ func (u *Up) Run(c *clicontext.CLIContext) error {
 	}
 
 	if len(imageBuilds) > 0 {
-		pushLocal := os.Getenv("PUSH_LOCAL") == "TRUE"
-		localBuilder, err := localbuilder.NewLocalBuilder(c.Ctx, c.BuildkitPodName, c.SocatPodName, c.SystemNamespace, pushLocal, c.Apply, c.K8s)
+		localBuilder, err := localbuilder.NewLocalBuilder(c.Ctx, c.SystemNamespace, c.Apply, c.K8s)
 		if err != nil {
 			return err
 		}
@@ -115,25 +104,20 @@ func (u *Up) Run(c *clicontext.CLIContext) error {
 			return err
 		}
 		for k, i := range images {
-			localRegsitry := fmt.Sprintf("registry.%s", c.SystemNamespace)
+			localRegsitry := constants.RegistryService
 			if strings.HasPrefix(i, localRegsitry) {
 				images[k] = strings.Replace(i, localRegsitry, "localhost:5442", -1)
 			}
 		}
-		s.Spec.Images = images
-	}
-
-	existing, err := c.Rio.Stacks(namespace).Get(u.Name, metav1.GetOptions{})
-	if err != nil {
-		if errors.IsNotFound(err) {
-			return c.Create(s)
+		if err := deployStack.SetServiceImages(images); err != nil {
+			return err
 		}
+	}
+	objs, err := deployStack.GetObjects()
+	if err != nil {
 		return err
 	}
-	existing.Spec.Template = s.Spec.Template
-	existing.Spec.Answers = s.Spec.Answers
-	existing.Spec.Images = s.Spec.Images
-	return c.UpdateObject(existing)
+	return c.Apply.ApplyObjects(objs...)
 }
 
 func readFile(file string) ([]byte, error) {
@@ -149,10 +133,4 @@ func readFile(file string) ([]byte, error) {
 		return ioutil.ReadAll(resp.Body)
 	}
 	return ioutil.ReadFile(file)
-}
-
-func getCurrentDir() string {
-	workingDir, _ := os.Getwd()
-	dir := filepath.Base(workingDir)
-	return dir
 }

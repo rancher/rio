@@ -5,10 +5,10 @@ import (
 	"io"
 	"os"
 
+	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
+
 	"github.com/pkg/errors"
-	"github.com/rancher/rio/pkg/constants"
 	projectv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/admin.rio.cattle.io/v1"
-	autoscalev1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/autoscale.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/kubeconfig"
@@ -25,32 +25,29 @@ import (
 var ErrNoConfig = errors.New("Can not find rio info resource inside your cluster. Have you installed Rio?(run `rio install --help`)")
 
 type Config struct {
-	ShowSystem       bool
-	SystemNamespace  string
-	DefaultNamespace string
-	Kubeconfig       string
-	Debug            bool
-	Wait             bool
-	WaitTimeout      int
-	WaitState        string
+	AllNamespace        bool
+	ShowSystemNamespace bool
+	SystemNamespace     string
+	DefaultNamespace    string
+	Kubeconfig          string
+	Debug               bool
+	Wait                bool
+	WaitTimeout         int
+	WaitState           string
 
 	Apply      apply.Apply
 	RestConfig *rest.Config
 	K8s        *kubernetes.Clientset
 
-	Core      corev1.CoreV1Interface
-	Build     tektonv1alpha1.TektonV1alpha1Interface
-	Rio       riov1.RioV1Interface
-	Project   projectv1.AdminV1Interface
-	Autoscale autoscalev1.AutoscaleV1Interface
+	Core    corev1.CoreV1Interface
+	Build   tektonv1alpha1.TektonV1alpha1Interface
+	Rio     riov1.RioV1Interface
+	Project projectv1.AdminV1Interface
 
 	NoPrompt bool
 	Writer   io.Writer
 
 	DebugLevel string
-
-	BuildkitPodName string
-	SocatPodName    string
 }
 
 func (c *Config) Validate() error {
@@ -62,7 +59,16 @@ func (c *Config) Validate() error {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
+	if c.ShowSystemNamespace {
+		c.DefaultNamespace = c.SystemNamespace
+	}
+
 	loader := kubeconfig.GetInteractiveClientConfig(c.Kubeconfig)
+
+	defaultNs, _, err := loader.Namespace()
+	if err != nil {
+		return err
+	}
 
 	restConfig, err := loader.ClientConfig()
 	if err != nil {
@@ -92,11 +98,6 @@ func (c *Config) Validate() error {
 		return err
 	}
 
-	autoscale, err := autoscalev1.NewForConfig(restConfig)
-	if err != nil {
-		return err
-	}
-
 	k8s := kubernetes.NewForConfigOrDie(restConfig)
 
 	c.Apply = apply.New(k8s.Discovery(), apply.NewClientFactory(restConfig))
@@ -106,7 +107,10 @@ func (c *Config) Validate() error {
 	c.Project = project
 	c.Core = core
 	c.Build = build
-	c.Autoscale = autoscale
+
+	if c.DefaultNamespace == "" {
+		c.DefaultNamespace = defaultNs
+	}
 
 	if info, err := project.RioInfos().Get("rio", metav1.GetOptions{}); err != nil {
 		if !errors2.IsForbidden(err) {
@@ -115,22 +119,21 @@ func (c *Config) Validate() error {
 		}
 	} else {
 		c.SystemNamespace = info.Status.SystemNamespace
-		c.BuildkitPodName = info.Status.BuildkitPodName
-		c.SocatPodName = info.Status.SocatPodName
 	}
 
-	if c.DefaultNamespace == c.SystemNamespace {
-		c.ShowSystem = true
-	}
 	c.Writer = os.Stdout
 
 	return nil
 }
 
-func (c *Config) Domain() (string, error) {
-	clusterDomain, err := c.Project.ClusterDomains(c.SystemNamespace).Get(constants.ClusterDomainName, metav1.GetOptions{})
+func (c *Config) Domain() (*v1.ClusterDomain, error) {
+	clusterDomain, err := c.Project.ClusterDomains().List(metav1.ListOptions{})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return clusterDomain.Status.ClusterDomain, nil
+
+	if len(clusterDomain.Items) > 0 {
+		return &clusterDomain.Items[0], nil
+	}
+	return nil, nil
 }

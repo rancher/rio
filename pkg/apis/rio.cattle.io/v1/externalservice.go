@@ -24,7 +24,10 @@ type ExternalServiceSpec struct {
 	FQDN string `json:"fqdn,omitempty"`
 
 	// In-Mesh service name in another namespace
-	Service string `json:"service,omitempty"`
+	TargetServiceName string `json:"targetServiceName,omitempty"`
+
+	// Namespace of in-mesh service in another namespace
+	TargetServiceNamespace string `json:"targetServiceNamespace,omitempty"`
 }
 
 type ExternalServiceStatus struct {

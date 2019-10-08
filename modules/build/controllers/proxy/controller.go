@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/rancher/rio/pkg/constants"
+
 	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/apply"
@@ -39,7 +41,7 @@ func (h *Handler) onChange(key string, svc *corev1.Service) (*corev1.Service, er
 		return nil, nil
 	}
 
-	if svc.Namespace != h.namespace || svc.Name != "registry" {
+	if svc.Namespace != h.namespace || svc.Name != constants.BuildkitdService {
 		return svc, nil
 	}
 
@@ -47,7 +49,7 @@ func (h *Handler) onChange(key string, svc *corev1.Service) (*corev1.Service, er
 		return svc, nil
 	}
 
-	socatDeploy := constructors.NewDaemonset(svc.Namespace, "socat", v1.Deployment{
+	socatDeploy := constructors.NewDaemonset(svc.Namespace, "socat", v1.DaemonSet{
 		ObjectMeta: v12.ObjectMeta{
 			OwnerReferences: []v12.OwnerReference{
 				{
@@ -58,7 +60,7 @@ func (h *Handler) onChange(key string, svc *corev1.Service) (*corev1.Service, er
 				},
 			},
 		},
-		Spec: v1.DeploymentSpec{
+		Spec: v1.DaemonSetSpec{
 			Selector: &v12.LabelSelector{
 				MatchLabels: map[string]string{
 					"app": "socat",

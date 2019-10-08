@@ -20,7 +20,22 @@ func Populate(service *riov1.Service, os *objectset.ObjectSet) error {
 	addServiceAccount(labels, *subject, os)
 	addRoles(labels, *subject, service, os)
 	addRules(labels, *subject, service, os)
+	return nil
+}
+
+func PopulateCluster(service *riov1.Service, os *objectset.ObjectSet) error {
+	labels := servicelabels.ServiceLabels(service)
+	subject := subject(service)
+	if subject == nil {
+		return nil
+	}
+
+	labels["rio.cattle.io/service"] = service.Name
+	labels["rio.cattle.io/namespace"] = service.Namespace
+
+	addClusterRoles(labels, *subject, service, os)
 	addClusterRules(labels, *subject, service, os)
+
 	return nil
 }
 
@@ -38,13 +53,8 @@ func subject(service *riov1.Service) *v1.Subject {
 }
 
 func ServiceAccountName(service *riov1.Service) string {
-	if len(service.Spec.Permissions) == 0 &&
-		len(service.Spec.GlobalPermissions) == 0 && service.Spec.DisableServiceAccount {
+	if len(service.Spec.Permissions) == 0 && len(service.Spec.GlobalPermissions) == 0 && service.Spec.ServiceMesh != nil && !*service.Spec.ServiceMesh {
 		return ""
-	}
-	// need to hard code name as it is hardcoded in istio
-	if service.Name == "istio-sidecar-injector" {
-		return service.Name + "-service-account"
 	}
 	return service.Name
 }
@@ -65,7 +75,9 @@ func addRoles(labels map[string]string, subject v1.Subject, service *riov1.Servi
 		}
 		os.Add(roleBinding)
 	}
+}
 
+func addClusterRoles(labels map[string]string, subject v1.Subject, service *riov1.Service, os *objectset.ObjectSet) {
 	for _, role := range service.Spec.GlobalPermissions {
 		if role.Role == "" {
 			continue

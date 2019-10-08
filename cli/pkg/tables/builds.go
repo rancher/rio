@@ -3,15 +3,16 @@ package tables
 import (
 	"fmt"
 
-	"github.com/knative/pkg/apis"
+	"github.com/rancher/rio/cli/pkg/types"
 
 	"github.com/rancher/rio/cli/pkg/table"
 	tektonv1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	"knative.dev/pkg/apis"
 )
 
 func NewBuild(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
-		{"NAME", "{{stackScopedName .Obj.Namespace .Obj.Name ``}}"},
+		{"NAME", "{{id .Obj}}"},
 		{"SERVICE/STACK", "{{.Obj | findService}}"},
 		{"REVISION", "{{.Obj | findRevision}}"},
 		{"CREATED", "{{.Obj.CreationTimestamp | ago}}"},
@@ -19,7 +20,6 @@ func NewBuild(cfg Config) TableWriter {
 		{"REASON", "{{ .Obj | reason }}"},
 	}, cfg)
 
-	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cfg.GetSetNamespace()))
 	writer.AddFormatFunc("findService", findService)
 	writer.AddFormatFunc("findRevision", findRevision)
 	writer.AddFormatFunc("succeed", findSucceed)
@@ -60,12 +60,10 @@ func findService(data interface{}) (string, error) {
 	}
 	if m.Labels["service-name"] != "" {
 		name := m.Labels["service-name"]
-		namespace := m.Labels["service-namespace"]
-		return fmt.Sprintf("%s/%s", namespace, name), nil
+		return fmt.Sprintf("%s/%s", types.ServiceType, name), nil
 	} else if m.Labels["stack-name"] != "" {
 		name := m.Labels["stack-name"]
-		namespace := m.Labels["stack-namespace"]
-		return fmt.Sprintf("%s/%s", namespace, name), nil
+		return fmt.Sprintf("%s/%s", types.StackType, name), nil
 	}
 	return "", nil
 }

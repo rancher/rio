@@ -20,7 +20,6 @@ package versioned
 
 import (
 	adminv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/admin.rio.cattle.io/v1"
-	autoscalev1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/autoscale.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/rio.cattle.io/v1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
@@ -30,7 +29,6 @@ import (
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	AdminV1() adminv1.AdminV1Interface
-	AutoscaleV1() autoscalev1.AutoscaleV1Interface
 	RioV1() riov1.RioV1Interface
 }
 
@@ -38,19 +36,13 @@ type Interface interface {
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	adminV1     *adminv1.AdminV1Client
-	autoscaleV1 *autoscalev1.AutoscaleV1Client
-	rioV1       *riov1.RioV1Client
+	adminV1 *adminv1.AdminV1Client
+	rioV1   *riov1.RioV1Client
 }
 
 // AdminV1 retrieves the AdminV1Client
 func (c *Clientset) AdminV1() adminv1.AdminV1Interface {
 	return c.adminV1
-}
-
-// AutoscaleV1 retrieves the AutoscaleV1Client
-func (c *Clientset) AutoscaleV1() autoscalev1.AutoscaleV1Interface {
-	return c.autoscaleV1
 }
 
 // RioV1 retrieves the RioV1Client
@@ -78,10 +70,6 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
-	cs.autoscaleV1, err = autoscalev1.NewForConfig(&configShallowCopy)
-	if err != nil {
-		return nil, err
-	}
 	cs.rioV1, err = riov1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
@@ -99,7 +87,6 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
 	cs.adminV1 = adminv1.NewForConfigOrDie(c)
-	cs.autoscaleV1 = autoscalev1.NewForConfigOrDie(c)
 	cs.rioV1 = riov1.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
@@ -110,7 +97,6 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
 	cs.adminV1 = adminv1.New(c)
-	cs.autoscaleV1 = autoscalev1.New(c)
 	cs.rioV1 = riov1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)

@@ -3,15 +3,17 @@ package mappers
 import (
 	"strings"
 
-	"github.com/rancher/mapper"
-	"github.com/rancher/mapper/mappers"
+	"github.com/rancher/norman/pkg/types/mapper"
+
+	"github.com/rancher/norman/pkg/data"
+	"github.com/rancher/norman/pkg/types"
 )
 
 type LabelCleaner struct {
-	mappers.DefaultMapper
+	mapper.DefaultMapper
 }
 
-func (d LabelCleaner) FromInternal(data map[string]interface{}) {
+func (d LabelCleaner) FromInternal(data data.Object) {
 	annotations, ok := data["annotations"].(map[string]interface{})
 	if ok {
 		for k := range annotations {
@@ -37,10 +39,10 @@ func (d LabelCleaner) FromInternal(data map[string]interface{}) {
 	}
 }
 
-func (d LabelCleaner) ToInternal(data map[string]interface{}) error {
+func (d LabelCleaner) ToInternal(data data.Object) error {
 	return nil
 }
 
-func (d LabelCleaner) ModifySchema(schema *mapper.Schema, schemas *mapper.Schemas) error {
+func (d LabelCleaner) ModifySchema(schema *types.Schema, schemas *types.Schemas) error {
 	return nil
 }

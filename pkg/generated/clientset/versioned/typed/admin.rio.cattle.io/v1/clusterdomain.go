@@ -32,7 +32,7 @@ import (
 // ClusterDomainsGetter has a method to return a ClusterDomainInterface.
 // A group's client should implement this interface.
 type ClusterDomainsGetter interface {
-	ClusterDomains(namespace string) ClusterDomainInterface
+	ClusterDomains() ClusterDomainInterface
 }
 
 // ClusterDomainInterface has methods to work with ClusterDomain resources.
@@ -52,14 +52,12 @@ type ClusterDomainInterface interface {
 // clusterDomains implements ClusterDomainInterface
 type clusterDomains struct {
 	client rest.Interface
-	ns     string
 }
 
 // newClusterDomains returns a ClusterDomains
-func newClusterDomains(c *AdminV1Client, namespace string) *clusterDomains {
+func newClusterDomains(c *AdminV1Client) *clusterDomains {
 	return &clusterDomains{
 		client: c.RESTClient(),
-		ns:     namespace,
 	}
 }
 
@@ -67,7 +65,6 @@ func newClusterDomains(c *AdminV1Client, namespace string) *clusterDomains {
 func (c *clusterDomains) Get(name string, options metav1.GetOptions) (result *v1.ClusterDomain, err error) {
 	result = &v1.ClusterDomain{}
 	err = c.client.Get().
-		Namespace(c.ns).
 		Resource("clusterdomains").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
@@ -84,7 +81,6 @@ func (c *clusterDomains) List(opts metav1.ListOptions) (result *v1.ClusterDomain
 	}
 	result = &v1.ClusterDomainList{}
 	err = c.client.Get().
-		Namespace(c.ns).
 		Resource("clusterdomains").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -101,7 +97,6 @@ func (c *clusterDomains) Watch(opts metav1.ListOptions) (watch.Interface, error)
 	}
 	opts.Watch = true
 	return c.client.Get().
-		Namespace(c.ns).
 		Resource("clusterdomains").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -112,7 +107,6 @@ func (c *clusterDomains) Watch(opts metav1.ListOptions) (watch.Interface, error)
 func (c *clusterDomains) Create(clusterDomain *v1.ClusterDomain) (result *v1.ClusterDomain, err error) {
 	result = &v1.ClusterDomain{}
 	err = c.client.Post().
-		Namespace(c.ns).
 		Resource("clusterdomains").
 		Body(clusterDomain).
 		Do().
@@ -124,7 +118,6 @@ func (c *clusterDomains) Create(clusterDomain *v1.ClusterDomain) (result *v1.Clu
 func (c *clusterDomains) Update(clusterDomain *v1.ClusterDomain) (result *v1.ClusterDomain, err error) {
 	result = &v1.ClusterDomain{}
 	err = c.client.Put().
-		Namespace(c.ns).
 		Resource("clusterdomains").
 		Name(clusterDomain.Name).
 		Body(clusterDomain).
@@ -139,7 +132,6 @@ func (c *clusterDomains) Update(clusterDomain *v1.ClusterDomain) (result *v1.Clu
 func (c *clusterDomains) UpdateStatus(clusterDomain *v1.ClusterDomain) (result *v1.ClusterDomain, err error) {
 	result = &v1.ClusterDomain{}
 	err = c.client.Put().
-		Namespace(c.ns).
 		Resource("clusterdomains").
 		Name(clusterDomain.Name).
 		SubResource("status").
@@ -152,7 +144,6 @@ func (c *clusterDomains) UpdateStatus(clusterDomain *v1.ClusterDomain) (result *
 // Delete takes name of the clusterDomain and deletes it. Returns an error if one occurs.
 func (c *clusterDomains) Delete(name string, options *metav1.DeleteOptions) error {
 	return c.client.Delete().
-		Namespace(c.ns).
 		Resource("clusterdomains").
 		Name(name).
 		Body(options).
@@ -167,7 +158,6 @@ func (c *clusterDomains) DeleteCollection(options *metav1.DeleteOptions, listOpt
 		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
-		Namespace(c.ns).
 		Resource("clusterdomains").
 		VersionedParams(&listOptions, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -180,7 +170,6 @@ func (c *clusterDomains) DeleteCollection(options *metav1.DeleteOptions, listOpt
 func (c *clusterDomains) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.ClusterDomain, err error) {
 	result = &v1.ClusterDomain{}
 	err = c.client.Patch(pt).
-		Namespace(c.ns).
 		Resource("clusterdomains").
 		SubResource(subresources...).
 		Name(name).

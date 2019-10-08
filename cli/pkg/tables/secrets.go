@@ -4,13 +4,12 @@ import "github.com/rancher/rio/cli/pkg/table"
 
 func NewSecret(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
-		{"NAME", "{{stackScopedName .Obj.Namespace .Obj.Name ``}}"},
+		{"NAME", "{{id .Obj}}"},
 		{"TYPE", "{{.Obj.Type}}"},
 		{"DATA", "{{.Obj.Data | len}}"},
 		{"CREATED", "{{.Obj.CreationTimestamp | ago}}"},
 	}, cfg)
 
-	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cfg.GetSetNamespace()))
 	return &tableWriter{
 		writer: writer,
 	}

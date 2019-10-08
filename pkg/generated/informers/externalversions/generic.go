@@ -22,7 +22,6 @@ import (
 	"fmt"
 
 	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
-	autoscaleriocattleiov1 "github.com/rancher/rio/pkg/apis/autoscale.rio.cattle.io/v1"
 	riocattleiov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
@@ -57,20 +56,14 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=admin.rio.cattle.io, Version=v1
 	case v1.SchemeGroupVersion.WithResource("clusterdomains"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Admin().V1().ClusterDomains().Informer()}, nil
-	case v1.SchemeGroupVersion.WithResource("features"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Admin().V1().Features().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("publicdomains"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Admin().V1().PublicDomains().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("rioinfos"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Admin().V1().RioInfos().Informer()}, nil
-
-		// Group=autoscale.rio.cattle.io, Version=v1
-	case autoscaleriocattleiov1.SchemeGroupVersion.WithResource("servicescalerecommendations"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Autoscale().V1().ServiceScaleRecommendations().Informer()}, nil
+	case v1.SchemeGroupVersion.WithResource("systemstacks"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Admin().V1().SystemStacks().Informer()}, nil
 
 		// Group=rio.cattle.io, Version=v1
-	case riocattleiov1.SchemeGroupVersion.WithResource("apps"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Rio().V1().Apps().Informer()}, nil
 	case riocattleiov1.SchemeGroupVersion.WithResource("externalservices"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rio().V1().ExternalServices().Informer()}, nil
 	case riocattleiov1.SchemeGroupVersion.WithResource("routers"):

@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rancher/rio/cli/cmd/ps"
+	v1 "k8s.io/api/core/v1"
+
+	"github.com/rancher/rio/cli/cmd/util"
+
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/tables"
 )
 
 type Attach struct {
+	Pod     string `desc:"Specify pod name, default to the first pod"`
 	Timeout string `desc:"Timeout waiting for the container to be created to attach to" default:"1m"`
 }
 
@@ -24,21 +27,37 @@ func (a *Attach) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	return RunAttach(ctx, timeout, ctx.CLI.Args()[0])
+	return RunAttach(ctx, timeout, ctx.CLI.Args()[0], a.Pod)
 }
 
-func RunAttach(ctx *clicontext.CLIContext, timeout time.Duration, container string) error {
-	var pd *tables.PodData
-	var err error
-
+func RunAttach(ctx *clicontext.CLIContext, timeout time.Duration, service, podName string) error {
+	var pod v1.Pod
 	deadline := time.Now().Add(timeout)
 	for {
-		pd, err = ps.ListFirstPod(ctx, true, container)
+		pods, err := util.ListPods(ctx, service)
 		if err != nil {
 			return err
 		}
 
-		if (pd == nil || len(pd.Containers) == 0) && time.Now().Before(deadline) {
+		if len(pods) == 0 {
+			continue
+		}
+
+		if podName != "" {
+			for _, p := range pods {
+				if p.Name == podName {
+					pod = p
+					break
+				}
+			}
+			if pod.Name == "" {
+				continue
+			}
+		} else {
+			pod = pods[0]
+		}
+
+		if time.Now().Before(deadline) {
 			time.Sleep(750 * time.Millisecond)
 			continue
 		}
@@ -46,22 +65,22 @@ func RunAttach(ctx *clicontext.CLIContext, timeout time.Duration, container stri
 		break
 	}
 
-	if pd == nil {
-		return fmt.Errorf("failed to find a container for %s", container)
+	if pod.Name == "" {
+		return fmt.Errorf("failed to find pod for %s", service)
 	}
 
 	execArgs := []string{
 		fmt.Sprintf("--pod-running-timeout=%s", timeout),
-		pd.Pod.Name,
-		"-c", pd.Containers[0].Name,
+		pod.Name,
+		"-c", pod.Spec.Containers[0].Name,
 	}
 
-	if pd.Containers[0].Stdin {
+	if pod.Spec.Containers[0].Stdin {
 		execArgs = append(execArgs, "-i")
 	}
-	if pd.Containers[0].TTY {
+	if pod.Spec.Containers[0].TTY {
 		execArgs = append(execArgs, "-t")
 	}
 
-	return ctx.Kubectl(pd.Pod.Namespace, "attach", execArgs...)
+	return ctx.Kubectl(pod.Namespace, "attach", execArgs...)
 }
