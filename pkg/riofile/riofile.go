@@ -4,22 +4,16 @@ import (
 	"bytes"
 	"strings"
 
-	"github.com/rancher/mapper"
-	"github.com/rancher/mapper/convert"
+	"github.com/rancher/norman/pkg/types/convert"
 	"github.com/rancher/rio/cli/pkg/table"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/riofile/schema"
 	"github.com/rancher/rio/pkg/template"
-	"github.com/rancher/wrangler/pkg/crd"
 	"github.com/rancher/wrangler/pkg/gvk"
 	"github.com/rancher/wrangler/pkg/yaml"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-)
-
-var (
-	schema = mapper.NewSchemas()
 )
 
 type Riofile struct {
@@ -28,28 +22,9 @@ type Riofile struct {
 	Routers          map[string]riov1.Router
 	ExternalServices map[string]riov1.ExternalService
 	Kubernetes       []runtime.Object
-	CRD              []v1beta1.CustomResourceDefinition
-}
-
-type kubernetes struct {
-	NamespacedCustomResourceDefintions []string `json:"namespacedCustomResourceDefinitions,omitempty"`
-	CustomResourceDefintions           []string `json:"customResourceDefinitions,omitempty"`
-	Manifest                           string   `json:"manifest,omitempty"`
-}
-
-type riofile struct {
-	Services         map[string]riov1.Service         `json:"services,omitempty"`
-	Configs          map[string]v1.ConfigMap          `json:"configs,omitempty"`
-	Routers          map[string]riov1.Router          `json:"routers,omitempty"`
-	ExternalServices map[string]riov1.ExternalService `json:"externalservices,omitempty"`
-	Kubernetes       *kubernetes                      `json:"kubernetes,omitempty"`
 }
 
 func (r *Riofile) Objects() (result []runtime.Object) {
-	for _, s := range r.CRD {
-		copy := s
-		result = append(result, &copy)
-	}
 	for _, s := range r.Kubernetes {
 		result = append(result, s)
 	}
@@ -69,7 +44,6 @@ func (r *Riofile) Objects() (result []runtime.Object) {
 		copy := s
 		result = append(result, &copy)
 	}
-
 	return
 }
 
@@ -80,7 +54,7 @@ func RenderObject(object runtime.Object) ([]byte, error) {
 	}
 
 	kind := object.GetObjectKind().GroupVersionKind().Kind
-	schema.Schema(kind).Mapper.FromInternal(data)
+	schema.Schema.Schema(kind).Mapper.FromInternal(data)
 
 	result, err := table.FormatYAML(data)
 	if err != nil {
@@ -90,12 +64,14 @@ func RenderObject(object runtime.Object) ([]byte, error) {
 }
 
 func Render(objects []runtime.Object) ([]byte, error) {
-	rf := riofile{
-		Services:         make(map[string]riov1.Service),
-		Configs:          make(map[string]v1.ConfigMap),
-		Routers:          make(map[string]riov1.Router),
-		ExternalServices: make(map[string]riov1.ExternalService),
+	rf := schema.ExternalRiofile{
+		Services:         map[string]riov1.Service{},
+		Configs:          map[string]v1.ConfigMap{},
+		Routers:          map[string]riov1.Router{},
+		ExternalServices: map[string]riov1.ExternalService{},
 	}
+
+	var other []runtime.Object
 
 	for _, obj := range objects {
 		switch obj.(type) {
@@ -111,6 +87,18 @@ func Render(objects []runtime.Object) ([]byte, error) {
 		case *riov1.ExternalService:
 			es := obj.(*riov1.ExternalService)
 			rf.ExternalServices[es.Name] = *es
+		case runtime.Object:
+			other = append(other, obj)
+		}
+	}
+
+	if len(other) > 0 {
+		bytes, err := yaml.ToBytes(other)
+		if err != nil {
+			return nil, err
+		}
+		rf.Kubernetes = &schema.Kubernetes{
+			Manifest: string(bytes),
 		}
 	}
 
@@ -119,7 +107,7 @@ func Render(objects []runtime.Object) ([]byte, error) {
 		return nil, err
 	}
 
-	schema.Schema("Riofile").Mapper.FromInternal(data)
+	schema.Schema.Schema("Riofile").Mapper.FromInternal(data)
 	result, err := table.FormatYAML(data)
 	if err != nil {
 		return nil, err
@@ -127,17 +115,40 @@ func Render(objects []runtime.Object) ([]byte, error) {
 	return []byte(result), nil
 }
 
+func isK8SYaml(contents []byte) (bool, []runtime.Object, error) {
+	objs, err := yaml.ToObjects(bytes.NewBuffer(contents))
+	if err != nil {
+		return false, nil, nil
+	}
+	if len(objs) > 0 &&
+		objs[0].GetObjectKind().GroupVersionKind().Kind != "" {
+		return true, objs, nil
+	}
+	return false, nil, nil
+}
+
 func Parse(contents []byte, answers template.AnswerCallback) (*Riofile, error) {
+	k8s, objs, err := isK8SYaml(contents)
+	if err != nil {
+		return nil, err
+	}
+
+	if k8s {
+		return &Riofile{
+			Kubernetes: objs,
+		}, nil
+	}
+
 	data, err := parseData(contents, answers)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := schema.Schema("Riofile").Mapper.ToInternal(data); err != nil {
+	if err := schema.Schema.Schema("Riofile").Mapper.ToInternal(data); err != nil {
 		return nil, err
 	}
 
-	rf := &riofile{}
+	rf := &schema.ExternalRiofile{}
 	if err := convert.ToObj(data, rf); err != nil {
 		return nil, err
 	}
@@ -172,7 +183,7 @@ func Update(originalObj runtime.Object, bytes []byte) (runtime.Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := schema.Schema(kind.Kind).Mapper.ToInternal(data); err != nil {
+	if err := schema.Schema.Schema(kind.Kind).Mapper.ToInternal(data); err != nil {
 		return nil, err
 	}
 
@@ -225,7 +236,7 @@ func merge(labels1, labels2 map[string]interface{}) map[string]interface{} {
 	return mergedMap
 }
 
-func toRiofile(rf *riofile) (*Riofile, error) {
+func toRiofile(rf *schema.ExternalRiofile) (*Riofile, error) {
 	riofile := &Riofile{
 		Services:         map[string]riov1.Service{},
 		Configs:          map[string]v1.ConfigMap{},
@@ -260,14 +271,6 @@ func toRiofile(rf *riofile) (*Riofile, error) {
 				return nil, err
 			}
 			riofile.Kubernetes = objs
-		}
-
-		for _, crdSpec := range rf.Kubernetes.CustomResourceDefintions {
-			riofile.CRD = append(riofile.CRD, crd.NonNamespacedType(crdSpec).ToCustomResourceDefinition())
-		}
-
-		for _, crdSpec := range rf.Kubernetes.NamespacedCustomResourceDefintions {
-			riofile.CRD = append(riofile.CRD, crd.NamespacedType(crdSpec).ToCustomResourceDefinition())
 		}
 	}
 

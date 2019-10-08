@@ -1,63 +1,64 @@
 package promote
 
 import (
+	"errors"
 	"fmt"
+	"github.com/rancher/rio/cli/cmd/util"
+	"time"
 
 	"github.com/rancher/mapper"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/lookup"
-	"github.com/rancher/rio/cli/pkg/stack"
 	"github.com/rancher/rio/cli/pkg/types"
-	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	"github.com/rancher/wrangler/pkg/kv"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type Promote struct {
-	RolloutIncrement int  `desc:"Rollout increment value" default:"5"`
-	RolloutInterval  int  `desc:"Rollout interval value" default:"5"`
-	Rollout          bool `desc:"Whether to rollout gradually. Default to true" default:"true"`
+	Increment int  `desc:"Increment value" default:"5"`
+	Interval  int  `desc:"Interval value" default:"5"`
+	Pause     bool `desc:"Whether to pause rollout or continue it. Default to false" default:"false"`
 }
 
 func (p *Promote) Run(ctx *clicontext.CLIContext) error {
 	ctx.NoPrompt = true
-	var errors []error
-	for _, arg := range ctx.CLI.Args() {
-		app, version := kv.Split(arg, ":")
-		if app == "" || version == "" {
-			continue
-		}
-		namespace, name := stack.NamespaceAndName(ctx, app)
-		appObj, err := ctx.Rio.Apps(namespace).Get(name, metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
-		var errors []error
-		for _, rev := range appObj.Spec.Revisions {
-			resource, err := lookup.Lookup(ctx, fmt.Sprintf("%s/%s", appObj.Namespace, rev.ServiceName), types.ServiceType)
-			if err != nil {
-				return err
-			}
-			err = ctx.UpdateResource(resource, func(obj runtime.Object) error {
-				service := obj.(*v1.Service)
-				if rev.Version == version {
-					service.Spec.ServiceRevision.Weight = 100
-				} else {
-					service.Spec.ServiceRevision.Weight = 0
-				}
-				if !p.Rollout {
-					service.Spec.Rollout = false
-				} else {
-					service.Spec.Rollout = true
-					service.Spec.RolloutInterval = p.RolloutInterval
-					service.Spec.RolloutIncrement = p.RolloutIncrement
-				}
-				return nil
-			})
-			errors = append(errors, err)
-		}
+	var allErrors []error
+	arg := ctx.CLI.Args()
+	if !arg.Present() {
+		return errors.New("at least one argument is needed")
+	}
+	serviceName := arg.First()
+	svcs, err := util.ListAppServicesFromServiceName(ctx, serviceName)
+	if err != nil {
+		return err
 	}
 
-	return mapper.NewErrors(errors...)
+	for _, s := range svcs {
+		err := ctx.UpdateResource(types.Resource{
+			Namespace: s.Namespace,
+			Name:      s.Name,
+			Type:      types.ServiceType,
+		}, func(obj runtime.Object) error {
+			s := obj.(*riov1.Service)
+			if s.Spec.Weight == nil {
+				s.Spec.Weight = new(int)
+			}
+			s.Spec.RolloutConfig = &riov1.RolloutConfig{
+				Pause:     p.Pause,
+				Increment: p.Increment,
+				Interval: metav1.Duration{
+					Duration: time.Duration(p.Interval) * time.Second,
+				},
+			}
+			if s.Name == serviceName {
+				*s.Spec.Weight = 100
+				fmt.Printf("%s:%s promoted\n", s.Spec.App, s.Spec.Version)
+			} else {
+				*s.Spec.Weight = 0
+			}
+			return nil
+		})
+		allErrors = append(allErrors, err)
+	}
+	return mapper.NewErrors(allErrors...)
 }

@@ -4,6 +4,8 @@ kubernetes:
     kind: Namespace
     metadata:
       name: ${NAMESPACE}
+      labels:
+       rio.cattle.io/is-system: "true"
     ---
     apiVersion: rbac.authorization.k8s.io/v1
     kind: ClusterRole
@@ -40,14 +42,9 @@ kubernetes:
       - "replicasets"
       - "deployments"
       - "daemonsets"
+      - "statefulsets"
       verbs:
       - '*'
-    - apiGroups:
-      - "autoscale.rio.cattle.io"
-      resources:
-      - "*"
-      verbs:
-      - "*"
     - apiGroups:
       - "build.knative.dev"
       - "caching.internal.knative.dev"
@@ -56,7 +53,7 @@ kubernetes:
       verbs:
       - "*"
     - apiGroups:
-      - "certmanager.k8s.io"
+      - "cert-manager.io"
       resources:
       - "*"
       verbs:
@@ -124,35 +121,9 @@ kubernetes:
       verbs:
       - "*"
     - apiGroups:
-      - "networking.istio.io"
-      resources:
-      - "*"
-      verbs:
-      - "*"
-    - apiGroups:
-      - "config.istio.io"
-      resources:
-      - "*"
-      verbs:
-      - "*"
-    - apiGroups:
       - "policy"
       resources:
       - "podsecuritypolicies"
-      verbs:
-      - "*"
-    - apiGroups:
-      - "rbac.istio.io"
-      resources:
-      - "*"
-      verbs:
-      - "get"
-      - "watch"
-      - "list"
-    - apiGroups:
-      - "autoscaling.internal.knative.dev"
-      resources:
-      - "*"
       verbs:
       - "*"
     - apiGroups:
@@ -162,22 +133,19 @@ kubernetes:
       verbs:
       - "*"
     - apiGroups:
-      - serving.knative.dev
-      - autoscaling.internal.knative.dev
-      - networking.internal.knative.dev
+      - "storage.k8s.io"
       resources:
-      - '*'
-      - '*/status'
-      - '*/finalizers'
+      - "storageclasses"
       verbs:
-      - get
-      - list
-      - create
-      - update
-      - delete
-      - deletecollection
-      - patch
-      - watch
+      - "*"
+    - apiGroups:
+      - "gateway.solo.io.v2"
+      - "gateway.solo.io"
+      - "gloo.solo.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
     - apiGroups:
       - tekton.dev
       resources:
@@ -253,7 +221,216 @@ kubernetes:
       name: rio-controller-serviceaccount
       namespace: ${NAMESPACE}
     ---
-    apiVersion: extensions/v1beta1
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: auth-webhook
+      namespace: ${NAMESPACE}
+    ---
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: auth-webhook
+      namespace: ${NAMESPACE}
+    spec:
+      ports:
+      - name: https-443
+        port: 443
+        protocol: TCP
+        targetPort: 443
+      selector:
+        rio-controller: "true"
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: rio-admin
+    rules:
+    - apiGroups:
+      - rio.cattle.io
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - admin.rio.cattle.io
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - autoscale.rio.cattle.io
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - tekton.dev
+      resources:
+      - "taskruns"
+      verbs:
+      - "*"
+    - apiGroups:
+      - ""
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "apps"
+      - "extensions"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "certmanager.k8s.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "split.smi-spec.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "linkerd.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - ""
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: rio-readonly
+    rules:
+    - apiGroups:
+      - rio.cattle.io
+      resources:
+      - "*"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+    - apiGroups:
+      - tekton.dev
+      resources:
+      - "taskruns"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+    - apiGroups:
+      - ""
+      resources:
+      - "*"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+    - apiGroups:
+      - "apps"
+      - "extensions"
+      resources:
+      - "*"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: rio-privileged
+    rules:
+    - apiGroups:
+      - rio.cattle.io
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - tekton.dev
+      resources:
+      - "taskruns"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+    - apiGroups:
+      - ""
+      resources:
+      - "*"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+      - "create"
+    - apiGroups:
+      - "apps"
+      - "extensions"
+      resources:
+      - "*"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: rio-standard
+    rules:
+    - apiGroups:
+      - rio.cattle.io
+      resources:
+      - "*"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+      - "create"
+      - "update"
+      - "delete"
+      - "patch"
+    - apiGroups:
+      - tekton.dev
+      resources:
+      - "taskruns"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+    - apiGroups:
+      - ""
+      resources:
+      - "*"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+      - "create"
+    - apiGroups:
+      - "apps"
+      - "extensions"
+      resources:
+      - "*"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+    ---
+    {{- if .Values.RUN_CONTROLLER}}
+    apiVersion: apps/v1
     kind: Deployment
     metadata:
       name: rio-controller
@@ -268,53 +445,36 @@ kubernetes:
             rio-controller: "true"
         spec:
           serviceAccountName: rio-controller-serviceaccount
+          volumes:
+          - name: secret-auth-webhook
+            secret:
+              defaultMode: 420
+              optional: true
+              secretName: auth-webhook
           containers:
           - image: ${IMAGE}
             imagePullPolicy: Always
             name: rio-controller
             args:
             - rio-controller
+            {{- if .Values.RIO_DEBUG}}
+            - --debug
+            {{- end}}
             env:
             - name: RIO_NAMESPACE
               value: ${NAMESPACE}
-            - name: RIO_DEBUG
-              value: ${RIO_DEBUG}
-            - name: HTTPS_PORT
-              value: "${HTTPS_PORT}"
-            - name: HTTP_PORT
-              value: "${HTTP_PORT}"
-            - name: IP_ADDRESSES
-              value: ${IP_ADDRESSES}
-            - name: DISABLE_FEATURES
-              value: ${DISABLE_FEATURES}
             - name: HTTP_PROXY
               value: ${HTTP_PROXY}
-            - name: INSTALL_MODE
-              value: ${INSTALL_MODE}
-            - name: SM_MODE
-              value: ${SM_MODE}
+            volumeMounts:
+            - mountPath: /var/run/rio/ssl
+              name: secret-auth-webhook
+              readOnly: true
+    {{- end}}
 
-templates:
+template:
   questions:
-  - variable: IMAGE
-    description: "rio-controller image"
   - variable: NAMESPACE
     description: "namespace to deploy to"
-  - variable: RIO_DEBUG
-    description: "set to true to enable debug logging"
-  - variable: HTTPS_PORT
-    description: "https port gateway will listen to"
-  - variable: HTTP_PORT
-    description: "http port gateway will listen to"
-  - variable: IP_ADDRESSES
-    description: "whether to manually specify ip addresses to generate"
-  - variable: SERVICE_CIDR
-    description: "manually specify service CIDR for service mesh to intercept"
-  - variable: DISABLE_FEATURES
-    description: "manually specify features to disable"
   - variable: HTTP_PROXY
     description: "specify http proxy setting"
-  - variable: INSTALL_MODE
-    description: "install mode"
-  - variable: SM_MODE
-    description: "service mesh mode"
+  - variable: RUN_CONTROLLER

@@ -3,37 +3,40 @@ package feature
 import (
 	"context"
 
-	"github.com/rancher/rio/modules/linkerd/controllers/router"
+	"github.com/rancher/rio/modules/linkerd/controller/inject"
 
-	"github.com/rancher/rio/modules/linkerd/controllers/app"
-	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/constants"
+	"github.com/rancher/rio/modules/linkerd/pkg/injector"
 	"github.com/rancher/rio/pkg/features"
 	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/rio/types"
-	"github.com/rancher/wrangler/pkg/start"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
 	apply := rContext.Apply.WithCacheTypes(rContext.Rio.Rio().V1().Router())
 	feature := &features.FeatureController{
 		FeatureName: "linkerd",
-		FeatureSpec: v1.FeatureSpec{
-			Description: "Linkerd service mesh",
-			Enabled:     constants.ServiceMeshMode == constants.ServiceMeshModeLinkerd,
+		FeatureSpec: features.FeatureSpec{
+			Description: "linkerd service mesh",
+			Enabled:     true,
 		},
 		SystemStacks: []*stack.SystemStack{
-			stack.NewSystemStack(apply, "linkerd", "linkerd"),
+			stack.NewSystemStack(apply, rContext.Admin.Admin().V1().SystemStack(), "linkerd", "linkerd"),
 		},
 		Controllers: []features.ControllerRegister{
-			app.Register,
-			router.Register,
+			inject.Register,
 		},
-		OnStart: func(feature *v1.Feature) error {
-			return start.All(ctx, 5,
-				rContext.Apps,
-				rContext.Core,
-				rContext.SMI)
+		OnStart: func() error {
+			injector.RegisterInjector()
+			rContext.Rio.Rio().V1().Service().Enqueue("*", "*")
+
+			settings, err := rContext.Gloo.Gloo().V1().Settings().Get(rContext.Namespace, "default", metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			settings.Spec.Linkerd = true
+			_, err = rContext.Gloo.Gloo().V1().Settings().Update(settings)
+			return err
 		},
 	}
 	return feature.Register()

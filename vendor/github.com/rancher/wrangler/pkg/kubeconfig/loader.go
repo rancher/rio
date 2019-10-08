@@ -2,6 +2,7 @@ package kubeconfig
 
 import (
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -29,11 +30,23 @@ func GetLoadingRules(kubeConfig string) *clientcmd.ClientConfigLoadingRules {
 		loadingRules.ExplicitPath = kubeConfig
 	}
 
+	var otherFiles []string
 	homeDir, err := os.UserHomeDir()
 	if err == nil {
-		loadingRules.Precedence = append(loadingRules.Precedence, filepath.Join(homeDir, ".kube", "k3s.yaml"))
+		otherFiles = append(otherFiles, filepath.Join(homeDir, ".kube", "k3s.yaml"))
 	}
+	otherFiles = append(otherFiles, "/etc/rancher/k3s/k3s.yaml")
+	loadingRules.Precedence = append(loadingRules.Precedence, canRead(otherFiles)...)
 
-	loadingRules.Precedence = append(loadingRules.Precedence, "/etc/rancher/k3s/k3s.yaml")
 	return loadingRules
+}
+
+func canRead(files []string) (result []string) {
+	for _, f := range files {
+		_, err := ioutil.ReadFile(f)
+		if err == nil {
+			result = append(result, f)
+		}
+	}
+	return
 }

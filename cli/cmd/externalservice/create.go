@@ -30,7 +30,13 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 		case strings.ContainsRune(name, '.'):
 			externalService.Spec.FQDN = name
 		default:
-			externalService.Spec.Service = name
+			ns, name := kv.Split(name, "/")
+			if name == "" {
+				name = ns
+				ns = ctx.GetSetNamespace()
+			}
+			externalService.Spec.TargetServiceName = name
+			externalService.Spec.TargetServiceNamespace = ns
 		}
 
 		if i > 0 && len(externalService.Spec.IPAddresses) != (i+1) {

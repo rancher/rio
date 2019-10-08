@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors
+Copyright 2019 The Tekton Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/knative/pkg/apis"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"knative.dev/pkg/apis"
 )
 
 // Validate pipelinerun
@@ -37,22 +37,28 @@ func (ps *PipelineRunSpec) Validate(ctx context.Context) *apis.FieldError {
 	if equality.Semantic.DeepEqual(ps, &PipelineRunSpec{}) {
 		return apis.ErrMissingField("spec")
 	}
-	// pipeline reference should be present for pipelinerun
-	if ps.PipelineRef.Name == "" {
-		return apis.ErrMissingField("pipelinerun.spec.Pipelineref.Name")
+
+	// can't have both pipelinekRef and pipelineSpec at the same time
+	if ps.PipelineRef.Name != "" && ps.PipelineSpec != nil {
+		return apis.ErrDisallowedFields("spec.pipelineRef", "spec.pipelineSpec")
 	}
 
-	// check for results
-	if ps.Results != nil {
-		if err := ps.Results.Validate(ctx, "spec.results"); err != nil {
+	// Check that one of PipelineRef and PipelineSpec is present
+	if ps.PipelineRef.Name == "" && ps.PipelineSpec == nil {
+		return apis.ErrMissingField("spec.pipelineRef.name", "spec.pipelineSpec")
+	}
+
+	// Validate PipelineSpec if it's present
+	if ps.PipelineSpec != nil {
+		if err := ps.PipelineSpec.Validate(ctx); err != nil {
 			return err
 		}
 	}
 
 	if ps.Timeout != nil {
 		// timeout should be a valid duration of at least 0.
-		if ps.Timeout.Duration <= 0 {
-			return apis.ErrInvalidValue(fmt.Sprintf("%s should be > 0", ps.Timeout.Duration.String()), "spec.timeout")
+		if ps.Timeout.Duration < 0 {
+			return apis.ErrInvalidValue(fmt.Sprintf("%s should be >= 0", ps.Timeout.Duration.String()), "spec.timeout")
 		}
 	}
 

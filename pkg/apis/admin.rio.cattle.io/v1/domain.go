@@ -3,7 +3,6 @@ package v1
 import (
 	"github.com/rancher/wrangler/pkg/condition"
 	"github.com/rancher/wrangler/pkg/genericcondition"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -12,6 +11,7 @@ var (
 )
 
 // +genclient
+// +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 type ClusterDomain struct {
@@ -23,23 +23,26 @@ type ClusterDomain struct {
 }
 
 type ClusterDomainSpec struct {
-	SecretRef  v1.SecretReference                  `json:"secretRef,omitempty"`
-	Addresses  []Address                           `json:"addresses,omitempty"`
-	Subdomains []Subdomain                         `json:"subdomains,omitempty"`
-	Conditions []genericcondition.GenericCondition `json:"conditions,omitempty"`
-}
+	// SecretName holding the TLS certificate for this domain.  This is expected
+	// to be a wildcard certificate
+	SecretName string `json:"secretName,omitempty"`
 
-type Address struct {
-	IP string `json:"ip,omitempty"`
-}
+	// The public HTTPS port for the cluster domain
+	HTTPSPort int `json:"httpsPort,omitempty"`
+	// The public HTTP port for the cluster domain
+	HTTPPort int `json:"httpPort,omitempty"`
 
-type Subdomain struct {
-	Name      string    `json:"name,omitempty"`
+	// The addresses assigned to the ClusterDomain by the provider
 	Addresses []Address `json:"addresses,omitempty"`
 }
 
+type Address struct {
+	IP       string `json:"ip,omitempty"`
+	Hostname string `json:"hostname,omitempty"`
+}
+
 type ClusterDomainStatus struct {
-	HTTPSSupported bool                                `json:"httpsSupported,omitempty"`
-	ClusterDomain  string                              `json:"domain,omitempty"`
-	Conditions     []genericcondition.GenericCondition `json:"conditions,omitempty"`
+	AssignedSecretName string                              `json:"assignedSecretName,omitempty"`
+	HTTPSSupported     bool                                `json:"httpsSupported,omitempty"`
+	Conditions         []genericcondition.GenericCondition `json:"conditions,omitempty"`
 }

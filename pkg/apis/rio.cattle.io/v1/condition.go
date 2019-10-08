@@ -5,6 +5,5 @@ import (
 )
 
 var (
-	PendingCondition  = condition.Cond("Pending")
 	DeployedCondition = condition.Cond("Deployed")
 )

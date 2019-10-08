@@ -7,7 +7,6 @@ import (
 
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/lookup"
 	"github.com/rancher/rio/cli/pkg/types"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -26,7 +25,7 @@ func (c *Update) Run(ctx *clicontext.CLIContext) error {
 	name := ctx.CLI.Args()[0]
 	file := ctx.CLI.Args()[1]
 
-	resource, err := lookup.Lookup(ctx, name, types.ConfigType)
+	resource, err := ctx.ByID(name)
 	if err != nil {
 		return err
 	}

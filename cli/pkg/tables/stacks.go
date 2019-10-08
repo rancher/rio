@@ -7,12 +7,11 @@ import (
 
 func NewStack(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
-		{"NAME", "{{stackName .Obj.Namespace .Obj.Name ``}}"},
+		{"NAME", "{{id .Obj}}"},
 		{"CREATED", "{{.Obj.CreationTimestamp | ago}}"},
 		{"DETAIL", "{{.Obj | stackDetail}}"},
 	}, cfg)
 
-	writer.AddFormatFunc("stackName", table.FormatStackScopedName(cfg.GetSetNamespace()))
 	writer.AddFormatFunc("stackDetail", stackDetail)
 
 	return &tableWriter{

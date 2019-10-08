@@ -2,27 +2,23 @@ package weight
 
 import (
 	"errors"
-	err2 "errors"
 	"fmt"
-	"strconv"
-	"strings"
-
 	"github.com/rancher/mapper"
+	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/lookup"
-	"github.com/rancher/rio/cli/pkg/stack"
-	"github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/kv"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type Weight struct {
-	RolloutIncrement int  `desc:"Rollout increment value" default:"5"`
-	RolloutInterval  int  `desc:"Rollout interval value" default:"5"`
-	Rollout          bool `desc:"Whether to rollout gradually"`
+	Increment int  `desc:"Increment value" default:"5"`
+	Interval  int  `desc:"Interval value" default:"5"`
+	Pause     bool `desc:"Whether to pause rollout or continue it. Default to false" default:"false"`
 }
 
 func (w *Weight) Run(ctx *clicontext.CLIContext) error {
@@ -30,38 +26,26 @@ func (w *Weight) Run(ctx *clicontext.CLIContext) error {
 		return errors.New("at least one parameter is required. Run -h to see options")
 	}
 	ctx.NoPrompt = true
-
-	return ScaleAndAllocate(ctx, ctx.CLI.Args(), w.Rollout, w.RolloutIncrement, w.RolloutInterval)
+	return ScaleAndAllocate(ctx, ctx.CLI.Args(), w.Pause, w.Increment, w.Interval)
 }
 
-func ScaleAndAllocate(ctx *clicontext.CLIContext, args []string, rollout bool, increment, interval int) error {
-	var errors []error
-	appVersion, _ := kv.Split(ctx.CLI.Args()[0], "=")
-	app, _ := kv.Split(appVersion, ":")
-
-	namespace, name := stack.NamespaceAndName(ctx, app)
-	appObj, err := ctx.Rio.Apps(namespace).Get(name, metav1.GetOptions{})
+func ScaleAndAllocate(ctx *clicontext.CLIContext, args []string, pause bool, increment, interval int) error {
+	var errs []error
+	serviceName, _ := kv.Split(ctx.CLI.Args()[0], "=")
+	svcs, err := util.ListAppServicesFromServiceName(ctx, serviceName)
 	if err != nil {
 		return err
 	}
-	versionMap := map[string]string{}
-	for _, rev := range appObj.Spec.Revisions {
-		versionMap[rev.Version] = fmt.Sprintf("%s/%s", appObj.Namespace, rev.ServiceName)
-	}
 
-	toSet := map[string]struct{}{}
+	cmdSet := map[string]int{}
 	reminder := 100
+	// First update spec weight on anything specified in command
 	for _, arg := range args {
-		appVersion, scaleStr := kv.Split(arg, "=")
-		_, version := kv.Split(appVersion, ":")
-		if version == "" {
-			return err2.New("Can't set weight without specifying version. Example: rio weight foo:version=50%")
-		}
-		toSet[version] = struct{}{}
-
+		serviceName, scaleStr := kv.Split(arg, "=")
+		cmdSet[serviceName] = 1
 		scaleStr = strings.TrimSuffix(scaleStr, "%")
 		if scaleStr == "" {
-			return err2.New("weight params must be in the format of SERVICE=PERCENTAGE, for example: myservice=10%")
+			return errors.New("weight params must be in the format of SERVICE=PERCENTAGE, for example: myservice=10%")
 		}
 		scale, err := strconv.Atoi(scaleStr)
 		if err != nil {
@@ -70,42 +54,47 @@ func ScaleAndAllocate(ctx *clicontext.CLIContext, args []string, rollout bool, i
 		if scale > 100 || reminder < 0 {
 			return fmt.Errorf("scale can't not exceed 100")
 		}
-
-		// set other version weight to zero and break loop
-
-		resource, err := lookup.Lookup(ctx, versionMap[version], types.ServiceType)
+		resource, err := ctx.ByID(serviceName)
 		if err != nil {
 			return err
 		}
 		err = ctx.UpdateResource(resource, func(obj runtime.Object) error {
-			service := obj.(*v1.Service)
-			service.Spec.ServiceRevision.Weight = scale
-			if !rollout {
-				service.Spec.Rollout = false
-			} else {
-				service.Spec.Rollout = true
-				service.Spec.RolloutInterval = interval
-				service.Spec.RolloutIncrement = increment
+			service := obj.(*riov1.Service)
+			if service.Spec.Weight == nil {
+				service.Spec.Weight = new(int)
+			}
+			*service.Spec.Weight = scale
+			service.Spec.RolloutConfig = &riov1.RolloutConfig{
+				Pause:     pause,
+				Increment: increment,
+				Interval: metav1.Duration{
+					Duration: time.Duration(interval) * time.Second,
+				},
 			}
 			return nil
 		})
-		errors = append(errors, err)
+		errs = append(errs, err)
 		reminder -= scale
 	}
 
-	var toAllocate []riov1.Revision
+	// grab all services that already had weight allocated
+	var toAllocate []riov1.Service
 	total := 0
-	for _, rev := range appObj.Spec.Revisions {
-		if _, ok := toSet[rev.Version]; ok {
+	for _, s := range svcs {
+		// Don't count ones specified in the weight cmd
+		if _, ok := cmdSet[s.Name]; ok {
 			continue
 		}
-		total += rev.AdjustedWeight
-		toAllocate = append(toAllocate, rev)
+		if s.Status.ComputedWeight != nil && *s.Status.ComputedWeight > 0 {
+			total += *s.Status.ComputedWeight
+			toAllocate = append(toAllocate, s)
+		}
 	}
 
+	// now allocate any remaining weight across those pre-weighted services
 	added := 0
 	for i, rev := range toAllocate {
-		resource, err := lookup.Lookup(ctx, versionMap[rev.Version], types.ServiceType)
+		resource, err := ctx.ByID(rev.Name)
 		if err != nil {
 			return err
 		}
@@ -113,23 +102,27 @@ func ScaleAndAllocate(ctx *clicontext.CLIContext, args []string, rollout bool, i
 		if i == len(toAllocate)-1 {
 			weight = reminder - added
 		} else {
-			weight = int(float64(rev.AdjustedWeight) / float64(total) * float64(reminder))
+			weight = int(float64(*rev.Status.ComputedWeight) / float64(total) * float64(reminder))
 			added += weight
 		}
 		err = ctx.UpdateResource(resource, func(obj runtime.Object) error {
-			service := obj.(*v1.Service)
-			service.Spec.ServiceRevision.Weight = weight
-			if !rollout {
-				service.Spec.Rollout = false
-			} else {
-				service.Spec.Rollout = true
-				service.Spec.RolloutInterval = interval
-				service.Spec.RolloutIncrement = increment
+			s := obj.(*riov1.Service)
+			if s.Spec.Weight == nil {
+				s.Spec.Weight = new(int)
+			}
+			*s.Spec.Weight = weight
+			s.Spec.RolloutConfig = &riov1.RolloutConfig{
+				Pause:     pause,
+				Increment: increment,
+				Interval: metav1.Duration{
+					Duration: time.Duration(interval) * time.Second,
+				},
 			}
 			return nil
 		})
-		errors = append(errors, err)
+
+		errs = append(errs, err)
 	}
 
-	return mapper.NewErrors(errors...)
+	return mapper.NewErrors(errs...)
 }

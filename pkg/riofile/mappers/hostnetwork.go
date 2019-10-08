@@ -1,28 +1,34 @@
 package mappers
 
 import (
-	"github.com/rancher/mapper"
+	"github.com/rancher/norman/pkg/data"
+	"github.com/rancher/norman/pkg/types"
 )
 
 type HostNetwork struct {
+	Field string
 }
 
-func (d HostNetwork) FromInternal(data map[string]interface{}) {
-	if _, ok := data["hostNetwork"]; ok {
-		delete(data, "hostNetwork")
+func NewHostNetwork(field string, _ ...string) types.Mapper {
+	return HostNetwork{Field: field}
+}
+
+func (d HostNetwork) FromInternal(data data.Object) {
+	if _, ok := data[d.Field]; ok {
+		delete(data, d.Field)
 		data["net"] = "host"
 	}
 }
 
-func (d HostNetwork) ToInternal(data map[string]interface{}) error {
+func (d HostNetwork) ToInternal(data data.Object) error {
 	if net, ok := data["net"]; ok && net == "host" {
 		delete(data, "net")
-		data["hostNetwork"] = true
+		data[d.Field] = true
 	}
 	return nil
 }
 
-func (d HostNetwork) ModifySchema(schema *mapper.Schema, schemas *mapper.Schemas) error {
-	schema.ResourceFields["net"] = mapper.Field{}
+func (d HostNetwork) ModifySchema(schema *types.Schema, schemas *types.Schemas) error {
+	schema.ResourceFields["net"] = types.Field{}
 	return nil
 }

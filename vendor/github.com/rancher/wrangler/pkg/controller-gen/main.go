@@ -8,13 +8,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sirupsen/logrus"
-
 	cgargs "github.com/rancher/wrangler/pkg/controller-gen/args"
 	"github.com/rancher/wrangler/pkg/controller-gen/generators"
+	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	csargs "k8s.io/code-generator/cmd/client-gen/args"
-	clientgenerators "k8s.io/code-generator/cmd/client-gen/generators"
 	cs "k8s.io/code-generator/cmd/client-gen/generators"
 	types2 "k8s.io/code-generator/cmd/client-gen/types"
 	dpargs "k8s.io/code-generator/cmd/deepcopy-gen/args"
@@ -24,6 +22,7 @@ import (
 	ls "k8s.io/code-generator/cmd/lister-gen/generators"
 	"k8s.io/gengo/args"
 	dp "k8s.io/gengo/examples/deepcopy-gen/generators"
+	clientgenerators "k8s.io/code-generator/cmd/client-gen/generators"
 	"k8s.io/gengo/types"
 )
 

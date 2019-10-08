@@ -43,23 +43,6 @@ func NewClusterDomain(namespace, name string, obj ClusterDomain) *ClusterDomain 
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// FeatureList is a list of Feature resources
-type FeatureList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata"`
-
-	Items []Feature `json:"items"`
-}
-
-func NewFeature(namespace, name string, obj Feature) *Feature {
-	obj.APIVersion, obj.Kind = SchemeGroupVersion.WithKind("Feature").ToAPIVersionAndKind()
-	obj.Name = name
-	obj.Namespace = namespace
-	return &obj
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
 // RioInfoList is a list of RioInfo resources
 type RioInfoList struct {
 	metav1.TypeMeta `json:",inline"`
@@ -87,6 +70,23 @@ type PublicDomainList struct {
 
 func NewPublicDomain(namespace, name string, obj PublicDomain) *PublicDomain {
 	obj.APIVersion, obj.Kind = SchemeGroupVersion.WithKind("PublicDomain").ToAPIVersionAndKind()
+	obj.Name = name
+	obj.Namespace = namespace
+	return &obj
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// SystemStackList is a list of SystemStack resources
+type SystemStackList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []SystemStack `json:"items"`
+}
+
+func NewSystemStack(namespace, name string, obj SystemStack) *SystemStack {
+	obj.APIVersion, obj.Kind = SchemeGroupVersion.WithKind("SystemStack").ToAPIVersionAndKind()
 	obj.Name = name
 	obj.Namespace = namespace
 	return &obj

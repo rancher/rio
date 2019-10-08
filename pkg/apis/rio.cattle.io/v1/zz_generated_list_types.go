@@ -77,23 +77,6 @@ func NewService(namespace, name string, obj Service) *Service {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// AppList is a list of App resources
-type AppList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata"`
-
-	Items []App `json:"items"`
-}
-
-func NewApp(namespace, name string, obj App) *App {
-	obj.APIVersion, obj.Kind = SchemeGroupVersion.WithKind("App").ToAPIVersionAndKind()
-	obj.Name = name
-	obj.Namespace = namespace
-	return &obj
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
 // StackList is a list of Stack resources
 type StackList struct {
 	metav1.TypeMeta `json:",inline"`

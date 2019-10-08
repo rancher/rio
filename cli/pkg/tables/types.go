@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sort"
 
+	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
+
 	"github.com/rancher/rio/cli/pkg/table"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -18,7 +20,7 @@ type Config interface {
 	table.WriterConfig
 	GetDefaultNamespace() string
 	GetSetNamespace() string
-	Domain() (string, error)
+	Domain() (*v1.ClusterDomain, error)
 }
 
 type tableWriter struct {
@@ -27,15 +29,19 @@ type tableWriter struct {
 }
 
 type data struct {
-	Name    string
-	Context interface{}
-	Obj     runtime.Object
+	Name      string
+	Namespace string
+	Context   interface{}
+	Obj       runtime.Object
 }
 
 func (t *tableWriter) Write(objs []runtime.Object) (err error) {
 	sort.Slice(objs, func(i, j int) bool {
 		leftMeta, _ := meta.Accessor(objs[i])
 		rightMeta, _ := meta.Accessor(objs[j])
+		if leftMeta.GetNamespace() != rightMeta.GetNamespace() {
+			return leftMeta.GetNamespace() < rightMeta.GetNamespace()
+		}
 		leftCreated := leftMeta.GetCreationTimestamp()
 		return leftCreated.After(rightMeta.GetCreationTimestamp().Time)
 	})
@@ -58,9 +64,10 @@ func (t *tableWriter) Write(objs []runtime.Object) (err error) {
 		}
 
 		t.writer.Write(&data{
-			Name:    id,
-			Context: t.context,
-			Obj:     obj,
+			Name:      id,
+			Namespace: metaObj.GetNamespace(),
+			Context:   t.context,
+			Obj:       obj,
 		})
 	}
 

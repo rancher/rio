@@ -1,79 +1,38 @@
 package constants
 
 const (
-	InstallModeIngress  = "ingress"
-	InstallModeSvclb    = "svclb"
-	InstallModeHostport = "hostport"
+	AuthWebhookSecretName  = "auth-webhook"
+	AuthWebhookServiceName = "auth-webhook"
 
-	ServiceMeshModeLinkerd = "linkerd"
-	ServiceMeshModeIstio   = "istio"
+	DevWebhookPort   = ":7443"
+	RegistryService  = "localhost:80"
+	BuildkitdService = "buildkitd"
+	BuildkitdImage   = "moby/buildkit:v0.6.1"
 
-	ClusterIngressName = "cluster-ingress"
+	ServiceMeshName = "linkerd"
 
-	L5dOverrideHeader = "l5d-dst-override"
-	L5dRemoteIPHeader = "l5d-remote-ip"
-	L5dServerIDHeader = "l5d-server-id"
+	AutoscalerServiceName = "autoscaler"
 
-	FeatureBuild        = "build"
-	FeatureIstio        = "istio"
-	FeatureGrafana      = "grafana"
-	FeatureMixer        = "mixer"
-	FeatureKiali        = "kiali"
-	FeaturePromethues   = "prometheus"
-	FeatureGateway      = "gateway"
-	FeatureLetsencrypts = "letsencrypt"
-	FeatureAutoscaling  = "autoscaling"
+	DefaultGitCrendential    = "gitcredential"
+	DefaultDockerCrendential = "dockerconfig"
+	DefaultGithubCrendential = "githubtoken"
 )
 
 var (
-	ControllerImage       = "rancher/rio-controller"
-	ControllerImageTag    = "dev"
-	ClusterDomainName     = "cluster-domain"
-	DefaultHTTPOpenPort   = "9080"
-	DefaultHTTPSOpenPort  = "9443"
-	InstallMode           = InstallModeSvclb
-	UseIPAddress          = ""
-	ServiceCidr           = ""
-	DefaultServiceVersion = "v0"
-	GatewaySecretName     = "rio-certs"
+	ControllerImage    = "rancher/rio-controller"
+	ControllerImageTag = "dev"
+	UseIPAddress       = ""
 
-	IstioMeshConfigKey             = "meshConfig"
-	IstionConfigMapName            = "mesh"
-	IstioSidecarTemplateName       = "sidecarTemplate"
-	IstioStackName                 = "istio"
-	IstioTelemetry                 = "istio-telemetry"
-	LetsEncryptProductionServerURL = "https://acme-v02.api.letsencrypt.org/directory"
-	LetsEncryptStagingServerURL    = "https://acme-staging-v02.api.letsencrypt.org/directory"
-	ProductionIssuerName           = "letsencrypt-production-issuer"
-	ProductionType                 = "production"
-	Prometheus                     = "prometheus"
-	PublicDomainType               = "RIO_PUBLICDOMAIN_CERT_TYPE"
-	RDNSURL                        = "https://api.on-rio.io/v1"
-	RioGateway                     = "rio-gateway"
-	RioWildcardType                = "RIO_WILDCARD_CERT_TYPE"
-	SelfSignedIssuerName           = "selfsigned-issuer"
-	SelfSignedType                 = "selfsigned"
-	StagingIssuerName              = "letsencrypt-staging-issuer"
-	StagingType                    = "staging"
+	Prometheus = "prometheus"
+	RDNSURL    = "https://api.on-rio.io/v1"
 
-	IstioVersion        = "1.2.5"
-	LinkerdVersion      = "stable-2.5.0"
-	LinkerdInstallImage = "rancher/linkerd-install:stable-2.5.0"
-
-	DisableAutoscaling = false
-	DisableBuild       = false
-	DisableGrafana     = false
-	DisableIstio       = false
-	DisableKiali       = false
-	DisableLinkerd     = false
-	DisableLetsencrypt = false
-	DisableMixer       = false
-	DisablePrometheus  = false
-	DisableRdns        = false
-
-	ServiceMeshMode = "linkerd"
-	GatewayName     = "gateway"
+	LinkerdInstallImage = "rancher/linkerd-install:stable-2.6.0"
 
 	AcmeVersion = "cm-acme"
 	InstallUUID = ""
+
+	DevMode = false
+
+	DefaultStorageClass = false
+	RegistryStorageSize = "20Gi"
 )

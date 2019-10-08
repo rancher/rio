@@ -4,32 +4,25 @@ import (
 	"github.com/rancher/rio/modules/service/controllers/service/populate/pod"
 	"github.com/rancher/rio/modules/service/controllers/service/populate/servicelabels"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/wrangler/pkg/objectset"
 	v1 "k8s.io/api/core/v1"
 )
 
-func Populate(service *riov1.Service, systemNamespace string, os *objectset.ObjectSet) error {
-	if service.SystemSpec != nil {
-		pod.Roles(service, &service.SystemSpec.PodSpec, os)
-		cp := newControllerParams(service, v1.PodTemplateSpec{Spec: service.SystemSpec.PodSpec})
-		deployment(service, cp, os)
-
-		return nil
-	}
-
-	if !isImageSet(service) {
-		return nil
-	}
-
-	podTemplateSpec, err := pod.Populate(service, systemNamespace, os)
+func Populate(service *riov1.Service, os *objectset.ObjectSet) error {
+	podTemplateSpec, err := pod.Populate(service, os)
 	if err != nil {
 		return err
 	}
 
+	if !allImagesSet(podTemplateSpec) {
+		return nil
+	}
+
 	cp := newControllerParams(service, podTemplateSpec)
-	if service.Spec.Global && service.Namespace == systemNamespace {
+	if service.Spec.Global {
 		daemonset(service, cp, os)
+	} else if len(cp.VolumeTemplates) > 0 {
+		statefulset(service, cp, os)
 	} else {
 		deployment(service, cp, os)
 	}
@@ -37,12 +30,14 @@ func Populate(service *riov1.Service, systemNamespace string, os *objectset.Obje
 	return nil
 }
 
-func isImageSet(service *riov1.Service) bool {
-	if service.Spec.Image == "" && service.Spec.Build != nil {
-		return false
+func allImagesSet(podTemplate v1.PodTemplateSpec) bool {
+	for _, container := range podTemplate.Spec.Containers {
+		if container.Image == "" {
+			return false
+		}
 	}
-	for _, con := range service.Spec.Sidecars {
-		if con.Image == "" && con.Build != nil {
+	for _, container := range podTemplate.Spec.InitContainers {
+		if container.Image == "" {
 			return false
 		}
 	}
@@ -50,46 +45,40 @@ func isImageSet(service *riov1.Service) bool {
 }
 
 func newControllerParams(service *riov1.Service, podTemplateSpec v1.PodTemplateSpec) *controllerParams {
-	scaleParams := parseScaleParams(&service.Spec)
+	scaleParams := parseScaleParams(service)
 	selectorLabels := servicelabels.SelectorLabels(service)
 	labels := servicelabels.ServiceLabels(service)
+	volumeTemplates := pod.NormalizeVolumeTemplates(service)
+	annotations := annotations(service)
 
-	if podTemplateSpec.Annotations == nil {
-		podTemplateSpec.Annotations = map[string]string{}
-	}
-
-	if constants.ServiceMeshMode == constants.ServiceMeshModeLinkerd {
-		if !service.Spec.DisableServiceMesh {
-			podTemplateSpec.Annotations["linkerd.io/inject"] = "enabled"
-		}
-	} else if constants.ServiceMeshMode == constants.ServiceMeshModeIstio {
-		if service.Spec.DisableServiceMesh {
-			podTemplateSpec.Annotations["sidecar.istio.io/inject"] = "false"
-		}
-	}
-
-	if podTemplateSpec.Labels == nil {
-		podTemplateSpec.Labels = map[string]string{}
-	}
-	for k, v := range selectorLabels {
-		podTemplateSpec.Labels[k] = v
-	}
-
-	if service.Status.ObservedScale != nil {
-		scaleParams.Scale = int32(*service.Status.ObservedScale)
-	}
+	// Selector labels must be on the podTemplateSpec
+	podTemplateSpec.Labels = servicelabels.Merge(podTemplateSpec.Labels, selectorLabels)
 
 	return &controllerParams{
 		Scale:           scaleParams,
 		Labels:          labels,
+		Annotations:     annotations,
 		SelectorLabels:  selectorLabels,
 		PodTemplateSpec: podTemplateSpec,
+		VolumeTemplates: volumeTemplates,
 	}
+}
+
+func annotations(service *riov1.Service) map[string]string {
+	result := map[string]string{}
+	if service.Spec.ServiceMesh != nil && !*service.Spec.ServiceMesh {
+		result["rio.cattle.io/mesh"] = "false"
+	} else {
+		result["rio.cattle.io/mesh"] = "true"
+	}
+	return result
 }
 
 type controllerParams struct {
 	Scale           scaleParams
 	Labels          map[string]string
+	Annotations     map[string]string
 	SelectorLabels  map[string]string
+	VolumeTemplates map[string]riov1.VolumeTemplate
 	PodTemplateSpec v1.PodTemplateSpec
 }

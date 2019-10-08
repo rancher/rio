@@ -2,13 +2,16 @@ package create
 
 import (
 	"fmt"
+	"strconv"
+	"time"
 
-	v1 "k8s.io/api/core/v1"
-
+	"github.com/pkg/errors"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/stack"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/pretty/stringers"
+	"github.com/rancher/rio/pkg/riofile/stringers"
+	"github.com/rancher/wrangler/pkg/kv"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -17,28 +20,30 @@ var (
 )
 
 type Create struct {
-	App                    string            `desc:"Specify the app label"`
+	App                    string            `desc:"Specify the app name"`
 	AddHost                []string          `desc:"Add a custom host-to-IP mapping (host:ip)"`
 	Annotations            map[string]string `desc:"Annotations to attach to this service"`
 	BuildBranch            string            `desc:"Build repository branch" default:"master"`
 	BuildDockerfile        string            `desc:"Set Dockerfile name, defaults to Dockerfile"`
-	BuildDockerfilePath    string            `desc:"Set Dockerfile path, defaults to buildContext"`
-	BuildContext           string            `desc:"Set build context, defaults to ./"`
+	BuildContext           string            `desc:"Set build context, defaults to ."`
 	BuildWebhookSecret     string            `desc:"Set GitHub webhook secret name"`
 	BuildDockerPushSecret  string            `desc:"Set docker push secret name"`
-	BuildGitSecret         string            `desc:"Set git basic secret name"`
-	BuildImageName         string            `desc:"Specify custom image name"`
-	BuildRegistry          string            `desc:"Specify registry for image"`
-	BuildRevision          string            `desc:"Build commit or tag"`
-	BuildEnablePr          bool              `desc:"Enable pull request builds"`
+	CloneGitSecret         string            `desc:"Set git clone secret name"`
+	BuildImageName         string            `desc:"Specify custom image name to push"`
+	BuildRegistry          string            `desc:"Specify to push image to"`
+	BuildRevision          string            `desc:"Build git commit or tag"`
+	BuildPr                bool              `desc:"Enable pull request builds"`
+	BuildTemplate          bool              `desc:"Use this service as a template for generating services if a new commit applys to git repo. If not specified it will do in-place update"`
+	BuildTimeout           string            `desc:"Timeout for build, default to 10m (ms|s|m|h)"`
 	Command                []string          `desc:"Overwrite the default ENTRYPOINT of the image"`
-	Concurrency            int               `desc:"The maximum concurrent request a container can handle(autoscaling)" default:"10"`
-	Config                 []string          `desc:"Configs to expose to the service (format: name:target)"`
+	Concurrency            int               `desc:"The maximum concurrent request a container can handle (autoscaling)" default:"10"`
+	Config                 []string          `desc:"Configs to expose to the service (format: name[/key]:target)"`
 	Cpus                   string            `desc:"Number of CPUs"`
-	DNSOption              []string          `desc:"Set DNS options (format: key:value or key)"`
-	DNSSearch              []string          `desc:"Set custom DNS search domains"`
-	DNS                    []string          `desc:"Set custom DNS servers"`
-	DisableServiceMesh     bool              `desc:"Disable service mesh"`
+	DnsOption              []string          `desc:"Set DNS options (format: key:value or key)"`
+	DnsSearch              []string          `desc:"Set custom DNS search domains"`
+	Dns                    []string          `desc:"Set custom DNS servers"`
+	HostDNS                bool              `desc:"Use the host level DNS and not the cluster level DNS"`
+	NoMesh                 bool              `desc:"Disable service mesh"`
 	E_Env                  []string          `desc:"Set environment variables"`
 	EnvFile                []string          `desc:"Read in a file of environment variables"`
 	GlobalPermission       []string          `desc:"Permissions to grant to container's service account for all namespaces"`
@@ -61,17 +66,18 @@ type Create struct {
 	M_Memory               string            `desc:"Memory reservation (format: <number>[<unit>], where unit = b, k, m or g)"`
 	N_Name                 string            `desc:"Assign a name to the container. Use format ${namespace}/${name} to assign workload to a different namespace"`
 	Permission             []string          `desc:"Permissions to grant to container's service account in current namespace"`
-	P_Ports                []string          `desc:"Publish a container's port(s) externally (default: \"80:8080/http\")"`
+	P_Ports                []string          `desc:"Publish a container's port(s) (format: svcport:containerport/protocol)"`
+	Privileged             bool              `desc:"Run container with privilege"`
 	ReadOnly               bool              `desc:"Mount the container's root filesystem as read only"`
-	RolloutInterval        int               `desc:"Rollout interval in seconds" default:"5"`
-	RolloutIncrement       int               `desc:"Rollout increment value" default:"5"`
-	Secret                 []string          `desc:"Secrets to inject to the service (format: name:target)"`
-	StageOnly              bool              `desc:"Whether to stage new created revision for build"`
+	RolloutInterval        int               `desc:"Rollout interval in seconds"`
+	RolloutIncrement       int               `desc:"Rollout increment value"`
+	Secret                 []string          `desc:"Secrets to inject to the service (format: name[/key]:target)"`
+	Template               bool              `desc:"Use this service as template to rollout services from git"`
 	T_Tty                  bool              `desc:"Allocate a pseudo-TTY"`
-	BuildTimeout           string            `desc:"BuildTimeout for build, default to 10m (ms|s|m|h)"`
 	Version                string            `desc:"Specify the revision"`
+	Scale                  string            `desc:"The number of replicas to run or a range for autoscaling (example 1-10)"`
 	U_User                 string            `desc:"UID[:GID] Sets the UID used and optionally GID for entrypoint process (format: <uid>[:<gid>])"`
-	Weight                 int               `desc:"Specify the weight for the revision" default:"100"`
+	Weight                 int               `desc:"Specify the weight for the revision"`
 	W_Workdir              string            `desc:"Working directory inside the container"`
 }
 
@@ -97,6 +103,66 @@ func (c *Create) RunCallback(ctx *clicontext.CLIContext, cb func(service *riov1.
 	return service, ctx.Create(service)
 }
 
+func (c *Create) setRollout(spec *riov1.ServiceSpec) {
+	if c.RolloutIncrement > 0 || c.RolloutInterval > 0 {
+		spec.RolloutConfig = &riov1.RolloutConfig{
+			Increment: c.RolloutIncrement,
+			Interval: metav1.Duration{
+				Duration: time.Duration(c.RolloutInterval) * time.Second,
+			},
+		}
+	}
+}
+
+func (c *Create) setDNS(spec *riov1.ServiceSpec) (err error) {
+	if len(c.Dns) > 0 || len(c.DnsSearch) > 0 || len(c.DnsOption) > 0 || c.HostDNS {
+		spec.DNS = &riov1.DNS{
+			Nameservers: c.Dns,
+			Searches:    c.DnsSearch,
+			Options:     nil,
+		}
+		if c.HostDNS {
+			spec.DNS.Policy = v1.DNSDefault
+		}
+		spec.DNS.Options, err = stringers.ParseDNSOptions(c.DnsOption...)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *Create) setScale(spec *riov1.ServiceSpec) (err error) {
+	if c.Scale == "" {
+		return nil
+	}
+
+	minStr, maxStr := kv.Split(c.Scale, "-")
+	minValue, err := strconv.ParseInt(minStr, 10, 64)
+	if err != nil {
+		return errors.Wrapf(err, "invalid scale %s", c.Scale)
+	}
+
+	min := int32(minValue)
+	if maxStr == "" {
+		spec.Replicas = &[]int{int(min)}[0]
+	} else {
+		maxValue, err := strconv.ParseInt(maxStr, 10, 64)
+		if err != nil {
+			return errors.Wrapf(err, "invalid scale %s", c.Scale)
+		}
+		max := int32(maxValue)
+		spec.Autoscale = &riov1.AutoscaleConfig{
+			Concurrency: c.Concurrency,
+			MinReplicas: &min,
+			MaxReplicas: &[]int32{max}[0],
+		}
+	}
+
+	return nil
+}
+
 func (c *Create) ToService(args []string) (*riov1.Service, error) {
 	var (
 		err error
@@ -109,56 +175,39 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 	var spec riov1.ServiceSpec
 
 	spec.App = c.App
-	spec.Version = c.Version
-	spec.Weight = c.Weight
-
-	spec.DisableServiceMesh = c.DisableServiceMesh
-
-	spec.RolloutConfig.RolloutInterval = c.RolloutInterval
-	spec.RolloutConfig.RolloutIncrement = c.RolloutIncrement
-	if c.RolloutIncrement != 0 && c.RolloutInterval != 0 {
-		spec.RolloutConfig.Rollout = true
-	}
-
 	spec.Args = args[1:]
+	spec.Hostname = c.Hostname
+	spec.HostNetwork = c.Net == "host"
 	spec.Stdin = c.I_Interactive
 	spec.TTY = c.T_Tty
+	spec.Version = c.Version
 	spec.WorkingDir = c.W_Workdir
-	spec.Hostname = c.Hostname
-	spec.Nameservers = c.DNS
-	spec.Searches = c.DNSSearch
 
-	if c.Net == "host" {
-		spec.HostNetwork = true
+	if c.NoMesh {
+		spec.ServiceMesh = &c.NoMesh
 	}
 
-	min, max := 1, 10
-	spec.AutoscaleConfig.MinScale = &min
-	spec.AutoscaleConfig.MaxScale = &max
-	spec.AutoscaleConfig.Concurrency = &c.Concurrency
-
-	if c.ReadOnly {
-		spec.ReadOnlyRootFilesystem = &t
+	if c.Weight > 0 {
+		spec.Weight = &c.Weight
+	}
+	c.setRollout(&spec)
+	if err := c.setDNS(&spec); err != nil {
+		return nil, err
+	}
+	if err := c.setScale(&spec); err != nil {
+		return nil, err
 	}
 
 	spec.ImagePullPolicy, err = stringers.ParseImagePullPolicy(c.ImagePullPolicy)
 	if err != nil {
 		return nil, err
 	}
-
-	for _, s := range c.ImagePullSecrets {
-		spec.ImagePullSecrets = append(spec.ImagePullSecrets,
-			v1.LocalObjectReference{
-				Name: s,
-			})
-	}
+	spec.ImagePullSecrets = c.ImagePullSecrets
 
 	spec.HostAliases, err = stringers.ParseHostAliases(c.AddHost...)
 	if err != nil {
 		return nil, err
 	}
-
-	spec.Options = stringers.ParseDNSOptions(c.DNSOption...)
 
 	if c.Cpus != "" {
 		cpus, err := stringers.ParseQuantity(c.Cpus)
@@ -168,86 +217,76 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 		spec.CPUs = &cpus
 	}
 
-	service := riov1.NewService("", c.N_Name, riov1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Labels:      c.L_Label,
-			Annotations: c.Annotations,
-		},
-		Spec: spec,
-	})
-
-	if stringers.IsRepo(args[0]) {
-		service.Spec.Build = &riov1.ImageBuild{}
-		service.Spec.Build.Branch = c.BuildBranch
-		service.Spec.Build.DockerFile = c.BuildDockerfile
-		service.Spec.Build.DockerFilePath = c.BuildDockerfilePath
-		service.Spec.Build.BuildContext = c.BuildContext
-		service.Spec.Build.Revision = c.BuildRevision
-		service.Spec.Build.GithubSecretName = c.BuildWebhookSecret
-		service.Spec.Build.GitSecretName = c.BuildGitSecret
-		service.Spec.Build.BuildImageName = c.BuildImageName
-		service.Spec.Build.PushRegistry = c.BuildRegistry
-		service.Spec.Build.PushRegistrySecretName = c.BuildDockerPushSecret
-		service.Spec.Build.Repo = args[0]
-		service.Spec.Build.StageOnly = c.StageOnly
-		service.Spec.Build.EnablePR = c.BuildEnablePr
-	} else {
-		service.Spec.Image = args[0]
-	}
-	if err := populateTimeout(c, service); err != nil {
+	if err := c.setBuildOrImage(args[0], &spec); err != nil {
 		return nil, err
 	}
 
-	service.Spec.RunAsUser, service.Spec.RunAsGroup, err = stringers.ParseUserGroup(c.U_User, c.Group)
+	spec.ContainerSecurityContext = &riov1.ContainerSecurityContext{}
+	if c.ReadOnly {
+		spec.ReadOnlyRootFilesystem = &t
+	}
+
+	spec.RunAsUser, spec.RunAsGroup, err = stringers.ParseUserGroup(c.U_User, c.Group)
 	if err != nil {
 		return nil, err
 	}
 
-	service.Spec.Configs, err = stringers.ParseConfigs(c.Config...)
+	if c.Privileged {
+		spec.Privileged = &c.Privileged
+	}
+
+	spec.Configs, err = stringers.ParseConfigs(c.Config...)
 	if err != nil {
 		return nil, err
 	}
 
-	service.Spec.Secrets, err = stringers.ParseSecrets(c.Secret...)
+	spec.Secrets, err = stringers.ParseSecrets(c.Secret...)
 	if err != nil {
 		return nil, err
 	}
 
-	service.Spec.GlobalPermissions, err = stringers.ParsePermissions(c.GlobalPermission...)
+	spec.GlobalPermissions, err = stringers.ParsePermissions(c.GlobalPermission...)
 	if err != nil {
 		return nil, err
 	}
 
-	service.Spec.Permissions, err = stringers.ParsePermissions(c.Permission...)
+	spec.Permissions, err = stringers.ParsePermissions(c.Permission...)
 	if err != nil {
 		return nil, err
 	}
 
-	service.Spec.Env, err = stringers.ParseEnv(c.EnvFile, c.E_Env, true)
+	spec.Env, err = stringers.ParseAllEnv(c.EnvFile, c.E_Env, true)
 	if err != nil {
 		return nil, err
 	}
 
-	service.Labels, err = parseLabels(c.LabelFile, service.Labels)
+	if err := c.setHealthCheck(&spec); err != nil {
+		return nil, err
+	}
+
+	labels, err := parseLabels(c.LabelFile, c.L_Label)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := populateHealthCheck(c, service); err != nil {
-		return nil, err
-	}
-
-	if err := populateMemory(c, service); err != nil {
+	if err := c.setMemory(&spec); err != nil {
 		return nil, err
 	}
 
 	if len(c.P_Ports) == 0 {
 		c.P_Ports = []string{"80:8080/http"}
 	}
-	service.Spec.Ports, err = stringers.ParsePorts(c.P_Ports...)
+
+	spec.Ports, err = stringers.ParsePorts(c.P_Ports...)
 	if err != nil {
 		return nil, err
 	}
 
-	return service, nil
+	return riov1.NewService("", c.N_Name, riov1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels:      labels,
+			Annotations: c.Annotations,
+		},
+		Spec: spec,
+	}), nil
 }

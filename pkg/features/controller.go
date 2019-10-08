@@ -4,22 +4,28 @@ import (
 	"context"
 
 	ntypes "github.com/rancher/mapper"
-	"github.com/rancher/mapper/slice"
-	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/rio/types"
 )
 
 type ControllerRegister func(ctx context.Context, rContext *types.Context) error
 
+type FeatureSpec struct {
+	Enabled     bool              `json:"enabled,omitempty"`
+	Description string            `json:"description,omitempty"`
+	Questions   []riov1.Question  `json:"questions,omitempty"`
+	Answers     map[string]string `json:"answers,omitempty"`
+	Requires    []string          `json:"features,omitempty"`
+}
+
 type FeatureController struct {
 	FeatureName  string
 	System       bool
-	FeatureSpec  v1.FeatureSpec
+	FeatureSpec  FeatureSpec
 	Controllers  []ControllerRegister
 	OnStop       func() error
-	OnChange     func(*v1.Feature) error
-	OnStart      func(*v1.Feature) error
+	OnStart      func() error
 	SystemStacks []*stack.SystemStack
 	FixedAnswers map[string]string
 	registered   bool
@@ -39,12 +45,6 @@ func (f *FeatureController) Register() error {
 		f.FeatureSpec.Questions = append(f.FeatureSpec.Questions, qs...)
 	}
 
-	if len(f.SystemStacks) > 0 {
-		if !slice.ContainsString(f.FeatureSpec.Requires, "stack") {
-			f.FeatureSpec.Requires = append(f.FeatureSpec.Requires, "stack")
-		}
-	}
-
 	Register(f)
 	return nil
 }
@@ -57,7 +57,7 @@ func (f *FeatureController) IsSystem() bool {
 	return f.System
 }
 
-func (f *FeatureController) Spec() v1.FeatureSpec {
+func (f *FeatureController) Spec() FeatureSpec {
 	return f.FeatureSpec
 }
 
@@ -76,21 +76,11 @@ func (f *FeatureController) Stop() error {
 	return ntypes.NewErrors(errs...)
 }
 
-func (f *FeatureController) Changed(feature *v1.Feature) error {
-	if f.OnChange != nil {
-		if err := f.OnChange(feature); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (f *FeatureController) Start(ctx context.Context, feature *v1.Feature) error {
+func (f *FeatureController) Start(ctx context.Context) error {
 	var errs []error
 	for _, ss := range f.SystemStacks {
 		ans := map[string]string{}
-		for k, v := range feature.Spec.Answers {
+		for k, v := range f.FeatureSpec.Answers {
 			ans[k] = v
 		}
 		for k, v := range f.FixedAnswers {
@@ -112,7 +102,7 @@ func (f *FeatureController) Start(ctx context.Context, feature *v1.Feature) erro
 	}
 
 	if f.OnStart != nil {
-		if err := f.OnStart(feature); err != nil {
+		if err := f.OnStart(); err != nil {
 			return err
 		}
 	}

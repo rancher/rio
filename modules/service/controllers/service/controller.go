@@ -3,76 +3,74 @@ package service
 import (
 	"context"
 
+	"github.com/rancher/rio/pkg/constants"
+
 	"github.com/rancher/rio/modules/service/controllers/service/populate"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/constants"
+	adminv1 "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
-	corev1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/core/v1"
+	"github.com/rancher/wrangler/pkg/generic"
 	"github.com/rancher/wrangler/pkg/objectset"
-	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
-	c := stackobject.NewGeneratingController(ctx, rContext, "stack-service", rContext.Rio.Rio().V1().Service())
-	c.Apply = c.Apply.WithCacheTypes(
-		rContext.Build.Tekton().V1alpha1().TaskRun(),
-		rContext.RBAC.Rbac().V1().Role(),
-		rContext.RBAC.Rbac().V1().RoleBinding(),
-		rContext.RBAC.Rbac().V1().ClusterRole(),
-		rContext.RBAC.Rbac().V1().ClusterRoleBinding(),
-		rContext.Apps.Apps().V1().Deployment(),
-		rContext.Apps.Apps().V1().DaemonSet(),
-		rContext.Core.Core().V1().ServiceAccount(),
-		rContext.Core.Core().V1().Service(),
-		rContext.Core.Core().V1().Secret(),
-		rContext.AutoScale.Autoscale().V1().ServiceScaleRecommendation(),
-		rContext.Webhook.Gitwatcher().V1().GitWatcher()).
-		WithRateLimiting(5).
-		WithStrictCaching()
-
-	sh := &serviceHandler{
-		namespace:     rContext.Namespace,
-		serviceClient: rContext.Rio.Rio().V1().Service(),
-		serviceCache:  rContext.Rio.Rio().V1().Service().Cache(),
-		ns:            rContext.Core.Core().V1().Namespace(),
+	sc := rContext.Rio.Rio().V1().Service()
+	scs, err := rContext.Storage.Storage().V1().StorageClass().List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	for _, sc := range scs.Items {
+		if sc.Annotations["storageclass.kubernetes.io/is-default-class"] == "true" {
+			constants.DefaultStorageClass = true
+			break
+		}
 	}
 
-	c.Populator = sh.populate
+	sh := &serviceHandler{
+		namespace:          rContext.Namespace,
+		publicDomainCache:  rContext.Admin.Admin().V1().PublicDomain().Cache(),
+		clusterDomainCache: rContext.Admin.Admin().V1().ClusterDomain().Cache(),
+	}
+
+	riov1controller.RegisterServiceGeneratingHandler(ctx,
+		sc,
+		rContext.Apply.WithCacheTypes(
+			rContext.RBAC.Rbac().V1().Role(),
+			rContext.RBAC.Rbac().V1().RoleBinding(),
+			rContext.Apps.Apps().V1().Deployment(),
+			rContext.Apps.Apps().V1().DaemonSet(),
+			rContext.Core.Core().V1().ServiceAccount(),
+			rContext.Core.Core().V1().Service(),
+			rContext.Core.Core().V1().Secret()).
+			WithInjectorName("mesh").
+			WithRateLimiting(20),
+		"ServiceDeployed",
+		"service",
+		sh.populate,
+		nil)
+
 	return nil
 }
 
 type serviceHandler struct {
-	namespace     string
-	serviceClient riov1controller.ServiceController
-	serviceCache  riov1controller.ServiceCache
-	ns            corev1controller.NamespaceController
+	namespace string
+
+	clusterDomainCache adminv1.ClusterDomainCache
+	publicDomainCache  adminv1.PublicDomainCache
 }
 
-func (s *serviceHandler) populate(obj runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) error {
-	service := obj.(*riov1.Service)
-
-	ns, err := s.ns.Cache().Get(service.Namespace)
-	if err != nil {
-		return err
+func (s *serviceHandler) populate(service *riov1.Service, status riov1.ServiceStatus) ([]runtime.Object, riov1.ServiceStatus, error) {
+	if service.Spec.Template {
+		return nil, status, generic.ErrSkip
 	}
 
-	if ns.Name != s.namespace && constants.ServiceMeshMode == constants.ServiceMeshModeIstio {
-		ns = ns.DeepCopy()
-		if ns.Labels == nil {
-			ns.Labels = map[string]string{}
-		}
-		ns.Labels["istio-injection"] = "enabled"
-		if _, err := s.ns.Update(ns); err != nil {
-			return err
-		}
+	os := objectset.NewObjectSet()
+	if err := populate.Service(service, os); err != nil {
+		return nil, status, err
 	}
 
-	if service.Namespace != s.namespace && service.SystemSpec != nil {
-		service = service.DeepCopy()
-		service.SystemSpec = nil
-	}
-	return populate.Service(service, s.namespace, os)
+	return os.All(), status, nil
 }

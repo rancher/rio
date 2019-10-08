@@ -9,6 +9,7 @@ import (
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/riofile"
+	"github.com/rancher/rio/pkg/services"
 	"github.com/rancher/rio/pkg/template"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -76,38 +77,45 @@ func (s *Stack) GetObjects() ([]runtime.Object, error) {
 	return rf.Objects(), nil
 }
 
-func (s *Stack) GetImageBuilds() (map[string]riov1.ImageBuild, error) {
+type ContainerBuildKey struct {
+	Service   string
+	Container string
+}
+
+func (s *Stack) GetImageBuilds() (map[ContainerBuildKey]riov1.ImageBuildSpec, error) {
 	objs, err := s.GetObjects()
 	if err != nil {
 		return nil, err
 	}
 
-	buildConfig := make(map[string]riov1.ImageBuild)
+	buildConfig := make(map[ContainerBuildKey]riov1.ImageBuildSpec)
 	for _, obj := range objs {
 		if svc, ok := obj.(*riov1.Service); ok {
-			if svc.Spec.Image == "" {
-				if svc.Spec.Build == nil {
-					buildConfig[svc.Name] = riov1.ImageBuild{}
-					continue
-				}
-
-				if svc.Spec.Build.Repo != "" {
-					continue
-				}
-
-				buildConfig[svc.Name] = *svc.Spec.Build
-			} else {
-				// check if the image points toward a local path
-				if strings.HasPrefix(svc.Spec.Image, "./") || strings.HasPrefix(svc.Spec.Image, "/") {
-					fileInfo, err := os.Stat(svc.Spec.Image)
-					if err != nil {
-						return nil, errors.Wrap(err, "error parsing image field")
+			for _, container := range services.ToNamedContainers(svc) {
+				if container.ImageBuild != nil {
+					if svc.Spec.ImageBuild.Repo != "" {
+						continue
 					}
-					if fileInfo.IsDir() {
-						buildConfig[svc.Name] = riov1.ImageBuild{BuildContext: svc.Spec.Image}
-						svc.Spec.Image = ""
-					} else {
-						return nil, errors.Wrap(err, "image field is not a directory")
+					buildConfig[ContainerBuildKey{
+						Service:   svc.Name,
+						Container: container.Name,
+					}] = *container.ImageBuild
+				} else {
+					// check if the image points toward a local path
+					if strings.HasPrefix(svc.Spec.Image, "./") || strings.HasPrefix(svc.Spec.Image, "/") {
+						fileInfo, err := os.Stat(svc.Spec.Image)
+						if err != nil {
+							return nil, errors.Wrap(err, "error parsing image field")
+						}
+						if fileInfo.IsDir() {
+							buildConfig[ContainerBuildKey{
+								Service:   svc.Name,
+								Container: container.Name,
+							}] = riov1.ImageBuildSpec{Context: svc.Spec.Image}
+							svc.Spec.Image = ""
+						} else {
+							return nil, errors.Wrap(err, "image field is not a directory")
+						}
 					}
 				}
 			}

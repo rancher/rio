@@ -5,8 +5,6 @@ import (
 
 	"github.com/rancher/rio/cli/cmd/apply"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/stack"
-	"github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/kv"
 )
@@ -21,8 +19,7 @@ func (u update) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("exactly one argument is required")
 	}
 
-	ns, name := stack.NamespaceAndName(ctx, ctx.CLI.Args()[0])
-	r, err := ctx.ByID(ns, name, types.StackType)
+	r, err := ctx.ByID(ctx.CLI.Args()[0])
 	if err != nil {
 		return err
 	}

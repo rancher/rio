@@ -1,12 +1,12 @@
 package v1
 
 import (
-	genericcondition "github.com/rancher/wrangler/pkg/genericcondition"
-	v1 "k8s.io/api/core/v1"
+	"github.com/rancher/wrangler/pkg/genericcondition"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // +genclient
+// +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // PublicDomain is a top-level resource to allow user to its own public domain for the services inside cluster. It can be pointed to
@@ -15,33 +15,30 @@ type PublicDomain struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   PublicDomainSpec   `json:"spec,inline"`
-	Status PublicDomainStatus `json:"status,inline"`
+	Spec   PublicDomainSpec   `json:"spec,omitempty"`
+	Status PublicDomainStatus `json:"status,omitempty"`
 }
 
 type PublicDomainSpec struct {
-	// SecretRef reference the secret that contains key and certs for TLS configuration. By default it is configured to use Letsencrypt
-	SecretRef v1.SecretReference `json:"secretRef,omitempty"`
+	// SecretName holding the TLS certificate for this domain.
+	SecretName string `json:"secretName,omitempty"`
 
-	// Whether to disable Letsencrypt certificates.
-	DisableLetsencrypt bool `json:"disableLetsencrypt,omitempty"`
+	// Target App Name.  Can be a Router name also
+	TargetApp string `json:"targetApp,omitempty"`
 
-	// Target Service Name in the same Namespace
-	TargetServiceName string `json:"targetServiceName,omitempty"`
+	// Target Version
+	TargetVersion string `json:"targetVersion,omitempty"`
 
-	// PublicDomain name
-	DomainName string `json:"domainName,omitempty"`
+	// Target Service or Router Namespace
+	TargetNamespace string `json:"targetNamespace,omitempty"`
 }
 
 type PublicDomainStatus struct {
 	// Whether HTTP is supported in the Domain
 	HTTPSSupported bool `json:"httpsSupported,omitempty"`
 
-	// Letsencrypt issuer name
-	IssuerName string `json:"issuerName,omitempty"`
-
-	// Endpoint to access this Domain
-	Endpoint string `json:"endpoint,omitempty"`
+	// Secret containing TLS cert for HTTPS
+	AssignedSecretName string `json:"assignedSecretName,omitempty"`
 
 	// Represents the latest available observations of a PublicDomain's current state.
 	Conditions []genericcondition.GenericCondition `json:"conditions,omitempty"`

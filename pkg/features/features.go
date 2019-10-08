@@ -2,8 +2,6 @@ package features
 
 import (
 	"context"
-
-	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 )
 
 var (
@@ -11,11 +9,9 @@ var (
 )
 
 type Feature interface {
-	Start(ctx context.Context, feature *v1.Feature) error
-	Changed(feature *v1.Feature) error
+	Start(ctx context.Context) error
 	Stop() error
-	IsSystem() bool
-	Spec() v1.FeatureSpec
+	Spec() FeatureSpec
 	Name() string
 }
 
