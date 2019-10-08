@@ -14,20 +14,23 @@ var (
 	defaultMemory = resource.MustParse("64Mi")
 )
 
-func podSpec(service *riov1.Service, systemNamespace string) v1.PodSpec {
+func podSpec(service *riov1.Service) v1.PodSpec {
 	podSpec := v1.PodSpec{
 		DNSConfig:          podDNS(service),
-		DNSPolicy:          service.Spec.DNSPolicy,
 		HostAliases:        service.Spec.HostAliases,
 		Hostname:           service.Spec.Hostname,
 		HostNetwork:        service.Spec.HostNetwork,
 		ServiceAccountName: rbac.ServiceAccountName(service),
 		EnableServiceLinks: &f,
-		Containers:         containers(service, systemNamespace, false),
-		InitContainers:     containers(service, systemNamespace, true),
+		Containers:         containers(service, false),
+		InitContainers:     containers(service, true),
 		Volumes:            volumes(service),
 		Affinity:           service.Spec.Affinity,
-		ImagePullSecrets:   service.Spec.ImagePullSecrets,
+		ImagePullSecrets:   pullSecrets(service.Spec.ImagePullSecrets),
+	}
+
+	if service.Spec.DNS != nil {
+		podSpec.DNSPolicy = service.Spec.DNS.Policy
 	}
 
 	if podSpec.ServiceAccountName == "" {
@@ -39,15 +42,28 @@ func podSpec(service *riov1.Service, systemNamespace string) v1.PodSpec {
 	return podSpec
 }
 
+func pullSecrets(names []string) (result []v1.LocalObjectReference) {
+	for _, name := range names {
+		result = append(result, v1.LocalObjectReference{
+			Name: name,
+		})
+	}
+	return
+}
+
 func podDNS(service *riov1.Service) *v1.PodDNSConfig {
-	if len(service.Spec.PodDNSConfig.Options) == 0 &&
-		len(service.Spec.PodDNSConfig.Nameservers) == 0 &&
-		len(service.Spec.PodDNSConfig.Searches) == 0 {
+	if service.Spec.DNS == nil {
+		return nil
+	}
+
+	if len(service.Spec.DNS.Options) == 0 &&
+		len(service.Spec.DNS.Nameservers) == 0 &&
+		len(service.Spec.DNS.Searches) == 0 {
 		return nil
 	}
 
 	var options []v1.PodDNSConfigOption
-	for _, opt := range service.Spec.PodDNSConfig.Options {
+	for _, opt := range service.Spec.DNS.Options {
 		options = append(options, v1.PodDNSConfigOption{
 			Name:  opt.Name,
 			Value: opt.Value,
@@ -55,7 +71,7 @@ func podDNS(service *riov1.Service) *v1.PodDNSConfig {
 	}
 	return &v1.PodDNSConfig{
 		Options:     options,
-		Nameservers: service.Spec.PodDNSConfig.Nameservers,
-		Searches:    service.Spec.PodDNSConfig.Searches,
+		Nameservers: service.Spec.DNS.Nameservers,
+		Searches:    service.Spec.DNS.Searches,
 	}
 }

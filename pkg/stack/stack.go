@@ -7,6 +7,7 @@ import (
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/riofile"
+	"github.com/rancher/rio/pkg/services"
 	"github.com/rancher/rio/pkg/template"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -74,26 +75,27 @@ func (s *Stack) GetObjects() ([]runtime.Object, error) {
 	return rf.Objects(), nil
 }
 
-func (s *Stack) GetImageBuilds() (map[string]riov1.ImageBuild, error) {
+type ContainerBuildKey struct {
+	Service   string
+	Container string
+}
+
+func (s *Stack) GetImageBuilds() (map[ContainerBuildKey]riov1.ImageBuildSpec, error) {
 	objs, err := s.GetObjects()
 	if err != nil {
 		return nil, err
 	}
 
-	buildConfig := make(map[string]riov1.ImageBuild)
+	buildConfig := make(map[ContainerBuildKey]riov1.ImageBuildSpec)
 	for _, obj := range objs {
 		if svc, ok := obj.(*riov1.Service); ok {
-			if svc.Spec.Image == "" {
-				if svc.Spec.Build == nil {
-					buildConfig[svc.Name] = riov1.ImageBuild{}
-					continue
+			for _, container := range services.ToNamedContainers(svc) {
+				if container.ImageBuild != nil {
+					buildConfig[ContainerBuildKey{
+						Service:   svc.Name,
+						Container: container.Name,
+					}] = *container.ImageBuild
 				}
-
-				if svc.Spec.Build.Repo != "" {
-					continue
-				}
-
-				buildConfig[svc.Name] = *svc.Spec.Build
 			}
 		}
 	}

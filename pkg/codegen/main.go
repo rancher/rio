@@ -8,6 +8,9 @@ import (
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	controllergen "github.com/rancher/wrangler/pkg/controller-gen"
 	"github.com/rancher/wrangler/pkg/controller-gen/args"
+
+	solov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
+	//solov1 "github.com/rancher/rio/pkg/apis/gateway.solo.io/v1"
 )
 
 var (
@@ -23,7 +26,6 @@ func main() {
 			"admin.rio.cattle.io": {
 				Types: []interface{}{
 					adminv1.ClusterDomain{},
-					adminv1.Feature{},
 					adminv1.RioInfo{},
 					adminv1.PublicDomain{},
 				},
@@ -40,10 +42,18 @@ func main() {
 					riov1.ExternalService{},
 					riov1.Router{},
 					riov1.Service{},
-					riov1.App{},
 					riov1.Stack{},
 				},
 				GenerateTypes: true,
+			},
+			"gateway.solo.io": {
+				Types: []interface{}{
+					solov1.VirtualService{},
+				},
+				//GenerateTypes: true,
+				ClientSetPackage: "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/clientset/versioned",
+				InformersPackage: "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/informers/externalversions",
+				ListersPackage:   "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/listers",
 			},
 		},
 	})

@@ -32,7 +32,7 @@ func (a *Register) Run(ctx *clicontext.CLIContext) error {
 			Namespace: ctx.SystemNamespace,
 			Name:      a.Secret,
 		}
-		pd.Spec.DisableLetsencrypt = true
+		pd.Spec.DisableLetsEncrypt = true
 	}
 
 	return ctx.Create(adminv1.NewPublicDomain(namespace, name2.PublicDomain(domainName), pd))

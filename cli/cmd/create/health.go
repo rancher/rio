@@ -12,7 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func populateHealthCheck(c *Create, service *riov1.Service) error {
+func (c *Create) setHealthCheck(spec *riov1.ServiceSpec) error {
 	if c.HealthURL == "" && c.HealthCmd == "" {
 		return nil
 	}
@@ -104,8 +104,6 @@ func populateHealthCheck(c *Create, service *riov1.Service) error {
 		}
 	}
 
-	service.Spec.LivenessProbe = &hc
-	service.Spec.ReadinessProbe = &hc
-
+	spec.ReadinessProbe = &hc
 	return nil
 }

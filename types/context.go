@@ -6,6 +6,7 @@ import (
 	webhookinator "github.com/rancher/gitwatcher/pkg/generated/controllers/gitwatcher.cattle.io"
 	"github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io"
 	"github.com/rancher/rio/pkg/generated/controllers/autoscale.rio.cattle.io"
+	gloo "github.com/rancher/rio/pkg/generated/controllers/gateway.solo.io"
 	"github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io"
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/apiextensions.k8s.io"
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/apps"
@@ -27,6 +28,10 @@ import (
 
 type contextKey struct{}
 
+type Config interface {
+	Get(section, name string) string
+}
+
 type Context struct {
 	Namespace string
 
@@ -39,16 +44,18 @@ type Context struct {
 	Ext           *apiextensions.Factory
 	K8sNetworking *extensionsv1beta1.Factory
 	Networking    *networking.Factory
-	Global        *admin.Factory
+	Admin         *admin.Factory
 	K8s           kubernetes.Interface
 	RBAC          *rbac.Factory
 	Rio           *rio.Factory
 	SMI           *smi.Factory
+	Gloo          *gloo.Factory
 	Serving       *serving.Factory
 	Storage       *storage.Factory
 	Webhook       *webhookinator.Factory
 
-	Apply apply.Apply
+	Config Config
+	Apply  apply.Apply
 }
 
 func From(ctx context.Context) *Context {
@@ -67,7 +74,7 @@ func NewContext(namespace string, config *rest.Config) *Context {
 		Ext:           apiextensions.NewFactoryFromConfigOrDie(config),
 		K8sNetworking: extensionsv1beta1.NewFactoryFromConfigOrDie(config),
 		Networking:    networking.NewFactoryFromConfigOrDie(config),
-		Global:        admin.NewFactoryFromConfigOrDie(config),
+		Admin:         admin.NewFactoryFromConfigOrDie(config),
 		RBAC:          rbac.NewFactoryFromConfigOrDie(config),
 		Rio:           rio.NewFactoryFromConfigOrDie(config),
 		Serving:       serving.NewFactoryFromConfigOrDie(config),
@@ -75,6 +82,7 @@ func NewContext(namespace string, config *rest.Config) *Context {
 		SMI:           smi.NewFactoryFromConfigOrDie(config),
 		Webhook:       webhookinator.NewFactoryFromConfigOrDie(config),
 		K8s:           kubernetes.NewForConfigOrDie(config),
+		Gloo:          gloo.NewFactoryFromConfigOrDie(config),
 	}
 
 	context.Apply = apply.New(context.K8s.Discovery(), apply.NewClientFactory(config))
@@ -82,7 +90,24 @@ func NewContext(namespace string, config *rest.Config) *Context {
 }
 
 func (c *Context) Start(ctx context.Context) error {
-	return start.All(ctx, 5, c.Global)
+	return start.All(ctx, 5,
+		c.Apps,
+		c.AutoScale,
+		c.Batch,
+		c.Build,
+		c.CertManager,
+		c.Core,
+		c.Ext,
+		c.K8sNetworking,
+		c.Networking,
+		c.Admin,
+		c.RBAC,
+		c.Rio,
+		c.Serving,
+		c.Storage,
+		c.SMI,
+		c.Webhook,
+		c.Gloo)
 }
 
 func BuildContext(ctx context.Context, namespace string, config *rest.Config) (context.Context, *Context) {

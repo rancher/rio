@@ -1,46 +1,23 @@
 package pod
 
 import (
-	"strings"
-
-	"github.com/rancher/rio/pkg/constants"
-
 	"github.com/rancher/rio/modules/service/controllers/service/populate/rbac"
 	"github.com/rancher/rio/modules/service/controllers/service/populate/servicelabels"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/wrangler/pkg/objectset"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var (
-	statsPatternAnnotationKey = "sidecar.istio.io/statsInclusionPrefixes"
-
-	defaultEnvoyStatsMatcherInclusionPatterns = []string{
-		"http",
-		"cluster_manager",
-		"listener_manager",
-		"http_mixer_filter",
-		"tcp_mixer_filter",
-		"server",
-		"cluster.xds-grpc",
-	}
-)
-
-func Populate(service *riov1.Service, systemNamespace string, os *objectset.ObjectSet) (v1.PodTemplateSpec, error) {
+func Populate(service *riov1.Service, os *objectset.ObjectSet) (v1.PodTemplateSpec, error) {
 	pts := v1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels:      servicelabels.ServiceLabels(service),
-			Annotations: servicelabels.Merge(service.Annotations),
+			Annotations: servicelabels.ServiceAnnotations(service),
 		},
 	}
 
-	if _, ok := pts.Annotations[statsPatternAnnotationKey]; !ok && constants.ServiceMeshMode == constants.ServiceMeshModeIstio {
-		pts.Annotations[statsPatternAnnotationKey] = strings.Join(defaultEnvoyStatsMatcherInclusionPatterns, ",")
-	}
-
-	podSpec := podSpec(service, systemNamespace)
+	podSpec := podSpec(service)
 	Roles(service, &podSpec, os)
 	if err := images(service, &podSpec); err != nil {
 		return pts, err
@@ -66,21 +43,25 @@ func Roles(service *riov1.Service, podSpec *v1.PodSpec, os *objectset.ObjectSet)
 func images(service *riov1.Service, podSpec *v1.PodSpec) error {
 	for i, container := range podSpec.InitContainers {
 		image := service.Status.ContainerImages[container.Name]
-		if image != "" {
-			podSpec.InitContainers[i].Image = image
+		if image.ImageName != "" {
+			podSpec.InitContainers[i].Image = image.ImageName
 		}
-		if podSpec.InitContainers[i].Image == "" {
-			return stackobject.ErrSkipObjectSet
+		if image.PullSecret != "" {
+			podSpec.ImagePullSecrets = append(podSpec.ImagePullSecrets, v1.LocalObjectReference{
+				Name: image.PullSecret,
+			})
 		}
 	}
 
 	for i, container := range podSpec.Containers {
 		image := service.Status.ContainerImages[container.Name]
-		if image != "" {
-			podSpec.Containers[i].Image = image
+		if image.ImageName != "" {
+			podSpec.Containers[i].Image = image.ImageName
 		}
-		if podSpec.Containers[i].Image == "" {
-			return stackobject.ErrSkipObjectSet
+		if image.PullSecret != "" {
+			podSpec.ImagePullSecrets = append(podSpec.ImagePullSecrets, v1.LocalObjectReference{
+				Name: image.PullSecret,
+			})
 		}
 	}
 

@@ -1,36 +1,36 @@
 package mappers
 
 import (
-	"github.com/rancher/mapper"
-	"github.com/rancher/mapper/mappers"
+	"github.com/rancher/norman/pkg/types"
+	"github.com/rancher/norman/pkg/types/mapper"
 )
 
-func NewObject(kind, apiVersion string) mapper.Mapper {
-	return mapper.Mappers{
-		mappers.SetValue{Field: "kind", InternalValue: kind},
-		mappers.SetValue{Field: "apiVersion", InternalValue: apiVersion},
-		mappers.Drop{
+func NewObject(kind, apiVersion string) types.Mapper {
+	return types.Mappers{
+		mapper.SetValue{Field: "kind", InternalValue: kind},
+		mapper.SetValue{Field: "apiVersion", InternalValue: apiVersion},
+		mapper.Drop{
 			Field: "kind",
 		},
-		mappers.Drop{
+		mapper.Drop{
 			Field: "apiVersion",
 		},
-		mappers.Move{
+		mapper.Move{
 			From: "metadata/labels",
 			To:   "labels",
 		},
-		mappers.Move{
+		mapper.Move{
 			From: "metadata/annotations",
 			To:   "annotations",
 		},
-		mappers.Drop{
+		mapper.Drop{
 			Field: "metadata",
 		},
-		mappers.Drop{
-			IgnoreDefinition: true,
-			Field:            "status",
+		mapper.Drop{
+			Optional: true,
+			Field:    "status",
 		},
-		&mappers.Embed{
+		&mapper.Embed{
 			Field:    "spec",
 			Optional: true,
 		},

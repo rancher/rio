@@ -29,7 +29,6 @@ import (
 
 var (
 	ClusterDomainResourceName = "clusterdomains"
-	FeatureResourceName       = "features"
 	PublicDomainResourceName  = "publicdomains"
 	RioInfoResourceName       = "rioinfos"
 )
@@ -57,8 +56,6 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&ClusterDomain{},
 		&ClusterDomainList{},
-		&Feature{},
-		&FeatureList{},
 		&PublicDomain{},
 		&PublicDomainList{},
 		&RioInfo{},
