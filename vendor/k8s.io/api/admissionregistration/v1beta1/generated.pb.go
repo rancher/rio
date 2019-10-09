@@ -687,6 +687,70 @@ func (m *MutatingWebhook) Size() (n int) {
 	n += 1 + l + sovGenerated(uint64(l))
 	if len(m.Rules) > 0 {
 		for _, e := range m.Rules {
+<<<<<<< HEAD
+			l = e.Size()
+			n += 1 + l + sovGenerated(uint64(l))
+		}
+	}
+	if m.FailurePolicy != nil {
+		l = len(*m.FailurePolicy)
+		n += 1 + l + sovGenerated(uint64(l))
+	}
+	if m.NamespaceSelector != nil {
+		l = m.NamespaceSelector.Size()
+		n += 1 + l + sovGenerated(uint64(l))
+	}
+	if m.SideEffects != nil {
+		l = len(*m.SideEffects)
+		n += 1 + l + sovGenerated(uint64(l))
+	}
+	if m.TimeoutSeconds != nil {
+		n += 1 + sovGenerated(uint64(*m.TimeoutSeconds))
+	}
+	if len(m.AdmissionReviewVersions) > 0 {
+		for _, s := range m.AdmissionReviewVersions {
+			l = len(s)
+			n += 1 + l + sovGenerated(uint64(l))
+		}
+	}
+	if m.MatchPolicy != nil {
+		l = len(*m.MatchPolicy)
+		n += 1 + l + sovGenerated(uint64(l))
+	}
+	if m.ReinvocationPolicy != nil {
+		l = len(*m.ReinvocationPolicy)
+		n += 1 + l + sovGenerated(uint64(l))
+	}
+	if m.ObjectSelector != nil {
+		l = m.ObjectSelector.Size()
+		n += 1 + l + sovGenerated(uint64(l))
+	}
+	return n
+}
+
+func (m *MutatingWebhookConfiguration) Size() (n int) {
+	var l int
+	_ = l
+	l = m.ObjectMeta.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	if len(m.Webhooks) > 0 {
+		for _, e := range m.Webhooks {
+			l = e.Size()
+			n += 1 + l + sovGenerated(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *MutatingWebhookConfigurationList) Size() (n int) {
+	var l int
+	_ = l
+	l = m.ListMeta.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	if len(m.Items) > 0 {
+		for _, e := range m.Items {
+=======
+>>>>>>> 4e1125d8... Go module changes
 			l = e.Size()
 			n += 1 + l + sovGenerated(uint64(l))
 		}
@@ -1793,11 +1857,19 @@ func (m *Rule) Unmarshal(dAtA []byte) error {
 			intStringLen := int(stringLen)
 			if intStringLen < 0 {
 				return ErrInvalidLengthGenerated
+<<<<<<< HEAD
 			}
 			postIndex := iNdEx + intStringLen
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
+=======
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+>>>>>>> 4e1125d8... Go module changes
 			s := ScopeType(dAtA[iNdEx:postIndex])
 			m.Scope = &s
 			iNdEx = postIndex

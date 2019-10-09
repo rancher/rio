@@ -13,6 +13,7 @@ replace (
 	github.com/jaguilar/vt100 => github.com/tonistiigi/vt100 v0.0.0-20190402012908-ad4c4a574305
 	github.com/jetstack/cert-manager => github.com/rancher/cert-manager v0.7.0-rio.1
 	github.com/knative/pkg => github.com/rancher/pkg v0.0.0-20190514055449-b30ab9de040e
+	github.com/linkerd/linkerd2 => ../linkerd2
 	github.com/matryer/moq => github.com/rancher/moq v0.0.0-20190404221404-ee5226d43009
 	golang.org/x/tools => golang.org/x/tools v0.0.0-20190411180116-681f9ce8ac52
 
@@ -31,6 +32,8 @@ require (
 	github.com/Azure/go-autorest/autorest/to v0.3.0 // indirect
 	github.com/Azure/go-autorest/autorest/validation v0.2.0 // indirect
 	github.com/Masterminds/sprig v2.18.0+incompatible
+	github.com/MakeNowJust/heredoc v0.0.0-20171113091838-e9091a26100e // indirect
+	github.com/Masterminds/sprig v2.17.1+incompatible
 	github.com/aokoli/goutils v1.1.0
 	github.com/aws/aws-sdk-go v1.25.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -49,11 +52,15 @@ require (
 	github.com/envoyproxy/go-control-plane v0.8.7-0.20190906190023-ba541bc36302 // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.1.0 // indirect
 	github.com/gdamore/tcell v0.0.0-20190319073105-ec71b09872d7 // indirect
+	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
+	github.com/fatih/camelcase v1.0.0 // indirect
+	github.com/gdamore/tcell v0.0.0-20190319073105-ec71b09872d7
 	github.com/go-bindata/go-bindata v3.1.2+incompatible
 	github.com/gogo/googleapis v1.2.0 // indirect
 	github.com/gogo/protobuf v1.3.0
 	github.com/gophercloud/gophercloud v0.2.0 // indirect
 	github.com/hashicorp/vault/api v1.0.4 // indirect
+	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
 	github.com/jetstack/cert-manager v0.7.2
 	github.com/json-iterator/go v1.1.7 // indirect
 	github.com/knative/build v0.6.0
@@ -61,6 +68,7 @@ require (
 	github.com/knative/serving v0.6.1
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/linkerd/linkerd2 v0.0.0-20191010175117-1039d8254738 // indirect
+	github.com/linkerd/linkerd2 v0.0.0-20191001225726-66e82de19047
 	github.com/markbates/inflect v1.0.4 // indirect
 	github.com/mattn/go-shellwords v1.0.5
 	github.com/miekg/dns v1.1.17 // indirect
@@ -98,6 +106,18 @@ require (
 	k8s.io/apiextensions-apiserver v0.0.0-20190918201827-3de75813f604
 	k8s.io/apimachinery v0.0.0-20190817020851-f2f3a405f61d
 	k8s.io/cli-runtime v0.0.0-20190918202139-0b14c719ca62
+	github.com/urfave/cli v1.20.1-0.20190203184040-693af58b4d51
+	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
+	golang.org/x/sync v0.0.0-20190423024810-112230192c58
+	google.golang.org/grpc v1.23.0
+	gopkg.in/yaml.v2 v2.2.2
+	gotest.tools v2.2.0+incompatible
+	istio.io/api v0.0.0-20190902114838-92e636208314
+	k8s.io/api v0.0.0-20190620084959-7cf5895f2711
+	k8s.io/apiextensions-apiserver v0.0.0-20190409022649-727a075fdec8
+	k8s.io/apimachinery v0.0.0-20190612205821-1799e75a0719
+	k8s.io/apiserver v0.0.0-00010101000000-000000000000
+	k8s.io/cli-runtime v0.0.0-20190606211212-7b5a46666fe9
 	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
 	k8s.io/gengo v0.0.0-20190327210449-e17681d19d3a // indirect
 	k8s.io/klog v0.4.0

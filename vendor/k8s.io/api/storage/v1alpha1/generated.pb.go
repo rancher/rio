@@ -36,7 +36,13 @@ package v1alpha1
 import (
 	fmt "fmt"
 
+<<<<<<< HEAD
 	proto "github.com/gogo/protobuf/proto"
+=======
+import k8s_io_api_core_v1 "k8s.io/api/core/v1"
+
+import github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
+>>>>>>> 4e1125d8... Go module changes
 
 	math "math"
 
