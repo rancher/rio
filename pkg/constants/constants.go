@@ -23,6 +23,11 @@ const (
 	FeatureGateway      = "gateway"
 	FeatureLetsencrypts = "letsencrypt"
 	FeatureAutoscaling  = "autoscaling"
+
+	AuthWebhookSecretName  = "auth-webhook"
+	AuthWebhookServiceName = "auth-webhook"
+
+	DevWebhookPort = ":7443"
 )
 
 var (
@@ -76,4 +81,6 @@ var (
 
 	AcmeVersion = "cm-acme"
 	InstallUUID = ""
+
+	DevMode = ""
 )

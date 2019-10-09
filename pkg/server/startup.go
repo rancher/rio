@@ -3,11 +3,13 @@ package server
 import (
 	"context"
 
-	"github.com/rancher/rio/modules/system/features/nodes"
-
 	"github.com/rancher/rio/modules"
+	"github.com/rancher/rio/modules/system/features/nodes"
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/rio/pkg/controllers"
+	"github.com/rancher/rio/pkg/stack"
+	"github.com/rancher/rio/pkg/webhook"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/crd"
 	"github.com/rancher/wrangler/pkg/kubeconfig"
@@ -58,12 +60,36 @@ func Startup(ctx context.Context, systemNamespace, kubeConfig string) error {
 
 	ctx, rioContext := types.BuildContext(ctx, systemNamespace, restConfig)
 
+	webhookPort := ":443"
+	if _, err := rioContext.Apps.Apps().V1().Deployment().Get(systemNamespace, "rio-controller", metav1.GetOptions{}); errors.IsNotFound(err) {
+		constants.DevMode = "true"
+		controllerStack := stack.NewSystemStack(rioContext.Apply, systemNamespace, "rio-controller")
+		answer := map[string]string{
+			"NAMESPACE": systemNamespace,
+		}
+		if err := controllerStack.Deploy(answer); err != nil {
+			return err
+		}
+		webhookPort = constants.DevWebhookPort
+	}
+
+	if err := webhook.SetupValidatingWebhook(rioContext); err != nil {
+		return err
+	}
+
+	if err := webhook.Run(kubeConfig, rioContext, webhookPort); err != nil {
+		return err
+	}
+
 	namespaceClient := rioContext.Core.Core().V1().Namespace()
 	if _, err := namespaceClient.Get(systemNamespace, metav1.GetOptions{}); err != nil {
 		if !errors.IsNotFound(err) {
 			return err
 		}
 		ns := constructors.NewNamespace(systemNamespace, v1.Namespace{})
+		ns.Labels = map[string]string{
+			"rio.cattle.io/is-system": "true",
+		}
 		if _, err := namespaceClient.Create(ns); err != nil {
 			return err
 		}

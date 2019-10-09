@@ -3,12 +3,10 @@ package features
 import (
 	"context"
 
-	"github.com/rancher/rio/modules/service/controllers/ingress"
-
-	"github.com/rancher/rio/modules/service/controllers/clusterdomain"
-
 	"github.com/rancher/rio/modules/service/controllers/appweight"
+	"github.com/rancher/rio/modules/service/controllers/clusterdomain"
 	"github.com/rancher/rio/modules/service/controllers/externalservice"
+	"github.com/rancher/rio/modules/service/controllers/ingress"
 	"github.com/rancher/rio/modules/service/controllers/publicdomain"
 	"github.com/rancher/rio/modules/service/controllers/routeset"
 	"github.com/rancher/rio/modules/service/controllers/service"

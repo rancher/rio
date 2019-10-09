@@ -4,6 +4,8 @@ kubernetes:
     kind: Namespace
     metadata:
       name: ${NAMESPACE}
+      labels:
+       rio.cattle.io/is-system: "true"
     ---
     apiVersion: rbac.authorization.k8s.io/v1
     kind: ClusterRole
@@ -253,6 +255,215 @@ kubernetes:
       name: rio-controller-serviceaccount
       namespace: ${NAMESPACE}
     ---
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: auth-webhook
+      namespace: ${NAMESPACE}
+    ---
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: auth-webhook
+      namespace: ${NAMESPACE}
+    spec:
+      ports:
+      - name: https-443
+        port: 443
+        protocol: TCP
+        targetPort: 443
+      selector:
+        rio-controller: "true"
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: rio-admin
+    rules:
+    - apiGroups:
+      - rio.cattle.io
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - admin.rio.cattle.io
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - autoscale.rio.cattle.io
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - tekton.dev
+      resources:
+      - "taskruns"
+      verbs:
+      - "*"
+    - apiGroups:
+      - ""
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "apps"
+      - "extensions"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "certmanager.k8s.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "split.smi-spec.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "linkerd.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - ""
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: rio-readonly
+    rules:
+    - apiGroups:
+      - rio.cattle.io
+      resources:
+      - "*"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+    - apiGroups:
+      - tekton.dev
+      resources:
+      - "taskruns"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+    - apiGroups:
+      - ""
+      resources:
+      - "*"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+    - apiGroups:
+      - "apps"
+      - "extensions"
+      resources:
+      - "*"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: rio-privileged
+    rules:
+    - apiGroups:
+      - rio.cattle.io
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - tekton.dev
+      resources:
+      - "taskruns"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+    - apiGroups:
+      - ""
+      resources:
+      - "*"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+      - "create"
+    - apiGroups:
+      - "apps"
+      - "extensions"
+      resources:
+      - "*"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: rio-standard
+    rules:
+    - apiGroups:
+      - rio.cattle.io
+      resources:
+      - "*"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+      - "create"
+      - "update"
+      - "delete"
+      - "patch"
+    - apiGroups:
+      - tekton.dev
+      resources:
+      - "taskruns"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+    - apiGroups:
+      - ""
+      resources:
+      - "*"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+      - "create"
+    - apiGroups:
+      - "apps"
+      - "extensions"
+      resources:
+      - "*"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+    ---
+    {{- if .Values.RUN_CONTROLLER}}
     apiVersion: extensions/v1beta1
     kind: Deployment
     metadata:
@@ -268,6 +479,12 @@ kubernetes:
             rio-controller: "true"
         spec:
           serviceAccountName: rio-controller-serviceaccount
+          volumes:
+          - name: secret-auth-webhook
+            secret:
+              defaultMode: 420
+              optional: true
+              secretName: auth-webhook
           containers:
           - image: ${IMAGE}
             imagePullPolicy: Always
@@ -293,8 +510,13 @@ kubernetes:
               value: ${INSTALL_MODE}
             - name: SM_MODE
               value: ${SM_MODE}
+            volumeMounts:
+            - mountPath: /var/run/rio/ssl
+              name: secret-auth-webhook
+              readOnly: true
+    {{- end}}
 
-templates:
+template:
   questions:
   - variable: IMAGE
     description: "rio-controller image"
@@ -318,3 +540,4 @@ templates:
     description: "install mode"
   - variable: SM_MODE
     description: "service mesh mode"
+  - variable: RUN_CONTROLLER

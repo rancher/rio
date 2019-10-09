@@ -2,18 +2,15 @@ package stack
 
 import (
 	"io/ioutil"
-	"os"
 
-	"k8s.io/client-go/dynamic"
-
-	"github.com/sirupsen/logrus"
-
-	"github.com/rancher/rio/stacks"
-
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/riofile"
 	"github.com/rancher/rio/pkg/template"
+	"github.com/rancher/rio/stacks"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/objectset"
+	"github.com/sirupsen/logrus"
+	"k8s.io/client-go/dynamic"
 )
 
 type SystemStack struct {
@@ -59,7 +56,7 @@ func (s *SystemStack) Remove() error {
 }
 
 func (s *SystemStack) content() ([]byte, error) {
-	if os.Getenv("RIO_DEV") != "" {
+	if constants.DevMode != "" {
 		return ioutil.ReadFile("stacks/" + s.name + "-stack.yaml")
 	}
 	return stacks.Asset("stacks/" + s.name + "-stack.yaml")
