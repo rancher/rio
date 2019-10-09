@@ -5,6 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 )
@@ -77,17 +80,17 @@ func (tr *TestRoute) reload() error {
 }
 
 func (tr *TestRoute) waitForRoute() error {
-	f := func() bool {
+	f := wait.ConditionFunc(func() (bool, error) {
 		err := tr.reload()
 		if err == nil {
 			if len(tr.Router.Status.Endpoints) > 0 {
-				return true
+				return true, nil
 			}
 		}
-		return false
-	}
-	ok := WaitFor(f, 60)
-	if ok == false {
+		return false, nil
+	})
+	err := wait.Poll(2*time.Second, 60*time.Second, f)
+	if err != nil {
 		return errors.New("router and router endpoint not successfully initiated")
 	}
 	return nil

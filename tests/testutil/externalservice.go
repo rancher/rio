@@ -5,6 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 )
@@ -73,15 +76,15 @@ func (es *TestExternalService) reload() error {
 }
 
 func (es *TestExternalService) waitForExternalService() error {
-	f := func() bool {
+	f := wait.ConditionFunc(func() (bool, error) {
 		err := es.reload()
 		if err == nil && (len(es.ExternalService.Spec.IPAddresses) > 0 || es.ExternalService.Spec.FQDN != "") {
-			return true
+			return true, nil
 		}
-		return false
-	}
-	ok := WaitFor(f, 60)
-	if ok == false {
+		return false, nil
+	})
+	err := wait.Poll(2*time.Second, 60*time.Second, f)
+	if err != nil {
 		return errors.New("external service not successfully initiated")
 	}
 	return nil

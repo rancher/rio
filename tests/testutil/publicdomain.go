@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 )
@@ -78,17 +81,17 @@ func (td *TestDomain) reload() error {
 }
 
 func (td *TestDomain) waitForDomain() error {
-	f := func() bool {
+	f := wait.ConditionFunc(func() (bool, error) {
 		err := td.reload()
 		if err == nil {
 			if td.PublicDomain.Status.Endpoint != "" {
-				return true
+				return true, nil
 			}
 		}
-		return false
-	}
-	ok := WaitFor(f, 60)
-	if ok == false {
+		return false, nil
+	})
+	err := wait.Poll(2*time.Second, 60*time.Second, f)
+	if err != nil {
 		return errors.New("domain not successfully created")
 	}
 	return nil

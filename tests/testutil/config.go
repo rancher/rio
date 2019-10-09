@@ -8,8 +8,10 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 type TestConfig struct {
@@ -101,15 +103,15 @@ func (tc *TestConfig) reload() error {
 }
 
 func (tc *TestConfig) waitForConfig() error {
-	f := func() bool {
+	f := wait.ConditionFunc(func() (bool, error) {
 		err := tc.reload()
 		if err == nil && tc.ConfigMap.UID != "" {
-			return true
+			return true, nil
 		}
-		return false
-	}
-	ok := WaitFor(f, 60)
-	if ok == false {
+		return false, nil
+	})
+	err := wait.Poll(2*time.Second, 60*time.Second, f)
+	if err != nil {
 		return errors.New("config not successfully created")
 	}
 	return nil
