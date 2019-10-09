@@ -170,6 +170,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		"DISABLE_FEATURES": strings.Join(i.DisableFeatures, ","),
 		"HTTP_PROXY":       i.HTTPProxy,
 		"SM_MODE":          i.MeshMode,
+		"RUN_CONTROLLER":   "true",
 	}
 	if i.Yaml {
 		yamlOutput, err := controllerStack.Yaml(answers)

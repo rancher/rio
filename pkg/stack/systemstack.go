@@ -2,8 +2,8 @@ package stack
 
 import (
 	"io/ioutil"
-	"os"
 
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/riofile"
 	"github.com/rancher/rio/pkg/template"
 	"github.com/rancher/rio/stacks"
@@ -56,7 +56,7 @@ func (s *SystemStack) Remove() error {
 }
 
 func (s *SystemStack) content() ([]byte, error) {
-	if os.Getenv("RIO_DEV") != "" {
+	if constants.DevMode != "" {
 		return ioutil.ReadFile("stacks/" + s.name + "-stack.yaml")
 	}
 	return stacks.Asset("stacks/" + s.name + "-stack.yaml")
