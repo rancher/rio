@@ -4,10 +4,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/rancher/rio/tests/testutil"
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"
-
-	"github.com/rancher/rio/tests/testutil"
 )
 
 func TestMain(m *testing.M) {
@@ -28,6 +27,7 @@ func TestSuite(t *testing.T) {
 		"export":          exportTests,
 		"externalService": externalServiceTests,
 		"riofile":         riofileTests,
+		"rbac":            rbacTests,
 	}
 	for desc, fnc := range specs {
 		suite(desc, fnc)

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"os"
 	"testing"
 	"time"
 
@@ -21,11 +22,41 @@ type TestService struct {
 	Service riov1.Service
 	Version string
 	T       *testing.T
+	Kubeconfig string
 }
 
 // Create generates a new rio service, named randomly in the testing namespace, and
 // returns a new TestService with it attached. Guarantees ready state but not live endpoint
-func (ts *TestService) Create(t *testing.T, source string) {
+func (ts *TestService) Create(t *testing.T, source ...string) {
+	args := ts.createArgs(t, source...)
+	var envs []string
+	if ts.Kubeconfig != "" {
+		envs = []string{fmt.Sprintf("KUBECONFIG=%s", ts.Kubeconfig)}
+	}
+	_, err := RioCmd("run", args, envs...)
+	if err != nil {
+		ts.T.Fatalf("Failed to create service:  %v", err.Error())
+	}
+	err = ts.waitForReadyService()
+	if err != nil {
+		ts.T.Fatalf(err.Error())
+	}
+}
+
+func (ts *TestService) CreateWithError(t *testing.T, source ...string) error {
+	args := ts.createArgs(t, source...)
+	var envs []string
+	if ts.Kubeconfig != "" {
+		envs = []string{fmt.Sprintf("KUBECONFIG=%s", ts.Kubeconfig)}
+	}
+	_, err := RioCmd("run", args, envs...)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (ts *TestService) createArgs(t *testing.T, source ...string) []string {
 	ts.T = t
 	ts.Version = "v0"
 	ts.AppName = fmt.Sprintf(
@@ -34,6 +65,7 @@ func (ts *TestService) Create(t *testing.T, source string) {
 		RandomString(5),
 	)
 	ts.Name = fmt.Sprintf("%s:%s", ts.AppName, ts.Version)
+<<<<<<< HEAD
 	if source == "" {
 		source = "nginx"
 	}
@@ -44,7 +76,13 @@ func (ts *TestService) Create(t *testing.T, source string) {
 	err = ts.waitForReadyService()
 	if err != nil {
 		ts.T.Fatalf(err.Error())
+=======
+	if len(source) == 0 {
+		source = []string{"nginx"}
+>>>>>>> 8725aec4... Add auth tests
 	}
+	args := append([]string{"-p", "80/http", "-n", ts.AppName}, source...)
+	return args
 }
 
 // Takes name and version of existing service and returns loaded TestService
@@ -70,6 +108,12 @@ func GetService(t *testing.T, name string, version string) TestService {
 
 // Remove calls "rio rm" on this service. Logs error but does not fail test.
 func (ts *TestService) Remove() {
+	if ts.Kubeconfig != "" {
+		err := os.RemoveAll(ts.Kubeconfig)
+		if err != nil {
+			ts.T.Log(err.Error())
+		}
+	}
 	if ts.Service.Status.DeploymentStatus != nil {
 		_, err := RioCmd([]string{"rm", "--type", "service", ts.Name})
 		if err != nil {
