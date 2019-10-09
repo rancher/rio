@@ -31,7 +31,7 @@ Dev Notes
 * We are purposefully failing tests in the util code rather than returning errors in order to keep specs clean
     * Only fail tests in public methods. Public methods should not call each other.
 * To add a new suite, create a file and add it in the TestSuite list
-* While writing use `it.Focus` or `when.Focus` to limit to your spec, just remember to revert
+* While writing use `it.Focus` or `when.Focus` to limit to your spec
 * Use parallel tests as much as possible
 * Most every `It` block spins up a new service which takes > 10 seconds. If you want to specify multiple assertions on a single service it will be much faster to use testify descriptions within a single block, example in run_test.go
 * Ensure all `Remove` functions can be run on a never-instantiated object, you don't know what order will be in `it.After`.  

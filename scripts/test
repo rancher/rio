@@ -3,8 +3,19 @@ set -e
 
 cd $(dirname $0)/..
 
+fatal()
+{
+    echo "[ERROR] " "$@"
+    exit 1
+}
+
+
 if [[ ${ARCH} == amd64 ]]; then
     echo Running tests
+
+    if grep -rnw ./tests/integration/ -e "Focus"; then
+      fatal "Integration tests must not be focused"
+    fi
 
     go test -cover -tags=test ./...
 

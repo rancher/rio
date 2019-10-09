@@ -14,8 +14,8 @@ import (
 )
 
 type TestService struct {
-	Name    string // includes namespace and version
-	AppName string // name only
+	Name    string // namespace/name:version
+	AppName string // namespace/name
 	App     riov1.App
 	Service riov1.Service
 	Version string
@@ -30,16 +30,15 @@ func (ts *TestService) Create(t *testing.T, source string) {
 	ts.AppName = fmt.Sprintf(
 		"%s/%s",
 		testingNamespace,
-		fmt.Sprintf("test-service-%v", RandomString(5)),
+		RandomString(5),
 	)
 	ts.Name = fmt.Sprintf("%s:%s", ts.AppName, ts.Version)
 	if source == "" {
 		source = "nginx"
 	}
-	args := []string{"-p", "80/http", "-n", ts.AppName, source}
-	_, err := RioCmd("run", args)
+	_, err := RioCmd([]string{"--namespace", testingNamespace, "run", "-p", "80/http", "-n", ts.AppName, source})
 	if err != nil {
-		ts.T.Fatalf("Failed to create service:  %v", err.Error())
+		ts.T.Fatalf("Failed to create service %s: %v", ts.Name, err.Error())
 	}
 	err = ts.waitForReadyService()
 	if err != nil {
@@ -47,10 +46,31 @@ func (ts *TestService) Create(t *testing.T, source string) {
 	}
 }
 
+// Takes name and version of existing service and returns loaded TestService
+func GetService(t *testing.T, name string, version string) TestService {
+	ts := TestService{
+		App:     riov1.App{},
+		Service: riov1.Service{},
+		Version: version,
+		T:       t,
+	}
+	ts.AppName = fmt.Sprintf(
+		"%s/%s",
+		testingNamespace,
+		name,
+	)
+	ts.Name = fmt.Sprintf("%s:%s", ts.AppName, ts.Version)
+	err := ts.waitForReadyService()
+	if err != nil {
+		ts.T.Fatalf(err.Error())
+	}
+	return ts
+}
+
 // Remove calls "rio rm" on this service. Logs error but does not fail test.
 func (ts *TestService) Remove() {
 	if ts.Service.Status.DeploymentStatus != nil {
-		_, err := RioCmd("rm", []string{"--type", "service", ts.Name})
+		_, err := RioCmd([]string{"rm", "--type", "service", ts.Name})
 		if err != nil {
 			ts.T.Log(err.Error())
 		}
@@ -59,10 +79,10 @@ func (ts *TestService) Remove() {
 
 // Call "rio scale ns/service={scaleTo}"
 func (ts *TestService) Scale(scaleTo int) {
-	args := []string{
+	_, err := RioCmd([]string{
+		"scale",
 		fmt.Sprintf("%s=%d", ts.Name, scaleTo),
-	}
-	_, err := RioCmd("scale", args)
+	})
 	if err != nil {
 		ts.T.Fatalf("scale command failed:  %v", err.Error())
 	}
@@ -80,10 +100,10 @@ func (ts *TestService) Scale(scaleTo int) {
 
 // Call "rio weight ns/service:version={percentage}" on this service
 func (ts *TestService) Weight(percentage int) {
-	args := []string{
+	_, err := RioCmd([]string{
+		"weight",
 		fmt.Sprintf("%s=%d", ts.Name, percentage),
-	}
-	_, err := RioCmd("weight", args)
+	})
 	if err != nil {
 		ts.T.Fatalf("weight command failed:  %v", err.Error())
 	}
@@ -96,8 +116,7 @@ func (ts *TestService) Weight(percentage int) {
 // Call "rio stage --image={source} ns/name:{version}", this will return a new TestService
 func (ts *TestService) Stage(source, version string) TestService {
 	name := fmt.Sprintf("%s:%s", ts.AppName, version)
-	args := []string{"--image", source, name}
-	_, err := RioCmd("stage", args)
+	_, err := RioCmd([]string{"stage", "--image", source, name})
 	if err != nil {
 		ts.T.Fatalf("stage command failed:  %v", err.Error())
 	}
@@ -130,7 +149,7 @@ func (ts *TestService) GetEndpoint() string {
 
 // Export calls "rio export {serviceName}" and returns that in a new TestService object
 func (ts *TestService) Export() TestService {
-	args := []string{"--type", "service", "--format", "json", ts.Name}
+	args := []string{"export", "--type", "service", "--format", "json", ts.Name}
 	service, err := ts.loadExport(args)
 	if err != nil {
 		ts.T.Fatal(err.Error())
@@ -140,7 +159,7 @@ func (ts *TestService) Export() TestService {
 
 // ExportRaw works the same as export, but with --raw flag
 func (ts *TestService) ExportRaw() TestService {
-	args := []string{"--raw", "--type", "service", "--format", "json", ts.Name}
+	args := []string{"export", "--raw", "--type", "service", "--format", "json", ts.Name}
 	service, err := ts.loadExport(args)
 	if err != nil {
 		ts.T.Fatal(err.Error())
@@ -208,8 +227,7 @@ func (ts *TestService) GetRunningPods() string {
 
 // reload calls inspect on the service and uses that to reload our object
 func (ts *TestService) reload() error {
-	args := append([]string{"--type", "service", "--format", "json", ts.Name})
-	out, err := RioCmd("inspect", args)
+	out, err := RioCmd([]string{"inspect", "--type", "service", "--format", "json", ts.Name})
 	if err != nil {
 		return err
 	}
@@ -222,8 +240,7 @@ func (ts *TestService) reload() error {
 
 // reload calls inspect on the service's app and uses that to reload the app obj
 func (ts *TestService) reloadApp() error {
-	args := append([]string{"--type", "app", "--format", "json", ts.AppName})
-	out, err := RioCmd("inspect", args)
+	out, err := RioCmd([]string{"inspect", "--type", "app", "--format", "json", ts.AppName})
 	if err != nil {
 		return err
 	}
@@ -236,7 +253,7 @@ func (ts *TestService) reloadApp() error {
 
 // load a "rio export..." response into a new TestService obj
 func (ts *TestService) loadExport(args []string) (TestService, error) {
-	out, err := RioCmd("export", args)
+	out, err := RioCmd(args)
 	if err != nil {
 		return TestService{}, fmt.Errorf("export command failed: %v", err.Error())
 	}
@@ -276,7 +293,7 @@ func (ts *TestService) waitForReadyService() error {
 	})
 	err := wait.Poll(2*time.Second, ts.getScalingTimeout(), f)
 	if err != nil {
-		return errors.New("service never reached ready status")
+		return fmt.Errorf("service %v never reached ready status", ts.Name)
 	}
 	ts.reload()
 	return nil
@@ -295,7 +312,7 @@ func (ts *TestService) waitForAvailableReplicas(want int) error {
 	})
 	err := wait.Poll(2*time.Second, ts.getScalingTimeout(), f)
 	if err != nil {
-		return errors.New("service failed to scale up available replicas")
+		return fmt.Errorf("service %v failed to scale up available replicas", ts.Name)
 	}
 	return nil
 }
