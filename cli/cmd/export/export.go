@@ -101,28 +101,28 @@ func collectObjectsFromNs(ctx *clicontext.CLIContext, ns string) ([]runtime.Obje
 		objects = append(objects, &services.Items[i])
 	}
 
-	for _, svc := range services.Items {
-		configs, err := configmapsFromService(ctx, svc)
+	for i := range services.Items {
+		configs, err := configmapsFromService(ctx, services.Items[i])
 		if err != nil {
 			return objects, err
 		}
 		objects = append(objects, configs...)
 	}
 
-	externalservices, err := ctx.Rio.ExternalServices(ns).List(metav1.ListOptions{})
+	externalServices, err := ctx.Rio.ExternalServices(ns).List(metav1.ListOptions{})
 	if err != nil {
 		return objects, err
 	}
-	for _, obj := range externalservices.Items {
-		objects = append(objects, &obj)
+	for i := range externalServices.Items {
+		objects = append(objects, &externalServices.Items[i])
 	}
 
 	routers, err := ctx.Rio.Routers(ns).List(metav1.ListOptions{})
 	if err != nil {
 		return objects, err
 	}
-	for _, obj := range routers.Items {
-		objects = append(objects, &obj)
+	for i := range routers.Items {
+		objects = append(objects, &routers.Items[i])
 	}
 
 	return objects, nil

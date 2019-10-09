@@ -11,7 +11,7 @@ import (
 )
 
 type Rm struct {
-	T_Type string `desc:"delete specific type. Available types: [config,service,router,externalservice,publicdomain,app,secret,build]"`
+	T_Type string `desc:"delete specific type. Available types: [config,service,router,externalservice,publicdomain,app,secret,build,stack]"`
 }
 
 func (r *Rm) Run(ctx *clicontext.CLIContext) error {
