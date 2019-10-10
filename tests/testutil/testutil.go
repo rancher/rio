@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -101,4 +102,12 @@ func RandomString(length int) string {
 
 func GenerateName() string {
 	return strings.Replace(namesgenerator.GetRandomName(2), "_", "-", -1)
+}
+
+func GetHostname(URL string) string {
+	u, err := url.Parse(URL)
+	if err != nil {
+		return ""
+	}
+	return u.Hostname()
 }

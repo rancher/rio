@@ -34,8 +34,8 @@ func riofileTests(t *testing.T, when spec.G, it spec.S) {
 			// services and their endpoints
 			serviceV0 := testutil.GetService(t, "export-test-image", "v0")
 			serviceV3 := testutil.GetService(t, "export-test-image", "v3")
-			assert.Equal(t, serviceV0.GetEndpoint(), "Hello World", "should have service v0 with endpoint")
-			assert.Equal(t, serviceV3.GetEndpoint(), "Hello World v3", "should have service v3 with endpoint")
+			assert.Equal(t, serviceV0.GetEndpointResponse(), "Hello World", "should have service v0 with endpoint")
+			assert.Equal(t, serviceV3.GetEndpointResponse(), "Hello World v3", "should have service v3 with endpoint")
 			// routers and their endpoints
 			routerBar := testutil.GetRoute(t, "route-bar", "/bv0")
 			assert.Equal(t, "/bv0", routerBar.Router.Spec.Routes[0].Matches[0].Path.Exact, "should have correct route set")
