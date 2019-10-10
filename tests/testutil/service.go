@@ -186,6 +186,22 @@ func (ts *TestService) GetImage() string {
 	return ts.Service.Spec.Image
 }
 
+// GetRunningPods returns all running pods, separated by new lines, for this service's app
+// Each value, separated by spaces, will have the Pod's NAME  READY  STATUS  RESTARTS  AGE in that order.
+func (ts *TestService) GetRunningPods() string {
+	ts.reloadApp()
+	args := append([]string{"get", "pods",
+		"-n", testingNamespace,
+		"-l", fmt.Sprintf("app=%s", ts.App.Name),
+		"--field-selector", "status.phase=Running",
+		"--no-headers"})
+	out, err := KubectlCmd(args)
+	if err != nil {
+		ts.T.Fatalf("Failed to get running pods:  %v", err.Error())
+	}
+	return out
+}
+
 //////////////////
 // Private methods
 //////////////////
