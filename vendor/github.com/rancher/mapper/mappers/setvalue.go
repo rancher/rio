@@ -11,13 +11,13 @@ type SetValue struct {
 }
 
 func (d SetValue) FromInternal(data map[string]interface{}) {
-	if d.ExternalValue != nil {
+	if data != nil && d.ExternalValue != nil {
 		data[d.Field] = d.ExternalValue
 	}
 }
 
 func (d SetValue) ToInternal(data map[string]interface{}) error {
-	if d.InternalValue != nil {
+	if data != nil && d.InternalValue != nil {
 		data[d.Field] = d.InternalValue
 	}
 	return nil

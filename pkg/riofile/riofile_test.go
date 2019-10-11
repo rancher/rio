@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/rancher/wrangler/pkg/yaml"
-
 	"github.com/rancher/rio/pkg/template"
+	"github.com/rancher/wrangler/pkg/yaml"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -178,4 +178,26 @@ func TestParse(t *testing.T) {
 
 	fmt.Println(string(yamlBytes))
 
+}
+
+func TestParseFuzzyCases(t *testing.T) {
+	tests := []struct {
+		desc string
+		fail bool
+		body string
+	}{
+		{"empty service spec", false, "services:\n 00:"},
+		{"empty config spec", false, "configs:\n 0:"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			_, err := Parse([]byte(test.body), template.AnswersFromMap(nil))
+			if test.fail {
+				assert.Error(t, err, "Should error")
+			} else {
+				assert.Nil(t, err, "Should not error")
+			}
+		})
+	}
 }

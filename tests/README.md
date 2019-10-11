@@ -52,3 +52,12 @@ make ci
 ```
 
 
+### Fuzzing
+
+We fuzz inputs to the system using [go-fuzz](https://github.com/dvyukov/go-fuzz).
+
+```
+cd tests/fuzz/parser
+go-fuzz-build
+go-fuzz -bin=./{generated_zip_file}
+```

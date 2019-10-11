@@ -1,0 +1,13 @@
+services:
+  nginx:
+    concurrency: 1
+    image: nginx
+    imagePullPolicy: Always
+    ports:
+    - "80"
+    rollout: true
+    rolloutIncrement: 1
+    rolloutInterval: 10
+    scale: 1-2
+    version: v1
+    weight: 100

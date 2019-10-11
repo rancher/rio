@@ -5,8 +5,7 @@ ENV ARCH $DAPPER_HOST_ARCH
 ENV K3S_VERSION v0.9.1
 ENV KUBECTL_VERSION v1.15.0
 
-RUN apk -U add bash git gcc musl-dev docker vim less file curl wget ca-certificates python3 py3-pip python3-dev openssl-dev libffi-dev jq
-RUN pip3 install 'tox==3.6.0'
+RUN apk -U add bash git gcc musl-dev docker vim less file curl wget ca-certificates openssl-dev libffi-dev jq
 RUN go get -d golang.org/x/lint/golint && \
     git -C /go/src/golang.org/x/lint/golint checkout -b current 06c8688daad7faa9da5a0c2f163a3d14aac986ca && \
     go install golang.org/x/lint/golint && \

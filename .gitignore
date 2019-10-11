@@ -1,6 +1,9 @@
 *.swp
+*.zip
+*.DS_Store
 /.dapper
-/.idea
+*.idea
+*.vscode
 /.trash-cache
 /.vagrant
 /*.log
@@ -9,9 +12,6 @@
 /data-dir
 /dist
 /package/rio
-__pycache__
-/tests/.pytest_cache/
-/tests/.tox/
-/tests/.vscode
-/tests/.idea
 /tests/MANIFEST
+/tests/fuzz/*/crashers
+/tests/fuzz/*/suppressions
