@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 	"testing"
 	"time"
 
@@ -133,20 +134,6 @@ func (ts *TestService) Stage(source, version string) TestService {
 	return stagedService
 }
 
-// GetEndpoint performs an http.get against the service endpoint and returns response if
-// status code is 200, otherwise it errors out
-func (ts *TestService) GetEndpoint() string {
-	endpoint, err := ts.waitForEndpointDNS()
-	if err != nil {
-		ts.T.Fatal(err.Error())
-	}
-	response, err := WaitForURLResponse(endpoint)
-	if err != nil {
-		ts.T.Fatal(err.Error())
-	}
-	return response
-}
-
 // Export calls "rio export {serviceName}" and returns that in a new TestService object
 func (ts *TestService) Export() TestService {
 	args := []string{"export", "--type", "service", "--format", "json", ts.Name}
@@ -170,6 +157,24 @@ func (ts *TestService) ExportRaw() TestService {
 //////////
 // Getters
 //////////
+
+// GetEndpointResponse performs an http.get against the service endpoint and returns response if
+// status code is 200, otherwise it errors out
+func (ts *TestService) GetEndpointResponse() string {
+	response, err := WaitForURLResponse(ts.GetEndpointURL())
+	if err != nil {
+		ts.T.Fatal(err.Error())
+	}
+	return response
+}
+
+func (ts *TestService) GetAppEndpointResponse() string {
+	response, err := WaitForURLResponse(ts.GetAppEndpointURL())
+	if err != nil {
+		ts.T.Fatal(err.Error())
+	}
+	return response
+}
 
 // Returns count of ready and available pods
 func (ts *TestService) GetAvailableReplicas() int {
@@ -219,6 +224,68 @@ func (ts *TestService) GetRunningPods() string {
 		ts.T.Fatalf("Failed to get running pods:  %v", err.Error())
 	}
 	return out
+}
+
+// GetEndpointURL returns the URL for this service's app
+func (ts *TestService) GetEndpointURL() string {
+	url, err := ts.waitForEndpointDNS()
+	if err != nil {
+		ts.T.Fatalf("Failed to get the endpoint url:  %v", err.Error())
+		return ""
+	}
+	return url
+}
+
+// GetAppEndpointURL retrieves the service's app endpoint URL and returns it as string
+func (ts *TestService) GetAppEndpointURL() string {
+	url, err := ts.waitForAppEndpointDNS()
+	if err != nil {
+		ts.T.Fatalf("Failed to get the endpoint url:  %v", err.Error())
+		return ""
+	}
+	return url
+}
+
+// GetKubeEndpointURL returns the app revision endpoint URL
+// and returns it as string
+func (ts *TestService) GetKubeEndpointURL() string {
+	_, err := ts.waitForEndpointDNS()
+	if err != nil {
+		ts.T.Fatalf("Failed waiting for DNS:  %v", err.Error())
+		return ""
+	}
+	args := []string{"get", "service.rio.cattle.io",
+		"-n", testingNamespace,
+		ts.Service.Name,
+		"-o", `jsonpath="{.status.endpoints[0]}"`}
+	url, err := KubectlCmd(args)
+	if err != nil {
+		ts.T.Fatalf("Failed to get endpoint url:  %v", err.Error())
+		return ""
+	}
+	return strings.Replace(url, "\"", "", -1) // remove double quotes from output
+}
+
+// GetKubeAppEndpointURL returns the endpoint URL of the service's app
+// by using kubectl and returns it as string
+func (ts *TestService) GetKubeAppEndpointURL() string {
+	_, err := ts.waitForAppEndpointDNS()
+	if err != nil {
+		ts.T.Fatalf("Failed waiting for DNS:  %v", err.Error())
+		return ""
+	}
+	appName := strings.Split(ts.AppName, "/")[1]
+	args := []string{"get", "apps",
+		"-n", testingNamespace,
+		appName,
+		"-o", `jsonpath="{.status.endpoints[0]}"`}
+	url, err := KubectlCmd(args)
+	if err != nil {
+		ts.T.Fatalf("Failed to get app endpoint url:  %v", err.Error())
+		return ""
+	}
+
+	return strings.Replace(url, "\"", "", -1) // remove double quotes from output
 }
 
 //////////////////
@@ -371,4 +438,24 @@ func (ts *TestService) waitForEndpointDNS() (string, error) {
 		return "", errors.New("service endpoint never created")
 	}
 	return ts.Service.Status.Endpoints[0], nil
+}
+
+func (ts *TestService) waitForAppEndpointDNS() (string, error) {
+	if len(ts.App.Status.Endpoints) > 0 {
+		return ts.App.Status.Endpoints[0], nil
+	}
+	f := wait.ConditionFunc(func() (bool, error) {
+		err := ts.reloadApp()
+		if err == nil {
+			if len(ts.App.Status.Endpoints) > 0 {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
+	err := wait.Poll(2*time.Second, 60*time.Second, f)
+	if err != nil {
+		return "", errors.New("app endpoint never created")
+	}
+	return ts.App.Status.Endpoints[0], nil
 }
