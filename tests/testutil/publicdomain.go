@@ -30,8 +30,7 @@ func (td *TestDomain) RegisterDomain(t *testing.T, domain string, target string)
 	td.GeneratedDomainName = fmt.Sprintf("%v/%v",
 		testingNamespace,
 		strings.Replace(domain, ".", "-", 1))
-	args := []string{"register", domain, target}
-	_, err := RioCmd("domain", args)
+	_, err := RioCmd([]string{"domain", "register", domain, target})
 	if err != nil {
 		td.T.Fatalf("register domain command failed: %v", err.Error())
 	}
@@ -44,7 +43,7 @@ func (td *TestDomain) RegisterDomain(t *testing.T, domain string, target string)
 // Executes "rio domain unregister" for this domain
 func (td *TestDomain) UnRegister() {
 	if td.PublicDomain.Spec.DomainName != "" {
-		_, err := RioCmd("domain", []string{"unregister", td.GeneratedDomainName})
+		_, err := RioCmd([]string{"domain", "unregister", td.GeneratedDomainName})
 		if err != nil {
 			td.T.Logf("failed to unregister domain:  %v", err.Error())
 		}
@@ -68,8 +67,7 @@ func (td *TestDomain) GetDomain() string {
 //////////////////
 
 func (td *TestDomain) reload() error {
-	args := append([]string{"--type", "publicdomain", "--format", "json"}, td.GeneratedDomainName)
-	out, err := RioCmd("inspect", args)
+	out, err := RioCmd([]string{"inspect", "--type", "publicdomain", "--format", "json", td.GeneratedDomainName})
 	if err != nil {
 		return err
 	}

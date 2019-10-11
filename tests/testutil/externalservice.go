@@ -25,8 +25,7 @@ func (es *TestExternalService) Create(t *testing.T, target string) {
 	es.T = t
 	es.Target = target
 	es.Name = fmt.Sprintf("%s/%s", testingNamespace, GenerateName())
-	args := []string{"create", es.Name, target}
-	_, err := RioCmd("externalservice", args)
+	_, err := RioCmd([]string{"externalservice", "create", es.Name, target})
 	if err != nil {
 		es.T.Fatalf("external service create command failed: %v", err.Error())
 	}
@@ -36,10 +35,25 @@ func (es *TestExternalService) Create(t *testing.T, target string) {
 	}
 }
 
+// Takes the name of an existing external service, loads it, and returns
+func GetExternalService(t *testing.T, name string) TestExternalService {
+	es := TestExternalService{
+		Target:          "",
+		Name:            fmt.Sprintf("%s/%s", testingNamespace, name),
+		ExternalService: riov1.ExternalService{},
+		T:               t,
+	}
+	err := es.waitForExternalService()
+	if err != nil {
+		es.T.Fatalf(err.Error())
+	}
+	return es
+}
+
 // Executes "rio rm" for this external service
 func (es *TestExternalService) Remove() {
 	if es.ExternalService.Name != "" {
-		_, err := RioCmd("rm", []string{"--type", "externalservice", es.Name})
+		_, err := RioCmd([]string{"rm", "--type", "externalservice", es.Name})
 		if err != nil {
 			es.T.Logf("failed to delete external service: %v", err.Error())
 		}
@@ -63,8 +77,7 @@ func (es *TestExternalService) GetFQDN() string {
 //////////////////
 
 func (es *TestExternalService) reload() error {
-	args := append([]string{"--type", "externalservice", "--format", "json", es.Name})
-	out, err := RioCmd("inspect", args)
+	out, err := RioCmd([]string{"inspect", "--type", "externalservice", "--format", "json", es.Name})
 	if err != nil {
 		return err
 	}
