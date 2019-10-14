@@ -200,10 +200,7 @@ func (ts *TestService) GetSpecWeight() int {
 // Return service's actual current weight, not the spec (end-goal) weight
 func (ts *TestService) GetCurrentWeight() int {
 	ts.reloadApp()
-	if val, ok := ts.App.Status.RevisionWeight[ts.Version]; ok {
-		return val.Weight
-	}
-	return 0
+	return getRevisionWeight(ts.App, ts.Version)
 }
 
 func (ts *TestService) GetImage() string {
@@ -288,6 +285,23 @@ func (ts *TestService) GetKubeAppEndpointURL() string {
 	return strings.Replace(url, "\"", "", -1) // remove double quotes from output
 }
 
+// GetKubeCurrentWeight takes in a revision value and retrieves the actual current weight, not the spec (end-goal) weight
+func (ts *TestService) GetKubeCurrentWeight() int {
+	ts.reloadApp()
+	args := []string{"get", "apps", ts.App.GetName(), "-n", testingNamespace, "-o", "json"}
+	resultString, err := KubectlCmd(args)
+	if err != nil {
+		ts.T.Fatalf("Failed to get rio.cattle.io.apps:  %v", err.Error())
+	}
+	var app riov1.App
+	err = json.Unmarshal([]byte(resultString), &app)
+	if err != nil {
+		ts.T.Fatalf("Failed to unmarshal App results: %s with error: %v", resultString, err.Error())
+	}
+
+	return getRevisionWeight(app, ts.Version)
+}
+
 //////////////////
 // Private methods
 //////////////////
@@ -341,6 +355,14 @@ func (ts *TestService) loadExport(args []string) (TestService, error) {
 func (ts *TestService) getScalingTimeout() time.Duration {
 	scalingTimeout := time.Duration(math.Max(float64(ts.GetScale())*20, 120))
 	return time.Second * scalingTimeout
+}
+
+// Get the current weight of a revision. If it does not exist, then it is 0.
+func getRevisionWeight(app riov1.App, version string) int {
+	if val, ok := app.Status.RevisionWeight[version]; ok {
+		return val.Weight
+	}
+	return 0
 }
 
 //////////////////

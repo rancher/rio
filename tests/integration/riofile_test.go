@@ -41,8 +41,8 @@ func riofileTests(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, "/bv0", routerBar.Router.Spec.Routes[0].Matches[0].Path.Exact, "should have correct route set")
 			routerFooV0 := testutil.GetRoute(t, "route-foo", "/v0")
 			routerFooV3 := testutil.GetRoute(t, "route-foo", "/v3")
-			assert.Equal(t, "Hello World", routerFooV0.GetEndpoint(), "should have working route paths for v1")
-			assert.Equal(t, "Hello World v3", routerFooV3.GetEndpoint(), "should have working route paths for v3")
+			assert.Equal(t, "Hello World", routerFooV0.GetEndpointResponse(), "should have working route paths for v1")
+			assert.Equal(t, "Hello World v3", routerFooV3.GetEndpointResponse(), "should have working route paths for v3")
 		})
 	}, spec.Parallel())
 }

@@ -30,10 +30,22 @@ func routeTests(t *testing.T, when spec.G, it spec.S) {
 
 	when("a running service has routes added to it", func() {
 		it("should be accessible on multiple revision by multiple routes", func() {
-			routeA.Add(t, "/to-svc-v0", "to", service)
-			routeB.Add(t, "/to-svc-v3", "to", stagedService)
-			assert.Equal(t, "Hello World", routeA.GetEndpoint())
-			assert.Equal(t, "Hello World v3", routeB.GetEndpoint())
+			routeA.Add(t, "", "/to-svc-v0", "to", service)
+			routeB.Add(t, "", "/to-svc-v3", "to", stagedService)
+			assert.Equal(t, "Hello World", routeA.GetEndpointResponse())
+			assert.Equal(t, "Hello World v3", routeB.GetEndpointResponse())
+			assert.Equal(t, "Hello World", routeA.GetKubeEndpointResponse())
+			assert.Equal(t, "Hello World v3", routeB.GetKubeEndpointResponse())
+		})
+		it("should be accessible from one domain", func() {
+			routeA.Add(t, "test-route-root", "/first", "to", service)
+			routeB.Add(t, "test-route-root", "/to-svc-v3", "to", stagedService)
+			assert.Equal(t, routeA.Router.Status.Endpoints, routeB.Router.Status.Endpoints)
+			assert.Equal(t, routeA.Name, routeB.Name)
+			assert.Equal(t, "Hello World", routeA.GetEndpointResponse())
+			assert.Equal(t, "Hello World v3", routeB.GetEndpointResponse())
+			assert.Equal(t, "Hello World", routeA.GetKubeEndpointResponse())
+			assert.Equal(t, "Hello World v3", routeB.GetKubeEndpointResponse())
 		})
 	}, spec.Parallel())
 }

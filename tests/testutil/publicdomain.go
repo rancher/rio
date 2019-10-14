@@ -50,16 +50,30 @@ func (td *TestDomain) UnRegister() {
 	}
 }
 
-// GetDomainName returns standard format non-namespaced domain, ex: "foo.bar"
+// GetDomain returns standard format non-namespaced domain, ex: "foo.bar"
 func (td *TestDomain) GetDomain() string {
 	err := td.reload()
 	if err != nil {
 		td.T.Fatalf("failed to fetch domain: %v", err.Error())
 	}
-	if td.PublicDomain.Spec.DomainName == "" {
-		return ""
+	return getStandardFormatDomain(td.PublicDomain)
+}
+
+// GetKubeDomain receives the TestDomain object to retrieve the test PublicDomain data
+// CLI Command Run: "kubectl get publicdomains my-domain -n testing-ns -o json"
+func (td *TestDomain) GetKubeDomain() string {
+	td.reload()
+	args := []string{"get", "publicdomains", td.PublicDomain.GetName(), "-n", testingNamespace, "-o", "json"}
+	resultString, err := KubectlCmd(args)
+	if err != nil {
+		td.T.Fatalf("Failed to get admin.rio.cattle.io.publicdomains:  %v", err.Error())
 	}
-	return strings.Replace(td.PublicDomain.Spec.DomainName, "-", ".", 1)
+	var results adminv1.PublicDomain
+	err = json.Unmarshal([]byte(resultString), &results)
+	if err != nil {
+		td.T.Fatalf("Failed to unmarshal PublicDomain result: %s with error: %v", resultString, err.Error())
+	}
+	return getStandardFormatDomain(results)
 }
 
 //////////////////
@@ -93,4 +107,13 @@ func (td *TestDomain) waitForDomain() error {
 		return errors.New("domain not successfully created")
 	}
 	return nil
+}
+
+// getStandardFormatDomain takes in a PublicDomain object
+// Returns standard format non-namespaced public domain name, ex: "foo.bar"
+func getStandardFormatDomain(publicDomain adminv1.PublicDomain) string {
+	if publicDomain.Spec.DomainName == "" {
+		return ""
+	}
+	return strings.Replace(publicDomain.Spec.DomainName, "-", ".", 1)
 }
