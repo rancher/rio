@@ -14,7 +14,7 @@ func scaleTests(t *testing.T, when spec.G, it spec.S) {
 	var service testutil.TestService
 
 	it.Before(func() {
-		service.Create(t, "nginx")
+		service.Create(t, "sangeetha/mytestcontainer")
 	})
 
 	it.After(func() {
@@ -26,6 +26,8 @@ func scaleTests(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, 1, service.GetAvailableReplicas())
 			service.Scale(2)
 			assert.Equal(t, 2, service.GetAvailableReplicas())
+			assert.Equal(t, service.GetKubeAvailableReplicas(), service.GetAvailableReplicas())
+			assert.True(t, service.PodsResponsesMatchAvailableReplicas("/name.html", service.GetAvailableReplicas()))
 		})
 		// This is an important test because zero scale is wide ranging feature
 		it("should scale to zero", func() {
@@ -39,18 +41,24 @@ func scaleTests(t *testing.T, when spec.G, it spec.S) {
 			service.Scale(3)
 			assert.Equal(t, 3, service.GetAvailableReplicas())
 			assert.Equal(t, 3, service.GetScale())
+			assert.Equal(t, service.GetKubeAvailableReplicas(), service.GetAvailableReplicas())
+			assert.True(t, service.PodsResponsesMatchAvailableReplicas("/name.html", service.GetAvailableReplicas()))
 		})
 		it("should scale to 5", func() {
 			assert.Equal(t, 1, service.GetAvailableReplicas())
 			service.Scale(5)
 			assert.Equal(t, 5, service.GetAvailableReplicas())
 			assert.Equal(t, 5, service.GetScale())
+			assert.Equal(t, service.GetKubeAvailableReplicas(), service.GetAvailableReplicas())
+			assert.True(t, service.PodsResponsesMatchAvailableReplicas("/name.html", service.GetAvailableReplicas()))
 		})
 		it("should scale to 10", func() {
 			assert.Equal(t, 1, service.GetAvailableReplicas())
 			service.Scale(10)
 			assert.Equal(t, 10, service.GetAvailableReplicas())
 			assert.Equal(t, 10, service.GetScale())
+			assert.Equal(t, service.GetKubeAvailableReplicas(), service.GetAvailableReplicas())
+			assert.True(t, service.PodsResponsesMatchAvailableReplicas("/name.html", service.GetAvailableReplicas()))
 		})
 	}, spec.Parallel())
 }

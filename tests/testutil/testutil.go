@@ -15,12 +15,18 @@ import (
 
 	"github.com/docker/docker/pkg/namesgenerator"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 const testingNamespace = "testing-ns"
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
+}
+
+type stop struct {
+	error
 }
 
 // Ensure CLI flag is passed, this way integration tests won't run during unit tests
@@ -37,7 +43,7 @@ func PreCheck() {
 // Example: args=["run", "-n", "test", "nginx"] would run: "rio run -n test nginx"
 func RioCmd(args []string) (string, error) {
 	cmd := exec.Command("rio", args...)
-	stdOutErr, err := cmd.CombinedOutput()
+	stdOutErr, err := retry(5, 1, cmd.CombinedOutput)
 	if err != nil {
 		return "", fmt.Errorf("%s: %s", err.Error(), stdOutErr)
 	}
@@ -48,7 +54,7 @@ func RioCmd(args []string) (string, error) {
 // Example: args=["get", "-n", "test", "services"] would run: "kubectl get -n test services"
 func KubectlCmd(args []string) (string, error) {
 	cmd := exec.Command("kubectl", args...)
-	stdOutErr, err := cmd.CombinedOutput()
+	stdOutErr, err := retry(5, 1, cmd.CombinedOutput)
 	if err != nil {
 		return "", fmt.Errorf("%s: %s", err.Error(), stdOutErr)
 	}
@@ -110,4 +116,42 @@ func GetHostname(URL string) string {
 		return ""
 	}
 	return u.Hostname()
+}
+
+// stringInSlice returns true if string a value is equals to any element of the slice otherwise false
+func stringInSlice(a string, list []string) bool {
+	for _, i := range list {
+		if i == a {
+			return true
+		}
+	}
+	return false
+}
+
+// GetKubeClient returns the kubernetes clientset for querying its API, defaults to
+// KUBECONFIG env value
+func GetKubeClient() *kubernetes.Clientset {
+	kubeConfigENV := os.Getenv("KUBECONFIG")
+	kubeConfig, _ := clientcmd.BuildConfigFromFlags("", kubeConfigENV)
+	clientset, _ := kubernetes.NewForConfig(kubeConfig)
+	return clientset
+}
+
+// retry function is intended for retrying command line commands invocations that collisioned while
+// updating kubernetes objects
+func retry(attempts int, sleep time.Duration, f func() ([]byte, error)) ([]byte, error) {
+	byteArray, err := f()
+	if err != nil {
+		if s, ok := err.(stop); ok {
+			return byteArray, s.error
+		}
+		if attempts--; attempts > 0 {
+			jitter := time.Duration(rand.Int63n(int64(sleep)))
+			sleep = sleep + jitter/2
+			time.Sleep(sleep)
+			return retry(attempts, 2*sleep, f)
+		}
+		return byteArray, err
+	}
+	return byteArray, nil
 }
