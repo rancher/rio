@@ -30,8 +30,10 @@ func riofileTests(t *testing.T, when spec.G, it spec.S) {
 			// external services
 			externalFoo := testutil.GetExternalService(t, "es-foo")
 			assert.Equal(t, "www.example.com", externalFoo.GetFQDN(), "should have external service with fqdn")
+			assert.Equal(t, externalFoo.GetKubeFQDN(), externalFoo.GetFQDN(), "should have external service with fqdn from k8s")
 			externalBar := testutil.GetExternalService(t, "es-bar")
 			assert.Equal(t, "1.1.1.1", externalBar.GetFirstIPAddress(), "should have external service with ip")
+			assert.Equal(t, externalBar.GetFirstIPAddress(), externalBar.GetKubeFirstIPAddress(), "should have external service with ip from k8s")
 			// services and their endpoints
 			serviceV0 := testutil.GetService(t, "export-test-image", "v0")
 			serviceV3 := testutil.GetService(t, "export-test-image-v3", "v3")

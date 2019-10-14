@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type TestExternalService struct {
@@ -71,6 +72,38 @@ func (es *TestExternalService) GetFirstIPAddress() string {
 
 func (es *TestExternalService) GetFQDN() string {
 	return es.ExternalService.Spec.FQDN
+}
+
+// GetKubeIPAddress retrieves the external service IP Address value using the kubernetes clientset
+func (es *TestExternalService) GetKubeFirstIPAddress() string {
+	clientset := GetKubeClient()
+	endpointsList, err := clientset.CoreV1().
+		Endpoints(testingNamespace).
+		List(metav1.ListOptions{FieldSelector: "metadata.name=" + es.ExternalService.Name})
+	if err != nil {
+		es.T.Fatalf(err.Error())
+	}
+	if len(endpointsList.Items) == 0 ||
+		len(endpointsList.Items[0].Subsets) == 0 ||
+		len(endpointsList.Items[0].Subsets[0].Addresses) == 0 {
+		return ""
+	}
+	return endpointsList.Items[0].Subsets[0].Addresses[0].IP
+}
+
+// GetKubeFQDN retrieves the external service FQDN value using the kubernetes clientset
+func (es *TestExternalService) GetKubeFQDN() string {
+	clientset := GetKubeClient()
+	serviceList, err := clientset.CoreV1().
+		Services(testingNamespace).
+		List(metav1.ListOptions{LabelSelector: "rio.cattle.io/service=" + es.ExternalService.Name})
+	if err != nil {
+		es.T.Fatalf(err.Error())
+	}
+	if len(serviceList.Items) == 0 {
+		return ""
+	}
+	return serviceList.Items[0].Spec.ExternalName
 }
 
 //////////////////
