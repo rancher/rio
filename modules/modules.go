@@ -3,6 +3,8 @@ package modules
 import (
 	"context"
 
+	"github.com/rancher/rio/modules/linkerd"
+
 	"github.com/rancher/rio/modules/autoscale"
 
 	"github.com/rancher/rio/modules/smi"
@@ -35,9 +37,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	if err := smi.Register(ctx, rContext); err != nil {
 		return err
 	}
-	//if err := linkerd.Register(ctx, rioContext); err != nil {
-	//	return err
-	//}
+	if err := linkerd.Register(ctx, rContext); err != nil {
+		return err
+	}
 	if err := letsencrypt.Register(ctx, rContext); err != nil {
 		return err
 	}

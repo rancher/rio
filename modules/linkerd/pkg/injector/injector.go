@@ -22,6 +22,7 @@ func addLinkerdLabel(objs []runtime.Object) ([]runtime.Object, error) {
 			setAnnotations(&o.ObjectMeta)
 		}
 	}
+	return objs, nil
 }
 
 func setAnnotations(meta *v1.ObjectMeta) {

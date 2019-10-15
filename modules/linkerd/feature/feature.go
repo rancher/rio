@@ -3,8 +3,6 @@ package feature
 import (
 	"context"
 
-	"github.com/rancher/rio/modules/linkerd/controllers/app"
-	"github.com/rancher/rio/modules/linkerd/controllers/router"
 	"github.com/rancher/rio/modules/linkerd/pkg/injector"
 	"github.com/rancher/rio/pkg/features"
 	"github.com/rancher/rio/pkg/stack"
@@ -21,10 +19,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		SystemStacks: []*stack.SystemStack{
 			stack.NewSystemStack(apply, "linkerd", "linkerd"),
 		},
-		Controllers: []features.ControllerRegister{
-			app.Register,
-			router.Register,
-		},
+		Controllers: []features.ControllerRegister{},
 		OnStart: func() error {
 			injector.RegisterInjector()
 			rContext.Rio.Rio().V1().Service().Enqueue("*", "*")

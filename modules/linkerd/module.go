@@ -14,6 +14,10 @@ import (
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
+	if err := installLinkerd(rContext); err != nil {
+		return err
+	}
+
 	return feature.Register(ctx, rContext)
 }
 
