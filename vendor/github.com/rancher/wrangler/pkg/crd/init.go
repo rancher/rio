@@ -9,6 +9,7 @@ import (
 	"github.com/rancher/wrangler/pkg/kv"
 	"github.com/rancher/wrangler/pkg/name"
 	"github.com/sirupsen/logrus"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -29,6 +30,24 @@ type CRD struct {
 	GVK          schema.GroupVersionKind
 	PluralName   string
 	NonNamespace bool
+	Schema       *v1beta1.JSONSchemaProps
+	Status       bool
+	Scale        bool
+}
+
+func (c CRD) WithSchema(schema *v1beta1.JSONSchemaProps) CRD {
+	c.Schema = schema
+	return c
+}
+
+func (c CRD) WithStatus() CRD {
+	c.Status = true
+	return c
+}
+
+func (c CRD) WithScale() CRD {
+	c.Scale = true
+	return c
 }
 
 func (c CRD) ToCustomResourceDefinition() apiext.CustomResourceDefinition {
@@ -58,6 +77,26 @@ func (c CRD) ToCustomResourceDefinition() apiext.CustomResourceDefinition {
 				Kind:   c.GVK.Kind,
 			},
 		},
+	}
+
+	if c.Schema != nil {
+		crd.Spec.Validation = &apiext.CustomResourceValidation{
+			OpenAPIV3Schema: c.Schema,
+		}
+	}
+
+	if c.Status {
+		crd.Spec.Subresources = &apiext.CustomResourceSubresources{
+			Status: &apiext.CustomResourceSubresourceStatus{},
+		}
+		if c.Scale {
+			sel := "Spec.Selector"
+			crd.Spec.Subresources.Scale = &apiext.CustomResourceSubresourceScale{
+				SpecReplicasPath:   "Spec.Replicas",
+				StatusReplicasPath: "Status.Replicas",
+				LabelSelectorPath:  &sel,
+			}
+		}
 	}
 
 	if c.NonNamespace {
@@ -219,7 +258,8 @@ func (f *Factory) createCRD(crdDef CRD, ready map[string]*apiext.CustomResourceD
 
 	existing, ok := ready[crd.Name]
 	if ok {
-		if !equality.Semantic.DeepEqual(crd.Spec.Versions, existing.Spec.Versions) {
+		if !equality.Semantic.DeepEqual(crd.Spec.Validation, existing.Spec.Validation) ||
+			!equality.Semantic.DeepEqual(crd.Spec.Versions, existing.Spec.Versions) {
 			existing.Spec = crd.Spec
 			logrus.Infof("Updating CRD %s", crd.Name)
 			return f.CRDClient.ApiextensionsV1beta1().CustomResourceDefinitions().Update(existing)

@@ -20,13 +20,17 @@ package v1alpha1
 
 import (
 	"context"
+	"time"
 
 	v1alpha1 "github.com/knative/serving/pkg/apis/autoscaling/v1alpha1"
 	clientset "github.com/knative/serving/pkg/client/clientset/versioned/typed/autoscaling/v1alpha1"
 	informers "github.com/knative/serving/pkg/client/informers/externalversions/autoscaling/v1alpha1"
 	listers "github.com/knative/serving/pkg/client/listers/autoscaling/v1alpha1"
+	"github.com/rancher/wrangler/pkg/apply"
+	"github.com/rancher/wrangler/pkg/condition"
 	"github.com/rancher/wrangler/pkg/generic"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -40,20 +44,15 @@ import (
 type PodAutoscalerHandler func(string, *v1alpha1.PodAutoscaler) (*v1alpha1.PodAutoscaler, error)
 
 type PodAutoscalerController interface {
+	generic.ControllerMeta
 	PodAutoscalerClient
 
 	OnChange(ctx context.Context, name string, sync PodAutoscalerHandler)
 	OnRemove(ctx context.Context, name string, sync PodAutoscalerHandler)
 	Enqueue(namespace, name string)
+	EnqueueAfter(namespace, name string, duration time.Duration)
 
 	Cache() PodAutoscalerCache
-
-	Informer() cache.SharedIndexInformer
-	GroupVersionKind() schema.GroupVersionKind
-
-	AddGenericHandler(ctx context.Context, name string, handler generic.Handler)
-	AddGenericRemoveHandler(ctx context.Context, name string, handler generic.Handler)
-	Updater() generic.Updater
 }
 
 type PodAutoscalerClient interface {
@@ -118,26 +117,21 @@ func (c *podAutoscalerController) Updater() generic.Updater {
 	}
 }
 
-func UpdatePodAutoscalerOnChange(updater generic.Updater, handler PodAutoscalerHandler) PodAutoscalerHandler {
-	return func(key string, obj *v1alpha1.PodAutoscaler) (*v1alpha1.PodAutoscaler, error) {
-		if obj == nil {
-			return handler(key, nil)
-		}
-
-		copyObj := obj.DeepCopy()
-		newObj, err := handler(key, copyObj)
-		if newObj != nil {
-			copyObj = newObj
-		}
-		if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
-			newObj, err := updater(copyObj)
-			if newObj != nil && err == nil {
-				copyObj = newObj.(*v1alpha1.PodAutoscaler)
-			}
-		}
-
-		return copyObj, err
+func UpdatePodAutoscalerDeepCopyOnChange(client PodAutoscalerClient, obj *v1alpha1.PodAutoscaler, handler func(obj *v1alpha1.PodAutoscaler) (*v1alpha1.PodAutoscaler, error)) (*v1alpha1.PodAutoscaler, error) {
+	if obj == nil {
+		return obj, nil
 	}
+
+	copyObj := obj.DeepCopy()
+	newObj, err := handler(copyObj)
+	if newObj != nil {
+		copyObj = newObj
+	}
+	if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
+		return client.Update(copyObj)
+	}
+
+	return copyObj, err
 }
 
 func (c *podAutoscalerController) AddGenericHandler(ctx context.Context, name string, handler generic.Handler) {
@@ -160,6 +154,10 @@ func (c *podAutoscalerController) OnRemove(ctx context.Context, name string, syn
 
 func (c *podAutoscalerController) Enqueue(namespace, name string) {
 	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), namespace, name)
+}
+
+func (c *podAutoscalerController) EnqueueAfter(namespace, name string, duration time.Duration) {
+	c.controllerManager.EnqueueAfter(c.gvk, c.informer.Informer(), namespace, name, duration)
 }
 
 func (c *podAutoscalerController) Informer() cache.SharedIndexInformer {
@@ -239,4 +237,104 @@ func (c *podAutoscalerCache) GetByIndex(indexName, key string) (result []*v1alph
 		result = append(result, obj.(*v1alpha1.PodAutoscaler))
 	}
 	return result, nil
+}
+
+type PodAutoscalerStatusHandler func(obj *v1alpha1.PodAutoscaler, status v1alpha1.PodAutoscalerStatus) (v1alpha1.PodAutoscalerStatus, error)
+
+type PodAutoscalerGeneratingHandler func(obj *v1alpha1.PodAutoscaler, status v1alpha1.PodAutoscalerStatus) ([]runtime.Object, v1alpha1.PodAutoscalerStatus, error)
+
+func RegisterPodAutoscalerStatusHandler(ctx context.Context, controller PodAutoscalerController, condition condition.Cond, name string, handler PodAutoscalerStatusHandler) {
+	statusHandler := &podAutoscalerStatusHandler{
+		client:    controller,
+		condition: condition,
+		handler:   handler,
+	}
+	controller.AddGenericHandler(ctx, name, FromPodAutoscalerHandlerToHandler(statusHandler.sync))
+}
+
+func RegisterPodAutoscalerGeneratingHandler(ctx context.Context, controller PodAutoscalerController, apply apply.Apply,
+	condition condition.Cond, name string, handler PodAutoscalerGeneratingHandler, opts *generic.GeneratingHandlerOptions) {
+	statusHandler := &podAutoscalerGeneratingHandler{
+		PodAutoscalerGeneratingHandler: handler,
+		apply:                          apply,
+		name:                           name,
+		gvk:                            controller.GroupVersionKind(),
+	}
+	if opts != nil {
+		statusHandler.opts = *opts
+	}
+	RegisterPodAutoscalerStatusHandler(ctx, controller, condition, name, statusHandler.Handle)
+}
+
+type podAutoscalerStatusHandler struct {
+	client    PodAutoscalerClient
+	condition condition.Cond
+	handler   PodAutoscalerStatusHandler
+}
+
+func (a *podAutoscalerStatusHandler) sync(key string, obj *v1alpha1.PodAutoscaler) (*v1alpha1.PodAutoscaler, error) {
+	if obj == nil {
+		return obj, nil
+	}
+
+	status := obj.Status
+	obj = obj.DeepCopy()
+	newStatus, err := a.handler(obj, obj.Status)
+	if err != nil {
+		// Revert to old status on error
+		newStatus = *status.DeepCopy()
+	}
+
+	if a.condition != "" {
+		if errors.IsConflict(err) {
+			a.condition.SetError(obj, "", nil)
+		} else {
+			a.condition.SetError(obj, "", err)
+		}
+	}
+	if !equality.Semantic.DeepEqual(status, newStatus) {
+		var newErr error
+		obj.Status = newStatus
+		obj, newErr = a.client.UpdateStatus(obj)
+		if err == nil {
+			err = newErr
+		}
+	}
+	return obj, err
+}
+
+type podAutoscalerGeneratingHandler struct {
+	PodAutoscalerGeneratingHandler
+	apply apply.Apply
+	opts  generic.GeneratingHandlerOptions
+	gvk   schema.GroupVersionKind
+	name  string
+}
+
+func (a *podAutoscalerGeneratingHandler) Handle(obj *v1alpha1.PodAutoscaler, status v1alpha1.PodAutoscalerStatus) (v1alpha1.PodAutoscalerStatus, error) {
+	objs, newStatus, err := a.PodAutoscalerGeneratingHandler(obj, status)
+	if err != nil {
+		return newStatus, err
+	}
+
+	apply := a.apply
+
+	if !a.opts.DynamicLookup {
+		apply = apply.WithStrictCaching()
+	}
+
+	if !a.opts.AllowCrossNamespace && !a.opts.AllowClusterScoped {
+		apply = apply.WithSetOwnerReference(true, false).
+			WithDefaultNamespace(obj.GetNamespace()).
+			WithListerNamespace(obj.GetNamespace())
+	}
+
+	if !a.opts.AllowClusterScoped {
+		apply = apply.WithRestrictClusterScoped()
+	}
+
+	return newStatus, apply.
+		WithOwner(obj).
+		WithSetID(a.name).
+		ApplyObjects(objs...)
 }

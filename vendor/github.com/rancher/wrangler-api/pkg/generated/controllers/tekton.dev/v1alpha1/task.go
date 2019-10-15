@@ -20,6 +20,7 @@ package v1alpha1
 
 import (
 	"context"
+	"time"
 
 	"github.com/rancher/wrangler/pkg/generic"
 	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
@@ -40,20 +41,15 @@ import (
 type TaskHandler func(string, *v1alpha1.Task) (*v1alpha1.Task, error)
 
 type TaskController interface {
+	generic.ControllerMeta
 	TaskClient
 
 	OnChange(ctx context.Context, name string, sync TaskHandler)
 	OnRemove(ctx context.Context, name string, sync TaskHandler)
 	Enqueue(namespace, name string)
+	EnqueueAfter(namespace, name string, duration time.Duration)
 
 	Cache() TaskCache
-
-	Informer() cache.SharedIndexInformer
-	GroupVersionKind() schema.GroupVersionKind
-
-	AddGenericHandler(ctx context.Context, name string, handler generic.Handler)
-	AddGenericRemoveHandler(ctx context.Context, name string, handler generic.Handler)
-	Updater() generic.Updater
 }
 
 type TaskClient interface {
@@ -118,26 +114,21 @@ func (c *taskController) Updater() generic.Updater {
 	}
 }
 
-func UpdateTaskOnChange(updater generic.Updater, handler TaskHandler) TaskHandler {
-	return func(key string, obj *v1alpha1.Task) (*v1alpha1.Task, error) {
-		if obj == nil {
-			return handler(key, nil)
-		}
-
-		copyObj := obj.DeepCopy()
-		newObj, err := handler(key, copyObj)
-		if newObj != nil {
-			copyObj = newObj
-		}
-		if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
-			newObj, err := updater(copyObj)
-			if newObj != nil && err == nil {
-				copyObj = newObj.(*v1alpha1.Task)
-			}
-		}
-
-		return copyObj, err
+func UpdateTaskDeepCopyOnChange(client TaskClient, obj *v1alpha1.Task, handler func(obj *v1alpha1.Task) (*v1alpha1.Task, error)) (*v1alpha1.Task, error) {
+	if obj == nil {
+		return obj, nil
 	}
+
+	copyObj := obj.DeepCopy()
+	newObj, err := handler(copyObj)
+	if newObj != nil {
+		copyObj = newObj
+	}
+	if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
+		return client.Update(copyObj)
+	}
+
+	return copyObj, err
 }
 
 func (c *taskController) AddGenericHandler(ctx context.Context, name string, handler generic.Handler) {
@@ -160,6 +151,10 @@ func (c *taskController) OnRemove(ctx context.Context, name string, sync TaskHan
 
 func (c *taskController) Enqueue(namespace, name string) {
 	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), namespace, name)
+}
+
+func (c *taskController) EnqueueAfter(namespace, name string, duration time.Duration) {
+	c.controllerManager.EnqueueAfter(c.gvk, c.informer.Informer(), namespace, name, duration)
 }
 
 func (c *taskController) Informer() cache.SharedIndexInformer {

@@ -28,6 +28,7 @@ import (
 type Interface interface {
 	Certificate() CertificateController
 	ClusterIssuer() ClusterIssuerController
+	Issuer() IssuerController
 }
 
 func New(controllerManager *generic.ControllerManager, client clientset.CertmanagerV1alpha1Interface,
@@ -50,4 +51,7 @@ func (c *version) Certificate() CertificateController {
 }
 func (c *version) ClusterIssuer() ClusterIssuerController {
 	return NewClusterIssuerController(v1alpha1.SchemeGroupVersion.WithKind("ClusterIssuer"), c.controllerManager, c.client, c.informers.ClusterIssuers())
+}
+func (c *version) Issuer() IssuerController {
+	return NewIssuerController(v1alpha1.SchemeGroupVersion.WithKind("Issuer"), c.controllerManager, c.client, c.informers.Issuers())
 }

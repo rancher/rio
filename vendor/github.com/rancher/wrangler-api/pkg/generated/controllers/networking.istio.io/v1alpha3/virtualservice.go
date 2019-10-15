@@ -20,6 +20,7 @@ package v1alpha3
 
 import (
 	"context"
+	"time"
 
 	v1alpha3 "github.com/knative/pkg/apis/istio/v1alpha3"
 	clientset "github.com/knative/pkg/client/clientset/versioned/typed/istio/v1alpha3"
@@ -40,20 +41,15 @@ import (
 type VirtualServiceHandler func(string, *v1alpha3.VirtualService) (*v1alpha3.VirtualService, error)
 
 type VirtualServiceController interface {
+	generic.ControllerMeta
 	VirtualServiceClient
 
 	OnChange(ctx context.Context, name string, sync VirtualServiceHandler)
 	OnRemove(ctx context.Context, name string, sync VirtualServiceHandler)
 	Enqueue(namespace, name string)
+	EnqueueAfter(namespace, name string, duration time.Duration)
 
 	Cache() VirtualServiceCache
-
-	Informer() cache.SharedIndexInformer
-	GroupVersionKind() schema.GroupVersionKind
-
-	AddGenericHandler(ctx context.Context, name string, handler generic.Handler)
-	AddGenericRemoveHandler(ctx context.Context, name string, handler generic.Handler)
-	Updater() generic.Updater
 }
 
 type VirtualServiceClient interface {
@@ -118,26 +114,21 @@ func (c *virtualServiceController) Updater() generic.Updater {
 	}
 }
 
-func UpdateVirtualServiceOnChange(updater generic.Updater, handler VirtualServiceHandler) VirtualServiceHandler {
-	return func(key string, obj *v1alpha3.VirtualService) (*v1alpha3.VirtualService, error) {
-		if obj == nil {
-			return handler(key, nil)
-		}
-
-		copyObj := obj.DeepCopy()
-		newObj, err := handler(key, copyObj)
-		if newObj != nil {
-			copyObj = newObj
-		}
-		if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
-			newObj, err := updater(copyObj)
-			if newObj != nil && err == nil {
-				copyObj = newObj.(*v1alpha3.VirtualService)
-			}
-		}
-
-		return copyObj, err
+func UpdateVirtualServiceDeepCopyOnChange(client VirtualServiceClient, obj *v1alpha3.VirtualService, handler func(obj *v1alpha3.VirtualService) (*v1alpha3.VirtualService, error)) (*v1alpha3.VirtualService, error) {
+	if obj == nil {
+		return obj, nil
 	}
+
+	copyObj := obj.DeepCopy()
+	newObj, err := handler(copyObj)
+	if newObj != nil {
+		copyObj = newObj
+	}
+	if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
+		return client.Update(copyObj)
+	}
+
+	return copyObj, err
 }
 
 func (c *virtualServiceController) AddGenericHandler(ctx context.Context, name string, handler generic.Handler) {
@@ -160,6 +151,10 @@ func (c *virtualServiceController) OnRemove(ctx context.Context, name string, sy
 
 func (c *virtualServiceController) Enqueue(namespace, name string) {
 	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), namespace, name)
+}
+
+func (c *virtualServiceController) EnqueueAfter(namespace, name string, duration time.Duration) {
+	c.controllerManager.EnqueueAfter(c.gvk, c.informer.Informer(), namespace, name, duration)
 }
 
 func (c *virtualServiceController) Informer() cache.SharedIndexInformer {

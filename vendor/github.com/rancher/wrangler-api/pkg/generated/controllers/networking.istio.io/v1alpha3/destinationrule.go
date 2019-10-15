@@ -20,6 +20,7 @@ package v1alpha3
 
 import (
 	"context"
+	"time"
 
 	v1alpha3 "github.com/knative/pkg/apis/istio/v1alpha3"
 	clientset "github.com/knative/pkg/client/clientset/versioned/typed/istio/v1alpha3"
@@ -40,20 +41,15 @@ import (
 type DestinationRuleHandler func(string, *v1alpha3.DestinationRule) (*v1alpha3.DestinationRule, error)
 
 type DestinationRuleController interface {
+	generic.ControllerMeta
 	DestinationRuleClient
 
 	OnChange(ctx context.Context, name string, sync DestinationRuleHandler)
 	OnRemove(ctx context.Context, name string, sync DestinationRuleHandler)
 	Enqueue(namespace, name string)
+	EnqueueAfter(namespace, name string, duration time.Duration)
 
 	Cache() DestinationRuleCache
-
-	Informer() cache.SharedIndexInformer
-	GroupVersionKind() schema.GroupVersionKind
-
-	AddGenericHandler(ctx context.Context, name string, handler generic.Handler)
-	AddGenericRemoveHandler(ctx context.Context, name string, handler generic.Handler)
-	Updater() generic.Updater
 }
 
 type DestinationRuleClient interface {
@@ -118,26 +114,21 @@ func (c *destinationRuleController) Updater() generic.Updater {
 	}
 }
 
-func UpdateDestinationRuleOnChange(updater generic.Updater, handler DestinationRuleHandler) DestinationRuleHandler {
-	return func(key string, obj *v1alpha3.DestinationRule) (*v1alpha3.DestinationRule, error) {
-		if obj == nil {
-			return handler(key, nil)
-		}
-
-		copyObj := obj.DeepCopy()
-		newObj, err := handler(key, copyObj)
-		if newObj != nil {
-			copyObj = newObj
-		}
-		if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
-			newObj, err := updater(copyObj)
-			if newObj != nil && err == nil {
-				copyObj = newObj.(*v1alpha3.DestinationRule)
-			}
-		}
-
-		return copyObj, err
+func UpdateDestinationRuleDeepCopyOnChange(client DestinationRuleClient, obj *v1alpha3.DestinationRule, handler func(obj *v1alpha3.DestinationRule) (*v1alpha3.DestinationRule, error)) (*v1alpha3.DestinationRule, error) {
+	if obj == nil {
+		return obj, nil
 	}
+
+	copyObj := obj.DeepCopy()
+	newObj, err := handler(copyObj)
+	if newObj != nil {
+		copyObj = newObj
+	}
+	if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
+		return client.Update(copyObj)
+	}
+
+	return copyObj, err
 }
 
 func (c *destinationRuleController) AddGenericHandler(ctx context.Context, name string, handler generic.Handler) {
@@ -160,6 +151,10 @@ func (c *destinationRuleController) OnRemove(ctx context.Context, name string, s
 
 func (c *destinationRuleController) Enqueue(namespace, name string) {
 	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), namespace, name)
+}
+
+func (c *destinationRuleController) EnqueueAfter(namespace, name string, duration time.Duration) {
+	c.controllerManager.EnqueueAfter(c.gvk, c.informer.Informer(), namespace, name, duration)
 }
 
 func (c *destinationRuleController) Informer() cache.SharedIndexInformer {

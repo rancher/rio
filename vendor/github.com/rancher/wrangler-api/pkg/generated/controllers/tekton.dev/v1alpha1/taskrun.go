@@ -20,13 +20,17 @@ package v1alpha1
 
 import (
 	"context"
+	"time"
 
+	"github.com/rancher/wrangler/pkg/apply"
+	"github.com/rancher/wrangler/pkg/condition"
 	"github.com/rancher/wrangler/pkg/generic"
 	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	clientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/typed/pipeline/v1alpha1"
 	informers "github.com/tektoncd/pipeline/pkg/client/informers/externalversions/pipeline/v1alpha1"
 	listers "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -40,20 +44,15 @@ import (
 type TaskRunHandler func(string, *v1alpha1.TaskRun) (*v1alpha1.TaskRun, error)
 
 type TaskRunController interface {
+	generic.ControllerMeta
 	TaskRunClient
 
 	OnChange(ctx context.Context, name string, sync TaskRunHandler)
 	OnRemove(ctx context.Context, name string, sync TaskRunHandler)
 	Enqueue(namespace, name string)
+	EnqueueAfter(namespace, name string, duration time.Duration)
 
 	Cache() TaskRunCache
-
-	Informer() cache.SharedIndexInformer
-	GroupVersionKind() schema.GroupVersionKind
-
-	AddGenericHandler(ctx context.Context, name string, handler generic.Handler)
-	AddGenericRemoveHandler(ctx context.Context, name string, handler generic.Handler)
-	Updater() generic.Updater
 }
 
 type TaskRunClient interface {
@@ -118,26 +117,21 @@ func (c *taskRunController) Updater() generic.Updater {
 	}
 }
 
-func UpdateTaskRunOnChange(updater generic.Updater, handler TaskRunHandler) TaskRunHandler {
-	return func(key string, obj *v1alpha1.TaskRun) (*v1alpha1.TaskRun, error) {
-		if obj == nil {
-			return handler(key, nil)
-		}
-
-		copyObj := obj.DeepCopy()
-		newObj, err := handler(key, copyObj)
-		if newObj != nil {
-			copyObj = newObj
-		}
-		if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
-			newObj, err := updater(copyObj)
-			if newObj != nil && err == nil {
-				copyObj = newObj.(*v1alpha1.TaskRun)
-			}
-		}
-
-		return copyObj, err
+func UpdateTaskRunDeepCopyOnChange(client TaskRunClient, obj *v1alpha1.TaskRun, handler func(obj *v1alpha1.TaskRun) (*v1alpha1.TaskRun, error)) (*v1alpha1.TaskRun, error) {
+	if obj == nil {
+		return obj, nil
 	}
+
+	copyObj := obj.DeepCopy()
+	newObj, err := handler(copyObj)
+	if newObj != nil {
+		copyObj = newObj
+	}
+	if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
+		return client.Update(copyObj)
+	}
+
+	return copyObj, err
 }
 
 func (c *taskRunController) AddGenericHandler(ctx context.Context, name string, handler generic.Handler) {
@@ -160,6 +154,10 @@ func (c *taskRunController) OnRemove(ctx context.Context, name string, sync Task
 
 func (c *taskRunController) Enqueue(namespace, name string) {
 	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), namespace, name)
+}
+
+func (c *taskRunController) EnqueueAfter(namespace, name string, duration time.Duration) {
+	c.controllerManager.EnqueueAfter(c.gvk, c.informer.Informer(), namespace, name, duration)
 }
 
 func (c *taskRunController) Informer() cache.SharedIndexInformer {
@@ -239,4 +237,104 @@ func (c *taskRunCache) GetByIndex(indexName, key string) (result []*v1alpha1.Tas
 		result = append(result, obj.(*v1alpha1.TaskRun))
 	}
 	return result, nil
+}
+
+type TaskRunStatusHandler func(obj *v1alpha1.TaskRun, status v1alpha1.TaskRunStatus) (v1alpha1.TaskRunStatus, error)
+
+type TaskRunGeneratingHandler func(obj *v1alpha1.TaskRun, status v1alpha1.TaskRunStatus) ([]runtime.Object, v1alpha1.TaskRunStatus, error)
+
+func RegisterTaskRunStatusHandler(ctx context.Context, controller TaskRunController, condition condition.Cond, name string, handler TaskRunStatusHandler) {
+	statusHandler := &taskRunStatusHandler{
+		client:    controller,
+		condition: condition,
+		handler:   handler,
+	}
+	controller.AddGenericHandler(ctx, name, FromTaskRunHandlerToHandler(statusHandler.sync))
+}
+
+func RegisterTaskRunGeneratingHandler(ctx context.Context, controller TaskRunController, apply apply.Apply,
+	condition condition.Cond, name string, handler TaskRunGeneratingHandler, opts *generic.GeneratingHandlerOptions) {
+	statusHandler := &taskRunGeneratingHandler{
+		TaskRunGeneratingHandler: handler,
+		apply:                    apply,
+		name:                     name,
+		gvk:                      controller.GroupVersionKind(),
+	}
+	if opts != nil {
+		statusHandler.opts = *opts
+	}
+	RegisterTaskRunStatusHandler(ctx, controller, condition, name, statusHandler.Handle)
+}
+
+type taskRunStatusHandler struct {
+	client    TaskRunClient
+	condition condition.Cond
+	handler   TaskRunStatusHandler
+}
+
+func (a *taskRunStatusHandler) sync(key string, obj *v1alpha1.TaskRun) (*v1alpha1.TaskRun, error) {
+	if obj == nil {
+		return obj, nil
+	}
+
+	status := obj.Status
+	obj = obj.DeepCopy()
+	newStatus, err := a.handler(obj, obj.Status)
+	if err != nil {
+		// Revert to old status on error
+		newStatus = *status.DeepCopy()
+	}
+
+	if a.condition != "" {
+		if errors.IsConflict(err) {
+			a.condition.SetError(obj, "", nil)
+		} else {
+			a.condition.SetError(obj, "", err)
+		}
+	}
+	if !equality.Semantic.DeepEqual(status, newStatus) {
+		var newErr error
+		obj.Status = newStatus
+		obj, newErr = a.client.UpdateStatus(obj)
+		if err == nil {
+			err = newErr
+		}
+	}
+	return obj, err
+}
+
+type taskRunGeneratingHandler struct {
+	TaskRunGeneratingHandler
+	apply apply.Apply
+	opts  generic.GeneratingHandlerOptions
+	gvk   schema.GroupVersionKind
+	name  string
+}
+
+func (a *taskRunGeneratingHandler) Handle(obj *v1alpha1.TaskRun, status v1alpha1.TaskRunStatus) (v1alpha1.TaskRunStatus, error) {
+	objs, newStatus, err := a.TaskRunGeneratingHandler(obj, status)
+	if err != nil {
+		return newStatus, err
+	}
+
+	apply := a.apply
+
+	if !a.opts.DynamicLookup {
+		apply = apply.WithStrictCaching()
+	}
+
+	if !a.opts.AllowCrossNamespace && !a.opts.AllowClusterScoped {
+		apply = apply.WithSetOwnerReference(true, false).
+			WithDefaultNamespace(obj.GetNamespace()).
+			WithListerNamespace(obj.GetNamespace())
+	}
+
+	if !a.opts.AllowClusterScoped {
+		apply = apply.WithRestrictClusterScoped()
+	}
+
+	return newStatus, apply.
+		WithOwner(obj).
+		WithSetID(a.name).
+		ApplyObjects(objs...)
 }

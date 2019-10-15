@@ -20,6 +20,7 @@ package v1alpha1
 
 import (
 	"context"
+	"time"
 
 	v1alpha1 "github.com/deislabs/smi-sdk-go/pkg/apis/split/v1alpha1"
 	clientset "github.com/deislabs/smi-sdk-go/pkg/gen/client/split/clientset/versioned/typed/split/v1alpha1"
@@ -40,20 +41,15 @@ import (
 type TrafficSplitHandler func(string, *v1alpha1.TrafficSplit) (*v1alpha1.TrafficSplit, error)
 
 type TrafficSplitController interface {
+	generic.ControllerMeta
 	TrafficSplitClient
 
 	OnChange(ctx context.Context, name string, sync TrafficSplitHandler)
 	OnRemove(ctx context.Context, name string, sync TrafficSplitHandler)
 	Enqueue(namespace, name string)
+	EnqueueAfter(namespace, name string, duration time.Duration)
 
 	Cache() TrafficSplitCache
-
-	Informer() cache.SharedIndexInformer
-	GroupVersionKind() schema.GroupVersionKind
-
-	AddGenericHandler(ctx context.Context, name string, handler generic.Handler)
-	AddGenericRemoveHandler(ctx context.Context, name string, handler generic.Handler)
-	Updater() generic.Updater
 }
 
 type TrafficSplitClient interface {
@@ -118,26 +114,21 @@ func (c *trafficSplitController) Updater() generic.Updater {
 	}
 }
 
-func UpdateTrafficSplitOnChange(updater generic.Updater, handler TrafficSplitHandler) TrafficSplitHandler {
-	return func(key string, obj *v1alpha1.TrafficSplit) (*v1alpha1.TrafficSplit, error) {
-		if obj == nil {
-			return handler(key, nil)
-		}
-
-		copyObj := obj.DeepCopy()
-		newObj, err := handler(key, copyObj)
-		if newObj != nil {
-			copyObj = newObj
-		}
-		if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
-			newObj, err := updater(copyObj)
-			if newObj != nil && err == nil {
-				copyObj = newObj.(*v1alpha1.TrafficSplit)
-			}
-		}
-
-		return copyObj, err
+func UpdateTrafficSplitDeepCopyOnChange(client TrafficSplitClient, obj *v1alpha1.TrafficSplit, handler func(obj *v1alpha1.TrafficSplit) (*v1alpha1.TrafficSplit, error)) (*v1alpha1.TrafficSplit, error) {
+	if obj == nil {
+		return obj, nil
 	}
+
+	copyObj := obj.DeepCopy()
+	newObj, err := handler(copyObj)
+	if newObj != nil {
+		copyObj = newObj
+	}
+	if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
+		return client.Update(copyObj)
+	}
+
+	return copyObj, err
 }
 
 func (c *trafficSplitController) AddGenericHandler(ctx context.Context, name string, handler generic.Handler) {
@@ -160,6 +151,10 @@ func (c *trafficSplitController) OnRemove(ctx context.Context, name string, sync
 
 func (c *trafficSplitController) Enqueue(namespace, name string) {
 	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), namespace, name)
+}
+
+func (c *trafficSplitController) EnqueueAfter(namespace, name string, duration time.Duration) {
+	c.controllerManager.EnqueueAfter(c.gvk, c.informer.Informer(), namespace, name, duration)
 }
 
 func (c *trafficSplitController) Informer() cache.SharedIndexInformer {

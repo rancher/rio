@@ -72,7 +72,7 @@ func (in *GitCommit) DeepCopyObject() runtime.Object {
 func (in *GitCommitList) DeepCopyInto(out *GitCommitList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]GitCommit, len(*in))
@@ -175,7 +175,7 @@ func (in *GitWatcher) DeepCopyObject() runtime.Object {
 func (in *GitWatcherList) DeepCopyInto(out *GitWatcherList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]GitWatcher, len(*in))

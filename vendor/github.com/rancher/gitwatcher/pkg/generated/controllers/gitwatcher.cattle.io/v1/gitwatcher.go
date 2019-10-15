@@ -20,13 +20,17 @@ package v1
 
 import (
 	"context"
+	"time"
 
 	v1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
 	clientset "github.com/rancher/gitwatcher/pkg/generated/clientset/versioned/typed/gitwatcher.cattle.io/v1"
 	informers "github.com/rancher/gitwatcher/pkg/generated/informers/externalversions/gitwatcher.cattle.io/v1"
 	listers "github.com/rancher/gitwatcher/pkg/generated/listers/gitwatcher.cattle.io/v1"
+	"github.com/rancher/wrangler/pkg/apply"
+	"github.com/rancher/wrangler/pkg/condition"
 	"github.com/rancher/wrangler/pkg/generic"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -40,20 +44,15 @@ import (
 type GitWatcherHandler func(string, *v1.GitWatcher) (*v1.GitWatcher, error)
 
 type GitWatcherController interface {
+	generic.ControllerMeta
 	GitWatcherClient
 
 	OnChange(ctx context.Context, name string, sync GitWatcherHandler)
 	OnRemove(ctx context.Context, name string, sync GitWatcherHandler)
 	Enqueue(namespace, name string)
+	EnqueueAfter(namespace, name string, duration time.Duration)
 
 	Cache() GitWatcherCache
-
-	Informer() cache.SharedIndexInformer
-	GroupVersionKind() schema.GroupVersionKind
-
-	AddGenericHandler(ctx context.Context, name string, handler generic.Handler)
-	AddGenericRemoveHandler(ctx context.Context, name string, handler generic.Handler)
-	Updater() generic.Updater
 }
 
 type GitWatcherClient interface {
@@ -118,26 +117,21 @@ func (c *gitWatcherController) Updater() generic.Updater {
 	}
 }
 
-func UpdateGitWatcherOnChange(updater generic.Updater, handler GitWatcherHandler) GitWatcherHandler {
-	return func(key string, obj *v1.GitWatcher) (*v1.GitWatcher, error) {
-		if obj == nil {
-			return handler(key, nil)
-		}
-
-		copyObj := obj.DeepCopy()
-		newObj, err := handler(key, copyObj)
-		if newObj != nil {
-			copyObj = newObj
-		}
-		if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
-			newObj, err := updater(copyObj)
-			if newObj != nil && err == nil {
-				copyObj = newObj.(*v1.GitWatcher)
-			}
-		}
-
-		return copyObj, err
+func UpdateGitWatcherDeepCopyOnChange(client GitWatcherClient, obj *v1.GitWatcher, handler func(obj *v1.GitWatcher) (*v1.GitWatcher, error)) (*v1.GitWatcher, error) {
+	if obj == nil {
+		return obj, nil
 	}
+
+	copyObj := obj.DeepCopy()
+	newObj, err := handler(copyObj)
+	if newObj != nil {
+		copyObj = newObj
+	}
+	if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
+		return client.Update(copyObj)
+	}
+
+	return copyObj, err
 }
 
 func (c *gitWatcherController) AddGenericHandler(ctx context.Context, name string, handler generic.Handler) {
@@ -160,6 +154,10 @@ func (c *gitWatcherController) OnRemove(ctx context.Context, name string, sync G
 
 func (c *gitWatcherController) Enqueue(namespace, name string) {
 	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), namespace, name)
+}
+
+func (c *gitWatcherController) EnqueueAfter(namespace, name string, duration time.Duration) {
+	c.controllerManager.EnqueueAfter(c.gvk, c.informer.Informer(), namespace, name, duration)
 }
 
 func (c *gitWatcherController) Informer() cache.SharedIndexInformer {
@@ -239,4 +237,104 @@ func (c *gitWatcherCache) GetByIndex(indexName, key string) (result []*v1.GitWat
 		result = append(result, obj.(*v1.GitWatcher))
 	}
 	return result, nil
+}
+
+type GitWatcherStatusHandler func(obj *v1.GitWatcher, status v1.GitWatcherStatus) (v1.GitWatcherStatus, error)
+
+type GitWatcherGeneratingHandler func(obj *v1.GitWatcher, status v1.GitWatcherStatus) ([]runtime.Object, v1.GitWatcherStatus, error)
+
+func RegisterGitWatcherStatusHandler(ctx context.Context, controller GitWatcherController, condition condition.Cond, name string, handler GitWatcherStatusHandler) {
+	statusHandler := &gitWatcherStatusHandler{
+		client:    controller,
+		condition: condition,
+		handler:   handler,
+	}
+	controller.AddGenericHandler(ctx, name, FromGitWatcherHandlerToHandler(statusHandler.sync))
+}
+
+func RegisterGitWatcherGeneratingHandler(ctx context.Context, controller GitWatcherController, apply apply.Apply,
+	condition condition.Cond, name string, handler GitWatcherGeneratingHandler, opts *generic.GeneratingHandlerOptions) {
+	statusHandler := &gitWatcherGeneratingHandler{
+		GitWatcherGeneratingHandler: handler,
+		apply:                       apply,
+		name:                        name,
+		gvk:                         controller.GroupVersionKind(),
+	}
+	if opts != nil {
+		statusHandler.opts = *opts
+	}
+	RegisterGitWatcherStatusHandler(ctx, controller, condition, name, statusHandler.Handle)
+}
+
+type gitWatcherStatusHandler struct {
+	client    GitWatcherClient
+	condition condition.Cond
+	handler   GitWatcherStatusHandler
+}
+
+func (a *gitWatcherStatusHandler) sync(key string, obj *v1.GitWatcher) (*v1.GitWatcher, error) {
+	if obj == nil {
+		return obj, nil
+	}
+
+	status := obj.Status
+	obj = obj.DeepCopy()
+	newStatus, err := a.handler(obj, obj.Status)
+	if err != nil {
+		// Revert to old status on error
+		newStatus = *status.DeepCopy()
+	}
+
+	if a.condition != "" {
+		if errors.IsConflict(err) {
+			a.condition.SetError(obj, "", nil)
+		} else {
+			a.condition.SetError(obj, "", err)
+		}
+	}
+	if !equality.Semantic.DeepEqual(status, newStatus) {
+		var newErr error
+		obj.Status = newStatus
+		obj, newErr = a.client.UpdateStatus(obj)
+		if err == nil {
+			err = newErr
+		}
+	}
+	return obj, err
+}
+
+type gitWatcherGeneratingHandler struct {
+	GitWatcherGeneratingHandler
+	apply apply.Apply
+	opts  generic.GeneratingHandlerOptions
+	gvk   schema.GroupVersionKind
+	name  string
+}
+
+func (a *gitWatcherGeneratingHandler) Handle(obj *v1.GitWatcher, status v1.GitWatcherStatus) (v1.GitWatcherStatus, error) {
+	objs, newStatus, err := a.GitWatcherGeneratingHandler(obj, status)
+	if err != nil {
+		return newStatus, err
+	}
+
+	apply := a.apply
+
+	if !a.opts.DynamicLookup {
+		apply = apply.WithStrictCaching()
+	}
+
+	if !a.opts.AllowCrossNamespace && !a.opts.AllowClusterScoped {
+		apply = apply.WithSetOwnerReference(true, false).
+			WithDefaultNamespace(obj.GetNamespace()).
+			WithListerNamespace(obj.GetNamespace())
+	}
+
+	if !a.opts.AllowClusterScoped {
+		apply = apply.WithRestrictClusterScoped()
+	}
+
+	return newStatus, apply.
+		WithOwner(obj).
+		WithSetID(a.name).
+		ApplyObjects(objs...)
 }
