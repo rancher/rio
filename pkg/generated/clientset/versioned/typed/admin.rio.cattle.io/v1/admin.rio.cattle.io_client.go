@@ -21,14 +21,12 @@ package v1
 import (
 	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/generated/clientset/versioned/scheme"
-	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	rest "k8s.io/client-go/rest"
 )
 
 type AdminV1Interface interface {
 	RESTClient() rest.Interface
 	ClusterDomainsGetter
-	FeaturesGetter
 	PublicDomainsGetter
 	RioInfosGetter
 }
@@ -38,16 +36,12 @@ type AdminV1Client struct {
 	restClient rest.Interface
 }
 
-func (c *AdminV1Client) ClusterDomains(namespace string) ClusterDomainInterface {
-	return newClusterDomains(c, namespace)
+func (c *AdminV1Client) ClusterDomains() ClusterDomainInterface {
+	return newClusterDomains(c)
 }
 
-func (c *AdminV1Client) Features(namespace string) FeatureInterface {
-	return newFeatures(c, namespace)
-}
-
-func (c *AdminV1Client) PublicDomains(namespace string) PublicDomainInterface {
-	return newPublicDomains(c, namespace)
+func (c *AdminV1Client) PublicDomains() PublicDomainInterface {
+	return newPublicDomains(c)
 }
 
 func (c *AdminV1Client) RioInfos() RioInfoInterface {
@@ -86,7 +80,7 @@ func setConfigDefaults(config *rest.Config) error {
 	gv := v1.SchemeGroupVersion
 	config.GroupVersion = &gv
 	config.APIPath = "/apis"
-	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: scheme.Codecs}
+	config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
 
 	if config.UserAgent == "" {
 		config.UserAgent = rest.DefaultKubernetesUserAgent()

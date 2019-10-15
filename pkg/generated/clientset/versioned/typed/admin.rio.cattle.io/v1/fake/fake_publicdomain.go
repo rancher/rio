@@ -31,7 +31,6 @@ import (
 // FakePublicDomains implements PublicDomainInterface
 type FakePublicDomains struct {
 	Fake *FakeAdminV1
-	ns   string
 }
 
 var publicdomainsResource = schema.GroupVersionResource{Group: "admin.rio.cattle.io", Version: "v1", Resource: "publicdomains"}
@@ -41,8 +40,7 @@ var publicdomainsKind = schema.GroupVersionKind{Group: "admin.rio.cattle.io", Ve
 // Get takes name of the publicDomain, and returns the corresponding publicDomain object, and an error if there is any.
 func (c *FakePublicDomains) Get(name string, options v1.GetOptions) (result *adminriocattleiov1.PublicDomain, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(publicdomainsResource, c.ns, name), &adminriocattleiov1.PublicDomain{})
-
+		Invokes(testing.NewRootGetAction(publicdomainsResource, name), &adminriocattleiov1.PublicDomain{})
 	if obj == nil {
 		return nil, err
 	}
@@ -52,8 +50,7 @@ func (c *FakePublicDomains) Get(name string, options v1.GetOptions) (result *adm
 // List takes label and field selectors, and returns the list of PublicDomains that match those selectors.
 func (c *FakePublicDomains) List(opts v1.ListOptions) (result *adminriocattleiov1.PublicDomainList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(publicdomainsResource, publicdomainsKind, c.ns, opts), &adminriocattleiov1.PublicDomainList{})
-
+		Invokes(testing.NewRootListAction(publicdomainsResource, publicdomainsKind, opts), &adminriocattleiov1.PublicDomainList{})
 	if obj == nil {
 		return nil, err
 	}
@@ -74,15 +71,13 @@ func (c *FakePublicDomains) List(opts v1.ListOptions) (result *adminriocattleiov
 // Watch returns a watch.Interface that watches the requested publicDomains.
 func (c *FakePublicDomains) Watch(opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(publicdomainsResource, c.ns, opts))
-
+		InvokesWatch(testing.NewRootWatchAction(publicdomainsResource, opts))
 }
 
 // Create takes the representation of a publicDomain and creates it.  Returns the server's representation of the publicDomain, and an error, if there is any.
 func (c *FakePublicDomains) Create(publicDomain *adminriocattleiov1.PublicDomain) (result *adminriocattleiov1.PublicDomain, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(publicdomainsResource, c.ns, publicDomain), &adminriocattleiov1.PublicDomain{})
-
+		Invokes(testing.NewRootCreateAction(publicdomainsResource, publicDomain), &adminriocattleiov1.PublicDomain{})
 	if obj == nil {
 		return nil, err
 	}
@@ -92,8 +87,7 @@ func (c *FakePublicDomains) Create(publicDomain *adminriocattleiov1.PublicDomain
 // Update takes the representation of a publicDomain and updates it. Returns the server's representation of the publicDomain, and an error, if there is any.
 func (c *FakePublicDomains) Update(publicDomain *adminriocattleiov1.PublicDomain) (result *adminriocattleiov1.PublicDomain, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(publicdomainsResource, c.ns, publicDomain), &adminriocattleiov1.PublicDomain{})
-
+		Invokes(testing.NewRootUpdateAction(publicdomainsResource, publicDomain), &adminriocattleiov1.PublicDomain{})
 	if obj == nil {
 		return nil, err
 	}
@@ -104,8 +98,7 @@ func (c *FakePublicDomains) Update(publicDomain *adminriocattleiov1.PublicDomain
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
 func (c *FakePublicDomains) UpdateStatus(publicDomain *adminriocattleiov1.PublicDomain) (*adminriocattleiov1.PublicDomain, error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(publicdomainsResource, "status", c.ns, publicDomain), &adminriocattleiov1.PublicDomain{})
-
+		Invokes(testing.NewRootUpdateSubresourceAction(publicdomainsResource, "status", publicDomain), &adminriocattleiov1.PublicDomain{})
 	if obj == nil {
 		return nil, err
 	}
@@ -115,14 +108,13 @@ func (c *FakePublicDomains) UpdateStatus(publicDomain *adminriocattleiov1.Public
 // Delete takes name of the publicDomain and deletes it. Returns an error if one occurs.
 func (c *FakePublicDomains) Delete(name string, options *v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(publicdomainsResource, c.ns, name), &adminriocattleiov1.PublicDomain{})
-
+		Invokes(testing.NewRootDeleteAction(publicdomainsResource, name), &adminriocattleiov1.PublicDomain{})
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
 func (c *FakePublicDomains) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(publicdomainsResource, c.ns, listOptions)
+	action := testing.NewRootDeleteCollectionAction(publicdomainsResource, listOptions)
 
 	_, err := c.Fake.Invokes(action, &adminriocattleiov1.PublicDomainList{})
 	return err
@@ -131,8 +123,7 @@ func (c *FakePublicDomains) DeleteCollection(options *v1.DeleteOptions, listOpti
 // Patch applies the patch and returns the patched publicDomain.
 func (c *FakePublicDomains) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *adminriocattleiov1.PublicDomain, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(publicdomainsResource, c.ns, name, pt, data, subresources...), &adminriocattleiov1.PublicDomain{})
-
+		Invokes(testing.NewRootPatchSubresourceAction(publicdomainsResource, name, pt, data, subresources...), &adminriocattleiov1.PublicDomain{})
 	if obj == nil {
 		return nil, err
 	}
