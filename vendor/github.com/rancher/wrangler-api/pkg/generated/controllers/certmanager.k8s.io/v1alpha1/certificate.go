@@ -20,13 +20,17 @@ package v1alpha1
 
 import (
 	"context"
+	"time"
 
 	v1alpha1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha1"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/certmanager/v1alpha1"
 	listers "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
+	"github.com/rancher/wrangler/pkg/apply"
+	"github.com/rancher/wrangler/pkg/condition"
 	"github.com/rancher/wrangler/pkg/generic"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -40,20 +44,15 @@ import (
 type CertificateHandler func(string, *v1alpha1.Certificate) (*v1alpha1.Certificate, error)
 
 type CertificateController interface {
+	generic.ControllerMeta
 	CertificateClient
 
 	OnChange(ctx context.Context, name string, sync CertificateHandler)
 	OnRemove(ctx context.Context, name string, sync CertificateHandler)
 	Enqueue(namespace, name string)
+	EnqueueAfter(namespace, name string, duration time.Duration)
 
 	Cache() CertificateCache
-
-	Informer() cache.SharedIndexInformer
-	GroupVersionKind() schema.GroupVersionKind
-
-	AddGenericHandler(ctx context.Context, name string, handler generic.Handler)
-	AddGenericRemoveHandler(ctx context.Context, name string, handler generic.Handler)
-	Updater() generic.Updater
 }
 
 type CertificateClient interface {
@@ -118,26 +117,21 @@ func (c *certificateController) Updater() generic.Updater {
 	}
 }
 
-func UpdateCertificateOnChange(updater generic.Updater, handler CertificateHandler) CertificateHandler {
-	return func(key string, obj *v1alpha1.Certificate) (*v1alpha1.Certificate, error) {
-		if obj == nil {
-			return handler(key, nil)
-		}
-
-		copyObj := obj.DeepCopy()
-		newObj, err := handler(key, copyObj)
-		if newObj != nil {
-			copyObj = newObj
-		}
-		if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
-			newObj, err := updater(copyObj)
-			if newObj != nil && err == nil {
-				copyObj = newObj.(*v1alpha1.Certificate)
-			}
-		}
-
-		return copyObj, err
+func UpdateCertificateDeepCopyOnChange(client CertificateClient, obj *v1alpha1.Certificate, handler func(obj *v1alpha1.Certificate) (*v1alpha1.Certificate, error)) (*v1alpha1.Certificate, error) {
+	if obj == nil {
+		return obj, nil
 	}
+
+	copyObj := obj.DeepCopy()
+	newObj, err := handler(copyObj)
+	if newObj != nil {
+		copyObj = newObj
+	}
+	if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
+		return client.Update(copyObj)
+	}
+
+	return copyObj, err
 }
 
 func (c *certificateController) AddGenericHandler(ctx context.Context, name string, handler generic.Handler) {
@@ -160,6 +154,10 @@ func (c *certificateController) OnRemove(ctx context.Context, name string, sync 
 
 func (c *certificateController) Enqueue(namespace, name string) {
 	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), namespace, name)
+}
+
+func (c *certificateController) EnqueueAfter(namespace, name string, duration time.Duration) {
+	c.controllerManager.EnqueueAfter(c.gvk, c.informer.Informer(), namespace, name, duration)
 }
 
 func (c *certificateController) Informer() cache.SharedIndexInformer {
@@ -239,4 +237,104 @@ func (c *certificateCache) GetByIndex(indexName, key string) (result []*v1alpha1
 		result = append(result, obj.(*v1alpha1.Certificate))
 	}
 	return result, nil
+}
+
+type CertificateStatusHandler func(obj *v1alpha1.Certificate, status v1alpha1.CertificateStatus) (v1alpha1.CertificateStatus, error)
+
+type CertificateGeneratingHandler func(obj *v1alpha1.Certificate, status v1alpha1.CertificateStatus) ([]runtime.Object, v1alpha1.CertificateStatus, error)
+
+func RegisterCertificateStatusHandler(ctx context.Context, controller CertificateController, condition condition.Cond, name string, handler CertificateStatusHandler) {
+	statusHandler := &certificateStatusHandler{
+		client:    controller,
+		condition: condition,
+		handler:   handler,
+	}
+	controller.AddGenericHandler(ctx, name, FromCertificateHandlerToHandler(statusHandler.sync))
+}
+
+func RegisterCertificateGeneratingHandler(ctx context.Context, controller CertificateController, apply apply.Apply,
+	condition condition.Cond, name string, handler CertificateGeneratingHandler, opts *generic.GeneratingHandlerOptions) {
+	statusHandler := &certificateGeneratingHandler{
+		CertificateGeneratingHandler: handler,
+		apply:                        apply,
+		name:                         name,
+		gvk:                          controller.GroupVersionKind(),
+	}
+	if opts != nil {
+		statusHandler.opts = *opts
+	}
+	RegisterCertificateStatusHandler(ctx, controller, condition, name, statusHandler.Handle)
+}
+
+type certificateStatusHandler struct {
+	client    CertificateClient
+	condition condition.Cond
+	handler   CertificateStatusHandler
+}
+
+func (a *certificateStatusHandler) sync(key string, obj *v1alpha1.Certificate) (*v1alpha1.Certificate, error) {
+	if obj == nil {
+		return obj, nil
+	}
+
+	status := obj.Status
+	obj = obj.DeepCopy()
+	newStatus, err := a.handler(obj, obj.Status)
+	if err != nil {
+		// Revert to old status on error
+		newStatus = *status.DeepCopy()
+	}
+
+	if a.condition != "" {
+		if errors.IsConflict(err) {
+			a.condition.SetError(obj, "", nil)
+		} else {
+			a.condition.SetError(obj, "", err)
+		}
+	}
+	if !equality.Semantic.DeepEqual(status, newStatus) {
+		var newErr error
+		obj.Status = newStatus
+		obj, newErr = a.client.UpdateStatus(obj)
+		if err == nil {
+			err = newErr
+		}
+	}
+	return obj, err
+}
+
+type certificateGeneratingHandler struct {
+	CertificateGeneratingHandler
+	apply apply.Apply
+	opts  generic.GeneratingHandlerOptions
+	gvk   schema.GroupVersionKind
+	name  string
+}
+
+func (a *certificateGeneratingHandler) Handle(obj *v1alpha1.Certificate, status v1alpha1.CertificateStatus) (v1alpha1.CertificateStatus, error) {
+	objs, newStatus, err := a.CertificateGeneratingHandler(obj, status)
+	if err != nil {
+		return newStatus, err
+	}
+
+	apply := a.apply
+
+	if !a.opts.DynamicLookup {
+		apply = apply.WithStrictCaching()
+	}
+
+	if !a.opts.AllowCrossNamespace && !a.opts.AllowClusterScoped {
+		apply = apply.WithSetOwnerReference(true, false).
+			WithDefaultNamespace(obj.GetNamespace()).
+			WithListerNamespace(obj.GetNamespace())
+	}
+
+	if !a.opts.AllowClusterScoped {
+		apply = apply.WithRestrictClusterScoped()
+	}
+
+	return newStatus, apply.
+		WithOwner(obj).
+		WithSetID(a.name).
+		ApplyObjects(objs...)
 }

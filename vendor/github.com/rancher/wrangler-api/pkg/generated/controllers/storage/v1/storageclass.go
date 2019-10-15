@@ -20,6 +20,7 @@ package v1
 
 import (
 	"context"
+	"time"
 
 	"github.com/rancher/wrangler/pkg/generic"
 	v1 "k8s.io/api/storage/v1"
@@ -40,20 +41,15 @@ import (
 type StorageClassHandler func(string, *v1.StorageClass) (*v1.StorageClass, error)
 
 type StorageClassController interface {
+	generic.ControllerMeta
 	StorageClassClient
 
 	OnChange(ctx context.Context, name string, sync StorageClassHandler)
 	OnRemove(ctx context.Context, name string, sync StorageClassHandler)
 	Enqueue(name string)
+	EnqueueAfter(name string, duration time.Duration)
 
 	Cache() StorageClassCache
-
-	Informer() cache.SharedIndexInformer
-	GroupVersionKind() schema.GroupVersionKind
-
-	AddGenericHandler(ctx context.Context, name string, handler generic.Handler)
-	AddGenericRemoveHandler(ctx context.Context, name string, handler generic.Handler)
-	Updater() generic.Updater
 }
 
 type StorageClassClient interface {
@@ -118,26 +114,21 @@ func (c *storageClassController) Updater() generic.Updater {
 	}
 }
 
-func UpdateStorageClassOnChange(updater generic.Updater, handler StorageClassHandler) StorageClassHandler {
-	return func(key string, obj *v1.StorageClass) (*v1.StorageClass, error) {
-		if obj == nil {
-			return handler(key, nil)
-		}
-
-		copyObj := obj.DeepCopy()
-		newObj, err := handler(key, copyObj)
-		if newObj != nil {
-			copyObj = newObj
-		}
-		if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
-			newObj, err := updater(copyObj)
-			if newObj != nil && err == nil {
-				copyObj = newObj.(*v1.StorageClass)
-			}
-		}
-
-		return copyObj, err
+func UpdateStorageClassDeepCopyOnChange(client StorageClassClient, obj *v1.StorageClass, handler func(obj *v1.StorageClass) (*v1.StorageClass, error)) (*v1.StorageClass, error) {
+	if obj == nil {
+		return obj, nil
 	}
+
+	copyObj := obj.DeepCopy()
+	newObj, err := handler(copyObj)
+	if newObj != nil {
+		copyObj = newObj
+	}
+	if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
+		return client.Update(copyObj)
+	}
+
+	return copyObj, err
 }
 
 func (c *storageClassController) AddGenericHandler(ctx context.Context, name string, handler generic.Handler) {
@@ -160,6 +151,10 @@ func (c *storageClassController) OnRemove(ctx context.Context, name string, sync
 
 func (c *storageClassController) Enqueue(name string) {
 	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), "", name)
+}
+
+func (c *storageClassController) EnqueueAfter(name string, duration time.Duration) {
+	c.controllerManager.EnqueueAfter(c.gvk, c.informer.Informer(), "", name, duration)
 }
 
 func (c *storageClassController) Informer() cache.SharedIndexInformer {

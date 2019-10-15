@@ -20,13 +20,17 @@ package v1alpha1
 
 import (
 	"context"
+	"time"
 
 	v1alpha1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha1"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/certmanager/v1alpha1"
 	listers "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
+	"github.com/rancher/wrangler/pkg/apply"
+	"github.com/rancher/wrangler/pkg/condition"
 	"github.com/rancher/wrangler/pkg/generic"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -40,20 +44,15 @@ import (
 type ClusterIssuerHandler func(string, *v1alpha1.ClusterIssuer) (*v1alpha1.ClusterIssuer, error)
 
 type ClusterIssuerController interface {
+	generic.ControllerMeta
 	ClusterIssuerClient
 
 	OnChange(ctx context.Context, name string, sync ClusterIssuerHandler)
 	OnRemove(ctx context.Context, name string, sync ClusterIssuerHandler)
 	Enqueue(name string)
+	EnqueueAfter(name string, duration time.Duration)
 
 	Cache() ClusterIssuerCache
-
-	Informer() cache.SharedIndexInformer
-	GroupVersionKind() schema.GroupVersionKind
-
-	AddGenericHandler(ctx context.Context, name string, handler generic.Handler)
-	AddGenericRemoveHandler(ctx context.Context, name string, handler generic.Handler)
-	Updater() generic.Updater
 }
 
 type ClusterIssuerClient interface {
@@ -118,26 +117,21 @@ func (c *clusterIssuerController) Updater() generic.Updater {
 	}
 }
 
-func UpdateClusterIssuerOnChange(updater generic.Updater, handler ClusterIssuerHandler) ClusterIssuerHandler {
-	return func(key string, obj *v1alpha1.ClusterIssuer) (*v1alpha1.ClusterIssuer, error) {
-		if obj == nil {
-			return handler(key, nil)
-		}
-
-		copyObj := obj.DeepCopy()
-		newObj, err := handler(key, copyObj)
-		if newObj != nil {
-			copyObj = newObj
-		}
-		if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
-			newObj, err := updater(copyObj)
-			if newObj != nil && err == nil {
-				copyObj = newObj.(*v1alpha1.ClusterIssuer)
-			}
-		}
-
-		return copyObj, err
+func UpdateClusterIssuerDeepCopyOnChange(client ClusterIssuerClient, obj *v1alpha1.ClusterIssuer, handler func(obj *v1alpha1.ClusterIssuer) (*v1alpha1.ClusterIssuer, error)) (*v1alpha1.ClusterIssuer, error) {
+	if obj == nil {
+		return obj, nil
 	}
+
+	copyObj := obj.DeepCopy()
+	newObj, err := handler(copyObj)
+	if newObj != nil {
+		copyObj = newObj
+	}
+	if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
+		return client.Update(copyObj)
+	}
+
+	return copyObj, err
 }
 
 func (c *clusterIssuerController) AddGenericHandler(ctx context.Context, name string, handler generic.Handler) {
@@ -160,6 +154,10 @@ func (c *clusterIssuerController) OnRemove(ctx context.Context, name string, syn
 
 func (c *clusterIssuerController) Enqueue(name string) {
 	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), "", name)
+}
+
+func (c *clusterIssuerController) EnqueueAfter(name string, duration time.Duration) {
+	c.controllerManager.EnqueueAfter(c.gvk, c.informer.Informer(), "", name, duration)
 }
 
 func (c *clusterIssuerController) Informer() cache.SharedIndexInformer {
@@ -239,4 +237,104 @@ func (c *clusterIssuerCache) GetByIndex(indexName, key string) (result []*v1alph
 		result = append(result, obj.(*v1alpha1.ClusterIssuer))
 	}
 	return result, nil
+}
+
+type ClusterIssuerStatusHandler func(obj *v1alpha1.ClusterIssuer, status v1alpha1.IssuerStatus) (v1alpha1.IssuerStatus, error)
+
+type ClusterIssuerGeneratingHandler func(obj *v1alpha1.ClusterIssuer, status v1alpha1.IssuerStatus) ([]runtime.Object, v1alpha1.IssuerStatus, error)
+
+func RegisterClusterIssuerStatusHandler(ctx context.Context, controller ClusterIssuerController, condition condition.Cond, name string, handler ClusterIssuerStatusHandler) {
+	statusHandler := &clusterIssuerStatusHandler{
+		client:    controller,
+		condition: condition,
+		handler:   handler,
+	}
+	controller.AddGenericHandler(ctx, name, FromClusterIssuerHandlerToHandler(statusHandler.sync))
+}
+
+func RegisterClusterIssuerGeneratingHandler(ctx context.Context, controller ClusterIssuerController, apply apply.Apply,
+	condition condition.Cond, name string, handler ClusterIssuerGeneratingHandler, opts *generic.GeneratingHandlerOptions) {
+	statusHandler := &clusterIssuerGeneratingHandler{
+		ClusterIssuerGeneratingHandler: handler,
+		apply:                          apply,
+		name:                           name,
+		gvk:                            controller.GroupVersionKind(),
+	}
+	if opts != nil {
+		statusHandler.opts = *opts
+	}
+	RegisterClusterIssuerStatusHandler(ctx, controller, condition, name, statusHandler.Handle)
+}
+
+type clusterIssuerStatusHandler struct {
+	client    ClusterIssuerClient
+	condition condition.Cond
+	handler   ClusterIssuerStatusHandler
+}
+
+func (a *clusterIssuerStatusHandler) sync(key string, obj *v1alpha1.ClusterIssuer) (*v1alpha1.ClusterIssuer, error) {
+	if obj == nil {
+		return obj, nil
+	}
+
+	status := obj.Status
+	obj = obj.DeepCopy()
+	newStatus, err := a.handler(obj, obj.Status)
+	if err != nil {
+		// Revert to old status on error
+		newStatus = *status.DeepCopy()
+	}
+
+	if a.condition != "" {
+		if errors.IsConflict(err) {
+			a.condition.SetError(obj, "", nil)
+		} else {
+			a.condition.SetError(obj, "", err)
+		}
+	}
+	if !equality.Semantic.DeepEqual(status, newStatus) {
+		var newErr error
+		obj.Status = newStatus
+		obj, newErr = a.client.UpdateStatus(obj)
+		if err == nil {
+			err = newErr
+		}
+	}
+	return obj, err
+}
+
+type clusterIssuerGeneratingHandler struct {
+	ClusterIssuerGeneratingHandler
+	apply apply.Apply
+	opts  generic.GeneratingHandlerOptions
+	gvk   schema.GroupVersionKind
+	name  string
+}
+
+func (a *clusterIssuerGeneratingHandler) Handle(obj *v1alpha1.ClusterIssuer, status v1alpha1.IssuerStatus) (v1alpha1.IssuerStatus, error) {
+	objs, newStatus, err := a.ClusterIssuerGeneratingHandler(obj, status)
+	if err != nil {
+		return newStatus, err
+	}
+
+	apply := a.apply
+
+	if !a.opts.DynamicLookup {
+		apply = apply.WithStrictCaching()
+	}
+
+	if !a.opts.AllowCrossNamespace && !a.opts.AllowClusterScoped {
+		apply = apply.WithSetOwnerReference(true, false).
+			WithDefaultNamespace(obj.GetNamespace()).
+			WithListerNamespace(obj.GetNamespace())
+	}
+
+	if !a.opts.AllowClusterScoped {
+		apply = apply.WithRestrictClusterScoped()
+	}
+
+	return newStatus, apply.
+		WithOwner(obj).
+		WithSetID(a.name).
+		ApplyObjects(objs...)
 }

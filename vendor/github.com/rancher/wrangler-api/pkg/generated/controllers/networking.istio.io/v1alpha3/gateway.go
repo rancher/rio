@@ -20,6 +20,7 @@ package v1alpha3
 
 import (
 	"context"
+	"time"
 
 	v1alpha3 "github.com/knative/pkg/apis/istio/v1alpha3"
 	clientset "github.com/knative/pkg/client/clientset/versioned/typed/istio/v1alpha3"
@@ -40,20 +41,15 @@ import (
 type GatewayHandler func(string, *v1alpha3.Gateway) (*v1alpha3.Gateway, error)
 
 type GatewayController interface {
+	generic.ControllerMeta
 	GatewayClient
 
 	OnChange(ctx context.Context, name string, sync GatewayHandler)
 	OnRemove(ctx context.Context, name string, sync GatewayHandler)
 	Enqueue(namespace, name string)
+	EnqueueAfter(namespace, name string, duration time.Duration)
 
 	Cache() GatewayCache
-
-	Informer() cache.SharedIndexInformer
-	GroupVersionKind() schema.GroupVersionKind
-
-	AddGenericHandler(ctx context.Context, name string, handler generic.Handler)
-	AddGenericRemoveHandler(ctx context.Context, name string, handler generic.Handler)
-	Updater() generic.Updater
 }
 
 type GatewayClient interface {
@@ -118,26 +114,21 @@ func (c *gatewayController) Updater() generic.Updater {
 	}
 }
 
-func UpdateGatewayOnChange(updater generic.Updater, handler GatewayHandler) GatewayHandler {
-	return func(key string, obj *v1alpha3.Gateway) (*v1alpha3.Gateway, error) {
-		if obj == nil {
-			return handler(key, nil)
-		}
-
-		copyObj := obj.DeepCopy()
-		newObj, err := handler(key, copyObj)
-		if newObj != nil {
-			copyObj = newObj
-		}
-		if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
-			newObj, err := updater(copyObj)
-			if newObj != nil && err == nil {
-				copyObj = newObj.(*v1alpha3.Gateway)
-			}
-		}
-
-		return copyObj, err
+func UpdateGatewayDeepCopyOnChange(client GatewayClient, obj *v1alpha3.Gateway, handler func(obj *v1alpha3.Gateway) (*v1alpha3.Gateway, error)) (*v1alpha3.Gateway, error) {
+	if obj == nil {
+		return obj, nil
 	}
+
+	copyObj := obj.DeepCopy()
+	newObj, err := handler(copyObj)
+	if newObj != nil {
+		copyObj = newObj
+	}
+	if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
+		return client.Update(copyObj)
+	}
+
+	return copyObj, err
 }
 
 func (c *gatewayController) AddGenericHandler(ctx context.Context, name string, handler generic.Handler) {
@@ -160,6 +151,10 @@ func (c *gatewayController) OnRemove(ctx context.Context, name string, sync Gate
 
 func (c *gatewayController) Enqueue(namespace, name string) {
 	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), namespace, name)
+}
+
+func (c *gatewayController) EnqueueAfter(namespace, name string, duration time.Duration) {
+	c.controllerManager.EnqueueAfter(c.gvk, c.informer.Informer(), namespace, name, duration)
 }
 
 func (c *gatewayController) Informer() cache.SharedIndexInformer {
