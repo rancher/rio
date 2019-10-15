@@ -3,6 +3,8 @@ package modules
 import (
 	"context"
 
+	"github.com/rancher/rio/modules/autoscale"
+
 	"github.com/rancher/rio/modules/smi"
 
 	"github.com/rancher/rio/pkg/indexes"
@@ -42,8 +44,8 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	//if err := build.Register(ctx, rioContext); err != nil {
 	//	return err
 	//}
-	//if err := autoscale.Register(ctx, rioContext); err != nil {
-	//	return err
-	//}
+	if err := autoscale.Register(ctx, rContext); err != nil {
+		return err
+	}
 	return nil
 }

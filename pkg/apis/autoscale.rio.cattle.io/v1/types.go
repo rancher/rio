@@ -22,8 +22,11 @@ type ServiceScaleRecommendation struct {
 }
 
 type ServiceScaleRecommendationSpec struct {
-	Replicas *int32                `json:"replicas,omitempty"`
-	Selector *metav1.LabelSelector `json:"selector"`
+	MinScale    int                   `json:"minScale,omitempty"`
+	MaxScale    int                   `json:"maxScale,omitempty"`
+	Concurrency int                   `json:"concurrency,omitempty"`
+	Replicas    *int32                `json:"replicas,omitempty"`
+	Selector    *metav1.LabelSelector `json:"selector"`
 }
 
 type ServiceScaleRecommendationStatus struct {

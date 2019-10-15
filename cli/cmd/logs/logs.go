@@ -60,7 +60,7 @@ func (l *Logs) Run(ctx *clicontext.CLIContext) error {
 			if l.C_Container != "" && container.Name != l.C_Container {
 				continue
 			}
-			if !l.A_All && (container.Name == "istio-proxy" || container.Name == "istio-init") {
+			if !l.A_All && (container.Name == "linkerd-proxy" || container.Name == "linkerd-init") {
 				if l.C_Container == "" && !logPods {
 					continue
 				}

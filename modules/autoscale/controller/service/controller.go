@@ -2,87 +2,46 @@ package service
 
 import (
 	"context"
-	"fmt"
-	"strconv"
 
-	"github.com/knative/serving/pkg/apis/autoscaling/v1alpha1"
-	"github.com/knative/serving/pkg/apis/networking"
-	servingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
 	autoscalev1 "github.com/rancher/rio/pkg/apis/autoscale.rio.cattle.io/v1"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/constants"
-	"github.com/rancher/rio/pkg/constructors"
 	autoscalev1controller "github.com/rancher/rio/pkg/generated/controllers/autoscale.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/services"
-	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/objectset"
 	"github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-const (
-	GroupName = "autoscaling.knative.dev"
-
-	// MinScaleAnnotationKey is the annotation to specify the minimum number of Pods
-	// the PodAutoscaler should provision. For example,
-	//   autoscaling.knative.dev/minScale: "1"
-	MinScaleAnnotationKey = GroupName + "/minScale"
-	// MaxScaleAnnotationKey is the annotation to specify the maximum number of Pods
-	// the PodAutoscaler should provision. For example,
-	//   autoscaling.knative.dev/maxScale: "10"
-	MaxScaleAnnotationKey = GroupName + "/maxScale"
-
-	ConfigurationKey = "serving.knative.dev/configuration"
-
-	ServiceKey = "serving.knative.dev/service"
-
-	RevisionKey = "serving.knative.dev/revision"
-
-	ScrapeKey = "metric-scrape"
-
-	ReferingLabel = "autoscaling.knative.dev/class"
-
-	ContainerPortKey = "container-port"
-
-	AppKey = "app"
-
-	VersionKey = "version"
-)
-
 func Register(ctx context.Context, rContext *types.Context) error {
-	c := stackobject.NewGeneratingController(ctx, rContext, "autoscale-service", rContext.Rio.Rio().V1().Service())
-	c.Apply = c.Apply.WithCacheTypes(rContext.AutoScale.Autoscale().V1().ServiceScaleRecommendation(),
-		rContext.Serving.Autoscaling().V1alpha1().PodAutoscaler())
-
-	p := populator{
-		systemNamespace: rContext.Namespace,
-	}
-	c.Populator = p.populate
-
 	h := handler{
 		services: rContext.Rio.Rio().V1().Service(),
 	}
+	riov1controller.RegisterServiceGeneratingHandler(
+		ctx,
+		rContext.Rio.Rio().V1().Service(),
+		rContext.Apply.WithCacheTypes(rContext.AutoScale.Autoscale().V1().ServiceScaleRecommendation()),
+		"ServiceRecommendationGenerated",
+		"serviceRecommendation",
+		h.populate,
+		nil,
+	)
+
 	rContext.AutoScale.Autoscale().V1().ServiceScaleRecommendation().OnChange(ctx, "ssr-service-update", h.sync)
 
 	return nil
 }
 
-type populator struct {
-	systemNamespace string
+func (h handler) populate(service *riov1.Service, status riov1.ServiceStatus) ([]runtime.Object, riov1.ServiceStatus, error) {
+	os := objectset.NewObjectSet()
+	populateServiceRecommendation(service, os)
+	return os.All(), status, nil
 }
 
-func (p populator) populate(object runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) error {
-	populatePodAutoscaler(object, ns, os)
-	populateServiceRecommendation(object, ns, os)
-	return nil
-}
-
-func populateServiceRecommendation(object runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) {
-	service := object.(*v1.Service)
+func populateServiceRecommendation(service *riov1.Service, os *objectset.ObjectSet) {
 	autoscale := AutoscaleEnabled(service)
 	app, version := services.AppAndVersion(service)
 	if autoscale {
@@ -94,6 +53,9 @@ func populateServiceRecommendation(object runtime.Object, ns *corev1.Namespace, 
 						"version": version,
 					},
 				},
+				MinScale:    *service.Spec.Autoscale.MinReplicas,
+				MaxScale:    *service.Spec.Autoscale.MaxReplicas,
+				Concurrency: service.Spec.Autoscale.Concurrency,
 			},
 			Status: autoscalev1.ServiceScaleRecommendationStatus{},
 		}
@@ -126,69 +88,18 @@ func (h handler) setServiceScale(ssr *autoscalev1.ServiceScaleRecommendation) er
 	}
 
 	observedScale := int(*ssr.Spec.Replicas)
-	if svc.Status.ObservedScale != nil && *svc.Status.ObservedScale == observedScale {
+	if svc.Status.ComputedReplicas != nil && *svc.Status.ComputedReplicas == observedScale {
 		return nil
 	}
 	logrus.Infof("Setting desired scale %v for %v/%v", *ssr.Spec.Replicas, svc.Namespace, svc.Name)
 
-	svc.Status.ObservedScale = &observedScale
+	svc.Status.ComputedReplicas = &observedScale
 	if _, err := h.services.Update(svc); err != nil {
 		return err
 	}
 	return nil
 }
 
-func populatePodAutoscaler(object runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) {
-	service := object.(*v1.Service)
-	autoscale := AutoscaleEnabled(service)
-	if !autoscale {
-		return
-	}
-	app, version := services.AppAndVersion(service)
-	annotation := map[string]string{
-		ReferingLabel:         "kpa.autoscaling.knative.dev",
-		MinScaleAnnotationKey: strconv.Itoa(*service.Spec.MinScale),
-		MaxScaleAnnotationKey: strconv.Itoa(*service.Spec.MaxScale),
-	}
-	if constants.ServiceMeshMode == constants.ServiceMeshModeLinkerd {
-		annotation[ScrapeKey] = "linkerd"
-	} else if constants.ServiceMeshMode == constants.ServiceMeshModeIstio {
-		annotation[ScrapeKey] = "envoy"
-	}
-	var portValue string
-	for _, port := range service.Spec.Ports {
-		if !port.InternalOnly {
-			portValue = strconv.Itoa(int(port.TargetPort))
-			break
-		}
-	}
-	podAutoscaler := constructors.NewPodAutoscaler(service.Namespace, service.Name, v1alpha1.PodAutoscaler{
-		ObjectMeta: metav1.ObjectMeta{
-			Annotations: annotation,
-			Labels: map[string]string{
-				ConfigurationKey: service.Name,
-				ServiceKey:       service.Name,
-				RevisionKey:      fmt.Sprintf("%s-%s", app, version),
-				ContainerPortKey: portValue,
-				AppKey:           app,
-				VersionKey:       version,
-			},
-		},
-		Spec: v1alpha1.PodAutoscalerSpec{
-			ContainerConcurrency: servingv1beta1.RevisionContainerConcurrencyType(*service.Spec.AutoscaleConfig.Concurrency),
-			ScaleTargetRef: corev1.ObjectReference{
-				Kind:       "ServiceScaleRecommendation",
-				APIVersion: autoscalev1.SchemeGroupVersion.String(),
-				Name:       service.Name,
-			},
-			ProtocolType: networking.ProtocolHTTP1,
-		},
-	})
-
-	os.Add(podAutoscaler)
-	return
-}
-
 func AutoscaleEnabled(service *v1.Service) bool {
-	return service.Spec.MinScale != nil && service.Spec.MaxScale != nil && service.Spec.Concurrency != nil && *service.Spec.MinScale != *service.Spec.MaxScale
+	return service.Spec.Autoscale != nil && service.Spec.Autoscale.MinReplicas != nil && service.Spec.Autoscale.MaxReplicas != nil && *service.Spec.Autoscale.MinReplicas != *service.Spec.Autoscale.MaxReplicas
 }

@@ -31,7 +31,7 @@ type AutoscaleConfig struct {
 	Concurrency int `json:"concurrency,omitempty"`
 
 	// The minimal number of replicas Service can be scaled
-	MinReplicas int `json:"minReplicas,omitempty" mapper:"alias=minScale|min"`
+	MinReplicas *int `json:"minReplicas,omitempty" mapper:"alias=minScale|min"`
 
 	// The maximum number of replicas Service can be scaled
 	MaxReplicas *int `json:"maxReplicas,omitempty" mapper:"alias=maxScale|max"`

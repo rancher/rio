@@ -10,7 +10,6 @@ import (
 	"github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io"
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/apiextensions.k8s.io"
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/apps"
-	serving "github.com/rancher/wrangler-api/pkg/generated/controllers/autoscaling.internal.knative.dev"
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/batch"
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/certmanager.k8s.io"
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/core"
@@ -50,7 +49,6 @@ type Context struct {
 	Rio           *rio.Factory
 	SMI           *smi.Factory
 	Gloo          *gloo.Factory
-	Serving       *serving.Factory
 	Storage       *storage.Factory
 	Webhook       *webhookinator.Factory
 
@@ -77,7 +75,6 @@ func NewContext(namespace string, config *rest.Config) *Context {
 		Admin:         admin.NewFactoryFromConfigOrDie(config),
 		RBAC:          rbac.NewFactoryFromConfigOrDie(config),
 		Rio:           rio.NewFactoryFromConfigOrDie(config),
-		Serving:       serving.NewFactoryFromConfigOrDie(config),
 		Storage:       storage.NewFactoryFromConfigOrDie(config),
 		SMI:           smi.NewFactoryFromConfigOrDie(config),
 		Webhook:       webhookinator.NewFactoryFromConfigOrDie(config),
@@ -103,7 +100,6 @@ func (c *Context) Start(ctx context.Context) error {
 		c.Admin,
 		c.RBAC,
 		c.Rio,
-		c.Serving,
 		c.Storage,
 		c.SMI,
 		c.Webhook,

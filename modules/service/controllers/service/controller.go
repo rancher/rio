@@ -2,13 +2,13 @@ package service
 
 import (
 	"context"
-	"github.com/rancher/wrangler/pkg/generic"
 
 	"github.com/rancher/rio/modules/service/controllers/service/populate"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	adminv1 "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
+	"github.com/rancher/wrangler/pkg/generic"
 	"github.com/rancher/wrangler/pkg/objectset"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -31,9 +31,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			rContext.Core.Core().V1().ServiceAccount(),
 			rContext.Core.Core().V1().Service(),
 			rContext.Core.Core().V1().Secret()).
-			WithRateLimiting(5).
-			WithInjectorName("mesh").
-			WithStrictCaching(),
+			WithRateLimiting(5),
 		"ServiceDeployed",
 		"service",
 		sh.populate,
