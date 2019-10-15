@@ -57,8 +57,6 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=admin.rio.cattle.io, Version=v1
 	case v1.SchemeGroupVersion.WithResource("clusterdomains"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Admin().V1().ClusterDomains().Informer()}, nil
-	case v1.SchemeGroupVersion.WithResource("features"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Admin().V1().Features().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("publicdomains"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Admin().V1().PublicDomains().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("rioinfos"):
@@ -69,8 +67,6 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Autoscale().V1().ServiceScaleRecommendations().Informer()}, nil
 
 		// Group=rio.cattle.io, Version=v1
-	case riocattleiov1.SchemeGroupVersion.WithResource("apps"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Rio().V1().Apps().Informer()}, nil
 	case riocattleiov1.SchemeGroupVersion.WithResource("externalservices"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rio().V1().ExternalServices().Informer()}, nil
 	case riocattleiov1.SchemeGroupVersion.WithResource("routers"):

@@ -20,13 +20,17 @@ package v1
 
 import (
 	"context"
+	"time"
 
 	v1 "github.com/rancher/rio/pkg/apis/autoscale.rio.cattle.io/v1"
 	clientset "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/autoscale.rio.cattle.io/v1"
 	informers "github.com/rancher/rio/pkg/generated/informers/externalversions/autoscale.rio.cattle.io/v1"
 	listers "github.com/rancher/rio/pkg/generated/listers/autoscale.rio.cattle.io/v1"
+	"github.com/rancher/wrangler/pkg/apply"
+	"github.com/rancher/wrangler/pkg/condition"
 	"github.com/rancher/wrangler/pkg/generic"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -40,20 +44,15 @@ import (
 type ServiceScaleRecommendationHandler func(string, *v1.ServiceScaleRecommendation) (*v1.ServiceScaleRecommendation, error)
 
 type ServiceScaleRecommendationController interface {
+	generic.ControllerMeta
 	ServiceScaleRecommendationClient
 
 	OnChange(ctx context.Context, name string, sync ServiceScaleRecommendationHandler)
 	OnRemove(ctx context.Context, name string, sync ServiceScaleRecommendationHandler)
 	Enqueue(namespace, name string)
+	EnqueueAfter(namespace, name string, duration time.Duration)
 
 	Cache() ServiceScaleRecommendationCache
-
-	Informer() cache.SharedIndexInformer
-	GroupVersionKind() schema.GroupVersionKind
-
-	AddGenericHandler(ctx context.Context, name string, handler generic.Handler)
-	AddGenericRemoveHandler(ctx context.Context, name string, handler generic.Handler)
-	Updater() generic.Updater
 }
 
 type ServiceScaleRecommendationClient interface {
@@ -118,26 +117,21 @@ func (c *serviceScaleRecommendationController) Updater() generic.Updater {
 	}
 }
 
-func UpdateServiceScaleRecommendationOnChange(updater generic.Updater, handler ServiceScaleRecommendationHandler) ServiceScaleRecommendationHandler {
-	return func(key string, obj *v1.ServiceScaleRecommendation) (*v1.ServiceScaleRecommendation, error) {
-		if obj == nil {
-			return handler(key, nil)
-		}
-
-		copyObj := obj.DeepCopy()
-		newObj, err := handler(key, copyObj)
-		if newObj != nil {
-			copyObj = newObj
-		}
-		if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
-			newObj, err := updater(copyObj)
-			if newObj != nil && err == nil {
-				copyObj = newObj.(*v1.ServiceScaleRecommendation)
-			}
-		}
-
-		return copyObj, err
+func UpdateServiceScaleRecommendationDeepCopyOnChange(client ServiceScaleRecommendationClient, obj *v1.ServiceScaleRecommendation, handler func(obj *v1.ServiceScaleRecommendation) (*v1.ServiceScaleRecommendation, error)) (*v1.ServiceScaleRecommendation, error) {
+	if obj == nil {
+		return obj, nil
 	}
+
+	copyObj := obj.DeepCopy()
+	newObj, err := handler(copyObj)
+	if newObj != nil {
+		copyObj = newObj
+	}
+	if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
+		return client.Update(copyObj)
+	}
+
+	return copyObj, err
 }
 
 func (c *serviceScaleRecommendationController) AddGenericHandler(ctx context.Context, name string, handler generic.Handler) {
@@ -160,6 +154,10 @@ func (c *serviceScaleRecommendationController) OnRemove(ctx context.Context, nam
 
 func (c *serviceScaleRecommendationController) Enqueue(namespace, name string) {
 	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), namespace, name)
+}
+
+func (c *serviceScaleRecommendationController) EnqueueAfter(namespace, name string, duration time.Duration) {
+	c.controllerManager.EnqueueAfter(c.gvk, c.informer.Informer(), namespace, name, duration)
 }
 
 func (c *serviceScaleRecommendationController) Informer() cache.SharedIndexInformer {
@@ -239,4 +237,104 @@ func (c *serviceScaleRecommendationCache) GetByIndex(indexName, key string) (res
 		result = append(result, obj.(*v1.ServiceScaleRecommendation))
 	}
 	return result, nil
+}
+
+type ServiceScaleRecommendationStatusHandler func(obj *v1.ServiceScaleRecommendation, status v1.ServiceScaleRecommendationStatus) (v1.ServiceScaleRecommendationStatus, error)
+
+type ServiceScaleRecommendationGeneratingHandler func(obj *v1.ServiceScaleRecommendation, status v1.ServiceScaleRecommendationStatus) ([]runtime.Object, v1.ServiceScaleRecommendationStatus, error)
+
+func RegisterServiceScaleRecommendationStatusHandler(ctx context.Context, controller ServiceScaleRecommendationController, condition condition.Cond, name string, handler ServiceScaleRecommendationStatusHandler) {
+	statusHandler := &serviceScaleRecommendationStatusHandler{
+		client:    controller,
+		condition: condition,
+		handler:   handler,
+	}
+	controller.AddGenericHandler(ctx, name, FromServiceScaleRecommendationHandlerToHandler(statusHandler.sync))
+}
+
+func RegisterServiceScaleRecommendationGeneratingHandler(ctx context.Context, controller ServiceScaleRecommendationController, apply apply.Apply,
+	condition condition.Cond, name string, handler ServiceScaleRecommendationGeneratingHandler, opts *generic.GeneratingHandlerOptions) {
+	statusHandler := &serviceScaleRecommendationGeneratingHandler{
+		ServiceScaleRecommendationGeneratingHandler: handler,
+		apply: apply,
+		name:  name,
+		gvk:   controller.GroupVersionKind(),
+	}
+	if opts != nil {
+		statusHandler.opts = *opts
+	}
+	RegisterServiceScaleRecommendationStatusHandler(ctx, controller, condition, name, statusHandler.Handle)
+}
+
+type serviceScaleRecommendationStatusHandler struct {
+	client    ServiceScaleRecommendationClient
+	condition condition.Cond
+	handler   ServiceScaleRecommendationStatusHandler
+}
+
+func (a *serviceScaleRecommendationStatusHandler) sync(key string, obj *v1.ServiceScaleRecommendation) (*v1.ServiceScaleRecommendation, error) {
+	if obj == nil {
+		return obj, nil
+	}
+
+	status := obj.Status
+	obj = obj.DeepCopy()
+	newStatus, err := a.handler(obj, obj.Status)
+	if err != nil {
+		// Revert to old status on error
+		newStatus = *status.DeepCopy()
+	}
+
+	if a.condition != "" {
+		if errors.IsConflict(err) {
+			a.condition.SetError(obj, "", nil)
+		} else {
+			a.condition.SetError(obj, "", err)
+		}
+	}
+	if !equality.Semantic.DeepEqual(status, newStatus) {
+		var newErr error
+		obj.Status = newStatus
+		obj, newErr = a.client.UpdateStatus(obj)
+		if err == nil {
+			err = newErr
+		}
+	}
+	return obj, err
+}
+
+type serviceScaleRecommendationGeneratingHandler struct {
+	ServiceScaleRecommendationGeneratingHandler
+	apply apply.Apply
+	opts  generic.GeneratingHandlerOptions
+	gvk   schema.GroupVersionKind
+	name  string
+}
+
+func (a *serviceScaleRecommendationGeneratingHandler) Handle(obj *v1.ServiceScaleRecommendation, status v1.ServiceScaleRecommendationStatus) (v1.ServiceScaleRecommendationStatus, error) {
+	objs, newStatus, err := a.ServiceScaleRecommendationGeneratingHandler(obj, status)
+	if err != nil {
+		return newStatus, err
+	}
+
+	apply := a.apply
+
+	if !a.opts.DynamicLookup {
+		apply = apply.WithStrictCaching()
+	}
+
+	if !a.opts.AllowCrossNamespace && !a.opts.AllowClusterScoped {
+		apply = apply.WithSetOwnerReference(true, false).
+			WithDefaultNamespace(obj.GetNamespace()).
+			WithListerNamespace(obj.GetNamespace())
+	}
+
+	if !a.opts.AllowClusterScoped {
+		apply = apply.WithRestrictClusterScoped()
+	}
+
+	return newStatus, apply.
+		WithOwner(obj).
+		WithSetID(a.name).
+		ApplyObjects(objs...)
 }

@@ -28,16 +28,12 @@ type FakeAdminV1 struct {
 	*testing.Fake
 }
 
-func (c *FakeAdminV1) ClusterDomains(namespace string) v1.ClusterDomainInterface {
-	return &FakeClusterDomains{c, namespace}
+func (c *FakeAdminV1) ClusterDomains() v1.ClusterDomainInterface {
+	return &FakeClusterDomains{c}
 }
 
-func (c *FakeAdminV1) Features(namespace string) v1.FeatureInterface {
-	return &FakeFeatures{c, namespace}
-}
-
-func (c *FakeAdminV1) PublicDomains(namespace string) v1.PublicDomainInterface {
-	return &FakePublicDomains{c, namespace}
+func (c *FakeAdminV1) PublicDomains() v1.PublicDomainInterface {
+	return &FakePublicDomains{c}
 }
 
 func (c *FakeAdminV1) RioInfos() v1.RioInfoInterface {

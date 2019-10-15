@@ -26,7 +26,6 @@ import (
 )
 
 type Interface interface {
-	App() AppController
 	ExternalService() ExternalServiceController
 	Router() RouterController
 	Service() ServiceController
@@ -48,9 +47,6 @@ type version struct {
 	client            clientset.RioV1Interface
 }
 
-func (c *version) App() AppController {
-	return NewAppController(v1.SchemeGroupVersion.WithKind("App"), c.controllerManager, c.client, c.informers.Apps())
-}
 func (c *version) ExternalService() ExternalServiceController {
 	return NewExternalServiceController(v1.SchemeGroupVersion.WithKind("ExternalService"), c.controllerManager, c.client, c.informers.ExternalServices())
 }

@@ -27,7 +27,6 @@ import (
 
 type Interface interface {
 	ClusterDomain() ClusterDomainController
-	Feature() FeatureController
 	PublicDomain() PublicDomainController
 	RioInfo() RioInfoController
 }
@@ -49,9 +48,6 @@ type version struct {
 
 func (c *version) ClusterDomain() ClusterDomainController {
 	return NewClusterDomainController(v1.SchemeGroupVersion.WithKind("ClusterDomain"), c.controllerManager, c.client, c.informers.ClusterDomains())
-}
-func (c *version) Feature() FeatureController {
-	return NewFeatureController(v1.SchemeGroupVersion.WithKind("Feature"), c.controllerManager, c.client, c.informers.Features())
 }
 func (c *version) PublicDomain() PublicDomainController {
 	return NewPublicDomainController(v1.SchemeGroupVersion.WithKind("PublicDomain"), c.controllerManager, c.client, c.informers.PublicDomains())

@@ -26,8 +26,6 @@ import (
 type Interface interface {
 	// ClusterDomains returns a ClusterDomainInformer.
 	ClusterDomains() ClusterDomainInformer
-	// Features returns a FeatureInformer.
-	Features() FeatureInformer
 	// PublicDomains returns a PublicDomainInformer.
 	PublicDomains() PublicDomainInformer
 	// RioInfos returns a RioInfoInformer.
@@ -47,17 +45,12 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 
 // ClusterDomains returns a ClusterDomainInformer.
 func (v *version) ClusterDomains() ClusterDomainInformer {
-	return &clusterDomainInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// Features returns a FeatureInformer.
-func (v *version) Features() FeatureInformer {
-	return &featureInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+	return &clusterDomainInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // PublicDomains returns a PublicDomainInformer.
 func (v *version) PublicDomains() PublicDomainInformer {
-	return &publicDomainInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+	return &publicDomainInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // RioInfos returns a RioInfoInformer.

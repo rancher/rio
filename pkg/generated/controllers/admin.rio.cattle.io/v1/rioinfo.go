@@ -20,13 +20,17 @@ package v1
 
 import (
 	"context"
+	"time"
 
 	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	clientset "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/admin.rio.cattle.io/v1"
 	informers "github.com/rancher/rio/pkg/generated/informers/externalversions/admin.rio.cattle.io/v1"
 	listers "github.com/rancher/rio/pkg/generated/listers/admin.rio.cattle.io/v1"
+	"github.com/rancher/wrangler/pkg/apply"
+	"github.com/rancher/wrangler/pkg/condition"
 	"github.com/rancher/wrangler/pkg/generic"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -40,20 +44,15 @@ import (
 type RioInfoHandler func(string, *v1.RioInfo) (*v1.RioInfo, error)
 
 type RioInfoController interface {
+	generic.ControllerMeta
 	RioInfoClient
 
 	OnChange(ctx context.Context, name string, sync RioInfoHandler)
 	OnRemove(ctx context.Context, name string, sync RioInfoHandler)
 	Enqueue(name string)
+	EnqueueAfter(name string, duration time.Duration)
 
 	Cache() RioInfoCache
-
-	Informer() cache.SharedIndexInformer
-	GroupVersionKind() schema.GroupVersionKind
-
-	AddGenericHandler(ctx context.Context, name string, handler generic.Handler)
-	AddGenericRemoveHandler(ctx context.Context, name string, handler generic.Handler)
-	Updater() generic.Updater
 }
 
 type RioInfoClient interface {
@@ -118,26 +117,21 @@ func (c *rioInfoController) Updater() generic.Updater {
 	}
 }
 
-func UpdateRioInfoOnChange(updater generic.Updater, handler RioInfoHandler) RioInfoHandler {
-	return func(key string, obj *v1.RioInfo) (*v1.RioInfo, error) {
-		if obj == nil {
-			return handler(key, nil)
-		}
-
-		copyObj := obj.DeepCopy()
-		newObj, err := handler(key, copyObj)
-		if newObj != nil {
-			copyObj = newObj
-		}
-		if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
-			newObj, err := updater(copyObj)
-			if newObj != nil && err == nil {
-				copyObj = newObj.(*v1.RioInfo)
-			}
-		}
-
-		return copyObj, err
+func UpdateRioInfoDeepCopyOnChange(client RioInfoClient, obj *v1.RioInfo, handler func(obj *v1.RioInfo) (*v1.RioInfo, error)) (*v1.RioInfo, error) {
+	if obj == nil {
+		return obj, nil
 	}
+
+	copyObj := obj.DeepCopy()
+	newObj, err := handler(copyObj)
+	if newObj != nil {
+		copyObj = newObj
+	}
+	if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
+		return client.Update(copyObj)
+	}
+
+	return copyObj, err
 }
 
 func (c *rioInfoController) AddGenericHandler(ctx context.Context, name string, handler generic.Handler) {
@@ -160,6 +154,10 @@ func (c *rioInfoController) OnRemove(ctx context.Context, name string, sync RioI
 
 func (c *rioInfoController) Enqueue(name string) {
 	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), "", name)
+}
+
+func (c *rioInfoController) EnqueueAfter(name string, duration time.Duration) {
+	c.controllerManager.EnqueueAfter(c.gvk, c.informer.Informer(), "", name, duration)
 }
 
 func (c *rioInfoController) Informer() cache.SharedIndexInformer {
@@ -239,4 +237,104 @@ func (c *rioInfoCache) GetByIndex(indexName, key string) (result []*v1.RioInfo, 
 		result = append(result, obj.(*v1.RioInfo))
 	}
 	return result, nil
+}
+
+type RioInfoStatusHandler func(obj *v1.RioInfo, status v1.RioInfoStatus) (v1.RioInfoStatus, error)
+
+type RioInfoGeneratingHandler func(obj *v1.RioInfo, status v1.RioInfoStatus) ([]runtime.Object, v1.RioInfoStatus, error)
+
+func RegisterRioInfoStatusHandler(ctx context.Context, controller RioInfoController, condition condition.Cond, name string, handler RioInfoStatusHandler) {
+	statusHandler := &rioInfoStatusHandler{
+		client:    controller,
+		condition: condition,
+		handler:   handler,
+	}
+	controller.AddGenericHandler(ctx, name, FromRioInfoHandlerToHandler(statusHandler.sync))
+}
+
+func RegisterRioInfoGeneratingHandler(ctx context.Context, controller RioInfoController, apply apply.Apply,
+	condition condition.Cond, name string, handler RioInfoGeneratingHandler, opts *generic.GeneratingHandlerOptions) {
+	statusHandler := &rioInfoGeneratingHandler{
+		RioInfoGeneratingHandler: handler,
+		apply:                    apply,
+		name:                     name,
+		gvk:                      controller.GroupVersionKind(),
+	}
+	if opts != nil {
+		statusHandler.opts = *opts
+	}
+	RegisterRioInfoStatusHandler(ctx, controller, condition, name, statusHandler.Handle)
+}
+
+type rioInfoStatusHandler struct {
+	client    RioInfoClient
+	condition condition.Cond
+	handler   RioInfoStatusHandler
+}
+
+func (a *rioInfoStatusHandler) sync(key string, obj *v1.RioInfo) (*v1.RioInfo, error) {
+	if obj == nil {
+		return obj, nil
+	}
+
+	status := obj.Status
+	obj = obj.DeepCopy()
+	newStatus, err := a.handler(obj, obj.Status)
+	if err != nil {
+		// Revert to old status on error
+		newStatus = *status.DeepCopy()
+	}
+
+	if a.condition != "" {
+		if errors.IsConflict(err) {
+			a.condition.SetError(obj, "", nil)
+		} else {
+			a.condition.SetError(obj, "", err)
+		}
+	}
+	if !equality.Semantic.DeepEqual(status, newStatus) {
+		var newErr error
+		obj.Status = newStatus
+		obj, newErr = a.client.UpdateStatus(obj)
+		if err == nil {
+			err = newErr
+		}
+	}
+	return obj, err
+}
+
+type rioInfoGeneratingHandler struct {
+	RioInfoGeneratingHandler
+	apply apply.Apply
+	opts  generic.GeneratingHandlerOptions
+	gvk   schema.GroupVersionKind
+	name  string
+}
+
+func (a *rioInfoGeneratingHandler) Handle(obj *v1.RioInfo, status v1.RioInfoStatus) (v1.RioInfoStatus, error) {
+	objs, newStatus, err := a.RioInfoGeneratingHandler(obj, status)
+	if err != nil {
+		return newStatus, err
+	}
+
+	apply := a.apply
+
+	if !a.opts.DynamicLookup {
+		apply = apply.WithStrictCaching()
+	}
+
+	if !a.opts.AllowCrossNamespace && !a.opts.AllowClusterScoped {
+		apply = apply.WithSetOwnerReference(true, false).
+			WithDefaultNamespace(obj.GetNamespace()).
+			WithListerNamespace(obj.GetNamespace())
+	}
+
+	if !a.opts.AllowClusterScoped {
+		apply = apply.WithRestrictClusterScoped()
+	}
+
+	return newStatus, apply.
+		WithOwner(obj).
+		WithSetID(a.name).
+		ApplyObjects(objs...)
 }

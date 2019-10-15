@@ -31,7 +31,6 @@ import (
 // FakeClusterDomains implements ClusterDomainInterface
 type FakeClusterDomains struct {
 	Fake *FakeAdminV1
-	ns   string
 }
 
 var clusterdomainsResource = schema.GroupVersionResource{Group: "admin.rio.cattle.io", Version: "v1", Resource: "clusterdomains"}
@@ -41,8 +40,7 @@ var clusterdomainsKind = schema.GroupVersionKind{Group: "admin.rio.cattle.io", V
 // Get takes name of the clusterDomain, and returns the corresponding clusterDomain object, and an error if there is any.
 func (c *FakeClusterDomains) Get(name string, options v1.GetOptions) (result *adminriocattleiov1.ClusterDomain, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(clusterdomainsResource, c.ns, name), &adminriocattleiov1.ClusterDomain{})
-
+		Invokes(testing.NewRootGetAction(clusterdomainsResource, name), &adminriocattleiov1.ClusterDomain{})
 	if obj == nil {
 		return nil, err
 	}
@@ -52,8 +50,7 @@ func (c *FakeClusterDomains) Get(name string, options v1.GetOptions) (result *ad
 // List takes label and field selectors, and returns the list of ClusterDomains that match those selectors.
 func (c *FakeClusterDomains) List(opts v1.ListOptions) (result *adminriocattleiov1.ClusterDomainList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(clusterdomainsResource, clusterdomainsKind, c.ns, opts), &adminriocattleiov1.ClusterDomainList{})
-
+		Invokes(testing.NewRootListAction(clusterdomainsResource, clusterdomainsKind, opts), &adminriocattleiov1.ClusterDomainList{})
 	if obj == nil {
 		return nil, err
 	}
@@ -74,15 +71,13 @@ func (c *FakeClusterDomains) List(opts v1.ListOptions) (result *adminriocattleio
 // Watch returns a watch.Interface that watches the requested clusterDomains.
 func (c *FakeClusterDomains) Watch(opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(clusterdomainsResource, c.ns, opts))
-
+		InvokesWatch(testing.NewRootWatchAction(clusterdomainsResource, opts))
 }
 
 // Create takes the representation of a clusterDomain and creates it.  Returns the server's representation of the clusterDomain, and an error, if there is any.
 func (c *FakeClusterDomains) Create(clusterDomain *adminriocattleiov1.ClusterDomain) (result *adminriocattleiov1.ClusterDomain, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(clusterdomainsResource, c.ns, clusterDomain), &adminriocattleiov1.ClusterDomain{})
-
+		Invokes(testing.NewRootCreateAction(clusterdomainsResource, clusterDomain), &adminriocattleiov1.ClusterDomain{})
 	if obj == nil {
 		return nil, err
 	}
@@ -92,8 +87,7 @@ func (c *FakeClusterDomains) Create(clusterDomain *adminriocattleiov1.ClusterDom
 // Update takes the representation of a clusterDomain and updates it. Returns the server's representation of the clusterDomain, and an error, if there is any.
 func (c *FakeClusterDomains) Update(clusterDomain *adminriocattleiov1.ClusterDomain) (result *adminriocattleiov1.ClusterDomain, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(clusterdomainsResource, c.ns, clusterDomain), &adminriocattleiov1.ClusterDomain{})
-
+		Invokes(testing.NewRootUpdateAction(clusterdomainsResource, clusterDomain), &adminriocattleiov1.ClusterDomain{})
 	if obj == nil {
 		return nil, err
 	}
@@ -104,8 +98,7 @@ func (c *FakeClusterDomains) Update(clusterDomain *adminriocattleiov1.ClusterDom
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
 func (c *FakeClusterDomains) UpdateStatus(clusterDomain *adminriocattleiov1.ClusterDomain) (*adminriocattleiov1.ClusterDomain, error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(clusterdomainsResource, "status", c.ns, clusterDomain), &adminriocattleiov1.ClusterDomain{})
-
+		Invokes(testing.NewRootUpdateSubresourceAction(clusterdomainsResource, "status", clusterDomain), &adminriocattleiov1.ClusterDomain{})
 	if obj == nil {
 		return nil, err
 	}
@@ -115,14 +108,13 @@ func (c *FakeClusterDomains) UpdateStatus(clusterDomain *adminriocattleiov1.Clus
 // Delete takes name of the clusterDomain and deletes it. Returns an error if one occurs.
 func (c *FakeClusterDomains) Delete(name string, options *v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(clusterdomainsResource, c.ns, name), &adminriocattleiov1.ClusterDomain{})
-
+		Invokes(testing.NewRootDeleteAction(clusterdomainsResource, name), &adminriocattleiov1.ClusterDomain{})
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
 func (c *FakeClusterDomains) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(clusterdomainsResource, c.ns, listOptions)
+	action := testing.NewRootDeleteCollectionAction(clusterdomainsResource, listOptions)
 
 	_, err := c.Fake.Invokes(action, &adminriocattleiov1.ClusterDomainList{})
 	return err
@@ -131,8 +123,7 @@ func (c *FakeClusterDomains) DeleteCollection(options *v1.DeleteOptions, listOpt
 // Patch applies the patch and returns the patched clusterDomain.
 func (c *FakeClusterDomains) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *adminriocattleiov1.ClusterDomain, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(clusterdomainsResource, c.ns, name, pt, data, subresources...), &adminriocattleiov1.ClusterDomain{})
-
+		Invokes(testing.NewRootPatchSubresourceAction(clusterdomainsResource, name, pt, data, subresources...), &adminriocattleiov1.ClusterDomain{})
 	if obj == nil {
 		return nil, err
 	}
