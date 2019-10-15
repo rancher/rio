@@ -36,6 +36,12 @@ func riofileTests(t *testing.T, when spec.G, it spec.S) {
 			serviceV3 := testutil.GetService(t, "export-test-image", "v3")
 			assert.Equal(t, serviceV0.GetEndpointResponse(), "Hello World", "should have service v0 with endpoint")
 			assert.Equal(t, serviceV3.GetEndpointResponse(), "Hello World v3", "should have service v3 with endpoint")
+			runningPods := serviceV0.GetRunningPods()
+			assert.Len(t, runningPods, 2, "There should be 2 pods associated with the service's app since there are two revisions at scale of 1")
+			for _, pod := range runningPods {
+				assert.Contains(t, pod, "export-test-image")
+				assert.Contains(t, pod, "2/2")
+			}
 			// routers and their endpoints
 			routerBar := testutil.GetRoute(t, "route-bar", "/bv0")
 			assert.Equal(t, "/bv0", routerBar.Router.Spec.Routes[0].Matches[0].Path.Exact, "should have correct route set")
@@ -43,6 +49,8 @@ func riofileTests(t *testing.T, when spec.G, it spec.S) {
 			routerFooV3 := testutil.GetRoute(t, "route-foo", "/v3")
 			assert.Equal(t, "Hello World", routerFooV0.GetEndpointResponse(), "should have working route paths for v1")
 			assert.Equal(t, "Hello World v3", routerFooV3.GetEndpointResponse(), "should have working route paths for v3")
+			assert.Equal(t, "Hello World", routerFooV0.GetKubeEndpointResponse())
+			assert.Equal(t, "Hello World v3", routerFooV3.GetKubeEndpointResponse())
 		})
 	}, spec.Parallel())
 }

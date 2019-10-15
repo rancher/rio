@@ -9,7 +9,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/knative/pkg/apis"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	tektonv1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -19,13 +21,36 @@ type TestService struct {
 	AppName string // namespace/name
 	App     riov1.App
 	Service riov1.Service
+	Build   tektonv1alpha1.TaskRun
 	Version string
 	T       *testing.T
 }
 
 // Create generates a new rio service, named randomly in the testing namespace, and
 // returns a new TestService with it attached. Guarantees ready state but not live endpoint
-func (ts *TestService) Create(t *testing.T, source string) {
+func (ts *TestService) Create(t *testing.T, source ...string) {
+	args := ts.createArgs(t, source...)
+	_, err := RioCmd(args)
+	if err != nil {
+		ts.T.Fatalf("Failed to create service %s: %v", ts.Name, err.Error())
+	}
+	if ts.isGithubSource(source...) {
+		err = ts.waitForBuild()
+		if err != nil {
+			ts.T.Fatalf(err.Error())
+		}
+	}
+	err = ts.waitForReadyService()
+	if err != nil {
+		ts.T.Fatalf(err.Error())
+	}
+	err = ts.waitForAvailableReplicas(ts.GetScale())
+	if err != nil {
+		ts.T.Fatalf(err.Error())
+	}
+}
+
+func (ts *TestService) createArgs(t *testing.T, source ...string) []string {
 	ts.T = t
 	ts.Version = "v0"
 	ts.AppName = fmt.Sprintf(
@@ -34,17 +59,19 @@ func (ts *TestService) Create(t *testing.T, source string) {
 		RandomString(5),
 	)
 	ts.Name = fmt.Sprintf("%s:%s", ts.AppName, ts.Version)
-	if source == "" {
-		source = "nginx"
+	if len(source) == 0 {
+		source = []string{"nginx"}
 	}
-	_, err := RioCmd([]string{"--namespace", testingNamespace, "run", "-p", "80/http", "-n", ts.AppName, source})
-	if err != nil {
-		ts.T.Fatalf("Failed to create service %s: %v", ts.Name, err.Error())
+	// Ensure port 80/http unless the source is from github
+	if !ts.isGithubSource(source...) {
+		source = append([]string{"-p", "80/http"}, source...)
 	}
-	err = ts.waitForReadyService()
-	if err != nil {
-		ts.T.Fatalf(err.Error())
-	}
+	args := append([]string{"run", "-n", ts.AppName}, source...)
+	return args
+}
+
+func (ts *TestService) isGithubSource(source ...string) bool {
+	return len(source) > 0 && source[len(source)-1][0:4] == "http" && strings.Contains(source[len(source)-1], "github")
 }
 
 // Takes name and version of existing service and returns loaded TestService
@@ -96,18 +123,24 @@ func (ts *TestService) Scale(scaleTo int) {
 	}
 }
 
-// Call "rio weight ns/service:version={percentage}" on this service
-func (ts *TestService) Weight(percentage int) {
+// Weight calls "rio weight --rollout={rollout} --rollout-increment={increment} --rollout-interval={interval} ns/service:version={percentage}" on this service.
+// If passing rollout=false then the increment and interval values won't matter. Best practice is to pass "5" for both to keep in line with Spec defaults.
+func (ts *TestService) Weight(percentage int, rollout bool, increment int, interval int) {
 	_, err := RioCmd([]string{
 		"weight",
+		fmt.Sprintf("--rollout=%t", rollout),
+		fmt.Sprintf("--rollout-increment=%d", increment),
+		fmt.Sprintf("--rollout-interval=%d", interval),
 		fmt.Sprintf("%s=%d", ts.Name, percentage),
 	})
 	if err != nil {
 		ts.T.Fatalf("weight command failed:  %v", err.Error())
 	}
-	err = ts.waitForWeight(percentage)
-	if err != nil {
-		ts.T.Fatal(err.Error())
+	if !rollout {
+		err = ts.waitForWeight(percentage)
+		if err != nil {
+			ts.T.Fatal(err.Error())
+		}
 	}
 }
 
@@ -129,6 +162,40 @@ func (ts *TestService) Stage(source, version string) TestService {
 		ts.T.Fatalf(err.Error())
 	}
 	return stagedService
+}
+
+// Promote calls "rio promote --rollout=false [args] ns/name:{version}" to instantly promote a revision
+func (ts *TestService) Promote(args ...string) {
+	args = append(
+		[]string{"promote", "--rollout=false"},
+		append(args, ts.Name)...)
+	_, err := RioCmd(args)
+	if err != nil {
+		ts.T.Fatalf("stage command failed:  %v", err.Error())
+	}
+	err = ts.waitForWeight(100)
+	if err != nil {
+		ts.T.Fatalf(err.Error())
+	}
+}
+
+// Logs calls "rio logs ns/service" on this service
+func (ts *TestService) Logs(args ...string) string {
+	args = append([]string{"logs"}, append(args, ts.AppName)...)
+	out, err := RioCmd(args)
+	if err != nil {
+		ts.T.Fatalf("logs command failed:  %v", err.Error())
+	}
+	return out
+}
+
+// Exec calls "rio exec ns/service {command}" on this service
+func (ts *TestService) Exec(command ...string) string {
+	out, err := RioCmd(append([]string{"exec", ts.AppName}, command...))
+	if err != nil {
+		ts.T.Fatalf("exec command failed:  %v", err.Error())
+	}
+	return out
 }
 
 // Export calls "rio export {serviceName}" and returns that in a new TestService object
@@ -170,6 +237,10 @@ func (ts *TestService) GetAppEndpointResponse() string {
 	if err != nil {
 		ts.T.Fatal(err.Error())
 	}
+	err = ts.waitForReadyService() // After hitting the endpoint, the service should be ready again, so verify that it is
+	if err != nil {
+		ts.T.Fatal(err.Error())
+	}
 	return response
 }
 
@@ -204,9 +275,9 @@ func (ts *TestService) GetImage() string {
 	return ts.Service.Spec.Image
 }
 
-// GetRunningPods returns all running pods, separated by new lines, for this service's app
-// Each value, separated by spaces, will have the Pod's NAME  READY  STATUS  RESTARTS  AGE in that order.
-func (ts *TestService) GetRunningPods() string {
+// GetRunningPods returns the kubectl overview of all running pods for this service's app in an array
+// Each value in the array is a string, separated by spaces, that will have the Pod's NAME  READY  STATUS  RESTARTS  AGE in that order.
+func (ts *TestService) GetRunningPods() []string {
 	ts.reloadApp()
 	args := append([]string{"get", "pods",
 		"-n", testingNamespace,
@@ -217,7 +288,55 @@ func (ts *TestService) GetRunningPods() string {
 	if err != nil {
 		ts.T.Fatalf("Failed to get running pods:  %v", err.Error())
 	}
-	return out
+
+	kubeResult := strings.Split(strings.TrimSpace(out), "\n")
+	runningPods := kubeResult[:0]
+	for _, pod := range kubeResult {
+		if strings.Contains(pod, "Running") {
+			runningPods = append(runningPods, pod)
+		}
+	}
+	return runningPods
+}
+
+// GetResponseCounts takes an array of expected response strings and sends numRequests requests to the service's app endpoint.
+// If it gets a response other than one in the specified array, it throws a failure. Otherwise it returns individual counts of each response.
+func (ts *TestService) GetResponseCounts(responses []string, numRequests int) map[string]int {
+	var responseCounts = map[string]int{}
+	var response string
+	for i := 0; i < numRequests; i++ {
+		response = ts.GetAppEndpointResponse()
+		gotExpectedResponse := false
+		for _, resp := range responses {
+			if response == resp {
+				responseCounts[resp]++
+				gotExpectedResponse = true
+				break
+			}
+		}
+		if !gotExpectedResponse {
+			ts.T.Fatalf("Failed to get one of the expected responses. Got: %v", response)
+		}
+	}
+	return responseCounts
+}
+
+// GenerateLoad queries the endpoint multiple times in order to put load on the service.
+// It will execute for up to 60 seconds until there is an Observed Scale on the service or the the AvailableReplicas equal the MaxScale
+func (ts *TestService) GenerateLoad() {
+	f := wait.ConditionFunc(func() (bool, error) {
+		HeyCmd(GetHostname(ts.GetAppEndpointURL()), "5s", 10*(*ts.Service.Spec.MaxScale))
+		ts.reloadApp()
+		ts.reload()
+		if ts.Service.Status.ObservedScale != nil || ts.GetAvailableReplicas() == *ts.Service.Spec.MaxScale {
+			return true, nil
+		}
+		return false, nil
+	})
+	wait.Poll(5*time.Second, 60*time.Second, f)
+	if ts.Service.Status.ObservedScale != nil {
+		ts.waitForAvailableReplicas(*ts.Service.Status.ObservedScale)
+	}
 }
 
 // GetEndpointURL returns the URL for this service's app
@@ -335,6 +454,24 @@ func (ts *TestService) GetKubeAvailableReplicas() int {
 	return int(replicaSetList.Items[0].Status.ReadyReplicas)
 }
 
+// WaitForScaleDown waits until either 5 minutes pass or a service has scaled down to its minimum value
+func (ts *TestService) WaitForScaleDown() error {
+	f := wait.ConditionFunc(func() (bool, error) {
+		err := ts.reload()
+		if err == nil {
+			if *ts.Service.Spec.MinScale == ts.GetAvailableReplicas() {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
+	err := wait.Poll(5*time.Second, 300*time.Second, f)
+	if err != nil {
+		return fmt.Errorf("service %v failed to scale down after 5 minutes", ts.Name)
+	}
+	return nil
+}
+
 //////////////////
 // Private methods
 //////////////////
@@ -348,6 +485,23 @@ func (ts *TestService) reload() error {
 	ts.Service = riov1.Service{}
 	if err := json.Unmarshal([]byte(out), &ts.Service); err != nil {
 		return err
+	}
+	return nil
+}
+
+// reloadBuild calls inspect on the build and uses that to reload our object
+func (ts *TestService) reloadBuild() error {
+	ts.reload()
+	out, err := KubectlCmd([]string{"get", "taskrun", "-n", testingNamespace, "-l", "service-name=" + ts.Service.GetName(), "-o", "json"})
+	if err != nil {
+		return err
+	}
+	list := tektonv1alpha1.TaskRunList{}
+	if err := json.Unmarshal([]byte(out), &list); err != nil {
+		return err
+	}
+	if len(list.Items) > 0 {
+		ts.Build = list.Items[0]
 	}
 	return nil
 }
@@ -407,7 +561,7 @@ func (ts *TestService) waitForReadyService() error {
 	f := wait.ConditionFunc(func() (bool, error) {
 		err := ts.reload()
 		if err == nil {
-			if ts.Service.Status.DeploymentStatus != nil && ts.Service.Status.DeploymentStatus.AvailableReplicas > 0 {
+			if ts.GetAvailableReplicas() > 0 {
 				return true, nil
 			}
 		}
@@ -418,6 +572,24 @@ func (ts *TestService) waitForReadyService() error {
 		return fmt.Errorf("service %v never reached ready status", ts.Name)
 	}
 	ts.reload()
+	return nil
+}
+
+// Wait until a service has finished building, or error out
+func (ts *TestService) waitForBuild() error {
+	f := wait.ConditionFunc(func() (bool, error) {
+		err := ts.reloadBuild()
+		if err == nil {
+			if ts.Build.Status.GetCondition(apis.ConditionSucceeded) != nil && ts.Build.Status.GetCondition(apis.ConditionSucceeded).IsTrue() {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
+	err := wait.Poll(10*time.Second, 240*time.Second, f)
+	if err != nil {
+		return fmt.Errorf("build never completed for service: %v. Error: %v", ts.Name, err.Error())
+	}
 	return nil
 }
 

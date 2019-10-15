@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -30,12 +31,22 @@ type stop struct {
 	error
 }
 
-// Ensure CLI flag is passed, this way integration tests won't run during unit tests
-func PreCheck() {
+// IntegrationPreCheck ensures CLI flag is passed, this way integration tests won't run during unit or validation tests
+func IntegrationPreCheck() {
 	runTests := flag.Bool("integration-tests", false, "must be provided to run the integration tests")
 	flag.Parse()
 	if !*runTests {
 		fmt.Fprintln(os.Stderr, "integration test must be enabled with --integration-tests")
+		os.Exit(0)
+	}
+}
+
+// ValidationPreCheck ensures CLI flag is passed, this way validation tests won't run during unit or integration tests
+func ValidationPreCheck() {
+	runTests := flag.Bool("validation-tests", false, "must be provided to run the validation tests")
+	flag.Parse()
+	if !*runTests {
+		fmt.Fprintln(os.Stderr, "validation test must be enabled with --validation-tests")
 		os.Exit(0)
 	}
 }
@@ -60,6 +71,17 @@ func KubectlCmd(args []string) (string, error) {
 		return "", fmt.Errorf("%s: %s", err.Error(), stdOutErr)
 	}
 	return string(stdOutErr), nil
+}
+
+// HeyCmd generates load on a specified URL
+// Example: url=test-testing-ns.abcdef.on-rio.io, time=90s, c=120 would run: "hey -z 90s -c 120 http://test-testing-ns.abcdef.on-rio.io:9080"
+func HeyCmd(url string, time string, c int) {
+	args := []string{"-z", time, "-c", strconv.Itoa(c), fmt.Sprintf("http://%s:9080", url)}
+	cmd := exec.Command("hey", args...)
+	stdOutErr, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, fmt.Errorf("%s: %s", err.Error(), stdOutErr))
+	}
 }
 
 // Wait until a URL has a response that returns 200 status code, else return error

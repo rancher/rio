@@ -25,9 +25,21 @@ go test -v -race ./tests/integration/... -integration-tests
 
 Every spec should be in the `when x, it should y` format.
 
-Dev Notes
 
-* Logic lives in the testutil dir, test specs live in the integration folder
+### Validation tests
+
+Validation tests live inside the /tests/validation dir. They require a working cluster with KUBECONFIG env var set, and rio already installed.
+In the future, rio will be installed as part of the tests.
+
+```
+go test -v -race ./tests/validation/... -validation-tests
+```
+
+These tests should not be used to block merging PRs. They are meant to run in other CI and run less regularly. They are also the place where more obscure tests that are useful for regression can be written.
+
+### Integration/Validation Dev Notes
+
+* Logic lives in the testutil dir, test specs live in the integration or validation folder
 * We are purposefully failing tests in the util code rather than returning errors in order to keep specs clean
     * Only fail tests in public methods. Public methods should not call each other.
 * To add a new suite, create a file and add it in the TestSuite list
@@ -43,7 +55,6 @@ Goland is useful for debugging, setup with:
 * package: `github.com/rancher/rio/tests/integration`
 * environment: set your `KUBECONFIG`
 * program arguments: `--integration-tests`
-
 
 ### Full suite
 
