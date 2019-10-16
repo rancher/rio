@@ -20,9 +20,10 @@ type PublicDomain struct {
 }
 
 type PublicDomainSpec struct {
-	DNSInfo `json:",inline"`
+	// SecretName holding the TLS certificate for this domain.
+	SecretName string `json:"secretName,omitempty"`
 
-	// Target App Name
+	// Target App Name.  Can be a Router name also
 	TargetApp string `json:"targetApp,omitempty"`
 
 	// Target Version
