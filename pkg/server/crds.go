@@ -1,6 +1,12 @@
 package server
 
 import (
+	"reflect"
+	"strconv"
+	"strings"
+
+	"github.com/rancher/wrangler/pkg/kv"
+
 	"github.com/rancher/norman/pkg/openapi"
 	rioadminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
@@ -49,7 +55,56 @@ func newClusterCRD(name string, obj interface{}) crd.CRD {
 func newCRD(name string, obj interface{}) crd.CRD {
 	return crd.NamespacedType(name).
 		WithStatus().
-		WithSchema(mustSchema(obj))
+		WithSchema(mustSchema(obj)).
+		WithCustomColumn(customColumn(obj))
+}
+
+type customResourceColumnDefinitionList struct {
+	list []v1beta1.CustomResourceColumnDefinition
+}
+
+func customColumn(obj interface{}) []v1beta1.CustomResourceColumnDefinition {
+	var r customResourceColumnDefinitionList
+	t := reflect.TypeOf(obj)
+	readCustomColumn(t, &r)
+	return r.list
+}
+
+func readCustomColumn(t reflect.Type, r *customResourceColumnDefinitionList) {
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i).Type
+		if f.Kind() == reflect.Ptr {
+			f = f.Elem()
+		}
+		if f.Kind() == reflect.Struct {
+			readCustomColumn(f, r)
+		} else {
+			c := v1beta1.CustomResourceColumnDefinition{}
+			kvs := strings.Split(t.Field(i).Tag.Get("column"), ",")
+			for _, keyValues := range kvs {
+				k, v := kv.Split(keyValues, "=")
+				switch k {
+				case "name":
+					c.Name = v
+				case "type":
+					c.Type = v
+				case "format":
+					c.Format = v
+				case "description":
+					c.Description = v
+				case "priority":
+					p, _ := strconv.Atoi(v)
+					c.Priority = int32(p)
+				case "jsonpath":
+					c.JSONPath = v
+				}
+			}
+			if c.Name == "" {
+				continue
+			}
+			r.list = append(r.list, c)
+		}
+	}
 }
 
 func mustSchema(obj interface{}) *v1beta1.JSONSchemaProps {

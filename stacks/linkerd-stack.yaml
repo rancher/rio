@@ -2,6 +2,5 @@ routers:
   web:
     routes:
     - to:
-      - service: linkerd-web
-        namespace: linkerd
+      - app: linkerd-web
         port: 8084

@@ -10,7 +10,7 @@ import (
 	"github.com/rancher/wrangler/pkg/controller-gen/args"
 
 	solov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	//solov1 "github.com/rancher/rio/pkg/apis/gateway.solo.io/v1"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 )
 
 var (
@@ -54,6 +54,15 @@ func main() {
 				ClientSetPackage: "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/clientset/versioned",
 				InformersPackage: "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/informers/externalversions",
 				ListersPackage:   "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/listers",
+			},
+			"gloo.solo.io": {
+				Types: []interface{}{
+					gloov1.Settings{},
+				},
+				//GenerateTypes: true,
+				ClientSetPackage: "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/client/clientset/versioned",
+				InformersPackage: "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/client/informers/externalversions",
+				ListersPackage:   "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/client/listers",
 			},
 		},
 	})

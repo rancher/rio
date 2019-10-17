@@ -60,7 +60,7 @@ func (f *certsHandler) onSecretChange(key string, obj *corev1.Secret) (*corev1.S
 }
 
 func (f *certsHandler) Handle(obj *v1.PublicDomain, status v1.PublicDomainStatus) ([]runtime.Object, v1.PublicDomainStatus, error) {
-	if obj.Namespace != f.namespace || obj.Spec.Provider != "rdns" {
+	if obj.Namespace != f.namespace {
 		return nil, status, nil
 	}
 

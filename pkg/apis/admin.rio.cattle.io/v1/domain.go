@@ -23,7 +23,9 @@ type ClusterDomain struct {
 }
 
 type ClusterDomainSpec struct {
-	DNSInfo `json:",inline"`
+	// SecretName holding the TLS certificate for this domain.  This is expected
+	// to be a wildcard certificate
+	SecretName string `json:"secretName,omitempty"`
 
 	// The public HTTPS port for the cluster domain
 	HTTPSPort int `json:"httpsPort,omitempty"`
@@ -43,11 +45,4 @@ type ClusterDomainStatus struct {
 	AssignedSecretName string                              `json:"assignedSecretName,omitempty"`
 	HTTPSSupported     bool                                `json:"httpsSupported,omitempty"`
 	Conditions         []genericcondition.GenericCondition `json:"conditions,omitempty"`
-}
-
-type DNSInfo struct {
-	// SecretName holding the TLS certificate for this domain
-	SecretName string `json:"secretName,omitempty"`
-	// The provider managing this DNS record. If provider is set controllers may be able to do additional logic.
-	Provider string `json:"provider,omitempty"`
 }

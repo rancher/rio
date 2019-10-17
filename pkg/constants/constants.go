@@ -41,5 +41,5 @@ var (
 	AcmeVersion = "cm-acme"
 	InstallUUID = ""
 
-	DevMode = ""
+	DevMode = false
 )

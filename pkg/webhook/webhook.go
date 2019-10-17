@@ -44,49 +44,87 @@ var (
 	servicemeshVerb = "rio-servicemesh"
 )
 
-func SetupValidatingWebhook(rContext *types.Context) error {
-	secret, err := rContext.Core.Core().V1().Secret().Get(rContext.Namespace, constants.AuthWebhookSecretName, metav1.GetOptions{})
+type Webhook struct {
+	rContext   *types.Context
+	kubeconfig string
+	devMode    bool
+	listenHost string
+	port       string
+}
+
+func New(rContext *types.Context, kc string, devMode bool) Webhook {
+	w := Webhook{
+		rContext:   rContext,
+		kubeconfig: kc,
+		devMode:    devMode,
+		listenHost: fmt.Sprintf("%s.%s.svc", constants.AuthWebhookServiceName, rContext.Namespace),
+		port:       ":443",
+	}
+	if devMode {
+		w.listenHost = os.Getenv("LOCALHOST")
+		if w.listenHost == "" {
+			w.listenHost = "127.0.0.1"
+		}
+		w.port = constants.DevWebhookPort
+	}
+	return w
+}
+
+func (w Webhook) Setup() error {
+	if err := w.setup(); err != nil {
+		return err
+	}
+	return w.run()
+}
+
+func (w Webhook) setup() error {
+	caBundle, err := w.reconcileSecret()
 	if err != nil {
 		return err
 	}
-	devHost := os.Getenv("LOCALHOST")
-	if devHost == "" {
-		devHost = "localhost"
+
+	return w.reconcileWebhook(caBundle)
+}
+
+func (w Webhook) reconcileSecret() ([]byte, error) {
+	secret, err := w.rContext.Core.Core().V1().Secret().Get(w.rContext.Namespace, constants.AuthWebhookSecretName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
 	}
 	if len(secret.Data) == 0 {
-		hostname := fmt.Sprintf("%s.%s.svc", constants.AuthWebhookServiceName, rContext.Namespace)
-		if constants.DevMode != "" {
-			hostname = devHost
-		}
+		hostname := w.listenHost
 		webhookCa, err := tls.GenerateRootCAWithDefaults(hostname)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		secret.Data = map[string][]byte{
 			corev1.TLSPrivateKeyKey: []byte(webhookCa.Cred.EncodePrivateKeyPEM()),
 			corev1.TLSCertKey:       []byte(webhookCa.Cred.EncodeCertificatePEM()),
 			"ca":                    []byte(webhookCa.Cred.EncodeCertificatePEM()),
 		}
-		if _, err := rContext.Core.Core().V1().Secret().Update(secret); err != nil {
-			return err
+		if _, err := w.rContext.Core.Core().V1().Secret().Update(secret); err != nil {
+			return nil, err
 		}
 	}
 
-	if constants.DevMode != "" {
+	if w.devMode {
 		tlsKeyPath = fmt.Sprintf("%s/.local/ssl/tls.key", os.Getenv("HOME"))
 		tlsCrtPath = fmt.Sprintf("%s/.local/ssl/tls.crt", os.Getenv("HOME"))
 		if err := os.MkdirAll(filepath.Dir(tlsKeyPath), 0755); err != nil {
-			return err
+			return nil, err
 		}
 		if err := ioutil.WriteFile(tlsKeyPath, secret.Data[corev1.TLSPrivateKeyKey], 0755); err != nil {
-			return err
+			return nil, err
 		}
 
 		if err := ioutil.WriteFile(tlsCrtPath, secret.Data[corev1.TLSCertKey], 0755); err != nil {
-			return err
+			return nil, err
 		}
 	}
+	return secret.Data["ca"], nil
+}
 
+func (w Webhook) reconcileWebhook(caBundle []byte) error {
 	failPolicy := v1beta1.Fail
 	validatingWebhook := &v1beta1.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
@@ -109,10 +147,10 @@ func SetupValidatingWebhook(rContext *types.Context) error {
 				},
 				ClientConfig: v1beta1.WebhookClientConfig{
 					Service: &v1beta1.ServiceReference{
-						Namespace: rContext.Namespace,
+						Namespace: w.rContext.Namespace,
 						Name:      "auth-webhook",
 					},
-					CABundle: secret.Data["ca"],
+					CABundle: caBundle,
 				},
 				FailurePolicy: &failPolicy,
 				Rules: []v1beta1.RuleWithOperations{
@@ -132,41 +170,41 @@ func SetupValidatingWebhook(rContext *types.Context) error {
 		},
 	}
 
-	if constants.DevMode != "" {
+	if w.devMode {
 		validatingWebhook.Webhooks[0].ClientConfig = v1beta1.WebhookClientConfig{
-			URL:      &[]string{fmt.Sprintf("https://%s%s", devHost, constants.DevWebhookPort)}[0],
-			CABundle: secret.Data["ca"],
+			URL:      &[]string{fmt.Sprintf("https://%s%s", w.listenHost, constants.DevWebhookPort)}[0],
+			CABundle: caBundle,
 		}
+		ignorePolicy := v1beta1.Ignore
+		validatingWebhook.Webhooks[0].FailurePolicy = &ignorePolicy
 	}
 
-	webhook, err := rContext.K8s.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Get(validatingWebhook.Name, metav1.GetOptions{})
-	if err != nil {
-		if errors.IsNotFound(err) {
-			if _, err = rContext.K8s.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Create(validatingWebhook); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-	} else {
+	webhook, err := w.rContext.K8s.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Get(validatingWebhook.Name, metav1.GetOptions{})
+	if err != nil && errors.IsNotFound(err) {
+		_, err = w.rContext.K8s.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Create(validatingWebhook)
+		return err
+	} else if err == nil {
 		webhook.Webhooks = validatingWebhook.Webhooks
 		webhook.Name = validatingWebhook.Name
-		if _, err := rContext.K8s.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Update(webhook); err != nil {
+		if _, err := w.rContext.K8s.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Update(webhook); err != nil {
 			return err
 		}
 	}
-
-	return nil
+	return err
 }
 
-func Run(kc string, rContext *types.Context, port string) error {
-	k8sAPI, err := k8s.InitializeAPI(kc)
+func (w Webhook) run() error {
+	port := "443"
+	if constants.DevMode {
+		port = constants.DevWebhookPort
+	}
+	k8sAPI, err := k8s.InitializeAPI(w.kubeconfig)
 	if err != nil {
 		log.Fatalf("failed to initialize Kubernetes API: %s", err)
 	}
 
 	rbacRestGetter := rbacRestGetter{
-		Interface: rContext.RBAC.Rbac(),
+		Interface: w.rContext.RBAC.Rbac(),
 	}
 
 	ruleResolver := rbacregistryvalidation.NewDefaultRuleResolver(rbacRestGetter, rbacRestGetter, rbacRestGetter, rbacRestGetter)
@@ -177,9 +215,9 @@ func Run(kc string, rContext *types.Context, port string) error {
 	}
 
 	h := handler{
-		systemNamespace:      rContext.Namespace,
+		systemNamespace:      w.rContext.Namespace,
 		ruleSolver:           ruleResolver,
-		ignoreServiceAccount: fmt.Sprintf(rioAdminAccount, rContext.Namespace),
+		ignoreServiceAccount: fmt.Sprintf(rioAdminAccount, w.rContext.Namespace),
 	}
 
 	s, err := webhook.NewServer(k8sAPI, port, cred, h.ValidateAuth, constants.AuthWebhookServiceName)
@@ -291,8 +329,12 @@ func convertSecurityPolicyRule(service riov1.Service) []rbacv1.PolicyRule {
 		useHostNetwork = true
 	}
 
-	if !service.Spec.DisableServiceMesh {
+	if service.Spec.ServiceMesh != nil {
 		useServiceMesh = true
+	}
+
+	if service.Spec.Privileged != nil {
+		usePriviledged = true
 	}
 
 	if useHostPort {

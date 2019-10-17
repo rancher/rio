@@ -44,6 +44,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 }
 
 func findService(namespace, name string, obj runtime.Object) ([]relatedresource.Key, error) {
+	if obj == nil {
+		return nil, nil
+	}
 	meta, err := meta.Accessor(obj)
 	if err != nil {
 		return nil, err

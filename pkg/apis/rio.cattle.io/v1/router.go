@@ -31,7 +31,7 @@ type RouterSpec struct {
 
 type RouterStatus struct {
 	// The endpoint to access the router
-	Endpoints []string `json:"endpoints,omitempty"`
+	Endpoints []string `json:"endpoints,omitempty" column:"name=Endpoint,type=string,jsonpath=.status.endpoints[0]"`
 
 	// Represents the latest available observations of a PublicDomain's current state.
 	Conditions []genericcondition.GenericCondition `json:"conditions,omitempty"`

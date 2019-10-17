@@ -20,6 +20,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		SystemStacks: []*stack.SystemStack{
 			stack.NewSystemStack(apply, rContext.Namespace, "rio-autoscaler"),
 		},
+		FixedAnswers: map[string]string{
+			"NAMESPACE": rContext.Namespace,
+		},
 		Controllers: []features.ControllerRegister{
 			service.Register,
 		},

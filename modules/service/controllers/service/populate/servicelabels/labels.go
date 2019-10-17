@@ -1,24 +1,8 @@
 package servicelabels
 
 import (
-	"strings"
-
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/services"
-)
-
-var (
-	statsPatternAnnotationKey = "sidecar.istio.io/statsInclusionPrefixes"
-
-	defaultEnvoyStatsMatcherInclusionPatterns = []string{
-		"http",
-		"cluster_manager",
-		"listener_manager",
-		"http_mixer_filter",
-		"tcp_mixer_filter",
-		"server",
-		"cluster.xds-grpc",
-	}
 )
 
 func SelectorLabels(service *v1.Service) map[string]string {
@@ -50,7 +34,6 @@ func annotations(service *v1.Service) map[string]string {
 		result["rio.cattle.io/mesh"] = "false"
 	} else {
 		result["rio.cattle.io/mesh"] = "true"
-		result[statsPatternAnnotationKey] = strings.Join(defaultEnvoyStatsMatcherInclusionPatterns, ",")
 	}
 	return result
 }

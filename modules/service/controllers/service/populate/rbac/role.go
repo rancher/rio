@@ -53,7 +53,7 @@ func subject(service *riov1.Service) *v1.Subject {
 }
 
 func ServiceAccountName(service *riov1.Service) string {
-	if len(service.Spec.Permissions) == 0 && len(service.Spec.GlobalPermissions) == 0 {
+	if len(service.Spec.Permissions) == 0 && len(service.Spec.GlobalPermissions) == 0 && service.Spec.ServiceMesh != nil && !*service.Spec.ServiceMesh {
 		return ""
 	}
 	return service.Name

@@ -133,9 +133,6 @@ func (h *handler) generate(svc *corev1.Service, status corev1.ServiceStatus) ([]
 			Namespace: svc.Namespace,
 		},
 		Spec: adminv1.ClusterDomainSpec{
-			DNSInfo: adminv1.DNSInfo{
-				Provider: "rdns",
-			},
 			Addresses: addresses,
 		},
 	}

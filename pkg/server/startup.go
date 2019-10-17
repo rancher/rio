@@ -4,9 +4,7 @@ import (
 	"context"
 
 	"github.com/rancher/rio/modules"
-	"github.com/rancher/rio/modules/system/features/nodes"
 	"github.com/rancher/rio/pkg/constants"
-	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/rio/pkg/controllers"
 	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/rio/pkg/webhook"
@@ -14,7 +12,6 @@ import (
 	"github.com/rancher/wrangler/pkg/crd"
 	"github.com/rancher/wrangler/pkg/kubeconfig"
 	"github.com/rancher/wrangler/pkg/leader"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -34,39 +31,17 @@ func Startup(ctx context.Context, systemNamespace, kubeConfig string) error {
 
 	ctx, rioContext := types.BuildContext(ctx, systemNamespace, restConfig)
 
-	webhookPort := ":443"
-	if _, err := rioContext.Apps.Apps().V1().Deployment().Get(systemNamespace, "rio-controller", metav1.GetOptions{}); errors.IsNotFound(err) {
-		constants.DevMode = "true"
-		controllerStack := stack.NewSystemStack(rioContext.Apply, systemNamespace, "rio-controller")
-		answer := map[string]string{
-			"NAMESPACE": systemNamespace,
-		}
-		if err := controllerStack.Deploy(answer); err != nil {
-			return err
-		}
-		webhookPort = constants.DevWebhookPort
-	}
-
-	if err := webhook.SetupValidatingWebhook(rioContext); err != nil {
+	// detect and bootstrap developer environment
+	devMode, err := bootstrapResources(rioContext, systemNamespace)
+	if err != nil {
 		return err
 	}
+	constants.DevMode = devMode
 
-	if err := webhook.Run(kubeConfig, rioContext, webhookPort); err != nil {
+	// setting up auth webhook
+	w := webhook.New(rioContext, kubeConfig, devMode)
+	if err := w.Setup(); err != nil {
 		return err
-	}
-
-	namespaceClient := rioContext.Core.Core().V1().Namespace()
-	if _, err := namespaceClient.Get(systemNamespace, metav1.GetOptions{}); err != nil {
-		if !errors.IsNotFound(err) {
-			return err
-		}
-		ns := constructors.NewNamespace(systemNamespace, v1.Namespace{})
-		ns.Labels = map[string]string{
-			"rio.cattle.io/is-system": "true",
-		}
-		if _, err := namespaceClient.Create(ns); err != nil {
-			return err
-		}
 	}
 
 	leader.RunOrDie(ctx, systemNamespace, "rio", rioContext.K8s, func(ctx context.Context) {
@@ -77,6 +52,20 @@ func Startup(ctx context.Context, systemNamespace, kubeConfig string) error {
 	})
 
 	return nil
+}
+
+func bootstrapResources(rioContext *types.Context, systemNamespace string) (bool, error) {
+	if _, err := rioContext.Apps.Apps().V1().Deployment().Get(systemNamespace, "rio-controller", metav1.GetOptions{}); errors.IsNotFound(err) {
+		controllerStack := stack.NewSystemStack(rioContext.Apply, systemNamespace, "rio-controller")
+		answer := map[string]string{
+			"NAMESPACE": systemNamespace,
+		}
+		if err := controllerStack.Deploy(answer); err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+	return false, nil
 }
 
 func Types(ctx context.Context, config *rest.Config) error {

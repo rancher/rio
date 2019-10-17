@@ -31,8 +31,10 @@ func getTarget(obj *riov1.Service) (result target, err error) {
 	app, version := services.AppAndVersion(obj)
 	result.Name = name.SafeConcatName(app, version)
 	result.Namespace = obj.Namespace
-	if obj.Status.ComputedWeight != nil {
+	if obj.Spec.RolloutConfig != nil && obj.Status.ComputedWeight != nil {
 		result.Weight = *obj.Status.ComputedWeight
+	} else if obj.Spec.Weight != nil {
+		result.Weight = *obj.Spec.Weight
 	}
 
 	for _, port := range serviceports.ContainerPorts(obj) {
@@ -42,11 +44,16 @@ func getTarget(obj *riov1.Service) (result target, err error) {
 		}
 	}
 
+	seen := map[string]bool{}
 	for _, endpoint := range obj.Status.Endpoints {
 		u, err := url.Parse(endpoint)
 		if err != nil {
 			return result, err
 		}
+		if seen[u.Host] {
+			continue
+		}
+		seen[u.Host] = true
 
 		result.Hosts = append(result.Hosts, u.Host)
 	}
@@ -101,6 +108,7 @@ func getTargetsForApp(svcs []*riov1.Service) (hostnames []string, targets []targ
 		seen = map[string]bool{}
 	)
 
+	weightSet := false
 	for _, svc := range svcs {
 		target, err := getTarget(svc)
 		if err != nil {
@@ -118,7 +126,16 @@ func getTargetsForApp(svcs []*riov1.Service) (hostnames []string, targets []targ
 			seen[hostname] = true
 			hostnames = append(hostnames, hostname)
 		}
+		if target.Weight != 0 {
+			weightSet = true
+		}
 		targets = append(targets, target)
+	}
+
+	if !weightSet {
+		for i := range targets {
+			targets[i].Weight = 1
+		}
 	}
 
 	return

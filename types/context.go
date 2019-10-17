@@ -6,7 +6,8 @@ import (
 	webhookinator "github.com/rancher/gitwatcher/pkg/generated/controllers/gitwatcher.cattle.io"
 	"github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io"
 	"github.com/rancher/rio/pkg/generated/controllers/autoscale.rio.cattle.io"
-	gloo "github.com/rancher/rio/pkg/generated/controllers/gateway.solo.io"
+	gateway "github.com/rancher/rio/pkg/generated/controllers/gateway.solo.io"
+	gloo "github.com/rancher/rio/pkg/generated/controllers/gloo.solo.io"
 	"github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io"
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/apiextensions.k8s.io"
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/apps"
@@ -48,6 +49,7 @@ type Context struct {
 	RBAC          *rbac.Factory
 	Rio           *rio.Factory
 	SMI           *smi.Factory
+	Gateway       *gateway.Factory
 	Gloo          *gloo.Factory
 	Storage       *storage.Factory
 	Webhook       *webhookinator.Factory
@@ -79,6 +81,7 @@ func NewContext(namespace string, config *rest.Config) *Context {
 		SMI:           smi.NewFactoryFromConfigOrDie(config),
 		Webhook:       webhookinator.NewFactoryFromConfigOrDie(config),
 		K8s:           kubernetes.NewForConfigOrDie(config),
+		Gateway:       gateway.NewFactoryFromConfigOrDie(config),
 		Gloo:          gloo.NewFactoryFromConfigOrDie(config),
 	}
 
@@ -103,6 +106,7 @@ func (c *Context) Start(ctx context.Context) error {
 		c.Storage,
 		c.SMI,
 		c.Webhook,
+		c.Gateway,
 		c.Gloo)
 }
 

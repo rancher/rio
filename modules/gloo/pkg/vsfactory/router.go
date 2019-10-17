@@ -285,6 +285,10 @@ func matchToMatch(match riov1.Match) (result *gloov1.Matcher) {
 				Exact: match.Path.Exact,
 			}
 		}
+	} else {
+		result.PathSpecifier = &gloov1.Matcher_Prefix{
+			Prefix: "/",
+		}
 	}
 
 	for _, match := range match.Headers {

@@ -15,6 +15,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		FeatureName: "linkerd",
 		FeatureSpec: features.FeatureSpec{
 			Description: "linkerd service mesh",
+			Enabled:     true,
 		},
 		SystemStacks: []*stack.SystemStack{
 			stack.NewSystemStack(apply, "linkerd", "linkerd"),
@@ -22,6 +23,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		Controllers: []features.ControllerRegister{},
 		OnStart: func() error {
 			injector.RegisterInjector()
+
 			rContext.Rio.Rio().V1().Service().Enqueue("*", "*")
 			return nil
 		},

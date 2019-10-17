@@ -31,10 +31,10 @@ type AutoscaleConfig struct {
 	Concurrency int `json:"concurrency,omitempty"`
 
 	// The minimal number of replicas Service can be scaled
-	MinReplicas *int `json:"minReplicas,omitempty" mapper:"alias=minScale|min"`
+	MinReplicas *int `json:"minReplicas,omitempty" mapper:"alias=minScale|min" column:"name=MinScale,type=integer,format=int32,jsonpath=.spec.autoscale.minReplicas"`
 
 	// The maximum number of replicas Service can be scaled
-	MaxReplicas *int `json:"maxReplicas,omitempty" mapper:"alias=maxScale|max"`
+	MaxReplicas *int `json:"maxReplicas,omitempty" mapper:"alias=maxScale|max" column:"name=MaxScale,type=integer,format=int32,jsonpath=.spec.autoscale.maxReplicas"`
 }
 
 // RolloutConfig specifies the configuration when promoting a new revision
@@ -376,10 +376,10 @@ type ServiceStatus struct {
 	ScaleStatus *ScaleStatus `json:"scaleStatus,omitempty"`
 
 	// ComputedReplicas is calculated from autoscaling component to make sure pod has the desired load
-	ComputedReplicas *int `json:"observedScale,omitempty"`
+	ComputedReplicas *int `json:"computedReplicas,omitempty" column:"name=ComputedReplicas,type=integer,jsonpath=.status.computedReplicas"`
 
 	// ComputedWeight is the weight calculated from the rollout revision
-	ComputedWeight *int `json:"weightOverride,omitempty"`
+	ComputedWeight *int `json:"computedWeight,omitempty"`
 
 	// ContainerImages are populated from builds to override the images of this service
 	ContainerImages map[string]BuiltImage `json:"containerImages,omitempty"`
@@ -388,7 +388,7 @@ type ServiceStatus struct {
 	Conditions []genericcondition.GenericCondition `json:"conditions,omitempty"`
 
 	// The Endpoints to access this version directly
-	Endpoints []string `json:"endpoints,omitempty"`
+	Endpoints []string `json:"endpoints,omitempty" column:"name=Endpoint,type=string,jsonpath=.status.endpoints[0]"`
 
 	// The Endpoints to access this service as part of an app
 	AppEndpoints []string `json:"appEndpoints,omitempty"`

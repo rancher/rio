@@ -22,7 +22,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	riov1controller.RegisterServiceGeneratingHandler(ctx,
 		rContext.Rio.Rio().V1().Service(),
 		rContext.Apply.WithCacheTypes(
-			rContext.Gloo.Gateway().V1().VirtualService(),
+			rContext.Gateway.Gateway().V1().VirtualService(),
 		),
 		"",
 		"gloo-service",

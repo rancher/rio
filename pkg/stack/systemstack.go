@@ -56,7 +56,7 @@ func (s *SystemStack) Remove() error {
 }
 
 func (s *SystemStack) content() ([]byte, error) {
-	if constants.DevMode != "" {
+	if constants.DevMode {
 		return ioutil.ReadFile("stacks/" + s.name + "-stack.yaml")
 	}
 	return stacks.Asset("stacks/" + s.name + "-stack.yaml")

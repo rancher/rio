@@ -27,7 +27,7 @@ func installLinkerd(rContext *types.Context) error {
 	if _, err := cmClient.Get("linkerd", "linkerd-config", metav1.GetOptions{}); err == nil {
 		linkerdUpgrade = "TRUE"
 	}
-	if constants.DevMode != "" && linkerdUpgrade == "TRUE" {
+	if constants.DevMode && linkerdUpgrade == "TRUE" {
 		return nil
 	}
 

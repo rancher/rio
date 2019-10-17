@@ -2,14 +2,13 @@ package app
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/rancher/rio/modules/gloo/pkg/vsfactory"
-
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/indexes"
 	"github.com/rancher/rio/types"
 	corev1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/core/v1"
-	"golang.org/x/tools/go/ssa/interp/testdata/src/fmt"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -23,7 +22,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	corev1controller.RegisterServiceGeneratingHandler(ctx,
 		rContext.Core.Core().V1().Service(),
 		rContext.Apply.
-			WithCacheTypes(rContext.Gloo.Gateway().V1().VirtualService()),
+			WithCacheTypes(rContext.Gateway.Gateway().V1().VirtualService()),
 		"",
 		"gloo-app",
 		h.generate,

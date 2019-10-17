@@ -18,7 +18,7 @@ func Register(ctx context.Context, rContexts *types.Context) error {
 	riov1controller.RegisterRouterGeneratingHandler(ctx,
 		rContexts.Rio.Rio().V1().Router(),
 		rContexts.Apply.
-			WithCacheTypes(rContexts.Gloo.Gateway().V1().VirtualService()),
+			WithCacheTypes(rContexts.Gateway.Gateway().V1().VirtualService()),
 		"GatewayConfigured",
 		"gloo",
 		h.generate,

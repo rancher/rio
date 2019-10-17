@@ -64,10 +64,6 @@ func (f *certsHandler) onCertChange(key string, obj *certmanagerapi.Certificate)
 }
 
 func (f *certsHandler) Handle(obj *v1.ClusterDomain, status v1.ClusterDomainStatus) ([]runtime.Object, v1.ClusterDomainStatus, error) {
-	if obj.Spec.Provider != "rdns" {
-		return nil, status, nil
-	}
-
 	if obj.Spec.SecretName != "" {
 		status.AssignedSecretName = obj.Spec.SecretName
 		return nil, status, nil

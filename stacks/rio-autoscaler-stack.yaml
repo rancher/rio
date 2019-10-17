@@ -5,7 +5,9 @@ services:
     - '* configmaps'
     - '* autoscale.rio.cattle.io/servicescalerecommendations'
     image: strongmonkey1992/autoscaler:dev
+    env:
+    - NAMESPACE=${NAMESPACE}
     ports:
-    - 80:80
+    - 80:80,expose=false
     args:
     - --debug

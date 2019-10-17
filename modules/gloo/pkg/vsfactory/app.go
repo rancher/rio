@@ -11,6 +11,10 @@ func (f *VirtualServiceFactory) ForApp(namespace, appName string, svcs []*riov1.
 		return nil, err
 	}
 
+	if len(hostnames) == 0 {
+		return nil, nil
+	}
+
 	vs := newVirtualService(namespace, appName, hostnames)
 	vs.Spec.VirtualHost.Routes[0].Action = newRouteAction(targets...)
 
