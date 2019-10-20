@@ -11,7 +11,7 @@ replace (
 
 	github.com/golang/protobuf => github.com/golang/protobuf v1.3.1
 	github.com/jaguilar/vt100 => github.com/tonistiigi/vt100 v0.0.0-20190402012908-ad4c4a574305
-	github.com/jetstack/cert-manager => github.com/StrongMonkey/cert-manager v0.5.1-0.20191021184308-1f29cbc86ca1
+	github.com/jetstack/cert-manager => github.com/rancher/cert-manager v0.5.1-0.20191021233300-3a070253aeda
 	github.com/knative/pkg => github.com/rancher/pkg v0.0.0-20190514055449-b30ab9de040e
 	github.com/linkerd/linkerd2 => github.com/StrongMonkey/linkerd2 v0.0.0-20191021165729-976fad67457a
 	github.com/matryer/moq => github.com/rancher/moq v0.0.0-20190404221404-ee5226d43009

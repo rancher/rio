@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	ServiceConditionImageReady = condition.Cond("ImageReady")
+	ServiceConditionImageReady      = condition.Cond("ImageReady")
+	ServiceConditionServiceDeployed = condition.Cond("ServiceDeployed")
 )
 
 // +genclient
@@ -103,7 +104,7 @@ type ServiceSpec struct {
 	// Autoscale the replicas based on the amount of traffic received by this service
 	Autoscale *AutoscaleConfig `json:"autoscale,omitempty"`
 
-	// RolloutConfig If more than one rollout config exist for a given App name then the first created will be used
+	// RolloutConfig controls how each service is allocated ComputedWeight
 	RolloutConfig *RolloutConfig `json:"rollout,omitempty"`
 
 	// Place one pod per node that matches the scheduling rules
