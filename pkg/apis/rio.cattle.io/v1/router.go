@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -175,6 +176,14 @@ type Match struct {
 type HeaderMatch struct {
 	Name  string       `json:"name,omitempty"`
 	Value *StringMatch `json:"value,omitempty"`
+}
+
+func (h HeaderMatch) String() string {
+	value := ""
+	if h.Value != nil {
+		value = h.Value.String()
+	}
+	return fmt.Sprintf("%s=%s", h.Name, value)
 }
 
 func (m Match) MaybeString() interface{} {

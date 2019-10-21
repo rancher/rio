@@ -33,6 +33,7 @@ type Create struct {
 	BuildRegistry          string            `desc:"Specify to push image to"`
 	BuildRevision          string            `desc:"Build git commit or tag"`
 	BuildPr                bool              `desc:"Enable pull request builds"`
+	BuildTemplate          bool              `desc:"Use this service as a template for generating services if a new commit applys to git repo. If not specified it will do in-place update"`
 	BuildTimeout           string            `desc:"Timeout for build, default to 10m (ms|s|m|h)"`
 	Command                []string          `desc:"Overwrite the default ENTRYPOINT of the image"`
 	Concurrency            int               `desc:"The maximum concurrent request a container can handle (autoscaling)" default:"10"`
@@ -65,7 +66,8 @@ type Create struct {
 	M_Memory               string            `desc:"Memory reservation (format: <number>[<unit>], where unit = b, k, m or g)"`
 	N_Name                 string            `desc:"Assign a name to the container. Use format ${namespace}/${name} to assign workload to a different namespace"`
 	Permission             []string          `desc:"Permissions to grant to container's service account in current namespace"`
-	P_Ports                []string          `desc:"Publish a container's port(s) (format: svcport:containerport/protocol 80:8080/http"`
+	P_Ports                []string          `desc:"Publish a container's port(s) (format: svcport:containerport/protocol)"`
+	Privileged             bool              `desc:"Run container with privilege"`
 	ReadOnly               bool              `desc:"Mount the container's root filesystem as read only"`
 	RolloutInterval        int               `desc:"Rollout interval in seconds"`
 	RolloutIncrement       int               `desc:"Rollout increment value"`
@@ -174,7 +176,6 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 
 	spec.App = c.App
 	spec.Args = args[1:]
-	spec.ServiceMesh = &c.NoMesh
 	spec.Hostname = c.Hostname
 	spec.HostNetwork = c.Net == "host"
 	spec.Stdin = c.I_Interactive
@@ -195,10 +196,6 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 	}
 	if err := c.setScale(&spec); err != nil {
 		return nil, err
-	}
-
-	if c.ReadOnly {
-		spec.ReadOnlyRootFilesystem = &t
 	}
 
 	spec.ImagePullPolicy, err = stringers.ParseImagePullPolicy(c.ImagePullPolicy)
@@ -224,9 +221,18 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 		return nil, err
 	}
 
+	spec.ContainerSecurityContext = &riov1.ContainerSecurityContext{}
+	if c.ReadOnly {
+		spec.ReadOnlyRootFilesystem = &t
+	}
+
 	spec.RunAsUser, spec.RunAsGroup, err = stringers.ParseUserGroup(c.U_User, c.Group)
 	if err != nil {
 		return nil, err
+	}
+
+	if c.Privileged {
+		spec.Privileged = &c.Privileged
 	}
 
 	spec.Configs, err = stringers.ParseConfigs(c.Config...)
@@ -265,6 +271,10 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 
 	if err := c.setMemory(&spec); err != nil {
 		return nil, err
+	}
+
+	if len(c.P_Ports) == 0 {
+		c.P_Ports = []string{"80:8080/http"}
 	}
 
 	spec.Ports, err = stringers.ParsePorts(c.P_Ports...)

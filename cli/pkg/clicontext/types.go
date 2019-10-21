@@ -13,7 +13,6 @@ import (
 	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constructors"
-	"github.com/rancher/rio/pkg/services"
 	"github.com/rancher/wrangler/pkg/gvk"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -101,12 +100,6 @@ func (c *CLIContext) Create(obj runtime.Object) (err error) {
 	switch o := obj.(type) {
 	case *riov1.Service:
 		_, err = c.Rio.Services(o.Namespace).Create(o)
-		if err != nil {
-			return err
-		}
-		app, version := services.AppAndVersion(o)
-		fmt.Printf("%s/%s:%s\n", o.Namespace, app, version)
-		return nil
 	case *corev1.Pod:
 		_, err = c.Core.Pods(o.Namespace).Create(o)
 	case *corev1.ConfigMap:
@@ -125,7 +118,11 @@ func (c *CLIContext) Create(obj runtime.Object) (err error) {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%s/%s\n", metadata.GetNamespace(), metadata.GetName())
+	g, err := gvk.Get(obj)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%s/%s\n", strings.ToLower(g.Kind), metadata.GetName())
 	return nil
 }
 

@@ -4,10 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"reflect"
 	"strings"
 	"text/tabwriter"
 	"text/template"
 	"time"
+
+	gvk2 "github.com/rancher/wrangler/pkg/gvk"
+
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	yaml2 "sigs.k8s.io/yaml"
 
@@ -21,14 +27,15 @@ import (
 
 var (
 	idsHeader = [][]string{
-		{"NAME", "NAME"},
+		{"NAME", "Name"},
 	}
 
 	nsHeader = [][]string{
-		{"NAMESPACE", "NAMESPACE"},
+		{"NAMESPACE", "Namespace"},
 	}
 
 	localFuncMap = map[string]interface{}{
+		"id":          FormatID,
 		"ago":         FormatCreated,
 		"json":        FormatJSON,
 		"jsoncompact": FormatJSONCompact,
@@ -38,7 +45,9 @@ var (
 		"toJson":      ToJSON,
 		"boolToStar":  BoolToStar,
 		"array":       ToArray,
+		"arrayFirst":  ToArrayFirst,
 		"graph":       Graph,
+		"pointer":     Pointer,
 	}
 )
 
@@ -218,6 +227,13 @@ func ToArray(s []string) (string, error) {
 	return strings.Join(s, ", "), nil
 }
 
+func ToArrayFirst(s []string) (string, error) {
+	if len(s) > 0 {
+		return s[0], nil
+	}
+	return "", nil
+}
+
 func Graph(value int) (string, error) {
 	bars := int(float64(value) / 100.0 * 30)
 	builder := &strings.Builder{}
@@ -231,29 +247,29 @@ func Graph(value int) (string, error) {
 	return builder.String(), nil
 }
 
-func FormatStackScopedName(defaultNamespace string) func(interface{}, interface{}, interface{}) (string, error) {
-	return func(data, data2, data3 interface{}) (string, error) {
-		stackName, ok := data.(string)
-		if !ok {
-			return "", nil
-		}
-
-		serviceName, ok := data2.(string)
-		if !ok {
-			return "", nil
-		}
-
-		if stackName == defaultNamespace {
-			return serviceName, nil
-		}
-
-		version, ok := data3.(string)
-		if ok && version != "" {
-			serviceName = serviceName + ":" + version
-		}
-
-		return stackName + "/" + serviceName, nil
+func Pointer(data interface{}) string {
+	if reflect.ValueOf(data).IsNil() {
+		return ""
 	}
+	return fmt.Sprint(data)
+}
+
+func FormatID(obj runtime.Object) (string, error) {
+	metaObj, err := meta.Accessor(obj)
+	if err != nil {
+		return "", err
+	}
+
+	kind := obj.GetObjectKind().GroupVersionKind().Kind
+	if kind == "" {
+		gvk, err := gvk2.Get(obj)
+		if err != nil {
+			return "", err
+		}
+		kind = gvk.Kind
+	}
+
+	return fmt.Sprintf("%s/%s/%s", strings.ToLower(kind), metaObj.GetNamespace(), metaObj.GetName()), nil
 }
 
 func FormatCreated(data interface{}) (string, error) {

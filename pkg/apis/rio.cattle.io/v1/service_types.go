@@ -57,6 +57,9 @@ type ServiceSpec struct {
 	// from the build.repo
 	Template bool `json:"template,omitempty"`
 
+	// StageOnly whether to only stage services that are generated through template from build.repo
+	StageOnly bool `json:"stageOnly,omitempty"`
+
 	// Version version of this service
 	Version string `json:"version,omitempty"`
 
@@ -275,10 +278,10 @@ type Volume struct {
 	Path string `json:"path,omitempty"`
 
 	// That path on the host to mount into this container
-	HostPath string `json:"path,omitempty"`
+	HostPath string `json:"hostpath,omitempty"`
 
 	// The
-	HostPathType *v1.HostPathType `json:"type,omitempty" protobuf:"bytes,2,opt,name=type"`
+	HostPathType *v1.HostPathType `json:"hostPathType,omitempty" protobuf:"bytes,2,opt,name=type"`
 
 	// If Persistent is true then this volume refers to a PersistentVolumeClaim in this namespace. The
 	// Name field is used to reference PersistentVolumeClaim.  If the Name of this Volume matches a VolumeTemplate
@@ -372,6 +375,9 @@ func (in ContainerPort) IsExposed() bool {
 }
 
 type ServiceStatus struct {
+	// DeploymentReady for ready status on deployment
+	DeploymentReady bool `json:"deploymentReady,omitempty"`
+
 	// ScaleStatus for the Service
 	ScaleStatus *ScaleStatus `json:"scaleStatus,omitempty"`
 
@@ -395,6 +401,9 @@ type ServiceStatus struct {
 
 	// log token to access build log
 	BuildLogToken string `json:"buildLogToken,omitempty"`
+
+	// Associated git commit name
+	GitCommitName string `json:"gitCommitName,omitempty"`
 }
 
 type BuiltImage struct {

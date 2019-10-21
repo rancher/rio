@@ -10,13 +10,12 @@ import (
 
 func NewConfig(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
-		{"NAME", "{{stackScopedName .Obj.Namespace .Obj.Name ``}}"},
+		{"NAME", "{{id .Obj}}"},
 		{"CREATED", "{{.Obj.CreationTimestamp | ago}}"},
 		{"SIZE", "{{.Obj | size}}"},
 	}, cfg)
 
 	writer.AddFormatFunc("size", Base64Size)
-	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cfg.GetSetNamespace()))
 
 	return &tableWriter{
 		writer: writer,

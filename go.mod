@@ -13,9 +13,10 @@ replace (
 	github.com/jaguilar/vt100 => github.com/tonistiigi/vt100 v0.0.0-20190402012908-ad4c4a574305
 	github.com/jetstack/cert-manager => github.com/rancher/cert-manager v0.7.0-rio.1
 	github.com/knative/pkg => github.com/rancher/pkg v0.0.0-20190514055449-b30ab9de040e
-	github.com/linkerd/linkerd2 => ../linkerd2
+	github.com/linkerd/linkerd2 => /home/daishan/goprojects/linkerd2
 	github.com/matryer/moq => github.com/rancher/moq v0.0.0-20190404221404-ee5226d43009
-	github.com/rancher/wrangler => ../wrangler
+	github.com/rancher/gitwatcher => /home/daishan/goprojects/gitwatcher
+	github.com/rancher/wrangler => /home/daishan/goprojects/wrangler
 	golang.org/x/tools => golang.org/x/tools v0.0.0-20190411180116-681f9ce8ac52
 
 	k8s.io/api => k8s.io/api v0.0.0-20190918195907-bd6ac527cfd2
@@ -46,7 +47,6 @@ require (
 	github.com/drone/envsubst v0.0.0-20171016184023-f4d1a8ef8670
 	github.com/envoyproxy/go-control-plane v0.8.7-0.20190906190023-ba541bc36302 // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.1.0 // indirect
-	github.com/gdamore/tcell v0.0.0-20190319073105-ec71b09872d7 // indirect
 	github.com/go-bindata/go-bindata v3.1.2+incompatible
 	github.com/gogo/googleapis v1.2.0 // indirect
 	github.com/gogo/protobuf v1.3.0
@@ -72,22 +72,19 @@ require (
 	github.com/prometheus/common v0.6.0 // indirect
 	github.com/prometheus/procfs v0.0.3 // indirect
 	github.com/radovskyb/watcher v1.0.7 // indirect
-	github.com/rancher/axe v0.0.0-20190531011056-59fcf8b44147 // indirect
 	github.com/rancher/gitwatcher v0.4.2-0.20191015052408-00ce0a8a61c1
 	github.com/rancher/mapper v0.0.0-20190814232720-058a8b7feb99
 	github.com/rancher/norman v0.0.0-20191015045353-cc004d32fcc9
 	github.com/rancher/rdns-server v0.5.7-0.20190927164127-7128efe7d065
 	github.com/rancher/wrangler v0.2.1-0.20191015042916-f2a6ecca4f20
 	github.com/rancher/wrangler-api v0.2.1-0.20191015045805-d3635aa0853a
-	github.com/rivo/tview v0.0.0-20190319111340-8d5eba0c2f51 // indirect
-	github.com/rivo/uniseg v0.0.0-20190313204849-f699dde9c340 // indirect
 	github.com/sclevine/spec v1.3.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/solo-io/gloo v0.20.3-0.20191003200350-6f6e02641501
 	github.com/solo-io/go-utils v0.10.17 // indirect
 	github.com/solo-io/solo-kit v0.10.24-0.20191003192541-dc479f62f67b
 	github.com/stretchr/testify v1.3.0
-	github.com/tektoncd/pipeline v0.4.0
+	github.com/tektoncd/pipeline v0.7.0
 	github.com/urfave/cli v1.22.1
 	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
@@ -99,10 +96,11 @@ require (
 	k8s.io/apimachinery v0.0.0-20190817020851-f2f3a405f61d
 	k8s.io/apiserver v0.0.0-20190918200908-1e17798da8c1
 	k8s.io/cli-runtime v0.0.0-20190918202139-0b14c719ca62
-	k8s.io/client-go v10.0.0+incompatible
+	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
 	k8s.io/gengo v0.0.0-20190327210449-e17681d19d3a // indirect
 	k8s.io/klog v0.3.2
-	k8s.io/kubernetes v1.13.4
+	k8s.io/kubernetes v1.14.3
 	k8s.io/utils v0.0.0-20190506122338-8fab8cb257d5 // indirect
+	knative.dev/pkg v0.0.0-20191020211422-ec5f5148b8d0
 	sigs.k8s.io/yaml v1.1.0
 )

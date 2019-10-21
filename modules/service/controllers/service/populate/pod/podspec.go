@@ -20,13 +20,18 @@ func podSpec(service *riov1.Service) v1.PodSpec {
 		HostAliases:        service.Spec.HostAliases,
 		Hostname:           service.Spec.Hostname,
 		HostNetwork:        service.Spec.HostNetwork,
-		ServiceAccountName: rbac.ServiceAccountName(service),
 		EnableServiceLinks: &f,
 		Containers:         containers(service, false),
 		InitContainers:     containers(service, true),
 		Volumes:            volumes(service),
 		Affinity:           service.Spec.Affinity,
 		ImagePullSecrets:   pullSecrets(service.Spec.ImagePullSecrets),
+	}
+
+	serviceAccountName := rbac.ServiceAccountName(service)
+	if serviceAccountName != "" {
+		podSpec.ServiceAccountName = serviceAccountName
+		podSpec.AutomountServiceAccountToken = nil
 	}
 
 	if service.Spec.DNS != nil {

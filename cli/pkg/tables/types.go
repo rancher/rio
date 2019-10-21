@@ -27,9 +27,10 @@ type tableWriter struct {
 }
 
 type data struct {
-	Name    string
-	Context interface{}
-	Obj     runtime.Object
+	Name      string
+	Namespace string
+	Context   interface{}
+	Obj       runtime.Object
 }
 
 func (t *tableWriter) Write(objs []runtime.Object) (err error) {
@@ -58,9 +59,10 @@ func (t *tableWriter) Write(objs []runtime.Object) (err error) {
 		}
 
 		t.writer.Write(&data{
-			Name:    id,
-			Context: t.context,
-			Obj:     obj,
+			Name:      id,
+			Namespace: metaObj.GetNamespace(),
+			Context:   t.context,
+			Obj:       obj,
 		})
 	}
 

@@ -7,7 +7,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/kubectl/cmd/util/editor"
+	"k8s.io/kubernetes/pkg/kubectl/cmd/util/editor"
 )
 
 type updateFunc func(content []byte) error

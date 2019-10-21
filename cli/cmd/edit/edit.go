@@ -31,8 +31,7 @@ var (
 )
 
 type Edit struct {
-	Raw    bool   `desc:"Edit the raw API object, not the pretty formatted one"`
-	T_Type string `desc:"Specific type to edit"`
+	Raw bool `desc:"Edit the raw API object, not the pretty formatted one"`
 }
 
 func (edit *Edit) Run(ctx *clicontext.CLIContext) error {

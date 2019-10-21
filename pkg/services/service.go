@@ -42,3 +42,7 @@ func ToNamedContainers(service *v1.Service) (result []v1.NamedContainer) {
 	result = append(result, service.Spec.Sidecars...)
 	return
 }
+
+func AutoscaleEnable(service *v1.Service) bool {
+	return service.Spec.Autoscale != nil && service.Spec.Autoscale.MinReplicas != nil && service.Spec.Autoscale.MaxReplicas != nil && *service.Spec.Autoscale.MinReplicas != *service.Spec.Autoscale.MaxReplicas
+}

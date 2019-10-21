@@ -5,7 +5,6 @@ import (
 
 	webhookinator "github.com/rancher/gitwatcher/pkg/generated/controllers/gitwatcher.cattle.io"
 	"github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io"
-	"github.com/rancher/rio/pkg/generated/controllers/autoscale.rio.cattle.io"
 	gateway "github.com/rancher/rio/pkg/generated/controllers/gateway.solo.io"
 	gloo "github.com/rancher/rio/pkg/generated/controllers/gloo.solo.io"
 	"github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io"
@@ -36,7 +35,6 @@ type Context struct {
 	Namespace string
 
 	Apps          *apps.Factory
-	AutoScale     *autoscale.Factory
 	Batch         *batch.Factory
 	Build         *build.Factory
 	CertManager   *certmanager.Factory
@@ -66,7 +64,6 @@ func NewContext(namespace string, config *rest.Config) *Context {
 	context := &Context{
 		Namespace:     namespace,
 		Apps:          apps.NewFactoryFromConfigOrDie(config),
-		AutoScale:     autoscale.NewFactoryFromConfigOrDie(config),
 		Batch:         batch.NewFactoryFromConfigOrDie(config),
 		Build:         build.NewFactoryFromConfigOrDie(config),
 		CertManager:   certmanager.NewFactoryFromConfigOrDie(config),
@@ -92,7 +89,6 @@ func NewContext(namespace string, config *rest.Config) *Context {
 func (c *Context) Start(ctx context.Context) error {
 	return start.All(ctx, 5,
 		c.Apps,
-		c.AutoScale,
 		c.Batch,
 		c.Build,
 		c.CertManager,

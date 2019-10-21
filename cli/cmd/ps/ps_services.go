@@ -32,8 +32,9 @@ func (p *Ps) services(ctx *clicontext.CLIContext) error {
 			return err
 		}
 		output = append(output, ServiceData{
-			ID:      id,
-			Service: service.(*riov1.Service),
+			ID:        id,
+			Service:   service.(*riov1.Service),
+			Namespace: service.(*riov1.Service).Namespace,
 		})
 	}
 

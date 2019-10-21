@@ -49,7 +49,7 @@ func (h *Handler) onChange(key string, svc *corev1.Service) (*corev1.Service, er
 		return svc, nil
 	}
 
-	socatDeploy := constructors.NewDaemonset(svc.Namespace, "socat", v1.Deployment{
+	socatDeploy := constructors.NewDaemonset(svc.Namespace, "socat", v1.DaemonSet{
 		ObjectMeta: v12.ObjectMeta{
 			OwnerReferences: []v12.OwnerReference{
 				{
@@ -60,7 +60,7 @@ func (h *Handler) onChange(key string, svc *corev1.Service) (*corev1.Service, er
 				},
 			},
 		},
-		Spec: v1.DeploymentSpec{
+		Spec: v1.DaemonSetSpec{
 			Selector: &v12.LabelSelector{
 				MatchLabels: map[string]string{
 					"app": "socat",

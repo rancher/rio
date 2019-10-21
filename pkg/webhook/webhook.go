@@ -333,7 +333,7 @@ func convertSecurityPolicyRule(service riov1.Service) []rbacv1.PolicyRule {
 		useServiceMesh = true
 	}
 
-	if service.Spec.Privileged != nil {
+	if service.Spec.ContainerSecurityContext != nil && service.Spec.ContainerSecurityContext.Privileged != nil && *service.Spec.ContainerSecurityContext.Privileged {
 		usePriviledged = true
 	}
 

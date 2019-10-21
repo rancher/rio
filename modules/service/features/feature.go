@@ -27,7 +27,6 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			service.Register,
 			globalrbac.Register,
 			servicestatus.Register,
-			//stack.Register,
 		},
 	}
 

@@ -30,25 +30,24 @@ func NewRuncBuilder(buildkitPort string) *Builder {
 	}
 }
 
-func (l Builder) Build(ctx context.Context, spec riov1.ImageBuild) (string, error) {
+func (l Builder) Build(ctx context.Context, spec riov1.ImageBuildSpec) (string, error) {
 	return l.build(ctx, spec)
 }
 
-func (l Builder) build(ctx context.Context, spec riov1.ImageBuild) (string, error) {
+func (l Builder) build(ctx context.Context, spec riov1.ImageBuildSpec) (string, error) {
 	buildkitClient, solveOpt, err := initializeClient(ctx, spec, l.buildkitPort)
 	if err != nil {
 		return "", nil
 	}
 
-	image := fmt.Sprintf("%s/%s", spec.PushRegistry, spec.BuildImageName)
+	image := fmt.Sprintf("%s/%s", spec.PushRegistry, spec.ImageName)
 	exportEntry := client.ExportEntry{
 		Type:  "image",
 		Attrs: map[string]string{},
 	}
 	exportEntry.Attrs["name"] = image
-	if spec.Push {
-		exportEntry.Attrs["push"] = "true"
-	}
+	exportEntry.Attrs["push"] = "true"
+
 	if strings.HasPrefix(spec.PushRegistry, constants.BuildkitdService) {
 		exportEntry.Attrs["registry.insecure"] = "true"
 	}
@@ -72,7 +71,7 @@ func (l Builder) build(ctx context.Context, spec riov1.ImageBuild) (string, erro
 			}
 		}
 
-		if !strings.ContainsAny(spec.BuildImageName, ":@") {
+		if !strings.ContainsAny(spec.ImageName, ":@") {
 			image = fmt.Sprintf("%s@%s", image, digest)
 		}
 		return nil
@@ -91,7 +90,7 @@ func (l Builder) build(ctx context.Context, spec riov1.ImageBuild) (string, erro
 	return image, nil
 }
 
-func initializeClient(ctx context.Context, buildSpec riov1.ImageBuild, port string) (*client.Client, client.SolveOpt, error) {
+func initializeClient(ctx context.Context, buildSpec riov1.ImageBuildSpec, port string) (*client.Client, client.SolveOpt, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
@@ -105,24 +104,23 @@ func initializeClient(ctx context.Context, buildSpec riov1.ImageBuild, port stri
 	solveOpt := client.SolveOpt{
 		Frontend: "dockerfile.v0",
 		FrontendAttrs: map[string]string{
-			"filename": buildSpec.DockerFile,
+			"filename": buildSpec.Dockerfile,
 		},
 		LocalDirs: map[string]string{
-			"context":    buildSpec.BuildContext,
-			"dockerfile": buildSpec.DockerFilePath,
+			"context": buildSpec.Context,
 		},
 		Session: attachable,
 	}
 
 	var buildArgs []string
-	for _, arg := range buildSpec.BuildArgs {
+	for _, arg := range buildSpec.Args {
 		buildArgs = append(buildArgs, fmt.Sprintf("build-arg:%s", arg))
 	}
 	solveOpt.FrontendAttrs, err = build.ParseOpt(buildArgs, nil)
 	if err != nil {
 		return nil, client.SolveOpt{}, err
 	}
-	solveOpt.FrontendAttrs["filename"] = buildSpec.DockerFile
+	solveOpt.FrontendAttrs["filename"] = buildSpec.Dockerfile
 	if buildSpec.NoCache {
 		solveOpt.FrontendAttrs["no-cache"] = ""
 	}

@@ -6,12 +6,11 @@ import (
 
 func NewPublicDomain(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
-		{"NAME", "{{stackScopedName .Obj.Namespace .Obj.Name ``}}"},
+		{"NAME", "{{id .Obj}}"},
 		{"DOMAIN", "Obj.Spec.DomainName"},
 		{"TARGET", "{{stackScopedName .Obj.Namespace .Obj.Spec.TargetServiceName ``}}"},
 	}, cfg)
 
-	writer.AddFormatFunc("stackScopedName", table.FormatStackScopedName(cfg.GetSetNamespace()))
 	return &tableWriter{
 		writer: writer,
 	}

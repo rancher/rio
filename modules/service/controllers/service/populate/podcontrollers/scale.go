@@ -2,6 +2,7 @@ package podcontrollers
 
 import (
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/services"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -15,7 +16,7 @@ func parseScaleParams(service *riov1.Service) scaleParams {
 	var scale *int
 	scale = service.Spec.Replicas
 
-	if service.Status.ComputedReplicas != nil {
+	if service.Status.ComputedReplicas != nil && services.AutoscaleEnable(service) {
 		scale = service.Status.ComputedReplicas
 	}
 

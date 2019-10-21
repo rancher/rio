@@ -13,15 +13,15 @@ import (
 
 func NewService(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
-		{"NAME", "{{.ID}"},
-		{"ENDPOINT", "{{.Service.Status.Endpoints[0]}}"},
-		{"SCALE", "{{scale .Service .Service.Status.ScaleStatus}}"},
+		{"NAME", "{{.ID}}"},
 		{"IMAGE", "{{.Service | image}}"},
+		{"ENDPOINT", "{{arrayFirst .Service.Status.Endpoints}}"},
+		{"SCALE", "{{scale .Service .Service.Status.ScaleStatus}}"},
 		{"APP", "{{.Service | app}}"},
 		{"VERSION", "{{.Service | version}}"},
-		{"WEIGHT", "{{.Service.Spec.Weight}}"},
+		{"WEIGHT", "{{.Service.Spec.Weight | pointer}}"},
 		{"CREATED", "{{.Service.CreationTimestamp | ago}}"},
-		{"DETAIL", "{{}}"},
+		//{"DETAIL", "{{}}"},
 	}, cfg)
 
 	writer.AddFormatFunc("image", FormatImage)
@@ -54,7 +54,7 @@ func version(data interface{}) string {
 
 func formatRevisionScale(svc *riov1.Service, scaleStatus *v1.ScaleStatus) (string, error) {
 	scale := svc.Spec.Replicas
-	if svc.Status.ComputedReplicas != nil {
+	if svc.Status.ComputedReplicas != nil && services.AutoscaleEnable(svc) {
 		scale = svc.Status.ComputedReplicas
 	}
 	return FormatScale(scale, scaleStatus)

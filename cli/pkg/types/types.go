@@ -12,7 +12,7 @@ const (
 	FeatureType         = "feature"
 	PublicDomainType    = "publicdomain"
 	SecretType          = "secret"
-	BuildType           = "build"
+	BuildType           = "taskrun"
 	StackType           = "stack"
 )
 

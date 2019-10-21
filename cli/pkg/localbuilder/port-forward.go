@@ -18,7 +18,7 @@ import (
 	"k8s.io/client-go/rest"
 	portforwardtools "k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
-	"k8s.io/kubectl/cmd/portforward"
+	"k8s.io/kubernetes/pkg/kubectl/cmd/portforward"
 )
 
 func portForward(podNamespace string, k8s *kubernetes.Clientset, port, targetPort string, stopChan chan struct{}) error {

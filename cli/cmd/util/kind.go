@@ -5,10 +5,8 @@ import (
 	"strings"
 
 	"github.com/rancher/rio/cli/pkg/types"
-
-	"github.com/rancher/wrangler/pkg/kv"
-
 	gvk2 "github.com/rancher/wrangler/pkg/gvk"
+	"github.com/rancher/wrangler/pkg/kv"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 )

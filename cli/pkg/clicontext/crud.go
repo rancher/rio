@@ -31,7 +31,7 @@ func (c *CLIContext) UpdateResource(r types.Resource, updater func(obj runtime.O
 	return c.UpdateObject(r.Object)
 }
 
-func (c *CLIContext) Update(name, typeName string, updater func(obj runtime.Object) error) error {
+func (c *CLIContext) Update(name string, updater func(obj runtime.Object) error) error {
 	r, err := c.ByID(name)
 	if err != nil {
 		return err

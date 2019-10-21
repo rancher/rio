@@ -18,4 +18,6 @@ type Logs struct {
 }
 
 func (l *Logs) Run(ctx *clicontext.CLIContext) error {
+	// todo
+	return nil
 }

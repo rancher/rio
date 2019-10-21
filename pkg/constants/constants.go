@@ -7,10 +7,15 @@ const (
 	DevWebhookPort   = ":7443"
 	RegistryService  = "localhost:80"
 	BuildkitdService = "buildkitd"
+	BuildkitdImage   = "moby/buildkit:v0.6.1"
 
 	ServiceMeshName = "linkerd"
 
 	AutoscalerServiceName = "autoscaler"
+
+	DefaultGitCrendential    = "gitcredential"
+	DefaultDockerCrendential = "dockerconfig"
+	DefaultGithubCrendential = "githubtoken"
 )
 
 var (

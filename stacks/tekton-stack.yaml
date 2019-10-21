@@ -665,7 +665,6 @@ kubernetes:
           - configMap:
               name: config-logging
             name: config-logging
-    
     ---
 
 template:

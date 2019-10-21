@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/rancher/rio/cli/cmd/install"
-
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/rio/cli/cmd/attach"
 	"github.com/rancher/rio/cli/cmd/builds"
@@ -19,13 +17,11 @@ import (
 	"github.com/rancher/rio/cli/cmd/externalservice"
 	"github.com/rancher/rio/cli/cmd/info"
 	"github.com/rancher/rio/cli/cmd/inspect"
-
-	//"github.com/rancher/rio/cli/cmd/install"
+	"github.com/rancher/rio/cli/cmd/install"
 	"github.com/rancher/rio/cli/cmd/logs"
 	"github.com/rancher/rio/cli/cmd/promote"
 	"github.com/rancher/rio/cli/cmd/ps"
 	"github.com/rancher/rio/cli/cmd/publicdomain"
-	"github.com/rancher/rio/cli/cmd/revision"
 	"github.com/rancher/rio/cli/cmd/rm"
 	"github.com/rancher/rio/cli/cmd/route"
 	"github.com/rancher/rio/cli/cmd/run"
@@ -39,7 +35,11 @@ import (
 	"github.com/rancher/rio/cli/cmd/weight"
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	_ "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io"
+	_ "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io"
 	"github.com/rancher/rio/pkg/version"
+	_ "github.com/rancher/wrangler-api/pkg/generated/controllers/core"
+	_ "github.com/rancher/wrangler-api/pkg/generated/controllers/tekton.dev"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -99,11 +99,15 @@ func main() {
 			Value:       "rio-system",
 			Destination: &cfg.SystemNamespace,
 		},
+		cli.BoolFlag{
+			Name:        "show-system,s",
+			Usage:       "Show system namespace resource",
+			Destination: &cfg.ShowSystemNamespace,
+		},
 		cli.StringFlag{
-			Name:        "namespace,n",
-			Usage:       "Specify which namespace in kubernetes to use",
-			EnvVar:      "NAMESPACE",
-			Destination: &cfg.DefaultNamespace,
+			Name:   "namespace,n",
+			Usage:  "Specify which namespace in kubernetes to use",
+			EnvVar: "NAMESPACE",
 		},
 		cli.BoolFlag{
 			Name:        "all-namespaces,A",
@@ -126,9 +130,9 @@ func main() {
 		stacks.Stacks(app),
 
 		builder.Command(&ps.Ps{},
-			"List services and containers",
-			appName+" ps [OPTIONS] [SERVICE_OR_REVISION_...]",
-			"To view revisions, run `rio ps foo`. To view pods of a specific revision, run `rio ps foo:v0`. To view containers, run `rio ps -c foo[:v0]"),
+			"List services",
+			appName+" ps [OPTIONS]",
+			"To view all rio services, run `rio ps`"),
 
 		builder.Command(&run.Run{},
 			"Create and run a new service",
@@ -180,10 +184,6 @@ func main() {
 		builder.Command(&uninstall.Uninstall{},
 			"Uninstall rio",
 			appName+" uninstall [OPTIONS]",
-			""),
-		builder.Command(&revision.Revision{},
-			"List service revisions",
-			appName+" revision [OPTIONS] [APP...]",
 			""),
 
 		builder.Command(&stage.Stage{},

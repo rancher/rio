@@ -9,7 +9,7 @@ func (c *CLIContext) IDs() bool {
 }
 
 func (c *CLIContext) AllNamespaceSet() bool {
-	return c.CLI.GlobalBool("--all-namespaces")
+	return c.AllNamespace
 }
 
 func (c *CLIContext) Quiet() bool {
@@ -29,14 +29,18 @@ func (c *CLIContext) WithWriter(writer io.Writer) {
 }
 
 func (c *CLIContext) GetSetNamespace() string {
-	if c.CLI.GlobalBool("A") {
+	if c.CLI.GlobalBool("all-namespaces") {
 		return ""
 	}
-	return c.CLI.GlobalString("namespace")
+	ns := c.CLI.GlobalString("namespace")
+	if ns == "" {
+		return c.GetDefaultNamespace()
+	}
+	return ns
 }
 
 func (c *CLIContext) GetDefaultNamespace() string {
-	return "default"
+	return c.DefaultNamespace
 }
 
 func (c *CLIContext) GetSystemNamespace() string {

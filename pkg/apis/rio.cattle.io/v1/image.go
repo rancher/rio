@@ -52,4 +52,7 @@ type ImageBuildSpec struct {
 
 	// Timeout describes how long the build can run
 	Timeout *metav1.Duration `json:"timeout,omitempty" mapper:"duration"`
+
+	// Watch describe if a git watcher should be created to watch git branch changes and apply change
+	Watch bool `json:"watch,omitempty"`
 }

@@ -5,9 +5,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/rancher/rio/cli/cmd/util"
+
 	"github.com/rancher/mapper"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	clitypes "github.com/rancher/rio/cli/pkg/types"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/kv"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -21,7 +22,7 @@ func (s *Scale) Run(ctx *clicontext.CLIContext) error {
 
 	for _, arg := range ctx.CLI.Args() {
 		name, scaleStr := kv.Split(arg, "=")
-		err := ctx.Update(name, clitypes.ServiceType, func(obj runtime.Object) error {
+		err := ctx.Update(name, func(obj runtime.Object) error {
 			service := obj.(*v1.Service)
 
 			if strings.ContainsRune(scaleStr, '-') {
@@ -37,8 +38,8 @@ func (s *Scale) Run(ctx *clicontext.CLIContext) error {
 				if service.Spec.Autoscale.Concurrency == 0 {
 					service.Spec.Autoscale.Concurrency = 10
 				}
-				service.Spec.Autoscale.MinReplicas = toInt32(minScale)
-				service.Spec.Autoscale.MaxReplicas = toInt32(maxScale)
+				service.Spec.Autoscale.MinReplicas = util.ToInt32(minScale)
+				service.Spec.Autoscale.MaxReplicas = util.ToInt32(maxScale)
 				if minScale != 0 {
 					service.Spec.Replicas = &minScale
 				} else {
@@ -50,9 +51,7 @@ func (s *Scale) Run(ctx *clicontext.CLIContext) error {
 					return fmt.Errorf("failed to parse %s: %v", arg, err)
 				}
 				service.Spec.Replicas = &scale
-				service.Spec.Autoscale.MinReplicas = nil
-				service.Spec.Autoscale.MaxReplicas = nil
-				service.Status.ComputedReplicas = nil
+				service.Spec.Autoscale = nil
 			}
 
 			return nil
@@ -61,9 +60,4 @@ func (s *Scale) Run(ctx *clicontext.CLIContext) error {
 	}
 
 	return mapper.NewErrors(errors...)
-}
-
-func toInt32(v int) *int32 {
-	r := int32(v)
-	return &r
 }

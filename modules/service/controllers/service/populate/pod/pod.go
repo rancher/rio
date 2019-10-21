@@ -21,7 +21,7 @@ func Populate(service *riov1.Service, os *objectset.ObjectSet) (v1.PodTemplateSp
 	}
 
 	podSpec := podSpec(service)
-	Roles(service, &podSpec, os)
+	Roles(service, os)
 	if err := images(service, &podSpec); err != nil {
 		return pts, err
 	}
@@ -32,16 +32,10 @@ func Populate(service *riov1.Service, os *objectset.ObjectSet) (v1.PodTemplateSp
 	return pts, nil
 }
 
-func Roles(service *riov1.Service, podSpec *v1.PodSpec, os *objectset.ObjectSet) {
+func Roles(service *riov1.Service, os *objectset.ObjectSet) {
 	if err := rbac.Populate(service, os); err != nil {
 		os.AddErr(err)
 		return
-	}
-
-	serviceAccountName := rbac.ServiceAccountName(service)
-	if serviceAccountName != "" {
-		podSpec.ServiceAccountName = serviceAccountName
-		podSpec.AutomountServiceAccountToken = nil
 	}
 }
 

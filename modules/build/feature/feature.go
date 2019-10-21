@@ -23,6 +23,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		},
 		SystemStacks: []*stack.SystemStack{
 			stack.NewSystemStack(apply, rContext.Namespace, "build"),
+			stack.NewSystemStack(rContext.Apply, rContext.Namespace, "tekton"),
 		},
 		Controllers: []features.ControllerRegister{
 			service.Register,

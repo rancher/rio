@@ -4,9 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/selection"
-
 	webhookv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
 	"github.com/rancher/rio/modules/service/controllers/service/populate/rbac"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
@@ -14,7 +11,6 @@ import (
 	"github.com/rancher/rio/pkg/constructors"
 	adminv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
 	corev1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/pkg/apply"
@@ -25,31 +21,35 @@ import (
 	v1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/selection"
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
-	c := stackobject.NewGeneratingController(ctx, rContext, "stack-service-build", rContext.Rio.Rio().V1().Stack())
-	c.Apply = c.Apply.WithCacheTypes(
-		rContext.Build.Tekton().V1alpha1().TaskRun(),
-		rContext.Webhook.Gitwatcher().V1().GitWatcher(),
-		rContext.Core.Core().V1().ServiceAccount(),
-		rContext.Core.Core().V1().Secret(),
-		rContext.RBAC.Rbac().V1().Role(),
-		rContext.RBAC.Rbac().V1().RoleBinding(),
-		rContext.RBAC.Rbac().V1().ClusterRole(),
-		rContext.RBAC.Rbac().V1().ClusterRoleBinding(),
-	).WithStrictCaching()
-
 	p := populator{
-		apply:           c.Apply,
 		systemNamespace: rContext.Namespace,
-		appCache:        rContext.Rio.Rio().V1().App().Cache(),
-		info:            rContext.Global.Admin().V1().RioInfo().Cache(),
+		info:            rContext.Admin.Admin().V1().RioInfo().Cache(),
 		pods:            rContext.Core.Core().V1().Pod().Cache(),
+		services:        rContext.Rio.Rio().V1().Service().Cache(),
 	}
 
-	c.Populator = p.populate
+	riov1controller.RegisterStackGeneratingHandler(ctx,
+		rContext.Rio.Rio().V1().Stack(),
+		rContext.Apply.WithCacheTypes(
+			rContext.Build.Tekton().V1alpha1().TaskRun(),
+			rContext.Webhook.Gitwatcher().V1().GitWatcher(),
+			rContext.Core.Core().V1().ServiceAccount(),
+			rContext.Core.Core().V1().Secret(),
+			rContext.RBAC.Rbac().V1().Role(),
+			rContext.RBAC.Rbac().V1().RoleBinding(),
+			rContext.RBAC.Rbac().V1().ClusterRole(),
+			rContext.RBAC.Rbac().V1().ClusterRoleBinding(),
+		),
+		"BuildDeployed",
+		"stack-service-build",
+		p.populate,
+		nil)
 
 	return nil
 }
@@ -57,31 +57,31 @@ func Register(ctx context.Context, rContext *types.Context) error {
 type populator struct {
 	apply           apply.Apply
 	systemNamespace string
-	appCache        riov1controller.AppCache
 	info            adminv1controller.RioInfoCache
 	pods            corev1controller.PodCache
+	services        riov1controller.ServiceCache
 }
 
-func (p populator) populate(obj runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) error {
-	stack := obj.(*riov1.Stack)
-
+func (p populator) populate(stack *riov1.Stack, status riov1.StackStatus) ([]runtime.Object, riov1.StackStatus, error) {
 	if stack == nil || stack.Spec.Build == nil || stack.Spec.Build.Repo == "" {
-		return nil
+		return nil, status, nil
 	}
+
+	os := objectset.NewObjectSet()
 
 	if err := p.populateBuild(stack, p.systemNamespace, os); err != nil {
-		return err
+		return nil, status, err
 	}
 
-	webhook, err := p.appCache.Get(p.systemNamespace, "webhook")
+	webhook, err := p.services.Get(p.systemNamespace, "webhook")
 	if errors.IsNotFound(err) {
 		webhook = nil
 	} else if err != nil {
-		return err
+		return nil, status, err
 	}
 
 	populateWebhookAndSecrets(webhook, stack, os)
-	return nil
+	return os.All(), status, nil
 }
 
 func (p populator) populateBuild(stack *riov1.Stack, systemNamespace string, os *objectset.ObjectSet) error {
@@ -95,9 +95,9 @@ func (p populator) populateBuild(stack *riov1.Stack, systemNamespace string, os 
 
 	trName := name.SafeConcatName(stack.Namespace, stack.Name+"-stack", name.Hex(stack.Spec.Build.Repo, 5), name.Hex(rev, 5))
 	sa := constructors.NewServiceAccount(stack.Namespace, trName+"-stack", corev1.ServiceAccount{})
-	if stack.Spec.Build.GitSecretName != "" {
+	if stack.Spec.Build.CloneSecretName != "" {
 		sa.Secrets = append(sa.Secrets, corev1.ObjectReference{
-			Name: stack.Spec.Build.GitSecretName,
+			Name: stack.Spec.Build.CloneSecretName,
 		})
 	}
 	os.Add(sa)
@@ -136,31 +136,35 @@ func (p populator) populateBuild(stack *riov1.Stack, systemNamespace string, os 
 				Inputs: &tektonv1alpha1.Inputs{
 					Resources: []tektonv1alpha1.TaskResource{
 						{
-							Name: "source",
-							Type: tektonv1alpha1.PipelineResourceTypeGit,
+							ResourceDeclaration: tektonv1alpha1.ResourceDeclaration{
+								Name: "source",
+								Type: tektonv1alpha1.PipelineResourceTypeGit,
+							},
 						},
 					},
 				},
-				Steps: []corev1.Container{
+				Steps: []tektonv1alpha1.Step{
 					{
-						Name:            "rio-up",
-						Image:           fmt.Sprintf("%s:%s", constants.ControllerImage, constants.ControllerImageTag),
-						ImagePullPolicy: corev1.PullAlways,
-						WorkingDir:      "/workspace/source",
-						Command: []string{
-							"rio",
-						},
-						Args: []string{
-							"-n",
-							stack.Namespace,
-							"up",
-							"--name",
-							stack.Name,
-						},
-						Env: []corev1.EnvVar{
-							{
-								Name:  "PUSH_LOCAL",
-								Value: "TRUE",
+						Container: corev1.Container{
+							Name:            "rio-up",
+							Image:           fmt.Sprintf("%s:%s", constants.ControllerImage, constants.ControllerImageTag),
+							ImagePullPolicy: corev1.PullAlways,
+							WorkingDir:      "/workspace/source",
+							Command: []string{
+								"rio",
+							},
+							Args: []string{
+								"-n",
+								stack.Namespace,
+								"up",
+								"--name",
+								stack.Name,
+							},
+							Env: []corev1.EnvVar{
+								{
+									Name:  "PUSH_LOCAL",
+									Value: "TRUE",
+								},
 							},
 						},
 					},
@@ -172,7 +176,7 @@ func (p populator) populateBuild(stack *riov1.Stack, systemNamespace string, os 
 						Name: "source",
 						ResourceSpec: &tektonv1alpha1.PipelineResourceSpec{
 							Type: tektonv1alpha1.PipelineResourceTypeGit,
-							Params: []tektonv1alpha1.Param{
+							Params: []tektonv1alpha1.ResourceParam{
 								{
 									Name:  "url",
 									Value: stack.Spec.Build.Repo,
@@ -283,7 +287,7 @@ func populateRbac(stack *riov1.Stack, saName, systemNamespace, buildKitPodName s
 	}
 }
 
-func populateWebhookAndSecrets(webhookService *riov1.App, stack *riov1.Stack, os *objectset.ObjectSet) {
+func populateWebhookAndSecrets(webhookService *riov1.Service, stack *riov1.Stack, os *objectset.ObjectSet) {
 	webhookReceiver := webhookv1.NewGitWatcher(stack.Namespace, stack.Name+"-stack", webhookv1.GitWatcher{
 		Spec: webhookv1.GitWatcherSpec{
 			RepositoryURL:                  stack.Spec.Build.Repo,
@@ -291,7 +295,8 @@ func populateWebhookAndSecrets(webhookService *riov1.App, stack *riov1.Stack, os
 			Push:                           true,
 			Tag:                            true,
 			Branch:                         stack.Spec.Build.Branch,
-			RepositoryCredentialSecretName: stack.Spec.Build.GitSecretName,
+			RepositoryCredentialSecretName: stack.Spec.Build.CloneSecretName,
+			TargetStackName:                stack.Name,
 		},
 	})
 

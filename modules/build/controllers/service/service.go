@@ -10,9 +10,9 @@ import (
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
 	projectv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
+	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/randomtoken"
-	"github.com/rancher/rio/pkg/stackobject"
 	"github.com/rancher/rio/types"
 	corev1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/pkg/name"
@@ -26,30 +26,27 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-const (
-	DefaultGitCrendential    = "gitcredential"
-	DefaultDockerCrendential = "dockerconfig"
-	DefaultGithubCrendential = "githubtoken"
-)
-
 func Register(ctx context.Context, rContext *types.Context) error {
-	c := stackobject.NewGeneratingController(ctx, rContext, "stack-service-build", rContext.Rio.Rio().V1().Service())
-	c.Apply = c.Apply.WithCacheTypes(
-		rContext.Build.Tekton().V1alpha1().TaskRun(),
-		rContext.Webhook.Gitwatcher().V1().GitWatcher(),
-		rContext.Core.Core().V1().ServiceAccount(),
-		rContext.Core.Core().V1().Secret(),
-	).WithStrictCaching()
-
 	p := populator{
 		systemNamespace:    rContext.Namespace,
 		secretsCache:       rContext.Core.Core().V1().Secret().Cache(),
 		clusterDomainCache: rContext.Admin.Admin().V1().ClusterDomain().Cache(),
 		serviceCache:       rContext.Rio.Rio().V1().Service().Cache(),
-		services:           rContext.Rio.Rio().V1().Service(),
 	}
 
-	c.Populator = p.populate
+	riov1controller.RegisterServiceGeneratingHandler(
+		ctx,
+		rContext.Rio.Rio().V1().Service(),
+		rContext.Apply.WithCacheTypes(
+			rContext.Build.Tekton().V1alpha1().TaskRun(),
+			rContext.Webhook.Gitwatcher().V1().GitWatcher(),
+			rContext.Core.Core().V1().ServiceAccount(),
+			rContext.Core.Core().V1().Secret(),
+		),
+		"BuildDeployed",
+		"service-build",
+		p.populate,
+		nil)
 
 	relatedresource.Watch(ctx, "webhook-service", p.resolve,
 		rContext.Rio.Rio().V1().Service(), rContext.Rio.Rio().V1().Service())
@@ -60,10 +57,8 @@ func Register(ctx context.Context, rContext *types.Context) error {
 type populator struct {
 	systemNamespace    string
 	customRegistry     string
-	appCache           v1.AppCache
 	secretsCache       corev1controller.SecretCache
 	serviceCache       v1.ServiceCache
-	services           v1.ServiceClient
 	clusterDomainCache projectv1controller.ClusterDomainCache
 }
 
@@ -97,148 +92,131 @@ func (p *populator) resolve(namespace, name string, obj runtime.Object) (result 
 	return
 }
 
-func (p *populator) populate(obj runtime.Object, ns *corev1.Namespace, os *objectset.ObjectSet) error {
-	service := obj.(*riov1.Service)
-
-	if service == nil || service.Spec.Build == nil || service.Spec.Build.Repo == "" {
-		return nil
+func (p *populator) populate(service *riov1.Service, status riov1.ServiceStatus) ([]runtime.Object, riov1.ServiceStatus, error) {
+	imageBuilds := map[string]*riov1.ImageBuildSpec{}
+	if service.Spec.ImageBuild != nil {
+		imageBuilds[service.Name] = service.Spec.ImageBuild
+	}
+	for _, con := range service.Spec.Sidecars {
+		if con.ImageBuild != nil {
+			imageBuilds[con.Name] = con.ImageBuild
+		}
 	}
 
-	if service.Status.BuildLogToken == "" {
+	os := objectset.NewObjectSet()
+	for name, build := range imageBuilds {
+		if build.Repo == "" {
+			continue
+		}
+
+		if err := p.populateBuild(name, service.Namespace, build, service, p.systemNamespace, os); err != nil {
+			return nil, status, err
+		}
+
+		if err := p.populateWebhookAndSecrets(build, service, name, service.Namespace, os); err != nil {
+			return nil, status, err
+		}
+	}
+
+	if status.BuildLogToken == "" {
 		token, err := randomtoken.Generate()
 		if err != nil {
-			return err
+			return nil, status, err
 		}
-		service.Status.BuildLogToken = token
-		newService, err := p.services.Update(service)
-		if err != nil {
-			return err
-		}
-		service = newService
+		status.BuildLogToken = token
 	}
 
-	if err := p.populateBuild(service, p.systemNamespace, os); err != nil {
-		return err
-	}
-
-	webhook, err := p.appCache.Get(p.systemNamespace, "webhook")
-	if errors.IsNotFound(err) {
-		webhook = nil
-	} else if err != nil {
-		return err
-	}
-
-	populateWebhookAndSecrets(webhook, service, os)
-	return nil
+	return os.All(), status, nil
 }
 
-func (p populator) populateBuild(service *riov1.Service, systemNamespace string, os *objectset.ObjectSet) error {
-	// we only support setting imageBuild for primary container
-	rev := service.Spec.Build.Revision
-	if rev == "" {
-		rev = service.Status.FirstRevision
-	}
+func (p populator) populateBuild(buildKey, namespace string, build *riov1.ImageBuildSpec, svc *riov1.Service, systemNamespace string, os *objectset.ObjectSet) error {
+	rev := build.Revision
 	if rev == "" {
 		return nil
 	}
 
-	trName := name.SafeConcatName(service.Namespace, service.Name, name.Hex(service.Spec.Build.Repo, 5), name.Hex(rev, 5))
+	trName := name.SafeConcatName(buildKey, name.Hex(build.Repo, 5), name.Hex(rev, 5))
 
-	p.setDefaults(service)
+	p.setDefaults(build, namespace)
 
-	sa := constructors.NewServiceAccount(service.Namespace, trName, corev1.ServiceAccount{})
-	if service.Spec.Build.GitSecretName != "" {
+	sa := constructors.NewServiceAccount(namespace, trName, corev1.ServiceAccount{})
+	if build.CloneSecretName != "" {
 		sa.Secrets = append(sa.Secrets, corev1.ObjectReference{
-			Name: service.Spec.Build.GitSecretName,
+			Name: build.CloneSecretName,
 		})
 	}
-	if service.Spec.Build.PushRegistrySecretName != "" {
+	if build.PushRegistrySecretName != "" {
 		sa.Secrets = append(sa.Secrets, corev1.ObjectReference{
-			Name: service.Spec.Build.PushRegistrySecretName,
+			Name: build.PushRegistrySecretName,
 		})
 	}
 
-	build := constructors.NewTaskRun(service.Namespace, trName, tektonv1alpha1.TaskRun{
+	taskrun := constructors.NewTaskRun(namespace, trName, tektonv1alpha1.TaskRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				"service-name":      service.Name,
-				"service-namespace": service.Namespace,
-				"gitcommit-name":    service.Status.GitCommitName,
-				"log-token":         service.Status.BuildLogToken,
+				"container-name":    buildKey,
+				"service-name":      svc.Name,
+				"service-namespace": svc.Namespace,
+				"gitcommit-name":    svc.Status.GitCommitName,
+				"log-token":         svc.Status.BuildLogToken,
 			},
 		},
 		Spec: tektonv1alpha1.TaskRunSpec{
 			ServiceAccount: sa.Name,
-			Timeout:        service.Spec.Build.BuildTimeout,
+			Timeout:        build.Timeout,
 			TaskSpec: &tektonv1alpha1.TaskSpec{
 				Inputs: &tektonv1alpha1.Inputs{
-					Params: []tektonv1alpha1.TaskParam{
+					Params: []tektonv1alpha1.ParamSpec{
 						{
 							Name:        "image",
+							Type:        tektonv1alpha1.ParamTypeString,
 							Description: "Where to publish the resulting image",
 						},
 						{
 							Name:        "dockerfile",
+							Type:        tektonv1alpha1.ParamTypeString,
 							Description: "The name of the Dockerfile",
 						},
 						{
-							Name:        "dockerfile-path",
-							Description: "The path of the Dockerfile",
-						},
-						{
 							Name:        "docker-context",
+							Type:        tektonv1alpha1.ParamTypeString,
 							Description: "The context of the build",
 						},
 						{
-							Name:        "push",
-							Description: "Whether push or not",
-							Default:     "true",
-						},
-						{
-							Name:        "workingdir",
-							Description: " The directory containing the app",
-							Default:     "/workspace",
-						},
-						{
-							Name:        "buildkit-image",
-							Description: "The name of the BuildKit client (buildctl) image",
-							Default:     "moby/buildkit:v0.6.1",
-						},
-						{
 							Name:        "insecure-registry",
+							Type:        tektonv1alpha1.ParamTypeString,
 							Description: "Whether to use insecure registry",
-						},
-						{
-							Name:        "buildkit-daemon-address",
-							Description: "The address of the BuildKit daemon (buildkitd) service",
-							Default:     fmt.Sprintf("tcp://%s.%s:8080", constants.BuildkitdService, systemNamespace),
 						},
 					},
 					Resources: []tektonv1alpha1.TaskResource{
 						{
-							Name: "source",
-							Type: tektonv1alpha1.PipelineResourceTypeGit,
+							ResourceDeclaration: tektonv1alpha1.ResourceDeclaration{
+								Name: "source",
+								Type: tektonv1alpha1.PipelineResourceTypeGit,
+							},
 						},
 					},
 				},
-				Steps: []corev1.Container{
+				Steps: []tektonv1alpha1.Step{
 					{
-						Name:       "build-and-push",
-						Image:      "${inputs.params.buildkit-image}",
-						Command:    []string{"buildctl"},
-						WorkingDir: "/workspace/source",
-						SecurityContext: &corev1.SecurityContext{
-							Privileged: &[]bool{true}[0],
-						},
-						Args: []string{
-							"--addr=${inputs.params.buildkit-daemon-address}",
-							"build",
-							"--progress=plain",
-							"--frontend=dockerfile.v0",
-							"--frontend-opt", "filename=${inputs.params.dockerfile}",
-							"--local", "context=${inputs.params.docker-context}",
-							"--local", "dockerfile=${inputs.params.dockerfile-path}",
-							"--output", "type=image,name=${inputs.params.image},push=true,registry.insecure=${inputs.params.insecure-registry}",
+						Container: corev1.Container{
+							Name:       "build-and-push",
+							Image:      constants.BuildkitdImage,
+							Command:    []string{"buildctl"},
+							WorkingDir: "/workspace/source",
+							SecurityContext: &corev1.SecurityContext{
+								Privileged: &[]bool{true}[0],
+							},
+							Args: []string{
+								fmt.Sprintf("--addr=tcp://%s.%s:8080", constants.BuildkitdService, p.systemNamespace),
+								"build",
+								"--progress=plain",
+								"--frontend=dockerfile.v0",
+								"--opt", "filename=$(inputs.params.dockerfile)",
+								"--local", "context=$(inputs.params.docker-context)",
+								"--local", "dockerfile=$(inputs.params.docker-context)",
+								"--output", "type=image,name=$(inputs.params.image),push=true,registry.insecure=$(inputs.params.insecure-registry)",
+							},
 						},
 					},
 				},
@@ -246,24 +224,32 @@ func (p populator) populateBuild(service *riov1.Service, systemNamespace string,
 			Inputs: tektonv1alpha1.TaskRunInputs{
 				Params: []tektonv1alpha1.Param{
 					{
-						Name:  "image",
-						Value: ImageName(rev, service),
+						Name: "image",
+						Value: tektonv1alpha1.ArrayOrString{
+							Type:      tektonv1alpha1.ParamTypeString,
+							StringVal: ImageName(rev, namespace, buildKey, build),
+						},
 					},
 					{
-						Name:  "insecure-registry",
-						Value: strconv.FormatBool(service.Spec.Build.PushRegistry == ""),
+						Name: "insecure-registry",
+						Value: tektonv1alpha1.ArrayOrString{
+							Type:      tektonv1alpha1.ParamTypeString,
+							StringVal: strconv.FormatBool(build.PushRegistry == ""),
+						},
 					},
 					{
-						Name:  "dockerfile",
-						Value: service.Spec.Build.DockerFile,
+						Name: "dockerfile",
+						Value: tektonv1alpha1.ArrayOrString{
+							Type:      tektonv1alpha1.ParamTypeString,
+							StringVal: build.Dockerfile,
+						},
 					},
 					{
-						Name:  "docker-context",
-						Value: service.Spec.Build.BuildContext,
-					},
-					{
-						Name:  "dockerfile-path",
-						Value: service.Spec.Build.DockerFilePath,
+						Name: "docker-context",
+						Value: tektonv1alpha1.ArrayOrString{
+							Type:      tektonv1alpha1.ParamTypeString,
+							StringVal: build.Context,
+						},
 					},
 				},
 				Resources: []tektonv1alpha1.TaskResourceBinding{
@@ -271,10 +257,10 @@ func (p populator) populateBuild(service *riov1.Service, systemNamespace string,
 						Name: "source",
 						ResourceSpec: &tektonv1alpha1.PipelineResourceSpec{
 							Type: tektonv1alpha1.PipelineResourceTypeGit,
-							Params: []tektonv1alpha1.Param{
+							Params: []tektonv1alpha1.ResourceParam{
 								{
 									Name:  "url",
-									Value: service.Spec.Build.Repo,
+									Value: build.Repo,
 								},
 								{
 									Name:  "revision",
@@ -288,87 +274,90 @@ func (p populator) populateBuild(service *riov1.Service, systemNamespace string,
 		},
 	})
 	os.Add(sa)
-	os.Add(build)
+	os.Add(taskrun)
 	return nil
 }
 
-func populateWebhookAndSecrets(webhookService *riov1.App, service *riov1.Service, os *objectset.ObjectSet) {
-	if service.Spec.Build.Revision != "" {
-		return
+func (p populator) populateWebhookAndSecrets(build *riov1.ImageBuildSpec, svc *riov1.Service, containerName, namespace string, os *objectset.ObjectSet) error {
+	if !build.Watch {
+		return nil
 	}
-	webhookReceiver := webhookv1.NewGitWatcher(service.Namespace, service.Name, webhookv1.GitWatcher{
+
+	webhook, err := p.serviceCache.Get(p.systemNamespace, "webhook")
+	if errors.IsNotFound(err) {
+		webhook = nil
+	} else if err != nil {
+		return err
+	}
+
+	webhookReceiver := webhookv1.NewGitWatcher(namespace, fmt.Sprintf("%s-%s", svc.Name, containerName), webhookv1.GitWatcher{
 		Spec: webhookv1.GitWatcherSpec{
-			RepositoryURL:                  service.Spec.Build.Repo,
+			RepositoryURL:                  build.Repo,
 			Enabled:                        true,
 			Push:                           true,
 			Tag:                            true,
-			PR:                             service.Spec.Build.EnablePR,
-			Branch:                         service.Spec.Build.Branch,
-			RepositoryCredentialSecretName: service.Spec.Build.GitSecretName,
-			GithubWebhookToken:             service.Spec.Build.GithubSecretName,
+			PR:                             build.PR,
+			Branch:                         build.Branch,
+			RepositoryCredentialSecretName: build.CloneSecretName,
+			GithubWebhookToken:             build.WebhookSecretName,
 			GithubDeployment:               true,
+			TargetServiceName:              svc.Name,
+			TargetContainerName:            containerName,
 		},
 	})
 
-	if webhookService != nil && len(webhookService.Status.Endpoints) > 0 {
-		webhookReceiver.Spec.ReceiverURL = webhookService.Status.Endpoints[0]
+	if webhook != nil && len(webhook.Status.Endpoints) > 0 {
+		webhookReceiver.Spec.ReceiverURL = webhook.Status.Endpoints[0]
 	}
 
 	os.Add(webhookReceiver)
+	return nil
 }
 
-func (p populator) setDefaults(service *riov1.Service) {
-	if service.Spec.Build.DockerFile == "" {
-		service.Spec.Build.DockerFile = "Dockerfile"
+func (p populator) setDefaults(build *riov1.ImageBuildSpec, namespace string) {
+	if build.Dockerfile == "" {
+		build.Dockerfile = "Dockerfile"
 	}
-	if service.Spec.Build.Template == "" {
-		service.Spec.Build.Template = "buildkit"
+	if build.Template == "" {
+		build.Template = "buildkit"
 	}
-	if service.Spec.Build.BuildContext == "" {
-		service.Spec.Build.BuildContext = "."
+	if build.Context == "" {
+		build.Context = "."
 	}
-	if service.Spec.Build.DockerFilePath == "" {
-		service.Spec.Build.DockerFilePath = service.Spec.Build.BuildContext
-	}
-	if service.Spec.Build.GitSecretName == "" {
-		if _, err := p.secretsCache.Get(service.Namespace, DefaultGitCrendential); err == nil {
-			service.Spec.Build.GitSecretName = DefaultGitCrendential
+	if build.CloneSecretName == "" {
+		if _, err := p.secretsCache.Get(namespace, constants.DefaultGitCrendential); err == nil {
+			build.CloneSecretName = constants.DefaultGitCrendential
 		}
 	}
 
-	if service.Spec.Build.PushRegistry != "" && service.Spec.Build.PushRegistrySecretName == "" {
-		if _, err := p.secretsCache.Get(service.Namespace, DefaultDockerCrendential); err == nil {
-			service.Spec.Build.PushRegistrySecretName = DefaultDockerCrendential
-			service.Spec.ImagePullSecrets = []corev1.LocalObjectReference{
-				{
-					Name: DefaultDockerCrendential + "-" + "pull",
-				},
-			}
+	if build.PushRegistry != "" && build.PushRegistrySecretName == "" {
+		if _, err := p.secretsCache.Get(namespace, constants.DefaultDockerCrendential); err == nil {
+			build.PushRegistrySecretName = constants.DefaultDockerCrendential
 		}
 	}
 }
 
-func ImageName(rev string, service *riov1.Service) string {
+func ImageName(rev string, namespace, name string, build *riov1.ImageBuildSpec) string {
 	registry := constants.RegistryService
-	if service.Spec.Build.PushRegistry != "" {
-		registry = service.Spec.Build.PushRegistry
+	if build.PushRegistry != "" {
+		registry = build.PushRegistry
 	}
-	imageName := service.Namespace + "-" + service.Name
-	if service.Spec.Build.BuildImageName != "" {
-		imageName = service.Spec.Build.BuildImageName
+	imageName := namespace + "-" + name
+	if build.ImageName != "" {
+		imageName = build.ImageName
 	}
 
 	return fmt.Sprintf("%s/%s:%s", registry, imageName, rev)
 }
 
-func PullImageName(rev string, service *riov1.Service) string {
+func PullImageName(rev string, namespace, name string, build *riov1.ImageBuildSpec) string {
 	registry := "localhost:5442"
-	if service.Spec.Build.PushRegistry != "" {
-		registry = service.Spec.Build.PushRegistry
+	if build.PushRegistry != "" {
+		registry = build.PushRegistry
 	}
-	imageName := service.Namespace + "-" + service.Name
-	if service.Spec.Build.BuildImageName != "" {
-		imageName = service.Spec.Build.BuildImageName
+	imageName := namespace + "-" + name
+	if build.ImageName != "" {
+		imageName = build.ImageName
 	}
 
 	return fmt.Sprintf("%s/%s:%s", registry, imageName, rev)

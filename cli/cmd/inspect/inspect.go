@@ -26,7 +26,18 @@ func (i *Inspect) Run(ctx *clicontext.CLIContext) error {
 		return errors.New("at least one argument is required")
 	}
 
-	ctx.ByID()
+	for _, id := range ctx.CLI.Args() {
+		r, err := ctx.ByID(id)
+		if err != nil {
+			return err
+		}
+
+		t := table.NewWriter(nil, ctx)
+		t.Write(r.Object)
+		if err := t.Close(); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
