@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/wait"
-
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 type TestService struct {
@@ -80,10 +80,7 @@ func (ts *TestService) Remove() {
 
 // Call "rio scale ns/service={scaleTo}"
 func (ts *TestService) Scale(scaleTo int) {
-	_, err := RioCmd([]string{
-		"scale",
-		fmt.Sprintf("%s=%d", ts.Name, scaleTo),
-	})
+	_, err := RioCmd([]string{"scale", fmt.Sprintf("%s=%d", ts.Name, scaleTo)})
 	if err != nil {
 		ts.T.Fatalf("scale command failed:  %v", err.Error())
 	}
@@ -300,6 +297,42 @@ func (ts *TestService) GetKubeCurrentWeight() int {
 	}
 
 	return getRevisionWeight(app, ts.Version)
+}
+
+// PodsResponsesMatchAvailableReplicas does a GetURL in the App endpoint and stores the response in a slice
+// the length of the resulting slice should represent the number of responsive pods in a service.
+// Returns true if the number of replicas is equal to the length of the responses slice.
+func (ts *TestService) PodsResponsesMatchAvailableReplicas(path string, numberOfReplicas int) bool {
+	i := 0
+	replicasTimesRequests := numberOfReplicas * 8
+	responses := make([]string, 0)
+	for i < replicasTimesRequests {
+		response, err := WaitForURLResponse(ts.GetAppEndpointURL() + path)
+		if err != nil {
+			ts.T.Fatal(err.Error())
+		}
+		i++
+		if !stringInSlice(response, responses) {
+			responses = append(responses, response)
+		}
+	}
+	return len(responses) == numberOfReplicas
+}
+
+// KubeCompareReplicasValues get the app number of ready replicasets with a clientset
+// and returns true if that value match the scale given
+func (ts *TestService) GetKubeAvailableReplicas() int {
+	clientset := GetKubeClient()
+	replicaSetList, err := clientset.AppsV1().
+		ReplicaSets(testingNamespace).
+		List(metav1.ListOptions{LabelSelector: "app=" + ts.Service.Name})
+	if err != nil {
+		ts.T.Fatalf(err.Error())
+	}
+	if len(replicaSetList.Items) == 0 {
+		return 0
+	}
+	return int(replicaSetList.Items[0].Status.ReadyReplicas)
 }
 
 //////////////////
