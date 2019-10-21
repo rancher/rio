@@ -13,10 +13,10 @@ replace (
 	github.com/jaguilar/vt100 => github.com/tonistiigi/vt100 v0.0.0-20190402012908-ad4c4a574305
 	github.com/jetstack/cert-manager => github.com/rancher/cert-manager v0.7.0-rio.1
 	github.com/knative/pkg => github.com/rancher/pkg v0.0.0-20190514055449-b30ab9de040e
-	github.com/linkerd/linkerd2 => /home/daishan/goprojects/linkerd2
+	github.com/linkerd/linkerd2 => github.com/StrongMonkey/linkerd2 v0.0.0-20191021165729-976fad67457a
 	github.com/matryer/moq => github.com/rancher/moq v0.0.0-20190404221404-ee5226d43009
-	github.com/rancher/gitwatcher => /home/daishan/goprojects/gitwatcher
-	github.com/rancher/wrangler => /home/daishan/goprojects/wrangler
+	github.com/rancher/gitwatcher => github.com/StrongMonkey/webhookinator v0.0.0-20191021165343-56c8bac69536
+	github.com/rancher/wrangler => github.com/StrongMonkey/wrangler v0.0.0-20191021165522-6a731953f00c
 	golang.org/x/tools => golang.org/x/tools v0.0.0-20190411180116-681f9ce8ac52
 
 	k8s.io/api => k8s.io/api v0.0.0-20190918195907-bd6ac527cfd2
