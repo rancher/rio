@@ -36,6 +36,10 @@ type GitWatcherSpec struct {
 	ExecutionLabels                map[string]string `json:"executionLabels,omitempty"`
 	Enabled                        bool              `json:"enabled,omitempty"`
 	GithubDeployment               bool              `json:"githubDeployment,omitempty"`
+
+	TargetServiceName   string `json:"targetServiceName,omitempty"`
+	TargetStackName     string `json:"targetStackName,omitempty"`
+	TargetContainerName string `json:"targetContainerName,omitempty"`
 }
 
 // +genclient
