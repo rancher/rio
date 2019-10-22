@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -132,9 +133,25 @@ func stringInSlice(a string, list []string) bool {
 // KUBECONFIG env value
 func GetKubeClient() *kubernetes.Clientset {
 	kubeConfigENV := os.Getenv("KUBECONFIG")
+	if kubeConfigENV == "" {
+		if home := homeDir(); home != "" {
+			kubeConfigENV = filepath.Join(home, ".kube", "config")
+		} else {
+			fmt.Fprintln(os.Stderr, "an error occurred please set the KUBECONFIG environment variable")
+			os.Exit(1)
+		}
+	}
 	kubeConfig, _ := clientcmd.BuildConfigFromFlags("", kubeConfigENV)
 	clientset, _ := kubernetes.NewForConfig(kubeConfig)
 	return clientset
+}
+
+// homeDir returns the user HOME PATH
+func homeDir() string {
+	if h := os.Getenv("HOME"); h != "" {
+		return h
+	}
+	return os.Getenv("USERPROFILE") // windows
 }
 
 // retry function is intended for retrying command line commands invocations that collisioned while
