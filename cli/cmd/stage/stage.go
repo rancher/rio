@@ -1,6 +1,7 @@
 package stage
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/rancher/rio/cli/cmd/edit/edit"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/services"
 	"github.com/rancher/wrangler/pkg/kv"
 	"sigs.k8s.io/yaml"
 )
@@ -28,7 +30,8 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 
 	serviceName, version := kv.Split(ctx.CLI.Args()[0], ":")
 	if version == "" {
-		version, err := goutils.RandomNumeric(5)
+		var err error
+		version, err = goutils.RandomNumeric(5)
 		if err != nil {
 			return fmt.Errorf("failed to generate random version, err: %v", err)
 		}
@@ -41,11 +44,11 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 	}
 
 	if r.E_Edit {
-		bytes, err := json.Marshal(service.Object)
+		byteContent, err := json.Marshal(service.Object)
 		if err != nil {
 			return err
 		}
-		yamlBytes, err := yaml.JSONToYAML(bytes)
+		yamlBytes, err := yaml.JSONToYAML(byteContent)
 		if err != nil {
 			return err
 		}
@@ -53,14 +56,15 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 
 		_, err = edit.Loop(nil, yamlBytes, func(content []byte) error {
 			var obj *riov1.Service
-			if err := json.Unmarshal(content, &obj); err != nil {
+			content = bytes.TrimSuffix(bytes.TrimSpace(content), []byte("/n"))
+			if err := yaml.Unmarshal(content, &obj); err != nil {
 				return err
 			}
 			svc := riov1.NewService(service.Namespace, service.Name, riov1.Service{
 				Spec: obj.Spec,
 			})
-
-			svc.Name = obj.Spec.App + "-" + version
+			app, _ := services.AppAndVersion(svc)
+			svc.Name = app + "-" + version
 			svc.Spec.Version = version
 			svc.Spec.App = obj.Spec.App
 			svc.Spec.Weight = &[]int{0}[0]
@@ -71,9 +75,10 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 		}
 	} else {
 		svc := service.Object.(*riov1.Service)
+		app, _ := services.AppAndVersion(svc)
 		spec := svc.Spec.DeepCopy()
 		spec.Version = version
-		spec.App = spec.App
+		spec.App = app
 		spec.Weight = &[]int{0}[0]
 		stagedService := riov1.NewService(svc.Namespace, spec.App+"-"+version, riov1.Service{})
 

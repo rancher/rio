@@ -738,6 +738,8 @@ github.com/prometheus/procfs v0.0.3 h1:CTwfnzjQ+8dS6MhHHu4YswVAD99sL2wjPqP+VkURm
 github.com/prometheus/procfs v0.0.3/go.mod h1:4A/X28fw3Fc593LaREMrKMqOKvUAntwMDaekg4FpcdQ=
 github.com/radovskyb/watcher v1.0.7 h1:AYePLih6dpmS32vlHfhCeli8127LzkIgwJGcwwe8tUE=
 github.com/radovskyb/watcher v1.0.7/go.mod h1:78okwvY5wPdzcb1UYnip1pvrZNIVEIh/Cm+ZuvsUYIg=
+github.com/rancher/cert-manager v0.5.1-0.20191021233300-3a070253aeda h1:o8QdcpXJ/3PYThmGJw7PgQ8Kt0VS2Rxxe7SbqwSeOMs=
+github.com/rancher/cert-manager v0.5.1-0.20191021233300-3a070253aeda/go.mod h1:GisP3XX8Kr7jt/idFkYU62z6jTdEu6ZtUZvEiz7zSyw=
 github.com/rancher/mapper v0.0.0-20190814232720-058a8b7feb99 h1:rGnt9h1Uk7Yw4qNPyGq0LWHGdPyag/+Fg/wJWSTkKx4=
 github.com/rancher/mapper v0.0.0-20190814232720-058a8b7feb99/go.mod h1:zU4cm21k7ZBFVQhUu2aSH7NwouY317rLYxruOn+wdOQ=
 github.com/rancher/moq v0.0.0-20190404221404-ee5226d43009 h1:Xsxh7fX3+2wAUJtPy8g2lZh0cYuyifqhBL0vxCIYojs=
