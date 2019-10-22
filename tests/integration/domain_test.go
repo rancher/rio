@@ -15,7 +15,7 @@ func domainTests(t *testing.T, when spec.G, it spec.S) {
 	var domain testutil.TestDomain
 
 	it.Before(func() {
-		service.Create(t, "nginx")
+		service.Create(t)
 	})
 
 	it.After(func() {
