@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors
+Copyright 2019 The Tekton Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -9,14 +9,14 @@ You may obtain a copy of the License at
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either extress or implied.
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
 
 package list
 
-import "fmt"
+import "golang.org/x/xerrors"
 
 // IsSame will return an error indicating if there are extra or missing strings
 // between the required and provided strings, or will return no error if the two
@@ -24,11 +24,11 @@ import "fmt"
 func IsSame(required, provided []string) error {
 	missing := DiffLeft(required, provided)
 	if len(missing) > 0 {
-		return fmt.Errorf("Didn't provide required values: %s", missing)
+		return xerrors.Errorf("Didn't provide required values: %s", missing)
 	}
 	extra := DiffLeft(provided, required)
 	if len(extra) > 0 {
-		return fmt.Errorf("Provided extra values: %s", extra)
+		return xerrors.Errorf("Provided extra values: %s", extra)
 	}
 	return nil
 }

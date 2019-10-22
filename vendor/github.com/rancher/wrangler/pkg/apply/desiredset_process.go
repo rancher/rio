@@ -57,7 +57,7 @@ func (o *desiredSet) assignOwnerReference(gvk schema.GroupVersionKind, objs map[
 
 	for k, v := range objs {
 		// can't set owners across boundaries
-		if o.a.clients.IsNamespaced(gvk) != ownerNSed {
+		if ownerNSed && !o.a.clients.IsNamespaced(gvk) {
 			continue
 		}
 
@@ -66,7 +66,7 @@ func (o *desiredSet) assignOwnerReference(gvk schema.GroupVersionKind, objs map[
 		if o.a.clients.IsNamespaced(gvk) {
 			if k.Namespace == "" {
 				assignNS = true
-			} else if k.Namespace != ownerMeta.GetNamespace() {
+			} else if k.Namespace != ownerMeta.GetNamespace() && ownerNSed {
 				assignOwner = false
 			}
 		}

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"fmt"
 )
 
@@ -9,10 +8,7 @@ import (
 func (c *Client) Help(path string) (*Help, error) {
 	r := c.NewRequest("GET", fmt.Sprintf("/v1/%s", path))
 	r.Params.Add("help", "1")
-
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	defer cancelFunc()
-	resp, err := c.RawRequestWithContext(ctx, r)
+	resp, err := c.RawRequest(r)
 	if err != nil {
 		return nil, err
 	}
@@ -24,7 +20,6 @@ func (c *Client) Help(path string) (*Help, error) {
 }
 
 type Help struct {
-	Help    string                 `json:"help"`
-	SeeAlso []string               `json:"see_also"`
-	OpenAPI map[string]interface{} `json:"openapi"`
+	Help    string   `json:"help"`
+	SeeAlso []string `json:"see_also"`
 }

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors
+Copyright 2019 The Tekton Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,10 +18,12 @@ package v1alpha1
 
 import (
 	"context"
+	"net/url"
+	"strconv"
 	"strings"
 
-	"github.com/knative/pkg/apis"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"knative.dev/pkg/apis"
 )
 
 func (r *PipelineResource) Validate(ctx context.Context) *apis.FieldError {
@@ -37,7 +39,7 @@ func (rs *PipelineResourceSpec) Validate(ctx context.Context) *apis.FieldError {
 		return apis.ErrMissingField(apis.CurrentField)
 	}
 	if rs.Type == PipelineResourceTypeCluster {
-		var usernameFound, cadataFound, nameFound bool
+		var usernameFound, cadataFound, nameFound, isInsecure bool
 		for _, param := range rs.Params {
 			switch {
 			case strings.EqualFold(param.Name, "URL"):
@@ -50,6 +52,9 @@ func (rs *PipelineResourceSpec) Validate(ctx context.Context) *apis.FieldError {
 				cadataFound = true
 			case strings.EqualFold(param.Name, "name"):
 				nameFound = true
+			case strings.EqualFold(param.Name, "insecure"):
+				b, _ := strconv.ParseBool(param.Value)
+				isInsecure = b
 			}
 		}
 
@@ -68,7 +73,7 @@ func (rs *PipelineResourceSpec) Validate(ctx context.Context) *apis.FieldError {
 		if !usernameFound {
 			return apis.ErrMissingField("username param")
 		}
-		if !cadataFound {
+		if !cadataFound && !isInsecure {
 			return apis.ErrMissingField("CAData param")
 		}
 	}
@@ -78,7 +83,7 @@ func (rs *PipelineResourceSpec) Validate(ctx context.Context) *apis.FieldError {
 		for _, param := range rs.Params {
 			switch {
 			case strings.EqualFold(param.Name, "type"):
-				if !allowedStorageType(param.Value) {
+				if !AllowedStorageType(param.Value) {
 					return apis.ErrInvalidValue(param.Value, "spec.params.type")
 				}
 				foundTypeParam = true
@@ -104,7 +109,7 @@ func (rs *PipelineResourceSpec) Validate(ctx context.Context) *apis.FieldError {
 	return apis.ErrInvalidValue("spec.type", string(rs.Type))
 }
 
-func allowedStorageType(gotType string) bool {
+func AllowedStorageType(gotType string) bool {
 	switch gotType {
 	case string(PipelineResourceTypeGCS):
 		return true
@@ -112,4 +117,15 @@ func allowedStorageType(gotType string) bool {
 		return true
 	}
 	return false
+}
+
+func validateURL(u, path string) *apis.FieldError {
+	if u == "" {
+		return nil
+	}
+	_, err := url.ParseRequestURI(u)
+	if err != nil {
+		return apis.ErrInvalidValue(u, path)
+	}
+	return nil
 }

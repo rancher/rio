@@ -1,10 +1,9 @@
 package api
 
 import (
-	"context"
-	"errors"
 	"fmt"
 
+	"github.com/fatih/structs"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -18,58 +17,56 @@ func (c *Sys) AuditHash(path string, input string) (string, error) {
 		return "", err
 	}
 
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	defer cancelFunc()
-	resp, err := c.c.RawRequestWithContext(ctx, r)
+	resp, err := c.c.RawRequest(r)
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
 
-	secret, err := ParseSecret(resp.Body)
+	type d struct {
+		Hash string `json:"hash"`
+	}
+
+	var result d
+	err = resp.DecodeJSON(&result)
 	if err != nil {
 		return "", err
 	}
-	if secret == nil || secret.Data == nil {
-		return "", errors.New("data from server response is empty")
-	}
 
-	hash, ok := secret.Data["hash"]
-	if !ok {
-		return "", errors.New("hash not found in response data")
-	}
-	hashStr, ok := hash.(string)
-	if !ok {
-		return "", errors.New("could not parse hash in response data")
-	}
-
-	return hashStr, nil
+	return result.Hash, err
 }
 
 func (c *Sys) ListAudit() (map[string]*Audit, error) {
 	r := c.c.NewRequest("GET", "/v1/sys/audit")
-
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	defer cancelFunc()
-	resp, err := c.c.RawRequestWithContext(ctx, r)
-
+	resp, err := c.c.RawRequest(r)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	secret, err := ParseSecret(resp.Body)
+	var result map[string]interface{}
+	err = resp.DecodeJSON(&result)
 	if err != nil {
 		return nil, err
-	}
-	if secret == nil || secret.Data == nil {
-		return nil, errors.New("data from server response is empty")
 	}
 
 	mounts := map[string]*Audit{}
-	err = mapstructure.Decode(secret.Data, &mounts)
-	if err != nil {
-		return nil, err
+	for k, v := range result {
+		switch v.(type) {
+		case map[string]interface{}:
+		default:
+			continue
+		}
+		var res Audit
+		err = mapstructure.Decode(v, &res)
+		if err != nil {
+			return nil, err
+		}
+		// Not a mount, some other api.Secret data
+		if res.Type == "" {
+			continue
+		}
+		mounts[k] = &res
 	}
 
 	return mounts, nil
@@ -86,15 +83,14 @@ func (c *Sys) EnableAudit(
 }
 
 func (c *Sys) EnableAuditWithOptions(path string, options *EnableAuditOptions) error {
+	body := structs.Map(options)
+
 	r := c.c.NewRequest("PUT", fmt.Sprintf("/v1/sys/audit/%s", path))
-	if err := r.SetJSONBody(options); err != nil {
+	if err := r.SetJSONBody(body); err != nil {
 		return err
 	}
 
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	defer cancelFunc()
-	resp, err := c.c.RawRequestWithContext(ctx, r)
-
+	resp, err := c.c.RawRequest(r)
 	if err != nil {
 		return err
 	}
@@ -105,11 +101,7 @@ func (c *Sys) EnableAuditWithOptions(path string, options *EnableAuditOptions) e
 
 func (c *Sys) DisableAudit(path string) error {
 	r := c.c.NewRequest("DELETE", fmt.Sprintf("/v1/sys/audit/%s", path))
-
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	defer cancelFunc()
-	resp, err := c.c.RawRequestWithContext(ctx, r)
-
+	resp, err := c.c.RawRequest(r)
 	if err == nil {
 		defer resp.Body.Close()
 	}
@@ -121,16 +113,16 @@ func (c *Sys) DisableAudit(path string) error {
 // documentation. Please refer to that documentation for more details.
 
 type EnableAuditOptions struct {
-	Type        string            `json:"type" mapstructure:"type"`
-	Description string            `json:"description" mapstructure:"description"`
-	Options     map[string]string `json:"options" mapstructure:"options"`
-	Local       bool              `json:"local" mapstructure:"local"`
+	Type        string            `json:"type" structs:"type"`
+	Description string            `json:"description" structs:"description"`
+	Options     map[string]string `json:"options" structs:"options"`
+	Local       bool              `json:"local" structs:"local"`
 }
 
 type Audit struct {
-	Type        string            `json:"type" mapstructure:"type"`
-	Description string            `json:"description" mapstructure:"description"`
-	Options     map[string]string `json:"options" mapstructure:"options"`
-	Local       bool              `json:"local" mapstructure:"local"`
-	Path        string            `json:"path" mapstructure:"path"`
+	Path        string
+	Type        string
+	Description string
+	Options     map[string]string
+	Local       bool
 }
