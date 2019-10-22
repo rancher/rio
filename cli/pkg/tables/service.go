@@ -19,7 +19,7 @@ func NewService(cfg Config) TableWriter {
 		{"SCALE", "{{scale .Service .Service.Status.ScaleStatus}}"},
 		{"APP", "{{.Service | app}}"},
 		{"VERSION", "{{.Service | version}}"},
-		{"WEIGHT", "{{.Service.Spec.Weight | pointer}}"},
+		{"WEIGHT", "{{.Service | formatWeight}}"},
 		{"CREATED", "{{.Service.CreationTimestamp | ago}}"},
 		//{"DETAIL", "{{}}"},
 	}, cfg)
@@ -28,6 +28,7 @@ func NewService(cfg Config) TableWriter {
 	writer.AddFormatFunc("scale", formatRevisionScale)
 	writer.AddFormatFunc("app", app)
 	writer.AddFormatFunc("version", version)
+	writer.AddFormatFunc("formatWeight", formatWeight)
 
 	return &tableWriter{
 		writer: writer,
@@ -50,6 +51,17 @@ func version(data interface{}) string {
 	}
 	_, version := services.AppAndVersion(s)
 	return version
+}
+
+func formatWeight(data interface{}) string {
+	s, ok := data.(*v1.Service)
+	if !ok {
+		return ""
+	}
+	if s.Status.ComputedWeight != nil {
+		return fmt.Sprintf("%s%%", strconv.Itoa(*s.Status.ComputedWeight))
+	}
+	return "0%"
 }
 
 func formatRevisionScale(svc *riov1.Service, scaleStatus *v1.ScaleStatus) (string, error) {

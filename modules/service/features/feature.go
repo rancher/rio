@@ -2,6 +2,7 @@ package features
 
 import (
 	"context"
+	"github.com/rancher/rio/modules/service/controllers/rollout"
 
 	"github.com/rancher/rio/modules/service/controllers/app"
 	"github.com/rancher/rio/modules/service/controllers/externalservice"
@@ -27,6 +28,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			service.Register,
 			globalrbac.Register,
 			servicestatus.Register,
+			rollout.Register,
 		},
 	}
 
