@@ -84,8 +84,6 @@ github.com/SermoDigital/jose v0.9.1/go.mod h1:ARgCUhI1MHQH+ONky/PAtmVHQrP5JlGY0F
 github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWXgklEdEo=
 github.com/Shopify/sarama v1.21.0/go.mod h1:yuqtN/pe8cXRWG5zPaO7hCfNJp5MwmkoJEoLjkm5tCQ=
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
-github.com/StrongMonkey/cert-manager v0.5.1-0.20191021184308-1f29cbc86ca1 h1:CuLWFW30dOBcwaF9USdlRF1ZddZaDCsbkkJJUfc+U6c=
-github.com/StrongMonkey/cert-manager v0.5.1-0.20191021184308-1f29cbc86ca1/go.mod h1:aUaHqAreS8nU0CFUL1OgaGLi5AtOF3/+2zPLF2h2bq8=
 github.com/StrongMonkey/linkerd2 v0.0.0-20191021165729-976fad67457a h1:kvyMlzSGUDaJwdl57OnB9bBbJdP9B5mR9le/JnUVByo=
 github.com/StrongMonkey/linkerd2 v0.0.0-20191021165729-976fad67457a/go.mod h1:C+pkr4rp/oOlvvsQMOZGHWRaZJfXxsLXIHL8MALgJjA=
 github.com/StrongMonkey/webhookinator v0.0.0-20191021165343-56c8bac69536 h1:VydqgX2gExLDDK2n8xN8p8YFLo/ZeWWa+30erMm7pRo=
