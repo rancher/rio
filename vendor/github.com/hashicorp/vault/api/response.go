@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 
-	"github.com/hashicorp/vault/sdk/helper/jsonutil"
+	"github.com/hashicorp/vault/helper/jsonutil"
 )
 
 // Response is a raw response that wraps an HTTP response.
@@ -34,19 +33,9 @@ func (r *Response) Error() error {
 
 	// We have an error. Let's copy the body into our own buffer first,
 	// so that if we can't decode JSON, we can at least copy it raw.
-	bodyBuf := &bytes.Buffer{}
-	if _, err := io.Copy(bodyBuf, r.Body); err != nil {
+	var bodyBuf bytes.Buffer
+	if _, err := io.Copy(&bodyBuf, r.Body); err != nil {
 		return err
-	}
-
-	r.Body.Close()
-	r.Body = ioutil.NopCloser(bodyBuf)
-
-	// Build up the error object
-	respErr := &ResponseError{
-		HTTPMethod: r.Request.Method,
-		URL:        r.Request.URL.String(),
-		StatusCode: r.StatusCode,
 	}
 
 	// Decode the error response if we can. Note that we wrap the bodyBuf
@@ -54,67 +43,31 @@ func (r *Response) Error() error {
 	// read pointer for the original buffer.
 	var resp ErrorResponse
 	if err := jsonutil.DecodeJSON(bodyBuf.Bytes(), &resp); err != nil {
-		// Store the fact that we couldn't decode the errors
-		respErr.RawError = true
-		respErr.Errors = []string{bodyBuf.String()}
-	} else {
-		// Store the decoded errors
-		respErr.Errors = resp.Errors
-	}
-
-	return respErr
-}
-
-// ErrorResponse is the raw structure of errors when they're returned by the
-// HTTP API.
-type ErrorResponse struct {
-	Errors []string
-}
-
-// ResponseError is the error returned when Vault responds with an error or
-// non-success HTTP status code. If a request to Vault fails because of a
-// network error a different error message will be returned. ResponseError gives
-// access to the underlying errors and status code.
-type ResponseError struct {
-	// HTTPMethod is the HTTP method for the request (PUT, GET, etc).
-	HTTPMethod string
-
-	// URL is the URL of the request.
-	URL string
-
-	// StatusCode is the HTTP status code.
-	StatusCode int
-
-	// RawError marks that the underlying error messages returned by Vault were
-	// not parsable. The Errors slice will contain the raw response body as the
-	// first and only error string if this value is set to true.
-	RawError bool
-
-	// Errors are the underlying errors returned by Vault.
-	Errors []string
-}
-
-// Error returns a human-readable error string for the response error.
-func (r *ResponseError) Error() string {
-	errString := "Errors"
-	if r.RawError {
-		errString = "Raw Message"
+		// Ignore the decoding error and just drop the raw response
+		return fmt.Errorf(
+			"Error making API request.\n\n"+
+				"URL: %s %s\n"+
+				"Code: %d. Raw Message:\n\n%s",
+			r.Request.Method, r.Request.URL.String(),
+			r.StatusCode, bodyBuf.String())
 	}
 
 	var errBody bytes.Buffer
 	errBody.WriteString(fmt.Sprintf(
 		"Error making API request.\n\n"+
 			"URL: %s %s\n"+
-			"Code: %d. %s:\n\n",
-		r.HTTPMethod, r.URL, r.StatusCode, errString))
-
-	if r.RawError && len(r.Errors) == 1 {
-		errBody.WriteString(r.Errors[0])
-	} else {
-		for _, err := range r.Errors {
-			errBody.WriteString(fmt.Sprintf("* %s", err))
-		}
+			"Code: %d. Errors:\n\n",
+		r.Request.Method, r.Request.URL.String(),
+		r.StatusCode))
+	for _, err := range resp.Errors {
+		errBody.WriteString(fmt.Sprintf("* %s", err))
 	}
 
-	return errBody.String()
+	return fmt.Errorf(errBody.String())
+}
+
+// ErrorResponse is the raw structure of errors when they're returned by the
+// HTTP API.
+type ErrorResponse struct {
+	Errors []string
 }

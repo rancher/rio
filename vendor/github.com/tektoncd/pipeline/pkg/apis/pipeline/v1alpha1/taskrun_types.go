@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors.
+Copyright 2019 The Tekton Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,10 +20,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/knative/pkg/apis"
-	duckv1beta1 "github.com/knative/pkg/apis/duck/v1beta1"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 )
 
 // Check that TaskRun may be validated and defaulted.
@@ -37,9 +38,11 @@ type TaskRunSpec struct {
 	// +optional
 	Outputs TaskRunOutputs `json:"outputs,omitempty"`
 	// +optional
-	Results *Results `json:"results,omitempty"`
+	ServiceAccountName string `json:"serviceAccountName"`
+	// DeprecatedServiceAccount is a depreciated alias for ServiceAccountName.
+	// Deprecated: Use serviceAccountName instead.
 	// +optional
-	ServiceAccount string `json:"serviceAccount,omitempty"`
+	DeprecatedServiceAccount string `json:"serviceAccount,omitempty"`
 	// no more than one of the TaskRef and TaskSpec may be specified.
 	// +optional
 	TaskRef *TaskRef `json:"taskRef,omitempty"`
@@ -53,17 +56,9 @@ type TaskRunSpec struct {
 	// Refer Go's ParseDuration documentation for expected format: https://golang.org/pkg/time/#ParseDuration
 	// +optional
 	Timeout *metav1.Duration `json:"timeout,omitempty"`
-	// NodeSelector is a selector which must be true for the pod to fit on a node.
-	// Selector which must match a node's labels for the pod to be scheduled on that node.
-	// More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
-	// +optional
-	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
-	// If specified, the pod's tolerations.
-	// +optional
-	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
-	// If specified, the pod's scheduling constraints
-	// +optional
-	Affinity *corev1.Affinity `json:"affinity,omitempty"`
+
+	// PodTemplate holds pod specific configuration
+	PodTemplate PodTemplate `json:"podTemplate,omitempty"`
 }
 
 // TaskRunSpecStatus defines the taskrun spec status the user can provide
@@ -83,12 +78,21 @@ type TaskRunInputs struct {
 	Params []Param `json:"params,omitempty"`
 }
 
+// TaskResourceBinding points to the PipelineResource that
+// will be used for the Task input or output called Name.
+type TaskResourceBinding struct {
+	PipelineResourceBinding
+	// Paths will probably be removed in #1284, and then PipelineResourceBinding can be used instead.
+	// The optional Path field corresponds to a path on disk at which the Resource can be found
+	// (used when providing the resource via mounted volume, overriding the default logic to fetch the Resource).
+	// +optional
+	Paths []string `json:"paths,omitempty"`
+}
+
 // TaskRunOutputs holds the output values that this task was invoked with.
 type TaskRunOutputs struct {
 	// +optional
 	Resources []TaskResourceBinding `json:"resources,omitempty"`
-	// +optional
-	Params []Param `json:"params,omitempty"`
 }
 
 var taskRunCondSet = apis.NewBatchConditionSet()
@@ -96,10 +100,6 @@ var taskRunCondSet = apis.NewBatchConditionSet()
 // TaskRunStatus defines the observed state of TaskRun
 type TaskRunStatus struct {
 	duckv1beta1.Status `json:",inline"`
-
-	// In #107 should be updated to hold the location logs have been uploaded to
-	// +optional
-	Results *Results `json:"results,omitempty"`
 
 	// PodName is the name of the pod responsible for executing this task's steps.
 	PodName string `json:"podName"`
@@ -115,6 +115,12 @@ type TaskRunStatus struct {
 	// Steps describes the state of each build step container.
 	// +optional
 	Steps []StepState `json:"steps,omitempty"`
+
+	// CloudEvents describe the state of each cloud event requested via a
+	// CloudEventResource.
+	// +optional
+	CloudEvents []CloudEventDelivery `json:"cloudEvents,omitempty"`
+
 	// RetriesStatus contains the history of TaskRunStatus in case of a retry in order to keep record of failures.
 	// All TaskRunStatus stored in RetriesStatus will have no date within the RetriesStatus as is redundant.
 	// +optional
@@ -150,13 +156,53 @@ func (tr *TaskRunStatus) SetCondition(newCond *apis.Condition) {
 // StepState reports the results of running a step in the Task.
 type StepState struct {
 	corev1.ContainerState
-	Name string `json:"name,omitempty"`
+	Name          string `json:"name,omitempty"`
+	ContainerName string `json:"container,omitempty"`
+	ImageID       string `json:"imageID,omitempty"`
+}
+
+// CloudEventDelivery is the target of a cloud event along with the state of
+// delivery.
+type CloudEventDelivery struct {
+	// Target points to an addressable
+	Target string                  `json:"target,omitempty"`
+	Status CloudEventDeliveryState `json:"status,omitempty"`
+}
+
+// CloudEventCondition is a string that represents the condition of the event.
+type CloudEventCondition string
+
+const (
+	// CloudEventConditionUnknown means that the condition for the event to be
+	// triggered was not met yet, or we don't know the state yet.
+	CloudEventConditionUnknown CloudEventCondition = "Unknown"
+	// CloudEventConditionSent means that the event was sent successfully
+	CloudEventConditionSent CloudEventCondition = "Sent"
+	// CloudEventConditionFailed means that there was one or more attempts to
+	// send the event, and none was successful so far.
+	CloudEventConditionFailed CloudEventCondition = "Failed"
+)
+
+// CloudEventDeliveryState reports the state of a cloud event to be sent.
+type CloudEventDeliveryState struct {
+	// Current status
+	Condition CloudEventCondition `json:"condition,omitempty"`
+	// SentAt is the time at which the last attempt to send the event was made
+	// +optional
+	SentAt *metav1.Time `json:"sentAt,omitempty"`
+	// Error is the text of error (if any)
+	Error string `json:"message"`
+	// RetryCount is the number of attempts of sending the cloud event
+	RetryCount int32 `json:"retryCount"`
 }
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// TaskRun is the Schema for the taskruns API
+// TaskRun represents a single execution of a Task. TaskRuns are how the steps
+// specified in a Task are executed; they specify the parameters and resources
+// used to run the steps in a Task.
+//
 // +k8s:openapi-gen=true
 type TaskRun struct {
 	metav1.TypeMeta `json:",inline"`
@@ -235,5 +281,29 @@ func (tr *TaskRun) IsCancelled() bool {
 
 // GetRunKey return the taskrun key for timeout handler map
 func (tr *TaskRun) GetRunKey() string {
-	return fmt.Sprintf("%s/%s/%s", "TaskRun", tr.Namespace, tr.Name)
+	// The address of the pointer is a threadsafe unique identifier for the taskrun
+	return fmt.Sprintf("%s/%p", "TaskRun", tr)
+}
+
+func (tr *TaskRun) GetServiceAccountName() string {
+	name := tr.Spec.ServiceAccountName
+	if name == "" {
+		name = tr.Spec.DeprecatedServiceAccount
+	}
+	return name
+
+}
+
+// IsPartOfPipeline return true if TaskRun is a part of a Pipeline.
+// It also return the name of Pipeline and PipelineRun
+func (tr *TaskRun) IsPartOfPipeline() (bool, string, string) {
+	if tr == nil || len(tr.Labels) == 0 {
+		return false, "", ""
+	}
+
+	if pl, ok := tr.Labels[pipeline.GroupName+pipeline.PipelineLabelKey]; ok {
+		return true, pl, tr.Labels[pipeline.GroupName+pipeline.PipelineRunLabelKey]
+	}
+
+	return false, "", ""
 }

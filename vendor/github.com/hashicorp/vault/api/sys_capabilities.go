@@ -1,12 +1,6 @@
 package api
 
-import (
-	"context"
-	"errors"
-	"fmt"
-
-	"github.com/mitchellh/mapstructure"
-)
+import "fmt"
 
 func (c *Sys) CapabilitiesSelf(path string) ([]string, error) {
 	return c.Capabilities(c.c.Token(), path)
@@ -28,37 +22,22 @@ func (c *Sys) Capabilities(token, path string) ([]string, error) {
 		return nil, err
 	}
 
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	defer cancelFunc()
-	resp, err := c.c.RawRequestWithContext(ctx, r)
+	resp, err := c.c.RawRequest(r)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	secret, err := ParseSecret(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	if secret == nil || secret.Data == nil {
-		return nil, errors.New("data from server response is empty")
-	}
-
-	var res []string
-	err = mapstructure.Decode(secret.Data[path], &res)
+	var result map[string]interface{}
+	err = resp.DecodeJSON(&result)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(res) == 0 {
-		_, ok := secret.Data["capabilities"]
-		if ok {
-			err = mapstructure.Decode(secret.Data["capabilities"], &res)
-			if err != nil {
-				return nil, err
-			}
-		}
+	var capabilities []string
+	capabilitiesRaw := result["capabilities"].([]interface{})
+	for _, capability := range capabilitiesRaw {
+		capabilities = append(capabilities, capability.(string))
 	}
-
-	return res, nil
+	return capabilities, nil
 }

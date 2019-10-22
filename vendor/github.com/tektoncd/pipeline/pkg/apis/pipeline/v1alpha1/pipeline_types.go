@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors.
+Copyright 2019 The Tekton Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/knative/pkg/apis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
 )
 
 // PipelineSpec defines the desired state of Pipeline.
@@ -30,7 +30,7 @@ type PipelineSpec struct {
 	Tasks []PipelineTask `json:"tasks,omitempty"`
 	// Params declares a list of input parameters that must be supplied when
 	// this Pipeline is run.
-	Params []PipelineParam `json:"params,omitempty"`
+	Params []ParamSpec `json:"params,omitempty"`
 }
 
 // PipelineStatus does not contain anything because Pipelines on their own
@@ -73,6 +73,18 @@ type Pipeline struct {
 	Status PipelineStatus `json:"status"`
 }
 
+func (p *Pipeline) PipelineMetadata() metav1.ObjectMeta {
+	return p.ObjectMeta
+}
+
+func (p *Pipeline) PipelineSpec() PipelineSpec {
+	return p.Spec
+}
+
+func (p *Pipeline) Copy() PipelineInterface {
+	return p.DeepCopy()
+}
+
 // PipelineTask defines a task in a Pipeline, passing inputs from both
 // Params and from the output of previous tasks.
 type PipelineTask struct {
@@ -82,6 +94,10 @@ type PipelineTask struct {
 	Name string `json:"name,omitempty"`
 	// TaskRef is a reference to a task definition.
 	TaskRef TaskRef `json:"taskRef"`
+
+	// Conditions is a list of conditions that need to be true for the task to run
+	// +optional
+	Conditions []PipelineTaskCondition `json:"conditions,omitempty"`
 
 	// Retries represents how many times this task should be retried in case of task failure: ConditionSucceeded set to False
 	// +optional
@@ -107,19 +123,18 @@ type PipelineTaskParam struct {
 	Value string `json:"value"`
 }
 
-// PipelineParam defines an arbitrary parameter needed by a Pipeline beyond typed inputs
-// such as resources.
-type PipelineParam struct {
-	// Name is the name of the parameter.
-	Name string `json:"name"`
-	// Description is an informational description of what the parameter
-	// represents.
+// PipelineTaskCondition allows a PipelineTask to declare a Condition to be evaluated before
+// the Task is run.
+type PipelineTaskCondition struct {
+	// ConditionRef is the name of the Condition to use for the conditionCheck
+	ConditionRef string `json:"conditionRef"`
+
+	// Params declare parameters passed to this Condition
 	// +optional
-	Description string `json:"description,omitempty"`
-	// Default specifies the value that this parameter should take if a value is
-	// not specified in a PipelineRun.
-	// +optional
-	Default string `json:"default,omitempty"`
+	Params []Param `json:"params,omitempty"`
+
+	// Resources declare the resources provided to this Condition as input
+	Resources []PipelineConditionResource `json:"resources,omitempty"`
 }
 
 // PipelineDeclaredResource is used by a Pipeline to declare the types of the
@@ -133,6 +148,15 @@ type PipelineDeclaredResource struct {
 	Name string `json:"name"`
 	// Type is the type of the PipelineResource.
 	Type PipelineResourceType `json:"type"`
+}
+
+// PipelineConditionResource allows a Pipeline to declare how its DeclaredPipelineResources
+// should be provided to a Condition as its inputs.
+type PipelineConditionResource struct {
+	// Name is the name of the PipelineResource as declared by the Condition.
+	Name string `json:"name"`
+	// Resource is the name of the DeclaredPipelineResource to use.
+	Resource string `json:"resource"`
 }
 
 // PipelineTaskResources allows a Pipeline to declare how its DeclaredPipelineResources
