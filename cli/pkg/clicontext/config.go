@@ -5,6 +5,8 @@ import (
 	"io"
 	"os"
 
+	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
+
 	"github.com/pkg/errors"
 	projectv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/rio.cattle.io/v1"
@@ -124,14 +126,14 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-func (c *Config) Domain() (string, error) {
+func (c *Config) Domain() (*v1.ClusterDomain, error) {
 	clusterDomain, err := c.Project.ClusterDomains().List(metav1.ListOptions{})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if len(clusterDomain.Items) > 0 {
-		return clusterDomain.Items[0].Name, nil
+		return &clusterDomain.Items[0], nil
 	}
-	return "", nil
+	return nil, nil
 }

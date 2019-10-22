@@ -194,7 +194,7 @@ func (w Webhook) reconcileWebhook(caBundle []byte) error {
 }
 
 func (w Webhook) run() error {
-	port := "443"
+	port := w.port
 	if constants.DevMode {
 		port = constants.DevWebhookPort
 	}

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	certmanagerv1alpha1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	certmanagerv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	gitwatcherv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
 	"github.com/rancher/rio/cli/pkg/clicontext"
@@ -205,16 +205,16 @@ func (u Uninstall) Run(ctx *clicontext.CLIContext) error {
 		}
 	}
 
-	if ok, err := confirmDelete(certmanagerv1alpha1.SchemeGroupVersion.String()); err != nil {
+	if ok, err := confirmDelete(certmanagerv1alpha2.SchemeGroupVersion.String()); err != nil {
 		return err
 	} else if ok {
-		certmanagerresource, err := ctx.K8s.Discovery().ServerResourcesForGroupVersion(certmanagerv1alpha1.SchemeGroupVersion.String())
+		certmanagerresource, err := ctx.K8s.Discovery().ServerResourcesForGroupVersion(certmanagerv1alpha2.SchemeGroupVersion.String())
 		if err != nil && !errors.IsNotFound(err) {
 			return err
 		}
 		if certmanagerresource != nil {
 			for _, resource := range certmanagerresource.APIResources {
-				toDelete = append(toDelete, fmt.Sprintf("%s.%s", resource.Name, certmanagerv1alpha1.SchemeGroupVersion.Group))
+				toDelete = append(toDelete, fmt.Sprintf("%s.%s", resource.Name, certmanagerv1alpha2.SchemeGroupVersion.Group))
 			}
 		}
 	}

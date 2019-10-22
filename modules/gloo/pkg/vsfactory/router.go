@@ -24,6 +24,10 @@ func (f *VirtualServiceFactory) ForRouter(router *riov1.Router) ([]*solov1.Virtu
 		return nil, err
 	}
 
+	if err := f.InjectACME(vs); err != nil {
+		return nil, err
+	}
+
 	result := []*solov1.VirtualService{
 		vs,
 	}

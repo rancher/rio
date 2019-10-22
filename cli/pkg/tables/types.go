@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sort"
 
+	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
+
 	"github.com/rancher/rio/cli/pkg/table"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -18,7 +20,7 @@ type Config interface {
 	table.WriterConfig
 	GetDefaultNamespace() string
 	GetSetNamespace() string
-	Domain() (string, error)
+	Domain() (*v1.ClusterDomain, error)
 }
 
 type tableWriter struct {
@@ -37,6 +39,9 @@ func (t *tableWriter) Write(objs []runtime.Object) (err error) {
 	sort.Slice(objs, func(i, j int) bool {
 		leftMeta, _ := meta.Accessor(objs[i])
 		rightMeta, _ := meta.Accessor(objs[j])
+		if leftMeta.GetNamespace() != rightMeta.GetNamespace() {
+			return leftMeta.GetNamespace() < rightMeta.GetNamespace()
+		}
 		leftCreated := leftMeta.GetCreationTimestamp()
 		return leftCreated.After(rightMeta.GetCreationTimestamp().Time)
 	})

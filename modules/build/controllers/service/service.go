@@ -162,8 +162,8 @@ func (p populator) populateBuild(buildKey, namespace string, build *riov1.ImageB
 			},
 		},
 		Spec: tektonv1alpha1.TaskRunSpec{
-			ServiceAccount: sa.Name,
-			Timeout:        build.Timeout,
+			ServiceAccountName: sa.Name,
+			Timeout:            build.Timeout,
 			TaskSpec: &tektonv1alpha1.TaskSpec{
 				Inputs: &tektonv1alpha1.Inputs{
 					Params: []tektonv1alpha1.ParamSpec{
@@ -254,17 +254,19 @@ func (p populator) populateBuild(buildKey, namespace string, build *riov1.ImageB
 				},
 				Resources: []tektonv1alpha1.TaskResourceBinding{
 					{
-						Name: "source",
-						ResourceSpec: &tektonv1alpha1.PipelineResourceSpec{
-							Type: tektonv1alpha1.PipelineResourceTypeGit,
-							Params: []tektonv1alpha1.ResourceParam{
-								{
-									Name:  "url",
-									Value: build.Repo,
-								},
-								{
-									Name:  "revision",
-									Value: rev,
+						PipelineResourceBinding: tektonv1alpha1.PipelineResourceBinding{
+							Name: "source",
+							ResourceSpec: &tektonv1alpha1.PipelineResourceSpec{
+								Type: tektonv1alpha1.PipelineResourceTypeGit,
+								Params: []tektonv1alpha1.ResourceParam{
+									{
+										Name:  "url",
+										Value: build.Repo,
+									},
+									{
+										Name:  "revision",
+										Value: rev,
+									},
 								},
 							},
 						},
@@ -347,7 +349,7 @@ func ImageName(rev string, namespace, name string, build *riov1.ImageBuildSpec) 
 		imageName = build.ImageName
 	}
 
-	return fmt.Sprintf("%s/%s:%s", registry, imageName, rev)
+	return fmt.Sprintf("%s/%s:%s", registry, imageName, rev[:5])
 }
 
 func PullImageName(rev string, namespace, name string, build *riov1.ImageBuildSpec) string {
@@ -360,5 +362,5 @@ func PullImageName(rev string, namespace, name string, build *riov1.ImageBuildSp
 		imageName = build.ImageName
 	}
 
-	return fmt.Sprintf("%s/%s:%s", registry, imageName, rev)
+	return fmt.Sprintf("%s/%s:%s", registry, imageName, rev[:5])
 }

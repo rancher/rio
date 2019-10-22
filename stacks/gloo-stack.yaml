@@ -242,6 +242,7 @@ kubernetes:
       namespace: ${NAMESPACE}
     
     
+    
     ---
     
     apiVersion: v1
@@ -326,6 +327,9 @@ kubernetes:
       resources: ["upstreams","upstreamgroups", "proxies", "authconfigs"]
       # update is needed for status updates
       verbs: ["get", "list", "watch", "update"]
+    - apiGroups: [""] # get/update on configmaps for recording envoy metrics
+      resources: ["configmaps"]
+      verbs: ["get", "update"]
     
     ---
     
@@ -537,7 +541,7 @@ kubernetes:
       bindAddress: "::"
       bindPort: 8080
       httpGateway: {}
-      useProxyProto: 
+      useProxyProto: false
       ssl: false
       proxyNames:
       - gateway-proxy-v2
@@ -560,10 +564,44 @@ kubernetes:
       bindAddress: "::"
       bindPort: 8443
       httpGateway: {}
-      useProxyProto: 
+      useProxyProto: false
       ssl: true
       proxyNames:
       - gateway-proxy-v2
+    ---
+    
+    
+    apiVersion: gloo.solo.io/v1
+    kind: Settings
+    metadata:
+      labels:
+        app: gloo
+      name: default
+      namespace: ${NAMESPACE}
+      annotations:
+        "helm.sh/hook": pre-install
+        "helm.sh/hook-weight": "5"
+    spec:
+      gloo:
+       xdsBindAddr: 0.0.0.0:9977
+      discoveryNamespace: ${NAMESPACE}
+      kubernetesArtifactSource: {}
+      kubernetesConfigSource: {}
+      kubernetesSecretSource: {}
+      refreshRate: 60s
+    
+    ---
+    # use this config map to record envoy usage stats
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: gloo-usage
+      namespace: ${NAMESPACE}
+      labels:
+        app: gloo
+        gloo: gloo-usage
+    data:
+    
     ---
     
     # config_map
@@ -585,6 +623,11 @@ kubernetes:
           metadata:
             # role's value is the key for the in-memory xds cache (projects/gloo/pkg/xds/envoy.go)
             role: "{{.PodNamespace}}~gateway-proxy-v2"
+        stats_sinks:
+          - name: envoy.metrics_service
+            config:
+              grpc_service:
+                envoy_grpc: {cluster_name: gloo.${NAMESPACE}.svc.cluster.local:9966}
         static_resources: # if or ($spec.stats) ($spec.readConfig) # if $spec.stats # if $spec.readConfig
           clusters:
           - name: gloo.${NAMESPACE}.svc.cluster.local:9977
@@ -603,7 +646,21 @@ kubernetes:
             upstream_connection_options:
               tcp_keepalive: {}
             type: STRICT_DNS
-            respect_dns_ttl: true # if .Values.accessLogger.enabled # if $spec.tracing # if or ($spec.stats) ($spec.readConfig) # if $spec.tracing
+            respect_dns_ttl: true
+          - name: gloo.${NAMESPACE}.svc.cluster.local:9966
+            alt_stat_name: metrics_cluster
+            connect_timeout: 5.000s
+            load_assignment:
+                cluster_name: gloo.${NAMESPACE}.svc.cluster.local:9966
+                endpoints:
+                - lb_endpoints:
+                  - endpoint:
+                        address:
+                            socket_address:
+                                address: gloo.${NAMESPACE}.svc.cluster.local
+                                port_value: 9966
+            http2_protocol_options: {}
+            type: STRICT_DNS # if .Values.accessLogger.enabled # if $spec.tracing # if or ($spec.stats) ($spec.readConfig) # if $spec.tracing
         dynamic_resources:
           ads_config:
             api_type: GRPC
@@ -630,10 +687,15 @@ kubernetes:
       name: gloo
       namespace: ${NAMESPACE}
     spec:
-    
       ports:
-      - name: grpc
+      - name: grpc-xds
         port: 9977
+        protocol: TCP
+      - name: grpc-validation
+        port: 9988
+        protocol: TCP
+      - name: metrics-grpc
+        port: 9966
         protocol: TCP
       selector:
         gloo: gloo
@@ -687,7 +749,7 @@ kubernetes:
         spec:
           serviceAccountName: gloo
           containers:
-          - image: quay.io/solo-io/gloo:0.20.2
+          - image: quay.io/solo-io/gloo:0.20.8
             imagePullPolicy: IfNotPresent
             name: gloo
             resources:
@@ -704,13 +766,22 @@ kubernetes:
                 - ALL
             ports:
             - containerPort: 9977
-              name: grpc
+              name: grpc-xds
+              protocol: TCP
+            - containerPort: 9988
+              name: grpc-validation
               protocol: TCP
             env:
               - name: POD_NAMESPACE
                 valueFrom:
                   fieldRef:
                     fieldPath: metadata.namespace
+            readinessProbe:
+              tcpSocket:
+                port: 9977
+              initialDelaySeconds: 1
+              periodSeconds: 2
+              failureThreshold: 10
     
     ---
     
@@ -734,7 +805,7 @@ kubernetes:
         spec:
           serviceAccountName: gateway
           containers:
-          - image: quay.io/solo-io/gateway:0.20.2
+          - image: quay.io/solo-io/gateway:0.20.8
             imagePullPolicy: IfNotPresent
             name: gateway
     
@@ -788,7 +859,7 @@ kubernetes:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-            image: quay.io/solo-io/gloo-envoy-wrapper:0.20.2
+            image: quay.io/solo-io/gloo-envoy-wrapper:0.20.8
             imagePullPolicy: IfNotPresent
             name: gateway-proxy-v2
             securityContext:

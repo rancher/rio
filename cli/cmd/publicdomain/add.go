@@ -3,11 +3,13 @@ package publicdomain
 import (
 	"fmt"
 
+	"github.com/rancher/rio/pkg/services"
+
+	"github.com/rancher/wrangler/pkg/kv"
+
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/services"
-	"k8s.io/apimachinery/pkg/api/errors"
 )
 
 type Register struct {
@@ -25,15 +27,21 @@ func (r *Register) Run(ctx *clicontext.CLIContext) error {
 	var targetApp, targetVersion, targetNamespace string
 	result, err := ctx.ByID(target)
 	if err != nil {
-		if !errors.IsNotFound(err) {
-			return err
-		}
+		return err
+		target, ns := kv.Split(target, "/")
 		targetApp = target
-		targetNamespace = ctx.GetSetNamespace()
+		targetNamespace = ns
 	} else {
-		svc := result.Object.(*riov1.Service)
-		targetApp, targetVersion = services.AppAndVersion(svc)
-		targetNamespace = svc.Namespace
+		switch result.Object.(type) {
+		case *riov1.Service:
+			svc := result.Object.(*riov1.Service)
+			targetApp, targetVersion = services.AppAndVersion(svc)
+			targetNamespace = svc.Namespace
+		case *riov1.Router:
+			router := result.Object.(*riov1.Router)
+			targetApp, targetNamespace = router.Name, router.Namespace
+		}
+
 	}
 
 	targetVersion = r.Version

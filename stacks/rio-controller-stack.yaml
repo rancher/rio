@@ -42,6 +42,7 @@ kubernetes:
       - "replicasets"
       - "deployments"
       - "daemonsets"
+      - "statefulsets"
       verbs:
       - '*'
     - apiGroups:
@@ -52,7 +53,7 @@ kubernetes:
       verbs:
       - "*"
     - apiGroups:
-      - "certmanager.k8s.io"
+      - "cert-manager.io"
       resources:
       - "*"
       verbs:
@@ -120,35 +121,9 @@ kubernetes:
       verbs:
       - "*"
     - apiGroups:
-      - "networking.istio.io"
-      resources:
-      - "*"
-      verbs:
-      - "*"
-    - apiGroups:
-      - "config.istio.io"
-      resources:
-      - "*"
-      verbs:
-      - "*"
-    - apiGroups:
       - "policy"
       resources:
       - "podsecuritypolicies"
-      verbs:
-      - "*"
-    - apiGroups:
-      - "rbac.istio.io"
-      resources:
-      - "*"
-      verbs:
-      - "get"
-      - "watch"
-      - "list"
-    - apiGroups:
-      - "autoscaling.internal.knative.dev"
-      resources:
-      - "*"
       verbs:
       - "*"
     - apiGroups:
@@ -158,22 +133,19 @@ kubernetes:
       verbs:
       - "*"
     - apiGroups:
-      - serving.knative.dev
-      - autoscaling.internal.knative.dev
-      - networking.internal.knative.dev
+      - "storage.k8s.io"
       resources:
-      - '*'
-      - '*/status'
-      - '*/finalizers'
+      - "storageclasses"
       verbs:
-      - get
-      - list
-      - create
-      - update
-      - delete
-      - deletecollection
-      - patch
-      - watch
+      - "*"
+    - apiGroups:
+      - "gateway.solo.io.v2"
+      - "gateway.solo.io"
+      - "gloo.solo.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
     - apiGroups:
       - tekton.dev
       resources:
@@ -458,7 +430,7 @@ kubernetes:
       - "watch"
     ---
     {{- if .Values.RUN_CONTROLLER}}
-    apiVersion: extensions/v1beta1
+    apiVersion: apps/v1
     kind: Deployment
     metadata:
       name: rio-controller

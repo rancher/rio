@@ -18,6 +18,10 @@ func (f *VirtualServiceFactory) ForRevision(svc *riov1.Service) ([]*solov1.Virtu
 	vs.Spec.VirtualHost.Routes[0].Action = newRouteAction(target)
 	vs.Spec.VirtualHost.Routes[0].RoutePlugins = newRoutePlugin(target)
 
+	if err := f.InjectACME(vs); err != nil {
+		return nil, err
+	}
+
 	result := []*solov1.VirtualService{
 		vs,
 	}

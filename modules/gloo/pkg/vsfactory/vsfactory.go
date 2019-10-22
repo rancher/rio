@@ -3,6 +3,7 @@ package vsfactory
 import (
 	rioadminv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
+	extensionsv1beta1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/extensions/v1beta1"
 	"github.com/rancher/wrangler/pkg/name"
 	soloapiv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	solov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
@@ -21,6 +22,7 @@ const (
 type VirtualServiceFactory struct {
 	clusterDomainCache rioadminv1controller.ClusterDomainCache
 	publicDomainCache  rioadminv1controller.PublicDomainCache
+	ingresses          extensionsv1beta1controller.IngressCache
 	systemNamespace    string
 }
 
@@ -29,6 +31,7 @@ func New(rContext *types.Context) *VirtualServiceFactory {
 		clusterDomainCache: rContext.Admin.Admin().V1().ClusterDomain().Cache(),
 		publicDomainCache:  rContext.Admin.Admin().V1().PublicDomain().Cache(),
 		systemNamespace:    rContext.Namespace,
+		ingresses:          rContext.K8sNetworking.Extensions().V1beta1().Ingress().Cache(),
 	}
 }
 
@@ -64,6 +67,9 @@ func tlsCopy(hostname, tlsNamespace, tlsName string, vs *solov1.VirtualService) 
 				Name:      tlsName,
 				Namespace: tlsNamespace,
 			},
+		},
+		SniDomains: []string{
+			hostname,
 		},
 	}
 	vsTLS.Spec.VirtualHost.Domains = []string{hostname}
