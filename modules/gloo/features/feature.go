@@ -5,6 +5,7 @@ import (
 
 	"github.com/rancher/rio/modules/gloo/controller/app"
 	"github.com/rancher/rio/modules/gloo/controller/config"
+	"github.com/rancher/rio/modules/gloo/controller/ingress"
 	"github.com/rancher/rio/modules/gloo/controller/router"
 	"github.com/rancher/rio/modules/gloo/controller/service"
 	"github.com/rancher/rio/modules/gloo/pkg/injector"
@@ -33,6 +34,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			router.Register,
 			config.Register,
 			service.Register,
+			ingress.Register,
 		},
 	}
 

@@ -18,7 +18,7 @@ services:
     serviceMesh: false
     image: "moby/buildkit:v0.6.1"
     ports:
-    - 8080/http,exposed=false
+    - 8080/http,buildkit,expose=false
     privileged: true
     configs:
     - buildkitd-config:/etc/buildkit
@@ -28,7 +28,7 @@ services:
       env:
       - REGISTRY_HTTP_ADDR=0.0.0.0:80
       ports:
-      - 80:80/tcp,registry,internal=true
+      - 80:80/tcp,registry,expose=false
   webhook:
     global_permissions:
     - "* gitwatcher.cattle.io/gitwatchers"

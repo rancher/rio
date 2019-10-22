@@ -269,7 +269,11 @@ func FormatID(obj runtime.Object) (string, error) {
 		kind = gvk.Kind
 	}
 
-	return fmt.Sprintf("%s/%s/%s", strings.ToLower(kind), metaObj.GetNamespace(), metaObj.GetName()), nil
+	if metaObj.GetNamespace() != "" {
+		return fmt.Sprintf("%s/%s/%s", strings.ToLower(kind), metaObj.GetNamespace(), metaObj.GetName()), nil
+	}
+	return fmt.Sprintf("%s/%s", strings.ToLower(kind), metaObj.GetName()), nil
+
 }
 
 func FormatCreated(data interface{}) (string, error) {

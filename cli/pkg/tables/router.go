@@ -88,7 +88,7 @@ func NewRouter(cfg Config) TableWriter {
 	return &tableWriter{
 		writer: &routerWriter{
 			Writer: writer,
-			domain: domain,
+			domain: domain.Name,
 		},
 	}
 }

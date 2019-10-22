@@ -27,20 +27,12 @@ func getCRDs() []crd.CRD {
 		newClusterCRD("PublicDomain.admin.rio.cattle.io/v1", rioadminv1.PublicDomain{}))
 
 	crds = append(crds, crd.NonNamespacedTypes(
-		"ClusterIssuer.certmanager.k8s.io/v1alpha1",
 		"RioInfo.admin.rio.cattle.io/v1",
 	)...)
 
 	crds = append(crds, crd.NamespacedTypes(
 		"GitCommit.gitwatcher.cattle.io/v1",
 		"GitWatcher.gitwatcher.cattle.io/v1",
-
-		"ServiceScaleRecommendation.autoscale.rio.cattle.io/v1",
-
-		"Certificate.certmanager.k8s.io/v1alpha1",
-		"Challenge.certmanager.k8s.io/v1alpha1",
-		"Issuer.certmanager.k8s.io/v1alpha1",
-		"Order.certmanager.k8s.io/v1alpha1",
 	)...)
 
 	return crds

@@ -11,10 +11,9 @@ import (
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/apiextensions.k8s.io"
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/apps"
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/batch"
-	"github.com/rancher/wrangler-api/pkg/generated/controllers/certmanager.k8s.io"
+	certmanager "github.com/rancher/wrangler-api/pkg/generated/controllers/cert-manager.io"
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/core"
 	extensionsv1beta1 "github.com/rancher/wrangler-api/pkg/generated/controllers/extensions"
-	"github.com/rancher/wrangler-api/pkg/generated/controllers/networking.istio.io"
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/rbac"
 	smi "github.com/rancher/wrangler-api/pkg/generated/controllers/split.smi-spec.io"
 	"github.com/rancher/wrangler-api/pkg/generated/controllers/storage"
@@ -41,7 +40,6 @@ type Context struct {
 	Core          *core.Factory
 	Ext           *apiextensions.Factory
 	K8sNetworking *extensionsv1beta1.Factory
-	Networking    *networking.Factory
 	Admin         *admin.Factory
 	K8s           kubernetes.Interface
 	RBAC          *rbac.Factory
@@ -70,7 +68,6 @@ func NewContext(namespace string, config *rest.Config) *Context {
 		Core:          core.NewFactoryFromConfigOrDie(config),
 		Ext:           apiextensions.NewFactoryFromConfigOrDie(config),
 		K8sNetworking: extensionsv1beta1.NewFactoryFromConfigOrDie(config),
-		Networking:    networking.NewFactoryFromConfigOrDie(config),
 		Admin:         admin.NewFactoryFromConfigOrDie(config),
 		RBAC:          rbac.NewFactoryFromConfigOrDie(config),
 		Rio:           rio.NewFactoryFromConfigOrDie(config),
@@ -95,7 +92,6 @@ func (c *Context) Start(ctx context.Context) error {
 		c.Core,
 		c.Ext,
 		c.K8sNetworking,
-		c.Networking,
 		c.Admin,
 		c.RBAC,
 		c.Rio,

@@ -100,10 +100,8 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		if err != nil || info.Status.Version == "" {
 			progress.Display("Waiting for rio controller to initialize", 2)
 			continue
-		} else if info.Status.Ready {
-			progress.Display("Waiting for all the system components to be up. Not ready: %v", 2, "fake")
-			continue
 		}
+		//todo: wait for ready state
 
 		fmt.Printf("\rrio controller version %s (%s) installed into namespace %s\n", version.Version, version.GitCommit, info.Status.SystemNamespace)
 
@@ -113,10 +111,10 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		if err != nil {
 			return err
 		}
-		if clusterDomain == "" {
+		if clusterDomain == nil {
 			fmt.Println("Warning: Detected that Rio cluster domain is not generated for this cluster right now")
 		} else {
-			_, err = http.Get(fmt.Sprintf("http://%s:%s", clusterDomain))
+			_, err = http.Get(fmt.Sprintf("http://%s:%d", clusterDomain.Name, clusterDomain.Spec.HTTPPort))
 			if err != nil {
 				fmt.Printf("Warning: ClusterDomain is not accessible. Error: %v\n", err)
 			} else {
@@ -177,6 +175,12 @@ func isDockerForMac(nodes *v1.NodeList) bool {
 }
 
 func (i *Install) configure(ctx *clicontext.CLIContext) error {
+	if _, err := ctx.Core.Namespaces().Get(ctx.GetSystemNamespace(), metav1.GetOptions{}); errors.IsNotFound(err) {
+		if _, err := ctx.Core.Namespaces().Create(constructors.NewNamespace(ctx.GetSystemNamespace(), v1.Namespace{})); err != nil {
+			return err
+		}
+	}
+
 	cfg := config2.Config{
 		Features:    map[string]config2.FeatureConfig{},
 		LetsEncrypt: config2.LetsEncrypt{},
@@ -198,9 +202,11 @@ func (i *Install) configure(ctx *clicontext.CLIContext) error {
 
 	ips := strings.Join(i.IPAddress, ",")
 	for _, ip := range strings.Split(ips, ",") {
-		cfg.Gateway.StaticAddresses = append(cfg.Gateway.StaticAddresses, adminv1.Address{
-			IP: ip,
-		})
+		if ip != "" {
+			cfg.Gateway.StaticAddresses = append(cfg.Gateway.StaticAddresses, adminv1.Address{
+				IP: ip,
+			})
+		}
 	}
 
 	if config, err := ctx.Core.ConfigMaps(ctx.SystemNamespace).Get(config2.ConfigName, metav1.GetOptions{}); err != nil {

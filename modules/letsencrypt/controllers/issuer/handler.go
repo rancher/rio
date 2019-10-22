@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	certmanagerapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
+	certmanagerv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/rancher/rio/pkg/config"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/types"
@@ -16,7 +18,8 @@ import (
 const (
 	handlerName   = "letsencrypt-issuer"
 	rdnsTokenName = "rdns-token"
-	RioIssuer     = "rio-issuer"
+	RioDNSIssuer  = "rio-dns-issuer"
+	RioHTTPIssuer = "rio-http-issuer"
 
 	defaultEmail     = "cert@rancher.dev"
 	defaultAccount   = "letsencrypt-account"
@@ -31,7 +34,8 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			WithSetID(handlerName).
 			WithSetOwnerReference(true, true).
 			WithCacheTypes(
-				rContext.CertManager.Certmanager().V1alpha1().Issuer()),
+				rContext.CertManager.Certmanager().V1alpha2().Issuer(),
+				rContext.Core.Core().V1().Secret()),
 	}
 
 	rContext.Core.Core().V1().ConfigMap().OnChange(ctx, handlerName, h.sync)
@@ -56,7 +60,10 @@ func (h *handler) sync(key string, cm *v1.ConfigMap) (*v1.ConfigMap, error) {
 
 	return cm, h.apply.
 		WithOwner(cm).
-		ApplyObjects(constructIssuer(h.namespace, config))
+		ApplyObjects(
+			constructIssuer(h.namespace, "dns", config),
+			constructIssuer(h.namespace, "http", config),
+		)
 }
 
 func withDefault(val, def string) string {
@@ -66,45 +73,58 @@ func withDefault(val, def string) string {
 	return val
 }
 
-func constructIssuer(namespace string, config config.Config) *certmanagerapi.Issuer {
+func constructIssuer(namespace, issuerType string, config config.Config) *certmanagerv1alpha2.Issuer {
 	account := withDefault(config.LetsEncrypt.Account, defaultAccount)
 	email := withDefault(config.LetsEncrypt.Email, defaultEmail)
 	url := withDefault(config.LetsEncrypt.ServerURL, defaultServerURL)
 
-	return &certmanagerapi.Issuer{
+	issuer := &certmanagerv1alpha2.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
-			Name:      RioIssuer,
 		},
-		Spec: certmanagerapi.IssuerSpec{
-			IssuerConfig: certmanagerapi.IssuerConfig{
-				ACME: &certmanagerapi.ACMEIssuer{
+		Spec: certmanagerv1alpha2.IssuerSpec{
+			IssuerConfig: certmanagerv1alpha2.IssuerConfig{
+				ACME: &cmacme.ACMEIssuer{
 					Server: url,
 					Email:  email,
-					PrivateKey: certmanagerapi.SecretKeySelector{
-						LocalObjectReference: certmanagerapi.LocalObjectReference{
+					PrivateKey: cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{
 							Name: account,
-						},
-					},
-					HTTP01: &certmanagerapi.ACMEIssuerHTTP01Config{},
-					DNS01: &certmanagerapi.ACMEIssuerDNS01Config{
-						Providers: []certmanagerapi.ACMEIssuerDNS01Provider{
-							{
-								Name: "rdns",
-								RDNS: &certmanagerapi.ACMEIssuerDNS01ProviderRDNS{
-									APIEndpoint: constants.RDNSURL,
-									ClientToken: certmanagerapi.SecretKeySelector{
-										Key: "token",
-										LocalObjectReference: certmanagerapi.LocalObjectReference{
-											Name: rdnsTokenName,
-										},
-									},
-								},
-							},
 						},
 					},
 				},
 			},
 		},
 	}
+
+	if issuerType == "dns" {
+		issuer.Name = RioDNSIssuer
+		issuer.Spec.ACME.Solvers = []cmacme.ACMEChallengeSolver{
+			{
+				DNS01: &cmacme.ACMEChallengeSolverDNS01{
+					RDNS: &cmacme.ACMEIssuerDNS01ProviderRDNS{
+						APIEndpoint: constants.RDNSURL,
+						ClientToken: cmmeta.SecretKeySelector{
+							Key: "token",
+							LocalObjectReference: cmmeta.LocalObjectReference{
+								Name: rdnsTokenName,
+							},
+						},
+					},
+				},
+			}}
+	} else {
+		issuer.Name = RioHTTPIssuer
+		issuer.Spec.ACME.Solvers = []cmacme.ACMEChallengeSolver{
+			{
+				HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+					Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+						Class: &[]string{"gloo"}[0],
+					},
+				},
+			},
+		}
+	}
+
+	return issuer
 }

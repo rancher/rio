@@ -131,7 +131,7 @@ func (p populator) populateBuild(stack *riov1.Stack, systemNamespace string, os 
 			},
 		},
 		Spec: tektonv1alpha1.TaskRunSpec{
-			ServiceAccount: sa.Name,
+			ServiceAccountName: sa.Name,
 			TaskSpec: &tektonv1alpha1.TaskSpec{
 				Inputs: &tektonv1alpha1.Inputs{
 					Resources: []tektonv1alpha1.TaskResource{
@@ -173,17 +173,19 @@ func (p populator) populateBuild(stack *riov1.Stack, systemNamespace string, os 
 			Inputs: tektonv1alpha1.TaskRunInputs{
 				Resources: []tektonv1alpha1.TaskResourceBinding{
 					{
-						Name: "source",
-						ResourceSpec: &tektonv1alpha1.PipelineResourceSpec{
-							Type: tektonv1alpha1.PipelineResourceTypeGit,
-							Params: []tektonv1alpha1.ResourceParam{
-								{
-									Name:  "url",
-									Value: stack.Spec.Build.Repo,
-								},
-								{
-									Name:  "revision",
-									Value: rev,
+						PipelineResourceBinding: tektonv1alpha1.PipelineResourceBinding{
+							Name: "source",
+							ResourceSpec: &tektonv1alpha1.PipelineResourceSpec{
+								Type: tektonv1alpha1.PipelineResourceTypeGit,
+								Params: []tektonv1alpha1.ResourceParam{
+									{
+										Name:  "url",
+										Value: stack.Spec.Build.Repo,
+									},
+									{
+										Name:  "revision",
+										Value: rev,
+									},
 								},
 							},
 						},

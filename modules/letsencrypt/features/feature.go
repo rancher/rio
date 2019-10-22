@@ -20,7 +20,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			Description: "Let's Encrypt",
 		},
 		FixedAnswers: map[string]string{
-			"TAG":       "v0.7.2-rio.1",
+			"TAG":       "v0.11.0-rio.1",
 			"NAMESPACE": rContext.Namespace,
 		},
 		SystemStacks: []*stack.SystemStack{

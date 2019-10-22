@@ -1,8 +1,6 @@
 package ps
 
 import (
-	"sort"
-
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/tables"
@@ -37,10 +35,6 @@ func (p *Ps) services(ctx *clicontext.CLIContext) error {
 			Namespace: service.(*riov1.Service).Namespace,
 		})
 	}
-
-	sort.Slice(output, func(i, j int) bool {
-		return output[i].Service.CreationTimestamp.After(output[j].Service.CreationTimestamp.Time)
-	})
 
 	writer := tables.NewService(ctx)
 	defer writer.TableWriter().Close()

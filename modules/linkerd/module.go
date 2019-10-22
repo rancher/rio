@@ -8,6 +8,7 @@ import (
 	"github.com/rancher/rio/modules/linkerd/feature"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/types"
+	"github.com/sirupsen/logrus"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -67,6 +68,7 @@ func installLinkerd(rContext *types.Context) error {
 
 	startTime := time.Now()
 	for {
+		logrus.Infof("Waiting for linkerd to be installed")
 		job, err := rContext.K8s.BatchV1().Jobs(rContext.Namespace).Get(existingJob.Name, metav1.GetOptions{})
 		if err != nil {
 			return err

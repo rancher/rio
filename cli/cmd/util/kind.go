@@ -27,10 +27,10 @@ func GetID(object runtime.Object, allNamespace bool) (string, error) {
 		id = fmt.Sprintf("%s/%s/%s", strings.ToLower(gvk.Kind), metaObj.GetNamespace(), metaObj.GetName())
 	} else {
 		id = fmt.Sprintf("%s/%s", strings.ToLower(gvk.Kind), metaObj.GetName())
+		if kind == types.ServiceType {
+			_, id = kv.Split(id, "/")
+		}
 	}
 
-	if kind == types.ServiceType {
-		_, id = kv.Split(id, "/")
-	}
 	return id, nil
 }

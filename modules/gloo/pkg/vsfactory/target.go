@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/rancher/rio/modules/service/controllers/service/populate/serviceports"
@@ -89,13 +90,18 @@ func (f *VirtualServiceFactory) findTLS(namespace, app, version string, hostname
 
 	for _, domain := range domains {
 		for _, hostname := range hostnames {
-			host, _, err := net.SplitHostPort(hostname)
+			host, port, err := net.SplitHostPort(hostname)
 			if err != nil {
 				host = hostname
+				port = "443"
+			}
+			portInt, _ := strconv.Atoi(port)
+			if portInt != domain.Spec.HTTPSPort {
+				continue
 			}
 			if strings.HasSuffix(host, domain.Name) {
 				if domain.Status.AssignedSecretName != "" {
-					result[host] = domain.Status.AssignedSecretName
+					result[formatHost(portInt, 443, host)] = domain.Status.AssignedSecretName
 				}
 			}
 		}
@@ -156,4 +162,14 @@ func getTargetsForApp(svcs []*riov1.Service, systemNamespace string) (hostnames 
 	}
 
 	return
+}
+
+func formatHost(port, defaultPort int, hostname string) string {
+	if port == 0 {
+		return ""
+	}
+	if port == defaultPort {
+		return hostname
+	}
+	return fmt.Sprintf("%s:%d", hostname, port)
 }

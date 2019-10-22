@@ -11,12 +11,13 @@ replace (
 
 	github.com/golang/protobuf => github.com/golang/protobuf v1.3.1
 	github.com/jaguilar/vt100 => github.com/tonistiigi/vt100 v0.0.0-20190402012908-ad4c4a574305
-	github.com/jetstack/cert-manager => github.com/rancher/cert-manager v0.7.0-rio.1
+	github.com/jetstack/cert-manager => github.com/StrongMonkey/cert-manager v0.5.1-0.20191021184308-1f29cbc86ca1
 	github.com/knative/pkg => github.com/rancher/pkg v0.0.0-20190514055449-b30ab9de040e
 	github.com/linkerd/linkerd2 => github.com/StrongMonkey/linkerd2 v0.0.0-20191021165729-976fad67457a
 	github.com/matryer/moq => github.com/rancher/moq v0.0.0-20190404221404-ee5226d43009
 	github.com/rancher/gitwatcher => github.com/StrongMonkey/webhookinator v0.0.0-20191021165343-56c8bac69536
-	github.com/rancher/wrangler => github.com/StrongMonkey/wrangler v0.0.0-20191021165522-6a731953f00c
+	github.com/rancher/wrangler => github.com/StrongMonkey/wrangler v0.0.0-20191022071802-ecd068ff0c81
+	github.com/rancher/wrangler-api => github.com/StrongMonkey/wrangler-api v0.1.1-0.20191022161017-98344450ef5e
 	golang.org/x/tools => golang.org/x/tools v0.0.0-20190411180116-681f9ce8ac52
 
 	k8s.io/api => k8s.io/api v0.0.0-20190918195907-bd6ac527cfd2
@@ -27,12 +28,9 @@ replace (
 )
 
 require (
-	cloud.google.com/go v0.41.0 // indirect
-	github.com/Azure/azure-sdk-for-go v31.1.0+incompatible // indirect
+	contrib.go.opencensus.io/exporter/stackdriver v0.12.7 // indirect
 	github.com/Azure/go-autorest/autorest v0.9.1 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.6.0 // indirect
-	github.com/Azure/go-autorest/autorest/to v0.3.0 // indirect
-	github.com/Azure/go-autorest/autorest/validation v0.2.0 // indirect
 	github.com/Masterminds/sprig v2.18.0+incompatible
 	github.com/aokoli/goutils v1.1.0
 	github.com/aws/aws-sdk-go v1.25.1 // indirect
@@ -52,12 +50,10 @@ require (
 	github.com/gogo/protobuf v1.3.0
 	github.com/gophercloud/gophercloud v0.2.0 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
-	github.com/hashicorp/vault/api v1.0.4 // indirect
-	github.com/jetstack/cert-manager v0.7.2
-	github.com/json-iterator/go v1.1.7 // indirect
+	github.com/hashicorp/go-rootcerts v1.0.1 // indirect
+	github.com/hashicorp/go-sockaddr v1.0.2 // indirect
+	github.com/jetstack/cert-manager v0.11.0
 	github.com/knative/build v0.6.0
-	github.com/knative/pkg v0.0.0-20190514205332-5e4512dcb2ca
-	github.com/knative/serving v0.6.1
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/linkerd/linkerd2 v0.0.0-20191010175117-1039d8254738
 	github.com/markbates/inflect v1.0.4 // indirect
@@ -72,11 +68,11 @@ require (
 	github.com/prometheus/common v0.6.0 // indirect
 	github.com/prometheus/procfs v0.0.3 // indirect
 	github.com/radovskyb/watcher v1.0.7 // indirect
-	github.com/rancher/gitwatcher v0.4.2-0.20191015052408-00ce0a8a61c1
+	github.com/rancher/gitwatcher v0.0.0-00010101000000-000000000000
 	github.com/rancher/mapper v0.0.0-20190814232720-058a8b7feb99
 	github.com/rancher/norman v0.0.0-20191015045353-cc004d32fcc9
 	github.com/rancher/rdns-server v0.5.7-0.20190927164127-7128efe7d065
-	github.com/rancher/wrangler v0.2.1-0.20191015042916-f2a6ecca4f20
+	github.com/rancher/wrangler v0.2.1-0.20191021174615-d8c92d2665fe
 	github.com/rancher/wrangler-api v0.2.1-0.20191015045805-d3635aa0853a
 	github.com/sclevine/spec v1.3.0
 	github.com/sirupsen/logrus v1.4.2
@@ -84,7 +80,7 @@ require (
 	github.com/solo-io/go-utils v0.10.17 // indirect
 	github.com/solo-io/solo-kit v0.10.24-0.20191003192541-dc479f62f67b
 	github.com/stretchr/testify v1.3.0
-	github.com/tektoncd/pipeline v0.7.0
+	github.com/tektoncd/pipeline v0.8.0
 	github.com/urfave/cli v1.22.1
 	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
@@ -93,14 +89,12 @@ require (
 	gotest.tools v2.2.0+incompatible
 	k8s.io/api v0.0.0-20190918195907-bd6ac527cfd2
 	k8s.io/apiextensions-apiserver v0.0.0-20190918201827-3de75813f604
-	k8s.io/apimachinery v0.0.0-20190817020851-f2f3a405f61d
+	k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655
 	k8s.io/apiserver v0.0.0-20190918200908-1e17798da8c1
 	k8s.io/cli-runtime v0.0.0-20190918202139-0b14c719ca62
 	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
-	k8s.io/gengo v0.0.0-20190327210449-e17681d19d3a // indirect
-	k8s.io/klog v0.3.2
+	k8s.io/klog v0.4.0
 	k8s.io/kubernetes v1.14.3
-	k8s.io/utils v0.0.0-20190506122338-8fab8cb257d5 // indirect
-	knative.dev/pkg v0.0.0-20191020211422-ec5f5148b8d0
+	knative.dev/pkg v0.0.0-20191021194725-ba3f47d9e951
 	sigs.k8s.io/yaml v1.1.0
 )
