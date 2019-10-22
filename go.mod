@@ -15,9 +15,6 @@ replace (
 	github.com/knative/pkg => github.com/rancher/pkg v0.0.0-20190514055449-b30ab9de040e
 	github.com/linkerd/linkerd2 => github.com/StrongMonkey/linkerd2 v0.0.0-20191021165729-976fad67457a
 	github.com/matryer/moq => github.com/rancher/moq v0.0.0-20190404221404-ee5226d43009
-	github.com/rancher/gitwatcher => github.com/StrongMonkey/webhookinator v0.0.0-20191021165343-56c8bac69536
-	github.com/rancher/wrangler => github.com/StrongMonkey/wrangler v0.0.0-20191022071802-ecd068ff0c81
-	github.com/rancher/wrangler-api => github.com/StrongMonkey/wrangler-api v0.1.1-0.20191022161017-98344450ef5e
 	golang.org/x/tools => golang.org/x/tools v0.0.0-20190411180116-681f9ce8ac52
 
 	k8s.io/api => k8s.io/api v0.0.0-20190918195907-bd6ac527cfd2
@@ -69,12 +66,12 @@ require (
 	github.com/prometheus/common v0.6.0 // indirect
 	github.com/prometheus/procfs v0.0.3 // indirect
 	github.com/radovskyb/watcher v1.0.7 // indirect
-	github.com/rancher/gitwatcher v0.0.0-00010101000000-000000000000
+	github.com/rancher/gitwatcher v0.4.1
 	github.com/rancher/mapper v0.0.0-20190814232720-058a8b7feb99
 	github.com/rancher/norman v0.0.0-20191015045353-cc004d32fcc9
 	github.com/rancher/rdns-server v0.5.7-0.20190927164127-7128efe7d065
-	github.com/rancher/wrangler v0.2.1-0.20191021174615-d8c92d2665fe
-	github.com/rancher/wrangler-api v0.2.1-0.20191015045805-d3635aa0853a
+	github.com/rancher/wrangler v0.2.1-0.20191022173830-fea752b72607
+	github.com/rancher/wrangler-api v0.2.1-0.20191022174038-d313951897f9
 	github.com/sclevine/spec v1.3.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/solo-io/gloo v0.20.3-0.20191003200350-6f6e02641501

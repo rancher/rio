@@ -3,6 +3,8 @@ package gitcommit
 import (
 	"fmt"
 
+	"github.com/rancher/rio/modules/build/pkg"
+
 	webhookv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/indexes"
@@ -18,7 +20,7 @@ func (h Handler) onChangeService(key string, obj *webhookv1.GitCommit, gitWatche
 		return obj, nil
 	}
 
-	service, err := h.services.Cache().Get(obj.Namespace, gitWatcher.Spec.TargetServiceName)
+	service, err := h.services.Cache().Get(obj.Namespace, gitWatcher.Annotations[pkg.ServiceLabel])
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return obj, nil
@@ -90,9 +92,9 @@ func (h Handler) onChangeService(key string, obj *webhookv1.GitCommit, gitWatche
 		}
 	} else {
 		// if template is false, just update existing images
-		containerName := gitWatcher.Spec.TargetContainerName
+		containerName := gitWatcher.Annotations[pkg.ContainerLabel]
 		update := false
-		if containerName == gitWatcher.Spec.TargetServiceName {
+		if containerName == gitWatcher.Annotations[pkg.ServiceLabel] {
 			// use the first container
 			if obj.Spec.Branch != "" && obj.Spec.Branch != service.Spec.ImageBuild.Branch {
 				return obj, nil

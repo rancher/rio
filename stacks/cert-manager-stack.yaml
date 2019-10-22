@@ -10,7 +10,7 @@ services:
     - '* events'
     - '* services'
     - '* pods'
-    image: "strongmonkey1992/cert-manager-controller:${TAG}"
+    image: "rancher/cert-manager-controller:${TAG}"
     imagePullPolicy: Always
     args:
     - cert-manager
@@ -21,7 +21,7 @@ services:
     - --webhook-namespace
     - ${NAMESPACE}
     - --acme-http01-solver-image
-    - "strongmonkey1992/cert-manager-acmesolver:${TAG}"
+    - "rancher/cert-manager-acmesolver:${TAG}"
     - --logtostderr
     - "true"
 

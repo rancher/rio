@@ -26,7 +26,7 @@ var (
 	Prometheus = "prometheus"
 	RDNSURL    = "https://api.on-rio.io/v1"
 
-	LinkerdInstallImage = "rancher/linkerd-install:stable-2.5.0"
+	LinkerdInstallImage = "rancher/linkerd-install:stable-2.6.0"
 
 	AcmeVersion = "cm-acme"
 	InstallUUID = ""

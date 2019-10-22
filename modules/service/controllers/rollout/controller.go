@@ -3,6 +3,8 @@ package rollout
 import (
 	"context"
 	"fmt"
+	"time"
+
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/indexes"
@@ -10,7 +12,6 @@ import (
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/generic"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"time"
 )
 
 type rolloutHandler struct {
@@ -32,6 +33,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 }
 
 func (rh rolloutHandler) rollout(key string, svc *riov1.Service) (*riov1.Service, error) {
+	if svc == nil || svc.DeletionTimestamp != nil {
+		return nil, nil
+	}
 	appName, _ := services.AppAndVersion(svc)
 	if appName == "" {
 		return nil, generic.ErrSkip

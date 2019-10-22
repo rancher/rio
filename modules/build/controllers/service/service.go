@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/rancher/rio/modules/build/pkg"
+
 	webhookv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
@@ -303,10 +305,13 @@ func (p populator) populateWebhookAndSecrets(build *riov1.ImageBuildSpec, svc *r
 			RepositoryCredentialSecretName: build.CloneSecretName,
 			GithubWebhookToken:             build.WebhookSecretName,
 			GithubDeployment:               true,
-			TargetServiceName:              svc.Name,
-			TargetContainerName:            containerName,
 		},
 	})
+
+	webhookReceiver.Annotations = map[string]string{
+		pkg.ServiceLabel:   svc.Name,
+		pkg.ContainerLabel: containerName,
+	}
 
 	if webhook != nil && len(webhook.Status.Endpoints) > 0 {
 		webhookReceiver.Spec.ReceiverURL = webhook.Status.Endpoints[0]

@@ -6,12 +6,14 @@ import (
 	"github.com/rancher/rio/cli/pkg/tables"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type ServiceData struct {
 	ID        string
 	Service   *riov1.Service
 	Namespace string
+	Pod       *corev1.Pod
 }
 
 func (p *Ps) services(ctx *clicontext.CLIContext) error {
@@ -19,6 +21,18 @@ func (p *Ps) services(ctx *clicontext.CLIContext) error {
 	services, err := ctx.List(clitypes.ServiceType)
 	if err != nil {
 		return err
+	}
+
+	pods, err := ctx.List(clitypes.PodType)
+	if err != nil {
+		return err
+	}
+	podMap := map[string]*corev1.Pod{}
+	for _, obj := range pods {
+		pod := obj.(*corev1.Pod)
+		if pod.Labels["rio.cattle.io/service"] != "" {
+			podMap[pod.Labels["rio.cattle.io/service"]] = pod
+		}
 	}
 
 	var output []ServiceData
@@ -33,6 +47,7 @@ func (p *Ps) services(ctx *clicontext.CLIContext) error {
 			ID:        id,
 			Service:   service.(*riov1.Service),
 			Namespace: service.(*riov1.Service).Namespace,
+			Pod:       podMap[service.(*riov1.Service).Name],
 		})
 	}
 

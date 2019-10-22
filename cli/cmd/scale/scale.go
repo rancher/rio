@@ -35,6 +35,9 @@ func (s *Scale) Run(ctx *clicontext.CLIContext) error {
 				if err != nil {
 					return err
 				}
+				if service.Spec.Autoscale == nil {
+					service.Spec.Autoscale = &v1.AutoscaleConfig{}
+				}
 				if service.Spec.Autoscale.Concurrency == 0 {
 					service.Spec.Autoscale.Concurrency = 10
 				}

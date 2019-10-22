@@ -9,6 +9,7 @@ import (
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/services"
+	corev1 "k8s.io/api/core/v1"
 )
 
 func NewService(cfg Config) TableWriter {
@@ -21,7 +22,7 @@ func NewService(cfg Config) TableWriter {
 		{"VERSION", "{{.Service | version}}"},
 		{"WEIGHT", "{{.Service | formatWeight}}"},
 		{"CREATED", "{{.Service.CreationTimestamp | ago}}"},
-		//{"DETAIL", "{{}}"},
+		{"DETAIL", "{{serviceDetail .Service .Pod}}"},
 	}, cfg)
 
 	writer.AddFormatFunc("image", FormatImage)
@@ -29,6 +30,7 @@ func NewService(cfg Config) TableWriter {
 	writer.AddFormatFunc("app", app)
 	writer.AddFormatFunc("version", version)
 	writer.AddFormatFunc("formatWeight", formatWeight)
+	writer.AddFormatFunc("serviceDetail", serviceDetail)
 
 	return &tableWriter{
 		writer: writer,
@@ -58,10 +60,52 @@ func formatWeight(data interface{}) string {
 	if !ok {
 		return ""
 	}
+
 	if s.Status.ComputedWeight != nil {
 		return fmt.Sprintf("%s%%", strconv.Itoa(*s.Status.ComputedWeight))
 	}
 	return "0%"
+}
+
+func serviceDetail(data interface{}, pod *corev1.Pod) string {
+	s, ok := data.(*v1.Service)
+	if !ok {
+		return ""
+	}
+
+	for _, con := range s.Status.Conditions {
+		if con.Status != corev1.ConditionTrue {
+			return fmt.Sprintf("%s: %s(%s)", con.Type, con.Message, con.Reason)
+		}
+	}
+
+	output := strings.Builder{}
+	if pod == nil {
+		return ""
+	}
+	for _, con := range append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) {
+		if con.State.Waiting != nil && con.State.Waiting.Reason != "" {
+			output.WriteString("; ")
+			reason := con.State.Waiting.Reason
+			if con.State.Waiting.Message != "" {
+				reason = reason + "/" + con.State.Waiting.Message
+			}
+			output.WriteString(fmt.Sprintf("%s(%s)", con.Name, reason))
+		}
+
+		if con.State.Terminated != nil && con.State.Terminated.ExitCode != 0 {
+			output.WriteString(";")
+			if con.State.Terminated.Message == "" {
+				con.State.Terminated.Message = "exit code not zero"
+			}
+			reason := con.State.Terminated.Reason
+			if con.State.Terminated.Message != "" {
+				reason = reason + "/" + con.State.Terminated.Message
+			}
+			output.WriteString(fmt.Sprintf("%s(%s), exit code: %v", con.Name, reason, con.State.Terminated.ExitCode))
+		}
+	}
+	return strings.Trim(output.String(), "; ")
 }
 
 func formatRevisionScale(svc *riov1.Service, scaleStatus *v1.ScaleStatus) (string, error) {

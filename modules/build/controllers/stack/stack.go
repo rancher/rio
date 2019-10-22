@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/rancher/rio/modules/build/pkg"
+
 	webhookv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
 	"github.com/rancher/rio/modules/service/controllers/service/populate/rbac"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
@@ -298,9 +300,11 @@ func populateWebhookAndSecrets(webhookService *riov1.Service, stack *riov1.Stack
 			Tag:                            true,
 			Branch:                         stack.Spec.Build.Branch,
 			RepositoryCredentialSecretName: stack.Spec.Build.CloneSecretName,
-			TargetStackName:                stack.Name,
 		},
 	})
+	webhookReceiver.Annotations = map[string]string{
+		pkg.StackLabel: stack.Name,
+	}
 
 	if webhookService != nil && len(webhookService.Status.Endpoints) > 0 {
 		webhookReceiver.Spec.ReceiverURL = webhookService.Status.Endpoints[0]

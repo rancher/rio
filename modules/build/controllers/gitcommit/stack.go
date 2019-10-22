@@ -2,11 +2,12 @@ package gitcommit
 
 import (
 	webhookv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
+	"github.com/rancher/rio/modules/build/pkg"
 	"k8s.io/apimachinery/pkg/api/errors"
 )
 
 func (h Handler) onChangeStack(key string, obj *webhookv1.GitCommit, gitWatcher *webhookv1.GitWatcher) (*webhookv1.GitCommit, error) {
-	stack, err := h.stacks.Cache().Get(obj.Namespace, gitWatcher.Spec.TargetStackName)
+	stack, err := h.stacks.Cache().Get(obj.Namespace, gitWatcher.Annotations[pkg.StackLabel])
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return obj, nil
