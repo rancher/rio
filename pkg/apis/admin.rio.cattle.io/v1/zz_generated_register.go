@@ -29,9 +29,9 @@ import (
 
 var (
 	ClusterDomainResourceName = "clusterdomains"
-	FeatureResourceName       = "features"
 	PublicDomainResourceName  = "publicdomains"
 	RioInfoResourceName       = "rioinfos"
+	SystemStackResourceName   = "systemstacks"
 )
 
 // SchemeGroupVersion is group version used to register these objects
@@ -57,12 +57,12 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&ClusterDomain{},
 		&ClusterDomainList{},
-		&Feature{},
-		&FeatureList{},
 		&PublicDomain{},
 		&PublicDomainList{},
 		&RioInfo{},
 		&RioInfoList{},
+		&SystemStack{},
+		&SystemStackList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

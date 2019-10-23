@@ -29,8 +29,8 @@ import (
 type ClusterDomainLister interface {
 	// List lists all ClusterDomains in the indexer.
 	List(selector labels.Selector) (ret []*v1.ClusterDomain, err error)
-	// ClusterDomains returns an object that can list and get ClusterDomains.
-	ClusterDomains(namespace string) ClusterDomainNamespaceLister
+	// Get retrieves the ClusterDomain from the index for a given name.
+	Get(name string) (*v1.ClusterDomain, error)
 	ClusterDomainListerExpansion
 }
 
@@ -52,38 +52,9 @@ func (s *clusterDomainLister) List(selector labels.Selector) (ret []*v1.ClusterD
 	return ret, err
 }
 
-// ClusterDomains returns an object that can list and get ClusterDomains.
-func (s *clusterDomainLister) ClusterDomains(namespace string) ClusterDomainNamespaceLister {
-	return clusterDomainNamespaceLister{indexer: s.indexer, namespace: namespace}
-}
-
-// ClusterDomainNamespaceLister helps list and get ClusterDomains.
-type ClusterDomainNamespaceLister interface {
-	// List lists all ClusterDomains in the indexer for a given namespace.
-	List(selector labels.Selector) (ret []*v1.ClusterDomain, err error)
-	// Get retrieves the ClusterDomain from the indexer for a given namespace and name.
-	Get(name string) (*v1.ClusterDomain, error)
-	ClusterDomainNamespaceListerExpansion
-}
-
-// clusterDomainNamespaceLister implements the ClusterDomainNamespaceLister
-// interface.
-type clusterDomainNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all ClusterDomains in the indexer for a given namespace.
-func (s clusterDomainNamespaceLister) List(selector labels.Selector) (ret []*v1.ClusterDomain, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.ClusterDomain))
-	})
-	return ret, err
-}
-
-// Get retrieves the ClusterDomain from the indexer for a given namespace and name.
-func (s clusterDomainNamespaceLister) Get(name string) (*v1.ClusterDomain, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
+// Get retrieves the ClusterDomain from the index for a given name.
+func (s *clusterDomainLister) Get(name string) (*v1.ClusterDomain, error) {
+	obj, exists, err := s.indexer.GetByKey(name)
 	if err != nil {
 		return nil, err
 	}

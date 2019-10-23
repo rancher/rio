@@ -20,13 +20,17 @@ package v1
 
 import (
 	"context"
+	"time"
 
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	clientset "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/rio.cattle.io/v1"
 	informers "github.com/rancher/rio/pkg/generated/informers/externalversions/rio.cattle.io/v1"
 	listers "github.com/rancher/rio/pkg/generated/listers/rio.cattle.io/v1"
+	"github.com/rancher/wrangler/pkg/apply"
+	"github.com/rancher/wrangler/pkg/condition"
 	"github.com/rancher/wrangler/pkg/generic"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -40,20 +44,15 @@ import (
 type RouterHandler func(string, *v1.Router) (*v1.Router, error)
 
 type RouterController interface {
+	generic.ControllerMeta
 	RouterClient
 
 	OnChange(ctx context.Context, name string, sync RouterHandler)
 	OnRemove(ctx context.Context, name string, sync RouterHandler)
 	Enqueue(namespace, name string)
+	EnqueueAfter(namespace, name string, duration time.Duration)
 
 	Cache() RouterCache
-
-	Informer() cache.SharedIndexInformer
-	GroupVersionKind() schema.GroupVersionKind
-
-	AddGenericHandler(ctx context.Context, name string, handler generic.Handler)
-	AddGenericRemoveHandler(ctx context.Context, name string, handler generic.Handler)
-	Updater() generic.Updater
 }
 
 type RouterClient interface {
@@ -118,26 +117,21 @@ func (c *routerController) Updater() generic.Updater {
 	}
 }
 
-func UpdateRouterOnChange(updater generic.Updater, handler RouterHandler) RouterHandler {
-	return func(key string, obj *v1.Router) (*v1.Router, error) {
-		if obj == nil {
-			return handler(key, nil)
-		}
-
-		copyObj := obj.DeepCopy()
-		newObj, err := handler(key, copyObj)
-		if newObj != nil {
-			copyObj = newObj
-		}
-		if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
-			newObj, err := updater(copyObj)
-			if newObj != nil && err == nil {
-				copyObj = newObj.(*v1.Router)
-			}
-		}
-
-		return copyObj, err
+func UpdateRouterDeepCopyOnChange(client RouterClient, obj *v1.Router, handler func(obj *v1.Router) (*v1.Router, error)) (*v1.Router, error) {
+	if obj == nil {
+		return obj, nil
 	}
+
+	copyObj := obj.DeepCopy()
+	newObj, err := handler(copyObj)
+	if newObj != nil {
+		copyObj = newObj
+	}
+	if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
+		return client.Update(copyObj)
+	}
+
+	return copyObj, err
 }
 
 func (c *routerController) AddGenericHandler(ctx context.Context, name string, handler generic.Handler) {
@@ -160,6 +154,10 @@ func (c *routerController) OnRemove(ctx context.Context, name string, sync Route
 
 func (c *routerController) Enqueue(namespace, name string) {
 	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), namespace, name)
+}
+
+func (c *routerController) EnqueueAfter(namespace, name string, duration time.Duration) {
+	c.controllerManager.EnqueueAfter(c.gvk, c.informer.Informer(), namespace, name, duration)
 }
 
 func (c *routerController) Informer() cache.SharedIndexInformer {
@@ -239,4 +237,104 @@ func (c *routerCache) GetByIndex(indexName, key string) (result []*v1.Router, er
 		result = append(result, obj.(*v1.Router))
 	}
 	return result, nil
+}
+
+type RouterStatusHandler func(obj *v1.Router, status v1.RouterStatus) (v1.RouterStatus, error)
+
+type RouterGeneratingHandler func(obj *v1.Router, status v1.RouterStatus) ([]runtime.Object, v1.RouterStatus, error)
+
+func RegisterRouterStatusHandler(ctx context.Context, controller RouterController, condition condition.Cond, name string, handler RouterStatusHandler) {
+	statusHandler := &routerStatusHandler{
+		client:    controller,
+		condition: condition,
+		handler:   handler,
+	}
+	controller.AddGenericHandler(ctx, name, FromRouterHandlerToHandler(statusHandler.sync))
+}
+
+func RegisterRouterGeneratingHandler(ctx context.Context, controller RouterController, apply apply.Apply,
+	condition condition.Cond, name string, handler RouterGeneratingHandler, opts *generic.GeneratingHandlerOptions) {
+	statusHandler := &routerGeneratingHandler{
+		RouterGeneratingHandler: handler,
+		apply:                   apply,
+		name:                    name,
+		gvk:                     controller.GroupVersionKind(),
+	}
+	if opts != nil {
+		statusHandler.opts = *opts
+	}
+	RegisterRouterStatusHandler(ctx, controller, condition, name, statusHandler.Handle)
+}
+
+type routerStatusHandler struct {
+	client    RouterClient
+	condition condition.Cond
+	handler   RouterStatusHandler
+}
+
+func (a *routerStatusHandler) sync(key string, obj *v1.Router) (*v1.Router, error) {
+	if obj == nil {
+		return obj, nil
+	}
+
+	status := obj.Status
+	obj = obj.DeepCopy()
+	newStatus, err := a.handler(obj, obj.Status)
+	if err != nil {
+		// Revert to old status on error
+		newStatus = *status.DeepCopy()
+	}
+
+	if a.condition != "" {
+		if errors.IsConflict(err) {
+			a.condition.SetError(obj, "", nil)
+		} else {
+			a.condition.SetError(obj, "", err)
+		}
+	}
+	if !equality.Semantic.DeepEqual(status, newStatus) {
+		var newErr error
+		obj.Status = newStatus
+		obj, newErr = a.client.UpdateStatus(obj)
+		if err == nil {
+			err = newErr
+		}
+	}
+	return obj, err
+}
+
+type routerGeneratingHandler struct {
+	RouterGeneratingHandler
+	apply apply.Apply
+	opts  generic.GeneratingHandlerOptions
+	gvk   schema.GroupVersionKind
+	name  string
+}
+
+func (a *routerGeneratingHandler) Handle(obj *v1.Router, status v1.RouterStatus) (v1.RouterStatus, error) {
+	objs, newStatus, err := a.RouterGeneratingHandler(obj, status)
+	if err != nil {
+		return newStatus, err
+	}
+
+	apply := a.apply
+
+	if !a.opts.DynamicLookup {
+		apply = apply.WithStrictCaching()
+	}
+
+	if !a.opts.AllowCrossNamespace && !a.opts.AllowClusterScoped {
+		apply = apply.WithSetOwnerReference(true, false).
+			WithDefaultNamespace(obj.GetNamespace()).
+			WithListerNamespace(obj.GetNamespace())
+	}
+
+	if !a.opts.AllowClusterScoped {
+		apply = apply.WithRestrictClusterScoped()
+	}
+
+	return newStatus, apply.
+		WithOwner(obj).
+		WithSetID(a.name).
+		ApplyObjects(objs...)
 }

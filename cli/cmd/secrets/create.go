@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	"github.com/rancher/rio/pkg/constants"
+
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/stack"
 	"github.com/rancher/rio/cli/pkg/up/questions"
-	"github.com/rancher/rio/modules/build/controllers/service"
 	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/wrangler/pkg/kv"
 	v1 "k8s.io/api/core/v1"
@@ -34,11 +35,11 @@ func (s *Create) Run(ctx *clicontext.CLIContext) error {
 			return err
 		}
 
-		secret, err := ctx.Core.Secrets(ns).Get(service.DefaultGithubCrendential, metav1.GetOptions{})
+		secret, err := ctx.Core.Secrets(ns).Get(constants.DefaultGithubCrendential, metav1.GetOptions{})
 		if err == nil {
 			accessToken = string(secret.Data["accessToken"])
 		} else {
-			secret = constructors.NewSecret(ns, service.DefaultGithubCrendential, v1.Secret{})
+			secret = constructors.NewSecret(ns, constants.DefaultGithubCrendential, v1.Secret{})
 		}
 		setDefaults(secret)
 		secret.Type = v1.SecretTypeOpaque
@@ -59,13 +60,13 @@ func (s *Create) Run(ctx *clicontext.CLIContext) error {
 			return err
 		}
 
-		secret, err := ctx.Core.Secrets(ns).Get(service.DefaultDockerCrendential, metav1.GetOptions{})
+		secret, err := ctx.Core.Secrets(ns).Get(constants.DefaultDockerCrendential, metav1.GetOptions{})
 		if err == nil {
 			url = secret.Annotations["tekton.dev/docker-0"]
 			username = string(secret.Data["username"])
 			password = string(secret.Data["password"])
 		} else {
-			secret = constructors.NewSecret(ns, service.DefaultDockerCrendential, v1.Secret{})
+			secret = constructors.NewSecret(ns, constants.DefaultDockerCrendential, v1.Secret{})
 		}
 		setDefaults(secret)
 
@@ -91,7 +92,7 @@ func (s *Create) Run(ctx *clicontext.CLIContext) error {
 		}
 
 		generator := generateversioned.SecretForDockerRegistryGeneratorV1{
-			Name:     service.DefaultDockerCrendential + "-" + "pull",
+			Name:     constants.DefaultDockerCrendential + "-" + "pull",
 			Username: username,
 			Password: password,
 			Server:   url,
@@ -113,13 +114,13 @@ func (s *Create) Run(ctx *clicontext.CLIContext) error {
 			return err
 		}
 
-		secret, err := ctx.Core.Secrets(ns).Get(service.DefaultGitCrendential, metav1.GetOptions{})
+		secret, err := ctx.Core.Secrets(ns).Get(constants.DefaultGitCrendential, metav1.GetOptions{})
 		if err == nil {
 			url = secret.Annotations["tekton.dev/git-0"]
 			username = string(secret.Data["username"])
 			password = string(secret.Data["password"])
 		} else {
-			secret = constructors.NewSecret(ns, service.DefaultGitCrendential, v1.Secret{})
+			secret = constructors.NewSecret(ns, constants.DefaultGitCrendential, v1.Secret{})
 		}
 		setDefaults(secret)
 

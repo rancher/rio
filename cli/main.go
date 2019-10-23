@@ -15,16 +15,13 @@ import (
 	"github.com/rancher/rio/cli/cmd/exec"
 	"github.com/rancher/rio/cli/cmd/export"
 	"github.com/rancher/rio/cli/cmd/externalservice"
-	"github.com/rancher/rio/cli/cmd/feature"
 	"github.com/rancher/rio/cli/cmd/info"
 	"github.com/rancher/rio/cli/cmd/inspect"
 	"github.com/rancher/rio/cli/cmd/install"
 	"github.com/rancher/rio/cli/cmd/logs"
-	"github.com/rancher/rio/cli/cmd/pods"
 	"github.com/rancher/rio/cli/cmd/promote"
 	"github.com/rancher/rio/cli/cmd/ps"
 	"github.com/rancher/rio/cli/cmd/publicdomain"
-	"github.com/rancher/rio/cli/cmd/revision"
 	"github.com/rancher/rio/cli/cmd/rm"
 	"github.com/rancher/rio/cli/cmd/route"
 	"github.com/rancher/rio/cli/cmd/run"
@@ -33,13 +30,16 @@ import (
 	"github.com/rancher/rio/cli/cmd/stacks"
 	"github.com/rancher/rio/cli/cmd/stage"
 	"github.com/rancher/rio/cli/cmd/systemlogs"
-	"github.com/rancher/rio/cli/cmd/tui"
 	"github.com/rancher/rio/cli/cmd/uninstall"
 	"github.com/rancher/rio/cli/cmd/up"
 	"github.com/rancher/rio/cli/cmd/weight"
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	_ "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io"
+	_ "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io"
 	"github.com/rancher/rio/pkg/version"
+	_ "github.com/rancher/wrangler-api/pkg/generated/controllers/core"
+	_ "github.com/rancher/wrangler-api/pkg/generated/controllers/tekton.dev"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -99,21 +99,25 @@ func main() {
 			Value:       "rio-system",
 			Destination: &cfg.SystemNamespace,
 		},
+		cli.BoolFlag{
+			Name:        "show-system,s",
+			Usage:       "Show system namespace resource",
+			Destination: &cfg.ShowSystemNamespace,
+		},
 		cli.StringFlag{
-			Name:        "namespace,n",
-			Usage:       "Specify which namespace in kubernetes to use",
-			EnvVar:      "NAMESPACE",
-			Destination: &cfg.DefaultNamespace,
+			Name:   "namespace,n",
+			Usage:  "Specify which namespace in kubernetes to use",
+			EnvVar: "NAMESPACE",
+		},
+		cli.BoolFlag{
+			Name:        "all-namespaces,A",
+			Usage:       "Whether to show all namespaces resources",
+			Destination: &cfg.AllNamespace,
 		},
 		cli.StringFlag{
 			Name:        "kubeconfig",
-			Usage:       "Kubeconfig file to use",
+			Usage:       "kubeconfig file to use",
 			Destination: &cfg.Kubeconfig,
-		},
-		cli.BoolFlag{
-			Name:        "system,s",
-			Usage:       "Only show system resources",
-			Destination: &cfg.ShowSystem,
 		},
 	}
 
@@ -121,21 +125,19 @@ func main() {
 		config.Config(app),
 		publicdomain.PublicDomain(app),
 		externalservice.ExternalService(app),
-		feature.Feature(app),
 		secrets.Secrets(app),
 		builds.Builds(app),
-		pods.Pods(app),
 		stacks.Stacks(app),
 
 		builder.Command(&ps.Ps{},
-			"List services and containers",
-			appName+" ps [OPTIONS] [SERVICE_OR_REVISION_...]",
-			"To view revisions, run `rio ps foo`. To view pods of a specific revision, run `rio ps foo:v0`. To view containers, run `rio ps -c foo[:v0]"),
+			"List services",
+			appName+" ps [OPTIONS]",
+			"To view all rio services, run `rio ps`"),
 
 		builder.Command(&run.Run{},
 			"Create and run a new service",
 			appName+" run [OPTIONS] IMAGE [COMMAND] [ARG...]",
-			desc),
+			""),
 
 		builder.Command(&scale.Scale{},
 			"Scale a service",
@@ -144,16 +146,16 @@ func main() {
 
 		builder.Command(&rm.Rm{},
 			"Delete resource",
-			appName+" rm [NAMESPACE/]RESOURCE_NAME",
+			appName+" rm [TYPE/]RESOURCE_NAME",
 			""),
 		builder.Command(&inspect.Inspect{},
 			"Print the raw API output of a resource",
-			appName+" inspect [[NAMESPACE/]SERVICE_NAME...]",
+			appName+" inspect [TYPE/][NAMESPACE/]SERVICE_NAME",
 			""),
 
 		builder.Command(&edit.Edit{},
 			"Edit resource",
-			appName+" edit [NAMESPACE/]RESOURCE_NAME",
+			appName+" edit [TYPE/]RESOURCE_NAME",
 			""),
 		builder.Command(&export.Export{},
 			"Export a namespace or service",
@@ -171,10 +173,9 @@ func main() {
 			appName+" attach [OPTIONS] CONTAINER",
 			""),
 		builder.Command(&logs.Logs{},
-			"Print logs from containers",
-			appName+" logs [OPTIONS] [CONTAINER_OR_SERVICE_OR_BUILD...]",
+			"Print logs from services or containers",
+			appName+" logs [OPTIONS]",
 			""),
-
 		builder.Command(&install.Install{},
 			"Install rio management plane",
 			appName+" install [OPTIONS]",
@@ -183,26 +184,17 @@ func main() {
 			"Uninstall rio",
 			appName+" uninstall [OPTIONS]",
 			""),
-		builder.Command(&revision.Revision{},
-			"List service revisions",
-			appName+" revision [OPTIONS] [APP...]",
-			""),
-
 		builder.Command(&stage.Stage{},
 			"Stage a new revision of a service",
-			appName+" stage [OPTIONS] SERVICE_ID_NAME",
+			appName+" stage [OPTIONS] SERVICE_NAME:NEW_REVISION",
 			""),
 		builder.Command(&promote.Promote{},
 			"Promote a staged version to latest",
-			appName+" promote [NAMESPACE/]SERVICE_NAME:REVISION",
+			appName+" promote [OPTIONS] SERVICE_NAME",
 			""),
 		builder.Command(&weight.Weight{},
 			"Weight a percentage of traffic to a staged service",
-			appName+" weight [OPTIONS] [SERVICE_REVISION=PERCENTAGE...]",
-			""),
-		builder.Command(&tui.Console{},
-			"Terminal interactive UI",
-			appName+" console",
+			appName+" weight [OPTIONS] SERVICE_NAME=PERCENTAGE",
 			""),
 		builder.Command(&systemlogs.SystemLogs{},
 			"View system log for Rio management plane",

@@ -22,7 +22,6 @@ if [[ ${ARCH} == amd64 ]]; then
     k3s server >/dev/null 2>&1 &
     sleep 10
 
-    k3s kubectl apply -f ./scripts/rbac.yaml
     export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
     export PATH=$(pwd)/bin:$PATH
 

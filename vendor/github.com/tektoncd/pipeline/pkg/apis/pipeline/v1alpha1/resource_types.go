@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors.
+Copyright 2019 The Tekton Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,11 +17,11 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"fmt"
-
-	"github.com/knative/pkg/apis"
-	corev1 "k8s.io/api/core/v1"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline"
+	"golang.org/x/xerrors"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
 )
 
 // PipelineResourceType represents the type of endpoint the pipelineResource is, so that the
@@ -41,20 +41,65 @@ const (
 
 	// PipelineResourceTypeCluster indicates that this source is a k8s cluster Image.
 	PipelineResourceTypeCluster PipelineResourceType = "cluster"
+
+	// PipelineResourceTypePullRequest indicates that this source is a SCM Pull Request.
+	PipelineResourceTypePullRequest PipelineResourceType = "pullRequest"
+
+	// PipelineResourceTypeCloudEvent indicates that this source is a cloud event URI
+	PipelineResourceTypeCloudEvent PipelineResourceType = "cloudEvent"
 )
 
 // AllResourceTypes can be used for validation to check if a provided Resource type is one of the known types.
-var AllResourceTypes = []PipelineResourceType{PipelineResourceTypeGit, PipelineResourceTypeStorage, PipelineResourceTypeImage, PipelineResourceTypeCluster}
+var AllResourceTypes = []PipelineResourceType{PipelineResourceTypeGit, PipelineResourceTypeStorage, PipelineResourceTypeImage, PipelineResourceTypeCluster, PipelineResourceTypePullRequest, PipelineResourceTypeCloudEvent}
 
 // PipelineResourceInterface interface to be implemented by different PipelineResource types
 type PipelineResourceInterface interface {
 	GetName() string
 	GetType() PipelineResourceType
-	GetParams() []Param
 	Replacements() map[string]string
-	GetDownloadContainerSpec() ([]corev1.Container, error)
-	GetUploadContainerSpec() ([]corev1.Container, error)
-	SetDestinationDirectory(string)
+	GetOutputTaskModifier(ts *TaskSpec, path string) (TaskModifier, error)
+	GetInputTaskModifier(ts *TaskSpec, path string) (TaskModifier, error)
+}
+
+// TaskModifier is an interface to be implemented by different PipelineResources
+type TaskModifier interface {
+	GetStepsToPrepend() []Step
+	GetStepsToAppend() []Step
+	GetVolumes() []v1.Volume
+}
+
+// InternalTaskModifier implements TaskModifier for resources that are built-in to Tekton Pipelines.
+type InternalTaskModifier struct {
+	StepsToPrepend []Step
+	StepsToAppend  []Step
+	Volumes        []v1.Volume
+}
+
+// GetStepsToPrepend returns a set of Steps to prepend to the Task.
+func (tm *InternalTaskModifier) GetStepsToPrepend() []Step {
+	return tm.StepsToPrepend
+}
+
+// GetStepsToPrepend returns a set of Steps to append to the Task.
+func (tm *InternalTaskModifier) GetStepsToAppend() []Step {
+	return tm.StepsToAppend
+}
+
+// GetVolumes returns a set of Volumes to prepend to the Task pod.
+func (tm *InternalTaskModifier) GetVolumes() []v1.Volume {
+	return tm.Volumes
+}
+
+// ApplyTaskModifier applies a modifier to the task by appending and prepending steps and volumes.
+func ApplyTaskModifier(ts *TaskSpec, tm TaskModifier) {
+	steps := tm.GetStepsToPrepend()
+	ts.Steps = append(steps, ts.Steps...)
+
+	steps = tm.GetStepsToAppend()
+	ts.Steps = append(ts.Steps, steps...)
+
+	volumes := tm.GetVolumes()
+	ts.Volumes = append(ts.Volumes, volumes...)
 }
 
 // SecretParam indicates which secret can be used to populate a field of the resource
@@ -67,7 +112,7 @@ type SecretParam struct {
 // PipelineResourceSpec defines  an individual resources used in the pipeline.
 type PipelineResourceSpec struct {
 	Type   PipelineResourceType `json:"type"`
-	Params []Param              `json:"params"`
+	Params []ResourceParam      `json:"params"`
 	// Secrets to fetch to populate some of resource fields
 	// +optional
 	SecretParams []SecretParam `json:"secrets,omitempty"`
@@ -83,26 +128,12 @@ type PipelineResourceStatus struct {
 var _ apis.Validatable = (*PipelineResource)(nil)
 var _ apis.Defaultable = (*PipelineResource)(nil)
 
-// TaskResource defines an input or output Resource declared as a requirement
-// by a Task. The Name field will be used to refer to these Resources within
-// the Task definition, and when provided as an Input, the Name will be the
-// path to the volume mounted containing this Resource as an input (e.g.
-// an input Resource named `workspace` will be mounted at `/workspace`).
-type TaskResource struct {
-	Name string               `json:"name"`
-	Type PipelineResourceType `json:"type"`
-	// +optional
-	// TargetPath is the path in workspace directory where the task resource will be copied.
-	TargetPath string `json:"targetPath"`
-	// +optional
-	// Path to the index.json file for output container images
-	OutputImageDir string `json:"outputImageDir"`
-}
-
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// PipelineResource is the Schema for the pipelineResources API
+// PipelineResource describes a resource that is an input to or output from a
+// Task.
+//
 // +k8s:openapi-gen=true
 type PipelineResource struct {
 	metav1.TypeMeta `json:",inline"`
@@ -125,27 +156,21 @@ type PipelineResourceBinding struct {
 	// ResourceRef is a reference to the instance of the actual PipelineResource
 	// that should be used
 	ResourceRef PipelineResourceRef `json:"resourceRef,omitempty"`
-}
-
-// TaskResourceBinding points to the PipelineResource that
-// will be used for the Task input or output called Name. The optional Path field
-// corresponds to a path on disk at which the Resource can be found (used when providing
-// the resource via mounted volume, overriding the default logic to fetch the Resource).
-type TaskResourceBinding struct {
-	Name string `json:"name"`
-	// no more than one of the ResourceRef and ResourceSpec may be specified.
 	// +optional
-	ResourceRef PipelineResourceRef `json:"resourceRef,omitempty"`
-	// +optional
+	// ResourceSpec is specification of a resource that should be created and
+	// consumed by the task
 	ResourceSpec *PipelineResourceSpec `json:"resourceSpec,omitempty"`
-	// +optional
-	Paths []string `json:"paths,omitempty"`
 }
 
 // PipelineResourceResult used to export the image name and digest as json
 type PipelineResourceResult struct {
+	// Name and Digest are deprecated.
 	Name   string `json:"name"`
 	Digest string `json:"digest"`
+	// These will replace Name and Digest (https://github.com/tektoncd/pipeline/issues/1392)
+	Key         string              `json:"key"`
+	Value       string              `json:"value"`
+	ResourceRef PipelineResourceRef `json:"resourceRef,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -158,17 +183,39 @@ type PipelineResourceList struct {
 	Items           []PipelineResource `json:"items"`
 }
 
+// ResourceDeclaration defines an input or output PipelineResource declared as a requirement
+// by another type such as a Task or Condition. The Name field will be used to refer to these
+// PipelineResources within the type's definition, and when provided as an Input, the Name will be the
+// path to the volume mounted containing this PipelineResource as an input (e.g.
+// an input Resource named `workspace` will be mounted at `/workspace`).
+type ResourceDeclaration struct {
+	// Name declares the name by which a resource is referenced in the
+	// definition. Resources may be referenced by name in the definition of a
+	// Task's steps.
+	Name string `json:"name"`
+	// Type is the type of this resource;
+	Type PipelineResourceType `json:"type"`
+	// TargetPath is the path in workspace directory where the resource
+	// will be copied.
+	// +optional
+	TargetPath string `json:"targetPath,omitempty"`
+}
+
 // ResourceFromType returns a PipelineResourceInterface from a PipelineResource's type.
-func ResourceFromType(r *PipelineResource) (PipelineResourceInterface, error) {
+func ResourceFromType(r *PipelineResource, images pipeline.Images) (PipelineResourceInterface, error) {
 	switch r.Spec.Type {
 	case PipelineResourceTypeGit:
-		return NewGitResource(r)
+		return NewGitResource(images.GitImage, r)
 	case PipelineResourceTypeImage:
 		return NewImageResource(r)
 	case PipelineResourceTypeCluster:
-		return NewClusterResource(r)
+		return NewClusterResource(images.KubeconfigWriterImage, r)
 	case PipelineResourceTypeStorage:
-		return NewStorageResource(r)
+		return NewStorageResource(images, r)
+	case PipelineResourceTypePullRequest:
+		return NewPullRequestResource(images.PRImage, r)
+	case PipelineResourceTypeCloudEvent:
+		return NewCloudEventResource(r)
 	}
-	return nil, fmt.Errorf("%s is an invalid or unimplemented PipelineResource", r.Spec.Type)
+	return nil, xerrors.Errorf("%s is an invalid or unimplemented PipelineResource", r.Spec.Type)
 }

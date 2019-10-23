@@ -41,7 +41,7 @@ type StackBuild struct {
 	Revision string `json:"revision,omitempty"`
 
 	// Git secret name for repository
-	GitSecretName string `json:"gitSecretName,omitempty"`
+	CloneSecretName string `json:"cloneSecretName,omitempty"`
 }
 
 type StackStatus struct {

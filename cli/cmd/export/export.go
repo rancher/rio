@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/lookup"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/riofile"
@@ -18,26 +17,16 @@ import (
 )
 
 type Export struct {
-	T_Type string `desc:"Export specific type. Supported types: namespace or service"`
-	Raw    bool   `desc:"Export the raw API object, not the pretty formatted one"`
-	Format string `desc:"Specify output format, yaml/json. Defaults to yaml" default:"yaml"`
-	Stack  bool   `desc:"Export riofile format. Only works for namespace"`
+	Format  string `desc:"Specify output format, yaml/json. Defaults to yaml" default:"yaml"`
+	Riofile bool   `desc:"Export riofile format. Only works for namespace"`
 }
 
 func (e *Export) Run(ctx *clicontext.CLIContext) error {
 	output := &strings.Builder{}
-	types := []string{
-		clitypes.ServiceType,
-		clitypes.NamespaceType,
-		clitypes.StackType,
-	}
-	if e.T_Type != "" {
-		types = []string{e.T_Type}
-	}
 
 	var svcs []*riov1.Service
 	for _, arg := range ctx.CLI.Args() {
-		r, err := lookup.Lookup(ctx, arg, types...)
+		r, err := ctx.ByID(arg)
 		if err != nil {
 			return err
 		}
@@ -54,18 +43,12 @@ func (e *Export) Run(ctx *clicontext.CLIContext) error {
 				return err
 			}
 
-			if err := exportObjects(objects, output, e.Raw, e.Stack, e.Format); err != nil {
+			if err := exportObjects(objects, output, e.Riofile, e.Format); err != nil {
 				return err
 			}
 		case clitypes.StackType:
 			stack := r.Object.(*riov1.Stack)
-			if e.Raw {
-				if err := exportObjects([]runtime.Object{stack}, output, e.Raw, e.Stack, e.Format); err != nil {
-					return err
-				}
-			} else {
-				output.Write([]byte(stack.Spec.Template))
-			}
+			output.Write([]byte(stack.Spec.Template))
 		}
 	}
 
@@ -81,12 +64,12 @@ func (e *Export) Run(ctx *clicontext.CLIContext) error {
 		for _, svc := range svcs {
 			objects = append(objects, svc)
 		}
-		if err := exportObjects(objects, output, e.Raw, e.Stack, e.Format); err != nil {
+		if err := exportObjects(objects, output, e.Riofile, e.Format); err != nil {
 			return err
 		}
 	}
 
-	fmt.Println(string(output.String()))
+	fmt.Println(output.String())
 	return nil
 }
 
@@ -144,9 +127,9 @@ func configmapsFromService(ctx *clicontext.CLIContext, svc riov1.Service) ([]run
 	return objects, nil
 }
 
-func exportObjects(objects []runtime.Object, output *strings.Builder, raw, stack bool, format string) error {
-	if !stack {
-		return exportObjectsNative(objects, output, raw, format)
+func exportObjects(objects []runtime.Object, output *strings.Builder, riofile bool, format string) error {
+	if !riofile {
+		return exportObjectsNative(objects, output, format)
 	}
 
 	return exportObjectStack(objects, output)
@@ -162,9 +145,9 @@ func exportObjectStack(objects []runtime.Object, output *strings.Builder) error 
 	return nil
 }
 
-func exportObjectsNative(objects []runtime.Object, output *strings.Builder, raw bool, format string) error {
+func exportObjectsNative(objects []runtime.Object, output *strings.Builder, format string) error {
 	for _, obj := range objects {
-		result, err := objToYaml(obj, raw, format)
+		result, err := objToYaml(obj, format)
 		if err != nil {
 			return err
 		}
@@ -177,51 +160,12 @@ func exportObjectsNative(objects []runtime.Object, output *strings.Builder, raw 
 	return nil
 }
 
-func objToYaml(obj runtime.Object, raw bool, format string) (string, error) {
+func objToYaml(obj runtime.Object, format string) (string, error) {
 	data, err := json.MarshalIndent(obj, "", " ")
 	if err != nil {
 		return "", err
 	}
 
-	if !raw {
-		m := make(map[string]interface{})
-		if err := json.Unmarshal(data, &m); err != nil {
-			return "", err
-		}
-
-		modifiedMap := make(map[string]interface{})
-		newMeta := map[string]interface{}{}
-		if meta, ok := m["metadata"].(map[string]interface{}); ok {
-			if meta["labels"] != nil {
-				labels := cleanLabels(meta["labels"].(map[string]interface{}))
-				if len(labels) != 0 {
-					newMeta["labels"] = labels
-				}
-			}
-			if meta["annotations"] != nil {
-				anno := cleanLabels(meta["annotations"].(map[string]interface{}))
-				if len(anno) != 0 {
-					newMeta["annotations"] = anno
-				}
-			}
-			newMeta["name"] = meta["name"]
-			newMeta["namespace"] = meta["namespace"]
-		}
-		modifiedMap["apiVersion"] = m["apiVersion"]
-		modifiedMap["kind"] = m["kind"]
-		modifiedMap["metadata"] = newMeta
-		if _, ok := m["spec"]; ok {
-			modifiedMap["spec"] = m["spec"]
-		}
-		if m["data"] != nil {
-			modifiedMap["data"] = m["data"]
-		}
-
-		data, err = json.MarshalIndent(modifiedMap, "", " ")
-		if err != nil {
-			return "", err
-		}
-	}
 	if format == "json" {
 		return string(data), nil
 	}
@@ -232,14 +176,4 @@ func objToYaml(obj runtime.Object, raw bool, format string) (string, error) {
 	}
 
 	return string(r), nil
-}
-
-func cleanLabels(m map[string]interface{}) map[string]interface{} {
-	r := make(map[string]interface{})
-	for k, v := range m {
-		if !strings.Contains(k, "rio.cattle.io") {
-			r[k] = v
-		}
-	}
-	return r
 }

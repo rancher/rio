@@ -29,8 +29,8 @@ import (
 type PublicDomainLister interface {
 	// List lists all PublicDomains in the indexer.
 	List(selector labels.Selector) (ret []*v1.PublicDomain, err error)
-	// PublicDomains returns an object that can list and get PublicDomains.
-	PublicDomains(namespace string) PublicDomainNamespaceLister
+	// Get retrieves the PublicDomain from the index for a given name.
+	Get(name string) (*v1.PublicDomain, error)
 	PublicDomainListerExpansion
 }
 
@@ -52,38 +52,9 @@ func (s *publicDomainLister) List(selector labels.Selector) (ret []*v1.PublicDom
 	return ret, err
 }
 
-// PublicDomains returns an object that can list and get PublicDomains.
-func (s *publicDomainLister) PublicDomains(namespace string) PublicDomainNamespaceLister {
-	return publicDomainNamespaceLister{indexer: s.indexer, namespace: namespace}
-}
-
-// PublicDomainNamespaceLister helps list and get PublicDomains.
-type PublicDomainNamespaceLister interface {
-	// List lists all PublicDomains in the indexer for a given namespace.
-	List(selector labels.Selector) (ret []*v1.PublicDomain, err error)
-	// Get retrieves the PublicDomain from the indexer for a given namespace and name.
-	Get(name string) (*v1.PublicDomain, error)
-	PublicDomainNamespaceListerExpansion
-}
-
-// publicDomainNamespaceLister implements the PublicDomainNamespaceLister
-// interface.
-type publicDomainNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all PublicDomains in the indexer for a given namespace.
-func (s publicDomainNamespaceLister) List(selector labels.Selector) (ret []*v1.PublicDomain, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.PublicDomain))
-	})
-	return ret, err
-}
-
-// Get retrieves the PublicDomain from the indexer for a given namespace and name.
-func (s publicDomainNamespaceLister) Get(name string) (*v1.PublicDomain, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
+// Get retrieves the PublicDomain from the index for a given name.
+func (s *publicDomainLister) Get(name string) (*v1.PublicDomain, error) {
+	obj, exists, err := s.indexer.GetByKey(name)
 	if err != nil {
 		return nil, err
 	}

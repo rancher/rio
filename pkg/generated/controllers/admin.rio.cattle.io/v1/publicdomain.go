@@ -20,13 +20,17 @@ package v1
 
 import (
 	"context"
+	"time"
 
 	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	clientset "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/admin.rio.cattle.io/v1"
 	informers "github.com/rancher/rio/pkg/generated/informers/externalversions/admin.rio.cattle.io/v1"
 	listers "github.com/rancher/rio/pkg/generated/listers/admin.rio.cattle.io/v1"
+	"github.com/rancher/wrangler/pkg/apply"
+	"github.com/rancher/wrangler/pkg/condition"
 	"github.com/rancher/wrangler/pkg/generic"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -40,36 +44,31 @@ import (
 type PublicDomainHandler func(string, *v1.PublicDomain) (*v1.PublicDomain, error)
 
 type PublicDomainController interface {
+	generic.ControllerMeta
 	PublicDomainClient
 
 	OnChange(ctx context.Context, name string, sync PublicDomainHandler)
 	OnRemove(ctx context.Context, name string, sync PublicDomainHandler)
-	Enqueue(namespace, name string)
+	Enqueue(name string)
+	EnqueueAfter(name string, duration time.Duration)
 
 	Cache() PublicDomainCache
-
-	Informer() cache.SharedIndexInformer
-	GroupVersionKind() schema.GroupVersionKind
-
-	AddGenericHandler(ctx context.Context, name string, handler generic.Handler)
-	AddGenericRemoveHandler(ctx context.Context, name string, handler generic.Handler)
-	Updater() generic.Updater
 }
 
 type PublicDomainClient interface {
 	Create(*v1.PublicDomain) (*v1.PublicDomain, error)
 	Update(*v1.PublicDomain) (*v1.PublicDomain, error)
 	UpdateStatus(*v1.PublicDomain) (*v1.PublicDomain, error)
-	Delete(namespace, name string, options *metav1.DeleteOptions) error
-	Get(namespace, name string, options metav1.GetOptions) (*v1.PublicDomain, error)
-	List(namespace string, opts metav1.ListOptions) (*v1.PublicDomainList, error)
-	Watch(namespace string, opts metav1.ListOptions) (watch.Interface, error)
-	Patch(namespace, name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.PublicDomain, err error)
+	Delete(name string, options *metav1.DeleteOptions) error
+	Get(name string, options metav1.GetOptions) (*v1.PublicDomain, error)
+	List(opts metav1.ListOptions) (*v1.PublicDomainList, error)
+	Watch(opts metav1.ListOptions) (watch.Interface, error)
+	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.PublicDomain, err error)
 }
 
 type PublicDomainCache interface {
-	Get(namespace, name string) (*v1.PublicDomain, error)
-	List(namespace string, selector labels.Selector) ([]*v1.PublicDomain, error)
+	Get(name string) (*v1.PublicDomain, error)
+	List(selector labels.Selector) ([]*v1.PublicDomain, error)
 
 	AddIndexer(indexName string, indexer PublicDomainIndexer)
 	GetByIndex(indexName, key string) ([]*v1.PublicDomain, error)
@@ -118,26 +117,21 @@ func (c *publicDomainController) Updater() generic.Updater {
 	}
 }
 
-func UpdatePublicDomainOnChange(updater generic.Updater, handler PublicDomainHandler) PublicDomainHandler {
-	return func(key string, obj *v1.PublicDomain) (*v1.PublicDomain, error) {
-		if obj == nil {
-			return handler(key, nil)
-		}
-
-		copyObj := obj.DeepCopy()
-		newObj, err := handler(key, copyObj)
-		if newObj != nil {
-			copyObj = newObj
-		}
-		if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
-			newObj, err := updater(copyObj)
-			if newObj != nil && err == nil {
-				copyObj = newObj.(*v1.PublicDomain)
-			}
-		}
-
-		return copyObj, err
+func UpdatePublicDomainDeepCopyOnChange(client PublicDomainClient, obj *v1.PublicDomain, handler func(obj *v1.PublicDomain) (*v1.PublicDomain, error)) (*v1.PublicDomain, error) {
+	if obj == nil {
+		return obj, nil
 	}
+
+	copyObj := obj.DeepCopy()
+	newObj, err := handler(copyObj)
+	if newObj != nil {
+		copyObj = newObj
+	}
+	if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
+		return client.Update(copyObj)
+	}
+
+	return copyObj, err
 }
 
 func (c *publicDomainController) AddGenericHandler(ctx context.Context, name string, handler generic.Handler) {
@@ -158,8 +152,12 @@ func (c *publicDomainController) OnRemove(ctx context.Context, name string, sync
 	c.AddGenericHandler(ctx, name, removeHandler)
 }
 
-func (c *publicDomainController) Enqueue(namespace, name string) {
-	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), namespace, name)
+func (c *publicDomainController) Enqueue(name string) {
+	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), "", name)
+}
+
+func (c *publicDomainController) EnqueueAfter(name string, duration time.Duration) {
+	c.controllerManager.EnqueueAfter(c.gvk, c.informer.Informer(), "", name, duration)
 }
 
 func (c *publicDomainController) Informer() cache.SharedIndexInformer {
@@ -178,35 +176,35 @@ func (c *publicDomainController) Cache() PublicDomainCache {
 }
 
 func (c *publicDomainController) Create(obj *v1.PublicDomain) (*v1.PublicDomain, error) {
-	return c.clientGetter.PublicDomains(obj.Namespace).Create(obj)
+	return c.clientGetter.PublicDomains().Create(obj)
 }
 
 func (c *publicDomainController) Update(obj *v1.PublicDomain) (*v1.PublicDomain, error) {
-	return c.clientGetter.PublicDomains(obj.Namespace).Update(obj)
+	return c.clientGetter.PublicDomains().Update(obj)
 }
 
 func (c *publicDomainController) UpdateStatus(obj *v1.PublicDomain) (*v1.PublicDomain, error) {
-	return c.clientGetter.PublicDomains(obj.Namespace).UpdateStatus(obj)
+	return c.clientGetter.PublicDomains().UpdateStatus(obj)
 }
 
-func (c *publicDomainController) Delete(namespace, name string, options *metav1.DeleteOptions) error {
-	return c.clientGetter.PublicDomains(namespace).Delete(name, options)
+func (c *publicDomainController) Delete(name string, options *metav1.DeleteOptions) error {
+	return c.clientGetter.PublicDomains().Delete(name, options)
 }
 
-func (c *publicDomainController) Get(namespace, name string, options metav1.GetOptions) (*v1.PublicDomain, error) {
-	return c.clientGetter.PublicDomains(namespace).Get(name, options)
+func (c *publicDomainController) Get(name string, options metav1.GetOptions) (*v1.PublicDomain, error) {
+	return c.clientGetter.PublicDomains().Get(name, options)
 }
 
-func (c *publicDomainController) List(namespace string, opts metav1.ListOptions) (*v1.PublicDomainList, error) {
-	return c.clientGetter.PublicDomains(namespace).List(opts)
+func (c *publicDomainController) List(opts metav1.ListOptions) (*v1.PublicDomainList, error) {
+	return c.clientGetter.PublicDomains().List(opts)
 }
 
-func (c *publicDomainController) Watch(namespace string, opts metav1.ListOptions) (watch.Interface, error) {
-	return c.clientGetter.PublicDomains(namespace).Watch(opts)
+func (c *publicDomainController) Watch(opts metav1.ListOptions) (watch.Interface, error) {
+	return c.clientGetter.PublicDomains().Watch(opts)
 }
 
-func (c *publicDomainController) Patch(namespace, name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.PublicDomain, err error) {
-	return c.clientGetter.PublicDomains(namespace).Patch(name, pt, data, subresources...)
+func (c *publicDomainController) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.PublicDomain, err error) {
+	return c.clientGetter.PublicDomains().Patch(name, pt, data, subresources...)
 }
 
 type publicDomainCache struct {
@@ -214,12 +212,12 @@ type publicDomainCache struct {
 	indexer cache.Indexer
 }
 
-func (c *publicDomainCache) Get(namespace, name string) (*v1.PublicDomain, error) {
-	return c.lister.PublicDomains(namespace).Get(name)
+func (c *publicDomainCache) Get(name string) (*v1.PublicDomain, error) {
+	return c.lister.Get(name)
 }
 
-func (c *publicDomainCache) List(namespace string, selector labels.Selector) ([]*v1.PublicDomain, error) {
-	return c.lister.PublicDomains(namespace).List(selector)
+func (c *publicDomainCache) List(selector labels.Selector) ([]*v1.PublicDomain, error) {
+	return c.lister.List(selector)
 }
 
 func (c *publicDomainCache) AddIndexer(indexName string, indexer PublicDomainIndexer) {
@@ -239,4 +237,104 @@ func (c *publicDomainCache) GetByIndex(indexName, key string) (result []*v1.Publ
 		result = append(result, obj.(*v1.PublicDomain))
 	}
 	return result, nil
+}
+
+type PublicDomainStatusHandler func(obj *v1.PublicDomain, status v1.PublicDomainStatus) (v1.PublicDomainStatus, error)
+
+type PublicDomainGeneratingHandler func(obj *v1.PublicDomain, status v1.PublicDomainStatus) ([]runtime.Object, v1.PublicDomainStatus, error)
+
+func RegisterPublicDomainStatusHandler(ctx context.Context, controller PublicDomainController, condition condition.Cond, name string, handler PublicDomainStatusHandler) {
+	statusHandler := &publicDomainStatusHandler{
+		client:    controller,
+		condition: condition,
+		handler:   handler,
+	}
+	controller.AddGenericHandler(ctx, name, FromPublicDomainHandlerToHandler(statusHandler.sync))
+}
+
+func RegisterPublicDomainGeneratingHandler(ctx context.Context, controller PublicDomainController, apply apply.Apply,
+	condition condition.Cond, name string, handler PublicDomainGeneratingHandler, opts *generic.GeneratingHandlerOptions) {
+	statusHandler := &publicDomainGeneratingHandler{
+		PublicDomainGeneratingHandler: handler,
+		apply:                         apply,
+		name:                          name,
+		gvk:                           controller.GroupVersionKind(),
+	}
+	if opts != nil {
+		statusHandler.opts = *opts
+	}
+	RegisterPublicDomainStatusHandler(ctx, controller, condition, name, statusHandler.Handle)
+}
+
+type publicDomainStatusHandler struct {
+	client    PublicDomainClient
+	condition condition.Cond
+	handler   PublicDomainStatusHandler
+}
+
+func (a *publicDomainStatusHandler) sync(key string, obj *v1.PublicDomain) (*v1.PublicDomain, error) {
+	if obj == nil {
+		return obj, nil
+	}
+
+	status := obj.Status
+	obj = obj.DeepCopy()
+	newStatus, err := a.handler(obj, obj.Status)
+	if err != nil {
+		// Revert to old status on error
+		newStatus = *status.DeepCopy()
+	}
+
+	if a.condition != "" {
+		if errors.IsConflict(err) {
+			a.condition.SetError(obj, "", nil)
+		} else {
+			a.condition.SetError(obj, "", err)
+		}
+	}
+	if !equality.Semantic.DeepEqual(status, newStatus) {
+		var newErr error
+		obj.Status = newStatus
+		obj, newErr = a.client.UpdateStatus(obj)
+		if err == nil {
+			err = newErr
+		}
+	}
+	return obj, err
+}
+
+type publicDomainGeneratingHandler struct {
+	PublicDomainGeneratingHandler
+	apply apply.Apply
+	opts  generic.GeneratingHandlerOptions
+	gvk   schema.GroupVersionKind
+	name  string
+}
+
+func (a *publicDomainGeneratingHandler) Handle(obj *v1.PublicDomain, status v1.PublicDomainStatus) (v1.PublicDomainStatus, error) {
+	objs, newStatus, err := a.PublicDomainGeneratingHandler(obj, status)
+	if err != nil {
+		return newStatus, err
+	}
+
+	apply := a.apply
+
+	if !a.opts.DynamicLookup {
+		apply = apply.WithStrictCaching()
+	}
+
+	if !a.opts.AllowCrossNamespace && !a.opts.AllowClusterScoped {
+		apply = apply.WithSetOwnerReference(true, false).
+			WithDefaultNamespace(obj.GetNamespace()).
+			WithListerNamespace(obj.GetNamespace())
+	}
+
+	if !a.opts.AllowClusterScoped {
+		apply = apply.WithRestrictClusterScoped()
+	}
+
+	return newStatus, apply.
+		WithOwner(obj).
+		WithSetID(a.name).
+		ApplyObjects(objs...)
 }

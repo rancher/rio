@@ -1,11 +1,10 @@
 package v1
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
-	"github.com/knative/pkg/apis/istio/v1alpha3"
-	"github.com/rancher/mapper/convert"
 	"github.com/rancher/wrangler/pkg/genericcondition"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -25,14 +24,15 @@ type Router struct {
 type RouterSpec struct {
 	// An ordered list of route rules for HTTP traffic. The first rule matching an incoming request is used.
 	Routes []RouteSpec `json:"routes,omitempty"`
+
+	// By default all Routers are public and exposed outside of the cluster. Setting internal to true will
+	// cause the Router to not be exposed
+	Internal bool `json:"internal,omitempty"`
 }
 
 type RouterStatus struct {
-	// The list of publicedomains pointing to the router
-	PublicDomains []string `json:"publicDomains,omitempty"`
-
 	// The endpoint to access the router
-	Endpoints []string `json:"endpoints,omitempty"`
+	Endpoints []string `json:"endpoints,omitempty" column:"name=Endpoint,type=string,jsonpath=.status.endpoints[0]"`
 
 	// Represents the latest available observations of a PublicDomain's current state.
 	Conditions []genericcondition.GenericCondition `json:"conditions,omitempty"`
@@ -41,7 +41,7 @@ type RouterStatus struct {
 type RouteSpec struct {
 	//Match conditions to be satisfied for the rule to be activated. All conditions inside a single match block have AND semantics, while the list of match blocks have OR semantics.
 	// The rule is matched if any one of the match blocks succeed.
-	Matches []Match `json:"matches,omitempty"`
+	Match Match `json:"match,omitempty"`
 
 	// A http rule can either redirect or forward (default) traffic. The forwarding target can be one of several versions of a service (see glossary in beginning of document).
 	// Weights associated with the service version determine the proportion of traffic it receives.
@@ -55,12 +55,8 @@ type RouteSpec struct {
 	Rewrite *Rewrite `json:"rewrite,omitempty"`
 
 	//Header manipulation rules
-	Headers *v1alpha3.HeaderOperations `json:"headers,omitempty"`
+	Headers *HeaderOperations `json:"headers,omitempty"`
 
-	RouteTraffic
-}
-
-type RouteTraffic struct {
 	// Fault injection policy to apply on HTTP traffic at the client side. Note that timeouts or retries will not be enabled when faults are enabled on the client side.
 	Fault *Fault `json:"fault,omitempty"`
 
@@ -68,21 +64,25 @@ type RouteTraffic struct {
 	// Mirrored traffic is on a best effort basis where the sidecar/gateway will not wait for the mirrored cluster to respond before returning the response from the original destination.
 	// Statistics will be generated for the mirrored destination.
 	Mirror *Destination `json:"mirror,omitempty"`
-
-	// Timeout for HTTP requests.
-	TimeoutMillis *int `json:"timeoutMillis,omitempty"`
-
-	// Retry policy for HTTP requests.
-	Retry *Retry `json:"retry,omitempty"`
 }
 
-type Retry struct {
-	// REQUIRED. Number of retries for a given request. The interval between retries will be determined automatically (25ms+).
-	// Actual number of retries attempted depends on the httpReqTimeout.
-	Attempts int `json:"attempts,omitempty"`
+// HeaderOperations Describes the header manipulations to apply
+type HeaderOperations struct {
+	// Append the given values to the headers specified by keys
+	// (will create a comma-separated list of values)
+	Add []NameValue `json:"add,omitempty"`
 
-	// Timeout per retry attempt for a given request. Units: milliseconds
-	TimeoutMillis int `json:"timeoutMillis,omitempty"`
+	// Append the given values to the headers specified by keys
+	// (will create a comma-separated list of values)
+	Set []NameValue `json:"set,omitempty"`
+
+	// Remove a the specified headers
+	Remove []string `json:"remove,omitempty"`
+}
+
+type NameValue struct {
+	Name  string `json:"name,omitempty"`
+	Value string `json:"name,omitempty"`
 }
 
 type WeightedDestination struct {
@@ -94,47 +94,26 @@ type WeightedDestination struct {
 
 type Destination struct {
 	// Destination Service
-	Service string `json:"service,omitempty"`
-
-	// Destination Namespace
-	Namespace string `json:"namespace,omitempty"`
+	App string `json:"app,omitempty"`
 
 	// Destination Revision
-	Revision string `json:"revision,omitempty"`
+	Version string `json:"version,omitempty"`
 
 	// Destination Port
-	Port *uint32 `json:"port,omitempty"`
-}
-
-type ServiceSource struct {
-	Service  string `json:"service,omitempty"`
-	Stack    string `json:"stack,omitempty"`
-	Revision string `json:"revision,omitempty"`
-}
-
-func (s ServiceSource) String() string {
-	return Destination{
-		Namespace: s.Stack,
-		Service:   s.Service,
-		Revision:  s.Revision,
-	}.String()
+	Port uint32 `json:"port,omitempty"`
 }
 
 func (d Destination) String() string {
 	result := strings.Builder{}
-	if d.Namespace != "" {
-		result.WriteString(d.Namespace)
-		result.WriteString("/")
-	}
-	result.WriteString(d.Service)
-	if d.Revision != "" && d.Revision != "latest" {
+	result.WriteString(d.App)
+	if d.Version != "" && d.Version != "latest" {
 		result.WriteString(":")
-		result.WriteString(d.Revision)
+		result.WriteString(d.Version)
 	}
 
-	if d.Port != nil && *d.Port > 0 {
+	if d.Port > 0 {
 		result.WriteString(",port=")
-		result.WriteString(strconv.FormatInt(int64(*d.Port), 10))
+		result.WriteString(strconv.FormatInt(int64(d.Port), 10))
 	}
 
 	return result.String()
@@ -158,12 +137,7 @@ type Fault struct {
 	DelayMillis int `json:"delayMillis,omitempty"`
 
 	// Abort Http request attempts and return error codes back to downstream service, giving the impression that the upstream service is faulty.
-	Abort Abort `json:"abort,omitempty"`
-}
-
-type Abort struct {
-	// REQUIRED. HTTP status code to use to abort the Http request.
-	HTTPStatus int `json:"httpStatus,omitempty"`
+	AbortHTTPStatus int `json:"abortHTTPStatus,omitempty"`
 }
 
 type Match struct {
@@ -176,15 +150,6 @@ type Match struct {
 	//    regex: "value" for ECMAscript style regex-based match
 	Path *StringMatch `json:"path,omitempty"`
 
-	// URI Scheme values are case-sensitive and formatted as follows:
-	//
-	//    exact: "value" for exact string match
-	//
-	//    prefix: "value" for prefix-based match
-	//
-	//    regex: "value" for ECMAscript style regex-based match
-	Scheme *StringMatch `json:"scheme,omitempty"`
-
 	// HTTP Method values are case-sensitive and formatted as follows:
 	//
 	//    exact: "value" for exact string match
@@ -192,7 +157,7 @@ type Match struct {
 	//    prefix: "value" for prefix-based match
 	//
 	//    regex: "value" for ECMAscript style regex-based match
-	Method *StringMatch `json:"method,omitempty"`
+	Methods []string `json:"methods,omitempty"`
 
 	// The header keys must be lowercase and use hyphen as the separator, e.g. x-request-id.
 	//
@@ -205,84 +170,79 @@ type Match struct {
 	//    regex: "value" for ECMAscript style regex-based match
 	//
 	// Note: The keys uri, scheme, method, and authority will be ignored.
-	Headers map[string]StringMatch `json:"headers,omitempty"`
+	Headers []HeaderMatch `json:"headers,omitempty"`
+}
 
-	// Cookies must be lowercase and use hyphen as the separator, e.g. x-request-id.
-	//
-	// Header values are case-sensitive and formatted as follows:
-	//
-	//    exact: "value" for exact string match
-	//
-	//    prefix: "value" for prefix-based match
-	//
-	//    regex: "value" for ECMAscript style regex-based match
-	//
-	// Note: The keys uri, scheme, method, and authority will be ignored.
-	Cookies map[string]StringMatch `json:"cookies,omitempty"`
+type HeaderMatch struct {
+	Name  string       `json:"name,omitempty"`
+	Value *StringMatch `json:"value,omitempty"`
+}
 
-	// Specifies the ports on the host that is being addressed. Many services only expose a single port or label ports with the protocols they support, in these cases it is not required to explicitly select the port.
-	Port *int `json:"port,omitempty"`
-
-	From *ServiceSource `json:"from,omitempty"`
+func (h HeaderMatch) String() string {
+	value := ""
+	if h.Value != nil {
+		value = h.Value.String()
+	}
+	return fmt.Sprintf("%s=%s", h.Name, value)
 }
 
 func (m Match) MaybeString() interface{} {
-	path := m.Path.String()
-	scheme := m.Scheme.String()
-	method := m.Scheme.String()
-	authority := m.Scheme.String()
-	from := m.From.String()
+	return ""
+	//path := m.Path.String()
+	//method := m.Methods
 
-	if containsComma(authority, from, method, path, scheme) ||
-		containsCommaInMaps(m.Cookies, m.Headers) {
-		v, _ := convert.EncodeToMap(m)
-		return v
-	}
-
-	prefixData := strings.Builder{}
-
-	addPrefixedMap(&prefixData, "cookie", m.Cookies)
-	addPrefixedMap(&prefixData, "header", m.Headers)
-
-	matchData := strings.Builder{}
-
-	if method != "" {
-		matchData.WriteString(method)
-		matchData.WriteString(" ")
-	}
-
-	if scheme != "" {
-		matchData.WriteString(scheme)
-		matchData.WriteString("://")
-	}
-
-	matchData.WriteString(authority)
-
-	if m.Port != nil && *m.Port != 0 {
-		matchData.WriteString(":")
-		matchData.WriteString(strconv.Itoa(*m.Port))
-	}
-
-	if len(path) > 0 && path[0] != '/' {
-		matchData.WriteString("/")
-	}
-	matchData.WriteString(path)
-
-	if matchData.Len() == 0 {
-		return prefixData.String()
-	} else if prefixData.Len() == 0 {
-		return matchData.String()
-	}
-
-	prefixData.WriteString(",")
-	prefixData.Write([]byte(matchData.String()))
-
-	return prefixData.String()
+	//if containsComma(authority, from, method, path, scheme) ||
+	//	containsCommaInMaps(m.Cookies, m.Headers) {
+	//	v, _ := convert.EncodeToMap(m)
+	//	return v
+	//}
+	//
+	//prefixData := strings.Builder{}
+	//
+	//addPrefixedMap(&prefixData, "cookie", m.Cookies)
+	//addPrefixedMap(&prefixData, "header", m.Headers)
+	//
+	//matchData := strings.Builder{}
+	//
+	//if method != "" {
+	//	matchData.WriteString(method)
+	//	matchData.WriteString(" ")
+	//}
+	//
+	//if scheme != "" {
+	//	matchData.WriteString(scheme)
+	//	matchData.WriteString("://")
+	//}
+	//
+	//matchData.WriteString(authority)
+	//
+	//if m.Port != nil && *m.Port != 0 {
+	//	matchData.WriteString(":")
+	//	matchData.WriteString(strconv.Itoa(*m.Port))
+	//}
+	//
+	//if len(path) > 0 && path[0] != '/' {
+	//	matchData.WriteString("/")
+	//}
+	//matchData.WriteString(path)
+	//
+	//if matchData.Len() == 0 {
+	//	return prefixData.String()
+	//} else if prefixData.Len() == 0 {
+	//	return matchData.String()
+	//}
+	//
+	//prefixData.WriteString(",")
+	//prefixData.Write([]byte(matchData.String()))
+	//
+	//return prefixData.String()
 }
 
 type Redirect struct {
-	Host string `json:"host,omitempty"`
-	Path string `json:"path,omitempty"`
+	Host    string `json:"host,omitempty"`
+	Path    string `json:"path,omitempty"`
+	Prefix  string `json:"prefix,omitempty"`
+	ToHTTPS bool   `json:"toHTTPS,omitempty"`
 }
 
 type Rewrite struct {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"os"
 	"testing"
 	"time"
 
@@ -24,6 +25,7 @@ type TestService struct {
 	Build   tektonv1alpha1.TaskRun
 	Version string
 	T       *testing.T
+	Kubeconfig string
 }
 
 // Create generates a new rio service, named randomly in the testing namespace, and
@@ -39,15 +41,31 @@ func (ts *TestService) Create(t *testing.T, source ...string) {
 		if err != nil {
 			ts.T.Fatalf(err.Error())
 		}
+	var envs []string
+	if ts.Kubeconfig != "" {
+		envs = []string{fmt.Sprintf("KUBECONFIG=%s", ts.Kubeconfig)}
+	}
+	_, err := RioCmd("run", args, envs...)
+	if err != nil {
+		ts.T.Fatalf("Failed to create service:  %v", err.Error())
 	}
 	err = ts.waitForReadyService()
 	if err != nil {
 		ts.T.Fatalf(err.Error())
 	}
-	err = ts.waitForAvailableReplicas(ts.GetScale())
-	if err != nil {
-		ts.T.Fatalf(err.Error())
+}
+
+func (ts *TestService) CreateWithError(t *testing.T, source ...string) error {
+	args := ts.createArgs(t, source...)
+	var envs []string
+	if ts.Kubeconfig != "" {
+		envs = []string{fmt.Sprintf("KUBECONFIG=%s", ts.Kubeconfig)}
 	}
+	_, err := RioCmd("run", args, envs...)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (ts *TestService) createArgs(t *testing.T, source ...string) []string {
@@ -72,6 +90,19 @@ func (ts *TestService) createArgs(t *testing.T, source ...string) []string {
 
 func (ts *TestService) isGithubSource(source ...string) bool {
 	return len(source) > 0 && source[len(source)-1][0:4] == "http" && strings.Contains(source[len(source)-1], "github")
+	if source == "" {
+		source = "nginx"
+	}
+	_, err := RioCmd([]string{"--namespace", testingNamespace, "run", "-p", "80/http", "-n", ts.AppName, source})
+	if err != nil {
+		ts.T.Fatalf("Failed to create service %s: %v", ts.Name, err.Error())
+	}
+	err = ts.waitForReadyService()
+	if err != nil {
+		ts.T.Fatalf(err.Error())
+	}
+	args := append([]string{"-p", "80/http", "-n", ts.AppName}, source...)
+	return args
 }
 
 // Takes name and version of existing service and returns loaded TestService
@@ -97,6 +128,12 @@ func GetService(t *testing.T, name string, version string) TestService {
 
 // Remove calls "rio rm" on this service. Logs error but does not fail test.
 func (ts *TestService) Remove() {
+	if ts.Kubeconfig != "" {
+		err := os.RemoveAll(ts.Kubeconfig)
+		if err != nil {
+			ts.T.Log(err.Error())
+		}
+	}
 	if ts.Service.Status.DeploymentStatus != nil {
 		_, err := RioCmd([]string{"rm", "--type", "service", ts.Name})
 		if err != nil {

@@ -4,14 +4,13 @@ import (
 	"context"
 	"errors"
 
-	"github.com/knative/pkg/apis"
 	webhookv1controller "github.com/rancher/gitwatcher/pkg/generated/controllers/gitwatcher.cattle.io/v1"
 	"github.com/rancher/rio/modules/build/controllers/service"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
-	tektonv1alpha1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/tekton.dev/v1alpha1"
 	tektonv1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	"knative.dev/pkg/apis"
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
@@ -22,7 +21,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		gitcommits:      rContext.Webhook.Gitwatcher().V1().GitCommit(),
 	}
 
-	rContext.Build.Tekton().V1alpha1().TaskRun().OnChange(ctx, "build-service-update", tektonv1alpha1controller.UpdateTaskRunOnChange(rContext.Build.Tekton().V1alpha1().TaskRun().Updater(), h.updateService))
+	rContext.Build.Tekton().V1alpha1().TaskRun().OnChange(ctx, "build-service-update", h.updateService)
 	rContext.Build.Tekton().V1alpha1().TaskRun().OnRemove(ctx, "build-service-remove", h.updateOnRemove)
 	return nil
 }
@@ -41,6 +40,7 @@ func (h handler) updateService(key string, build *tektonv1alpha1.TaskRun) (*tekt
 
 	namespace := build.Labels["service-namespace"]
 	name := build.Labels["service-name"]
+	containerName := build.Labels["container-name"]
 	svc, err := h.services.Cache().Get(namespace, name)
 	if err != nil {
 		return build, nil
@@ -71,17 +71,26 @@ func (h handler) updateService(key string, build *tektonv1alpha1.TaskRun) (*tekt
 	}
 
 	if build.IsSuccessful() {
-		rev := svc.Spec.Build.Revision
-		if rev == "" {
-			rev = svc.Status.FirstRevision
+		containers := []v1.NamedContainer{
+			{
+				Name:      name,
+				Container: svc.Spec.Container,
+			},
 		}
-		imageName := service.PullImageName(rev, svc)
-		if svc.Spec.Image != imageName {
-			deepCopy := svc.DeepCopy()
-			v1.ServiceConditionImageReady.SetError(deepCopy, "", nil)
-			deepCopy.Spec.Image = service.PullImageName(rev, deepCopy)
-			if _, err := h.services.Update(deepCopy); err != nil {
-				return build, err
+		containers = append(containers, svc.Spec.Sidecars...)
+
+		for _, con := range containers {
+			if con.Name == containerName {
+				rev := con.ImageBuild.Revision
+				imageName := service.PullImageName(rev, namespace, containerName, con.ImageBuild)
+				if svc.Spec.Image != imageName {
+					deepCopy := svc.DeepCopy()
+					v1.ServiceConditionImageReady.SetError(deepCopy, "", nil)
+					deepCopy.Spec.Image = service.PullImageName(rev, namespace, containerName, con.ImageBuild)
+					if _, err := h.services.Update(deepCopy); err != nil {
+						return build, err
+					}
+				}
 			}
 		}
 	} else if build.IsDone() {

@@ -27,9 +27,9 @@ import (
 
 type Interface interface {
 	ClusterDomain() ClusterDomainController
-	Feature() FeatureController
 	PublicDomain() PublicDomainController
 	RioInfo() RioInfoController
+	SystemStack() SystemStackController
 }
 
 func New(controllerManager *generic.ControllerManager, client clientset.AdminV1Interface,
@@ -50,12 +50,12 @@ type version struct {
 func (c *version) ClusterDomain() ClusterDomainController {
 	return NewClusterDomainController(v1.SchemeGroupVersion.WithKind("ClusterDomain"), c.controllerManager, c.client, c.informers.ClusterDomains())
 }
-func (c *version) Feature() FeatureController {
-	return NewFeatureController(v1.SchemeGroupVersion.WithKind("Feature"), c.controllerManager, c.client, c.informers.Features())
-}
 func (c *version) PublicDomain() PublicDomainController {
 	return NewPublicDomainController(v1.SchemeGroupVersion.WithKind("PublicDomain"), c.controllerManager, c.client, c.informers.PublicDomains())
 }
 func (c *version) RioInfo() RioInfoController {
 	return NewRioInfoController(v1.SchemeGroupVersion.WithKind("RioInfo"), c.controllerManager, c.client, c.informers.RioInfos())
+}
+func (c *version) SystemStack() SystemStackController {
+	return NewSystemStackController(v1.SchemeGroupVersion.WithKind("SystemStack"), c.controllerManager, c.client, c.informers.SystemStacks())
 }

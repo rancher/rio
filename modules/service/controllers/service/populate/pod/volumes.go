@@ -3,49 +3,49 @@ package pod
 import (
 	"fmt"
 	"sort"
-	"strconv"
+
+	"github.com/rancher/rio/pkg/services"
 
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	v1 "k8s.io/api/core/v1"
 )
 
-func volumes(service *riov1.Service) (result []v1.Volume) {
-	secrets := secretNames(&service.Spec.Container)
-	configMaps := configMapNames(&service.Spec.Container)
-
-	for _, sidecar := range service.Spec.Sidecars {
-		secrets = append(secrets, secretNames(&sidecar.Container)...)
-		configMaps = append(configMaps, configMapNames(&sidecar.Container)...)
-	}
-
-	secrets = removeDuplicate(secrets)
-	sort.Strings(secrets)
-	configMaps = removeDuplicate(configMaps)
-	sort.Strings(configMaps)
-
-	for _, secret := range secrets {
-		// todo: handle mode in api?
-		var defaultMode *int32
-		secretName := secret
-		if secret == "identity" {
-			secretName = "istio." + service.Name
-			if service.Name == "istio-sidecar-injector" {
-				secretName = secretName + "-service-account"
+func secretVolumes(containers []riov1.NamedContainer) (result []v1.Volume) {
+	var names []string
+	for _, container := range containers {
+		for _, mount := range container.Secrets {
+			if mount.Name != "" {
+				names = append(names, mount.Name)
 			}
 		}
+	}
+
+	for _, secret := range removeDuplicateAndSort(names) {
 		result = append(result, v1.Volume{
 			Name: fmt.Sprintf("secret-%s", secret),
 			VolumeSource: v1.VolumeSource{
 				Secret: &v1.SecretVolumeSource{
-					SecretName:  secretName,
-					DefaultMode: defaultMode,
-					Optional:    &[]bool{true}[0],
+					SecretName: secret,
+					Optional:   &[]bool{true}[0],
 				},
 			},
 		})
 	}
 
-	for _, config := range configMaps {
+	return
+}
+
+func configVolumes(containers []riov1.NamedContainer) (result []v1.Volume) {
+	var names []string
+	for _, container := range containers {
+		for _, mount := range container.Configs {
+			if mount.Name != "" {
+				names = append(names, mount.Name)
+			}
+		}
+	}
+
+	for _, config := range removeDuplicateAndSort(names) {
 		result = append(result, v1.Volume{
 			Name: fmt.Sprintf("config-%s", config),
 			VolumeSource: v1.VolumeSource{
@@ -58,48 +58,124 @@ func volumes(service *riov1.Service) (result []v1.Volume) {
 		})
 	}
 
-	volumeMap := map[string]riov1.Volume{}
-	for _, v := range service.Spec.Volumes {
-		volumeMap[v.Name] = v
-	}
-	for _, c := range service.Spec.Sidecars {
-		for _, v := range c.Volumes {
-			volumeMap[v.Name] = v
+	return
+}
+
+type sortedVolumes struct {
+	All      map[string]bool
+	EmptyDir map[string]riov1.Volume
+	HostPath map[string]riov1.Volume
+	PVC      map[string]riov1.Volume
+}
+
+func sortVolumes(containers []riov1.NamedContainer, volumeTemplates map[string]riov1.VolumeTemplate) (result sortedVolumes) {
+	result.All = map[string]bool{}
+	result.EmptyDir = map[string]riov1.Volume{}
+	result.HostPath = map[string]riov1.Volume{}
+	result.PVC = map[string]riov1.Volume{}
+
+	for _, container := range containers {
+		for _, volume := range normalizeVolumes(container.Name, container.Volumes) {
+			if result.All[volume.Name] {
+				continue
+			}
+			result.All[volume.Name] = true
+			if volume.HostPath != "" {
+				result.HostPath[volume.Name] = volume
+			} else if _, ok := volumeTemplates[volume.Name]; !ok && volume.Persistent {
+				result.PVC[volume.Name] = volume
+			} else if !volume.Persistent {
+				result.EmptyDir[volume.Name] = volume
+			}
 		}
 	}
 
-	index := 0
-	for _, volume := range volumeMap {
-		if volume.Name == "" {
-			volume.Name = strconv.Itoa(index)
-			index++
-		}
+	return
+}
+
+func emptyDirVolumes(emptyDir map[string]riov1.Volume) (result []v1.Volume) {
+	var names []string
+	for name := range emptyDir {
+		names = append(names, name)
+	}
+	for _, name := range removeDuplicateAndSort(names) {
 		result = append(result, v1.Volume{
-			Name: fmt.Sprintf("emptydir-%s", volume.Name),
+			Name: fmt.Sprintf("vol-%s", name),
 			VolumeSource: v1.VolumeSource{
 				EmptyDir: &v1.EmptyDirVolumeSource{},
 			},
 		})
 	}
-
 	return
 }
 
-func secretNames(c *riov1.Container) (result []string) {
-	for _, mount := range c.Secrets {
-		result = append(result, mount.Name)
+func hostPathVolumes(hostPath map[string]riov1.Volume) (result []v1.Volume) {
+	var names []string
+	for name := range hostPath {
+		names = append(names, name)
+	}
+	for _, name := range removeDuplicateAndSort(names) {
+		result = append(result, v1.Volume{
+			Name: fmt.Sprintf("vol-%s", name),
+			VolumeSource: v1.VolumeSource{
+				HostPath: &v1.HostPathVolumeSource{
+					Path: hostPath[name].HostPath,
+					Type: hostPath[name].HostPathType,
+				},
+			},
+		})
 	}
 	return
 }
 
-func configMapNames(c *riov1.Container) (result []string) {
-	for _, mount := range c.Configs {
-		result = append(result, mount.Name)
+func pvcVolumes(pvcs map[string]riov1.Volume) (result []v1.Volume) {
+	var names []string
+	for name := range pvcs {
+		names = append(names, name)
+	}
+	for _, name := range removeDuplicateAndSort(names) {
+		result = append(result, v1.Volume{
+			Name: fmt.Sprintf("vol-%s", name),
+			VolumeSource: v1.VolumeSource{
+				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+					ClaimName: name,
+				},
+			},
+		})
 	}
 	return
 }
 
-func removeDuplicate(array []string) (result []string) {
+func NormalizeVolumeTemplates(service *riov1.Service) map[string]riov1.VolumeTemplate {
+	templates := map[string]riov1.VolumeTemplate{}
+	for _, template := range service.Spec.VolumeTemplates {
+		if _, ok := templates[template.Name]; ok || template.Name == "" {
+			continue
+		}
+		templates[template.Name] = template
+	}
+	return templates
+}
+
+func diskVolumes(containers []riov1.NamedContainer, service *riov1.Service) (result []v1.Volume) {
+	templates := NormalizeVolumeTemplates(service)
+	sorted := sortVolumes(containers, templates)
+
+	result = append(result, emptyDirVolumes(sorted.EmptyDir)...)
+	result = append(result, hostPathVolumes(sorted.HostPath)...)
+	result = append(result, pvcVolumes(sorted.PVC)...)
+	return
+}
+
+func volumes(service *riov1.Service) (result []v1.Volume) {
+	containers := services.ToNamedContainers(service)
+	result = append(result, secretVolumes(containers)...)
+	result = append(result, configVolumes(containers)...)
+	result = append(result, diskVolumes(containers, service)...)
+	return
+}
+
+func removeDuplicateAndSort(array []string) (result []string) {
 	set := map[string]struct{}{}
 	for _, s := range array {
 		set[s] = struct{}{}
@@ -107,5 +183,6 @@ func removeDuplicate(array []string) (result []string) {
 	for k := range set {
 		result = append(result, k)
 	}
+	sort.Strings(result)
 	return result
 }
