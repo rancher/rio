@@ -2,19 +2,19 @@ package logs
 
 import (
 	"context"
-	"fmt"
-
 	"encoding/json"
-	"github.com/fatih/color"
-	"github.com/pkg/errors"
-	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/wercker/stern/stern"
-	"k8s.io/apimachinery/pkg/labels"
+	"fmt"
 	"os"
-
 	"regexp"
 	"text/template"
 	"time"
+
+	"github.com/fatih/color"
+	"github.com/pkg/errors"
+	"github.com/rancher/rio/cli/pkg/clicontext"
+	clitypes "github.com/rancher/rio/cli/pkg/types"
+	"github.com/wercker/stern/stern"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 type Logs struct {
@@ -22,7 +22,6 @@ type Logs struct {
 	T_Timestamps bool   `desc:"Print the logs with timestamp" default:"false"`
 	N_Tail       int    `desc:"Number of recent lines to print, -1 for all" default:"200"`
 	C_Container  string `desc:"Print the logs of a specific container, use -a for system containers"`
-	RS_Service   string `desc:"Print the logs of a specific rio service"`
 	P_Previous   bool   `desc:"Print the logs for the previous instance of the container in a pod if it exists, excludes running"`
 	A_All        bool   `desc:"Include hidden or systems logs when logging" default:"false"`
 	NC_NoColor   bool   `desc:"Dont show color when logging" default:"false"`
@@ -47,14 +46,43 @@ func (l *Logs) setupConfig(ctx *clicontext.CLIContext) (*stern.Config, error) {
 		Namespace:     ctx.GetSetNamespace(),
 	}
 
-	config.Template, err = l.logFormat()
+	if len(ctx.CLI.Args()) > 0 {
+		objName := ctx.CLI.Args().First()
+		obj, err := ctx.ByID(objName)
+		if err != nil {
+			return nil, err
+		}
+		if obj.Object == nil {
+			return nil, errors.New("No object found")
+		}
+		if obj.Type == clitypes.BuildType {
+			l.P_Previous = true
+		}
+		config.PodQuery, err = regexp.Compile(obj.Name)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		config.PodQuery, _ = regexp.Compile("") // grab everything
+	}
+
+	config.ContainerQuery, err = regexp.Compile(l.C_Container)
 	if err != nil {
 		return nil, err
 	}
 
-	config.ContainerState = stern.RUNNING
-	if l.P_Previous {
-		config.ContainerState = stern.TERMINATED
+	config.ExcludeContainerQuery = nil
+	if l.A_All == false {
+		excludeContainer, err := regexp.Compile("linkerd-proxy")
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to compile regular expression for exclude container query")
+		}
+		config.ExcludeContainerQuery = excludeContainer
+	}
+
+	config.Template, err = l.logFormat()
+	if err != nil {
+		return nil, err
 	}
 
 	tail := int64(l.N_Tail)
@@ -65,24 +93,9 @@ func (l *Logs) setupConfig(ctx *clicontext.CLIContext) (*stern.Config, error) {
 		return nil, err
 	}
 
-	// todo: lookup and convert into svcName-version-*, ensure it exists or err
-	config.PodQuery, err = regexp.Compile(l.RS_Service)
-	if err != nil {
-		return nil, err
-	}
-
-	config.ContainerQuery, err = regexp.Compile(l.C_Container)
-	if err != nil {
-		return nil, err
-	}
-
-	config.ExcludeContainerQuery = nil
-	if l.A_All != true {
-		excludeContainer, err := regexp.Compile("linkerd-proxy")
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to compile regular expression for exclude container query")
-		}
-		config.ExcludeContainerQuery = excludeContainer
+	config.ContainerState = stern.RUNNING
+	if l.P_Previous {
+		config.ContainerState = stern.TERMINATED
 	}
 
 	return config, nil

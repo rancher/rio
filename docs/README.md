@@ -768,11 +768,11 @@ Starting at v0.5.0, Rio has added integration with Github deployment api. You ar
 ### View build logs
 To view logs from your builds
 ```bash
-$ rio builds
+$ rio build history
 NAME                                                                     SERVICE                   REVISION                                   CREATED        SUCCEED   REASON
 default/fervent-swartz6-ee709-786b366d5d44de6b547939f51d467437e45c5ee1   default/fervent-swartz6   786b366d5d44de6b547939f51d467437e45c5ee1   23 hours ago   True    
 
-$ rio logs -f default/fervent-swartz6-ee709-786b366d5d44de6b547939f51d467437e45c5ee1
+$ rio logs default/fervent-swartz6-ee709-786b366d5d44de6b547939f51d467437e45c5ee1
 
 # restart any builds that failed
 $ rio build restart default/fervent-swartz6-ee709-786b366d5d44de6b547939f51d467437e45c5ee1
