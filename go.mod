@@ -14,6 +14,7 @@ replace (
 	github.com/jetstack/cert-manager => github.com/rancher/cert-manager v0.5.1-0.20191021233300-3a070253aeda
 	github.com/linkerd/linkerd2 => github.com/StrongMonkey/linkerd2 v0.0.0-20191021165729-976fad67457a
 	github.com/matryer/moq => github.com/rancher/moq v0.0.0-20190404221404-ee5226d43009
+	github.com/wercker/stern => github.com/linkerd/stern v0.0.0-20190907020106-201e8ccdff9c
 	golang.org/x/tools => golang.org/x/tools v0.0.0-20190411180116-681f9ce8ac52
 
 	k8s.io/api => k8s.io/api v0.0.0-20190918195907-bd6ac527cfd2
@@ -43,14 +44,15 @@ require (
 	github.com/emicklei/go-restful v2.9.5+incompatible // indirect
 	github.com/envoyproxy/go-control-plane v0.8.7-0.20190906190023-ba541bc36302 // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.1.0 // indirect
+	github.com/fatih/color v1.7.0
 	github.com/go-bindata/go-bindata v3.1.2+incompatible
 	github.com/gogo/googleapis v1.2.0 // indirect
 	github.com/gogo/protobuf v1.3.0
 	github.com/gophercloud/gophercloud v0.2.0 // indirect
-	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
 	github.com/hashicorp/go-rootcerts v1.0.1 // indirect
 	github.com/hashicorp/go-sockaddr v1.0.2 // indirect
 	github.com/jetstack/cert-manager v0.11.0
+	github.com/knative/pkg v0.0.0-20190514205332-5e4512dcb2ca
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/linkerd/linkerd2 v0.0.0-20191010175117-1039d8254738
 	github.com/markbates/inflect v1.0.4 // indirect
@@ -79,6 +81,7 @@ require (
 	github.com/stretchr/testify v1.3.0
 	github.com/tektoncd/pipeline v0.8.0
 	github.com/urfave/cli v1.22.1
+	github.com/wercker/stern v0.0.0-20171214125149-b04b5491222d
 	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 	google.golang.org/grpc v1.23.1 // indirect

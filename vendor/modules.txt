@@ -200,6 +200,8 @@ github.com/evanphx/json-patch
 github.com/exponent-io/jsonpath
 # github.com/fatih/camelcase v1.0.0
 github.com/fatih/camelcase
+# github.com/fatih/color v1.7.0
+github.com/fatih/color
 # github.com/fatih/structs v1.1.0
 github.com/fatih/structs
 # github.com/ghodss/yaml v1.0.0
@@ -252,7 +254,7 @@ github.com/google/gofuzz
 github.com/google/shlex
 # github.com/google/uuid v1.1.1
 github.com/google/uuid
-# github.com/googleapis/gnostic v0.2.0
+# github.com/googleapis/gnostic v0.3.1
 github.com/googleapis/gnostic/OpenAPIv2
 github.com/googleapis/gnostic/compiler
 github.com/googleapis/gnostic/extensions
@@ -331,10 +333,13 @@ github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1alp
 github.com/jetstack/cert-manager/pkg/client/informers/externalversions/acme
 github.com/jetstack/cert-manager/pkg/client/informers/externalversions/acme/v1alpha2
 github.com/jetstack/cert-manager/pkg/client/listers/acme/v1alpha2
-# github.com/json-iterator/go v1.1.6
+# github.com/json-iterator/go v1.1.7
 github.com/json-iterator/go
 # github.com/k0kubun/pp v2.3.0+incompatible
 github.com/k0kubun/pp
+# github.com/knative/pkg v0.0.0-20190514205332-5e4512dcb2ca
+github.com/knative/pkg/apis
+github.com/knative/pkg/kmp
 # github.com/konsorten/go-windows-terminal-sequences v1.0.2
 github.com/konsorten/go-windows-terminal-sequences
 # github.com/linkerd/linkerd2 v0.0.0-20191010175117-1039d8254738 => github.com/StrongMonkey/linkerd2 v0.0.0-20191021165729-976fad67457a
@@ -368,7 +373,7 @@ github.com/matryer/moq/pkg/moq
 github.com/mattbaird/jsonpatch
 # github.com/mattn/go-colorable v0.1.2
 github.com/mattn/go-colorable
-# github.com/mattn/go-isatty v0.0.8
+# github.com/mattn/go-isatty v0.0.9
 github.com/mattn/go-isatty
 # github.com/mattn/go-shellwords v1.0.5
 github.com/mattn/go-shellwords
@@ -684,6 +689,9 @@ github.com/tonistiigi/fsutil
 github.com/tonistiigi/units
 # github.com/urfave/cli v1.22.1
 github.com/urfave/cli
+# github.com/wercker/stern v0.0.0-20171214125149-b04b5491222d => github.com/linkerd/stern v0.0.0-20190907020106-201e8ccdff9c
+github.com/wercker/stern/stern
+github.com/wercker/stern/kubernetes
 # go.opencensus.io v0.22.0
 go.opencensus.io/stats
 go.opencensus.io/stats/view
@@ -890,10 +898,10 @@ k8s.io/apimachinery/pkg/util/intstr
 k8s.io/apimachinery/pkg/apis/meta/v1/unstructured
 k8s.io/apimachinery/pkg/runtime/schema
 k8s.io/apimachinery/pkg/api/errors
+k8s.io/apimachinery/pkg/labels
 k8s.io/apimachinery/pkg/api/meta
 k8s.io/apimachinery/pkg/runtime/serializer
 k8s.io/apimachinery/pkg/util/wait
-k8s.io/apimachinery/pkg/labels
 k8s.io/apimachinery/pkg/selection
 k8s.io/apimachinery/pkg/util/json
 k8s.io/apimachinery/pkg/api/resource
