@@ -12,12 +12,14 @@ import (
 	"github.com/rancher/rio/cli/cmd/builds"
 	"github.com/rancher/rio/cli/cmd/config"
 	"github.com/rancher/rio/cli/cmd/edit"
+	"github.com/rancher/rio/cli/cmd/endpoint"
 	"github.com/rancher/rio/cli/cmd/exec"
 	"github.com/rancher/rio/cli/cmd/export"
 	"github.com/rancher/rio/cli/cmd/externalservice"
 	"github.com/rancher/rio/cli/cmd/info"
 	"github.com/rancher/rio/cli/cmd/inspect"
 	"github.com/rancher/rio/cli/cmd/install"
+	"github.com/rancher/rio/cli/cmd/linkerd"
 	"github.com/rancher/rio/cli/cmd/logs"
 	"github.com/rancher/rio/cli/cmd/promote"
 	"github.com/rancher/rio/cli/cmd/ps"
@@ -128,6 +130,7 @@ func main() {
 		secrets.Secrets(app),
 		builds.Builds(app),
 		stacks.Stacks(app),
+		endpoint.Endpoints(app),
 
 		builder.Command(&ps.Ps{},
 			"List services",
@@ -160,6 +163,10 @@ func main() {
 		builder.Command(&export.Export{},
 			"Export a namespace or service",
 			appName+" export NAMESPACE_OR_SERVICE",
+			""),
+		builder.Command(&linkerd.Linkerd{},
+			"Open linkerd dashboard",
+			appName+" linkerd",
 			""),
 
 		config.NewCatCommand("", app),

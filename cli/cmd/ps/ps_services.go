@@ -1,12 +1,15 @@
 package ps
 
 import (
+	"sort"
+
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/tables"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 )
 
 type ServiceData struct {
@@ -50,6 +53,16 @@ func (p *Ps) services(ctx *clicontext.CLIContext) error {
 			Pod:       podMap[service.(*riov1.Service).Name],
 		})
 	}
+
+	sort.Slice(output, func(i, j int) bool {
+		leftMeta, _ := meta.Accessor(output[i].Service)
+		rightMeta, _ := meta.Accessor(output[j].Service)
+		if leftMeta.GetNamespace() != rightMeta.GetNamespace() {
+			return leftMeta.GetNamespace() < rightMeta.GetNamespace()
+		}
+		leftCreated := leftMeta.GetCreationTimestamp()
+		return leftCreated.After(rightMeta.GetCreationTimestamp().Time)
+	})
 
 	writer := tables.NewService(ctx)
 	defer writer.TableWriter().Close()

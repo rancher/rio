@@ -38,7 +38,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 	}
 
 	namespace := ctx.SystemNamespace
-	controllerStack := stack.NewSystemStack(ctx.Apply, ctx.Project.SystemStacks(), namespace, "rio-controller")
+	controllerStack := stack.NewSystemStack(ctx.Apply, nil, namespace, "rio-controller")
 
 	answers := map[string]string{
 		"NAMESPACE":      namespace,
@@ -61,7 +61,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	if err := i.configure(ctx); err != nil {
+	if err := i.configure(ctx, controllerStack); err != nil {
 		return err
 	}
 
@@ -193,12 +193,16 @@ func isDockerForMac(nodes *v1.NodeList) bool {
 	return len(nodes.Items) == 1 && nodes.Items[0].Name == "docker-for-desktop"
 }
 
-func (i *Install) configure(ctx *clicontext.CLIContext) error {
-	if _, err := ctx.Core.Namespaces().Get(ctx.GetSystemNamespace(), metav1.GetOptions{}); errors.IsNotFound(err) {
-		if _, err := ctx.Core.Namespaces().Create(constructors.NewNamespace(ctx.GetSystemNamespace(), v1.Namespace{})); err != nil {
+func (i *Install) configure(ctx *clicontext.CLIContext, systemStack *stack.SystemStack) error {
+	ns, err := ctx.Core.Namespaces().Get(ctx.GetSystemNamespace(), metav1.GetOptions{})
+	if errors.IsNotFound(err) {
+		ns, err = ctx.Core.Namespaces().Create(constructors.NewNamespace(ctx.GetSystemNamespace(), v1.Namespace{}))
+		if err != nil {
 			return err
 		}
 	}
+
+	systemStack.WithApply(ctx.Apply.WithOwner(ns).WithSetOwnerReference(true, true).WithDynamicLookup())
 
 	cfg := config2.Config{
 		Features:    map[string]config2.FeatureConfig{},

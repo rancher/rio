@@ -61,7 +61,7 @@ func New(rContext *types.Context, kc string, devMode bool) Webhook {
 		port:       ":443",
 	}
 	if devMode {
-		w.listenHost = os.Getenv("LOCALHOST")
+		w.listenHost = os.Getenv("WEBHOOK_LISTEN")
 		if w.listenHost == "" {
 			w.listenHost = "127.0.0.1"
 		}
@@ -71,6 +71,9 @@ func New(rContext *types.Context, kc string, devMode bool) Webhook {
 }
 
 func (w Webhook) Setup() error {
+	if constants.DevMode && os.Getenv("RUN_WEBHOOK") == "" {
+		return nil
+	}
 	if err := w.setup(); err != nil {
 		return err
 	}

@@ -75,13 +75,46 @@ func serviceDetail(data interface{}, pod *corev1.Pod) string {
 		return ""
 	}
 
+	buffer := strings.Builder{}
+	if !s.Status.DeploymentReady {
+		if buffer.Len() > 0 {
+			buffer.WriteString("; ")
+		}
+		buffer.WriteString(s.Name + ": ")
+		pd := pkg.PodDetail(pod)
+		if pd == "" {
+			pd = "not ready"
+		}
+		buffer.WriteString(pd)
+	}
+
+	if waitingOnBuild(s) {
+		if riov1.ServiceConditionImageReady.IsFalse(s) {
+			if buffer.Len() > 0 {
+				buffer.WriteString("; ")
+			}
+			buffer.WriteString(s.Name)
+			buffer.WriteString(" build failed: ")
+			buffer.WriteString(riov1.ServiceConditionImageReady.GetMessage(s))
+		} else if !riov1.ServiceConditionImageReady.IsTrue(s) {
+			if buffer.Len() > 0 {
+				buffer.WriteString("; ")
+			}
+			buffer.WriteString(s.Name)
+			buffer.WriteString(" waiting on build")
+		}
+	}
+	if buffer.Len() > 0 {
+		return buffer.String()
+	}
+
 	for _, con := range s.Status.Conditions {
 		if con.Status != corev1.ConditionTrue {
 			return fmt.Sprintf("%s: %s(%s)", con.Type, con.Message, con.Reason)
 		}
 	}
 
-	return pkg.PodDetail(pod)
+	return ""
 }
 
 func formatRevisionScale(svc *riov1.Service, scaleStatus *v1.ScaleStatus) (string, error) {
@@ -138,4 +171,18 @@ func FormatImage(data interface{}) (string, error) {
 		image = s.Spec.Image
 	}
 	return strings.TrimPrefix(image, "localhost:5442/"), nil
+}
+
+func waitingOnBuild(svc *riov1.Service) bool {
+	if svc.Spec.Image == "" && len(svc.Spec.Sidecars) == 0 {
+		return true
+	}
+
+	for _, container := range svc.Spec.Sidecars {
+		if container.Image == "" {
+			return true
+		}
+	}
+
+	return false
 }

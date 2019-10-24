@@ -405,6 +405,9 @@ type ServiceStatus struct {
 
 	// Associated git commit name
 	GitCommitName string `json:"gitCommitName,omitempty"`
+
+	// Watch represents if a service should creates git watcher to watch git changes
+	Watch bool `json:"watch,omitempty"`
 }
 
 type BuiltImage struct {

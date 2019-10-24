@@ -90,6 +90,9 @@ func (h handler) updateService(key string, build *tektonv1alpha1.TaskRun) (*tekt
 					if _, err := h.services.Update(deepCopy); err != nil {
 						return build, err
 					}
+					if _, err := h.services.UpdateStatus(deepCopy); err != nil {
+						return build, err
+					}
 				}
 			}
 		}
@@ -97,7 +100,10 @@ func (h handler) updateService(key string, build *tektonv1alpha1.TaskRun) (*tekt
 		con := build.Status.GetCondition(apis.ConditionSucceeded)
 		deepCopy := svc.DeepCopy()
 		v1.ServiceConditionImageReady.SetError(deepCopy, con.Reason, errors.New(con.Message))
-		_, err := h.services.Update(deepCopy)
+		if _, err := h.services.Update(deepCopy); err != nil {
+			return build, err
+		}
+		_, err := h.services.UpdateStatus(deepCopy)
 		return build, err
 	}
 
