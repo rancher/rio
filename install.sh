@@ -25,7 +25,7 @@ fatal()
 setup_env() {
     # --- use sudo if we are not already root ---
     SUDO=sudo
-    if [ "$(id -u)" = 0 ]; then
+    if [ -n "${SKIP_SUDO}" ] || [ "$(id -u)" = 0 ]; then
         SUDO=
     fi
 
@@ -156,7 +156,7 @@ verify_binary() {
 setup_binary() {
     chmod 755 "${TMP_BIN}"
     info "Installing rio to ${BIN_DIR}/rio"
-    $SUDO chown 0:0 "${TMP_BIN}"
+    [ -n "$SUDO" ] && { $SUDO chown 0:0 "${TMP_BIN}"; }
     $SUDO mv -f "${TMP_BIN}" ${BIN_DIR}/rio
 
     if command -v getenforce > /dev/null 2>&1; then
@@ -203,7 +203,7 @@ remove_uninstall() {
 trap remove_uninstall EXIT
 EOF
     $SUDO chmod 755 ${BIN_DIR}/${UNINSTALL_RIO_SH}
-    $SUDO chown 0:0 ${BIN_DIR}/${UNINSTALL_RIO_SH}
+    [ -n "$SUDO" ] && { $SUDO ${BIN_DIR}/${UNINSTALL_RIO_SH}; }
 }
 
 # --- get hashes of the current rio bin and service files
