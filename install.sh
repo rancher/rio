@@ -140,7 +140,7 @@ installed_hash_matches() {
 download_binary() {
     BIN_URL=${GITHUB_URL}/download/${VERSION_RIO}/rio${SUFFIX}
     info "Downloading binary ${BIN_URL}"
-    curl -o "${TMP_BIN}" -sfL "${BIN_URL}" || fatal "Binary download failed"
+    curl -o "${TMP_BIN}" -fL "${BIN_URL}" || fatal "Binary download failed"
 }
 
 # --- verify downloaded binary hash ---
