@@ -151,12 +151,16 @@ func addMultiDestination(namespace string, route riov1.RouteSpec, gatewayRoute *
 	md := &gloov1.MultiDestination{}
 
 	for _, to := range route.To {
+		port := to.Port
+		if port == 0 {
+			port = 80
+		}
 		md.Destinations = append(md.Destinations, &gloov1.WeightedDestination{
 			Destination: &gloov1.Destination{
 				DestinationType: &gloov1.Destination_Kube{
 					Kube: &gloov1.KubernetesServiceDestination{
 						Ref:  *destinationToRef(namespace, &to.Destination),
-						Port: to.Port,
+						Port: port,
 					},
 				},
 			},
@@ -174,6 +178,10 @@ func addMultiDestination(namespace string, route riov1.RouteSpec, gatewayRoute *
 }
 
 func addSingleDestination(namespace string, route riov1.RouteSpec, gatewayRoute *gatewayv1.Route) {
+	port := route.To[0].Port
+	if port == 0 {
+		port = 80
+	}
 	gatewayRoute.Action = &gatewayv1.Route_RouteAction{
 		RouteAction: &gloov1.RouteAction{
 			Destination: &gloov1.RouteAction_Single{
@@ -181,7 +189,7 @@ func addSingleDestination(namespace string, route riov1.RouteSpec, gatewayRoute 
 					DestinationType: &gloov1.Destination_Kube{
 						Kube: &gloov1.KubernetesServiceDestination{
 							Ref:  *destinationToRef(namespace, &route.To[0].Destination),
-							Port: route.To[0].Port,
+							Port: port,
 						},
 					},
 				},

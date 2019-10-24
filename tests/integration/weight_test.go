@@ -3,10 +3,9 @@ package integration
 import (
 	"testing"
 
+	"github.com/rancher/rio/tests/testutil"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/rancher/rio/tests/testutil"
 )
 
 func weightTests(t *testing.T, when spec.G, it spec.S) {
@@ -32,7 +31,7 @@ func weightTests(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, 0, stagedService.GetKubeCurrentWeight())
 		})
 		it("should be able to split weights between revisions", func() {
-			stagedService.Weight(40, false, 5, 5)
+			stagedService.Weight(40, false, 0, 0)
 			assert.Equal(t, 60, service.GetCurrentWeight())
 			assert.Equal(t, 40, stagedService.GetCurrentWeight())
 			assert.Equal(t, 60, service.GetKubeCurrentWeight())

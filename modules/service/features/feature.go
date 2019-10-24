@@ -2,11 +2,11 @@ package features
 
 import (
 	"context"
-	"github.com/rancher/rio/modules/service/controllers/rollout"
 
 	"github.com/rancher/rio/modules/service/controllers/app"
 	"github.com/rancher/rio/modules/service/controllers/externalservice"
 	"github.com/rancher/rio/modules/service/controllers/globalrbac"
+	"github.com/rancher/rio/modules/service/controllers/rollout"
 	"github.com/rancher/rio/modules/service/controllers/router"
 	"github.com/rancher/rio/modules/service/controllers/service"
 	"github.com/rancher/rio/modules/service/controllers/servicestatus"

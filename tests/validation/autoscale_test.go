@@ -38,7 +38,7 @@ func autoscaleTests(t *testing.T, when spec.G, it spec.S) {
 			runningPods = service.GetRunningPods()
 			assert.Len(t, runningPods, 1)
 			for _, pod := range runningPods {
-				assert.Contains(t, pod, service.App.Name)
+				assert.Contains(t, pod, service.Service.Spec.App)
 				assert.Contains(t, pod, "2/2")
 			}
 		})

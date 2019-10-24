@@ -86,7 +86,7 @@ func (h handler) sync(key string, obj *appsv1.Deployment) (*appsv1.Deployment, e
 		return nil, err
 	}
 
-	ready := false
+	var ready bool
 	if constants.DevMode {
 		ready = true
 	} else {
@@ -97,7 +97,7 @@ func (h handler) sync(key string, obj *appsv1.Deployment) (*appsv1.Deployment, e
 		}
 	}
 
-	update := false
+	var update bool
 	if !reflect.DeepEqual(info.Status.SystemComponentReadyMap, readyMap) {
 		info.Status.SystemComponentReadyMap = readyMap
 		update = true

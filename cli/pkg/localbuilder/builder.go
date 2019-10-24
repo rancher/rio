@@ -32,7 +32,7 @@ var (
 )
 
 type LocalBuilder interface {
-	Build(ctx context.Context, specs map[stack.ContainerBuildKey]riov1.ImageBuildSpec, parallel bool, namespace string) (map[string]string, error)
+	Build(ctx context.Context, specs map[stack.ContainerBuildKey]riov1.ImageBuildSpec, parallel bool, namespace string) (map[stack.ContainerBuildKey]string, error)
 }
 
 type RuntimeBuilder interface {
@@ -60,12 +60,12 @@ type localBuilder struct {
 	systemNamespace string
 }
 
-func (l localBuilder) Build(ctx context.Context, specs map[stack.ContainerBuildKey]riov1.ImageBuildSpec, parallel bool, namespace string) (map[string]string, error) {
+func (l localBuilder) Build(ctx context.Context, specs map[stack.ContainerBuildKey]riov1.ImageBuildSpec, parallel bool, namespace string) (map[stack.ContainerBuildKey]string, error) {
 	if !parallel {
 		maxBuildThread = 1
 	}
 
-	result := make(map[string]string)
+	result := make(map[stack.ContainerBuildKey]string)
 	m := sync.Map{}
 	errg, _ := errgroup.WithContext(ctx)
 	s := semaphore.NewWeighted(maxBuildThread)
@@ -93,7 +93,7 @@ func (l localBuilder) Build(ctx context.Context, specs map[stack.ContainerBuildK
 	}
 
 	m.Range(func(key, value interface{}) bool {
-		result[key.(string)] = value.(string)
+		result[key.(stack.ContainerBuildKey)] = value.(string)
 		return true
 	})
 	return result, nil

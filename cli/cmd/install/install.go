@@ -83,6 +83,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 	if i.Lite {
 		disabledFeatures = append(disabledFeatures, "linkerd", "autoscaling", "build")
 	}
+	i.DisableFeatures = disabledFeatures
 
 	progress := progress.NewWriter()
 	for {

@@ -71,7 +71,7 @@ type ServiceSpec struct {
 	// to this service.  If rollout is set, the weight become the target weight of the rollout.
 	Weight *int `json:"weight,omitempty"`
 
-	// Number of desired pods. This is a pointer to distinguish between explicit zero and not specified. Defaults to 1.
+	// Number of desired pods. This is a pointer to distinguish between explicit zero and not specified. Defaults to 1 in deployment.
 	Replicas *int `json:"replicas,omitempty" mapper:"alias=scale"`
 
 	// The maximum number of pods that can be unavailable during the update.

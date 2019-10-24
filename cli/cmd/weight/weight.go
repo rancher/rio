@@ -3,6 +3,10 @@ package weight
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/rancher/mapper"
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
@@ -10,9 +14,6 @@ import (
 	"github.com/rancher/wrangler/pkg/kv"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type Weight struct {

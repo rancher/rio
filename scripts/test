@@ -19,13 +19,13 @@ if [[ ${ARCH} == amd64 ]]; then
 
     go test -cover -tags=test ./...
 
-    k3s server >/dev/null 2>&1 &
+    k3s server --no-deploy traefik >/dev/null 2>&1 &
     sleep 10
 
     export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
     export PATH=$(pwd)/bin:$PATH
 
-    rio-controller >/dev/null 2>&1 &
+    RUN_WEBHOOK=true rio-controller >/dev/null 2>&1 &
     rio install --check >/dev/null 2>&1
 
     go test -v ./tests/integration/... --integration-tests

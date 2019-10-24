@@ -107,6 +107,9 @@ func (p ObjectsToSlice) ToInternal(data data.Object) error {
 		} else {
 			if _, isMap := newObj.(map[string]interface{}); !isMap {
 				newObj, err = convert.EncodeToMap(newObj)
+				if err != nil {
+					return err
+				}
 			}
 
 			newSlc = append(newSlc, newObj)

@@ -51,22 +51,14 @@ func ValidationPreCheck() {
 	}
 }
 
-// RioCmd executes rio CLI commands with your arguments
-<<<<<<< HEAD
-// Example: args=["run", "-n", "test", "nginx"] would run: "rio run -n test nginx"
-func RioCmd(args []string) (string, error) {
-=======
-// Example: name=run and args=["-n", "test", "nginx"] would run: "rio run -n test nginx"
-func RioCmd(name string, args []string, envs ...string) (string, error) {
-	args = append([]string{name}, args...) // named command is always first arg
->>>>>>> 8725aec4... Add auth tests
+// RioCmd executes rio CLI commands with your arguments in testing namespace
+// Example: args=["run", "-n", "test", "nginx"] would run: "rio --namespace testing-namespace run -n test nginx"
+func RioCmd(args []string, envs ...string) (string, error) {
+	args = append([]string{"--namespace", testingNamespace}, args...)
+	fmt.Println(args)
 	cmd := exec.Command("rio", args...)
-<<<<<<< HEAD
-	stdOutErr, err := retry(5, 1, cmd.CombinedOutput)
-=======
 	cmd.Env = envs
 	stdOutErr, err := cmd.CombinedOutput()
->>>>>>> Major refactor
 	if err != nil {
 		return "", fmt.Errorf("%s: %s", err.Error(), stdOutErr)
 	}
@@ -87,7 +79,8 @@ func KubectlCmd(args []string) (string, error) {
 // HeyCmd generates load on a specified URL
 // Example: url=test-testing-ns.abcdef.on-rio.io, time=90s, c=120 would run: "hey -z 90s -c 120 http://test-testing-ns.abcdef.on-rio.io:9080"
 func HeyCmd(url string, time string, c int) {
-	args := []string{"-z", time, "-c", strconv.Itoa(c), fmt.Sprintf("http://%s:9080", url)}
+	args := []string{"-z", time, "-c", strconv.Itoa(c), url}
+	fmt.Println(args)
 	cmd := exec.Command("hey", args...)
 	stdOutErr, err := cmd.CombinedOutput()
 	if err != nil {
@@ -144,12 +137,18 @@ func GenerateName() string {
 	return strings.Replace(namesgenerator.GetRandomName(2), "_", "-", -1)
 }
 
-func GetHostname(URL string) string {
-	u, err := url.Parse(URL)
-	if err != nil {
-		return ""
+func GetHostname(urls ...string) string {
+	for _, u := range urls {
+		u1, err := url.Parse(u)
+		if err != nil {
+			return ""
+		}
+		if u1.Scheme == "http" {
+			return u
+		}
 	}
-	return u.Hostname()
+
+	return ""
 }
 
 // stringInSlice returns true if string a value is equals to any element of the slice otherwise false

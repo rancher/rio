@@ -8,15 +8,14 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/wait"
-
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 type TestDomain struct {
-	GeneratedDomainName string
-	PublicDomain        adminv1.PublicDomain
-	T                   *testing.T
+	Name         string
+	PublicDomain adminv1.PublicDomain
+	T            *testing.T
 }
 
 // Generates and returns a random string to use as domain name, ex: qpwb.towv
@@ -27,9 +26,7 @@ func GenerateRandomDomain() string {
 // Executes "rio domain register {domain} {target}" and returns a TestDomain
 func (td *TestDomain) RegisterDomain(t *testing.T, domain string, target string) {
 	td.T = t
-	td.GeneratedDomainName = fmt.Sprintf("%v/%v",
-		testingNamespace,
-		strings.Replace(domain, ".", "-", 1))
+	td.Name = fmt.Sprintf("%v/%v", "publicdomain", domain)
 	_, err := RioCmd([]string{"domain", "register", domain, target})
 	if err != nil {
 		td.T.Fatalf("register domain command failed: %v", err.Error())
@@ -42,8 +39,8 @@ func (td *TestDomain) RegisterDomain(t *testing.T, domain string, target string)
 
 // Executes "rio domain unregister" for this domain
 func (td *TestDomain) UnRegister() {
-	if td.PublicDomain.Spec.DomainName != "" {
-		_, err := RioCmd([]string{"domain", "unregister", td.GeneratedDomainName})
+	if td.PublicDomain.Name != "" {
+		_, err := RioCmd([]string{"domain", "unregister", td.Name})
 		if err != nil {
 			td.T.Logf("failed to unregister domain:  %v", err.Error())
 		}
@@ -59,29 +56,29 @@ func (td *TestDomain) GetDomain() string {
 	return getStandardFormatDomain(td.PublicDomain)
 }
 
-// GetKubeDomain receives the TestDomain object to retrieve the test PublicDomain data
-// CLI Command Run: "kubectl get publicdomains my-domain -n testing-ns -o json"
-func (td *TestDomain) GetKubeDomain() string {
-	td.reload()
-	args := []string{"get", "publicdomains", td.PublicDomain.GetName(), "-n", testingNamespace, "-o", "json"}
-	resultString, err := KubectlCmd(args)
-	if err != nil {
-		td.T.Fatalf("Failed to get admin.rio.cattle.io.publicdomains:  %v", err.Error())
-	}
-	var results adminv1.PublicDomain
-	err = json.Unmarshal([]byte(resultString), &results)
-	if err != nil {
-		td.T.Fatalf("Failed to unmarshal PublicDomain result: %s with error: %v", resultString, err.Error())
-	}
-	return getStandardFormatDomain(results)
-}
+//// GetKubeDomain receives the TestDomain object to retrieve the test PublicDomain data
+//// CLI Command Run: "kubectl get publicdomains my-domain -n testing-ns -o json"
+//func (td *TestDomain) GetKubeDomain() string {
+//	td.reload()
+//	args := []string{"get", "publicdomains", td.PublicDomain.GetName(), "-n", testingNamespace, "-o", "json"}
+//	resultString, err := KubectlCmd(args)
+//	if err != nil {
+//		td.T.Fatalf("Failed to get admin.rio.cattle.io.publicdomains:  %v", err.Error())
+//	}
+//	var results adminv1.PublicDomain
+//	err = json.Unmarshal([]byte(resultString), &results)
+//	if err != nil {
+//		td.T.Fatalf("Failed to unmarshal PublicDomain result: %s with error: %v", resultString, err.Error())
+//	}
+//	return getStandardFormatDomain(results)
+//}
 
 //////////////////
 // Private methods
 //////////////////
 
 func (td *TestDomain) reload() error {
-	out, err := RioCmd([]string{"inspect", "--type", "publicdomain", "--format", "json", td.GeneratedDomainName})
+	out, err := RioCmd([]string{"inspect", "--format", "json", td.Name})
 	if err != nil {
 		return err
 	}
@@ -96,7 +93,7 @@ func (td *TestDomain) waitForDomain() error {
 	f := wait.ConditionFunc(func() (bool, error) {
 		err := td.reload()
 		if err == nil {
-			if td.PublicDomain.Status.Endpoint != "" {
+			if td.PublicDomain.Spec.TargetApp != "" {
 				return true, nil
 			}
 		}
@@ -112,8 +109,8 @@ func (td *TestDomain) waitForDomain() error {
 // getStandardFormatDomain takes in a PublicDomain object
 // Returns standard format non-namespaced public domain name, ex: "foo.bar"
 func getStandardFormatDomain(publicDomain adminv1.PublicDomain) string {
-	if publicDomain.Spec.DomainName == "" {
+	if publicDomain.Name == "" {
 		return ""
 	}
-	return strings.Replace(publicDomain.Spec.DomainName, "-", ".", 1)
+	return strings.Replace(publicDomain.Name, "-", ".", 1)
 }
