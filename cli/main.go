@@ -174,7 +174,7 @@ func main() {
 			""),
 		builder.Command(&logs.Logs{},
 			"Print logs from services or containers",
-			appName+" logs [OPTIONS]",
+			appName+" logs [OPTIONS] SERVICE/BUILD",
 			""),
 		builder.Command(&install.Install{},
 			"Install rio management plane",
