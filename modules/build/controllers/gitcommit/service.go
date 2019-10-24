@@ -114,7 +114,11 @@ func (h Handler) onChangeService(key string, obj *webhookv1.GitCommit, gitWatche
 			}
 		}
 		if update {
+			service.Status.GitCommitName = obj.Name
 			if _, err := h.services.Update(service); err != nil {
+				return obj, err
+			}
+			if _, err := h.services.UpdateStatus(service); err != nil {
 				return obj, err
 			}
 		}

@@ -106,16 +106,20 @@ func (p *populator) populate(service *riov1.Service, status riov1.ServiceStatus)
 	}
 
 	os := objectset.NewObjectSet()
-	for name, build := range imageBuilds {
+	for conName, build := range imageBuilds {
 		if build.Repo == "" {
 			continue
 		}
 
-		if err := p.populateBuild(name, service.Namespace, build, service, p.systemNamespace, os); err != nil {
+		if build.Revision == "" {
+			status.Watch = true
+		}
+
+		if err := p.populateBuild(conName, service.Namespace, build, service, p.systemNamespace, os); err != nil {
 			return nil, status, err
 		}
 
-		if err := p.populateWebhookAndSecrets(build, service, name, service.Namespace, os); err != nil {
+		if err := p.populateWebhookAndSecrets(build, status, conName, service.Name, service.Namespace, os); err != nil {
 			return nil, status, err
 		}
 	}
@@ -282,8 +286,8 @@ func (p populator) populateBuild(buildKey, namespace string, build *riov1.ImageB
 	return nil
 }
 
-func (p populator) populateWebhookAndSecrets(build *riov1.ImageBuildSpec, svc *riov1.Service, containerName, namespace string, os *objectset.ObjectSet) error {
-	if !build.Watch {
+func (p populator) populateWebhookAndSecrets(build *riov1.ImageBuildSpec, status riov1.ServiceStatus, containerName, svcName, namespace string, os *objectset.ObjectSet) error {
+	if !status.Watch {
 		return nil
 	}
 
@@ -294,7 +298,7 @@ func (p populator) populateWebhookAndSecrets(build *riov1.ImageBuildSpec, svc *r
 		return err
 	}
 
-	webhookReceiver := webhookv1.NewGitWatcher(namespace, fmt.Sprintf("%s-%s", svc.Name, containerName), webhookv1.GitWatcher{
+	webhookReceiver := webhookv1.NewGitWatcher(namespace, fmt.Sprintf("%s-%s", svcName, containerName), webhookv1.GitWatcher{
 		Spec: webhookv1.GitWatcherSpec{
 			RepositoryURL:                  build.Repo,
 			Enabled:                        true,
@@ -309,7 +313,7 @@ func (p populator) populateWebhookAndSecrets(build *riov1.ImageBuildSpec, svc *r
 	})
 
 	webhookReceiver.Annotations = map[string]string{
-		pkg.ServiceLabel:   svc.Name,
+		pkg.ServiceLabel:   svcName,
 		pkg.ContainerLabel: containerName,
 	}
 

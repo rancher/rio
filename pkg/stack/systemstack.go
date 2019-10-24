@@ -20,26 +20,29 @@ import (
 type SystemStack struct {
 	k8s    dynamic.Interface
 	apply  apply.Apply
-	stacks adminv1controller.SystemStackController
+	stacks adminv1controller.SystemStackClient
 	name   string
 	Stack
 }
 
 func NewSystemStack(apply apply.Apply, stacks adminv1controller.SystemStackClient, systemNamespace string, name string) *SystemStack {
-	stack, err := stacks.Get(name, metav1.GetOptions{})
-	if errors.IsNotFound(err) {
-		stack, _ = stacks.Create(&adminv1.SystemStack{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: name,
-			},
-		})
-	}
-
 	setID := "system-stack-" + name
 	s := &SystemStack{
-		apply: apply.WithSetID(setID).WithSetOwnerReference(true, true).WithDefaultNamespace(systemNamespace).WithOwner(stack).WithDynamicLookup(),
-		name:  name,
-		Stack: Stack{},
+		apply:  apply.WithSetID(setID).WithDefaultNamespace(systemNamespace).WithDynamicLookup(),
+		stacks: stacks,
+		name:   name,
+		Stack:  Stack{},
+	}
+	if stacks != nil {
+		stack, err := stacks.Get(name, metav1.GetOptions{})
+		if errors.IsNotFound(err) {
+			stack, _ = stacks.Create(&adminv1.SystemStack{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: name,
+				},
+			})
+		}
+		s.apply = s.apply.WithSetOwnerReference(true, true).WithOwner(stack)
 	}
 	contents, err := s.content()
 	if err != nil {
@@ -67,7 +70,14 @@ func (s *SystemStack) Deploy(answers map[string]string) error {
 }
 
 func (s *SystemStack) Remove() error {
-	return s.stacks.Delete(s.name, &metav1.DeleteOptions{})
+	if s.stacks != nil {
+		return s.stacks.Delete(s.name, &metav1.DeleteOptions{})
+	}
+	return s.apply.Apply(nil)
+}
+
+func (s *SystemStack) WithApply(apply apply.Apply) {
+	s.apply = apply
 }
 
 func (s *SystemStack) content() ([]byte, error) {

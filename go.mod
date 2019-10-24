@@ -78,7 +78,7 @@ require (
 	github.com/solo-io/gloo v0.20.3-0.20191003200350-6f6e02641501
 	github.com/solo-io/go-utils v0.10.17 // indirect
 	github.com/solo-io/solo-kit v0.10.24-0.20191003192541-dc479f62f67b
-	github.com/stretchr/testify v1.3.0
+	github.com/stretchr/testify v1.4.0
 	github.com/tektoncd/pipeline v0.8.0
 	github.com/urfave/cli v1.22.1
 	github.com/wercker/stern v0.0.0-20171214125149-b04b5491222d

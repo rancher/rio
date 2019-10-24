@@ -50,7 +50,7 @@ func findReason(data interface{}) (string, error) {
 	if cond == nil {
 		return "", nil
 	}
-	return string(cond.Reason), nil
+	return cond.Reason, nil
 }
 
 func findService(data interface{}) (string, error) {

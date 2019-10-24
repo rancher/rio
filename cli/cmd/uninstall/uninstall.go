@@ -2,16 +2,17 @@ package uninstall
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
-	certmanagerv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	gitwatcherv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/up/questions"
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -24,7 +25,6 @@ func (u Uninstall) Run(ctx *clicontext.CLIContext) error {
 	if ctx.K8s == nil {
 		return fmt.Errorf("can't contact Kubernetes cluster. Please make sure your cluster is accessible")
 	}
-
 	_, err := ctx.Core.ConfigMaps("linkerd").Get("linkerd-config", metav1.GetOptions{})
 	if err == nil {
 		if err := u.uninstallLinkerd(ctx); err != nil {
@@ -65,47 +65,41 @@ func (u Uninstall) Run(ctx *clicontext.CLIContext) error {
 		}
 	}
 
-	if ok, err := confirmDelete(certmanagerv1alpha2.SchemeGroupVersion.String()); err != nil {
+	gitwatcherresources, err := ctx.K8s.Discovery().ServerResourcesForGroupVersion(gitwatcherv1.SchemeGroupVersion.String())
+	if err != nil && !errors.IsNotFound(err) {
 		return err
-	} else if ok {
-		certmanagerresource, err := ctx.K8s.Discovery().ServerResourcesForGroupVersion(certmanagerv1alpha2.SchemeGroupVersion.String())
-		if err != nil && !errors.IsNotFound(err) {
-			return err
-		}
-		if certmanagerresource != nil {
-			for _, resource := range certmanagerresource.APIResources {
-				toDelete = append(toDelete, fmt.Sprintf("%s.%s", resource.Name, certmanagerv1alpha2.SchemeGroupVersion.Group))
-			}
+	}
+	if gitwatcherresources != nil {
+		for _, resource := range gitwatcherresources.APIResources {
+			toDelete = append(toDelete, fmt.Sprintf("%s.%s", resource.Name, gitwatcherv1.SchemeGroupVersion.Group))
 		}
 	}
 
-	fmt.Printf("Deleting Namespace %s...\n", systemNamespace)
+	crdclient, err := clientset.NewForConfig(ctx.RestConfig)
+	if err != nil {
+		return err
+	}
+	for _, del := range toDelete {
+		if strings.Contains(del, "/") {
+			continue
+		}
+		if err := crdclient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(del, &metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
+			return err
+		}
+	}
+
+	fmt.Printf("Deleting System Namespace %s...\n", systemNamespace)
 	if err := ctx.Core.Namespaces().Delete(systemNamespace, &metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
+		return err
+	}
+
+	fmt.Println("Delete validating webhook")
+	if err := ctx.K8s.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Delete(constants.AuthWebhookSecretName, &metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
 		return err
 	}
 
 	fmt.Println("Rio is uninstalled from your cluster")
 	return nil
-}
-
-func confirmDelete(resource string) (bool, error) {
-	msg := fmt.Sprintf("Do you want to delete CRD group %v? some CRDs might be shared with your existing system components(istio, knative, cert-manager)\n", resource)
-
-	options := []string{
-		"[1] Yes\n",
-		"[2] No\n",
-	}
-
-	num, err := questions.PromptOptions(msg, 1, options...)
-	if err != nil {
-		return false, err
-	}
-
-	if num == 0 {
-		fmt.Printf("Adding CRD %v to delete list\n", resource)
-		return true, nil
-	}
-	return false, err
 }
 
 func (u Uninstall) uninstallLinkerd(ctx *clicontext.CLIContext) error {

@@ -10,15 +10,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rancher/rio/pkg/stack"
-
 	"github.com/rancher/rio/cli/pkg/localbuilder/runc"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
+	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 )
@@ -104,7 +105,20 @@ func (l localBuilder) setup(ctx context.Context) error {
 
 func (l localBuilder) setupPortforwarding(ctx context.Context) error {
 	go func() {
-		if err := portForward(l.systemNamespace, l.k8s, l.buildkitPort, "8080", chanWrapper(ctx.Done())); err != nil {
+		pods, err := l.k8s.CoreV1().Pods(l.systemNamespace).List(metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("app=%s", constants.BuildkitdService),
+		})
+		if err != nil {
+			logrus.Error(err)
+		}
+		var pod v1.Pod
+		for _, p := range pods.Items {
+			if p.Status.Phase == v1.PodRunning {
+				pod = p
+				break
+			}
+		}
+		if err := PortForward(l.k8s, l.buildkitPort, "8080", pod, false, ChanWrapper(ctx.Done())); err != nil {
 			logrus.Error(err)
 		}
 	}()
@@ -112,7 +126,7 @@ func (l localBuilder) setupPortforwarding(ctx context.Context) error {
 	return nil
 }
 
-func chanWrapper(input <-chan struct{}) chan struct{} {
+func ChanWrapper(input <-chan struct{}) chan struct{} {
 	output := make(chan struct{}, 1)
 	go func() {
 		select {
