@@ -187,7 +187,7 @@ func (ts *TestService) Promote(args ...string) {
 
 // Logs calls "rio logs ns/service" on this service
 func (ts *TestService) Logs(args ...string) string {
-	args = append([]string{"logs"}, append(args, ts.Name)...)
+	args = append([]string{"logs"}, append(args, ts.Name, "-a")...)
 	out, err := RioCmd(args)
 	if err != nil {
 		ts.T.Fatalf("logs command failed:  %v", err.Error())
@@ -345,10 +345,13 @@ func (ts *TestService) GenerateLoad() {
 		if ts.Service.Status.ScaleStatus != nil {
 			availablePods = ts.Service.Status.ScaleStatus.Available
 		}
-		HeyCmd(GetHostname(ts.GetServiceEndpointURL()[0]), "5s", 10*maxReplicas)
-		ts.reload()
-		if availablePods > 0 || ts.GetAvailableReplicas() == maxReplicas {
-			return true, nil
+		if maxReplicas > 0 {
+			HeyCmd(GetHostname(ts.GetServiceEndpointURL()[0]), "5s", 10*maxReplicas)
+			ts.reload()
+			if availablePods > 0 || ts.GetAvailableReplicas() == maxReplicas {
+				return true, nil
+			}
+
 		}
 		return false, nil
 	})
