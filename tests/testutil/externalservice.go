@@ -24,8 +24,9 @@ type TestExternalService struct {
 func (es *TestExternalService) Create(t *testing.T, target string) {
 	es.T = t
 	es.Target = target
-	es.Name = fmt.Sprintf("%s/%s", testingNamespace, GenerateName())
-	_, err := RioCmd([]string{"externalservice", "create", es.Name, target})
+	name := GenerateName()
+	es.Name = fmt.Sprintf("%s/%s", "externalservice", name)
+	_, err := RioCmd([]string{"externalservice", "create", name, target})
 	if err != nil {
 		es.T.Fatalf("external service create command failed: %v", err.Error())
 	}
@@ -77,7 +78,7 @@ func (es *TestExternalService) GetFQDN() string {
 //////////////////
 
 func (es *TestExternalService) reload() error {
-	out, err := RioCmd([]string{"inspect", "--type", "externalservice", "--format", "json", es.Name})
+	out, err := RioCmd([]string{"inspect", "--format", "json", es.Name})
 	if err != nil {
 		return err
 	}
@@ -96,7 +97,7 @@ func (es *TestExternalService) waitForExternalService() error {
 		}
 		return false, nil
 	})
-	err := wait.Poll(2*time.Second, 60*time.Second, f)
+	err := wait.Poll(2*time.Second, 30*time.Second, f)
 	if err != nil {
 		return errors.New("external service not successfully initiated")
 	}

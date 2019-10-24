@@ -15,10 +15,11 @@ func NamespaceAndName(c *clicontext.CLIContext, in string) (string, string) {
 			namespace = ""
 		}
 	}
-
+	if namespace == "" {
+		namespace = c.GetSetNamespace()
+	}
 	if namespace == "" {
 		namespace = "default"
 	}
-
 	return namespace, name
 }

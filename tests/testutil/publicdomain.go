@@ -2,15 +2,13 @@ package testutil
 
 import (
 	"encoding/json"
-	"errors"
+	//"errors"
 	"fmt"
+	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
+	//"k8s.io/apimachinery/pkg/util/wait"
 	"strings"
 	"testing"
-	"time"
-
-	"k8s.io/apimachinery/pkg/util/wait"
-
-	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
+	//"time"
 )
 
 type TestDomain struct {
@@ -42,7 +40,7 @@ func (td *TestDomain) RegisterDomain(t *testing.T, domain string, target string)
 
 // Executes "rio domain unregister" for this domain
 func (td *TestDomain) UnRegister() {
-	if td.PublicDomain.Spec.DomainName != "" {
+	if td.PublicDomain.Name != "" {
 		_, err := RioCmd([]string{"domain", "unregister", td.GeneratedDomainName})
 		if err != nil {
 			td.T.Logf("failed to unregister domain:  %v", err.Error())
@@ -93,27 +91,28 @@ func (td *TestDomain) reload() error {
 }
 
 func (td *TestDomain) waitForDomain() error {
-	f := wait.ConditionFunc(func() (bool, error) {
-		err := td.reload()
-		if err == nil {
-			if td.PublicDomain.Status.Endpoint != "" {
-				return true, nil
-			}
-		}
-		return false, nil
-	})
-	err := wait.Poll(2*time.Second, 60*time.Second, f)
-	if err != nil {
-		return errors.New("domain not successfully created")
-	}
+	//f := wait.ConditionFunc(func() (bool, error) {
+	//	err := td.reload()
+	//	if err == nil {
+	//		td.PublicDomain.Status.Conditions
+	//		if td.PublicDomain.Status.Endpoint != "" {
+	//			return true, nil
+	//		}
+	//	}
+	//	return false, nil
+	//})
+	//err := wait.Poll(2*time.Second, 60*time.Second, f)
+	//if err != nil {
+	//	return errors.New("domain not successfully created")
+	//}
 	return nil
 }
 
 // getStandardFormatDomain takes in a PublicDomain object
 // Returns standard format non-namespaced public domain name, ex: "foo.bar"
 func getStandardFormatDomain(publicDomain adminv1.PublicDomain) string {
-	if publicDomain.Spec.DomainName == "" {
-		return ""
-	}
-	return strings.Replace(publicDomain.Spec.DomainName, "-", ".", 1)
+	//if publicDomain.Spec.DomainName == "" {
+	return ""
+	//}
+	//return strings.Replace(publicDomain.Spec.DomainName, "-", ".", 1)
 }

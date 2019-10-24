@@ -337,9 +337,6 @@ github.com/jetstack/cert-manager/pkg/client/listers/acme/v1alpha2
 github.com/json-iterator/go
 # github.com/k0kubun/pp v2.3.0+incompatible
 github.com/k0kubun/pp
-# github.com/knative/pkg v0.0.0-20190514205332-5e4512dcb2ca
-github.com/knative/pkg/apis
-github.com/knative/pkg/kmp
 # github.com/konsorten/go-windows-terminal-sequences v1.0.2
 github.com/konsorten/go-windows-terminal-sequences
 # github.com/linkerd/linkerd2 v0.0.0-20191010175117-1039d8254738 => github.com/StrongMonkey/linkerd2 v0.0.0-20191021165729-976fad67457a
@@ -664,7 +661,7 @@ github.com/solo-io/solo-kit/pkg/api/v1/control-plane/log
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.3
 github.com/spf13/pflag
-# github.com/stretchr/testify v1.3.0
+# github.com/stretchr/testify v1.4.0
 github.com/stretchr/testify/assert
 # github.com/syndtr/gocapability v0.0.0-20180916011248-d98352740cb2
 github.com/syndtr/gocapability/capability

@@ -5,34 +5,33 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"strings"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/knative/pkg/apis"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	tektonv1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	apis "knative.dev/pkg/apis"
 )
 
 type TestService struct {
-	Name    string // namespace/name:version
-	AppName string // namespace/name
-	App     riov1.App
-	Service riov1.Service
-	Build   tektonv1alpha1.TaskRun
-	Version string
-	T       *testing.T
+	Name       string // namespace/name
+	App        string
+	Service    riov1.Service
+	Build      tektonv1alpha1.TaskRun
+	Version    string
+	T          *testing.T
 	Kubeconfig string
 }
 
 // Create generates a new rio service, named randomly in the testing namespace, and
 // returns a new TestService with it attached. Guarantees ready state but not live endpoint
 func (ts *TestService) Create(t *testing.T, source ...string) {
-	args := ts.createArgs(t, source...)
-	_, err := RioCmd(args)
+	args, envs := ts.createArgs(t, source...)
+	_, err := RioCmd(args, envs...)
 	if err != nil {
 		ts.T.Fatalf("Failed to create service %s: %v", ts.Name, err.Error())
 	}
@@ -41,13 +40,6 @@ func (ts *TestService) Create(t *testing.T, source ...string) {
 		if err != nil {
 			ts.T.Fatalf(err.Error())
 		}
-	var envs []string
-	if ts.Kubeconfig != "" {
-		envs = []string{fmt.Sprintf("KUBECONFIG=%s", ts.Kubeconfig)}
-	}
-	_, err := RioCmd("run", args, envs...)
-	if err != nil {
-		ts.T.Fatalf("Failed to create service:  %v", err.Error())
 	}
 	err = ts.waitForReadyService()
 	if err != nil {
@@ -55,28 +47,19 @@ func (ts *TestService) Create(t *testing.T, source ...string) {
 	}
 }
 
-func (ts *TestService) CreateWithError(t *testing.T, source ...string) error {
-	args := ts.createArgs(t, source...)
-	var envs []string
-	if ts.Kubeconfig != "" {
-		envs = []string{fmt.Sprintf("KUBECONFIG=%s", ts.Kubeconfig)}
-	}
-	_, err := RioCmd("run", args, envs...)
+func (ts *TestService) CreateExpectingError(t *testing.T, source ...string) error {
+	args, envs := ts.createArgs(t, source...)
+	_, err := RioCmd(args, envs...)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (ts *TestService) createArgs(t *testing.T, source ...string) []string {
+func (ts *TestService) createArgs(t *testing.T, source ...string) ([]string, []string) {
 	ts.T = t
 	ts.Version = "v0"
-	ts.AppName = fmt.Sprintf(
-		"%s/%s",
-		testingNamespace,
-		RandomString(5),
-	)
-	ts.Name = fmt.Sprintf("%s:%s", ts.AppName, ts.Version)
+	ts.Name = RandomString(5)
 	if len(source) == 0 {
 		source = []string{"nginx"}
 	}
@@ -84,41 +67,28 @@ func (ts *TestService) createArgs(t *testing.T, source ...string) []string {
 	if !ts.isGithubSource(source...) {
 		source = append([]string{"-p", "80/http"}, source...)
 	}
-	args := append([]string{"run", "-n", ts.AppName}, source...)
-	return args
+	args := append([]string{"run", "-n", ts.Name}, source...)
+
+	var envs []string
+	if ts.Kubeconfig != "" {
+		envs = []string{fmt.Sprintf("KUBECONFIG=%s", ts.Kubeconfig)}
+	}
+
+	return args, envs
 }
 
 func (ts *TestService) isGithubSource(source ...string) bool {
 	return len(source) > 0 && source[len(source)-1][0:4] == "http" && strings.Contains(source[len(source)-1], "github")
-	if source == "" {
-		source = "nginx"
-	}
-	_, err := RioCmd([]string{"--namespace", testingNamespace, "run", "-p", "80/http", "-n", ts.AppName, source})
-	if err != nil {
-		ts.T.Fatalf("Failed to create service %s: %v", ts.Name, err.Error())
-	}
-	err = ts.waitForReadyService()
-	if err != nil {
-		ts.T.Fatalf(err.Error())
-	}
-	args := append([]string{"-p", "80/http", "-n", ts.AppName}, source...)
-	return args
 }
 
 // Takes name and version of existing service and returns loaded TestService
 func GetService(t *testing.T, name string, version string) TestService {
 	ts := TestService{
-		App:     riov1.App{},
 		Service: riov1.Service{},
+		Name:    name,
 		Version: version,
 		T:       t,
 	}
-	ts.AppName = fmt.Sprintf(
-		"%s/%s",
-		testingNamespace,
-		name,
-	)
-	ts.Name = fmt.Sprintf("%s:%s", ts.AppName, ts.Version)
 	err := ts.waitForReadyService()
 	if err != nil {
 		ts.T.Fatalf(err.Error())
@@ -134,8 +104,8 @@ func (ts *TestService) Remove() {
 			ts.T.Log(err.Error())
 		}
 	}
-	if ts.Service.Status.DeploymentStatus != nil {
-		_, err := RioCmd([]string{"rm", "--type", "service", ts.Name})
+	if ts.Service.Status.DeploymentReady {
+		_, err := RioCmd([]string{"rm", ts.Name})
 		if err != nil {
 			ts.T.Log(err.Error())
 		}
@@ -183,14 +153,13 @@ func (ts *TestService) Weight(percentage int, rollout bool, increment int, inter
 
 // Call "rio stage --image={source} ns/name:{version}", this will return a new TestService
 func (ts *TestService) Stage(source, version string) TestService {
-	name := fmt.Sprintf("%s:%s", ts.AppName, version)
+	name := fmt.Sprintf("%s:%s", ts.Name, version)
 	_, err := RioCmd([]string{"stage", "--image", source, name})
 	if err != nil {
 		ts.T.Fatalf("stage command failed:  %v", err.Error())
 	}
 	stagedService := TestService{
 		T:       ts.T,
-		AppName: ts.AppName,
 		Name:    name,
 		Version: version,
 	}
@@ -218,7 +187,7 @@ func (ts *TestService) Promote(args ...string) {
 
 // Logs calls "rio logs ns/service" on this service
 func (ts *TestService) Logs(args ...string) string {
-	args = append([]string{"logs"}, append(args, ts.AppName)...)
+	args = append([]string{"logs"}, append(args, ts.Name)...)
 	out, err := RioCmd(args)
 	if err != nil {
 		ts.T.Fatalf("logs command failed:  %v", err.Error())
@@ -228,7 +197,7 @@ func (ts *TestService) Logs(args ...string) string {
 
 // Exec calls "rio exec ns/service {command}" on this service
 func (ts *TestService) Exec(command ...string) string {
-	out, err := RioCmd(append([]string{"exec", ts.AppName}, command...))
+	out, err := RioCmd(append([]string{"exec", ts.Name}, command...))
 	if err != nil {
 		ts.T.Fatalf("exec command failed:  %v", err.Error())
 	}
@@ -237,7 +206,7 @@ func (ts *TestService) Exec(command ...string) string {
 
 // Export calls "rio export {serviceName}" and returns that in a new TestService object
 func (ts *TestService) Export() TestService {
-	args := []string{"export", "--type", "service", "--format", "json", ts.Name}
+	args := []string{"export", "--format", "json", ts.Name}
 	service, err := ts.loadExport(args)
 	if err != nil {
 		ts.T.Fatal(err.Error())
@@ -247,7 +216,7 @@ func (ts *TestService) Export() TestService {
 
 // ExportRaw works the same as export, but with --raw flag
 func (ts *TestService) ExportRaw() TestService {
-	args := []string{"export", "--raw", "--type", "service", "--format", "json", ts.Name}
+	args := []string{"export", "--raw", "--format", "json", ts.Name}
 	service, err := ts.loadExport(args)
 	if err != nil {
 		ts.T.Fatal(err.Error())
@@ -270,7 +239,7 @@ func (ts *TestService) GetEndpointResponse() string {
 }
 
 func (ts *TestService) GetAppEndpointResponse() string {
-	response, err := WaitForURLResponse(ts.GetAppEndpointURL())
+	response, err := WaitForURLResponse(ts.GetServiceEndpointURL()[0])
 	if err != nil {
 		ts.T.Fatal(err.Error())
 	}
@@ -283,42 +252,48 @@ func (ts *TestService) GetAppEndpointResponse() string {
 
 // Returns count of ready and available pods
 func (ts *TestService) GetAvailableReplicas() int {
-	if ts.Service.Status.DeploymentStatus != nil {
-		return int(ts.Service.Status.DeploymentStatus.AvailableReplicas)
+	if ts.Service.Status.DeploymentReady && ts.Service.Status.ScaleStatus != nil {
+		return ts.Service.Status.ScaleStatus.Available
 	}
 	return 0
 }
 
 // Returns desired scale, different from current available replicas
 func (ts *TestService) GetScale() int {
-	if ts.Service.Spec.Scale != nil {
-		return *ts.Service.Spec.Scale
+	if ts.Service.Spec.Replicas != nil {
+		return *ts.Service.Spec.Replicas
 	}
 	return 0
 }
 
 // Return service's goal weight, this is different from weight service is currently at
 func (ts *TestService) GetSpecWeight() int {
-	return ts.Service.Spec.Weight
+	if ts.Service.Spec.Weight != nil {
+		return *ts.Service.Spec.Weight
+	}
+	return 0
 }
 
 // Return service's actual current weight, not the spec (end-goal) weight
 func (ts *TestService) GetCurrentWeight() int {
-	ts.reloadApp()
-	return getRevisionWeight(ts.App, ts.Version)
+	ts.reload()
+	if ts.Service.Status.ComputedWeight != nil {
+		return *ts.Service.Status.ComputedWeight
+	}
+	return 0
 }
 
 func (ts *TestService) GetImage() string {
 	return ts.Service.Spec.Image
 }
 
-// GetRunningPods returns the kubectl overview of all running pods for this service's app in an array
+// GetRunningPods returns the kubectl overview of all running pods for this service in an array
 // Each value in the array is a string, separated by spaces, that will have the Pod's NAME  READY  STATUS  RESTARTS  AGE in that order.
 func (ts *TestService) GetRunningPods() []string {
-	ts.reloadApp()
+	ts.reload()
 	args := append([]string{"get", "pods",
 		"-n", testingNamespace,
-		"-l", fmt.Sprintf("app=%s", ts.App.Name),
+		"-l", fmt.Sprintf("rio.cattle.io/service==%s", ts.Service.Name),
 		"--field-selector", "status.phase=Running",
 		"--no-headers"})
 	out, err := KubectlCmd(args)
@@ -359,20 +334,31 @@ func (ts *TestService) GetResponseCounts(responses []string, numRequests int) ma
 }
 
 // GenerateLoad queries the endpoint multiple times in order to put load on the service.
-// It will execute for up to 60 seconds until there is an Observed Scale on the service or the the AvailableReplicas equal the MaxScale
+// It will execute for up to 60 seconds until there are ready pods on the service or the the AvailableReplicas equal the MaxScale
 func (ts *TestService) GenerateLoad() {
 	f := wait.ConditionFunc(func() (bool, error) {
-		HeyCmd(GetHostname(ts.GetAppEndpointURL()), "5s", 10*(*ts.Service.Spec.MaxScale))
-		ts.reloadApp()
+		maxReplicas := 0
+		availablePods := 0
+		if ts.Service.Spec.Autoscale != nil {
+			maxReplicas = int(*ts.Service.Spec.Autoscale.MaxReplicas)
+		}
+		if ts.Service.Status.ScaleStatus != nil {
+			availablePods = ts.Service.Status.ScaleStatus.Available
+		}
+		HeyCmd(GetHostname(ts.GetServiceEndpointURL()[0]), "5s", 10*maxReplicas)
 		ts.reload()
-		if ts.Service.Status.ObservedScale != nil || ts.GetAvailableReplicas() == *ts.Service.Spec.MaxScale {
+		if availablePods > 0 || ts.GetAvailableReplicas() == maxReplicas {
 			return true, nil
 		}
 		return false, nil
 	})
 	wait.Poll(5*time.Second, 60*time.Second, f)
-	if ts.Service.Status.ObservedScale != nil {
-		ts.waitForAvailableReplicas(*ts.Service.Status.ObservedScale)
+	availablePods := 0
+	if ts.Service.Status.ScaleStatus != nil {
+		availablePods = ts.Service.Status.ScaleStatus.Available
+	}
+	if availablePods > 0 {
+		ts.waitForAvailableReplicas(availablePods)
 	}
 }
 
@@ -386,14 +372,14 @@ func (ts *TestService) GetEndpointURL() string {
 	return url
 }
 
-// GetAppEndpointURL retrieves the service's app endpoint URL and returns it as string
-func (ts *TestService) GetAppEndpointURL() string {
-	url, err := ts.waitForAppEndpointDNS()
+// GetServiceEndpointURL retrieves the service's app endpoint URL and returns it as string
+func (ts *TestService) GetServiceEndpointURL() []string {
+	endpoints, err := ts.waitForAppEndpointDNS()
 	if err != nil {
 		ts.T.Fatalf("Failed to get the endpoint url:  %v", err.Error())
-		return ""
+		return []string{}
 	}
-	return url
+	return endpoints
 }
 
 // GetKubeEndpointURL returns the app revision endpoint URL
@@ -424,11 +410,7 @@ func (ts *TestService) GetKubeAppEndpointURL() string {
 		ts.T.Fatalf("Failed waiting for DNS:  %v", err.Error())
 		return ""
 	}
-	appName := strings.Split(ts.AppName, "/")[1]
-	args := []string{"get", "apps",
-		"-n", testingNamespace,
-		appName,
-		"-o", `jsonpath="{.status.endpoints[0]}"`}
+	args := []string{"get", "apps", ts.Name, "-o", `jsonpath="{.status.endpoints[0]}"`}
 	url, err := KubectlCmd(args)
 	if err != nil {
 		ts.T.Fatalf("Failed to get app endpoint url:  %v", err.Error())
@@ -436,23 +418,6 @@ func (ts *TestService) GetKubeAppEndpointURL() string {
 	}
 
 	return strings.Replace(url, "\"", "", -1) // remove double quotes from output
-}
-
-// GetKubeCurrentWeight takes in a revision value and retrieves the actual current weight, not the spec (end-goal) weight
-func (ts *TestService) GetKubeCurrentWeight() int {
-	ts.reloadApp()
-	args := []string{"get", "apps", ts.App.GetName(), "-n", testingNamespace, "-o", "json"}
-	resultString, err := KubectlCmd(args)
-	if err != nil {
-		ts.T.Fatalf("Failed to get rio.cattle.io.apps:  %v", err.Error())
-	}
-	var app riov1.App
-	err = json.Unmarshal([]byte(resultString), &app)
-	if err != nil {
-		ts.T.Fatalf("Failed to unmarshal App results: %s with error: %v", resultString, err.Error())
-	}
-
-	return getRevisionWeight(app, ts.Version)
 }
 
 // PodsResponsesMatchAvailableReplicas does a GetURL in the App endpoint and stores the response in a slice
@@ -463,7 +428,7 @@ func (ts *TestService) PodsResponsesMatchAvailableReplicas(path string, numberOf
 	replicasTimesRequests := numberOfReplicas * 8
 	responses := make([]string, 0)
 	for i < replicasTimesRequests {
-		response, err := WaitForURLResponse(ts.GetAppEndpointURL() + path)
+		response, err := WaitForURLResponse(ts.GetServiceEndpointURL()[0] + path)
 		if err != nil {
 			ts.T.Fatal(err.Error())
 		}
@@ -496,8 +461,10 @@ func (ts *TestService) WaitForScaleDown() error {
 	f := wait.ConditionFunc(func() (bool, error) {
 		err := ts.reload()
 		if err == nil {
-			if *ts.Service.Spec.MinScale == ts.GetAvailableReplicas() {
-				return true, nil
+			if ts.Service.Spec.Autoscale != nil {
+				if int(*ts.Service.Spec.Autoscale.MinReplicas) == ts.GetAvailableReplicas() {
+					return true, nil
+				}
 			}
 		}
 		return false, nil
@@ -515,7 +482,7 @@ func (ts *TestService) WaitForScaleDown() error {
 
 // reload calls inspect on the service and uses that to reload our object
 func (ts *TestService) reload() error {
-	out, err := RioCmd([]string{"inspect", "--type", "service", "--format", "json", ts.Name})
+	out, err := RioCmd([]string{"inspect", "--format", "json", ts.Name})
 	if err != nil {
 		return err
 	}
@@ -543,19 +510,6 @@ func (ts *TestService) reloadBuild() error {
 	return nil
 }
 
-// reload calls inspect on the service's app and uses that to reload the app obj
-func (ts *TestService) reloadApp() error {
-	out, err := RioCmd([]string{"inspect", "--type", "app", "--format", "json", ts.AppName})
-	if err != nil {
-		return err
-	}
-	ts.App = riov1.App{}
-	if err := json.Unmarshal([]byte(out), &ts.App); err != nil {
-		return err
-	}
-	return nil
-}
-
 // load a "rio export..." response into a new TestService obj
 func (ts *TestService) loadExport(args []string) (TestService, error) {
 	out, err := RioCmd(args)
@@ -568,7 +522,6 @@ func (ts *TestService) loadExport(args []string) (TestService, error) {
 	}
 	stagedService := TestService{
 		Service: exportedService,
-		AppName: ts.AppName,
 		Name:    ts.Name,
 		Version: ts.Version,
 	}
@@ -579,14 +532,6 @@ func (ts *TestService) loadExport(args []string) (TestService, error) {
 func (ts *TestService) getScalingTimeout() time.Duration {
 	scalingTimeout := time.Duration(math.Max(float64(ts.GetScale())*20, 120))
 	return time.Second * scalingTimeout
-}
-
-// Get the current weight of a revision. If it does not exist, then it is 0.
-func getRevisionWeight(app riov1.App, version string) int {
-	if val, ok := app.Status.RevisionWeight[version]; ok {
-		return val.Weight
-	}
-	return 0
 }
 
 //////////////////
@@ -666,12 +611,12 @@ func (ts *TestService) waitForScale(want int) error {
 	return nil
 }
 
-// Wait until a service has actual weight we want, note this is not spec weight which changes immediately
+// Wait until a service has the computed weight we want, note this is not spec weight but actual weight
 func (ts *TestService) waitForWeight(percentage int) error {
 	f := wait.ConditionFunc(func() (bool, error) {
-		ts.reloadApp()
-		if val, ok := ts.App.Status.RevisionWeight[ts.Version]; ok {
-			if val.Weight == percentage {
+		ts.reload()
+		if ts.Service.Status.ComputedWeight != nil {
+			if percentage == *ts.Service.Status.ComputedWeight {
 				return true, nil
 			}
 		}
@@ -704,14 +649,14 @@ func (ts *TestService) waitForEndpointDNS() (string, error) {
 	return ts.Service.Status.Endpoints[0], nil
 }
 
-func (ts *TestService) waitForAppEndpointDNS() (string, error) {
-	if len(ts.App.Status.Endpoints) > 0 {
-		return ts.App.Status.Endpoints[0], nil
+func (ts *TestService) waitForAppEndpointDNS() ([]string, error) {
+	if len(ts.Service.Status.AppEndpoints) > 0 {
+		return ts.Service.Status.AppEndpoints, nil
 	}
 	f := wait.ConditionFunc(func() (bool, error) {
-		err := ts.reloadApp()
+		err := ts.reload()
 		if err == nil {
-			if len(ts.App.Status.Endpoints) > 0 {
+			if len(ts.Service.Status.AppEndpoints) > 0 {
 				return true, nil
 			}
 		}
@@ -719,7 +664,7 @@ func (ts *TestService) waitForAppEndpointDNS() (string, error) {
 	})
 	err := wait.Poll(2*time.Second, 60*time.Second, f)
 	if err != nil {
-		return "", errors.New("app endpoint never created")
+		return nil, errors.New("app endpoint never created")
 	}
-	return ts.App.Status.Endpoints[0], nil
+	return ts.Service.Status.AppEndpoints, nil
 }
