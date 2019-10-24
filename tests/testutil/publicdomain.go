@@ -79,7 +79,7 @@ func (td *TestDomain) GetKubeDomain() string {
 //////////////////
 
 func (td *TestDomain) reload() error {
-	out, err := RioCmd([]string{"inspect", "--type", "publicdomain", "--format", "json", td.GeneratedDomainName})
+	out, err := RioCmd([]string{"inspect", "--format", "json", td.GeneratedDomainName})
 	if err != nil {
 		return err
 	}

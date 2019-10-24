@@ -54,7 +54,7 @@ func GetExternalService(t *testing.T, name string) TestExternalService {
 // Executes "rio rm" for this external service
 func (es *TestExternalService) Remove() {
 	if es.ExternalService.Name != "" {
-		_, err := RioCmd([]string{"rm", "--type", "externalservice", es.Name})
+		_, err := RioCmd([]string{"rm", es.Name})
 		if err != nil {
 			es.T.Logf("failed to delete external service: %v", err.Error())
 		}

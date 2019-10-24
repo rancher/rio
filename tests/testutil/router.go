@@ -31,7 +31,7 @@ func (tr *TestRoute) Add(t *testing.T, domain string, routePath string, action s
 	tr.Path = routePath
 	tr.Name = fmt.Sprintf("%s/%s", testingNamespace, domain)
 	route := fmt.Sprintf("%s.%s%s", domain, testingNamespace, routePath)
-	_, err := RioCmd([]string{"route", "add", route, action, target.Name})
+	_, err := RioCmd([]string{"router", "add", route, action, target.Name})
 	if err != nil {
 		tr.T.Fatalf("route add command failed:  %v", err.Error())
 	}
@@ -59,7 +59,7 @@ func GetRoute(t *testing.T, name string, routePath string) TestRoute {
 // Executes "rio rm" for this route. This will delete all routes under this domain.
 func (tr *TestRoute) Remove() {
 	if tr.Router.Name != "" {
-		_, err := RioCmd([]string{"rm", "--type", "router", tr.Name})
+		_, err := RioCmd([]string{"rm", tr.Name})
 		if err != nil {
 			tr.T.Logf("failed to delete route:  %v", err.Error())
 		}
@@ -111,7 +111,7 @@ func (tr *TestRoute) GetKubeEndpointResponse() string {
 //////////////////
 
 func (tr *TestRoute) reload() error {
-	out, err := RioCmd([]string{"inspect", "--type", "router", "--format", "json", tr.Name})
+	out, err := RioCmd([]string{"inspect", "--format", "json", tr.Name})
 	if err != nil {
 		return err
 	}

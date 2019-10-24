@@ -41,35 +41,35 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 			//assert.Greater(t, len(runningPods), 1)
 		})
 	}, spec.Parallel())
-	//
-	//when("run a service with a fixed scale", func() {
-	//
-	//	it.Before(func() {
-	//		service.Create(t, "--scale", "3", "https://github.com/rancher/rio-demo")
-	//	})
-	//
-	//	it("should have the specified scale, no autoscaling, and be able to have its scale manually adjusted", func() {
-	//		assert.Equal(t, 3, service.GetAvailableReplicas(), "should have three available replicas")
-	//		assert.Equal(t, "Hi there, I'm running in Rio", service.GetAppEndpointResponse())
-	//
-	//		service.GenerateLoad()
-	//		assert.Equal(t, 3, service.GetAvailableReplicas(), "should have three available replicas")
-	//		runningPods := service.GetRunningPods()
-	//		assert.Len(t, runningPods, 3)
-	//		for _, pod := range runningPods {
-	//			assert.Contains(t, pod, service.Service.Name)
-	//			assert.Contains(t, pod, "2/2")
-	//		}
-	//
-	//		service.Scale(1)
-	//		assert.Equal(t, 1, service.GetAvailableReplicas(), "should have one available replica")
-	//		assert.Equal(t, 1, service.GetScale())
-	//		runningPods = service.GetRunningPods()
-	//		assert.Len(t, runningPods, 1)
-	//		for _, pod := range runningPods {
-	//			assert.Contains(t, pod, service.Service.Name)
-	//			assert.Contains(t, pod, "2/2")
-	//		}
-	//	})
-	//}, spec.Parallel())
+
+	when("run a service with a fixed scale", func() {
+
+		it.Before(func() {
+			service.Create(t, "--scale", "3", "https://github.com/rancher/rio-demo")
+		})
+
+		it("should have the specified scale, no autoscaling, and be able to have its scale manually adjusted", func() {
+			assert.Equal(t, 3, service.GetAvailableReplicas(), "should have three available replicas")
+			assert.Equal(t, "Hi there, I'm running in Rio", service.GetAppEndpointResponse())
+
+			service.GenerateLoad()
+			assert.Equal(t, 3, service.GetAvailableReplicas(), "should have three available replicas")
+			runningPods := service.GetRunningPods()
+			assert.Len(t, runningPods, 3)
+			for _, pod := range runningPods {
+				assert.Contains(t, pod, service.Service.Name)
+				assert.Contains(t, pod, "2/2")
+			}
+
+			service.Scale(1)
+			assert.Equal(t, 1, service.GetAvailableReplicas(), "should have one available replica")
+			assert.Equal(t, 1, service.GetScale())
+			runningPods = service.GetRunningPods()
+			assert.Len(t, runningPods, 1)
+			for _, pod := range runningPods {
+				assert.Contains(t, pod, service.Service.Name)
+				assert.Contains(t, pod, "2/2")
+			}
+		})
+	}, spec.Parallel())
 }

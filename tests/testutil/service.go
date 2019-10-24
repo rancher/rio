@@ -160,7 +160,7 @@ func (ts *TestService) Stage(source, version string) TestService {
 	}
 	stagedService := TestService{
 		T:       ts.T,
-		Name:    name,
+		Name:    fmt.Sprintf("%s-%s", ts.Name, version),
 		Version: version,
 	}
 	err = stagedService.waitForReadyService()
