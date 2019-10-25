@@ -3,11 +3,10 @@ package tables
 import (
 	"fmt"
 
-	"github.com/rancher/rio/cli/pkg/types"
-
 	"github.com/rancher/rio/cli/pkg/table"
+	"github.com/rancher/rio/cli/pkg/types"
+	"github.com/rancher/wrangler/pkg/condition"
 	tektonv1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-	"knative.dev/pkg/apis"
 )
 
 func NewBuild(cfg Config) TableWriter {
@@ -34,11 +33,7 @@ func findSucceed(data interface{}) (string, error) {
 	if !ok {
 		return "", nil
 	}
-	cond := b.Status.GetCondition(apis.ConditionSucceeded)
-	if cond == nil {
-		return "", nil
-	}
-	return string(cond.Status), nil
+	return condition.Cond("Succeeded").GetStatus(b), nil
 }
 
 func findReason(data interface{}) (string, error) {
@@ -46,11 +41,7 @@ func findReason(data interface{}) (string, error) {
 	if !ok {
 		return "", nil
 	}
-	cond := b.Status.GetCondition(apis.ConditionSucceeded)
-	if cond == nil {
-		return "", nil
-	}
-	return cond.Reason, nil
+	return condition.Cond("Succeeded").GetReason(b), nil
 }
 
 func findService(data interface{}) (string, error) {

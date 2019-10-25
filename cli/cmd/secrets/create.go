@@ -4,17 +4,16 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/rancher/rio/pkg/constants"
-
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/stack"
 	"github.com/rancher/rio/cli/pkg/up/questions"
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/wrangler/pkg/kv"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	generateversioned "k8s.io/kubernetes/pkg/kubectl/generate/versioned"
+	generateversioned "k8s.io/kubectl/pkg/generate/versioned"
 )
 
 type Create struct {
