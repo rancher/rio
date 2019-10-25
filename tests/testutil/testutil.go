@@ -55,7 +55,6 @@ func ValidationPreCheck() {
 // Example: args=["run", "-n", "test", "nginx"] would run: "rio --namespace testing-namespace run -n test nginx"
 func RioCmd(args []string, envs ...string) (string, error) {
 	args = append([]string{"--namespace", testingNamespace}, args...)
-	fmt.Println(args)
 	cmd := exec.Command("rio", args...)
 	cmd.Env = envs
 	stdOutErr, err := cmd.CombinedOutput()
@@ -69,7 +68,6 @@ func RioCmd(args []string, envs ...string) (string, error) {
 // Example: args=["get", "-n", "test", "services"] would run: "kubectl get -n test services"
 func KubectlCmd(args []string) (string, error) {
 	cmd := exec.Command("kubectl", args...)
-	fmt.Println(args)
 	stdOutErr, err := retry(5, 1, cmd.CombinedOutput)
 	if err != nil {
 		return "", fmt.Errorf("%s: %s", err.Error(), stdOutErr)
