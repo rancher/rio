@@ -40,7 +40,7 @@ func (es *TestExternalService) Create(t *testing.T, target string) {
 func GetExternalService(t *testing.T, name string) TestExternalService {
 	es := TestExternalService{
 		Target:          "",
-		Name:            fmt.Sprintf("%s/%s", testingNamespace, name),
+		Name:            fmt.Sprintf("externalservice/%s/%s", testingNamespace, name),
 		ExternalService: riov1.ExternalService{},
 		T:               t,
 	}

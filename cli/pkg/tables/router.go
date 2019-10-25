@@ -2,6 +2,7 @@ package tables
 
 import (
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -247,15 +248,22 @@ func FormatURL() func(obj interface{}) (string, error) {
 		if len(data.Obj.Status.Endpoints) == 0 {
 			return "", nil
 		}
-		hostBuf := strings.Builder{}
-		for i, endpoint := range data.Obj.Status.Endpoints {
-			hostBuf.WriteString(endpoint)
-			hostBuf.WriteString(data.path())
-			if i != len(data.Obj.Status.Endpoints)-1 {
-				hostBuf.WriteString(", ")
+		var endpoints []string
+		hostNameSeen := map[string]string{}
+		for _, e := range data.Obj.Status.Endpoints {
+			u, _ := url.Parse(e)
+			if u.Scheme == "https" {
+				hostNameSeen[u.Hostname()] = e + data.path()
+			} else {
+				if _, ok := hostNameSeen[u.Hostname()]; !ok {
+					hostNameSeen[u.Hostname()] = e + data.path()
+				}
 			}
 		}
 
-		return hostBuf.String(), nil
+		for _, endpoint := range hostNameSeen {
+			endpoints = append(endpoints, endpoint)
+		}
+		return strings.Join(endpoints, ","), nil
 	}
 }
