@@ -63,9 +63,9 @@ func (c *inMemoryResourceCache) Set(key string, resource resources.Resource) {
 }
 
 func (c *inMemoryResourceCache) List(prefix string) resources.ResourceList {
-	var ress resources.ResourceList
 	c.lock.RLock()
 	defer c.lock.RUnlock()
+	ress := make(resources.ResourceList, 0, len(c.store))
 	for key, resource := range c.store {
 		if !strings.HasPrefix(key, prefix) {
 			continue
@@ -197,9 +197,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 		}
 	}
 
-	sort.SliceStable(resourceList, func(i, j int) bool {
-		return resourceList[i].GetMetadata().Name < resourceList[j].GetMetadata().Name
-	})
+	sort.Stable(resourceList)
 
 	return resourceList, nil
 }

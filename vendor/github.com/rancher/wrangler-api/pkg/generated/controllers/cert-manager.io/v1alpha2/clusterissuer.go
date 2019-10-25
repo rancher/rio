@@ -23,9 +23,9 @@ import (
 	"time"
 
 	v1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha2"
-	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/certmanager/v1alpha2"
-	listers "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
+	clientset "github.com/rancher/wrangler-api/pkg/generated/clientset/versioned/typed/certmanager/v1alpha2"
+	informers "github.com/rancher/wrangler-api/pkg/generated/informers/externalversions/certmanager/v1alpha2"
+	listers "github.com/rancher/wrangler-api/pkg/generated/listers/certmanager/v1alpha2"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/condition"
 	"github.com/rancher/wrangler/pkg/generic"
