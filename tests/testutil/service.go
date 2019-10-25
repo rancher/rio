@@ -341,21 +341,19 @@ func (ts *TestService) GenerateLoad() {
 	f := wait.ConditionFunc(func() (bool, error) {
 		maxReplicas := 0
 		minReplicas := 0
-		availablePods := 0
 		if ts.Service.Spec.Autoscale != nil {
 			maxReplicas = int(*ts.Service.Spec.Autoscale.MaxReplicas)
 			minReplicas = int(*ts.Service.Spec.Autoscale.MinReplicas)
 		}
-		if ts.Service.Status.ScaleStatus != nil {
-			availablePods = ts.Service.Status.ScaleStatus.Available
-		}
 		if maxReplicas > 0 {
-			HeyCmd(GetHostname(ts.GetEndpointURLs()...), "30s", 10*maxReplicas)
+			HeyCmd(GetHostname(ts.GetEndpointURLs()...), "5s", 10*maxReplicas)
 			ts.reload()
-			if availablePods > 0 || ts.GetAvailableReplicas() > minReplicas {
+			if ts.GetAvailableReplicas() > minReplicas {
 				return true, nil
 			}
 
+		} else {
+			HeyCmd(GetHostname(ts.GetEndpointURLs()...), "5s", 100)
 		}
 		return false, nil
 	})

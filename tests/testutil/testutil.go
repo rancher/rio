@@ -55,7 +55,6 @@ func ValidationPreCheck() {
 // Example: args=["run", "-n", "test", "nginx"] would run: "rio --namespace testing-namespace run -n test nginx"
 func RioCmd(args []string, envs ...string) (string, error) {
 	args = append([]string{"--namespace", testingNamespace}, args...)
-	fmt.Println(args)
 	cmd := exec.Command("rio", args...)
 	cmd.Env = envs
 	stdOutErr, err := cmd.CombinedOutput()
@@ -80,7 +79,6 @@ func KubectlCmd(args []string) (string, error) {
 // Example: url=test-testing-ns.abcdef.on-rio.io, time=90s, c=120 would run: "hey -z 90s -c 120 http://test-testing-ns.abcdef.on-rio.io:9080"
 func HeyCmd(url string, time string, c int) {
 	args := []string{"-z", time, "-c", strconv.Itoa(c), url}
-	fmt.Println(args)
 	cmd := exec.Command("hey", args...)
 	stdOutErr, err := cmd.CombinedOutput()
 	if err != nil {
