@@ -32,7 +32,7 @@ func Endpoints(app *cli.App) cli.Command {
 type Endpoint struct {
 }
 
-type EndpointData struct {
+type Data struct {
 	Name      string
 	Endpoints []string
 }
@@ -48,7 +48,7 @@ func (e *Endpoint) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	var data []EndpointData
+	var data []Data
 	seen := map[string]bool{}
 	for _, svc := range services {
 		service := svc.(*riov1.Service)
@@ -76,7 +76,7 @@ func (e *Endpoint) Run(ctx *clicontext.CLIContext) error {
 		sort.Strings(endpoints)
 
 		if len(endpoints) > 0 {
-			data = append(data, EndpointData{
+			data = append(data, Data{
 				Name:      app,
 				Endpoints: endpoints,
 			})
@@ -105,7 +105,7 @@ func (e *Endpoint) Run(ctx *clicontext.CLIContext) error {
 		sort.Strings(endpoints)
 
 		if len(endpoints) > 0 {
-			data = append(data, EndpointData{
+			data = append(data, Data{
 				Name:      r.Name,
 				Endpoints: endpoints,
 			})

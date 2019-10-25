@@ -409,9 +409,9 @@ func (ts *TestService) GetKubeAppEndpointURLs() []string {
 		ts.T.Fatalf("Failed waiting for DNS:  %v", err.Error())
 		return []string{}
 	}
-	args := []string{"get", "service.rio.cattle.io", 
+	args := []string{"get", "service.rio.cattle.io",
 		"-n", testingNamespace,
-		ts.Service.Name, 
+		ts.Service.Name,
 		"-o", `jsonpath="{.status.appEndpoints}"`}
 	urls, err := KubectlCmd(args)
 	if err != nil {

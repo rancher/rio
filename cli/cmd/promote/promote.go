@@ -3,10 +3,10 @@ package promote
 import (
 	"errors"
 	"fmt"
-	"github.com/rancher/rio/cli/cmd/util"
 	"time"
 
 	"github.com/rancher/mapper"
+	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"

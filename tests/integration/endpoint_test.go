@@ -1,10 +1,11 @@
 package integration
 
 import (
+	"testing"
+
 	"github.com/rancher/rio/tests/testutil"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func endpointTests(t *testing.T, when spec.G, it spec.S) {

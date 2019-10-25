@@ -36,12 +36,12 @@ type handler struct {
 }
 
 func (h *handler) generate(service *riov1.Service, status riov1.ServiceStatus) ([]runtime.Object, riov1.ServiceStatus, error) {
-	if !service.Spec.Template || len(status.ImageBuilds) == 0 {
+	if !service.Spec.Template || len(status.ContainerImages) == 0 {
 		return nil, status, generic.ErrSkip
 	}
 
 	var images []string
-	for containerName := range status.ImageBuilds {
+	for containerName := range status.ContainerImages {
 		bi := status.ContainerImages[containerName]
 		if bi.ImageName == "" {
 			return nil, status, generic.ErrSkip

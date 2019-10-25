@@ -5,8 +5,6 @@ import (
 
 	"github.com/rancher/rio/pkg/services"
 
-	"github.com/rancher/wrangler/pkg/kv"
-
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
@@ -28,20 +26,15 @@ func (r *Register) Run(ctx *clicontext.CLIContext) error {
 	result, err := ctx.ByID(target)
 	if err != nil {
 		return err
-		target, ns := kv.Split(target, "/")
-		targetApp = target
-		targetNamespace = ns
-	} else {
-		switch result.Object.(type) {
-		case *riov1.Service:
-			svc := result.Object.(*riov1.Service)
-			targetApp, targetVersion = services.AppAndVersion(svc)
-			targetNamespace = svc.Namespace
-		case *riov1.Router:
-			router := result.Object.(*riov1.Router)
-			targetApp, targetNamespace = router.Name, router.Namespace
-		}
-
+	}
+	switch result.Object.(type) {
+	case *riov1.Service:
+		svc := result.Object.(*riov1.Service)
+		targetApp, _ = services.AppAndVersion(svc)
+		targetNamespace = svc.Namespace
+	case *riov1.Router:
+		router := result.Object.(*riov1.Router)
+		targetApp, targetNamespace = router.Name, router.Namespace
 	}
 
 	targetVersion = r.Version

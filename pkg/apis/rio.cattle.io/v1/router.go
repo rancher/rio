@@ -82,7 +82,7 @@ type HeaderOperations struct {
 
 type NameValue struct {
 	Name  string `json:"name,omitempty"`
-	Value string `json:"name,omitempty"`
+	Value string `json:"value,omitempty"`
 }
 
 type WeightedDestination struct {
