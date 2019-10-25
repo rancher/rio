@@ -38,11 +38,11 @@ func endpointTests(t *testing.T, when spec.G, it spec.S) {
 
 			assert.Equal(t, "Hello World", service.GetEndpointResponse())
 			assert.Equal(t, "Hello World v3", stagedService.GetEndpointResponse())
-
-			assert.Equal(t,
-				testutil.GetHostname(service.GetKubeAppEndpointURLs()[0]),
-				testutil.GetHostname(service.GetAppEndpointURLs()[0]),
-			)
+			//
+			//assert.Equal(t,
+			//	testutil.GetHostname(service.GetKubeAppEndpointURLs()[0]),
+			//	testutil.GetHostname(service.GetAppEndpointURLs()[0]),
+			//)
 
 			assert.Equal(t,
 				testutil.GetHostname(service.GetAppEndpointURLs()[0]),
