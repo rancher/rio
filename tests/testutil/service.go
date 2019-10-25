@@ -60,6 +60,7 @@ func (ts *TestService) createArgs(t *testing.T, source ...string) ([]string, []s
 	ts.T = t
 	ts.Version = "v0"
 	ts.Name = RandomString(5)
+	ts.App = ts.Name
 	if len(source) == 0 {
 		source = []string{"nginx"}
 	}
@@ -67,7 +68,7 @@ func (ts *TestService) createArgs(t *testing.T, source ...string) ([]string, []s
 	if !ts.isGithubSource(source...) {
 		source = append([]string{"-p", "80/http"}, source...)
 	}
-	args := append([]string{"run", "-n", ts.Name}, source...)
+	args := append([]string{"run", "--version", "v0", "-n", ts.Name}, source...)
 
 	var envs []string
 	if ts.Kubeconfig != "" {
@@ -160,6 +161,7 @@ func (ts *TestService) Stage(source, version string) TestService {
 	}
 	stagedService := TestService{
 		T:       ts.T,
+		App:     ts.Name,
 		Name:    fmt.Sprintf("%s-%s", ts.Name, version),
 		Version: version,
 	}
@@ -293,7 +295,7 @@ func (ts *TestService) GetRunningPods() []string {
 	ts.reload()
 	args := append([]string{"get", "pods",
 		"-n", testingNamespace,
-		"-l", fmt.Sprintf("rio.cattle.io/service==%s", ts.Service.Name),
+		"-l", fmt.Sprintf("app=%s", ts.Service.Name),
 		"--field-selector", "status.phase=Running",
 		"--no-headers"})
 	out, err := KubectlCmd(args)
@@ -338,31 +340,26 @@ func (ts *TestService) GetResponseCounts(responses []string, numRequests int) ma
 func (ts *TestService) GenerateLoad() {
 	f := wait.ConditionFunc(func() (bool, error) {
 		maxReplicas := 0
+		minReplicas := 0
 		availablePods := 0
 		if ts.Service.Spec.Autoscale != nil {
 			maxReplicas = int(*ts.Service.Spec.Autoscale.MaxReplicas)
+			minReplicas = int(*ts.Service.Spec.Autoscale.MinReplicas)
 		}
 		if ts.Service.Status.ScaleStatus != nil {
 			availablePods = ts.Service.Status.ScaleStatus.Available
 		}
 		if maxReplicas > 0 {
-			HeyCmd(GetHostname(ts.GetEndpointURLs()[0]), "5s", 10*maxReplicas)
+			HeyCmd(GetHostname(ts.GetEndpointURLs()...), "30s", 10*maxReplicas)
 			ts.reload()
-			if availablePods > 0 || ts.GetAvailableReplicas() == maxReplicas {
+			if availablePods > 0 || ts.GetAvailableReplicas() > minReplicas {
 				return true, nil
 			}
 
 		}
 		return false, nil
 	})
-	wait.Poll(5*time.Second, 60*time.Second, f)
-	availablePods := 0
-	if ts.Service.Status.ScaleStatus != nil {
-		availablePods = ts.Service.Status.ScaleStatus.Available
-	}
-	if availablePods > 0 {
-		ts.waitForAvailableReplicas(availablePods)
-	}
+	wait.Poll(5*time.Second, 120*time.Second, f)
 }
 
 // GetEndpointURL returns the URLs for this service

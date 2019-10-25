@@ -107,7 +107,8 @@ func initializeClient(ctx context.Context, buildSpec riov1.ImageBuildSpec, port 
 			"filename": buildSpec.Dockerfile,
 		},
 		LocalDirs: map[string]string{
-			"context": buildSpec.Context,
+			"context":    buildSpec.Context,
+			"dockerfile": buildSpec.Context,
 		},
 		Session: attachable,
 	}

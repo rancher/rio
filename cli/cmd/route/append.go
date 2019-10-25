@@ -106,17 +106,15 @@ func (a *Add) getRouteSet(ctx *clicontext.CLIContext, args []string) (*riov1.Rou
 	hostname, _ := parsePath(args[0])
 	namespace := ctx.GetSetNamespace()
 
-	routeSet, err := ctx.ByID(fmt.Sprintf("%s/%s", types.RouterType, hostname))
-	if err != nil && !errors.IsNotFound(err) {
+	routeset, err := ctx.ByID(fmt.Sprintf("%s/%s", types.RouterType, hostname))
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return riov1.NewRouter(namespace, hostname, riov1.Router{}), true, nil
+		}
 		return nil, false, err
 	}
 
-	if routeSet.Object != nil {
-		return routeSet.Object.(*riov1.Router), false, nil
-	}
-
-	r := riov1.NewRouter(namespace, hostname, riov1.Router{})
-	return r, true, nil
+	return routeset.Object.(*riov1.Router), false, nil
 }
 
 func actionsString(many bool) string {

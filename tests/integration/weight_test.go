@@ -1,10 +1,11 @@
 package integration
 
 import (
+	"testing"
+
 	"github.com/rancher/rio/tests/testutil"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func weightTests(t *testing.T, when spec.G, it spec.S) {
@@ -26,7 +27,6 @@ func weightTests(t *testing.T, when spec.G, it spec.S) {
 		it("should keep 100% of weight on original revision", func() {
 			assert.Equal(t, 100, service.GetCurrentWeight())
 			assert.Equal(t, 0, stagedService.GetCurrentWeight())
-			// todo: fix below
 			//assert.Equal(t, 100, service.GetKubeCurrentWeight())
 			//assert.Equal(t, 0, stagedService.GetKubeCurrentWeight())
 		})

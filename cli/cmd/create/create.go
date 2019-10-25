@@ -77,7 +77,7 @@ type Create struct {
 	Version                string            `desc:"Specify the revision"`
 	Scale                  string            `desc:"The number of replicas to run or a range for autoscaling (example 1-10)"`
 	U_User                 string            `desc:"UID[:GID] Sets the UID used and optionally GID for entrypoint process (format: <uid>[:<gid>])"`
-	Weight                 int               `desc:"Specify the weight for the revision"`
+	Weight                 int               `desc:"Specify the weight for the revision" default:"100"`
 	W_Workdir              string            `desc:"Working directory inside the container"`
 }
 
@@ -183,7 +183,8 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 	spec.WorkingDir = c.W_Workdir
 
 	if c.NoMesh {
-		spec.ServiceMesh = &c.NoMesh
+		mesh := !c.NoMesh
+		spec.ServiceMesh = &mesh
 	}
 
 	if c.Weight > 0 {

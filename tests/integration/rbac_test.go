@@ -59,10 +59,9 @@ func rbacTests(t *testing.T, when spec.G, it spec.S) {
 			testService.Create(t, "nginx")
 		})
 
-		// TODO: this needs to be changed when service-mesh api changes
 		it("rio-standard should not be able to create service-mesh services", func() {
 			testService.Kubeconfig = standardUser.GetKubeconfig()
-			err := testService.CreateExpectingError(t, "nginx")
+			err := testService.CreateExpectingError(t, "--no-mesh", "nginx")
 			if err == nil {
 				t.Fatal("rio-standard should not be able to create service that enable service mesh")
 			}
@@ -101,7 +100,7 @@ func rbacTests(t *testing.T, when spec.G, it spec.S) {
 
 		it("rio-standard user should not be able to create privileges it doesn't have in the current namespace", func() {
 			testService.Kubeconfig = standardUser.GetKubeconfig()
-			err := testService.CreateExpectingError(t, "--permission", "update admin.rio.cattle.io/publicdomain", "--disable-service-mesh", "nginx")
+			err := testService.CreateExpectingError(t, "--permission", "update admin.rio.cattle.io/publicdomain", "--no-mesh", "nginx")
 			if err == nil {
 				t.Fatal("rio-standard should not be able to create privileges it doesn't has")
 			}
@@ -110,12 +109,12 @@ func rbacTests(t *testing.T, when spec.G, it spec.S) {
 
 		it("rio-standard user should be able to create privileges it already has 1", func() {
 			testService.Kubeconfig = standardUser.GetKubeconfig()
-			testService.Create(t, "--permission", "list rio.cattle.io/services", "--disable-service-mesh", "nginx")
+			testService.Create(t, "--permission", "list rio.cattle.io/services", "nginx")
 		})
 
 		it("rio-standard user should be able to create privileges it already has 2", func() {
 			testService.Kubeconfig = standardUser.GetKubeconfig()
-			testService.Create(t, "--permission", "watch rio.cattle.io/app", "--disable-service-mesh", "nginx")
+			testService.Create(t, "--permission", "watch rio.cattle.io/services", "nginx")
 		})
 
 	}, spec.Parallel(), spec.Flat())
