@@ -52,7 +52,7 @@ func (p *Promote) Run(ctx *clicontext.CLIContext) error {
 			}
 			if s.Name == serviceName {
 				*s.Spec.Weight = 100
-				fmt.Printf("%s:%s promoted\n", s.Spec.App, s.Spec.Version)
+				fmt.Printf("%s promoted\n", s.Name)
 			} else {
 				*s.Spec.Weight = 0
 			}

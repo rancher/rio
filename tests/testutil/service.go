@@ -170,10 +170,10 @@ func (ts *TestService) Stage(source, version string) TestService {
 	return stagedService
 }
 
-// Promote calls "rio promote --rollout=false [args] ns/name:{version}" to instantly promote a revision
+// Promote calls "rio promote [args] service_name" to instantly promote a revision
 func (ts *TestService) Promote(args ...string) {
 	args = append(
-		[]string{"promote", "--rollout=false"},
+		[]string{"promote", "--pause=false", "--increment=0", "--interval=0"},
 		append(args, ts.Name)...)
 	_, err := RioCmd(args)
 	if err != nil {
@@ -231,7 +231,7 @@ func (ts *TestService) ExportRaw() TestService {
 // GetEndpointResponse performs an http.get against the service endpoint and returns response if
 // status code is 200, otherwise it errors out
 func (ts *TestService) GetEndpointResponse() string {
-	response, err := WaitForURLResponse(ts.GetEndpointURL())
+	response, err := WaitForURLResponse(ts.GetEndpointURLs()[0])
 	if err != nil {
 		ts.T.Fatal(err.Error())
 	}
@@ -239,7 +239,9 @@ func (ts *TestService) GetEndpointResponse() string {
 }
 
 func (ts *TestService) GetAppEndpointResponse() string {
-	response, err := WaitForURLResponse(ts.GetServiceEndpointURL()[0])
+	fmt.Println("CHecking", ts.GetAppEndpointURLs()[0])
+	response, err := WaitForURLResponse(ts.GetAppEndpointURLs()[0])
+	fmt.Println(response)
 	if err != nil {
 		ts.T.Fatal(err.Error())
 	}
@@ -346,7 +348,7 @@ func (ts *TestService) GenerateLoad() {
 			availablePods = ts.Service.Status.ScaleStatus.Available
 		}
 		if maxReplicas > 0 {
-			HeyCmd(GetHostname(ts.GetServiceEndpointURL()[0]), "5s", 10*maxReplicas)
+			HeyCmd(GetHostname(ts.GetEndpointURLs()[0]), "5s", 10*maxReplicas)
 			ts.reload()
 			if availablePods > 0 || ts.GetAvailableReplicas() == maxReplicas {
 				return true, nil
@@ -365,18 +367,18 @@ func (ts *TestService) GenerateLoad() {
 	}
 }
 
-// GetEndpointURL returns the URL for this service's app
-func (ts *TestService) GetEndpointURL() string {
-	url, err := ts.waitForEndpointDNS()
+// GetEndpointURL returns the URLs for this service
+func (ts *TestService) GetEndpointURLs() []string {
+	endpoints, err := ts.waitForEndpointDNS()
 	if err != nil {
 		ts.T.Fatalf("Failed to get the endpoint url:  %v", err.Error())
-		return ""
+		return []string{}
 	}
-	return url
+	return endpoints
 }
 
-// GetServiceEndpointURL retrieves the service's app endpoint URL and returns it as string
-func (ts *TestService) GetServiceEndpointURL() []string {
+// GetServiceEndpointURL retrieves the service's app endpoint URLs
+func (ts *TestService) GetAppEndpointURLs() []string {
 	endpoints, err := ts.waitForAppEndpointDNS()
 	if err != nil {
 		ts.T.Fatalf("Failed to get the endpoint url:  %v", err.Error())
@@ -385,43 +387,43 @@ func (ts *TestService) GetServiceEndpointURL() []string {
 	return endpoints
 }
 
-// GetKubeEndpointURL returns the app revision endpoint URL
-// and returns it as string
-func (ts *TestService) GetKubeEndpointURL() string {
-	_, err := ts.waitForEndpointDNS()
-	if err != nil {
-		ts.T.Fatalf("Failed waiting for DNS:  %v", err.Error())
-		return ""
-	}
-	args := []string{"get", "service.rio.cattle.io",
-		"-n", testingNamespace,
-		ts.Service.Name,
-		"-o", `jsonpath="{.status.endpoints[0]}"`}
-	url, err := KubectlCmd(args)
-	if err != nil {
-		ts.T.Fatalf("Failed to get endpoint url:  %v", err.Error())
-		return ""
-	}
-	return strings.Replace(url, "\"", "", -1) // remove double quotes from output
-}
-
-// GetKubeAppEndpointURL returns the endpoint URL of the service's app
-// by using kubectl and returns it as string
-func (ts *TestService) GetKubeAppEndpointURL() string {
-	_, err := ts.waitForAppEndpointDNS()
-	if err != nil {
-		ts.T.Fatalf("Failed waiting for DNS:  %v", err.Error())
-		return ""
-	}
-	args := []string{"get", "apps", ts.Name, "-o", `jsonpath="{.status.endpoints[0]}"`}
-	url, err := KubectlCmd(args)
-	if err != nil {
-		ts.T.Fatalf("Failed to get app endpoint url:  %v", err.Error())
-		return ""
-	}
-
-	return strings.Replace(url, "\"", "", -1) // remove double quotes from output
-}
+//// GetKubeEndpointURL returns the app revision endpoint URL
+//// and returns it as string
+//func (ts *TestService) GetKubeEndpointURLs() []string {
+//	_, err := ts.waitForEndpointDNS()
+//	if err != nil {
+//		ts.T.Fatalf("Failed waiting for DNS:  %v", err.Error())
+//		return []string{}
+//	}
+//	args := []string{"get", "service.rio.cattle.io",
+//		"-n", testingNamespace,
+//		ts.Service.Name,
+//		"-o", `jsonpath="{.status.endpoints[0]}"`}
+//	url, err := KubectlCmd(args)
+//	if err != nil {
+//		ts.T.Fatalf("Failed to get endpoint url:  %v", err.Error())
+//		return []string{}
+//	}
+//	return strings.Replace(url, "\"", "", -1) // remove double quotes from output
+//}
+//
+//// GetKubeAppEndpointURL returns the endpoint URL of the service's app
+//// by using kubectl and returns it as string
+//func (ts *TestService) GetKubeAppEndpointURLs() []string {
+//	_, err := ts.waitForAppEndpointDNS()
+//	if err != nil {
+//		ts.T.Fatalf("Failed waiting for DNS:  %v", err.Error())
+//		return []string{}
+//	}
+//	args := []string{"get", "apps", ts.Name, "-o", `jsonpath="{.status.endpoints[0]}"`}
+//	url, err := KubectlCmd(args)
+//	if err != nil {
+//		ts.T.Fatalf("Failed to get app endpoint url:  %v", err.Error())
+//		return []string{}
+//	}
+//
+//	return strings.Replace(url, "\"", "", -1) // remove double quotes from output
+//}
 
 // PodsResponsesMatchAvailableReplicas does a GetURL in the App endpoint and stores the response in a slice
 // the length of the resulting slice should represent the number of responsive pods in a service.
@@ -431,7 +433,7 @@ func (ts *TestService) PodsResponsesMatchAvailableReplicas(path string, numberOf
 	replicasTimesRequests := numberOfReplicas * 8
 	responses := make([]string, 0)
 	for i < replicasTimesRequests {
-		response, err := WaitForURLResponse(ts.GetServiceEndpointURL()[0] + path)
+		response, err := WaitForURLResponse(ts.GetEndpointURLs()[0] + path)
 		if err != nil {
 			ts.T.Fatal(err.Error())
 		}
@@ -632,9 +634,9 @@ func (ts *TestService) waitForWeight(percentage int) error {
 	return nil
 }
 
-func (ts *TestService) waitForEndpointDNS() (string, error) {
+func (ts *TestService) waitForEndpointDNS() ([]string, error) {
 	if len(ts.Service.Status.Endpoints) > 0 {
-		return ts.Service.Status.Endpoints[0], nil
+		return ts.Service.Status.Endpoints, nil
 	}
 	f := wait.ConditionFunc(func() (bool, error) {
 		err := ts.reload()
@@ -647,9 +649,9 @@ func (ts *TestService) waitForEndpointDNS() (string, error) {
 	})
 	err := wait.Poll(2*time.Second, 60*time.Second, f)
 	if err != nil {
-		return "", errors.New("service endpoint never created")
+		return []string{}, errors.New("service endpoint never created")
 	}
-	return ts.Service.Status.Endpoints[0], nil
+	return ts.Service.Status.Endpoints, nil
 }
 
 func (ts *TestService) waitForAppEndpointDNS() ([]string, error) {
