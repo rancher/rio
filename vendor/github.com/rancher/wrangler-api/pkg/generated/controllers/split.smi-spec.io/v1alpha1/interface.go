@@ -20,8 +20,8 @@ package v1alpha1
 
 import (
 	v1alpha1 "github.com/deislabs/smi-sdk-go/pkg/apis/split/v1alpha1"
-	clientset "github.com/deislabs/smi-sdk-go/pkg/gen/client/split/clientset/versioned/typed/split/v1alpha1"
-	informers "github.com/deislabs/smi-sdk-go/pkg/gen/client/split/informers/externalversions/split/v1alpha1"
+	clientset "github.com/rancher/wrangler-api/pkg/generated/clientset/versioned/typed/split/v1alpha1"
+	informers "github.com/rancher/wrangler-api/pkg/generated/informers/externalversions/split/v1alpha1"
 	"github.com/rancher/wrangler/pkg/generic"
 )
 

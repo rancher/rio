@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/controller"
+	"github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
+	"k8s.io/client-go/rest"
 
 	kubeinformers "k8s.io/client-go/informers"
 	kubelisters "k8s.io/client-go/listers/apps/v1"
@@ -14,6 +16,7 @@ import (
 )
 
 type KubeDeploymentCache interface {
+	clustercache.ClusterCache
 	DeploymentLister() kubelisters.DeploymentLister
 	Subscribe() <-chan struct{}
 	Unsubscribe(<-chan struct{})
@@ -52,6 +55,20 @@ func NewKubeDeploymentCache(ctx context.Context, client kubernetes.Interface) (*
 	return k, nil
 }
 
+func NewDeploymentCacheFromConfig(ctx context.Context, cluster string, restConfig *rest.Config) clustercache.ClusterCache {
+	kubeClient, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return nil
+	}
+	c, err := NewKubeDeploymentCache(ctx, kubeClient)
+	if err != nil {
+		return nil
+	}
+	return c
+}
+
+var _ clustercache.NewClusterCacheForConfig = NewDeploymentCacheFromConfig
+
 func (k *kubeDeploymentCache) DeploymentLister() kubelisters.DeploymentLister {
 	return k.deploymentLister
 }
@@ -74,6 +91,8 @@ func (k *kubeDeploymentCache) Unsubscribe(c <-chan struct{}) {
 		}
 	}
 }
+
+func (k *kubeDeploymentCache) IsClusterCache() {}
 
 func (k *kubeDeploymentCache) updatedOccured() {
 	k.cacheUpdatedWatchersMutex.Lock()

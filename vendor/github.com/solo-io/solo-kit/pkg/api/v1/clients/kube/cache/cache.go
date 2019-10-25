@@ -8,7 +8,9 @@ import (
 	"github.com/solo-io/go-utils/stringutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/controller"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
 	"go.opencensus.io/tag"
+	"k8s.io/client-go/rest"
 
 	v1 "k8s.io/api/core/v1"
 	kubelisters "k8s.io/client-go/listers/core/v1"
@@ -48,6 +50,7 @@ type Cache interface {
 
 type KubeCoreCache interface {
 	Cache
+	clustercache.ClusterCache
 
 	// Deprecated: Use NamespacedPodLister instead
 	PodLister() kubelisters.PodLister
@@ -75,6 +78,36 @@ type kubeCoreCaches struct {
 
 	cacheUpdatedWatchers      []chan struct{}
 	cacheUpdatedWatchersMutex sync.Mutex
+}
+
+var _ KubeCoreCache = &kubeCoreCaches{}
+
+func NewCoreCacheForConfig(ctx context.Context, cluster string, restConfig *rest.Config) clustercache.ClusterCache {
+	kubeClient, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return nil
+	}
+	c, err := NewKubeCoreCache(ctx, kubeClient)
+	if err != nil {
+		return nil
+	}
+	return c
+}
+
+var _ clustercache.NewClusterCacheForConfig = NewCoreCacheForConfig
+
+func NewFromConfigWithOptions(resyncDuration time.Duration, namesapcesToWatch []string) clustercache.NewClusterCacheForConfig {
+	return func(ctx context.Context, cluster string, restConfig *rest.Config) clustercache.ClusterCache {
+		kubeClient, err := kubernetes.NewForConfig(restConfig)
+		if err != nil {
+			return nil
+		}
+		c, err := NewKubeCoreCacheWithOptions(ctx, kubeClient, resyncDuration, namesapcesToWatch)
+		if err != nil {
+			return nil
+		}
+		return c
+	}
 }
 
 // This context should live as long as the cache is desired. i.e. if the cache is shared
@@ -282,6 +315,8 @@ func (k *kubeCoreCaches) Unsubscribe(c <-chan struct{}) {
 		}
 	}
 }
+
+func (k *kubeCoreCaches) IsClusterCache() {}
 
 func (k *kubeCoreCaches) updatedOccured() {
 	k.cacheUpdatedWatchersMutex.Lock()

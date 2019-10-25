@@ -9,6 +9,8 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/controller"
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
+	"github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
+	"k8s.io/client-go/rest"
 
 	"github.com/solo-io/go-utils/contextutils"
 
@@ -58,6 +60,8 @@ func init() {
 }
 
 type SharedCache interface {
+	clustercache.ClusterCache
+
 	// Registers the client with the shared cache
 	Register(rc *ResourceClient) error
 	// Starts all informers in the factory's registry. Must be idempotent.
@@ -81,6 +85,12 @@ func NewKubeCache(ctx context.Context) SharedCache {
 		registry:      newInformerRegistry(),
 		watchTimeout:  time.Second,
 	}
+}
+
+var _ clustercache.NewClusterCacheForConfig = NewKubeSharedCacheForConfig
+
+func NewKubeSharedCacheForConfig(ctx context.Context, cluster string, restConfig *rest.Config) clustercache.ClusterCache {
+	return NewKubeCache(ctx)
 }
 
 // The ResourceClientSharedInformerFactory creates a SharedIndexInformer for each of the clients that register with it
@@ -204,6 +214,8 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 
 	return nil
 }
+
+func (f *ResourceClientSharedInformerFactory) IsClusterCache() {}
 
 var cacheSyncTimeout = func() time.Duration {
 	timeout := time.Minute
