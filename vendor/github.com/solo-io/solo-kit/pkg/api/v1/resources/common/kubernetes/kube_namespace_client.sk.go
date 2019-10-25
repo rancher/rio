@@ -10,17 +10,17 @@ import (
 )
 
 type KubeNamespaceWatcher interface {
-	// watch namespace-scoped kubenamespaces
-	Watch(namespace string, opts clients.WatchOpts) (<-chan KubeNamespaceList, <-chan error, error)
+	// watch cluster-scoped kubenamespaces
+	Watch(opts clients.WatchOpts) (<-chan KubeNamespaceList, <-chan error, error)
 }
 
 type KubeNamespaceClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
-	Read(namespace, name string, opts clients.ReadOpts) (*KubeNamespace, error)
+	Read(name string, opts clients.ReadOpts) (*KubeNamespace, error)
 	Write(resource *KubeNamespace, opts clients.WriteOpts) (*KubeNamespace, error)
-	Delete(namespace, name string, opts clients.DeleteOpts) error
-	List(namespace string, opts clients.ListOpts) (KubeNamespaceList, error)
+	Delete(name string, opts clients.DeleteOpts) error
+	List(opts clients.ListOpts) (KubeNamespaceList, error)
 	KubeNamespaceWatcher
 }
 
@@ -57,10 +57,10 @@ func (client *kubeNamespaceClient) Register() error {
 	return client.rc.Register()
 }
 
-func (client *kubeNamespaceClient) Read(namespace, name string, opts clients.ReadOpts) (*KubeNamespace, error) {
+func (client *kubeNamespaceClient) Read(name string, opts clients.ReadOpts) (*KubeNamespace, error) {
 	opts = opts.WithDefaults()
 
-	resource, err := client.rc.Read(namespace, name, opts)
+	resource, err := client.rc.Read("", name, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -76,26 +76,26 @@ func (client *kubeNamespaceClient) Write(kubeNamespace *KubeNamespace, opts clie
 	return resource.(*KubeNamespace), nil
 }
 
-func (client *kubeNamespaceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
+func (client *kubeNamespaceClient) Delete(name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
 
-	return client.rc.Delete(namespace, name, opts)
+	return client.rc.Delete("", name, opts)
 }
 
-func (client *kubeNamespaceClient) List(namespace string, opts clients.ListOpts) (KubeNamespaceList, error) {
+func (client *kubeNamespaceClient) List(opts clients.ListOpts) (KubeNamespaceList, error) {
 	opts = opts.WithDefaults()
 
-	resourceList, err := client.rc.List(namespace, opts)
+	resourceList, err := client.rc.List("", opts)
 	if err != nil {
 		return nil, err
 	}
 	return convertToKubeNamespace(resourceList), nil
 }
 
-func (client *kubeNamespaceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan KubeNamespaceList, <-chan error, error) {
+func (client *kubeNamespaceClient) Watch(opts clients.WatchOpts) (<-chan KubeNamespaceList, <-chan error, error) {
 	opts = opts.WithDefaults()
 
-	resourcesChan, errs, initErr := client.rc.Watch(namespace, opts)
+	resourcesChan, errs, initErr := client.rc.Watch("", opts)
 	if initErr != nil {
 		return nil, nil, initErr
 	}

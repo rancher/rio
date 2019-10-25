@@ -60,7 +60,8 @@ func (r ResourceClients) ForKind(kind string) (ResourceClient, error) {
 }
 
 type ReadOpts struct {
-	Ctx context.Context
+	Ctx     context.Context
+	Cluster string
 }
 
 func (o ReadOpts) WithDefaults() ReadOpts {
@@ -92,6 +93,7 @@ func (o WriteOpts) WithDefaults() WriteOpts {
 type DeleteOpts struct {
 	Ctx            context.Context
 	IgnoreNotExist bool
+	Cluster        string
 }
 
 func (o DeleteOpts) WithDefaults() DeleteOpts {
@@ -104,6 +106,7 @@ func (o DeleteOpts) WithDefaults() DeleteOpts {
 type ListOpts struct {
 	Ctx      context.Context
 	Selector map[string]string
+	Cluster  string
 }
 
 func (o ListOpts) WithDefaults() ListOpts {
@@ -120,6 +123,8 @@ type WatchOpts struct {
 	Ctx         context.Context
 	Selector    map[string]string
 	RefreshRate time.Duration
+	// Cluster is ignored by aggregated watches, but is respected by multi cluster clients.
+	Cluster string
 }
 
 func (o WatchOpts) WithDefaults() WatchOpts {

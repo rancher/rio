@@ -173,7 +173,7 @@ func (f *Factory) BatchWait() error {
 	return f.err
 }
 
-func (f *Factory) BatchCreateCRDs(ctx context.Context, crds ...CRD) {
+func (f *Factory) BatchCreateCRDs(ctx context.Context, crds ...CRD) *Factory {
 	f.wg.Add(1)
 	go func() {
 		defer f.wg.Done()
@@ -181,6 +181,7 @@ func (f *Factory) BatchCreateCRDs(ctx context.Context, crds ...CRD) {
 			f.err = err
 		}
 	}()
+	return f
 }
 
 func (f *Factory) CreateCRDs(ctx context.Context, crds ...CRD) (map[schema.GroupVersionKind]*apiext.CustomResourceDefinition, error) {

@@ -19,9 +19,9 @@ limitations under the License.
 package certmanager
 
 import (
-	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/certmanager"
+	clientset "github.com/rancher/wrangler-api/pkg/generated/clientset/versioned"
 	v1alpha2 "github.com/rancher/wrangler-api/pkg/generated/controllers/cert-manager.io/v1alpha2"
+	informers "github.com/rancher/wrangler-api/pkg/generated/informers/externalversions/certmanager"
 	"github.com/rancher/wrangler/pkg/generic"
 )
 

@@ -3,15 +3,16 @@
 
 package api
 
-import (
-	bytes "bytes"
-	fmt "fmt"
-	proto "github.com/gogo/protobuf/proto"
-	io "io"
-	math "math"
-	reflect "reflect"
-	strings "strings"
-)
+import proto "github.com/gogo/protobuf/proto"
+import fmt "fmt"
+import math "math"
+
+import bytes "bytes"
+
+import strings "strings"
+import reflect "reflect"
+
+import io "io"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -31,7 +32,7 @@ type Http struct {
 	// A list of HTTP configuration rules that apply to individual API methods.
 	//
 	// **NOTE:** All service configuration rules follow "last one wins" order.
-	Rules []*HttpRule `protobuf:"bytes,1,rep,name=rules,proto3" json:"rules,omitempty"`
+	Rules []*HttpRule `protobuf:"bytes,1,rep,name=rules" json:"rules,omitempty"`
 	// When set to true, URL path parmeters will be fully URI-decoded except in
 	// cases of single segment matches in reserved expansion, where "%2F" will be
 	// left encoded.
@@ -47,7 +48,7 @@ type Http struct {
 func (m *Http) Reset()      { *m = Http{} }
 func (*Http) ProtoMessage() {}
 func (*Http) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ff9994be407cdcc9, []int{0}
+	return fileDescriptor_http_0b206a4af4ed46aa, []int{0}
 }
 func (m *Http) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -64,8 +65,8 @@ func (m *Http) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (m *Http) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Http.Merge(m, src)
+func (dst *Http) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Http.Merge(dst, src)
 }
 func (m *Http) XXX_Size() int {
 	return m.Size()
@@ -94,94 +95,94 @@ func (*Http) XXX_MessageName() string {
 	return "google.api.Http"
 }
 
-// # gRPC Transcoding
+// `HttpRule` defines the mapping of an RPC method to one or more HTTP
+// REST API methods. The mapping specifies how different portions of the RPC
+// request message are mapped to URL path, URL query parameters, and
+// HTTP request body. The mapping is typically specified as an
+// `google.api.http` annotation on the RPC method,
+// see "google/api/annotations.proto" for details.
 //
-// gRPC Transcoding is a feature for mapping between a gRPC method and one or
-// more HTTP REST endpoints. It allows developers to build a single API service
-// that supports both gRPC APIs and REST APIs. Many systems, including [Google
-// APIs](https://github.com/googleapis/googleapis),
-// [Cloud Endpoints](https://cloud.google.com/endpoints), [gRPC
-// Gateway](https://github.com/grpc-ecosystem/grpc-gateway),
-// and [Envoy](https://github.com/envoyproxy/envoy) proxy support this feature
-// and use it for large scale production services.
+// The mapping consists of a field specifying the path template and
+// method kind.  The path template can refer to fields in the request
+// message, as in the example below which describes a REST GET
+// operation on a resource collection of messages:
 //
-// `HttpRule` defines the schema of the gRPC/REST mapping. The mapping specifies
-// how different portions of the gRPC request message are mapped to the URL
-// path, URL query parameters, and HTTP request body. It also controls how the
-// gRPC response message is mapped to the HTTP response body. `HttpRule` is
-// typically specified as an `google.api.http` annotation on the gRPC method.
-//
-// Each mapping specifies a URL path template and an HTTP method. The path
-// template may refer to one or more fields in the gRPC request message, as long
-// as each field is a non-repeated field with a primitive (non-message) type.
-// The path template controls how fields of the request message are mapped to
-// the URL path.
-//
-// Example:
 //
 //     service Messaging {
 //       rpc GetMessage(GetMessageRequest) returns (Message) {
-//         option (google.api.http) = {
-//             get: "/v1/{name=messages/*}"
-//         };
-//       }
-//     }
-//     message GetMessageRequest {
-//       string name = 1; // Mapped to URL path.
-//     }
-//     message Message {
-//       string text = 1; // The resource content.
-//     }
-//
-// This enables an HTTP REST to gRPC mapping as below:
-//
-// HTTP | gRPC
-// -----|-----
-// `GET /v1/messages/123456`  | `GetMessage(name: "messages/123456")`
-//
-// Any fields in the request message which are not bound by the path template
-// automatically become HTTP query parameters if there is no HTTP request body.
-// For example:
-//
-//     service Messaging {
-//       rpc GetMessage(GetMessageRequest) returns (Message) {
-//         option (google.api.http) = {
-//             get:"/v1/messages/{message_id}"
-//         };
+//         option (google.api.http).get = "/v1/messages/{message_id}/{sub.subfield}";
 //       }
 //     }
 //     message GetMessageRequest {
 //       message SubMessage {
 //         string subfield = 1;
 //       }
-//       string message_id = 1; // Mapped to URL path.
-//       int64 revision = 2;    // Mapped to URL query parameter `revision`.
-//       SubMessage sub = 3;    // Mapped to URL query parameter `sub.subfield`.
+//       string message_id = 1; // mapped to the URL
+//       SubMessage sub = 2;    // `sub.subfield` is url-mapped
 //     }
+//     message Message {
+//       string text = 1; // content of the resource
+//     }
+//
+// The same http annotation can alternatively be expressed inside the
+// `GRPC API Configuration` YAML file.
+//
+//     http:
+//       rules:
+//         - selector: <proto_package_name>.Messaging.GetMessage
+//           get: /v1/messages/{message_id}/{sub.subfield}
+//
+// This definition enables an automatic, bidrectional mapping of HTTP
+// JSON to RPC. Example:
+//
+// HTTP | RPC
+// -----|-----
+// `GET /v1/messages/123456/foo`  | `GetMessage(message_id: "123456" sub: SubMessage(subfield: "foo"))`
+//
+// In general, not only fields but also field paths can be referenced
+// from a path pattern. Fields mapped to the path pattern cannot be
+// repeated and must have a primitive (non-message) type.
+//
+// Any fields in the request message which are not bound by the path
+// pattern automatically become (optional) HTTP query
+// parameters. Assume the following definition of the request message:
+//
+//
+//     service Messaging {
+//       rpc GetMessage(GetMessageRequest) returns (Message) {
+//         option (google.api.http).get = "/v1/messages/{message_id}";
+//       }
+//     }
+//     message GetMessageRequest {
+//       message SubMessage {
+//         string subfield = 1;
+//       }
+//       string message_id = 1; // mapped to the URL
+//       int64 revision = 2;    // becomes a parameter
+//       SubMessage sub = 3;    // `sub.subfield` becomes a parameter
+//     }
+//
 //
 // This enables a HTTP JSON to RPC mapping as below:
 //
-// HTTP | gRPC
+// HTTP | RPC
 // -----|-----
-// `GET /v1/messages/123456?revision=2&sub.subfield=foo` |
-// `GetMessage(message_id: "123456" revision: 2 sub: SubMessage(subfield:
-// "foo"))`
+// `GET /v1/messages/123456?revision=2&sub.subfield=foo` | `GetMessage(message_id: "123456" revision: 2 sub: SubMessage(subfield: "foo"))`
 //
-// Note that fields which are mapped to URL query parameters must have a
-// primitive type or a repeated primitive type or a non-repeated message type.
-// In the case of a repeated type, the parameter can be repeated in the URL
-// as `...?param=A&param=B`. In the case of a message type, each field of the
-// message is mapped to a separate parameter, such as
-// `...?foo.a=A&foo.b=B&foo.c=C`.
+// Note that fields which are mapped to HTTP parameters must have a
+// primitive type or a repeated primitive type. Message types are not
+// allowed. In the case of a repeated type, the parameter can be
+// repeated in the URL, as in `...?param=A&param=B`.
 //
-// For HTTP methods that allow a request body, the `body` field
+// For HTTP method kinds which allow a request body, the `body` field
 // specifies the mapping. Consider a REST update method on the
 // message resource collection:
+//
 //
 //     service Messaging {
 //       rpc UpdateMessage(UpdateMessageRequest) returns (Message) {
 //         option (google.api.http) = {
-//           patch: "/v1/messages/{message_id}"
+//           put: "/v1/messages/{message_id}"
 //           body: "message"
 //         };
 //       }
@@ -191,14 +192,14 @@ func (*Http) XXX_MessageName() string {
 //       Message message = 2;   // mapped to the body
 //     }
 //
+//
 // The following HTTP JSON to RPC mapping is enabled, where the
 // representation of the JSON in the request body is determined by
 // protos JSON encoding:
 //
-// HTTP | gRPC
+// HTTP | RPC
 // -----|-----
-// `PATCH /v1/messages/123456 { "text": "Hi!" }` | `UpdateMessage(message_id:
-// "123456" message { text: "Hi!" })`
+// `PUT /v1/messages/123456 { "text": "Hi!" }` | `UpdateMessage(message_id: "123456" message { text: "Hi!" })`
 //
 // The special name `*` can be used in the body mapping to define that
 // every field not bound by the path template should be mapped to the
@@ -208,7 +209,7 @@ func (*Http) XXX_MessageName() string {
 //     service Messaging {
 //       rpc UpdateMessage(Message) returns (Message) {
 //         option (google.api.http) = {
-//           patch: "/v1/messages/{message_id}"
+//           put: "/v1/messages/{message_id}"
 //           body: "*"
 //         };
 //       }
@@ -221,14 +222,13 @@ func (*Http) XXX_MessageName() string {
 //
 // The following HTTP JSON to RPC mapping is enabled:
 //
-// HTTP | gRPC
+// HTTP | RPC
 // -----|-----
-// `PATCH /v1/messages/123456 { "text": "Hi!" }` | `UpdateMessage(message_id:
-// "123456" text: "Hi!")`
+// `PUT /v1/messages/123456 { "text": "Hi!" }` | `UpdateMessage(message_id: "123456" text: "Hi!")`
 //
 // Note that when using `*` in the body mapping, it is not possible to
 // have HTTP parameters, as all fields not bound by the path end in
-// the body. This makes this option more rarely used in practice when
+// the body. This makes this option more rarely used in practice of
 // defining REST APIs. The common usage of `*` is in custom methods
 // which don't use the URL at all for transferring data.
 //
@@ -250,34 +250,32 @@ func (*Http) XXX_MessageName() string {
 //       string user_id = 2;
 //     }
 //
-// This enables the following two alternative HTTP JSON to RPC mappings:
 //
-// HTTP | gRPC
+// This enables the following two alternative HTTP JSON to RPC
+// mappings:
+//
+// HTTP | RPC
 // -----|-----
 // `GET /v1/messages/123456` | `GetMessage(message_id: "123456")`
-// `GET /v1/users/me/messages/123456` | `GetMessage(user_id: "me" message_id:
-// "123456")`
+// `GET /v1/users/me/messages/123456` | `GetMessage(user_id: "me" message_id: "123456")`
 //
-// ## Rules for HTTP mapping
+// # Rules for HTTP mapping
 //
-// 1. Leaf request fields (recursive expansion nested messages in the request
-//    message) are classified into three categories:
-//    - Fields referred by the path template. They are passed via the URL path.
-//    - Fields referred by the [HttpRule.body][google.api.HttpRule.body]. They
-//    are passed via the HTTP
-//      request body.
-//    - All other fields are passed via the URL query parameters, and the
-//      parameter name is the field path in the request message. A repeated
-//      field can be represented as multiple query parameters under the same
-//      name.
-//  2. If [HttpRule.body][google.api.HttpRule.body] is "*", there is no URL
-//  query parameter, all fields
-//     are passed via URL path and HTTP request body.
-//  3. If [HttpRule.body][google.api.HttpRule.body] is omitted, there is no HTTP
-//  request body, all
-//     fields are passed via URL path and URL query parameters.
+// The rules for mapping HTTP path, query parameters, and body fields
+// to the request message are as follows:
 //
-// ### Path template syntax
+// 1. The `body` field specifies either `*` or a field path, or is
+//    omitted. If omitted, it indicates there is no HTTP request body.
+// 2. Leaf fields (recursive expansion of nested messages in the
+//    request) can be classified into three types:
+//     (a) Matched in the URL template.
+//     (b) Covered by body (if body is `*`, everything except (a) fields;
+//         else everything under the body field)
+//     (c) All other fields.
+// 3. URL query parameters found in the HTTP request are mapped to (c) fields.
+// 4. Any body sent with an HTTP request can contain only (b) fields.
+//
+// The syntax of the path template is as follows:
 //
 //     Template = "/" Segments [ Verb ] ;
 //     Segments = Segment { "/" Segment } ;
@@ -286,91 +284,38 @@ func (*Http) XXX_MessageName() string {
 //     FieldPath = IDENT { "." IDENT } ;
 //     Verb     = ":" LITERAL ;
 //
-// The syntax `*` matches a single URL path segment. The syntax `**` matches
-// zero or more URL path segments, which must be the last part of the URL path
-// except the `Verb`.
+// The syntax `*` matches a single path segment. The syntax `**` matches zero
+// or more path segments, which must be the last part of the path except the
+// `Verb`. The syntax `LITERAL` matches literal text in the path.
 //
 // The syntax `Variable` matches part of the URL path as specified by its
 // template. A variable template must not contain other variables. If a variable
 // matches a single path segment, its template may be omitted, e.g. `{var}`
 // is equivalent to `{var=*}`.
 //
-// The syntax `LITERAL` matches literal text in the URL path. If the `LITERAL`
-// contains any reserved character, such characters should be percent-encoded
-// before the matching.
-//
 // If a variable contains exactly one path segment, such as `"{var}"` or
-// `"{var=*}"`, when such a variable is expanded into a URL path on the client
-// side, all characters except `[-_.~0-9a-zA-Z]` are percent-encoded. The
-// server side does the reverse decoding. Such variables show up in the
-// [Discovery
-// Document](https://developers.google.com/discovery/v1/reference/apis) as
-// `{var}`.
+// `"{var=*}"`, when such a variable is expanded into a URL path, all characters
+// except `[-_.~0-9a-zA-Z]` are percent-encoded. Such variables show up in the
+// Discovery Document as `{var}`.
 //
-// If a variable contains multiple path segments, such as `"{var=foo/*}"`
-// or `"{var=**}"`, when such a variable is expanded into a URL path on the
-// client side, all characters except `[-_.~/0-9a-zA-Z]` are percent-encoded.
-// The server side does the reverse decoding, except "%2F" and "%2f" are left
-// unchanged. Such variables show up in the
-// [Discovery
-// Document](https://developers.google.com/discovery/v1/reference/apis) as
-// `{+var}`.
+// If a variable contains one or more path segments, such as `"{var=foo/*}"`
+// or `"{var=**}"`, when such a variable is expanded into a URL path, all
+// characters except `[-_.~/0-9a-zA-Z]` are percent-encoded. Such variables
+// show up in the Discovery Document as `{+var}`.
 //
-// ## Using gRPC API Service Configuration
-//
-// gRPC API Service Configuration (service config) is a configuration language
-// for configuring a gRPC service to become a user-facing product. The
-// service config is simply the YAML representation of the `google.api.Service`
-// proto message.
-//
-// As an alternative to annotating your proto file, you can configure gRPC
-// transcoding in your service config YAML files. You do this by specifying a
-// `HttpRule` that maps the gRPC method to a REST endpoint, achieving the same
-// effect as the proto annotation. This can be particularly useful if you
-// have a proto that is reused in multiple services. Note that any transcoding
-// specified in the service config will override any matching transcoding
-// configuration in the proto.
-//
-// Example:
-//
-//     http:
-//       rules:
-//         # Selects a gRPC method and applies HttpRule to it.
-//         - selector: example.v1.Messaging.GetMessage
-//           get: /v1/messages/{message_id}/{sub.subfield}
-//
-// ## Special notes
-//
-// When gRPC Transcoding is used to map a gRPC to JSON REST endpoints, the
-// proto to JSON conversion must follow the [proto3
-// specification](https://developers.google.com/protocol-buffers/docs/proto3#json).
-//
-// While the single segment variable follows the semantics of
-// [RFC 6570](https://tools.ietf.org/html/rfc6570) Section 3.2.2 Simple String
-// Expansion, the multi segment variable **does not** follow RFC 6570 Section
-// 3.2.3 Reserved Expansion. The reason is that the Reserved Expansion
+// NOTE: While the single segment variable matches the semantics of
+// [RFC 6570](https://tools.ietf.org/html/rfc6570) Section 3.2.2
+// Simple String Expansion, the multi segment variable **does not** match
+// RFC 6570 Reserved Expansion. The reason is that the Reserved Expansion
 // does not expand special characters like `?` and `#`, which would lead
-// to invalid URLs. As the result, gRPC Transcoding uses a custom encoding
-// for multi segment variables.
+// to invalid URLs.
 //
-// The path variables **must not** refer to any repeated or mapped field,
-// because client libraries are not capable of handling such variable expansion.
-//
-// The path variables **must not** capture the leading "/" character. The reason
-// is that the most common use case "{var}" does not capture the leading "/"
-// character. For consistency, all path variables must share the same behavior.
-//
-// Repeated message fields must not be mapped to URL query parameters, because
-// no client library can support such complicated mapping.
-//
-// If an API needs to use a JSON array for request or response body, it can map
-// the request or response body to a repeated field. However, some gRPC
-// Transcoding implementations may not support this feature.
+// NOTE: the field paths in variables and in the `body` must not refer to
+// repeated fields or map fields.
 type HttpRule struct {
-	// Selects a method to which this rule applies.
+	// Selects methods to which this rule applies.
 	//
-	// Refer to [selector][google.api.DocumentationRule.selector] for syntax
-	// details.
+	// Refer to [selector][google.api.DocumentationRule.selector] for syntax details.
 	Selector string `protobuf:"bytes,1,opt,name=selector,proto3" json:"selector,omitempty"`
 	// Determines the URL pattern is matched by this rules. This pattern can be
 	// used with any of the {get|put|post|delete|patch} methods. A custom method
@@ -384,24 +329,19 @@ type HttpRule struct {
 	//	*HttpRule_Patch
 	//	*HttpRule_Custom
 	Pattern isHttpRule_Pattern `protobuf_oneof:"pattern"`
-	// The name of the request field whose value is mapped to the HTTP request
-	// body, or `*` for mapping all request fields not captured by the path
-	// pattern to the HTTP body, or omitted for not having any HTTP request body.
-	//
-	// NOTE: the referred field must be present at the top-level of the request
-	// message type.
+	// The name of the request field whose value is mapped to the HTTP body, or
+	// `*` for mapping all fields not captured by the path pattern to the HTTP
+	// body. NOTE: the referred field must not be a repeated field and must be
+	// present at the top-level of request message type.
 	Body string `protobuf:"bytes,7,opt,name=body,proto3" json:"body,omitempty"`
 	// Optional. The name of the response field whose value is mapped to the HTTP
-	// response body. When omitted, the entire response message will be used
-	// as the HTTP response body.
-	//
-	// NOTE: The referred field must be present at the top-level of the response
-	// message type.
+	// body of response. Other response fields are ignored. When
+	// not set, the response message will be used as HTTP body of response.
 	ResponseBody string `protobuf:"bytes,12,opt,name=response_body,json=responseBody,proto3" json:"response_body,omitempty"`
 	// Additional HTTP bindings for the selector. Nested bindings must
 	// not contain an `additional_bindings` field themselves (that is,
 	// the nesting may only be one level deep).
-	AdditionalBindings   []*HttpRule `protobuf:"bytes,11,rep,name=additional_bindings,json=additionalBindings,proto3" json:"additional_bindings,omitempty"`
+	AdditionalBindings   []*HttpRule `protobuf:"bytes,11,rep,name=additional_bindings,json=additionalBindings" json:"additional_bindings,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
 	XXX_sizecache        int32       `json:"-"`
@@ -410,7 +350,7 @@ type HttpRule struct {
 func (m *HttpRule) Reset()      { *m = HttpRule{} }
 func (*HttpRule) ProtoMessage() {}
 func (*HttpRule) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ff9994be407cdcc9, []int{1}
+	return fileDescriptor_http_0b206a4af4ed46aa, []int{1}
 }
 func (m *HttpRule) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -427,8 +367,8 @@ func (m *HttpRule) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (m *HttpRule) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_HttpRule.Merge(m, src)
+func (dst *HttpRule) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HttpRule.Merge(dst, src)
 }
 func (m *HttpRule) XXX_Size() int {
 	return m.Size()
@@ -462,7 +402,7 @@ type HttpRule_Patch struct {
 	Patch string `protobuf:"bytes,6,opt,name=patch,proto3,oneof"`
 }
 type HttpRule_Custom struct {
-	Custom *CustomHttpPattern `protobuf:"bytes,8,opt,name=custom,proto3,oneof"`
+	Custom *CustomHttpPattern `protobuf:"bytes,8,opt,name=custom,oneof"`
 }
 
 func (*HttpRule_Get) isHttpRule_Pattern()    {}
@@ -697,7 +637,7 @@ type CustomHttpPattern struct {
 func (m *CustomHttpPattern) Reset()      { *m = CustomHttpPattern{} }
 func (*CustomHttpPattern) ProtoMessage() {}
 func (*CustomHttpPattern) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ff9994be407cdcc9, []int{2}
+	return fileDescriptor_http_0b206a4af4ed46aa, []int{2}
 }
 func (m *CustomHttpPattern) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -714,8 +654,8 @@ func (m *CustomHttpPattern) XXX_Marshal(b []byte, deterministic bool) ([]byte, e
 		return b[:n], nil
 	}
 }
-func (m *CustomHttpPattern) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CustomHttpPattern.Merge(m, src)
+func (dst *CustomHttpPattern) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CustomHttpPattern.Merge(dst, src)
 }
 func (m *CustomHttpPattern) XXX_Size() int {
 	return m.Size()
@@ -748,41 +688,6 @@ func init() {
 	proto.RegisterType((*HttpRule)(nil), "google.api.HttpRule")
 	proto.RegisterType((*CustomHttpPattern)(nil), "google.api.CustomHttpPattern")
 }
-
-func init() { proto.RegisterFile("google/api/http.proto", fileDescriptor_ff9994be407cdcc9) }
-
-var fileDescriptor_ff9994be407cdcc9 = []byte{
-	// 444 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x92, 0xb1, 0x6f, 0xd3, 0x40,
-	0x14, 0xc6, 0x73, 0x89, 0x93, 0x26, 0x2f, 0x05, 0x89, 0xa3, 0xa0, 0x13, 0x82, 0x23, 0x0a, 0x4b,
-	0xc4, 0x90, 0x4a, 0x65, 0x60, 0x60, 0xc2, 0x10, 0x51, 0xb6, 0xc8, 0x23, 0x42, 0xb2, 0x2e, 0xbe,
-	0x47, 0x72, 0xc2, 0xf5, 0x9d, 0x7c, 0x67, 0x44, 0x36, 0xfe, 0x16, 0x26, 0xfe, 0x14, 0xc6, 0x8e,
-	0x88, 0x89, 0x98, 0x85, 0xb1, 0x63, 0x47, 0x74, 0x67, 0x87, 0x56, 0x42, 0xea, 0xf6, 0xbe, 0xef,
-	0xfd, 0xfc, 0xfc, 0xf9, 0xf9, 0xc1, 0xbd, 0xb5, 0xd6, 0xeb, 0x1c, 0x8f, 0x85, 0x51, 0xc7, 0x1b,
-	0xe7, 0xcc, 0xdc, 0x94, 0xda, 0x69, 0x0a, 0x8d, 0x3d, 0x17, 0x46, 0x4d, 0xb7, 0x10, 0x9d, 0x3a,
-	0x67, 0xe8, 0x53, 0xe8, 0x97, 0x55, 0x8e, 0x96, 0x91, 0x49, 0x6f, 0x36, 0x3e, 0x39, 0x9a, 0x5f,
-	0x31, 0x73, 0x0f, 0x24, 0x55, 0x8e, 0x49, 0x83, 0xd0, 0x05, 0x3c, 0xfe, 0x50, 0xe5, 0xf9, 0x36,
-	0x95, 0x98, 0x69, 0x89, 0x69, 0x89, 0x16, 0xcb, 0x4f, 0x28, 0x53, 0xfc, 0x6c, 0x44, 0x61, 0x95,
-	0x2e, 0x58, 0x77, 0x42, 0x66, 0xc3, 0xe4, 0x61, 0xc0, 0x5e, 0x07, 0x2a, 0x69, 0xa1, 0xc5, 0x9e,
-	0x99, 0xfe, 0xec, 0xc2, 0x70, 0x3f, 0x9a, 0x3e, 0x80, 0xa1, 0xc5, 0x1c, 0x33, 0xa7, 0x4b, 0x46,
-	0x26, 0x64, 0x36, 0x4a, 0xfe, 0x69, 0x4a, 0xa1, 0xb7, 0x46, 0x17, 0x66, 0x8e, 0x4e, 0x3b, 0x89,
-	0x17, 0xde, 0x33, 0x95, 0x63, 0xbd, 0xbd, 0x67, 0x2a, 0x47, 0x8f, 0x20, 0x32, 0xda, 0x3a, 0x16,
-	0xb5, 0x66, 0x50, 0x94, 0xc1, 0x40, 0x62, 0x8e, 0x0e, 0x59, 0xbf, 0xf5, 0x5b, 0x4d, 0xef, 0x43,
-	0xdf, 0x08, 0x97, 0x6d, 0xd8, 0xa0, 0x6d, 0x34, 0x92, 0x3e, 0x87, 0x41, 0x56, 0x59, 0xa7, 0xcf,
-	0xd8, 0x70, 0x42, 0x66, 0xe3, 0x93, 0x47, 0xd7, 0x97, 0xf1, 0x2a, 0x74, 0x7c, 0xee, 0xa5, 0x70,
-	0x0e, 0xcb, 0xc2, 0x0f, 0x6c, 0x70, 0x4a, 0x21, 0x5a, 0x69, 0xb9, 0x65, 0x07, 0xe1, 0x03, 0x42,
-	0x4d, 0x9f, 0xc0, 0xad, 0x12, 0xad, 0xd1, 0x85, 0xc5, 0x34, 0x34, 0x0f, 0x43, 0xf3, 0x70, 0x6f,
-	0xc6, 0x1e, 0x5a, 0xc0, 0x5d, 0x21, 0xa5, 0x72, 0x4a, 0x17, 0x22, 0x4f, 0x57, 0xaa, 0x90, 0xaa,
-	0x58, 0x5b, 0x36, 0xbe, 0xe1, 0x5f, 0xd0, 0xab, 0x07, 0xe2, 0x96, 0x8f, 0x47, 0x70, 0x60, 0x9a,
-	0x50, 0xd3, 0x17, 0x70, 0xe7, 0xbf, 0xa4, 0x3e, 0xdf, 0x47, 0x55, 0xc8, 0x76, 0xc1, 0xa1, 0xf6,
-	0x9e, 0x11, 0x6e, 0xd3, 0x6c, 0x37, 0x09, 0x75, 0xfc, 0xfe, 0x7c, 0xc7, 0x3b, 0x3f, 0x76, 0xbc,
-	0x73, 0xb1, 0xe3, 0xe4, 0x72, 0xc7, 0xc9, 0x97, 0x9a, 0x93, 0x6f, 0x35, 0x27, 0xdf, 0x6b, 0x4e,
-	0xce, 0x6b, 0x4e, 0x7e, 0xd5, 0x9c, 0xfc, 0xa9, 0x79, 0xe7, 0xc2, 0x7b, 0xbf, 0x39, 0x81, 0xdb,
-	0x99, 0x3e, 0xbb, 0x16, 0x33, 0x1e, 0x85, 0xd7, 0xfa, 0x6b, 0x5b, 0x92, 0x77, 0x3d, 0x61, 0xd4,
-	0x25, 0x21, 0x5f, 0xbb, 0xd1, 0x9b, 0x97, 0xcb, 0xb7, 0xab, 0x41, 0xb8, 0xc2, 0x67, 0x7f, 0x03,
-	0x00, 0x00, 0xff, 0xff, 0xa1, 0x9d, 0x2a, 0xeb, 0x9e, 0x02, 0x00, 0x00,
-}
-
 func (this *Http) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -1508,9 +1413,6 @@ func encodeVarintPopulateHttp(dAtA []byte, v uint64) []byte {
 	return dAtA
 }
 func (m *Http) Size() (n int) {
-	if m == nil {
-		return 0
-	}
 	var l int
 	_ = l
 	if len(m.Rules) > 0 {
@@ -1529,9 +1431,6 @@ func (m *Http) Size() (n int) {
 }
 
 func (m *HttpRule) Size() (n int) {
-	if m == nil {
-		return 0
-	}
 	var l int
 	_ = l
 	l = len(m.Selector)
@@ -1562,9 +1461,6 @@ func (m *HttpRule) Size() (n int) {
 }
 
 func (m *HttpRule_Get) Size() (n int) {
-	if m == nil {
-		return 0
-	}
 	var l int
 	_ = l
 	l = len(m.Get)
@@ -1572,9 +1468,6 @@ func (m *HttpRule_Get) Size() (n int) {
 	return n
 }
 func (m *HttpRule_Put) Size() (n int) {
-	if m == nil {
-		return 0
-	}
 	var l int
 	_ = l
 	l = len(m.Put)
@@ -1582,9 +1475,6 @@ func (m *HttpRule_Put) Size() (n int) {
 	return n
 }
 func (m *HttpRule_Post) Size() (n int) {
-	if m == nil {
-		return 0
-	}
 	var l int
 	_ = l
 	l = len(m.Post)
@@ -1592,9 +1482,6 @@ func (m *HttpRule_Post) Size() (n int) {
 	return n
 }
 func (m *HttpRule_Delete) Size() (n int) {
-	if m == nil {
-		return 0
-	}
 	var l int
 	_ = l
 	l = len(m.Delete)
@@ -1602,9 +1489,6 @@ func (m *HttpRule_Delete) Size() (n int) {
 	return n
 }
 func (m *HttpRule_Patch) Size() (n int) {
-	if m == nil {
-		return 0
-	}
 	var l int
 	_ = l
 	l = len(m.Patch)
@@ -1612,9 +1496,6 @@ func (m *HttpRule_Patch) Size() (n int) {
 	return n
 }
 func (m *HttpRule_Custom) Size() (n int) {
-	if m == nil {
-		return 0
-	}
 	var l int
 	_ = l
 	if m.Custom != nil {
@@ -1624,9 +1505,6 @@ func (m *HttpRule_Custom) Size() (n int) {
 	return n
 }
 func (m *CustomHttpPattern) Size() (n int) {
-	if m == nil {
-		return 0
-	}
 	var l int
 	_ = l
 	l = len(m.Kind)
@@ -1778,7 +1656,7 @@ func (m *Http) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -1806,7 +1684,7 @@ func (m *Http) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1815,9 +1693,6 @@ func (m *Http) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttp
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthHttp
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1840,7 +1715,7 @@ func (m *Http) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1853,9 +1728,6 @@ func (m *Http) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthHttp
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthHttp
 			}
 			if (iNdEx + skippy) > l {
@@ -1886,7 +1758,7 @@ func (m *HttpRule) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -1914,7 +1786,7 @@ func (m *HttpRule) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1924,9 +1796,6 @@ func (m *HttpRule) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttp
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthHttp
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1946,7 +1815,7 @@ func (m *HttpRule) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1956,9 +1825,6 @@ func (m *HttpRule) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttp
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthHttp
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1978,7 +1844,7 @@ func (m *HttpRule) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1988,9 +1854,6 @@ func (m *HttpRule) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttp
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthHttp
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2010,7 +1873,7 @@ func (m *HttpRule) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2020,9 +1883,6 @@ func (m *HttpRule) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttp
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthHttp
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2042,7 +1902,7 @@ func (m *HttpRule) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2052,9 +1912,6 @@ func (m *HttpRule) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttp
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthHttp
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2074,7 +1931,7 @@ func (m *HttpRule) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2084,9 +1941,6 @@ func (m *HttpRule) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttp
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthHttp
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2106,7 +1960,7 @@ func (m *HttpRule) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2116,9 +1970,6 @@ func (m *HttpRule) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttp
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthHttp
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2138,7 +1989,7 @@ func (m *HttpRule) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2147,9 +1998,6 @@ func (m *HttpRule) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttp
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthHttp
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2173,7 +2021,7 @@ func (m *HttpRule) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2182,9 +2030,6 @@ func (m *HttpRule) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttp
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthHttp
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2207,7 +2052,7 @@ func (m *HttpRule) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2217,9 +2062,6 @@ func (m *HttpRule) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttp
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthHttp
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2232,9 +2074,6 @@ func (m *HttpRule) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthHttp
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthHttp
 			}
 			if (iNdEx + skippy) > l {
@@ -2265,7 +2104,7 @@ func (m *CustomHttpPattern) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2293,7 +2132,7 @@ func (m *CustomHttpPattern) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2303,9 +2142,6 @@ func (m *CustomHttpPattern) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttp
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthHttp
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2325,7 +2161,7 @@ func (m *CustomHttpPattern) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2335,9 +2171,6 @@ func (m *CustomHttpPattern) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthHttp
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthHttp
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2350,9 +2183,6 @@ func (m *CustomHttpPattern) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthHttp
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthHttp
 			}
 			if (iNdEx + skippy) > l {
@@ -2422,11 +2252,8 @@ func skipHttp(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
-			if length < 0 {
-				return 0, ErrInvalidLengthHttp
-			}
 			iNdEx += length
-			if iNdEx < 0 {
+			if length < 0 {
 				return 0, ErrInvalidLengthHttp
 			}
 			return iNdEx, nil
@@ -2457,9 +2284,6 @@ func skipHttp(dAtA []byte) (n int, err error) {
 					return 0, err
 				}
 				iNdEx = start + next
-				if iNdEx < 0 {
-					return 0, ErrInvalidLengthHttp
-				}
 			}
 			return iNdEx, nil
 		case 4:
@@ -2478,3 +2302,37 @@ var (
 	ErrInvalidLengthHttp = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowHttp   = fmt.Errorf("proto: integer overflow")
 )
+
+func init() { proto.RegisterFile("google/api/http.proto", fileDescriptor_http_0b206a4af4ed46aa) }
+
+var fileDescriptor_http_0b206a4af4ed46aa = []byte{
+	// 446 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x92, 0xb1, 0x6f, 0x13, 0x31,
+	0x14, 0xc6, 0xe3, 0xe4, 0x92, 0x26, 0x2f, 0x05, 0x09, 0x53, 0x90, 0x85, 0xc0, 0x44, 0x61, 0x89,
+	0x18, 0x52, 0xa9, 0x0c, 0x0c, 0x4c, 0x1c, 0x44, 0x94, 0x2d, 0xba, 0x11, 0x21, 0x9d, 0x9c, 0xf3,
+	0x23, 0xb1, 0xb8, 0x9e, 0xad, 0xb3, 0x0f, 0x91, 0x8d, 0xbf, 0x85, 0x89, 0x3f, 0x85, 0xb1, 0x23,
+	0x62, 0x22, 0xc7, 0xc2, 0xd8, 0xb1, 0x23, 0xb2, 0xef, 0x42, 0x2b, 0x21, 0x75, 0x7b, 0xdf, 0xe7,
+	0x9f, 0xed, 0xef, 0x3d, 0x3d, 0xb8, 0xb7, 0xd6, 0x7a, 0x9d, 0xe3, 0xb1, 0x30, 0xea, 0x78, 0xe3,
+	0x9c, 0x99, 0x9b, 0x52, 0x3b, 0x4d, 0xa1, 0xb1, 0xe7, 0xc2, 0xa8, 0xe9, 0x16, 0xa2, 0x53, 0xe7,
+	0x0c, 0x7d, 0x0a, 0xfd, 0xb2, 0xca, 0xd1, 0x32, 0x32, 0xe9, 0xcd, 0xc6, 0x27, 0x47, 0xf3, 0x2b,
+	0x66, 0xee, 0x81, 0xa4, 0xca, 0x31, 0x69, 0x10, 0xba, 0x80, 0xc7, 0x1f, 0xaa, 0x3c, 0xdf, 0xa6,
+	0x12, 0x33, 0x2d, 0x31, 0x2d, 0xd1, 0x62, 0xf9, 0x09, 0x65, 0x8a, 0x9f, 0x8d, 0x28, 0xac, 0xd2,
+	0x05, 0xeb, 0x4e, 0xc8, 0x6c, 0x98, 0x3c, 0x0c, 0xd8, 0xeb, 0x40, 0x25, 0x2d, 0xb4, 0xd8, 0x33,
+	0xd3, 0x9f, 0x5d, 0x18, 0xee, 0x9f, 0xa6, 0x0f, 0x60, 0x68, 0x31, 0xc7, 0xcc, 0xe9, 0x92, 0x91,
+	0x09, 0x99, 0x8d, 0x92, 0x7f, 0x9a, 0x52, 0xe8, 0xad, 0xd1, 0x85, 0x37, 0x47, 0xa7, 0x9d, 0xc4,
+	0x0b, 0xef, 0x99, 0xca, 0xb1, 0xde, 0xde, 0x33, 0x95, 0xa3, 0x47, 0x10, 0x19, 0x6d, 0x1d, 0x8b,
+	0x5a, 0x33, 0x28, 0xca, 0x60, 0x20, 0x31, 0x47, 0x87, 0xac, 0xdf, 0xfa, 0xad, 0xa6, 0xf7, 0xa1,
+	0x6f, 0x84, 0xcb, 0x36, 0x6c, 0xd0, 0x1e, 0x34, 0x92, 0x52, 0x88, 0x56, 0x5a, 0x6e, 0xd9, 0x41,
+	0xc8, 0x11, 0x6a, 0xfa, 0x1c, 0x06, 0x59, 0x65, 0x9d, 0x3e, 0x63, 0xc3, 0x09, 0x99, 0x8d, 0x4f,
+	0x1e, 0x5d, 0x1f, 0xd0, 0xab, 0x70, 0xe2, 0x7b, 0x59, 0x0a, 0xe7, 0xb0, 0x2c, 0xfc, 0x27, 0x0d,
+	0x4e, 0x17, 0x70, 0x57, 0x48, 0xa9, 0x9c, 0xd2, 0x85, 0xc8, 0xd3, 0x95, 0x2a, 0xa4, 0x2a, 0xd6,
+	0x96, 0x8d, 0x6f, 0x18, 0x33, 0xbd, 0xba, 0x10, 0xb7, 0x3c, 0x7d, 0x02, 0xb7, 0x4a, 0xb4, 0x46,
+	0x17, 0x16, 0xd3, 0x10, 0xee, 0x30, 0x84, 0x3b, 0xdc, 0x9b, 0xb1, 0x96, 0xdb, 0x78, 0x04, 0x07,
+	0xa6, 0x09, 0x30, 0x7d, 0x01, 0x77, 0xfe, 0x4b, 0xe5, 0x1b, 0xfb, 0xa8, 0x0a, 0xd9, 0x0e, 0x38,
+	0xd4, 0xde, 0x33, 0xc2, 0x6d, 0x9a, 0xe9, 0x26, 0xa1, 0x8e, 0xdf, 0x9f, 0xef, 0x78, 0xe7, 0xc7,
+	0x8e, 0x77, 0x2e, 0x76, 0x9c, 0x5c, 0xee, 0x38, 0xf9, 0x52, 0x73, 0xf2, 0xad, 0xe6, 0xe4, 0x7b,
+	0xcd, 0xc9, 0x79, 0xcd, 0xc9, 0xaf, 0x9a, 0x93, 0x3f, 0x35, 0xef, 0x5c, 0x78, 0xef, 0x37, 0x27,
+	0x70, 0x3b, 0xd3, 0x67, 0xd7, 0x7a, 0x89, 0x47, 0xe1, 0x5b, 0xbf, 0x6d, 0x4b, 0xf2, 0xae, 0x27,
+	0x8c, 0xba, 0x24, 0xe4, 0x6b, 0x37, 0x7a, 0xf3, 0x72, 0xf9, 0x76, 0x35, 0x08, 0x5b, 0xf8, 0xec,
+	0x6f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x40, 0x7e, 0xd3, 0x2c, 0x9e, 0x02, 0x00, 0x00,
+}
