@@ -26,7 +26,7 @@ func domainTests(t *testing.T, when spec.G, it spec.S) {
 			randomDomain := testutil.GenerateRandomDomain()
 			domain.RegisterDomain(t, randomDomain, service.Name)
 			assert.Equal(t, randomDomain, domain.GetDomain())
-			assert.Equal(t, randomDomain, domain.GetKubeDomain())
+			//assert.Equal(t, randomDomain, domain.GetKubeDomain())
 		})
 	}, spec.Parallel())
 }
