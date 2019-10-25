@@ -9,6 +9,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/localbuilder"
 	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -22,6 +23,10 @@ const (
 
 type Linkerd struct {
 	Port string `desc:"The local port on which to serve requests" default:"9999"`
+}
+
+func (l *Linkerd) Customize(cmd *cli.Command) {
+	cmd.Hidden = true
 }
 
 func (l *Linkerd) Run(ctx *clicontext.CLIContext) error {
