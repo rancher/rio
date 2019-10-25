@@ -33,7 +33,6 @@ type Create struct {
 	BuildRegistry          string            `desc:"Specify to push image to"`
 	BuildRevision          string            `desc:"Build git commit or tag"`
 	BuildPr                bool              `desc:"Enable pull request builds"`
-	BuildTemplate          bool              `desc:"Use this service as a template for generating services if a new commit applys to git repo. If not specified it will do in-place update"`
 	BuildTimeout           string            `desc:"Timeout for build, default to 10m (ms|s|m|h)"`
 	Command                []string          `desc:"Overwrite the default ENTRYPOINT of the image"`
 	Concurrency            int               `desc:"The maximum concurrent request a container can handle (autoscaling)" default:"10"`
@@ -72,7 +71,7 @@ type Create struct {
 	RolloutInterval        int               `desc:"Rollout interval in seconds"`
 	RolloutIncrement       int               `desc:"Rollout increment value"`
 	Secret                 []string          `desc:"Secrets to inject to the service (format: name[/key]:target)"`
-	Template               bool              `desc:"Use this service as template to rollout services from git"`
+	Template               bool              `desc:"If true new version is created per git commit. If false update in-place"`
 	T_Tty                  bool              `desc:"Allocate a pseudo-TTY"`
 	Version                string            `desc:"Specify the revision"`
 	Scale                  string            `desc:"The number of replicas to run or a range for autoscaling (example 1-10)"`
@@ -108,6 +107,13 @@ func (c *Create) setRollout(spec *riov1.ServiceSpec) {
 			Increment: c.RolloutIncrement,
 			Interval: metav1.Duration{
 				Duration: time.Duration(c.RolloutInterval) * time.Second,
+			},
+		}
+	} else if c.Template {
+		spec.RolloutConfig = &riov1.RolloutConfig{
+			Increment: 5,
+			Interval: metav1.Duration{
+				Duration: 5 * time.Second,
 			},
 		}
 	}
@@ -190,7 +196,9 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 	if c.Weight > 0 {
 		spec.Weight = &c.Weight
 	}
+
 	c.setRollout(&spec)
+
 	if err := c.setDNS(&spec); err != nil {
 		return nil, err
 	}

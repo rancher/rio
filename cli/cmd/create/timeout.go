@@ -23,7 +23,7 @@ func (c *Create) setBuildOrImage(imageName string, spec *riov1.ServiceSpec) erro
 			Repo:                   imageName,
 			PR:                     c.BuildPr,
 		}
-		spec.Template = c.BuildTemplate
+		spec.Template = c.Template
 
 		if c.BuildTimeout != "" {
 			timeout, err := time.ParseDuration(c.BuildTimeout)
