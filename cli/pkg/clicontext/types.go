@@ -122,7 +122,7 @@ func (c *CLIContext) Create(obj runtime.Object) (err error) {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%s/%s\n", strings.ToLower(g.Kind), metadata.GetName())
+	fmt.Printf("%s/%s/%s\n", strings.ToLower(g.Kind), metadata.GetNamespace(), metadata.GetName())
 	return nil
 }
 

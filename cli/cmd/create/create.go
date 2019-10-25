@@ -39,9 +39,9 @@ type Create struct {
 	Concurrency            int               `desc:"The maximum concurrent request a container can handle (autoscaling)" default:"10"`
 	Config                 []string          `desc:"Configs to expose to the service (format: name[/key]:target)"`
 	Cpus                   string            `desc:"Number of CPUs"`
-	DnsOption              []string          `desc:"Set DNS options (format: key:value or key)"`
-	DnsSearch              []string          `desc:"Set custom DNS search domains"`
-	Dns                    []string          `desc:"Set custom DNS servers"`
+	DNSOption              []string          `desc:"Set DNS options (format: key:value or key)"`
+	DNSSearch              []string          `desc:"Set custom DNS search domains"`
+	DNS                    []string          `desc:"Set custom DNS servers"`
 	HostDNS                bool              `desc:"Use the host level DNS and not the cluster level DNS"`
 	NoMesh                 bool              `desc:"Disable service mesh"`
 	E_Env                  []string          `desc:"Set environment variables"`
@@ -77,7 +77,7 @@ type Create struct {
 	Version                string            `desc:"Specify the revision"`
 	Scale                  string            `desc:"The number of replicas to run or a range for autoscaling (example 1-10)"`
 	U_User                 string            `desc:"UID[:GID] Sets the UID used and optionally GID for entrypoint process (format: <uid>[:<gid>])"`
-	Weight                 int               `desc:"Specify the weight for the revision"`
+	Weight                 int               `desc:"Specify the weight for the revision" default:"100"`
 	W_Workdir              string            `desc:"Working directory inside the container"`
 }
 
@@ -114,16 +114,16 @@ func (c *Create) setRollout(spec *riov1.ServiceSpec) {
 }
 
 func (c *Create) setDNS(spec *riov1.ServiceSpec) (err error) {
-	if len(c.Dns) > 0 || len(c.DnsSearch) > 0 || len(c.DnsOption) > 0 || c.HostDNS {
+	if len(c.DNS) > 0 || len(c.DNSSearch) > 0 || len(c.DNSOption) > 0 || c.HostDNS {
 		spec.DNS = &riov1.DNS{
-			Nameservers: c.Dns,
-			Searches:    c.DnsSearch,
+			Nameservers: c.DNS,
+			Searches:    c.DNSSearch,
 			Options:     nil,
 		}
 		if c.HostDNS {
 			spec.DNS.Policy = v1.DNSDefault
 		}
-		spec.DNS.Options, err = stringers.ParseDNSOptions(c.DnsOption...)
+		spec.DNS.Options, err = stringers.ParseDNSOptions(c.DNSOption...)
 		if err != nil {
 			return err
 		}
@@ -183,7 +183,8 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 	spec.WorkingDir = c.W_Workdir
 
 	if c.NoMesh {
-		spec.ServiceMesh = &c.NoMesh
+		mesh := !c.NoMesh
+		spec.ServiceMesh = &mesh
 	}
 
 	if c.Weight > 0 {

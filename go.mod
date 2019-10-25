@@ -52,7 +52,6 @@ require (
 	github.com/hashicorp/go-rootcerts v1.0.1 // indirect
 	github.com/hashicorp/go-sockaddr v1.0.2 // indirect
 	github.com/jetstack/cert-manager v0.11.0
-	github.com/knative/pkg v0.0.0-20190514205332-5e4512dcb2ca
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/linkerd/linkerd2 v0.0.0-20191010175117-1039d8254738
 	github.com/markbates/inflect v1.0.4 // indirect

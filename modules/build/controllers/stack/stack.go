@@ -45,8 +45,6 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			rContext.Core.Core().V1().Secret(),
 			rContext.RBAC.Rbac().V1().Role(),
 			rContext.RBAC.Rbac().V1().RoleBinding(),
-			rContext.RBAC.Rbac().V1().ClusterRole(),
-			rContext.RBAC.Rbac().V1().ClusterRoleBinding(),
 		),
 		"BuildDeployed",
 		"stack-service-build",

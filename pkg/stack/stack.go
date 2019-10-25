@@ -2,6 +2,7 @@ package stack
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 
@@ -82,6 +83,10 @@ type ContainerBuildKey struct {
 	Container string
 }
 
+func (c ContainerBuildKey) String() string {
+	return fmt.Sprintf("%s-%s", c.Service, c.Container)
+}
+
 func (s *Stack) GetImageBuilds() (map[ContainerBuildKey]riov1.ImageBuildSpec, error) {
 	objs, err := s.GetObjects()
 	if err != nil {
@@ -124,7 +129,7 @@ func (s *Stack) GetImageBuilds() (map[ContainerBuildKey]riov1.ImageBuildSpec, er
 	return buildConfig, nil
 }
 
-func (s *Stack) SetServiceImages(images map[string]string) error {
+func (s *Stack) SetServiceImages(images map[ContainerBuildKey]string) error {
 	objs, err := s.GetObjects()
 	if err != nil {
 		return err
@@ -132,10 +137,24 @@ func (s *Stack) SetServiceImages(images map[string]string) error {
 
 	for _, obj := range objs {
 		if svc, ok := obj.(*riov1.Service); ok {
-			image := images[svc.Name]
-			if image != "" {
-				logrus.Debugf("Service %s is replaced with image %s", svc.Name, image)
-				svc.Spec.Image = image
+			var keys []ContainerBuildKey
+			for _, con := range svc.Spec.Sidecars {
+				keys = append(keys, ContainerBuildKey{
+					Service:   svc.Name,
+					Container: con.Name,
+				})
+			}
+			keys = append(keys, ContainerBuildKey{
+				Service:   svc.Name,
+				Container: svc.Name,
+			})
+
+			for _, key := range keys {
+				image := images[key]
+				if image != "" {
+					logrus.Debugf("Service %s is replaced with image %s", svc.Name, image)
+					svc.Spec.Image = image
+				}
 			}
 		}
 	}

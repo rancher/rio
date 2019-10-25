@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/rancher/rio/cli/cmd/apply"
@@ -32,43 +33,64 @@ const (
 )
 
 func (u *Up) Run(c *clicontext.CLIContext) error {
-	namespace := c.GetSetNamespace()
-	if namespace == "" {
-		namespace = c.GetDefaultNamespace()
+	if u.Name == "" {
+		u.Name = getCurrentDir()
 	}
 
 	if len(c.CLI.Args()) > 0 {
-		s := riov1.NewStack(namespace, c.CLI.Args()[0], riov1.Stack{
-			Spec: riov1.StackSpec{
-				Build: &riov1.StackBuild{
-					Repo:     c.CLI.Args()[0],
-					Branch:   u.Branch,
-					Revision: u.Revision,
-				},
-			},
-		})
-
-		existing, err := c.Rio.Stacks(namespace).Get(u.Name, metav1.GetOptions{})
-		if err != nil {
-			if errors.IsNotFound(err) {
-				return c.Create(s)
-			}
-		}
-		if existing.Spec.Build == nil {
-			existing.Spec.Build = &riov1.StackBuild{}
-		}
-		existing.Spec.Build.Repo = c.CLI.Args()[0]
-		existing.Spec.Build.Branch = u.Branch
-		existing.Spec.Build.Revision = u.Revision
-		return c.UpdateObject(existing)
+		return u.setBuild(c)
 	}
 
+	content, answer, err := u.loadFile(c)
+	if err != nil {
+		return err
+	}
+
+	if err := u.updateStack(content, answer, c); err != nil {
+		return err
+	}
+
+	existing, err := c.Rio.Stacks(c.GetSetNamespace()).Get(u.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	return u.up(content, answer, existing, c)
+}
+
+func (u *Up) setBuild(c *clicontext.CLIContext) error {
+	s := riov1.NewStack(c.GetSetNamespace(), u.Name, riov1.Stack{
+		Spec: riov1.StackSpec{
+			Build: &riov1.StackBuild{
+				Repo:     c.CLI.Args()[0],
+				Branch:   u.Branch,
+				Revision: u.Revision,
+			},
+		},
+	})
+
+	existing, err := c.Rio.Stacks(c.GetSetNamespace()).Get(u.Name, metav1.GetOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return c.Create(s)
+		}
+	}
+	if existing.Spec.Build == nil {
+		existing.Spec.Build = &riov1.StackBuild{}
+	}
+	existing.Spec.Build.Repo = c.CLI.Args()[0]
+	existing.Spec.Build.Branch = u.Branch
+	existing.Spec.Build.Revision = u.Revision
+	return c.UpdateObject(existing)
+}
+
+func (u *Up) loadFile(c *clicontext.CLIContext) (string, map[string]string, error) {
 	if u.F_File == "" {
 		if _, err := os.Stat(defaultRiofile); err == nil {
 			u.F_File = defaultRiofile
 		}
 		if u.F_File == "" {
-			return fmt.Errorf("can not found Riofile under current directory, must specify one. Example: rio up -f /path/to/Riofile.yaml")
+			return "", nil, fmt.Errorf("can not found Riofile under current directory, must specify one. Example: rio up -f /path/to/Riofile.yaml")
 		}
 	}
 
@@ -79,15 +101,18 @@ func (u *Up) Run(c *clicontext.CLIContext) error {
 	}
 	answers, err := apply.ReadAnswers(u.Answers)
 	if err != nil {
-		return err
+		return "", nil, err
 	}
 
 	content, err := readFile(u.F_File)
 	if err != nil {
-		return err
+		return "", nil, err
 	}
+	return string(content), answers, nil
+}
 
-	deployStack := stack.NewStack(content, answers)
+func (u *Up) up(content string, answers map[string]string, s *riov1.Stack, c *clicontext.CLIContext) error {
+	deployStack := stack.NewStack([]byte(content), answers)
 	imageBuilds, err := deployStack.GetImageBuilds()
 	if err != nil {
 		return err
@@ -99,7 +124,7 @@ func (u *Up) Run(c *clicontext.CLIContext) error {
 			return err
 		}
 
-		images, err := localBuilder.Build(c.Ctx, imageBuilds, u.P_Parallel, namespace)
+		images, err := localBuilder.Build(c.Ctx, imageBuilds, u.P_Parallel, c.GetSetNamespace())
 		if err != nil {
 			return err
 		}
@@ -117,7 +142,27 @@ func (u *Up) Run(c *clicontext.CLIContext) error {
 	if err != nil {
 		return err
 	}
-	return c.Apply.ApplyObjects(objs...)
+	return c.Apply.WithDefaultNamespace(c.GetSetNamespace()).WithOwner(s).WithSetOwnerReference(true, true).WithDynamicLookup().ApplyObjects(objs...)
+}
+
+func (u *Up) updateStack(content string, answers map[string]string, c *clicontext.CLIContext) error {
+	s := riov1.NewStack(c.GetSetNamespace(), u.Name, riov1.Stack{
+		Spec: riov1.StackSpec{
+			Template: content,
+			Answers:  answers,
+		},
+	})
+
+	existing, err := c.Rio.Stacks(c.GetSetNamespace()).Get(u.Name, metav1.GetOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return c.Create(s)
+		}
+		return err
+	}
+	existing.Spec.Template = s.Spec.Template
+	existing.Spec.Answers = s.Spec.Answers
+	return c.UpdateObject(existing)
 }
 
 func readFile(file string) ([]byte, error) {
@@ -133,4 +178,10 @@ func readFile(file string) ([]byte, error) {
 		return ioutil.ReadAll(resp.Body)
 	}
 	return ioutil.ReadFile(file)
+}
+
+func getCurrentDir() string {
+	workingDir, _ := os.Getwd()
+	dir := filepath.Base(workingDir)
+	return dir
 }

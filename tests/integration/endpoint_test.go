@@ -3,10 +3,9 @@ package integration
 import (
 	"testing"
 
+	"github.com/rancher/rio/tests/testutil"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/rancher/rio/tests/testutil"
 )
 
 func endpointTests(t *testing.T, when spec.G, it spec.S) {
@@ -29,24 +28,25 @@ func endpointTests(t *testing.T, when spec.G, it spec.S) {
 
 			// Check the hostnames returned by Rio and Kubectl are equal
 			assert.Equal(t,
-				testutil.GetHostname(service.GetKubeEndpointURL()),
-				testutil.GetHostname(service.GetEndpointURL()),
+				testutil.GetHostname(service.GetKubeEndpointURLs()[0]),
+				testutil.GetHostname(service.GetEndpointURLs()[0]),
 			)
 			assert.Equal(t,
-				testutil.GetHostname(stagedService.GetKubeEndpointURL()),
-				testutil.GetHostname(stagedService.GetEndpointURL()),
+				testutil.GetHostname(stagedService.GetKubeEndpointURLs()[0]),
+				testutil.GetHostname(stagedService.GetEndpointURLs()[0]),
 			)
 
 			assert.Equal(t, "Hello World", service.GetEndpointResponse())
 			assert.Equal(t, "Hello World v3", stagedService.GetEndpointResponse())
 
 			assert.Equal(t,
-				testutil.GetHostname(service.GetKubeAppEndpointURL()),
-				testutil.GetHostname(service.GetAppEndpointURL()),
+				testutil.GetHostname(service.GetKubeAppEndpointURLs()[0]),
+				testutil.GetHostname(service.GetAppEndpointURLs()[0]),
 			)
+
 			assert.Equal(t,
-				testutil.GetHostname(service.GetAppEndpointURL()),
-				testutil.GetHostname(stagedService.GetAppEndpointURL()),
+				testutil.GetHostname(service.GetAppEndpointURLs()[0]),
+				testutil.GetHostname(stagedService.GetAppEndpointURLs()[0]),
 			)
 			assert.Equal(t, "Hello World", service.GetAppEndpointResponse())
 		})
@@ -74,7 +74,7 @@ func endpointTests(t *testing.T, when spec.G, it spec.S) {
 			service.Promote()
 			assert.Equal(t, 100, service.GetKubeCurrentWeight())
 			assert.Equal(t, 0, stagedService.GetKubeCurrentWeight())
-			assert.Equal(t, "Hello World", service.GetEndpointResponse())
+			assert.Equal(t, "Hello World", service.GetAppEndpointResponse())
 		})
 	}, spec.Parallel())
 }

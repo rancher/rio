@@ -3,10 +3,10 @@ package promote
 import (
 	"errors"
 	"fmt"
-	"github.com/rancher/rio/cli/cmd/util"
 	"time"
 
 	"github.com/rancher/mapper"
+	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
@@ -52,7 +52,7 @@ func (p *Promote) Run(ctx *clicontext.CLIContext) error {
 			}
 			if s.Name == serviceName {
 				*s.Spec.Weight = 100
-				fmt.Printf("%s:%s promoted\n", s.Spec.App, s.Spec.Version)
+				fmt.Printf("%s promoted\n", s.Name)
 			} else {
 				*s.Spec.Weight = 0
 			}

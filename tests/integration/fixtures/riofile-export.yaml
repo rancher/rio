@@ -7,72 +7,47 @@ externalservices:
 routers:
   route-foo:
     routes:
-    - matches:
-      - path:
+    - match:
+        path:
           exact: /v0
       to:
-      - namespace: testing-ns
-        revision: v0
-        service: export-test-image
-    - matches:
-      - path:
+      - version: v0
+        app: export-test-image
+    - match:
+        path:
           exact: /v3
       to:
-      - namespace: testing-ns
-        revision: v3
-        service: export-test-image
-  route-bar:
-    routes:
-    - matches:
-      - path:
-          exact: /bv0
-      to:
-      - namespace: testing-ns
-        revision: v0
-        service: export-test-build
+      - version: v3
+        app: export-test-image
 services:
   export-test-image:
-    concurrency: 10
+    rolloutConfig:
+      increment: 5
+      interval: 5
     image: ibuildthecloud/demo:v1
     imagePullPolicy: IfNotPresent
     ports:
     - "80"
-    rollout: true
-    rolloutIncrement: 5
-    rolloutInterval: 5
-    scale: 1-10
+    scale: 1
+    autoscale:
+      concurrency: 10
+      min: 1
+      max: 10
     version: v0
     weight: 100
   export-test-image-v3:
     app: "export-test-image"
-    concurrency: 10
     image: ibuildthecloud/demo:v3
     imagePullPolicy: IfNotPresent
     ports:
       - "80"
-    rollout: true
-    rolloutIncrement: 5
-    rolloutInterval: 5
-    scale: 1-10
+    rolloutConfig:
+      increment: 5
+      interval: 5
+    autoscale:
+      concurrency: 10
+      min: 1
+      max: 10
+    scale: 1
     version: v3
-    weight: 100
-  export-test-build:
-    build:
-      BuildTimeout: null
-      branch: master
-      buildContext: .
-      dockerFile: Dockerfile
-      dockerFilePath: .
-      repo: https://github.com/rancher/rio-demo
-      template: buildkit
-    concurrency: 10
-    image: localhost:5442/testing-ns-export-test-build:19bc3ddfe17fb058163871dc48e07521397422bd
-    imagePullPolicy: IfNotPresent
-    ports:
-    - 80:8080
-    rollout: true
-    rolloutIncrement: 5
-    rolloutInterval: 5
-    scale: 1-10
-    version: v0
     weight: 100

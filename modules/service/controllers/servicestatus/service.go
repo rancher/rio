@@ -108,13 +108,13 @@ func toScaleStatus(owner runtime.Object) *riov1.ScaleStatus {
 			Unavailable: int(typed.Status.NumberUnavailable),
 		}
 	case *appsv1.StatefulSet:
-		unavaliable := typed.Status.Replicas - typed.Status.ReadyReplicas
-		if unavaliable < 0 {
-			unavaliable = 0
+		unavailable := typed.Status.Replicas - typed.Status.ReadyReplicas
+		if unavailable < 0 {
+			unavailable = 0
 		}
 		return &riov1.ScaleStatus{
 			Available:   int(typed.Status.ReadyReplicas),
-			Unavailable: int(unavaliable),
+			Unavailable: int(unavailable),
 		}
 	default:
 		return nil

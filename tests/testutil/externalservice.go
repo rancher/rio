@@ -24,8 +24,9 @@ type TestExternalService struct {
 func (es *TestExternalService) Create(t *testing.T, target string) {
 	es.T = t
 	es.Target = target
-	es.Name = fmt.Sprintf("%s/%s", testingNamespace, GenerateName())
-	_, err := RioCmd([]string{"externalservice", "create", es.Name, target})
+	name := GenerateName()
+	es.Name = fmt.Sprintf("%s/%s", "externalservice", name)
+	_, err := RioCmd([]string{"externalservice", "create", name, target})
 	if err != nil {
 		es.T.Fatalf("external service create command failed: %v", err.Error())
 	}
@@ -39,7 +40,7 @@ func (es *TestExternalService) Create(t *testing.T, target string) {
 func GetExternalService(t *testing.T, name string) TestExternalService {
 	es := TestExternalService{
 		Target:          "",
-		Name:            fmt.Sprintf("%s/%s", testingNamespace, name),
+		Name:            fmt.Sprintf("externalservice/%s/%s", testingNamespace, name),
 		ExternalService: riov1.ExternalService{},
 		T:               t,
 	}
@@ -53,7 +54,7 @@ func GetExternalService(t *testing.T, name string) TestExternalService {
 // Executes "rio rm" for this external service
 func (es *TestExternalService) Remove() {
 	if es.ExternalService.Name != "" {
-		_, err := RioCmd([]string{"rm", "--type", "externalservice", es.Name})
+		_, err := RioCmd([]string{"rm", es.Name})
 		if err != nil {
 			es.T.Logf("failed to delete external service: %v", err.Error())
 		}
@@ -77,7 +78,7 @@ func (es *TestExternalService) GetFQDN() string {
 //////////////////
 
 func (es *TestExternalService) reload() error {
-	out, err := RioCmd([]string{"inspect", "--type", "externalservice", "--format", "json", es.Name})
+	out, err := RioCmd([]string{"inspect", "--format", "json", es.Name})
 	if err != nil {
 		return err
 	}
@@ -96,7 +97,7 @@ func (es *TestExternalService) waitForExternalService() error {
 		}
 		return false, nil
 	})
-	err := wait.Poll(2*time.Second, 60*time.Second, f)
+	err := wait.Poll(2*time.Second, 30*time.Second, f)
 	if err != nil {
 		return errors.New("external service not successfully initiated")
 	}

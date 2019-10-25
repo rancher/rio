@@ -20,13 +20,13 @@ func ListAppServicesFromServiceName(ctx *clicontext.CLIContext, serviceName stri
 	if app == "" {
 		return []riov1.Service{}, errors.New("invalid app for service")
 	}
-	services, err := ctx.Rio.Services(namespace).List(metav1.ListOptions{})
+	svcs, err := ctx.Rio.Services(namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return []riov1.Service{}, err
 	}
 	var revisions []riov1.Service
-	for _, rev := range services.Items {
-		if rev.Spec.App == app {
+	for _, rev := range svcs.Items {
+		if app == rev.Spec.App || app == rev.Name {
 			revisions = append(revisions, rev)
 		}
 	}
