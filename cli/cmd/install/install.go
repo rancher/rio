@@ -105,29 +105,23 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 			progress.Display("Waiting for rio controller to initialize", 2)
 			continue
 		}
-		if !info.Status.Ready {
-			progress.Display("Waiting for rio controller to be ready", 2)
-			continue
-		}
-
-		fmt.Printf("\rrio controller version %s (%s) installed into namespace %s\n", version.Version, version.GitCommit, info.Status.SystemNamespace)
-
-		// Checking if clusterDomain is available
-		fmt.Println("Detecting if clusterDomain is accessible...")
 		clusterDomain, err := ctx.Domain()
 		if err != nil {
 			return err
 		}
 		if clusterDomain == nil {
-			fmt.Println("Warning: Detected that Rio cluster domain is not generated for this cluster right now")
+			progress.Display("Warning: Detected that Rio cluster domain is not generated for this cluster right now", 2)
+			continue
 		} else {
 			_, err = http.Get(fmt.Sprintf("http://%s:%d", clusterDomain.Name, clusterDomain.Spec.HTTPPort))
 			if err != nil {
-				fmt.Printf("Warning: ClusterDomain is not accessible. Error: %v\n", err)
+				progress.Display("Warning: ClusterDomain is not accessible. Error: %v\n", 2, err)
+				continue
 			} else {
 				fmt.Println("ClusterDomain is reachable. Run `rio info` to get more info.")
 			}
 		}
+		fmt.Printf("\rrio controller version %s (%s) installed into namespace %s\n", version.Version, version.GitCommit, info.Status.SystemNamespace)
 
 		fmt.Println("Controller logs are available from `rio systemlogs`")
 		fmt.Println("")
