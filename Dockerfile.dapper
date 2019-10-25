@@ -1,9 +1,10 @@
-FROM golang:1.12.6-alpine3.9
+FROM golang:1.13.3-alpine3.10
 
 ARG DAPPER_HOST_ARCH
 ENV ARCH $DAPPER_HOST_ARCH
 ENV K3S_VERSION v0.9.1
 ENV KUBECTL_VERSION v1.15.0
+ENV GO111MODULE off
 
 RUN apk -U add bash git gcc musl-dev docker vim less file curl wget ca-certificates
 RUN go get -d golang.org/x/lint/golint && \

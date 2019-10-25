@@ -5,12 +5,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rancher/wrangler/pkg/kv"
-
 	"github.com/rancher/norman/pkg/openapi"
 	rioadminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/crd"
+	"github.com/rancher/wrangler/pkg/kv"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 )
 
