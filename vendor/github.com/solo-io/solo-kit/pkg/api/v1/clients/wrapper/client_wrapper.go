@@ -23,9 +23,18 @@ func (c *Client) Read(namespace, name string, opts clients.ReadOpts) (resources.
 	return res, nil
 }
 
+/*
+ProcessResource must be called both before and after write. Before so that changes made can be persisted, and after
+in order to restore changes that might not be persisted by the underlying data store (e.g. ClusterName on Kubernetes).
+*/
 func (c *Client) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
 	c.ProcessResource(resource)
-	return c.ResourceClient.Write(resource, opts)
+	written, err := c.ResourceClient.Write(resource, opts)
+	if err != nil {
+		return nil, err
+	}
+	c.ProcessResource(written)
+	return written, err
 }
 
 func (c *Client) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {

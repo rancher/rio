@@ -49,6 +49,7 @@ func (f *typeGo) Imports(*generator.Context) []string {
 		"utilruntime \"k8s.io/apimachinery/pkg/util/runtime\"",
 		"k8s.io/apimachinery/pkg/watch",
 		"k8s.io/client-go/tools/cache",
+		"github.com/rancher/wrangler/pkg/apply",
 		"github.com/rancher/wrangler/pkg/condition",
 		fmt.Sprintf("%s \"%s\"", f.gv.Version, f.name.Package),
 		GenericPackage,

@@ -8,6 +8,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 )
 
+//go:generate mockgen -destination=./mocks/multi_watcher.go -source multi_watcher.go -package mocks
+
 /*
 A wrapper.watchAggregator wraps multiple ResourceWatchers and
 aggregates a watch on each into a single Watch func

@@ -23,9 +23,9 @@ import (
 	"time"
 
 	v1alpha1 "github.com/deislabs/smi-sdk-go/pkg/apis/split/v1alpha1"
-	clientset "github.com/deislabs/smi-sdk-go/pkg/gen/client/split/clientset/versioned/typed/split/v1alpha1"
-	informers "github.com/deislabs/smi-sdk-go/pkg/gen/client/split/informers/externalversions/split/v1alpha1"
-	listers "github.com/deislabs/smi-sdk-go/pkg/gen/client/split/listers/split/v1alpha1"
+	clientset "github.com/rancher/wrangler-api/pkg/generated/clientset/versioned/typed/split/v1alpha1"
+	informers "github.com/rancher/wrangler-api/pkg/generated/informers/externalversions/split/v1alpha1"
+	listers "github.com/rancher/wrangler-api/pkg/generated/listers/split/v1alpha1"
 	"github.com/rancher/wrangler/pkg/generic"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
