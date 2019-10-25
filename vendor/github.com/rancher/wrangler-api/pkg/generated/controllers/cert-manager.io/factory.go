@@ -22,9 +22,9 @@ import (
 	"context"
 	"time"
 
-	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	scheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
-	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
+	clientset "github.com/rancher/wrangler-api/pkg/generated/clientset/versioned"
+	scheme "github.com/rancher/wrangler-api/pkg/generated/clientset/versioned/scheme"
+	informers "github.com/rancher/wrangler-api/pkg/generated/informers/externalversions"
 	"github.com/rancher/wrangler/pkg/generic"
 	"github.com/rancher/wrangler/pkg/schemes"
 	"k8s.io/apimachinery/pkg/runtime/schema"

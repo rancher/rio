@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
-	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -13,8 +12,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
-
-const delim = " "
 
 type Resource interface {
 	GetMetadata() core.Metadata
@@ -41,25 +38,6 @@ func ProtoCast(res Resource) (ProtoResource, error) {
 		return nil, errors.Errorf("internal error: unexpected type %T not convertible to resources.Proto", res)
 	}
 	return protoResource, nil
-}
-
-func Key(resource Resource) string {
-	if cluster := resource.GetMetadata().Cluster; cluster != "" {
-		return fmt.Sprintf("%v%v%v%v%v%v%v", Kind(resource), delim, resource.GetMetadata().Cluster, delim, resource.GetMetadata().Namespace, delim, resource.GetMetadata().Name)
-	}
-	return fmt.Sprintf("%v%v%v%v%v", Kind(resource), delim, resource.GetMetadata().Namespace, delim,
-		resource.GetMetadata().Name)
-}
-
-func SplitKey(key string) (string, string, string, error) {
-	parts := strings.Split(key, delim)
-	if len(parts) != 3 {
-		return "", "", "", errors.Errorf("%v was not a valid key", key)
-	}
-	kind := parts[0]
-	namespace := parts[1]
-	name := parts[2]
-	return kind, namespace, name, nil
 }
 
 type InputResource interface {
@@ -122,14 +100,29 @@ func (list ResourceList) Copy() ResourceList {
 	return cpy
 }
 
+func (list ResourceList) Len() int {
+	return len(list)
+}
+
+func (list ResourceList) Less(i, j int) bool {
+	if result := MetadataCompare(list[i].GetMetadata(), list[j].GetMetadata()); result != 0 {
+		return result == -1
+	}
+	kindi := Kind(list[i])
+	kindj := Kind(list[j])
+	return kindi < kindj
+}
+
+func (list ResourceList) Swap(i, j int) {
+	list[i], list[j] = list[j], list[i]
+}
+
 func (list ResourceList) Sort() ResourceList {
-	var sorted ResourceList
+	sorted := make(ResourceList, 0, list.Len())
 	for _, res := range list {
 		sorted = append(sorted, Clone(res))
 	}
-	sort.SliceStable(sorted, func(i, j int) bool {
-		return Key(sorted[i]) < Key(sorted[j])
-	})
+	sort.Stable(sorted)
 	return sorted
 }
 
@@ -248,8 +241,50 @@ func (list ResourceList) AsInputResourceList() InputResourceList {
 	return inputs
 }
 
+func MetadataCompare(metai, metaj core.Metadata) int {
+	if metai.Cluster != metaj.Cluster {
+		if metai.Cluster < metaj.Cluster {
+			return -1
+		}
+		return 1
+	}
+
+	if metai.Namespace != metaj.Namespace {
+		if metai.Namespace < metaj.Namespace {
+			return -1
+		}
+		return 1
+	}
+
+	if metai.Name != metaj.Name {
+		if metai.Name < metaj.Name {
+			return -1
+		}
+		return 1
+	}
+	return 0
+}
+
 type InputResourceList []InputResource
 type InputResourcesByKind map[string]InputResourceList
+
+func (list InputResourceList) Len() int {
+	return len(list)
+}
+
+func (list InputResourceList) Less(i, j int) bool {
+	if result := MetadataCompare(list[i].GetMetadata(), list[j].GetMetadata()); result != 0 {
+		return result == -1
+	}
+
+	kindi := Kind(list[i])
+	kindj := Kind(list[j])
+	return kindi < kindj
+}
+
+func (list InputResourceList) Swap(i, j int) {
+	list[i], list[j] = list[j], list[i]
+}
 
 func (m InputResourcesByKind) Add(resource InputResource) {
 	m[Kind(resource)] = append(m[Kind(resource)], resource)
@@ -263,9 +298,7 @@ func (m InputResourcesByKind) List() InputResourceList {
 		all = append(all, list...)
 	}
 	// sort by type
-	sort.SliceStable(all, func(i, j int) bool {
-		return Key(all[i]) < Key(all[j])
-	})
+	sort.Stable(all)
 	return all
 }
 func (list InputResourceList) Contains(list2 InputResourceList) bool {

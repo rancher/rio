@@ -22,11 +22,11 @@ import (
 	"context"
 	"time"
 
+	clientset "github.com/rancher/wrangler-api/pkg/generated/clientset/versioned"
+	scheme "github.com/rancher/wrangler-api/pkg/generated/clientset/versioned/scheme"
+	informers "github.com/rancher/wrangler-api/pkg/generated/informers/externalversions"
 	"github.com/rancher/wrangler/pkg/generic"
 	"github.com/rancher/wrangler/pkg/schemes"
-	clientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
-	scheme "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/scheme"
-	informers "github.com/tektoncd/pipeline/pkg/client/informers/externalversions"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
 )
