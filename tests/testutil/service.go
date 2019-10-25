@@ -362,7 +362,7 @@ func (ts *TestService) GenerateLoad() {
 	wait.Poll(5*time.Second, 120*time.Second, f)
 }
 
-// GetEndpointURL returns the URLs for this service
+// GetEndpointURLs returns the URLs for this service
 func (ts *TestService) GetEndpointURLs() []string {
 	endpoints, err := ts.waitForEndpointDNS()
 	if err != nil {
@@ -372,7 +372,7 @@ func (ts *TestService) GetEndpointURLs() []string {
 	return endpoints
 }
 
-// GetServiceEndpointURL retrieves the service's app endpoint URLs
+// GetAppEndpointURLs retrieves the service's app endpoint URLs
 func (ts *TestService) GetAppEndpointURLs() []string {
 	endpoints, err := ts.waitForAppEndpointDNS()
 	if err != nil {
@@ -382,43 +382,64 @@ func (ts *TestService) GetAppEndpointURLs() []string {
 	return endpoints
 }
 
-//// GetKubeEndpointURL returns the app revision endpoint URL
-//// and returns it as string
-//func (ts *TestService) GetKubeEndpointURLs() []string {
-//	_, err := ts.waitForEndpointDNS()
-//	if err != nil {
-//		ts.T.Fatalf("Failed waiting for DNS:  %v", err.Error())
-//		return []string{}
-//	}
-//	args := []string{"get", "service.rio.cattle.io",
-//		"-n", testingNamespace,
-//		ts.Service.Name,
-//		"-o", `jsonpath="{.status.endpoints[0]}"`}
-//	url, err := KubectlCmd(args)
-//	if err != nil {
-//		ts.T.Fatalf("Failed to get endpoint url:  %v", err.Error())
-//		return []string{}
-//	}
-//	return strings.Replace(url, "\"", "", -1) // remove double quotes from output
-//}
-//
-//// GetKubeAppEndpointURL returns the endpoint URL of the service's app
-//// by using kubectl and returns it as string
-//func (ts *TestService) GetKubeAppEndpointURLs() []string {
-//	_, err := ts.waitForAppEndpointDNS()
-//	if err != nil {
-//		ts.T.Fatalf("Failed waiting for DNS:  %v", err.Error())
-//		return []string{}
-//	}
-//	args := []string{"get", "apps", ts.Name, "-o", `jsonpath="{.status.endpoints[0]}"`}
-//	url, err := KubectlCmd(args)
-//	if err != nil {
-//		ts.T.Fatalf("Failed to get app endpoint url:  %v", err.Error())
-//		return []string{}
-//	}
-//
-//	return strings.Replace(url, "\"", "", -1) // remove double quotes from output
-//}
+// GetKubeEndpointURLs returns the app revision endpoint URLs as an array
+func (ts *TestService) GetKubeEndpointURLs() []string {
+	_, err := ts.waitForEndpointDNS()
+	if err != nil {
+		ts.T.Fatalf("Failed waiting for DNS:  %v", err.Error())
+		return []string{}
+	}
+	args := []string{"get", "service.rio.cattle.io",
+		"-n", testingNamespace,
+		ts.Service.Name,
+		"-o", `jsonpath="{.status.endpoints}"`}
+	urls, err := KubectlCmd(args)
+	if err != nil {
+		ts.T.Fatalf("Failed to get endpoint urls:  %v", err.Error())
+		return []string{}
+	}
+	return strings.Split(urls[2:len(urls)-2], " ")
+}
+
+// GetKubeAppEndpointURLs returns the endpoint URL of the service's app
+// by using kubectl and returns it as string
+func (ts *TestService) GetKubeAppEndpointURLs() []string {
+	_, err := ts.waitForAppEndpointDNS()
+	if err != nil {
+		ts.T.Fatalf("Failed waiting for DNS:  %v", err.Error())
+		return []string{}
+	}
+	args := []string{"get", "service.rio.cattle.io", 
+		"-n", testingNamespace,
+		ts.Service.Name, 
+		"-o", `jsonpath="{.status.appEndpoints}"`}
+	urls, err := KubectlCmd(args)
+	if err != nil {
+		ts.T.Fatalf("Failed to get app endpoint urls:  %v", err.Error())
+		return []string{}
+	}
+
+	return strings.Split(urls[2:len(urls)-2], " ")
+}
+
+// GetKubeCurrentWeight does the exact same thing as GetCurrentWeight but uses the kubectl command instead of rio
+func (ts *TestService) GetKubeCurrentWeight() int {
+	ts.reload()
+	args := []string{"get", "services.rio.cattle.io", ts.Name, "-n", testingNamespace, "-o", "json"}
+	resultString, err := KubectlCmd(args)
+	if err != nil {
+		ts.T.Fatalf("Failed to get services.rio.cattle.io:  %v", err.Error())
+	}
+	var svc riov1.Service
+	err = json.Unmarshal([]byte(resultString), &svc)
+	if err != nil {
+		ts.T.Fatalf("Failed to unmarshal service results: %s with error: %v", resultString, err.Error())
+	}
+	if svc.Status.ComputedWeight != nil {
+		return *svc.Status.ComputedWeight
+	}
+	return 0
+}
 
 // PodsResponsesMatchAvailableReplicas does a GetURL in the App endpoint and stores the response in a slice
 // the length of the resulting slice should represent the number of responsive pods in a service.
@@ -440,7 +461,7 @@ func (ts *TestService) PodsResponsesMatchAvailableReplicas(path string, numberOf
 	return len(responses) == numberOfReplicas
 }
 
-// KubeCompareReplicasValues get the app number of ready replicasets with a clientset
+// GetKubeAvailableReplicas get the app number of ready replicasets with a clientset
 // and returns true if that value match the scale given
 func (ts *TestService) GetKubeAvailableReplicas() int {
 	clientset := GetKubeClient()
