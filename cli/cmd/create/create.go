@@ -96,6 +96,7 @@ func (c *Create) RunCallback(ctx *clicontext.CLIContext, cb func(service *riov1.
 	}
 
 	service.Namespace, service.Name = stack.NamespaceAndName(ctx, service.Name)
+	service.Name, service.Spec.Version = kv.Split(service.Name, ":")
 
 	service = cb(service)
 	return service, ctx.Create(service)
