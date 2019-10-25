@@ -34,10 +34,10 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 				assert.Contains(t, pod, service.Service.Name)
 				assert.Contains(t, pod, "2/2")
 			}
-			//service.GenerateLoad()
-			//assert.Greater(t, service.GetAvailableReplicas(), 1, "should have more than 1 available replica")
-			//runningPods = service.GetRunningPods()
-			//assert.Greater(t, len(runningPods), 1)
+			service.GenerateLoad()
+			assert.Greater(t, service.GetAvailableReplicas(), 1, "should have more than 1 available replica")
+			runningPods = service.GetRunningPods()
+			assert.Greater(t, len(runningPods), 1)
 		})
 	}, spec.Parallel())
 
