@@ -56,22 +56,22 @@ func (td *TestDomain) GetDomain() string {
 	return getStandardFormatDomain(td.PublicDomain)
 }
 
-//// GetKubeDomain receives the TestDomain object to retrieve the test PublicDomain data
-//// CLI Command Run: "kubectl get publicdomains my-domain -n testing-ns -o json"
-//func (td *TestDomain) GetKubeDomain() string {
-//	td.reload()
-//	args := []string{"get", "publicdomains", td.PublicDomain.GetName(), "-n", testingNamespace, "-o", "json"}
-//	resultString, err := KubectlCmd(args)
-//	if err != nil {
-//		td.T.Fatalf("Failed to get admin.rio.cattle.io.publicdomains:  %v", err.Error())
-//	}
-//	var results adminv1.PublicDomain
-//	err = json.Unmarshal([]byte(resultString), &results)
-//	if err != nil {
-//		td.T.Fatalf("Failed to unmarshal PublicDomain result: %s with error: %v", resultString, err.Error())
-//	}
-//	return getStandardFormatDomain(results)
-//}
+// GetKubeDomain receives the TestDomain object to retrieve the test PublicDomain data
+// CLI Command Run: "kubectl get publicdomains my-domain -n testing-ns -o json"
+func (td *TestDomain) GetKubeDomain() string {
+	td.reload()
+	args := []string{"get", "publicdomains", td.PublicDomain.GetName(), "-n", testingNamespace, "-o", "json"}
+	resultString, err := KubectlCmd(args)
+	if err != nil {
+		td.T.Fatalf("Failed to get admin.rio.cattle.io.publicdomains:  %v", err.Error())
+	}
+	var results adminv1.PublicDomain
+	err = json.Unmarshal([]byte(resultString), &results)
+	if err != nil {
+		td.T.Fatalf("Failed to unmarshal PublicDomain result: %s with error: %v", resultString, err.Error())
+	}
+	return getStandardFormatDomain(results)
+}
 
 //////////////////
 // Private methods
