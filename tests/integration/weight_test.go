@@ -26,13 +26,15 @@ func weightTests(t *testing.T, when spec.G, it spec.S) {
 		it("should keep 100% of weight on original revision", func() {
 			assert.Equal(t, 100, service.GetCurrentWeight())
 			assert.Equal(t, 0, stagedService.GetCurrentWeight())
+			// todo: fix below
 			//assert.Equal(t, 100, service.GetKubeCurrentWeight())
 			//assert.Equal(t, 0, stagedService.GetKubeCurrentWeight())
 		})
 		it("should be able to split weights between revisions", func() {
-			stagedService.Weight(40, false, 5, 5)
+			stagedService.Weight(40, false, 0, 0)
 			assert.Equal(t, 60, service.GetCurrentWeight())
 			assert.Equal(t, 40, stagedService.GetCurrentWeight())
+			// todo: fix below
 			//assert.Equal(t, 60, service.GetKubeCurrentWeight())
 			//assert.Equal(t, 40, stagedService.GetKubeCurrentWeight())
 			responses := service.GetResponseCounts([]string{"Hello World", "Hello World v3"}, 12)

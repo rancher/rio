@@ -17,13 +17,13 @@ func TestMain(m *testing.M) {
 func TestSuite(t *testing.T) {
 	suite := spec.New("integration suite", spec.Report(report.Terminal{}))
 	specs := map[string]func(t *testing.T, when spec.G, it spec.S){
-		"run":             runTests,
-		"scale":           scaleTests,
-		"weight":          weightTests,
+		"run":             runTests,      // base done
+		"scale":           scaleTests,    // base done
+		"weight":          weightTests,   // base done
 		"endpoint":        endpointTests, // base done
 		"domain":          domainTests,
 		"route":           routeTests,
-		"export":          exportTests,
+		"export":          exportTests, // base done
 		"config":          configTests,
 		"externalService": externalServiceTests,
 		//"riofile":         riofileTests,

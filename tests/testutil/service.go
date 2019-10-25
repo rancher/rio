@@ -132,18 +132,18 @@ func (ts *TestService) Scale(scaleTo int) {
 
 // Weight calls "rio weight --rollout={rollout} --rollout-increment={increment} --rollout-interval={interval} ns/service:version={percentage}" on this service.
 // If passing rollout=false then the increment and interval values won't matter. Best practice is to pass "5" for both to keep in line with Spec defaults.
-func (ts *TestService) Weight(percentage int, rollout bool, increment int, interval int) {
+func (ts *TestService) Weight(percentage int, pause bool, increment int, interval int) {
 	_, err := RioCmd([]string{
 		"weight",
-		fmt.Sprintf("--rollout=%t", rollout),
-		fmt.Sprintf("--rollout-increment=%d", increment),
-		fmt.Sprintf("--rollout-interval=%d", interval),
+		fmt.Sprintf("--pause=%t", pause),
+		fmt.Sprintf("--increment=%d", increment),
+		fmt.Sprintf("--interval=%d", interval),
 		fmt.Sprintf("%s=%d", ts.Name, percentage),
 	})
 	if err != nil {
 		ts.T.Fatalf("weight command failed:  %v", err.Error())
 	}
-	if !rollout {
+	if !pause {
 		err = ts.waitForWeight(percentage)
 		if err != nil {
 			ts.T.Fatal(err.Error())
@@ -239,9 +239,7 @@ func (ts *TestService) GetEndpointResponse() string {
 }
 
 func (ts *TestService) GetAppEndpointResponse() string {
-	fmt.Println("CHecking", ts.GetAppEndpointURLs()[0])
 	response, err := WaitForURLResponse(ts.GetAppEndpointURLs()[0])
-	fmt.Println(response)
 	if err != nil {
 		ts.T.Fatal(err.Error())
 	}
