@@ -6,14 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"k8s.io/client-go/tools/clientcmd"
-
-	"k8s.io/apimachinery/pkg/api/errors"
-
 	"github.com/rancher/rio/modules/service/controllers/service/populate/rbac"
 	"github.com/rancher/wrangler/pkg/kubeconfig"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (
@@ -60,9 +57,7 @@ func (u *TestUser) GetKubeconfig() string {
 		Kind:     "ClusterRole",
 		Name:     u.Username,
 	}
-	if _, err := client.RbacV1().RoleBindings(testingNamespace).Create(binding); err != nil && !errors.IsAlreadyExists(err) {
-		u.T.Fatal(err)
-	}
+	client.RbacV1().RoleBindings(testingNamespace).Create(binding)
 
 	for _, user := range rawConfig.AuthInfos {
 		user.Impersonate = u.Username

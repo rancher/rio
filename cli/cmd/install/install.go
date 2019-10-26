@@ -3,7 +3,6 @@ package install
 import (
 	"fmt"
 	"net/http"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -110,17 +109,19 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 			return err
 		}
 		if clusterDomain == nil {
-			progress.Display("Warning: Detected that Rio cluster domain is not generated for this cluster right now", 2)
+			progress.Display("Waiting for rio system components...", 2)
 			continue
 		} else {
 			_, err = http.Get(fmt.Sprintf("http://%s:%d", clusterDomain.Name, clusterDomain.Spec.HTTPPort))
 			if err != nil {
-				progress.Display("Warning: ClusterDomain is not accessible. Error: %v\n", 2, err)
+				progress.Display("Waiting for rio system components. Trying to access clusterDomain: %v\n", 2, err)
 				continue
 			} else {
 				fmt.Println("ClusterDomain is reachable. Run `rio info` to get more info.")
 			}
 		}
+		fmt.Printf("\rrio controller version %s (%s) installed into namespace %s\n", version.Version, version.GitCommit, info.Status.SystemNamespace)
+
 		fmt.Printf("\rrio controller version %s (%s) installed into namespace %s\n", version.Version, version.GitCommit, info.Status.SystemNamespace)
 
 		fmt.Println("Controller logs are available from `rio systemlogs`")
@@ -131,18 +132,6 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		break
 	}
 	return nil
-}
-
-type list struct {
-	notReady []string
-}
-
-func (l list) String() string {
-	sort.Strings(l.notReady)
-	if len(l.notReady) > 3 {
-		return fmt.Sprint(append(l.notReady[:3], "..."))
-	}
-	return fmt.Sprint(l.notReady)
 }
 
 func (i *Install) preConfigure(ctx *clicontext.CLIContext) error {
