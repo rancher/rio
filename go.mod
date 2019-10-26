@@ -64,9 +64,7 @@ require (
 	github.com/gogo/protobuf v1.3.0
 	github.com/hashicorp/consul/api v1.2.0 // indirect
 	github.com/jetstack/cert-manager v0.11.0
-	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/linkerd/linkerd2 v0.0.0-20191010175117-1039d8254738
-	github.com/markbates/inflect v1.0.4 // indirect
 	github.com/mattn/go-shellwords v1.0.5
 	github.com/moby/buildkit v0.6.2
 	github.com/onsi/ginkgo v1.10.1
@@ -101,5 +99,6 @@ require (
 	k8s.io/klog v0.4.0
 	k8s.io/kubectl v0.0.0
 	k8s.io/kubernetes v1.13.2
+	knative.dev/pkg v0.0.0-20191024223035-2a3fc371d326
 	sigs.k8s.io/yaml v1.1.0
 )

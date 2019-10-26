@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"math/big"
 	"time"
-	"net"
 )
 
 type (
@@ -98,17 +97,11 @@ func CreateRootCA(
 ) (*CA, error) {
 	// Configure the root certificate.
 	t := createTemplate(1, &key.PublicKey, validity)
-	if ip := net.ParseIP(name); ip != nil {
-		t.IPAddresses = []net.IP{ip}
-	} else {
-		t.Subject = pkix.Name{CommonName: name}
-	}
-
+	t.Subject = pkix.Name{CommonName: name}
 	t.IsCA = true
 	t.MaxPathLen = -1
 	t.BasicConstraintsValid = true
 	t.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign
-
 
 	// Self-sign the root certificate.
 	crtb, err := x509.CreateCertificate(rand.Reader, t, t, key.Public(), key)
