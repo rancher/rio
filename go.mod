@@ -99,5 +99,6 @@ require (
 	k8s.io/klog v0.4.0
 	k8s.io/kubectl v0.0.0
 	k8s.io/kubernetes v1.13.2
+	knative.dev/pkg v0.0.0-20191024223035-2a3fc371d326
 	sigs.k8s.io/yaml v1.1.0
 )
