@@ -25,7 +25,7 @@ type Logs struct {
 	P_Previous   bool   `desc:"Print the logs for the previous instance of the container in a pod if it exists, excludes running"`
 	A_All        bool   `desc:"Include hidden or systems logs when logging" default:"false"`
 	NC_NoColor   bool   `desc:"Dont show color when logging" default:"false"`
-	F_Format     string `desc:"Output format: [default, raw, json]"`
+	O_Output     string `desc:"Output format: [default, raw, json]"`
 }
 
 // This is based on both wercker/stern and linkerd/stern implementations
@@ -161,7 +161,7 @@ func (l *Logs) Output(ctx *clicontext.CLIContext, conf *stern.Config) error {
 // logFormat is based on both wercker/stern and linkerd/stern templating
 func (l *Logs) logFormat() (*template.Template, error) {
 	var tpl string
-	switch l.F_Format {
+	switch l.O_Output {
 	case "json":
 		tpl = "{{json .}}\n"
 	case "raw":
