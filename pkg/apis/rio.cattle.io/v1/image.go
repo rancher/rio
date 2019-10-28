@@ -30,7 +30,7 @@ type ImageBuildSpec struct {
 	WebhookSecretName string `json:"webhookSecretName,omitempty"`
 
 	// Specify secret name for checking our git resources
-	CloneSecretName string `json:"pullSecretName,omitempty"`
+	CloneSecretName string `json:"cloneSecretName,omitempty"`
 
 	// Specify custom registry to push the image instead of built-in one
 	PushRegistry string `json:"pushRegistry,omitempty"`
