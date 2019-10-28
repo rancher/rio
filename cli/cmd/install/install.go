@@ -3,8 +3,11 @@ package install
 import (
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/rancher/wrangler/pkg/kv"
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/progress"
@@ -104,25 +107,30 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 			progress.Display("Waiting for rio controller to initialize", 2)
 			continue
 		}
-		clusterDomain, err := ctx.Domain()
-		if err != nil {
-			return err
-		}
-		if clusterDomain == nil {
-			progress.Display("Waiting for rio system components...", 2)
-			continue
-		} else {
-			_, err = http.Get(fmt.Sprintf("http://%s:%d", clusterDomain.Name, clusterDomain.Spec.HTTPPort))
-			if err != nil {
-				progress.Display("Waiting for rio system components. Trying to access clusterDomain: %v\n", 2, err)
-				continue
-			} else {
-				fmt.Println("ClusterDomain is reachable. Run `rio info` to get more info.")
-			}
-		}
-		fmt.Printf("\rrio controller version %s (%s) installed into namespace %s\n", version.Version, version.GitCommit, info.Status.SystemNamespace)
 
-		fmt.Printf("\rrio controller version %s (%s) installed into namespace %s\n", version.Version, version.GitCommit, info.Status.SystemNamespace)
+		if ready, notReadyList, err := i.checkDeployment(ctx); err != nil {
+			return err
+		} else if ready {
+			clusterDomain, err := ctx.Domain()
+			if err != nil {
+				return err
+			}
+			if clusterDomain == nil {
+				fmt.Println("\rWarning: clusterDomain is not generated")
+			} else {
+				_, err = http.Get(fmt.Sprintf("http://%s:%d", clusterDomain.Name, clusterDomain.Spec.HTTPPort))
+				if err != nil {
+					fmt.Printf("\rWarning: trying to access clusterDomain(http://%s:%d): %v\n", clusterDomain.Name, clusterDomain.Spec.HTTPPort, err)
+				} else {
+					fmt.Printf("\rGenerating clusterDomain for this cluster: %s. Verified clusterDomain is reachable.\n", clusterDomain.Name)
+				}
+			}
+		} else {
+			progress.Display("Waiting for system components. Not ready deployments: %v", 2, notReadyList.String())
+			continue
+		}
+
+		fmt.Printf("rio controller version %s (%s) installed into namespace %s\n", version.Version, version.GitCommit, info.Status.SystemNamespace)
 
 		fmt.Println("Controller logs are available from `rio systemlogs`")
 		fmt.Println("")
@@ -233,6 +241,59 @@ func (i *Install) configure(ctx *clicontext.CLIContext, systemStack *stack.Syste
 		}
 	}
 	return nil
+}
+
+var checkFeatures = map[string][]string{
+	"gateway":     {"rio-system/gateway-v2", "rio-system/gateway-proxy-v2", "rio-system/gloo"},
+	"build":       {"rio-system/buildkitd", "rio-system/webhook", "tekton-pipelines/tekton-pipelines-webhook", "tekton-pipelines/tekton-pipelines-controller"},
+	"letsencrypt": {"rio-system/cert-manager"},
+	"autoscaling": {"rio-system/autoscaler"},
+	"linkerd":     {"linkerd/linkerd-identity", "linkerd/linkerd-tap", "linkerd/linkerd-sp-validator", "linkerd/linkerd-proxy-injector", "linkerd/linkerd-controller", "linkerd/linkerd-grafana", "linkerd/linkerd-web", "linkerd/linkerd-destination", "linkerd/linkerd-prometheus"},
+}
+
+type list struct {
+	notReady []string
+}
+
+func (l list) String() string {
+	sort.Strings(l.notReady)
+	if len(l.notReady) > 3 {
+		return fmt.Sprint(append(l.notReady[:3], "..."))
+	}
+	return fmt.Sprint(l.notReady)
+}
+
+func (i *Install) checkDeployment(ctx *clicontext.CLIContext) (bool, list, error) {
+	notReadyList := list{}
+	config, err := ctx.Core.ConfigMaps(ctx.SystemNamespace).Get(config2.ConfigName, metav1.GetOptions{})
+	if err != nil {
+		return false, notReadyList, err
+	}
+
+	conf, err := config2.FromConfigMap(config)
+	if err != nil {
+		return false, notReadyList, err
+	}
+
+	for feature, toChecks := range checkFeatures {
+		if f, ok := conf.Features[feature]; ok && f.Enabled != nil && !*f.Enabled {
+			continue
+		}
+
+		for _, name := range toChecks {
+			ns, n := kv.Split(name, "/")
+			deploy, err := ctx.K8s.AppsV1().Deployments(ns).Get(n, metav1.GetOptions{})
+			if err != nil || !isReady(deploy.Status) {
+				notReadyList.notReady = append(notReadyList.notReady, name)
+			}
+		}
+	}
+
+	if len(notReadyList.notReady) > 0 {
+		return false, notReadyList, nil
+	}
+
+	return true, notReadyList, nil
 }
 
 func isReady(status appsv1.DeploymentStatus) bool {
