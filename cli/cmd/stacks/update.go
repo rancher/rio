@@ -6,12 +6,10 @@ import (
 	"github.com/rancher/rio/cli/cmd/apply"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	"github.com/rancher/wrangler/pkg/kv"
 )
 
 type update struct {
-	Answers string   `desc:"Update answer file"`
-	Images  []string `desc:"Update image for services"`
+	Answers string `desc:"Update answer file"`
 }
 
 func (u update) Run(ctx *clicontext.CLIContext) error {
@@ -30,13 +28,6 @@ func (u update) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	images := map[string]string{}
-	for _, i := range u.Images {
-		serviceName, image := kv.Split(i, "=")
-		images[serviceName] = image
-	}
-
 	s.Spec.Answers = answers
-	s.Spec.Images = images
 	return ctx.UpdateObject(s)
 }
