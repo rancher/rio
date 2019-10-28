@@ -48,10 +48,7 @@ func info(ctx *clicontext.CLIContext) error {
 	builder.WriteString(fmt.Sprintf("Cluster Domain: %s\n", clusterDomain.Name))
 	builder.WriteString(fmt.Sprintf("Cluster Domain IPs: %s\n", strings.Join(addresses, ",")))
 	builder.WriteString(fmt.Sprintf("System Namespace: %s\n", info.Status.SystemNamespace))
-	builder.WriteString(fmt.Sprintf("System Ready State: %v\n", info.Status.Ready))
 	builder.WriteString(fmt.Sprintf("Wildcard certificates: %v\n", clusterDomain.Status.HTTPSSupported))
-	builder.WriteString("\n")
-	builder.WriteString("System Components:\n")
 
 	var keys []string
 	for k := range info.Status.SystemComponentReadyMap {

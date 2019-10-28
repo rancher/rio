@@ -32,7 +32,6 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 			runningPods := service.GetRunningPods()
 			for _, pod := range runningPods {
 				assert.Contains(t, pod, service.Service.Name)
-				assert.Contains(t, pod, "2/2")
 			}
 			// todo: fix GenerateLoad
 			//service.GenerateLoad()
@@ -57,7 +56,6 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 			assert.Len(t, runningPods, 3)
 			for _, pod := range runningPods {
 				assert.Contains(t, pod, service.Service.Name)
-				assert.Contains(t, pod, "2/2")
 			}
 
 			service.Scale(1)
@@ -67,7 +65,6 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 			assert.Len(t, runningPods, 1)
 			for _, pod := range runningPods {
 				assert.Contains(t, pod, service.Service.Name)
-				assert.Contains(t, pod, "2/2")
 			}
 		})
 	}, spec.Parallel())

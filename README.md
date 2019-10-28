@@ -1,5 +1,6 @@
 # Rio [Alpha]
 
+[![Build Status](https://drone-publish.rancher.io/api/badges/rancher/rio/status.svg?branch=master)](https://drone-publish.rancher.io/rancher/rio)
 [![Go Report Card](https://goreportcard.com/badge/github.com/rancher/rio)](https://goreportcard.com/report/github.com/rancher/rio)
 
 Rio is a MicroPaaS that can be layered on top of any standard Kubernetes cluster. Consisting of a few Kubernetes custom resources and a CLI to enhance the user experience, users can easily deploy services to Kubernetes and automatically get continuous delivery, DNS, HTTPS, routing, monitoring, autoscaling, canary deployments, git-triggered builds, and much more. All it takes to get going is an existing Kubernetes cluster and the rio CLI.
