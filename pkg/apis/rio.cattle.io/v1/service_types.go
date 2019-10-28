@@ -382,6 +382,12 @@ type ServiceStatus struct {
 	// ScaleStatus for the Service
 	ScaleStatus *ScaleStatus `json:"scaleStatus,omitempty"`
 
+	// ComputedApp is the calculated value of Spec.App if not set
+	ComputedApp string `json:"computedApp,omitempty"`
+
+	// ComputedVersion is the calculated value of Spec.Version if not set
+	ComputedVersion string `json:"computedVersion,omitempty"`
+
 	// ComputedReplicas is calculated from autoscaling component to make sure pod has the desired load
 	ComputedReplicas *int `json:"computedReplicas,omitempty"`
 
