@@ -3,11 +3,11 @@ package servicestatus
 import (
 	"context"
 
-	"github.com/rancher/rio/pkg/deployment"
-
 	"github.com/rancher/rio/modules/service/pkg/endpoints"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/deployment"
 	v1 "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/services"
 	"github.com/rancher/rio/types"
 	appsv1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/apps/v1"
 	"github.com/rancher/wrangler/pkg/relatedresource"
@@ -92,7 +92,16 @@ func (s *statusHandler) handle(obj *riov1.Service, status riov1.ServiceStatus) (
 	status.AppEndpoints = appEndpoints
 	status.ScaleStatus = toScaleStatus(owner)
 	status.DeploymentReady = toReady(owner)
+	status.ComputedReplicas = getReplicas(obj)
+	status.ComputedApp, status.ComputedVersion = services.AppAndVersion(obj)
 	return status, nil
+}
+
+func getReplicas(obj *riov1.Service) *int {
+	if obj.Spec.Autoscale == nil {
+		return obj.Spec.Replicas
+	}
+	return obj.Status.ComputedReplicas
 }
 
 func toScaleStatus(owner runtime.Object) *riov1.ScaleStatus {
