@@ -95,7 +95,7 @@ func WaitForURLResponse(endpoint string) (string, error) {
 		}
 		return false, nil
 	})
-	err := wait.Poll(2*time.Second, 120*time.Second, f)
+	err := wait.Poll(2*time.Second, 240*time.Second, f)
 	if err != nil {
 		return "", errors.New("endpoint did not return 200")
 	}

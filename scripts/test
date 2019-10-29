@@ -9,6 +9,16 @@ fatal()
     exit 1
 }
 
+print_log()
+{
+    EXIT=$?
+    if [ $EXIT -ne 0 ]; then
+        echo '***RIO LOGS***'
+        cat ./rio-controller-log
+        echo '***END RIO LOGS***'
+    fi
+}
+
 
 if [[ ${ARCH} == amd64 ]]; then
     echo Running tests
@@ -25,11 +35,12 @@ if [[ ${ARCH} == amd64 ]]; then
     export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
     export PATH=$(pwd)/bin:$PATH
 
-    RUN_WEBHOOK=true rio-controller >./rio-controller-log 2>&1 &
+    RUN_WEBHOOK=true rio-controller 2>&1 > ./rio-controller-log &
     rio install --check 2>&1
 
-    go test -v ./tests/integration/... --integration-tests
+    kubectl get po -n rio-system
 
-    echo "Printing rio controller logs"
-    cat ./rio-controller-log
+    trap print_log exit
+
+    go test -v ./tests/integration/... --integration-tests
 fi

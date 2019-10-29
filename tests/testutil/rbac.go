@@ -28,10 +28,10 @@ type TestUser struct {
 	Username   string
 	Group      string
 	T          *testing.T
-	kubeconfig string
+	Kubeconfig string
 }
 
-func (u *TestUser) GetKubeconfig() string {
+func (u *TestUser) Create() {
 	loader := kubeconfig.GetInteractiveClientConfig(os.Getenv("KUBECONFIG"))
 	rawConfig, err := loader.RawConfig()
 	if err != nil {
@@ -57,6 +57,7 @@ func (u *TestUser) GetKubeconfig() string {
 		Kind:     "ClusterRole",
 		Name:     u.Username,
 	}
+
 	client.RbacV1().RoleBindings(testingNamespace).Create(binding)
 
 	for _, user := range rawConfig.AuthInfos {
@@ -71,10 +72,9 @@ func (u *TestUser) GetKubeconfig() string {
 		u.T.Fatal(err)
 	}
 
-	u.kubeconfig = tmpfile.Name()
-	return u.kubeconfig
+	u.Kubeconfig = tmpfile.Name()
 }
 
 func (u *TestUser) Cleanup() {
-	os.RemoveAll(u.kubeconfig)
+	os.RemoveAll(u.Kubeconfig)
 }
