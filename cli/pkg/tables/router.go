@@ -80,16 +80,13 @@ func NewRouter(cfg Config) TableWriter {
 	}, cfg)
 
 	writer.AddFormatFunc("formatOpts", FormatOpts)
-	writer.AddFormatFunc("formatURL", FormatURL())
+	writer.AddFormatFunc("formatURL", FormatURL)
 	writer.AddFormatFunc("formatAction", FormatAction)
 	writer.AddFormatFunc("formatTarget", FormatRouteTarget)
-
-	domain, _ := cfg.Domain()
 
 	return &tableWriter{
 		writer: &routerWriter{
 			Writer: writer,
-			domain: domain.Name,
 		},
 	}
 }
@@ -239,31 +236,29 @@ func writeStringMatchMap(buf *strings.Builder, prefix string, matches []v1.Heade
 	}
 }
 
-func FormatURL() func(obj interface{}) (string, error) {
-	return func(obj interface{}) (string, error) {
-		data, ok := obj.(*RouteSpecData)
-		if !ok {
-			return "", fmt.Errorf("invalid data")
-		}
-		if len(data.Obj.Status.Endpoints) == 0 {
-			return "", nil
-		}
-		var endpoints []string
-		hostNameSeen := map[string]string{}
-		for _, e := range data.Obj.Status.Endpoints {
-			u, _ := url.Parse(e)
-			if u.Scheme == "https" {
+func FormatURL(obj interface{}) (string, error) {
+	data, ok := obj.(*RouteSpecData)
+	if !ok {
+		return "", fmt.Errorf("invalid data")
+	}
+	if len(data.Obj.Status.Endpoints) == 0 {
+		return "", nil
+	}
+	var endpoints []string
+	hostNameSeen := map[string]string{}
+	for _, e := range data.Obj.Status.Endpoints {
+		u, _ := url.Parse(e)
+		if u.Scheme == "https" {
+			hostNameSeen[u.Hostname()] = e + data.path()
+		} else {
+			if _, ok := hostNameSeen[u.Hostname()]; !ok {
 				hostNameSeen[u.Hostname()] = e + data.path()
-			} else {
-				if _, ok := hostNameSeen[u.Hostname()]; !ok {
-					hostNameSeen[u.Hostname()] = e + data.path()
-				}
 			}
 		}
-
-		for _, endpoint := range hostNameSeen {
-			endpoints = append(endpoints, endpoint)
-		}
-		return strings.Join(endpoints, ","), nil
 	}
+
+	for _, endpoint := range hostNameSeen {
+		endpoints = append(endpoints, endpoint)
+	}
+	return strings.Join(endpoints, ","), nil
 }

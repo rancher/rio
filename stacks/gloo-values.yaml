@@ -24,3 +24,7 @@ gatewayProxies:
 gloo:
   deployment:
     stats: false
+
+namespace:
+  create: false
+
