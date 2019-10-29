@@ -12,7 +12,7 @@ replace (
 	// vt100 needed for buildkit
 	github.com/jaguilar/vt100 => github.com/tonistiigi/vt100 v0.0.0-20190402012908-ad4c4a574305
 	github.com/jetstack/cert-manager v0.11.0 => github.com/rancher/cert-manager v0.5.1-0.20191021233300-3a070253aeda
-	github.com/linkerd/linkerd2 v0.5.1-0.20191010175117-1039d8254738 => github.com/StrongMonkey/linkerd2 v0.0.0-20191021165729-976fad67457a
+	github.com/linkerd/linkerd2 => github.com/StrongMonkey/linkerd2 v0.0.0-20191021165729-976fad67457a
 	github.com/wercker/stern v1.11.0 => github.com/linkerd/stern v0.0.0-20190907020106-201e8ccdff9c
 	golang.org/x/crypto v0.0.0-20190129210102-0709b304e793 => golang.org/x/crypto v0.0.0-20180904163835-0709b304e793
 	k8s.io/api => github.com/rancher/kubernetes/staging/src/k8s.io/api v1.16.2-k3s.1

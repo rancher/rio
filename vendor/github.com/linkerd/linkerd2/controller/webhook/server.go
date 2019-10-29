@@ -116,12 +116,11 @@ func (s *Server) processReq(data []byte) *admissionv1beta1.AdmissionReview {
 		}
 		return admissionReview
 	}
-	log.Infof("received admission review request %s", admissionReview.Request.UID)
+	log.Debugf("received admission review request %s", admissionReview.Request.UID)
 	log.Debugf("admission request: %+v", admissionReview.Request)
 
 	admissionResponse, err := s.handler(s.api, admissionReview.Request, s.recorder)
 	if err != nil {
-		log.Error("failed to inject sidecar. Reason: ", err)
 		admissionReview.Response = &admissionv1beta1.AdmissionResponse{
 			UID:     admissionReview.Request.UID,
 			Allowed: false,

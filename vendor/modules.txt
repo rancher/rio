@@ -324,7 +324,7 @@ github.com/json-iterator/go
 github.com/k0kubun/pp
 # github.com/konsorten/go-windows-terminal-sequences v1.0.2
 github.com/konsorten/go-windows-terminal-sequences
-# github.com/linkerd/linkerd2 v0.0.0-20191010175117-1039d8254738
+# github.com/linkerd/linkerd2 v0.0.0-20191010175117-1039d8254738 => github.com/StrongMonkey/linkerd2 v0.0.0-20191021165729-976fad67457a
 github.com/linkerd/linkerd2/controller/k8s
 github.com/linkerd/linkerd2/controller/webhook
 github.com/linkerd/linkerd2/pkg/tls
