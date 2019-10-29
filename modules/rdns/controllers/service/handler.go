@@ -183,7 +183,7 @@ func (h *handler) staticAddress() ([]adminv1.Address, error) {
 func (h *handler) getAddresses(svc *corev1.Service) ([]adminv1.Address, bool, error) {
 	result, err := h.staticAddress()
 	if len(result) > 0 || err != nil {
-		return result, false, err
+		return result, true, err
 	}
 
 	if svc.Spec.Type == corev1.ServiceTypeExternalName {
@@ -200,10 +200,12 @@ func (h *handler) getAddresses(svc *corev1.Service) ([]adminv1.Address, bool, er
 	}
 
 	for _, ingress := range svc.Status.LoadBalancer.Ingress {
-		result = append(result, adminv1.Address{
-			IP:       ingress.IP,
-			Hostname: ingress.Hostname,
-		})
+		if ingress.IP != "" || ingress.Hostname != "" {
+			result = append(result, adminv1.Address{
+				IP:       ingress.IP,
+				Hostname: ingress.Hostname,
+			})
+		}
 	}
 
 	if len(result) > 0 {

@@ -13,7 +13,7 @@ import (
 )
 
 type ServiceData struct {
-	ID        string
+	Name      string
 	Service   *riov1.Service
 	Namespace string
 	Pod       *corev1.Pod
@@ -47,7 +47,7 @@ func (p *Ps) services(ctx *clicontext.CLIContext) error {
 			return err
 		}
 		output = append(output, ServiceData{
-			ID:        id,
+			Name:      id,
 			Service:   service.(*riov1.Service),
 			Namespace: service.(*riov1.Service).Namespace,
 			Pod:       podMap[service.(*riov1.Service).Name],

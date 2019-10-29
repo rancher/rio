@@ -16,12 +16,11 @@ import (
 
 func NewService(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
-		{"NAME", "{{.ID}}"},
+		{"NAME", "{{.Name}}"},
 		{"IMAGE", "{{.Service | image}}"},
 		{"ENDPOINT", "{{arrayFirst .Service.Status.Endpoints}}"},
 		{"SCALE", "{{scale .Service .Service.Status.ScaleStatus}}"},
-		{"APP", "{{.Service | app}}"},
-		{"VERSION", "{{.Service | version}}"},
+		{"APP/VERSION", "{{.Service | appAndVersion}}"},
 		{"WEIGHT", "{{.Service | formatWeight}}"},
 		{"CREATED", "{{.Service.CreationTimestamp | ago}}"},
 		{"DETAIL", "{{serviceDetail .Service .Pod}}"},
@@ -29,8 +28,7 @@ func NewService(cfg Config) TableWriter {
 
 	writer.AddFormatFunc("image", FormatImage)
 	writer.AddFormatFunc("scale", formatRevisionScale)
-	writer.AddFormatFunc("app", app)
-	writer.AddFormatFunc("version", version)
+	writer.AddFormatFunc("appAndVersion", appAndVersion)
 	writer.AddFormatFunc("formatWeight", formatWeight)
 	writer.AddFormatFunc("serviceDetail", serviceDetail)
 
@@ -39,22 +37,13 @@ func NewService(cfg Config) TableWriter {
 	}
 }
 
-func app(data interface{}) string {
+func appAndVersion(data interface{}) string {
 	s, ok := data.(*v1.Service)
 	if !ok {
 		return ""
 	}
-	appName, _ := services.AppAndVersion(s)
-	return appName
-}
-
-func version(data interface{}) string {
-	s, ok := data.(*v1.Service)
-	if !ok {
-		return ""
-	}
-	_, version := services.AppAndVersion(s)
-	return version
+	appName, version := services.AppAndVersion(s)
+	return fmt.Sprintf("%s/%s", appName, version)
 }
 
 func formatWeight(data interface{}) string {

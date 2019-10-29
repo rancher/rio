@@ -27,7 +27,12 @@ func (a *Attach) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	return RunAttach(ctx, timeout, ctx.CLI.Args()[0], a.Pod)
+	svc, err := ctx.ByID(ctx.CLI.Args()[0])
+	if err != nil {
+		return err
+	}
+
+	return RunAttach(ctx, timeout, svc.Name, a.Pod)
 }
 
 func RunAttach(ctx *clicontext.CLIContext, timeout time.Duration, service, podName string) error {
@@ -55,6 +60,10 @@ func RunAttach(ctx *clicontext.CLIContext, timeout time.Duration, service, podNa
 			}
 		} else {
 			pod = pods[0]
+		}
+
+		if pod.Status.Phase == v1.PodRunning {
+			break
 		}
 
 		if time.Now().Before(deadline) {

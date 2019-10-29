@@ -296,9 +296,11 @@ func ParseDestinations(targets []string) ([]riov1.WeightedDestination, error) {
 		target, optStr := kv.Split(target, ",")
 		opts := kv.SplitMap(optStr, ",")
 
+		// take the last part splitted by /
+		parts := strings.Split(target, "/")
 		wd := riov1.WeightedDestination{
 			Destination: riov1.Destination{
-				App: target,
+				App: parts[len(parts)-1],
 			},
 		}
 
