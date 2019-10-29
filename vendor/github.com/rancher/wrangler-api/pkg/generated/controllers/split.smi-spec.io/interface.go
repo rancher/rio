@@ -19,9 +19,9 @@ limitations under the License.
 package split
 
 import (
-	clientset "github.com/deislabs/smi-sdk-go/pkg/gen/client/split/clientset/versioned"
-	informers "github.com/deislabs/smi-sdk-go/pkg/gen/client/split/informers/externalversions/split"
+	clientset "github.com/rancher/wrangler-api/pkg/generated/clientset/versioned"
 	v1alpha1 "github.com/rancher/wrangler-api/pkg/generated/controllers/split.smi-spec.io/v1alpha1"
+	informers "github.com/rancher/wrangler-api/pkg/generated/informers/externalversions/split"
 	"github.com/rancher/wrangler/pkg/generic"
 )
 

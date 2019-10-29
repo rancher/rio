@@ -11,7 +11,16 @@ gateway:
 gatewayProxies:
   gatewayProxyV2:
     stats: false
-    
+    gatewaySettings:
+      customHttpsGateway:
+        plugins:
+          httpConnectionManagerSettings:
+            useRemoteAddress: true
+      customHttpGateway:
+        plugins:
+          httpConnectionManagerSettings:
+            useRemoteAddress: true
+
 gloo:
   deployment:
     stats: false

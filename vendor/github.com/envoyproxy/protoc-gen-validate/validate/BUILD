@@ -1,22 +1,25 @@
 # gazelle:exclude validate.pb.go
 
-load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
-load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
+load("//bazel:go_proto_library.bzl", "go_proto_library")
+load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library", "py_proto_library")
 
 proto_library(
     name = "validate_proto",
     srcs = ["validate.proto"],
-    visibility = ["//visibility:public"],
     deps = [
         "@com_google_protobuf//:descriptor_proto",
         "@com_google_protobuf//:duration_proto",
         "@com_google_protobuf//:timestamp_proto",
     ],
+    visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
     name = "validate_cc",
-    deps = [":validate_proto"],
+    srcs = ["validate.proto"],
+    protoc = "@com_google_protobuf//:protoc",
+    default_runtime = "@com_google_protobuf//:protobuf",
+    deps = ["@com_google_protobuf//:cc_wkt_protos"],
     visibility = ["//visibility:public"],
 )
 
@@ -31,8 +34,16 @@ py_proto_library(
 
 go_proto_library(
     name = "go_default_library",
-    importpath = "github.com/envoyproxy/protoc-gen-validate/validate",
-    proto = ":validate_proto",
+    srcs = ["validate.proto"],
+    protoc = "@com_google_protobuf//:protoc",
+    rules_go_repo_only_for_internal_use = "",
+    ignore_go_package_option = 1,  # https://github.com/bazelbuild/rules_go/issues/323
+    deps = [
+        "@com_github_golang_protobuf//ptypes/duration:go_default_library",
+        "@com_github_golang_protobuf//ptypes/timestamp:go_default_library",
+        "@com_github_golang_protobuf//protoc-gen-go/descriptor:go_default_library",
+    ],
+    importpath = "github.com/lyft/protoc-gen-validate/validate",
     visibility = ["//visibility:public"],
 )
 
@@ -40,10 +51,4 @@ cc_library(
     name = "cc_validate",
     hdrs = ["validate.h"],
     visibility = ["//visibility:public"],
-)
-
-java_proto_library(
-    name = "validate_java",
-    deps = [":validate_proto"],
-    visibility=["//visibility:public"],
 )

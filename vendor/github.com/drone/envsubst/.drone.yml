@@ -1,10 +1,8 @@
-workspace:
-  base: /go
-  path: src/github.com/drone/envsubst
+kind: pipeline
+name: default
 
-pipeline:
-  build:
-    image: golang:1.8
-    commands:
-      - go get -t ./...
-      - go test -v ./...
+steps:
+- name: build
+  image: golang:1.11
+  commands:
+  - go test -v ./...

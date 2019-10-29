@@ -246,14 +246,14 @@ func (h handler) ValidateAuth(api *k8s.API, request *admissionv1beta1.AdmissionR
 	}
 
 	var service riov1.Service
-	err := yaml.UnmarshalStrict(request.Object.Raw, &service)
+	err := yaml.Unmarshal(request.Object.Raw, &service)
 	if err != nil {
 		return admissionResponse, fmt.Errorf("failed to validate rio service: %v", err)
 	}
 	// todo: compare spec, it can be removed after status is moved to subresource
 	if request.Operation == admissionv1beta1.Update {
 		var oldService riov1.Service
-		err := yaml.UnmarshalStrict(request.OldObject.Raw, &oldService)
+		err := yaml.Unmarshal(request.OldObject.Raw, &oldService)
 		if err != nil {
 			return admissionResponse, fmt.Errorf("failed to validate rio service, parsing old object: %v", err)
 		}

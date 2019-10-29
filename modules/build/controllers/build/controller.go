@@ -9,8 +9,8 @@ import (
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
+	"github.com/rancher/wrangler/pkg/condition"
 	tektonv1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-	"knative.dev/pkg/apis"
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
@@ -97,9 +97,11 @@ func (h handler) updateService(key string, build *tektonv1alpha1.TaskRun) (*tekt
 			}
 		}
 	} else if build.IsDone() {
-		con := build.Status.GetCondition(apis.ConditionSucceeded)
+		reason := condition.Cond("Succeeded").GetReason(build)
+		message := condition.Cond("Succeeded").GetMessage(build)
+
 		deepCopy := svc.DeepCopy()
-		v1.ServiceConditionImageReady.SetError(deepCopy, con.Reason, errors.New(con.Message))
+		v1.ServiceConditionImageReady.SetError(deepCopy, reason, errors.New(message))
 		if _, err := h.services.Update(deepCopy); err != nil {
 			return build, err
 		}

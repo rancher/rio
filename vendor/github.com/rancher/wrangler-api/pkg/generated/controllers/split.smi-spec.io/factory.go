@@ -22,9 +22,9 @@ import (
 	"context"
 	"time"
 
-	clientset "github.com/deislabs/smi-sdk-go/pkg/gen/client/split/clientset/versioned"
-	scheme "github.com/deislabs/smi-sdk-go/pkg/gen/client/split/clientset/versioned/scheme"
-	informers "github.com/deislabs/smi-sdk-go/pkg/gen/client/split/informers/externalversions"
+	clientset "github.com/rancher/wrangler-api/pkg/generated/clientset/versioned"
+	scheme "github.com/rancher/wrangler-api/pkg/generated/clientset/versioned/scheme"
+	informers "github.com/rancher/wrangler-api/pkg/generated/informers/externalversions"
 	"github.com/rancher/wrangler/pkg/generic"
 	"github.com/rancher/wrangler/pkg/schemes"
 	"k8s.io/apimachinery/pkg/runtime/schema"

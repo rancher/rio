@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	intstr "k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -1166,12 +1167,17 @@ func (in *StackSpec) DeepCopyInto(out *StackSpec) {
 		*out = new(StackBuild)
 		**out = **in
 	}
-	if in.Images != nil {
-		in, out := &in.Images, &out.Images
-		*out = make(map[string]string, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val
+	if in.Permissions != nil {
+		in, out := &in.Permissions, &out.Permissions
+		*out = make([]Permission, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
+	}
+	if in.AdditionalGroupVersionKinds != nil {
+		in, out := &in.AdditionalGroupVersionKinds, &out.AdditionalGroupVersionKinds
+		*out = make([]schema.GroupVersionKind, len(*in))
+		copy(*out, *in)
 	}
 	if in.Answers != nil {
 		in, out := &in.Answers, &out.Answers

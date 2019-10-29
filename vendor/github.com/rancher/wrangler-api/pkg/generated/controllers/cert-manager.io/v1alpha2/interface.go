@@ -20,8 +20,8 @@ package v1alpha2
 
 import (
 	v1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha2"
-	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/certmanager/v1alpha2"
+	clientset "github.com/rancher/wrangler-api/pkg/generated/clientset/versioned/typed/certmanager/v1alpha2"
+	informers "github.com/rancher/wrangler-api/pkg/generated/informers/externalversions/certmanager/v1alpha2"
 	"github.com/rancher/wrangler/pkg/generic"
 )
 

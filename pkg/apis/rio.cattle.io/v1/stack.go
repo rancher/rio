@@ -3,6 +3,7 @@ package v1
 import (
 	"github.com/rancher/wrangler/pkg/genericcondition"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // +genclient
@@ -20,11 +21,15 @@ type StackSpec struct {
 	// Stack build parameters that watches git repo
 	Build *StackBuild `json:"build,omitempty"`
 
-	// Stack template
+	// Permissions used while deploying objects created by this stack
+	Permissions []Permission `json:"permissions,omitempty" mapper:"permissions,alias=permission"`
+
+	// Deprecated, do not use
 	Template string `json:"template,omitempty"`
 
-	// Stack images
-	Images map[string]string `json:"images,omitempty"`
+	// Additional GVKs not in the rio.cattle.io that have the rio.cattle.io/stack label. These objects
+	// are "owned" by this stack
+	AdditionalGroupVersionKinds []schema.GroupVersionKind `json:"additionalGroupVersionKinds,omitempty"`
 
 	// Stack answers
 	Answers map[string]string `json:"answers,omitempty"`
@@ -42,6 +47,12 @@ type StackBuild struct {
 
 	// Git secret name for repository
 	CloneSecretName string `json:"cloneSecretName,omitempty"`
+
+	// Specify the name of the Riofile in the Repo. This is the full path relative to the repo root. Defaults to `Riofile`.
+	Riofile string `json:"rioFile,omitempty"`
+
+	// Specify the github secret name. Used to create Github webhook, the secret key has to be `accessToken`
+	WebhookSecretName string `json:"webhookSecretName,omitempty"`
 }
 
 type StackStatus struct {
