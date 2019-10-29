@@ -467,7 +467,7 @@ github.com/rancher/mapper/builder
 github.com/rancher/mapper/definition
 github.com/rancher/mapper/values
 github.com/rancher/mapper/httperror
-# github.com/rancher/norman v0.0.0-20191015045353-cc004d32fcc9
+# github.com/rancher/norman v0.0.0-20191030191625-ebecbda5fbe3
 github.com/rancher/norman/pkg/debug
 github.com/rancher/norman/pkg/types/convert
 github.com/rancher/norman/pkg/data

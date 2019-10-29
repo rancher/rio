@@ -3,6 +3,7 @@ package rollout
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
@@ -15,24 +16,26 @@ import (
 )
 
 type rolloutHandler struct {
-	services     riov1controller.ServiceController
-	serviceCache riov1controller.ServiceCache
-	client       riov1controller.ServiceClient
-	lastWrite    map[string]metav1.Time
+	services      riov1controller.ServiceController
+	serviceCache  riov1controller.ServiceCache
+	client        riov1controller.ServiceClient
+	lastWrite     map[string]metav1.Time
+	lastWriteLock sync.RWMutex
 }
 
 func Register(ctx context.Context, rContext *types.Context) error {
-	rh := rolloutHandler{
-		services:     rContext.Rio.Rio().V1().Service(),
-		serviceCache: rContext.Rio.Rio().V1().Service().Cache(),
-		client:       rContext.Rio.Rio().V1().Service(),
-		lastWrite:    make(map[string]metav1.Time),
+	rh := &rolloutHandler{
+		services:      rContext.Rio.Rio().V1().Service(),
+		serviceCache:  rContext.Rio.Rio().V1().Service().Cache(),
+		client:        rContext.Rio.Rio().V1().Service(),
+		lastWrite:     make(map[string]metav1.Time),
+		lastWriteLock: sync.RWMutex{},
 	}
 	rContext.Rio.Rio().V1().Service().OnChange(ctx, "rollout", rh.rollout)
 	return nil
 }
 
-func (rh rolloutHandler) rollout(key string, svc *riov1.Service) (*riov1.Service, error) {
+func (rh *rolloutHandler) rollout(key string, svc *riov1.Service) (*riov1.Service, error) {
 	if svc == nil || svc.DeletionTimestamp != nil {
 		return nil, nil
 	}
@@ -83,10 +86,13 @@ func (rh rolloutHandler) rollout(key string, svc *riov1.Service) (*riov1.Service
 		weightToAdjust := *s.Spec.Weight - computedWeight
 
 		if incrementalRollout(s.Spec.RolloutConfig) {
-			if time.Now().Before(rh.lastWrite[serviceKey(s)].Add(s.Spec.RolloutConfig.Interval.Duration)) { // todo: maybe add .5 second cushion here ?
+			rh.lastWriteLock.Lock() // Don't allow anyone else to read while we might write, avoids competing writes. Would be nice to convert this to key based locking.
+			lastSvcWrite := rh.lastWrite[serviceKey(s)]
+			if time.Now().Before(lastSvcWrite.Add(s.Spec.RolloutConfig.Interval.Duration)) {
+				rh.lastWriteLock.Unlock()
 				continue // this protects the service from scaling early, can't trust that next enqueue is from here
 			}
-			if abs(weightToAdjust) < s.Spec.RolloutConfig.Increment || allServicesOff(s, svcs) { // adjust entire amount
+			if abs(weightToAdjust) < s.Spec.RolloutConfig.Increment || (weightToAdjust > 0 && allOtherServicesOff(s, svcs)) { // adjust entire amount
 				computedWeight += weightToAdjust
 			} else { // only adjust one increment
 				oneIncrement := s.Spec.RolloutConfig.Increment
@@ -97,6 +103,7 @@ func (rh rolloutHandler) rollout(key string, svc *riov1.Service) (*riov1.Service
 			}
 			*s.Status.ComputedWeight = computedWeight
 			rh.lastWrite[serviceKey(s)] = metav1.NewTime(time.Now())
+			rh.lastWriteLock.Unlock()
 			rh.enqueueService(s)
 		} else {
 			// immediate rollout
@@ -111,7 +118,7 @@ func (rh rolloutHandler) rollout(key string, svc *riov1.Service) (*riov1.Service
 	return svc, nil
 }
 
-func (rh rolloutHandler) updateServices(svcs []*riov1.Service, updateNeeded []string) error {
+func (rh *rolloutHandler) updateServices(svcs []*riov1.Service, updateNeeded []string) error {
 	for _, s := range svcs {
 		if contains(updateNeeded, serviceKey(s)) {
 			_, err := rh.client.UpdateStatus(s)
@@ -124,7 +131,7 @@ func (rh rolloutHandler) updateServices(svcs []*riov1.Service, updateNeeded []st
 }
 
 // sleep in background and run again after interval period
-func (rh rolloutHandler) enqueueService(s *riov1.Service) {
+func (rh *rolloutHandler) enqueueService(s *riov1.Service) {
 	go func() {
 		time.Sleep(s.Spec.RolloutConfig.Interval.Duration)
 		rh.services.Enqueue(s.Namespace, s.Name)
@@ -156,7 +163,8 @@ func computedWeightsExist(svcs []*riov1.Service) bool {
 }
 
 // are all other services besides this service at zero or nil computedWeight ?
-func allServicesOff(curr *riov1.Service, svcs []*riov1.Service) bool {
+// Purpose: if we have svc-a at 60 and svc-b at 0, then just bump svc-a direct to 100
+func allOtherServicesOff(curr *riov1.Service, svcs []*riov1.Service) bool {
 	for _, z := range svcs {
 		if z.Name != curr.Name {
 			if z.Status.ComputedWeight != nil && *z.Status.ComputedWeight > 0 {
