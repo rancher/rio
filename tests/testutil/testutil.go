@@ -100,6 +100,14 @@ func WaitForURLResponse(endpoint string) (string, error) {
 		return "", errors.New("endpoint did not return 200")
 	}
 	resp, _ := GetURL(endpoint)
+	for i := 0; i < 5; i++ {
+		if resp == "no healthy upstream" {
+			time.Sleep(1 * time.Second)
+			resp, _ = GetURL(endpoint)
+		} else {
+			break
+		}
+	}
 	return resp, nil
 }
 
