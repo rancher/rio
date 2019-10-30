@@ -16,7 +16,7 @@ type ServiceData struct {
 	Name      string
 	Service   *riov1.Service
 	Namespace string
-	Pod       *corev1.Pod
+	Pods      []*corev1.Pod
 }
 
 func (p *Ps) services(ctx *clicontext.CLIContext) error {
@@ -30,17 +30,20 @@ func (p *Ps) services(ctx *clicontext.CLIContext) error {
 	if err != nil {
 		return err
 	}
-	podMap := map[string]*corev1.Pod{}
+	podMap := map[string][]*corev1.Pod{}
 	for _, obj := range pods {
 		pod := obj.(*corev1.Pod)
 		if pod.Labels["rio.cattle.io/service"] != "" {
-			podMap[pod.Labels["rio.cattle.io/service"]] = pod
+			podMap[pod.Labels["rio.cattle.io/service"]] = append(podMap[pod.Labels["rio.cattle.io/service"]], pod)
 		}
 	}
 
 	var output []ServiceData
 
 	for _, service := range services {
+		if service.(*riov1.Service).Spec.Template && !p.A_All {
+			continue
+		}
 		allNamespace := namespace == ""
 		id, err := util.GetID(service, allNamespace)
 		if err != nil {
@@ -50,7 +53,7 @@ func (p *Ps) services(ctx *clicontext.CLIContext) error {
 			Name:      id,
 			Service:   service.(*riov1.Service),
 			Namespace: service.(*riov1.Service).Namespace,
-			Pod:       podMap[service.(*riov1.Service).Name],
+			Pods:      podMap[service.(*riov1.Service).Name],
 		})
 	}
 

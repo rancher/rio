@@ -22,9 +22,6 @@ func Populate(service *riov1.Service, os *objectset.ObjectSet) (v1.PodTemplateSp
 
 	podSpec := podSpec(service)
 	Roles(service, os)
-	if err := images(service, &podSpec); err != nil {
-		return pts, err
-	}
 
 	PersistVolume(service, os)
 
@@ -68,32 +65,4 @@ func PersistVolume(service *riov1.Service, os *objectset.ObjectSet) {
 			os.Add(pv)
 		}
 	}
-}
-
-func images(service *riov1.Service, podSpec *v1.PodSpec) error {
-	for i, container := range podSpec.InitContainers {
-		image := service.Status.ContainerImages[container.Name]
-		if image.ImageName != "" {
-			podSpec.InitContainers[i].Image = image.ImageName
-		}
-		if image.PullSecret != "" {
-			podSpec.ImagePullSecrets = append(podSpec.ImagePullSecrets, v1.LocalObjectReference{
-				Name: image.PullSecret,
-			})
-		}
-	}
-
-	for i, container := range podSpec.Containers {
-		image := service.Status.ContainerImages[container.Name]
-		if image.ImageName != "" {
-			podSpec.Containers[i].Image = image.ImageName
-		}
-		if image.PullSecret != "" {
-			podSpec.ImagePullSecrets = append(podSpec.ImagePullSecrets, v1.LocalObjectReference{
-				Name: image.PullSecret,
-			})
-		}
-	}
-
-	return nil
 }

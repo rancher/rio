@@ -5,11 +5,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rancher/rio/pkg/controllers/pkg"
-
 	"github.com/rancher/rio/cli/pkg/table"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
+	"github.com/rancher/rio/pkg/controllers/pkg"
 	"github.com/rancher/rio/pkg/services"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -23,7 +23,7 @@ func NewService(cfg Config) TableWriter {
 		{"APP/VERSION", "{{.Service | appAndVersion}}"},
 		{"WEIGHT", "{{.Service | formatWeight}}"},
 		{"CREATED", "{{.Service.CreationTimestamp | ago}}"},
-		{"DETAIL", "{{serviceDetail .Service .Pod}}"},
+		{"DETAIL", "{{serviceDetail .Service .Pods}}"},
 	}, cfg)
 
 	writer.AddFormatFunc("image", FormatImage)
@@ -51,31 +51,37 @@ func formatWeight(data interface{}) string {
 	if !ok {
 		return ""
 	}
-
 	if s.Status.ComputedWeight != nil {
 		return fmt.Sprintf("%s%%", strconv.Itoa(*s.Status.ComputedWeight))
 	}
+
 	return "0%"
 }
 
-func serviceDetail(data interface{}, pod *corev1.Pod) string {
+func serviceDetail(data interface{}, pods []*corev1.Pod) string {
 	s, ok := data.(*v1.Service)
 	if !ok {
 		return ""
 	}
 
-	buffer := strings.Builder{}
-	if !s.Status.DeploymentReady {
-		if buffer.Len() > 0 {
-			buffer.WriteString("; ")
-		}
-		buffer.WriteString(s.Name + ": ")
-		pd := pkg.PodDetail(pod)
-		if pd == "" {
-			pd = "not ready"
-		}
-		buffer.WriteString(pd)
+	if s.Spec.Template {
+		return "Build Template"
 	}
+
+	buffer := strings.Builder{}
+
+	pd := ""
+	for _, pod := range pods {
+		pd = pkg.PodDetail(pod)
+		if pd != "" {
+			break
+		}
+	}
+	if pd == "" && !s.Status.DeploymentReady {
+		buffer.WriteString(s.Name + ": ")
+		pd = "not ready"
+	}
+	buffer.WriteString(pd)
 
 	if waitingOnBuild(s) {
 		if riov1.ServiceConditionImageReady.IsFalse(s) {
@@ -136,14 +142,12 @@ func FormatScale(scale *int, scaleStatus *v1.ScaleStatus) (string, error) {
 
 	var prefix string
 	percentage := ""
-	ready := scaleNum - scaleStatus.Unavailable
+	ready := scaleStatus.Available
 	if scaleNum > 0 {
 		percentage = fmt.Sprintf(" %d%%", (ready*100)/scaleNum)
 	}
 
-	if ready != scaleNum {
-		prefix = fmt.Sprintf("%d/", ready)
-	}
+	prefix = fmt.Sprintf("%d/", ready)
 
 	return fmt.Sprintf("%s%d%s", prefix, scaleNum, percentage), nil
 }
@@ -159,7 +163,7 @@ func FormatImage(data interface{}) (string, error) {
 	} else {
 		image = s.Spec.Image
 	}
-	return strings.TrimPrefix(image, "localhost:5442/"), nil
+	return strings.TrimPrefix(image, constants.LocalRegistry+"/"), nil
 }
 
 func waitingOnBuild(svc *riov1.Service) bool {

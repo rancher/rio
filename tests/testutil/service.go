@@ -517,7 +517,7 @@ func (ts *TestService) reload() error {
 // reloadBuild calls inspect on the build and uses that to reload our object
 func (ts *TestService) reloadBuild() error {
 	ts.reload()
-	out, err := KubectlCmd([]string{"get", "taskrun", "-n", testingNamespace, "-l", "service-name=" + ts.Service.GetName(), "-o", "json"})
+	out, err := KubectlCmd([]string{"get", "taskrun", "-n", testingNamespace, "-l", "gitwatcher.rio.cattle.io/service=" + ts.Service.GetName(), "-o", "json"})
 	if err != nil {
 		return err
 	}

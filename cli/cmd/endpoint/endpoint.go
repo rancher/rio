@@ -76,6 +76,7 @@ func (e *Endpoint) Run(ctx *clicontext.CLIContext) error {
 		sort.Strings(endpoints)
 
 		if len(endpoints) > 0 {
+			seen[app] = true
 			data = append(data, Data{
 				Name:      app,
 				Endpoints: endpoints,

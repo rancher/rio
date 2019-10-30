@@ -394,8 +394,17 @@ type ServiceStatus struct {
 	// ComputedWeight is the weight calculated from the rollout revision
 	ComputedWeight *int `json:"computedWeight,omitempty"`
 
-	// ContainerImages are populated from builds to override the images of this service
-	ContainerImages map[string]BuiltImage `json:"containerImages,omitempty"`
+	// ContainerRevision are populated from builds to store commits for each repo
+	ContainerRevision map[string]BuildRevision `json:"containerRevision,omitempty"`
+
+	// GeneratedServices contains all the service names are generated from build template
+	GeneratedServices []string `json:"generatedServices,omitempty"`
+
+	// GitCommits contains all git commits that triggers template update
+	GitCommits []string `json:"gitCommits,omitempty"`
+
+	// ShouldClean contains all the services that are generated from template but should be cleaned up.
+	ShouldClean []string `json:"shouldClean,omitempty"`
 
 	// Represents the latest available observations of a deployment's current state.
 	Conditions []genericcondition.GenericCondition `json:"conditions,omitempty"`
@@ -409,16 +418,8 @@ type ServiceStatus struct {
 	// log token to access build log
 	BuildLogToken string `json:"buildLogToken,omitempty"`
 
-	// Associated git commit name
-	GitCommitName string `json:"gitCommitName,omitempty"`
-
 	// Watch represents if a service should creates git watcher to watch git changes
 	Watch bool `json:"watch,omitempty"`
-}
-
-type BuiltImage struct {
-	ImageName  string `json:"imageName,omitempty"`
-	PullSecret string `json:"pullSecret,omitempty"`
 }
 
 type ScaleStatus struct {
@@ -428,4 +429,8 @@ type ScaleStatus struct {
 
 	// Total number of available pods (ready for at least minReadySeconds) targeted by this deployment.
 	Available int `json:"available,omitempty"`
+}
+
+type BuildRevision struct {
+	Commits []string `json:"commits,omitempty"`
 }
