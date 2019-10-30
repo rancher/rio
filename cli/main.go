@@ -162,7 +162,7 @@ func main() {
 			""),
 		builder.Command(&export.Export{},
 			"Export a namespace or service",
-			appName+" export NAMESPACE_OR_SERVICE",
+			appName+" export [TYPE/]NAMESPACE_OR_SERVICE",
 			""),
 		builder.Command(&linkerd.Linkerd{},
 			"Open linkerd dashboard",
