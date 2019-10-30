@@ -18,7 +18,7 @@ import (
 
 type Export struct {
 	Format  string `desc:"Specify output format, yaml/json. Defaults to yaml" default:"yaml"`
-	Riofile bool   `desc:"Export riofile format. Only works for namespace"`
+	Riofile bool   `desc:"Export riofile format. Only works for namespace (example: rio export --riofile namespace/default)"`
 }
 
 func (e *Export) Run(ctx *clicontext.CLIContext) error {
