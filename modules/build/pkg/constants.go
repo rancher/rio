@@ -1,7 +1,10 @@
 package pkg
 
 const (
-	StackLabel     = "rio.cattle.io/stack"
-	ServiceLabel   = "rio.cattle.io/service"
-	ContainerLabel = "rio.cattle.io/container"
+	StackLabel     = "gitwatcher.rio.cattle.io/stack"
+	ServiceLabel   = "gitwatcher.rio.cattle.io/service"
+	ContainerLabel = "gitwatcher.rio.cattle.io/container"
+
+	GitCommitLabel = "gitwatcher.rio.cattle.io/git-commit"
+	LogTokenLabel  = "gitwatcher.rio.cattle.io/log-token"
 )

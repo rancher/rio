@@ -13,6 +13,9 @@ func PodDetail(pod *v1.Pod) string {
 		return ""
 	}
 	for _, con := range append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) {
+		if con.Name == "linkerd-proxy" || con.Name == "linkerd-init" {
+			continue
+		}
 		if con.State.Waiting != nil && con.State.Waiting.Reason != "" {
 			output.WriteString("; ")
 			reason := con.State.Waiting.Reason

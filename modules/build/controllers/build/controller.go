@@ -6,8 +6,10 @@ import (
 
 	webhookv1controller "github.com/rancher/gitwatcher/pkg/generated/controllers/gitwatcher.cattle.io/v1"
 	"github.com/rancher/rio/modules/build/controllers/service"
+	"github.com/rancher/rio/modules/build/pkg"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/services"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/condition"
 	tektonv1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
@@ -22,7 +24,6 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	}
 
 	rContext.Build.Tekton().V1alpha1().TaskRun().OnChange(ctx, "build-service-update", h.updateService)
-	rContext.Build.Tekton().V1alpha1().TaskRun().OnRemove(ctx, "build-service-remove", h.updateOnRemove)
 	return nil
 }
 
@@ -38,26 +39,25 @@ func (h handler) updateService(key string, build *tektonv1alpha1.TaskRun) (*tekt
 		return build, nil
 	}
 
-	namespace := build.Labels["service-namespace"]
-	name := build.Labels["service-name"]
-	containerName := build.Labels["container-name"]
-	svc, err := h.services.Cache().Get(namespace, name)
+	namespace, svcName, conName := build.Namespace, build.Labels[pkg.ServiceLabel], build.Labels[pkg.ContainerLabel]
+	svc, err := h.services.Cache().Get(namespace, svcName)
 	if err != nil {
 		return build, nil
 	}
 
-	if svc.Spec.Image != "" {
+	if svc.Spec.Template {
 		return build, nil
 	}
 
 	state := ""
-	if build.IsDone() && !build.IsSuccessful() {
+	if condition.Cond("Succeeded").IsFalse(build) {
 		state = "failure"
-	} else if !build.IsDone() {
+	} else if condition.Cond("Succeeded").IsUnknown(build) {
 		state = "in_progress"
 	}
-	if build.Labels["gitcommit-name"] != "" {
-		gitcommit, err := h.gitcommits.Cache().Get(build.Namespace, build.Labels["gitcommit-name"])
+
+	if build.Labels[pkg.GitCommitLabel] != "" {
+		gitcommit, err := h.gitcommits.Cache().Get(build.Namespace, build.Labels[pkg.GitCommitLabel])
 		if err != nil {
 			return build, err
 		}
@@ -70,63 +70,42 @@ func (h handler) updateService(key string, build *tektonv1alpha1.TaskRun) (*tekt
 		}
 	}
 
-	if build.IsSuccessful() {
-		containers := []v1.NamedContainer{
-			{
-				Name:      name,
-				Container: svc.Spec.Container,
-			},
-		}
-		containers = append(containers, svc.Spec.Sidecars...)
-
-		for _, con := range containers {
-			if con.Name == containerName {
-				rev := con.ImageBuild.Revision
-				imageName := service.PullImageName(rev, namespace, containerName, con.ImageBuild)
-				if svc.Spec.Image != imageName {
-					deepCopy := svc.DeepCopy()
-					v1.ServiceConditionImageReady.SetError(deepCopy, "", nil)
-					deepCopy.Spec.Image = service.PullImageName(rev, namespace, containerName, con.ImageBuild)
-					if _, err := h.services.Update(deepCopy); err != nil {
-						return build, err
-					}
-					if _, err := h.services.UpdateStatus(deepCopy); err != nil {
-						return build, err
+	if condition.Cond("Succeeded").IsTrue(build) {
+		if conName == services.RootContainerName(svc) {
+			rev := svc.Spec.ImageBuild.Revision
+			imageName := service.PullImageName(rev, namespace, conName, svc.Spec.ImageBuild)
+			if svc.Spec.Image != imageName {
+				deepCopy := svc.DeepCopy()
+				v1.ServiceConditionImageReady.SetError(deepCopy, "", nil)
+				deepCopy.Spec.Image = service.PullImageName(rev, namespace, conName, svc.Spec.ImageBuild)
+				if _, err := h.services.Update(deepCopy); err != nil {
+					return build, err
+				}
+			}
+		} else {
+			for i, con := range svc.Spec.Sidecars {
+				if con.Name == conName {
+					rev := con.ImageBuild.Revision
+					imageName := service.PullImageName(rev, namespace, conName, con.ImageBuild)
+					if con.Image != imageName {
+						deepCopy := svc.DeepCopy()
+						v1.ServiceConditionImageReady.SetError(deepCopy, "", nil)
+						deepCopy.Spec.Sidecars[i].Image = service.PullImageName(rev, namespace, conName, con.ImageBuild)
+						if _, err := h.services.Update(deepCopy); err != nil {
+							return build, err
+						}
 					}
 				}
 			}
 		}
-	} else if build.IsDone() {
+	} else if condition.Cond("Succeeded").IsFalse(build) {
 		reason := condition.Cond("Succeeded").GetReason(build)
 		message := condition.Cond("Succeeded").GetMessage(build)
 
 		deepCopy := svc.DeepCopy()
 		v1.ServiceConditionImageReady.SetError(deepCopy, reason, errors.New(message))
-		if _, err := h.services.Update(deepCopy); err != nil {
-			return build, err
-		}
 		_, err := h.services.UpdateStatus(deepCopy)
 		return build, err
-	}
-
-	return build, nil
-}
-
-func (h *handler) updateOnRemove(key string, build *tektonv1alpha1.TaskRun) (*tektonv1alpha1.TaskRun, error) {
-	if build == nil {
-		return build, nil
-	}
-
-	if !build.IsSuccessful() || !build.IsDone() {
-		if build.Labels["service-namespace"] != "" {
-			namespace := build.Labels["service-namespace"]
-			name := build.Labels["service-name"]
-			h.services.Enqueue(namespace, name)
-		} else if build.Labels["stack-namespace"] != "" {
-			namespace := build.Labels["stack-namespace"]
-			name := build.Labels["stack-name"]
-			h.stacks.Enqueue(namespace, name)
-		}
 	}
 
 	return build, nil

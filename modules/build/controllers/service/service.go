@@ -119,7 +119,7 @@ func (p *populator) populate(service *riov1.Service, status riov1.ServiceStatus)
 			return nil, status, err
 		}
 
-		if err := p.populateWebhookAndSecrets(build, status, conName, service.Name, service.Namespace, os); err != nil {
+		if err := p.populateWebhookAndSecrets(build, status, conName, service.Name, service.Namespace, service.Spec.Template, os); err != nil {
 			return nil, status, err
 		}
 	}
@@ -136,6 +136,10 @@ func (p *populator) populate(service *riov1.Service, status riov1.ServiceStatus)
 }
 
 func (p populator) populateBuild(buildKey, namespace string, build *riov1.ImageBuildSpec, svc *riov1.Service, systemNamespace string, os *objectset.ObjectSet) error {
+	if svc.Spec.Template {
+		return nil
+	}
+
 	rev := build.Revision
 	if rev == "" {
 		return nil
@@ -160,11 +164,10 @@ func (p populator) populateBuild(buildKey, namespace string, build *riov1.ImageB
 	taskrun := constructors.NewTaskRun(namespace, trName, tektonv1alpha1.TaskRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				"container-name":    buildKey,
-				"service-name":      svc.Name,
-				"service-namespace": svc.Namespace,
-				"gitcommit-name":    svc.Status.GitCommitName,
-				"log-token":         svc.Status.BuildLogToken,
+				pkg.ContainerLabel: buildKey,
+				pkg.ServiceLabel:   svc.Name,
+				pkg.GitCommitLabel: svc.Annotations[pkg.GitCommitLabel],
+				pkg.LogTokenLabel:  svc.Status.BuildLogToken,
 			},
 		},
 		Spec: tektonv1alpha1.TaskRunSpec{
@@ -286,7 +289,7 @@ func (p populator) populateBuild(buildKey, namespace string, build *riov1.ImageB
 	return nil
 }
 
-func (p populator) populateWebhookAndSecrets(build *riov1.ImageBuildSpec, status riov1.ServiceStatus, containerName, svcName, namespace string, os *objectset.ObjectSet) error {
+func (p populator) populateWebhookAndSecrets(build *riov1.ImageBuildSpec, status riov1.ServiceStatus, containerName, svcName, namespace string, template bool, os *objectset.ObjectSet) error {
 	if !status.Watch {
 		return nil
 	}
@@ -362,7 +365,7 @@ func ImageName(rev string, namespace, name string, build *riov1.ImageBuildSpec) 
 }
 
 func PullImageName(rev string, namespace, name string, build *riov1.ImageBuildSpec) string {
-	registry := "localhost:5442"
+	registry := constants.LocalRegistry
 	if build.PushRegistry != "" {
 		registry = build.PushRegistry
 	}

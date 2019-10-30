@@ -35,7 +35,7 @@ if [[ ${ARCH} == amd64 ]]; then
     export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
     export PATH=$(pwd)/bin:$PATH
 
-    RUN_WEBHOOK=true rio-controller 2>&1 > ./rio-controller-log &
+    RUN_WEBHOOK=true rio-controller & > ./rio-controller-log &
     rio install --check 2>&1
 
     kubectl get po -n rio-system

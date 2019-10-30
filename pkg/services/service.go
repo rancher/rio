@@ -23,8 +23,7 @@ func AppAndVersion(service *v1.Service) (string, string) {
 }
 
 func RootContainerName(service *v1.Service) string {
-	appName, _ := AppAndVersion(service)
-	return appName
+	return service.Name
 }
 
 func containerIsValid(container *v1.Container) bool {

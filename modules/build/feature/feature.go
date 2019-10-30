@@ -30,6 +30,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			build.Register,
 			gitcommit.Register,
 			proxy.Register,
+			service.Register,
 			stack1.Register,
 		},
 		FixedAnswers: map[string]string{

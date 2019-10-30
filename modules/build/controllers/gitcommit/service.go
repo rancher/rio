@@ -12,7 +12,6 @@ import (
 	"github.com/rancher/wrangler/pkg/name"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (h Handler) onChangeService(key string, obj *webhookv1.GitCommit, gitWatcher *webhookv1.GitWatcher) (*webhookv1.GitCommit, error) {
@@ -20,7 +19,7 @@ func (h Handler) onChangeService(key string, obj *webhookv1.GitCommit, gitWatche
 		return obj, nil
 	}
 
-	service, err := h.services.Cache().Get(obj.Namespace, gitWatcher.Annotations[pkg.ServiceLabel])
+	baseService, err := h.services.Cache().Get(obj.Namespace, gitWatcher.Annotations[pkg.ServiceLabel])
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return obj, nil
@@ -28,114 +27,73 @@ func (h Handler) onChangeService(key string, obj *webhookv1.GitCommit, gitWatche
 		return obj, err
 	}
 
-	service = service.DeepCopy()
-	// todo: figure out how to support multiple repo watch
-	if service.Spec.Template {
+	var imageBuild riov1.ImageBuildSpec
+	containers := append(baseService.Spec.Sidecars, riov1.NamedContainer{
+		Name:      services.RootContainerName(baseService),
+		Container: baseService.Spec.Container,
+	})
+	containerName := gitWatcher.Annotations[pkg.ContainerLabel]
+	for _, container := range containers {
+		if container.Name == containerName {
+			imageBuild = *container.ImageBuild
+			break
+		}
+	}
+
+	baseService = baseService.DeepCopy()
+	if baseService.Spec.Template {
 		// if git commit is from different branch do no-op
-		if obj.Spec.Branch != "" && obj.Spec.Branch != service.Spec.ImageBuild.Branch {
+		if obj.Spec.Branch != "" && obj.Spec.Branch != imageBuild.Branch {
 			return obj, nil
 		}
 
-		if service.Spec.ImageBuild.Revision == "" {
-			service.Spec.ImageBuild.Revision = obj.Spec.Commit
-		} else {
-			appName, _ := services.AppAndVersion(service)
-			specCopy := service.Spec.DeepCopy()
-			specCopy.ImageBuild.Repo = obj.Spec.RepositoryURL
-			specCopy.ImageBuild.Revision = obj.Spec.Commit
-			specCopy.ImageBuild.Branch = ""
-			specCopy.Image = ""
-			specCopy.App = appName
-			if obj.Spec.PR != "" {
-				specCopy.Version = "pr-" + obj.Spec.PR
-				specCopy.StageOnly = true
-			} else {
-				specCopy.Version = "v" + obj.Spec.Commit[0:5]
-			}
+		serviceName := serviceName(baseService, obj)
+		if baseService.Status.ContainerRevision == nil {
+			baseService.Status.ContainerRevision = map[string]riov1.BuildRevision{}
+		}
+		revision := baseService.Status.ContainerRevision[containerName]
+		revision.Commits = append(revision.Commits, obj.Spec.Commit)
+		baseService.Status.ContainerRevision[containerName] = revision
+		baseService.Status.GeneratedServices = append(baseService.Status.GeneratedServices, serviceName)
+		baseService.Status.GitCommits = append(baseService.Status.GitCommits, obj.Name)
 
-			if !specCopy.StageOnly {
-				if err := h.scaleDownRevisions(obj.Namespace, appName); err != nil {
-					return obj, err
-				}
-				specCopy.Weight = &[]int{100}[0]
-			} else {
-				specCopy.Weight = &[]int{0}[0]
-			}
-			newServiceName := serviceName(service, obj)
-			newService := riov1.NewService(service.Namespace, newServiceName, riov1.Service{
-				Spec: *specCopy,
-			})
-
-			if obj.Spec.PR != "" && (obj.Spec.Merged || obj.Spec.Closed) {
-				logrus.Infof("PR %s is merged/closed, deleting revision, name: %s, namespace: %s, revision: %s", obj.Spec.PR, newService.Name, newService.Namespace, obj.Spec.Commit)
-				if err := h.services.Delete(newService.Namespace, newService.Name, &v1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
-					return obj, err
-				}
-				return obj, nil
-			}
-
-			logrus.Infof("Creating/Updating service revision, name: %s, namespace: %s, revision: %s", newService.Name, newService.Namespace, obj.Spec.Commit)
-			if existing, err := h.services.Get(newService.Namespace, newService.Name, v1.GetOptions{}); err == nil {
-				existing.Spec = newService.Spec
-				existing.Status.GitCommitName = obj.Name
-				if _, err := h.services.Update(existing); err != nil {
-					return obj, err
-				}
-			} else if errors.IsNotFound(err) {
-				newService.Status.GitCommitName = obj.Name
-				if _, err := h.services.Create(newService); err != nil {
-					return obj, err
-				}
-			} else {
-				return obj, err
-			}
+		if obj.Spec.PR != "" && (obj.Spec.Merged || obj.Spec.Closed) {
+			logrus.Infof("PR %s is merged/closed, deleting revision, name: %s, namespace: %s, revision: %s", obj.Spec.PR, serviceName, baseService.Namespace, obj.Spec.Commit)
+			baseService.Status.ShouldClean = append(baseService.Status.ShouldClean, serviceName)
+		}
+		if _, err := h.services.UpdateStatus(baseService); err != nil {
+			return obj, err
 		}
 	} else {
 		// if template is false, just update existing images
-		containerName := gitWatcher.Annotations[pkg.ContainerLabel]
 		update := false
 		if containerName == gitWatcher.Annotations[pkg.ServiceLabel] {
 			// use the first container
-			if obj.Spec.Branch != "" && obj.Spec.Branch != service.Spec.ImageBuild.Branch {
+			if obj.Spec.Branch != "" && obj.Spec.Branch != baseService.Spec.ImageBuild.Branch {
 				return obj, nil
 			}
-			if service.Spec.ImageBuild.Revision != obj.Spec.Commit {
-				service.Spec.ImageBuild.Revision = obj.Spec.Commit
+			if baseService.Spec.ImageBuild.Revision != obj.Spec.Commit {
+				baseService.Spec.ImageBuild.Revision = obj.Spec.Commit
 				update = true
 			}
 		} else {
-			for i, con := range service.Spec.Sidecars {
+			for i, con := range baseService.Spec.Sidecars {
 				if con.Name == containerName {
-					if service.Spec.Sidecars[i].ImageBuild.Revision != obj.Spec.Commit {
-						service.Spec.Sidecars[i].ImageBuild.Revision = obj.Spec.Commit
+					if baseService.Spec.Sidecars[i].ImageBuild.Revision != obj.Spec.Commit {
+						baseService.Spec.Sidecars[i].ImageBuild.Revision = obj.Spec.Commit
 						update = true
 					}
 				}
 			}
 		}
 		if update {
-			service.Status.GitCommitName = obj.Name
-			if _, err := h.services.Update(service); err != nil {
-				return obj, err
-			}
-			if _, err := h.services.UpdateStatus(service); err != nil {
+			if _, err := h.services.Update(baseService); err != nil {
 				return obj, err
 			}
 		}
 	}
 
 	return obj, nil
-
-}
-
-func (h Handler) updateBaseRevision(commit string, svc *riov1.Service) error {
-	deepcopy := svc.DeepCopy()
-	deepcopy.Spec.ImageBuild.Revision = commit
-	logrus.Infof("updating revision %s to base service %s/%s", commit, svc.Namespace, svc.Name)
-	if _, err := h.services.Update(deepcopy); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (h Handler) scaleDownRevisions(namespace, name string) error {

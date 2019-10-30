@@ -102,12 +102,11 @@ func (p populator) populateBuild(stack *riov1.Stack, systemNamespace string, os 
 	}
 	os.Add(sa)
 
-	selector := labels.NewSelector()
-	r, err := labels.NewRequirement("app", selection.In, []string{constants.BuildkitdService})
+	r, err := labels.NewRequirement("app", selection.Equals, []string{constants.BuildkitdService})
 	if err != nil {
 		return err
 	}
-	selector.Add(*r)
+	selector := labels.NewSelector().Add(*r)
 	pods, err := p.pods.List(p.systemNamespace, selector)
 	if err != nil {
 		return err
@@ -157,12 +156,8 @@ func (p populator) populateBuild(stack *riov1.Stack, systemNamespace string, os 
 								"-n",
 								stack.Namespace,
 								"up",
-							},
-							Env: []corev1.EnvVar{
-								{
-									Name:  "PUSH_LOCAL",
-									Value: "TRUE",
-								},
+								"--name",
+								stack.Name,
 							},
 						},
 					},
@@ -200,15 +195,16 @@ func populateRbac(stack *riov1.Stack, saName, systemNamespace, buildKitPodName s
 	role1 := rbac.NewRole(systemNamespace, fmt.Sprintf("%s-%s-stack", stack.Namespace, stack.Name), nil)
 	role1.Rules = []v1.PolicyRule{
 		{
-			APIGroups: []string{""},
-			Resources: []string{"pods"},
-			Verbs:     []string{"get"},
-		},
-		{
 			APIGroups:     []string{""},
 			Resources:     []string{"pods/portforward"},
 			ResourceNames: []string{buildKitPodName},
 			Verbs:         []string{"create", "get"},
+		},
+		{
+			APIGroups:     []string{""},
+			Resources:     []string{"pods"},
+			ResourceNames: []string{""},
+			Verbs:         []string{"list", "get"},
 		},
 	}
 
@@ -238,8 +234,8 @@ func populateRbac(stack *riov1.Stack, saName, systemNamespace, buildKitPodName s
 
 	roleBinding2 := rbac.NewBinding(stack.Namespace, fmt.Sprintf("%s-stack", stack.Name), nil)
 	roleBinding2.RoleRef = v1.RoleRef{
-		Kind:     "Role",
-		Name:     fmt.Sprintf("%s-stack", stack.Name),
+		Kind:     "ClusterRole",
+		Name:     "rio-standard",
 		APIGroup: "rbac.authorization.k8s.io",
 	}
 	roleBinding2.Subjects = []v1.Subject{
@@ -250,40 +246,13 @@ func populateRbac(stack *riov1.Stack, saName, systemNamespace, buildKitPodName s
 		},
 	}
 
-	clusterRole := rbac.NewClusterRole(stack.Name+"-stack", nil)
-	clusterRole.Rules = []v1.PolicyRule{
-		{
-			APIGroups: []string{""},
-			Resources: []string{"nodes"},
-			Verbs:     []string{"list"},
-		},
-		{
-			APIGroups: []string{"admin.rio.cattle.io"},
-			Resources: []string{"rioinfos"},
-			Verbs:     []string{"get"},
-		},
-	}
+	// todo: add extra permission from stack
 
-	clusterRolebinding := rbac.NewClusterBinding(stack.Name+"-stack", nil)
-	clusterRolebinding.RoleRef = v1.RoleRef{
-		Kind:     "ClusterRole",
-		Name:     stack.Name + "-stack",
-		APIGroup: "rbac.authorization.k8s.io",
-	}
-	clusterRolebinding.Subjects = []v1.Subject{
-		{
-			Kind:      "ServiceAccount",
-			Namespace: stack.Namespace,
-			Name:      saName,
-		},
-	}
 	return []runtime.Object{
 		role1,
 		roleBinding1,
 		role2,
 		roleBinding2,
-		clusterRole,
-		clusterRolebinding,
 	}
 }
 
@@ -296,6 +265,7 @@ func populateWebhookAndSecrets(webhookService *riov1.Service, stack *riov1.Stack
 			Tag:                            true,
 			Branch:                         stack.Spec.Build.Branch,
 			RepositoryCredentialSecretName: stack.Spec.Build.CloneSecretName,
+			GithubWebhookToken:             stack.Spec.Build.WebhookSecretName,
 		},
 	})
 	webhookReceiver.Annotations = map[string]string{

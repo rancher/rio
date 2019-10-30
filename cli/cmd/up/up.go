@@ -131,7 +131,7 @@ func (u *Up) up(content string, answers map[string]string, s *riov1.Stack, c *cl
 		for k, i := range images {
 			localRegsitry := constants.RegistryService
 			if strings.HasPrefix(i, localRegsitry) {
-				images[k] = strings.Replace(i, localRegsitry, "localhost:5442", -1)
+				images[k] = strings.Replace(i, localRegsitry, constants.LocalRegistry, -1)
 			}
 		}
 		if err := deployStack.SetServiceImages(images); err != nil {
@@ -142,7 +142,7 @@ func (u *Up) up(content string, answers map[string]string, s *riov1.Stack, c *cl
 	if err != nil {
 		return err
 	}
-	return c.Apply.WithDefaultNamespace(c.GetSetNamespace()).WithOwner(s).WithSetOwnerReference(true, true).WithDynamicLookup().ApplyObjects(objs...)
+	return c.Apply.WithListerNamespace(c.GetSetNamespace()).WithDefaultNamespace(c.GetSetNamespace()).WithOwner(s).WithSetOwnerReference(true, true).WithDynamicLookup().ApplyObjects(objs...)
 }
 
 func (u *Up) updateStack(content string, answers map[string]string, c *clicontext.CLIContext) error {

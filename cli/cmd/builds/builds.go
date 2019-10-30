@@ -10,10 +10,6 @@ func Builds(app *cli.App) cli.Command {
 		"List Builds",
 		app.Name+" builds history [OPTIONS]",
 		"")
-	restart := builder.Command(&Restart{},
-		"Restart builds",
-		app.Name+" restart $NAMESPACE/$NAME:$revision",
-		"To restart a build, run `rio restart default/build-foo:bar")
 	return cli.Command{
 		Name:     "build",
 		Usage:    "Operations on builds",
@@ -21,7 +17,6 @@ func Builds(app *cli.App) cli.Command {
 		Category: "SUB COMMANDS",
 		Subcommands: []cli.Command{
 			ls,
-			restart,
 		},
 	}
 }

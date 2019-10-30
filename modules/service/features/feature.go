@@ -10,6 +10,7 @@ import (
 	"github.com/rancher/rio/modules/service/controllers/router"
 	"github.com/rancher/rio/modules/service/controllers/service"
 	"github.com/rancher/rio/modules/service/controllers/servicestatus"
+	"github.com/rancher/rio/modules/service/controllers/template"
 	"github.com/rancher/rio/pkg/features"
 	"github.com/rancher/rio/types"
 )
@@ -29,6 +30,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			globalrbac.Register,
 			servicestatus.Register,
 			rollout.Register,
+			template.Register,
 		},
 	}
 
