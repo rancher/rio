@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/rio/cli/cmd/attach"
@@ -45,24 +44,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-)
-
-const (
-	desc = `For node scheduling arguments (--node-require, --node-require-any,
-   --node-preferred) the expression is evaluated against the node labels using the
-   following syntax.
-
-
-      foo=bar              Node with label foo must have the value bar
-      foo!=bar             If node has a label with key foo it must not equal to bar
-      foo                  Node must have a label with key foo and any value
-      foo in (bar, baz)    Node must have a label with key foo and a value of bar or baz
-      foo notin (bar, baz) If node has a label with key foo it must not equal to bar or baz
-      foo > 3              Node must have a label with key foo and a value greater than 3
-      foo < 3              Node must have a label with key foo and a value less than 3
-      !foo                 Node must not have a label with key foo with any value
-      expr && expr         Any above expression can be combined so that all expression must be true
-`
 )
 
 var (
@@ -216,9 +197,7 @@ func main() {
 	}
 	app.Before = func(ctx *cli.Context) error {
 		if err := cfg.Validate(); err != nil {
-			if len(ctx.Args()) > 0 && ctx.Args()[0] != "install" && ctx.Args()[0] != "uninstall" {
-				return err
-			}
+			return err
 		}
 		cc := clicontext.CLIContext{
 			Config: &cfg,
@@ -227,46 +206,9 @@ func main() {
 		cc.Store(ctx.App.Metadata)
 		return nil
 	}
-	app.ExitErrHandler = func(context *cli.Context, err error) {
-		if err != nil && strings.Contains(err.Error(), clicontext.ErrNoConfig.Error()) {
-			if context.Args().Get(context.NArg()-1) == "--help" {
-				err = cli.ShowCommandHelp(context, context.Args().First())
-				if err != nil {
-					cli.HandleExitCoder(err)
-				}
-			} else {
-				printConfigUsage()
-			}
-			os.Exit(0)
-		} else {
-			cli.HandleExitCoder(err)
-		}
-	}
 
 	err := app.Run(args)
 	if err != nil {
 		logrus.Fatal(err)
 	}
-}
-
-func printConfigUsage() {
-	fmt.Print(`
-No configuration found to contact server.  If you already have a Kubernetes cluster running then you should point your Kubernetes cluster using
-
-
-	export KUBECONFIG=/path/to/config
-
-
-If you don't have rio installed then you should run the following command to install Rio into your current cluster.
-
-
-	rio install 
-
-
-If you are just looking for general "rio" CLI usage then run
-
-    rio --help
-
-`)
-	os.Exit(1)
 }
