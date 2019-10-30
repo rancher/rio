@@ -49,6 +49,7 @@ type Apply interface {
 	WithListerNamespace(ns string) Apply
 	WithRateLimiting(ratelimitingQps float32) Apply
 	WithNoDelete() Apply
+	WithGVK(gvks ...schema.GroupVersionKind) Apply
 	WithSetOwnerReference(controller, block bool) Apply
 }
 
@@ -168,6 +169,10 @@ func (a *apply) WithInjectorName(injs ...string) Apply {
 
 func (a *apply) WithCacheTypes(igs ...InformerGetter) Apply {
 	return a.newDesiredSet().WithCacheTypes(igs...)
+}
+
+func (a *apply) WithGVK(gvks ...schema.GroupVersionKind) Apply {
+	return a.newDesiredSet().WithGVK(gvks...)
 }
 
 func (a *apply) WithPatcher(gvk schema.GroupVersionKind, patcher Patcher) Apply {

@@ -14,8 +14,11 @@ import (
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/stack"
+	"github.com/rancher/wrangler/pkg/gvk"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type Up struct {
@@ -30,6 +33,7 @@ type Up struct {
 const (
 	defaultRiofile       = "Riofile"
 	defaultRiofileAnswer = "Riofile-answers"
+	stackLabel           = "rio.cattle.io/stack"
 )
 
 func (u *Up) Run(c *clicontext.CLIContext) error {
@@ -46,7 +50,7 @@ func (u *Up) Run(c *clicontext.CLIContext) error {
 		return err
 	}
 
-	if err := u.updateStack(content, answer, c); err != nil {
+	if err = u.saveStack(content, answer, c); err != nil {
 		return err
 	}
 
@@ -142,10 +146,34 @@ func (u *Up) up(content string, answers map[string]string, s *riov1.Stack, c *cl
 	if err != nil {
 		return err
 	}
-	return c.Apply.WithListerNamespace(c.GetSetNamespace()).WithDefaultNamespace(c.GetSetNamespace()).WithOwner(s).WithSetOwnerReference(true, true).WithDynamicLookup().ApplyObjects(objs...)
+	objs, err = setObjLabels(objs, s)
+	if err != nil {
+		return err
+	}
+	gvks, err := convertObjs(objs)
+	if err != nil {
+		return fmt.Errorf("error converting objs to gvks, stack may be out of date: %w", err)
+	}
+
+	var knowngvks []schema.GroupVersionKind
+	if len(s.Spec.AdditionalGroupVersionKinds) == 0 {
+		knowngvks = gvks
+	} else {
+		knowngvks = s.Spec.AdditionalGroupVersionKinds
+	}
+
+	err = c.Apply.WithListerNamespace(c.GetSetNamespace()).WithDefaultNamespace(c.GetSetNamespace()).WithOwner(s).WithSetOwnerReference(true, true).WithGVK(knowngvks...).WithDynamicLookup().ApplyObjects(objs...)
+	if err != nil {
+		return err
+	}
+
+	stackToUpdate := s.DeepCopy()
+	stackToUpdate.Spec.AdditionalGroupVersionKinds = gvks
+	return c.UpdateObject(stackToUpdate)
 }
 
-func (u *Up) updateStack(content string, answers map[string]string, c *clicontext.CLIContext) error {
+// saveStack updates an existing stack or creates one if one does not exist
+func (u *Up) saveStack(content string, answers map[string]string, c *clicontext.CLIContext) error {
 	s := riov1.NewStack(c.GetSetNamespace(), u.Name, riov1.Stack{
 		Spec: riov1.StackSpec{
 			Template: content,
@@ -184,4 +212,40 @@ func getCurrentDir() string {
 	workingDir, _ := os.Getwd()
 	dir := filepath.Base(workingDir)
 	return strings.ToLower(dir)
+}
+
+func setObjLabels(objs []runtime.Object, s *riov1.Stack) ([]runtime.Object, error) {
+
+	for _, obj := range objs {
+
+		obj, ok := obj.(metav1.Object)
+		if !ok {
+			return nil, fmt.Errorf("runtime.Object failed type assertion with metav1.Object")
+		}
+		labels := obj.GetLabels()
+		if labels == nil {
+			labels = make(map[string]string)
+		}
+		// match debugID of stack
+		labels[stackLabel] = s.Name
+		obj.SetLabels(labels)
+	}
+
+	return objs, nil
+
+}
+
+func convertObjs(objs []runtime.Object) ([]schema.GroupVersionKind, error) {
+	gvks := make([]schema.GroupVersionKind, 0, len(objs))
+	for _, obj := range objs {
+		groupVersionKind, err := gvk.Get(obj)
+		if err != nil {
+			return nil, err
+		}
+		if groupVersionKind.Empty() {
+			return nil, fmt.Errorf("groupVersionKind shouldn't be empty")
+		}
+		gvks = append(gvks, groupVersionKind)
+	}
+	return gvks, nil
 }

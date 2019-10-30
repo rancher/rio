@@ -481,7 +481,7 @@ github.com/rancher/norman/pkg/types/values
 # github.com/rancher/rdns-server v0.5.7-0.20190927164127-7128efe7d065
 github.com/rancher/rdns-server/client
 github.com/rancher/rdns-server/model
-# github.com/rancher/wrangler v0.2.1-0.20191025041946-1fd360590735
+# github.com/rancher/wrangler v0.2.1-0.20191101235852-ff10906d8415
 github.com/rancher/wrangler/pkg/apply
 github.com/rancher/wrangler/pkg/apply/injectors
 github.com/rancher/wrangler/pkg/cleanup
