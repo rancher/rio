@@ -73,7 +73,7 @@ require (
 	github.com/radovskyb/watcher v1.0.7 // indirect
 	github.com/rancher/gitwatcher v0.4.1
 	github.com/rancher/mapper v0.0.0-20190814232720-058a8b7feb99
-	github.com/rancher/norman v0.0.0-20191015045353-cc004d32fcc9
+	github.com/rancher/norman v0.0.0-20191030191625-ebecbda5fbe3
 	github.com/rancher/rdns-server v0.5.7-0.20190927164127-7128efe7d065
 	github.com/rancher/wrangler v0.2.1-0.20191025041946-1fd360590735
 	github.com/rancher/wrangler-api v0.2.1-0.20191025043713-b1ca9c21825a

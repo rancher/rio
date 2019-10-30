@@ -15,9 +15,9 @@ import (
 )
 
 type Promote struct {
-	Increment int  `desc:"Increment value" default:"5"`
-	Interval  int  `desc:"Interval value" default:"5"`
-	Pause     bool `desc:"Whether to pause rollout or continue it. Default to false" default:"false"`
+	Increment int    `desc:"Increment value" default:"5"`
+	Interval  string `desc:"Interval value" default:"5s"`
+	Pause     bool   `desc:"Whether to pause rollout or continue it. Default to false" default:"false"`
 }
 
 func (p *Promote) Run(ctx *clicontext.CLIContext) error {
@@ -43,11 +43,15 @@ func (p *Promote) Run(ctx *clicontext.CLIContext) error {
 			if s.Spec.Weight == nil {
 				s.Spec.Weight = new(int)
 			}
+			interval, err := time.ParseDuration(p.Interval)
+			if err != nil {
+				return err
+			}
 			s.Spec.RolloutConfig = &riov1.RolloutConfig{
 				Pause:     p.Pause,
 				Increment: p.Increment,
 				Interval: metav1.Duration{
-					Duration: time.Duration(p.Interval) * time.Second,
+					Duration: interval,
 				},
 			}
 			if s.Name == serviceName {

@@ -537,6 +537,9 @@ func (s *Schemas) determineSchemaType(t reflect.Type) (string, error) {
 		if err != nil {
 			return "", err
 		}
+		if t.Name() == "Duration" && strings.Contains(schema.PkgName, "k8s.io/apimachinery/pkg/apis/meta/v1") {
+			return "string", nil
+		}
 		return schema.ID, nil
 	default:
 		return "", fmt.Errorf("unknown type kind %s", t.Kind())

@@ -17,9 +17,9 @@ import (
 )
 
 type Weight struct {
-	Increment int  `desc:"Increment value" default:"5"`
-	Interval  int  `desc:"Interval value" default:"5"`
-	Pause     bool `desc:"Whether to pause rollout or continue it. Default to false" default:"false"`
+	Increment int    `desc:"Increment value" default:"5"`
+	Interval  string `desc:"Interval value" default:"5s"`
+	Pause     bool   `desc:"Whether to pause rollout or continue it. Default to false" default:"false"`
 }
 
 func (w *Weight) Run(ctx *clicontext.CLIContext) error {
@@ -27,10 +27,14 @@ func (w *Weight) Run(ctx *clicontext.CLIContext) error {
 		return errors.New("at least one parameter is required. Run -h to see options")
 	}
 	ctx.NoPrompt = true
-	return ScaleAndAllocate(ctx, ctx.CLI.Args(), w.Pause, w.Increment, w.Interval)
+	interval, err := time.ParseDuration(w.Interval)
+	if err != nil {
+		return err
+	}
+	return scaleAndAllocate(ctx, ctx.CLI.Args(), w.Pause, w.Increment, interval)
 }
 
-func ScaleAndAllocate(ctx *clicontext.CLIContext, args []string, pause bool, increment, interval int) error {
+func scaleAndAllocate(ctx *clicontext.CLIContext, args []string, pause bool, increment int, interval time.Duration) error {
 	var errs []error
 	serviceName, _ := kv.Split(ctx.CLI.Args()[0], "=")
 	svcs, err := util.ListAppServicesFromServiceName(ctx, serviceName)
@@ -69,7 +73,7 @@ func ScaleAndAllocate(ctx *clicontext.CLIContext, args []string, pause bool, inc
 				Pause:     pause,
 				Increment: increment,
 				Interval: metav1.Duration{
-					Duration: time.Duration(interval) * time.Second,
+					Duration: interval,
 				},
 			}
 			return nil
@@ -116,7 +120,7 @@ func ScaleAndAllocate(ctx *clicontext.CLIContext, args []string, pause bool, inc
 				Pause:     pause,
 				Increment: increment,
 				Interval: metav1.Duration{
-					Duration: time.Duration(interval) * time.Second,
+					Duration: interval,
 				},
 			}
 			return nil

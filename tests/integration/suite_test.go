@@ -17,7 +17,7 @@ func TestMain(m *testing.M) {
 func TestSuite(t *testing.T) {
 	suite := spec.New("integration suite", spec.Report(report.Terminal{}))
 	specs := map[string]func(t *testing.T, when spec.G, it spec.S){
-		//"weight":          weightTests, // // todo: fix metav1.duration bug
+		"weight":          weightTests,
 		"run":             runTests,
 		"scale":           scaleTests,
 		"endpoint":        endpointTests,

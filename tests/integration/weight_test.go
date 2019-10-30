@@ -30,16 +30,15 @@ func weightTests(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, 100, service.GetKubeCurrentWeight())
 			assert.Equal(t, 0, stagedService.GetKubeCurrentWeight())
 		})
-		// todo: fix metav1.duration bug
-		//it("should be able to split weights between revisions", func() {
-		//	stagedService.Weight(40, false, 0, 0)
-		//	assert.Equal(t, 60, service.GetCurrentWeight())
-		//	assert.Equal(t, 40, stagedService.GetCurrentWeight())
-		//	assert.Equal(t, 60, service.GetKubeCurrentWeight())
-		//	assert.Equal(t, 40, stagedService.GetKubeCurrentWeight())
-		//	responses := service.GetResponseCounts([]string{"Hello World", "Hello World v3"}, 12)
-		//	assert.Greater(t, responses["Hello World"], 2, "The application did not return enough responses from the service. which has slightly more weight than the staged service.")
-		//	assert.GreaterOrEqual(t, responses["Hello World v3"], 1, "The application did not return enough responses from the staged service. which has slightly less weight than the service.")
-		//})
+		it("should be able to split weights between revisions", func() {
+			stagedService.Weight(40, "--increment=20", "--interval=1s")
+			assert.Equal(t, 60, service.GetCurrentWeight())
+			assert.Equal(t, 40, stagedService.GetCurrentWeight())
+			assert.Equal(t, 60, service.GetKubeCurrentWeight())
+			assert.Equal(t, 40, stagedService.GetKubeCurrentWeight())
+			responses := service.GetResponseCounts([]string{"Hello World", "Hello World v3"}, 12)
+			assert.Greater(t, responses["Hello World"], 2, "The application did not return enough responses from the service. which has slightly more weight than the staged service.")
+			assert.GreaterOrEqual(t, responses["Hello World v3"], 1, "The application did not return enough responses from the staged service. which has slightly less weight than the service.")
+		})
 	}, spec.Parallel())
 }

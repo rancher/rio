@@ -131,20 +131,22 @@ func (ts *TestService) Scale(scaleTo int) {
 	}
 }
 
-// Weight calls "rio weight --rollout={rollout} --rollout-increment={increment} --rollout-interval={interval} ns/service:version={percentage}" on this service.
-// If passing rollout=false then the increment and interval values won't matter. Best practice is to pass "5" for both to keep in line with Spec defaults.
-func (ts *TestService) Weight(percentage int, pause bool, increment int, interval int) {
-	_, err := RioCmd([]string{
-		"weight",
-		fmt.Sprintf("--pause=%t", pause),
-		fmt.Sprintf("--increment=%d", increment),
-		fmt.Sprintf("--interval=%d", interval),
-		fmt.Sprintf("%s=%d", ts.Name, percentage),
-	})
+// Weight calls "rio weight {args} service_name={percentage}" on this service.
+func (ts *TestService) Weight(percentage int, args ...string) {
+	args = append(
+		[]string{"weight"},
+		append(args, fmt.Sprintf("%s=%d", ts.Name, percentage))...)
+	_, err := RioCmd(args)
 	if err != nil {
 		ts.T.Fatalf("weight command failed:  %v", err.Error())
 	}
-	if !pause {
+	paused := false
+	for _, a := range args {
+		if strings.Contains(a, "pause") {
+			paused = true
+		}
+	}
+	if !paused {
 		err = ts.waitForWeight(percentage)
 		if err != nil {
 			ts.T.Fatal(err.Error())
