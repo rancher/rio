@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/rancher/rio/modules/build/pkg"
-
 	webhookv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
+	"github.com/rancher/rio/modules/build/pkg"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
@@ -105,6 +104,14 @@ func (p *populator) populate(service *riov1.Service, status riov1.ServiceStatus)
 		}
 	}
 
+	if status.BuildLogToken == "" {
+		token, err := randomtoken.Generate()
+		if err != nil {
+			return nil, status, err
+		}
+		status.BuildLogToken = token
+	}
+
 	os := objectset.NewObjectSet()
 	for conName, build := range imageBuilds {
 		if build.Repo == "" {
@@ -115,7 +122,7 @@ func (p *populator) populate(service *riov1.Service, status riov1.ServiceStatus)
 			status.Watch = true
 		}
 
-		if err := p.populateBuild(conName, service.Namespace, build, service, p.systemNamespace, os); err != nil {
+		if err := p.populateBuild(conName, service.Namespace, build, service, status, p.systemNamespace, os); err != nil {
 			return nil, status, err
 		}
 
@@ -124,18 +131,10 @@ func (p *populator) populate(service *riov1.Service, status riov1.ServiceStatus)
 		}
 	}
 
-	if status.BuildLogToken == "" {
-		token, err := randomtoken.Generate()
-		if err != nil {
-			return nil, status, err
-		}
-		status.BuildLogToken = token
-	}
-
 	return os.All(), status, nil
 }
 
-func (p populator) populateBuild(buildKey, namespace string, build *riov1.ImageBuildSpec, svc *riov1.Service, systemNamespace string, os *objectset.ObjectSet) error {
+func (p populator) populateBuild(buildKey, namespace string, build *riov1.ImageBuildSpec, svc *riov1.Service, status riov1.ServiceStatus, systemNamespace string, os *objectset.ObjectSet) error {
 	if svc.Spec.Template {
 		return nil
 	}
@@ -167,7 +166,7 @@ func (p populator) populateBuild(buildKey, namespace string, build *riov1.ImageB
 				pkg.ContainerLabel: buildKey,
 				pkg.ServiceLabel:   svc.Name,
 				pkg.GitCommitLabel: svc.Annotations[pkg.GitCommitLabel],
-				pkg.LogTokenLabel:  svc.Status.BuildLogToken,
+				pkg.LogTokenLabel:  status.BuildLogToken,
 			},
 		},
 		Spec: tektonv1alpha1.TaskRunSpec{
