@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/aokoli/goutils"
 	"github.com/rancher/rio/cli/cmd/edit/edit"
 	"github.com/rancher/rio/cli/pkg/clicontext"
@@ -80,13 +82,16 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 		spec.Version = version
 		spec.App = app
 		spec.Weight = &[]int{0}[0]
-		stagedService := riov1.NewService(svc.Namespace, spec.App+"-"+version, riov1.Service{})
-
 		if ctx.CLI.String("image") != "" {
 			spec.Image = ctx.CLI.String("image")
 		}
-
-		stagedService.Spec = *spec
+		stagedService := riov1.NewService(svc.Namespace, spec.App+"-"+version, riov1.Service{
+			Spec: *spec,
+			ObjectMeta: v1.ObjectMeta{
+				Labels:      svc.Labels,
+				Annotations: svc.Annotations,
+			},
+		})
 		return ctx.Create(stagedService)
 	}
 
