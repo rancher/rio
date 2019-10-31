@@ -33,7 +33,7 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 			for _, pod := range runningPods {
 				assert.Contains(t, pod, service.Service.Name)
 			}
-			// todo: fix GenerateLoad
+			// todo: fix flakey test below
 			//service.GenerateLoad()
 			//assert.Greater(t, service.GetAvailableReplicas(), 1, "should have more than 1 available replica")
 			//runningPods = service.GetRunningPods()
