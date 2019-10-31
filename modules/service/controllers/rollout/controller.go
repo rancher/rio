@@ -77,7 +77,7 @@ func (rh *rolloutHandler) rollout(key string, svc *riov1.Service) (*riov1.Servic
 
 	for _, s := range svcs {
 		// If pause is on, or if any revision is not ready but has weight allocated, return
-		if blocksRollout(s.Spec.RolloutConfig) == true || (riov1.ServiceConditionServiceDeployed.IsFalse(s) && s.Spec.Weight != nil && *s.Spec.Weight > 0) {
+		if blocksRollout(s.Spec.RolloutConfig) == true || (!s.Status.DeploymentReady && s.Spec.Weight != nil && *s.Spec.Weight > 0) {
 			err = rh.updateServices(svcs, updatedNeeded)
 			if err != nil {
 				return svc, err
@@ -96,7 +96,7 @@ func (rh *rolloutHandler) rollout(key string, svc *riov1.Service) (*riov1.Servic
 		weightToAdjust := *s.Spec.Weight - computedWeight
 
 		if incrementalRollout(s.Spec.RolloutConfig) {
-			rh.lastWriteLock.Lock() // Don't allow anyone else to read while we might write, avoids competing writes. Would be nice to convert this to key based locking.
+			rh.lastWriteLock.Lock() // Don't allow anyone else to read while we might write, avoids competing writes. todo: Would be nice to convert this to key based locking.
 			lastSvcWrite := rh.lastWrite[serviceKey(s)]
 			if time.Now().Before(lastSvcWrite.Add(s.Spec.RolloutConfig.Interval.Duration)) {
 				rh.lastWriteLock.Unlock()
