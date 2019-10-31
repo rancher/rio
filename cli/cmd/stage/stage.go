@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/rancher/rio/pkg/riofile/stringers"
+
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/aokoli/goutils"
@@ -17,8 +19,10 @@ import (
 )
 
 type Stage struct {
-	Image  string `desc:"Runtime image (Docker image/OCI image)"`
-	E_Edit bool   `desc:"Edit the config to change the spec in new revision"`
+	Image   string   `desc:"Runtime image (Docker image/OCI image)"`
+	E_Edit  bool     `desc:"Edit the config to change the spec in new revision"`
+	Env     []string `desc:"Set environment variables"`
+	EnvFile []string `desc:"Read in a file of environment variables"`
 }
 
 func (r *Stage) Run(ctx *clicontext.CLIContext) error {
@@ -84,6 +88,10 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 		spec.Weight = &[]int{0}[0]
 		if ctx.CLI.String("image") != "" {
 			spec.Image = ctx.CLI.String("image")
+		}
+		spec.Env, err = stringers.ParseAllEnv(r.EnvFile, r.Env, true)
+		if err != nil {
+			return err
 		}
 		stagedService := riov1.NewService(svc.Namespace, spec.App+"-"+version, riov1.Service{
 			Spec: *spec,
