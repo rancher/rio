@@ -398,13 +398,16 @@ type ServiceStatus struct {
 	ContainerRevision map[string]BuildRevision `json:"containerRevision,omitempty"`
 
 	// GeneratedServices contains all the service names are generated from build template
-	GeneratedServices []string `json:"generatedServices,omitempty"`
+	GeneratedServices map[string]bool `json:"generatedServices,omitempty"`
 
 	// GitCommits contains all git commits that triggers template update
 	GitCommits []string `json:"gitCommits,omitempty"`
 
+	// ShouldGenerate contains the serviceName that should be generated on the next controller run
+	ShouldGenerate string `json:"shouldGenerate,omitempty"`
+
 	// ShouldClean contains all the services that are generated from template but should be cleaned up.
-	ShouldClean []string `json:"shouldClean,omitempty"`
+	ShouldClean map[string]bool `json:"shouldClean,omitempty"`
 
 	// Represents the latest available observations of a deployment's current state.
 	Conditions []genericcondition.GenericCondition `json:"conditions,omitempty"`

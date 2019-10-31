@@ -1061,8 +1061,10 @@ func (in *ServiceStatus) DeepCopyInto(out *ServiceStatus) {
 	}
 	if in.GeneratedServices != nil {
 		in, out := &in.GeneratedServices, &out.GeneratedServices
-		*out = make([]string, len(*in))
-		copy(*out, *in)
+		*out = make(map[string]bool, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
 	}
 	if in.GitCommits != nil {
 		in, out := &in.GitCommits, &out.GitCommits
@@ -1071,8 +1073,10 @@ func (in *ServiceStatus) DeepCopyInto(out *ServiceStatus) {
 	}
 	if in.ShouldClean != nil {
 		in, out := &in.ShouldClean, &out.ShouldClean
-		*out = make([]string, len(*in))
-		copy(*out, *in)
+		*out = make(map[string]bool, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
 	}
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
