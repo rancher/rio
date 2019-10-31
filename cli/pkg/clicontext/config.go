@@ -14,7 +14,6 @@ import (
 	"github.com/rancher/wrangler/pkg/kubeconfig"
 	"github.com/sirupsen/logrus"
 	tektonv1alpha1 "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/typed/pipeline/v1alpha1"
-	errors2 "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -72,8 +71,7 @@ func (c *Config) Validate() error {
 
 	restConfig, err := loader.ClientConfig()
 	if err != nil {
-		logrus.Error(err)
-		return ErrNoConfig
+		return err
 	}
 	restConfig.QPS = 500
 	restConfig.Burst = 100
@@ -112,12 +110,7 @@ func (c *Config) Validate() error {
 		c.DefaultNamespace = defaultNs
 	}
 
-	if info, err := project.RioInfos().Get("rio", metav1.GetOptions{}); err != nil {
-		if !errors2.IsForbidden(err) {
-			logrus.Debug(err)
-			return ErrNoConfig
-		}
-	} else {
+	if info, err := project.RioInfos().Get("rio", metav1.GetOptions{}); err == nil {
 		c.SystemNamespace = info.Status.SystemNamespace
 	}
 
