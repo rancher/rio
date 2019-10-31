@@ -68,7 +68,7 @@ func RioCmd(args []string, envs ...string) (string, error) {
 // Example: args=["get", "-n", "test", "services"] would run: "kubectl get -n test services"
 func KubectlCmd(args []string) (string, error) {
 	cmd := exec.Command("kubectl", args...)
-	stdOutErr, err := retry(5, 1, cmd.CombinedOutput)
+	stdOutErr, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("%s: %s", err.Error(), stdOutErr)
 	}
@@ -111,6 +111,28 @@ func WaitForURLResponse(endpoint string) (string, error) {
 	return resp, nil
 }
 
+// WaitForNoResponse waits until the response returned by a service is not 200
+func WaitForNoResponse(endpoint string) (string, error) {
+	f := wait.ConditionFunc(func() (bool, error) {
+		_, err := GetURL(endpoint)
+		if err == nil {
+			return false, nil
+		}
+		return true, nil
+	})
+	err := wait.Poll(2*time.Second, 240*time.Second, f)
+	if err != nil {
+		return "", errors.New("endpoint did not go down")
+	}
+	resp, err := GetURL(endpoint)
+	if err == nil {
+		return resp, errors.New("endpoint did not go down")
+	}
+	return resp, nil
+
+}
+
+// GetURL performs an HTTP.Get on a endpoint and returns an error if the resp is not 200
 func GetURL(url string) (string, error) {
 	var body string
 	response, err := http.Get(url)
@@ -190,23 +212,4 @@ func homeDir() string {
 		return h
 	}
 	return os.Getenv("USERPROFILE") // windows
-}
-
-// retry function is intended for retrying command line commands invocations that collisioned while
-// updating kubernetes objects
-func retry(attempts int, sleep time.Duration, f func() ([]byte, error)) ([]byte, error) {
-	byteArray, err := f()
-	if err != nil {
-		if s, ok := err.(stop); ok {
-			return byteArray, s.error
-		}
-		if attempts--; attempts > 0 {
-			jitter := time.Duration(rand.Int63n(int64(sleep)))
-			sleep = sleep + jitter/2
-			time.Sleep(sleep)
-			return retry(attempts, 2*sleep, f)
-		}
-		return byteArray, err
-	}
-	return byteArray, nil
 }

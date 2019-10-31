@@ -19,9 +19,11 @@ type TestRiofile struct {
 }
 
 // Bring up a riofile by fixture file
-func (trf *TestRiofile) Up(t *testing.T, filename string) {
+func (trf *TestRiofile) Up(t *testing.T, filename, stackName string) {
 	trf.T = t
-	stackName := RandomString(5)
+	if stackName == "" {
+		stackName = RandomString(5)
+	}
 	trf.Name = fmt.Sprintf("stack/%s/%s", testingNamespace, stackName)
 	pwd, err := os.Getwd()
 	if err != nil {
