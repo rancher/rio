@@ -97,6 +97,9 @@ func wildcardDNS(namespace, name string) *certmanagerv1alpha2.Certificate {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      secretName,
+			Annotations: map[string]string{
+				"cert-manager.io/issue-temporary-certificate": "true",
+			},
 		},
 		Spec: certmanagerv1alpha2.CertificateSpec{
 			SecretName: secretName,

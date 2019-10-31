@@ -33,6 +33,7 @@ type Endpoint struct {
 }
 
 type Data struct {
+	Namespace string
 	Name      string
 	Endpoints []string
 }
@@ -79,6 +80,7 @@ func (e *Endpoint) Run(ctx *clicontext.CLIContext) error {
 			seen[app] = true
 			data = append(data, Data{
 				Name:      app,
+				Namespace: service.Namespace,
 				Endpoints: endpoints,
 			})
 		}
@@ -108,6 +110,7 @@ func (e *Endpoint) Run(ctx *clicontext.CLIContext) error {
 		if len(endpoints) > 0 {
 			data = append(data, Data{
 				Name:      r.Name,
+				Namespace: r.Namespace,
 				Endpoints: endpoints,
 			})
 		}

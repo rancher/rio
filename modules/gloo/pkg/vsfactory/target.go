@@ -133,6 +133,9 @@ func getTargetsForApp(svcs []*riov1.Service, systemNamespace string) (hostnames 
 
 	weightSet := false
 	for _, svc := range svcs {
+		if svc.Spec.Template {
+			continue
+		}
 		target, err := getTarget(svc, systemNamespace)
 		if err != nil {
 			return nil, nil, err

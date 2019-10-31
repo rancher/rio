@@ -39,6 +39,9 @@ type handler struct {
 }
 
 func (h *handler) generate(obj *riov1.Service, status riov1.ServiceStatus) ([]runtime.Object, riov1.ServiceStatus, error) {
+	if obj.Spec.Template {
+		return nil, status, nil
+	}
 	vss, err := h.vsFactory.ForRevision(obj)
 	if err != nil {
 		return nil, status, err
