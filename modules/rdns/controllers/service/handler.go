@@ -183,7 +183,13 @@ func (h *handler) staticAddress() ([]adminv1.Address, error) {
 func (h *handler) getAddresses(svc *corev1.Service) ([]adminv1.Address, bool, error) {
 	result, err := h.staticAddress()
 	if len(result) > 0 || err != nil {
-		return result, true, err
+		useNodePort := true
+		for _, ingress := range svc.Status.LoadBalancer.Ingress {
+			if ingress.IP != "" || ingress.Hostname != "" {
+				useNodePort = false
+			}
+		}
+		return result, useNodePort, err
 	}
 
 	if svc.Spec.Type == corev1.ServiceTypeExternalName {
