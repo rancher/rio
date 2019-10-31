@@ -97,8 +97,14 @@ func (h Handler) updateGitcommit(key string, obj *riov1.Service) (*riov1.Service
 	if err != nil {
 		return obj, err
 	}
+
+	webhookEndpoint := ""
+	if len(webhook.Status.Endpoints) > 0 {
+		webhookEndpoint = webhook.Status.Endpoints[0]
+	}
+
 	gitcommit = gitcommit.DeepCopy()
-	logURL := fmt.Sprintf("%s/logs/%s/%s?log-token=%s", webhook.Status.Endpoints[0], obj.Namespace, obj.Name, obj.Status.BuildLogToken)
+	logURL := fmt.Sprintf("%s/logs/%s/%s?log-token=%s", webhookEndpoint, obj.Namespace, obj.Name, obj.Status.BuildLogToken)
 	endpoint := ""
 	if len(obj.Status.Endpoints) > 0 {
 		endpoint = obj.Status.Endpoints[0]

@@ -45,7 +45,11 @@ func (h *handler) generate(service *riov1.Service, status riov1.ServiceStatus) (
 		return nil, status, generic.ErrSkip
 	}
 
-	name := last(status.GeneratedServices)
+	if err := h.cleanup(service); err != nil {
+		return nil, status, err
+	}
+
+	name := status.ShouldGenerate
 	app, _ := services.AppAndVersion(service)
 
 	spec := service.Spec.DeepCopy()
@@ -61,11 +65,15 @@ func (h *handler) generate(service *riov1.Service, status riov1.ServiceStatus) (
 		}
 	} else {
 		// if it is first generated service, set generated service to 1
-		if len(status.GeneratedServices) == 1 {
+		if len(status.GeneratedServices) == 0 {
 			spec.Weight = &[]int{100}[0]
 		} else {
 			spec.Weight = &[]int{0}[0]
 		}
+	}
+
+	if status.ShouldClean[name] || status.GeneratedServices[name] {
+		return nil, status, nil
 	}
 
 	logrus.Infof("Generating service %s/%s from template", service.Namespace, name)
@@ -84,7 +92,7 @@ func (h *handler) generate(service *riov1.Service, status riov1.ServiceStatus) (
 }
 
 func (h *handler) cleanup(service *riov1.Service) error {
-	for _, shouldDelete := range service.Status.ShouldClean {
+	for shouldDelete := range service.Status.ShouldClean {
 		if err := h.services.Delete(service.Namespace, shouldDelete, &metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
 			return err
 		}
@@ -118,7 +126,7 @@ func (h *handler) scaleDownRevisions(namespace, name, excludedService string) er
 }
 
 func skip(service *riov1.Service) bool {
-	if !service.Spec.Template || len(service.Status.ContainerRevision) == 0 || len(service.Status.GeneratedServices) == 0 {
+	if !service.Spec.Template || len(service.Status.ContainerRevision) == 0 || service.Status.ShouldGenerate == "" {
 		return true
 	}
 	needed := 0

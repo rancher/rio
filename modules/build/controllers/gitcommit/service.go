@@ -54,13 +54,18 @@ func (h Handler) onChangeService(key string, obj *webhookv1.GitCommit, gitWatche
 		revision := baseService.Status.ContainerRevision[containerName]
 		revision.Commits = append(revision.Commits, obj.Spec.Commit)
 		baseService.Status.ContainerRevision[containerName] = revision
-		baseService.Status.GeneratedServices = append(baseService.Status.GeneratedServices, serviceName)
 		baseService.Status.GitCommits = append(baseService.Status.GitCommits, obj.Name)
 
 		if obj.Spec.PR != "" && (obj.Spec.Merged || obj.Spec.Closed) {
 			logrus.Infof("PR %s is merged/closed, deleting revision, name: %s, namespace: %s, revision: %s", obj.Spec.PR, serviceName, baseService.Namespace, obj.Spec.Commit)
-			baseService.Status.ShouldClean = append(baseService.Status.ShouldClean, serviceName)
+			if baseService.Status.ShouldClean == nil {
+				baseService.Status.ShouldClean = map[string]bool{}
+			}
+			baseService.Status.ShouldClean[serviceName] = true
+		} else {
+			baseService.Status.ShouldGenerate = serviceName
 		}
+
 		if _, err := h.services.UpdateStatus(baseService); err != nil {
 			return obj, err
 		}
