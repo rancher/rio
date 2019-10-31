@@ -43,9 +43,19 @@ func (rh *rolloutHandler) rollout(key string, svc *riov1.Service) (*riov1.Servic
 	if appName == "" {
 		return nil, generic.ErrSkip
 	}
-	svcs, err := rh.serviceCache.GetByIndex(indexes.ServiceByApp, fmt.Sprintf("%s/%s", svc.Namespace, appName))
-	if err != nil || len(svcs) == 0 {
+	allSvcs, err := rh.serviceCache.GetByIndex(indexes.ServiceByApp, fmt.Sprintf("%s/%s", svc.Namespace, appName))
+	if err != nil {
 		return svc, err
+	}
+	var svcs []*riov1.Service
+	for _, s := range allSvcs {
+		// We don't ever want to assign weight to a template
+		if !s.Spec.Template {
+			svcs = append(svcs, s)
+		}
+	}
+	if len(svcs) == 0 {
+		return svc, nil
 	}
 
 	// When services are initiated with no weight or computedWeight, set initial ComputedWeights balanced evenly

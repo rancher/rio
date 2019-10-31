@@ -177,6 +177,10 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 		return nil, fmt.Errorf("at least one (1) argument is required")
 	}
 
+	if c.Version != "" && c.Template {
+		return nil, fmt.Errorf("version and template cannot be used together")
+	}
+
 	var spec riov1.ServiceSpec
 
 	spec.App = c.App

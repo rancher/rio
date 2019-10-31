@@ -26,7 +26,7 @@ func ListAppServicesFromServiceName(ctx *clicontext.CLIContext, serviceName stri
 	}
 	var revisions []riov1.Service
 	for _, rev := range svcs.Items {
-		if app == rev.Spec.App || app == rev.Name {
+		if (app == rev.Spec.App || app == rev.Name) && !rev.Spec.Template {
 			revisions = append(revisions, rev)
 		}
 	}
