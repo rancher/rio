@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/rancher/rio/pkg/riofile/stringers"
+
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/aokoli/goutils"
@@ -17,8 +19,10 @@ import (
 )
 
 type Stage struct {
-	Image  string `desc:"Runtime image (Docker image/OCI image)"`
-	E_Edit bool   `desc:"Edit the config to change the spec in new revision"`
+	Image   string   `desc:"Runtime image (Docker image/OCI image)"`
+	E_Edit  bool     `desc:"Edit the config to change the spec in new revision"`
+	Env     []string `desc:"Set environment variables"`
+	EnvFile []string `desc:"Read in a file of environment variables"`
 }
 
 func (r *Stage) Run(ctx *clicontext.CLIContext) error {
@@ -85,6 +89,10 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 		if ctx.CLI.String("image") != "" {
 			spec.Image = ctx.CLI.String("image")
 		}
+		spec.Env, err = r.mergeEnvVars(spec.Env)
+		if err != nil {
+			return err
+		}
 		stagedService := riov1.NewService(svc.Namespace, spec.App+"-"+version, riov1.Service{
 			Spec: *spec,
 			ObjectMeta: v1.ObjectMeta{
@@ -96,4 +104,26 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 	}
 
 	return nil
+}
+
+// This keeps original and stage env vars in order and adds staged last, deletes any dups from original
+func (r *Stage) mergeEnvVars(currEnvs []riov1.EnvVar) ([]riov1.EnvVar, error) {
+	stageEnvs, err := stringers.ParseAllEnv(r.EnvFile, r.Env, true)
+	if err != nil {
+		return stageEnvs, err
+	}
+	if len(stageEnvs) == 0 {
+		return currEnvs, nil
+	}
+	envMap := make(map[string]bool)
+	for _, se := range stageEnvs {
+		envMap[se.Name] = true
+	}
+	var orig []riov1.EnvVar
+	for _, e := range currEnvs {
+		if ok := envMap[e.Name]; !ok {
+			orig = append(orig, e)
+		}
+	}
+	return append(orig, stageEnvs...), nil
 }
