@@ -278,7 +278,7 @@ func (ts *TestService) GetSpecWeight() int {
 	return 0
 }
 
-// Return service's actual current weight, not the spec (end-goal) weight
+// Return service's computed (actual) weight, not the spec (end-goal) weight
 func (ts *TestService) GetCurrentWeight() int {
 	ts.reload()
 	if ts.Service.Status.ComputedWeight != nil {
