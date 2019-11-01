@@ -183,5 +183,5 @@ func readFile(file string) ([]byte, error) {
 func getCurrentDir() string {
 	workingDir, _ := os.Getwd()
 	dir := filepath.Base(workingDir)
-	return dir
+	return strings.ToLower(dir)
 }

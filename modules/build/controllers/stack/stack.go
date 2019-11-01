@@ -201,17 +201,16 @@ func populateRbac(stack *riov1.Stack, saName, systemNamespace, buildKitPodName s
 			Verbs:         []string{"create", "get"},
 		},
 		{
-			APIGroups:     []string{""},
-			Resources:     []string{"pods"},
-			ResourceNames: []string{""},
-			Verbs:         []string{"list", "get"},
+			APIGroups: []string{""},
+			Resources: []string{"pods"},
+			Verbs:     []string{"list", "get"},
 		},
 	}
 
 	roleBinding1 := rbac.NewBinding(systemNamespace, fmt.Sprintf("%s-%s-stack", stack.Namespace, stack.Name), nil)
 	roleBinding1.RoleRef = v1.RoleRef{
 		Kind:     "Role",
-		Name:     fmt.Sprintf("%s-%s-stack", stack.Namespace, stack.Name),
+		Name:     role1.Name,
 		APIGroup: "rbac.authorization.k8s.io",
 	}
 	roleBinding1.Subjects = []v1.Subject{
@@ -219,16 +218,6 @@ func populateRbac(stack *riov1.Stack, saName, systemNamespace, buildKitPodName s
 			Kind:      "ServiceAccount",
 			Namespace: stack.Namespace,
 			Name:      saName,
-		},
-	}
-
-	role2 := rbac.NewRole(stack.Namespace, fmt.Sprintf("%s-stack", stack.Name), nil)
-	role2.Rules = []v1.PolicyRule{
-		{
-			APIGroups:     []string{"rio.cattle.io"},
-			Resources:     []string{"stacks"},
-			ResourceNames: []string{stack.Name},
-			Verbs:         []string{"get", "update"},
 		},
 	}
 
@@ -251,7 +240,6 @@ func populateRbac(stack *riov1.Stack, saName, systemNamespace, buildKitPodName s
 	return []runtime.Object{
 		role1,
 		roleBinding1,
-		role2,
 		roleBinding2,
 	}
 }
