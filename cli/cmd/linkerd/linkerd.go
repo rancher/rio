@@ -51,7 +51,7 @@ func (l *Linkerd) Run(ctx *clicontext.CLIContext) error {
 			if err != nil {
 				return err
 			}
-			if err := localbuilder.PortForward(ctx.K8s, l.Port, webPort, pod, true, localbuilder.ChanWrapper(ctx.Ctx.Done())); err != nil {
+			if err := localbuilder.PortForward(ctx.K8s, l.Port, webPort, pod, true, make(chan struct{}), localbuilder.ChanWrapper(ctx.Ctx.Done())); err != nil {
 				logrus.Fatal(err)
 			}
 			return err

@@ -6,7 +6,6 @@ import (
 	"math/rand"
 	"net"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -104,6 +103,7 @@ func (l localBuilder) setup(ctx context.Context) error {
 }
 
 func (l localBuilder) setupPortforwarding(ctx context.Context) error {
+	readyChan := make(chan struct{})
 	go func() {
 		pods, err := l.k8s.CoreV1().Pods(l.systemNamespace).List(metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("app=%s", constants.BuildkitdService),
@@ -118,12 +118,16 @@ func (l localBuilder) setupPortforwarding(ctx context.Context) error {
 				break
 			}
 		}
-		if err := PortForward(l.k8s, l.buildkitPort, "8080", pod, false, ChanWrapper(ctx.Done())); err != nil {
-			logrus.Error(err)
+		if err := PortForward(l.k8s, l.buildkitPort, "8080", pod, false, readyChan, ChanWrapper(ctx.Done())); err != nil {
+			logrus.Fatal(err)
 		}
 	}()
 
-	return nil
+	logrus.Info("Waiting for port-forward to buildkitd")
+	select {
+	case <-readyChan:
+		return nil
+	}
 }
 
 func ChanWrapper(input <-chan struct{}) chan struct{} {
@@ -165,7 +169,7 @@ func (l localBuilder) buildSingle(ctx context.Context, spec riov1.ImageBuildSpec
 		image, err = l.runtimeBuilder.Build(newctx, spec)
 		if err == nil {
 			cancel()
-		} else if err != nil && !strings.Contains(err.Error(), "connect: connection refused") {
+		} else if err != nil {
 			logrus.Fatal(err)
 		}
 	}, time.Second, 1.5, false, newctx.Done())
