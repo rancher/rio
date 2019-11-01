@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -168,6 +169,7 @@ func (p populator) populateBuild(buildKey, namespace string, build *riov1.ImageB
 		}
 	}
 
+	dir, fileName := filepath.Join(build.Context, filepath.Dir(build.Dockerfile)), filepath.Base(build.Dockerfile)
 	taskrun := constructors.NewTaskRun(namespace, trName, tektonv1alpha1.TaskRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
@@ -187,11 +189,6 @@ func (p populator) populateBuild(buildKey, namespace string, build *riov1.ImageB
 							Name:        "image",
 							Type:        tektonv1alpha1.ParamTypeString,
 							Description: "Where to publish the resulting image",
-						},
-						{
-							Name:        "dockerfile",
-							Type:        tektonv1alpha1.ParamTypeString,
-							Description: "The name of the Dockerfile",
 						},
 						{
 							Name:        "docker-context",
@@ -228,9 +225,9 @@ func (p populator) populateBuild(buildKey, namespace string, build *riov1.ImageB
 								"build",
 								"--progress=plain",
 								"--frontend=dockerfile.v0",
-								"--opt", "filename=$(inputs.params.dockerfile)",
+								"--opt", fmt.Sprintf("filename=%s", fileName),
 								"--local", "context=$(inputs.params.docker-context)",
-								"--local", "dockerfile=$(inputs.params.docker-context)",
+								"--local", fmt.Sprintf("dockerfile=%s", dir),
 								"--output", "type=image,name=$(inputs.params.image),push=true,registry.insecure=$(inputs.params.insecure-registry)",
 							},
 						},
@@ -251,13 +248,6 @@ func (p populator) populateBuild(buildKey, namespace string, build *riov1.ImageB
 						Value: tektonv1alpha1.ArrayOrString{
 							Type:      tektonv1alpha1.ParamTypeString,
 							StringVal: strconv.FormatBool(build.PushRegistry == ""),
-						},
-					},
-					{
-						Name: "dockerfile",
-						Value: tektonv1alpha1.ArrayOrString{
-							Type:      tektonv1alpha1.ParamTypeString,
-							StringVal: build.Dockerfile,
 						},
 					},
 					{
