@@ -14,7 +14,7 @@
 		"skip-files": [
 			"/zz_generated_"
 		],
-		"deadline": "5m"
+		"timeout": "5m"
 	},
     "issues": {
         "exclude-rules": [
@@ -22,7 +22,12 @@
                 "path":"cli/cmd",
                 "text":"don't use underscores in Go names",
                 "linters":["golint"]
-            }
+            },
+	    {
+		"linters":["golint"],
+		"path":"pkg/generated/",
+		"text":"and that stutters;"
+	    }
         ]
     }
 }
