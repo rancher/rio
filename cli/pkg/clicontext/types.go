@@ -69,6 +69,8 @@ func (c *CLIContext) DeleteResource(r types.Resource) (err error) {
 		err = c.Build.TaskRuns(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
 	case clitypes.StackType:
 		err = c.Rio.Stacks(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
+	case clitypes.SecretType:
+		err = c.Core.Secrets(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
 	default:
 		return fmt.Errorf("unknown delete type %s", r.Type)
 	}
