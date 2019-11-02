@@ -72,7 +72,11 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 			app, _ := services.AppAndVersion(svc)
 			svc.Name = app + "-" + version
 			svc.Spec.Version = version
-			svc.Spec.App = obj.Spec.App
+			if obj.Spec.App != "" {
+				svc.Spec.App = obj.Spec.App
+			} else {
+				svc.Spec.App = app
+			}
 			svc.Spec.Weight = &[]int{0}[0]
 			return ctx.Create(svc)
 		})
