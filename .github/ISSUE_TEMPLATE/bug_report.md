@@ -29,7 +29,7 @@ Type:
 
 ```
 **Additional context**
-`rio systemlog`
+`rio systemlogs`
 output:
 ```
 
