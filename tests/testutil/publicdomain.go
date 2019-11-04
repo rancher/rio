@@ -40,7 +40,7 @@ func (td *TestDomain) RegisterDomain(t *testing.T, domain string, target string)
 // Executes "rio domain unregister" for this domain
 func (td *TestDomain) UnRegister() {
 	if td.PublicDomain.Name != "" {
-		_, err := RioCmd([]string{"domain", "unregister", td.Name})
+		_, err := RioCmd([]string{"domain", "unregister", strings.Split(td.Name, ":")[1]})
 		if err != nil {
 			td.T.Logf("failed to unregister domain:  %v", err.Error())
 		}
@@ -78,7 +78,7 @@ func (td *TestDomain) GetKubeDomain() string {
 //////////////////
 
 func (td *TestDomain) reload() error {
-	out, err := RioCmd([]string{"inspect", "--format", "json", td.Name})
+	out, err := RioCmd([]string{"inspect", "--format", "json", strings.Split(td.Name, ":")[1]})
 	if err != nil {
 		return err
 	}
