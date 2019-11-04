@@ -465,7 +465,6 @@ github.com/rancher/mapper/convert
 github.com/rancher/mapper/definition
 github.com/rancher/mapper/httperror
 github.com/rancher/mapper/mappers
-github.com/rancher/mapper/slice
 github.com/rancher/mapper/values
 # github.com/rancher/norman v0.0.0-20191030191625-ebecbda5fbe3
 github.com/rancher/norman/pkg/data
@@ -481,7 +480,7 @@ github.com/rancher/norman/pkg/types/values
 # github.com/rancher/rdns-server v0.5.7-0.20190927164127-7128efe7d065
 github.com/rancher/rdns-server/client
 github.com/rancher/rdns-server/model
-# github.com/rancher/wrangler v0.2.1-0.20191025041946-1fd360590735
+# github.com/rancher/wrangler v0.2.1-0.20191104064538-22e063a2a843
 github.com/rancher/wrangler/pkg/apply
 github.com/rancher/wrangler/pkg/apply/injectors
 github.com/rancher/wrangler/pkg/cleanup
