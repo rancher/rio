@@ -1,9 +1,5 @@
 package v1
 
-import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
-
 type ImageBuildSpec struct {
 	// Repository url
 	Repo string `json:"repo,omitempty"`
@@ -50,6 +46,6 @@ type ImageBuildSpec struct {
 	// Build image with no cache
 	NoCache bool `json:"noCache,omitempty"`
 
-	// Timeout describes how long the build can run
-	Timeout *metav1.Duration `json:"timeout,omitempty" mapper:"duration"`
+	// TimeoutSeconds describes how long the build can run
+	TimeoutSeconds *int `json:"timeout,omitempty" mapper:"duration"`
 }

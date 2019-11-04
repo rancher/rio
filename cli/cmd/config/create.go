@@ -7,7 +7,6 @@ import (
 
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/stack"
 	"github.com/rancher/rio/pkg/constructors"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -26,10 +25,10 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("two arguments are required")
 	}
 
-	namespace, name := stack.NamespaceAndName(ctx, ctx.CLI.Args()[0])
+	r := ctx.ParseID(ctx.CLI.Args()[0])
 	file := ctx.CLI.Args()[1]
 
-	config := constructors.NewConfigMap(namespace, name, corev1.ConfigMap{
+	config := constructors.NewConfigMap(r.Namespace, r.Name, corev1.ConfigMap{
 		Data:       make(map[string]string),
 		BinaryData: make(map[string][]byte),
 	})

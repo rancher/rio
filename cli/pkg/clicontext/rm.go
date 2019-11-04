@@ -1,6 +1,10 @@
 package clicontext
 
-import "k8s.io/apimachinery/pkg/api/errors"
+import (
+	"fmt"
+
+	"k8s.io/apimachinery/pkg/api/errors"
+)
 
 func (c *CLIContext) Rm(ids ...string) error {
 	for _, id := range ids {
@@ -11,6 +15,8 @@ func (c *CLIContext) Rm(ids ...string) error {
 
 		if err := c.DeleteResource(resource); err != nil && !errors.IsNotFound(err) {
 			return err
+		} else if err == nil {
+			fmt.Println(id)
 		}
 	}
 

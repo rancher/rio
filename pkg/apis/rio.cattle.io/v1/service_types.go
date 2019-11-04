@@ -4,7 +4,6 @@ import (
 	"github.com/rancher/wrangler/pkg/condition"
 	"github.com/rancher/wrangler/pkg/genericcondition"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -42,8 +41,8 @@ type RolloutConfig struct {
 	// Increment Value each Rollout can scale up or down
 	Increment int `json:"increment,omitempty"`
 
-	// Interval between each Rollout
-	Interval metav1.Duration `json:"interval,omitempty" mapper:"duration"`
+	// Interval between each Rollout in seconds
+	IntervalSeconds int `json:"intervalSeconds,omitempty" mapper:"duration,alias=interval"`
 
 	// Pause if true the rollout will stop in place until set to false.
 	Pause bool `json:"pause,omitempty"`
@@ -190,11 +189,11 @@ type Container struct {
 	// List of environment variables to set in the container. Cannot be updated.
 	Env []EnvVar `json:"env,omitempty" mapper:"env,envmap=sep==,alias=environment"`
 
-	// CPU, in cores. (500m = .5 cores)
-	CPUs *resource.Quantity `json:"cpus,omitempty" mapper:"quantity,alias=cpu"`
+	// CPU, in cores
+	CPUMillis *int64 `json:"cpuMillis,omitempty" mapper:"alias=cpu|cpus"`
 
-	// Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
-	Memory *resource.Quantity `json:"memory,omitempty" mapper:"quantity,alias=mem"`
+	// Memory, in bytes
+	MemoryBytes *int64 `json:"memoryBytes,omitempty" mapper:"quantity,alias=mem|memory"`
 
 	// Secrets Mounts
 	Secrets []DataMount `json:"secrets,omitempty" mapper:"secrets,envmap=sep=:,alias=secret"`
@@ -208,7 +207,7 @@ type Container struct {
 	// Periodic probe of container service readiness. Container will be removed from service endpoints if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
 	ReadinessProbe *v1.Probe `json:"readinessProbe,omitempty" mapper:"alias=readiness"`
 
-	// Image pull policy. One of Always, Never, IfNotPresent. Defaults to Always if :latest tag is specified, or IfNotPresent otherwise. Cannot be updated. More info: https://kubernetes.io/docs/concepts/containers/images#updating-images
+	// Image pull policy. One of Always, Never, IfNotPresent. Defaults to Always if tag is does not start with v[0-9] or [0-9], or IfNotPresent otherwise. Cannot be updated. More info: https://kubernetes.io/docs/concepts/containers/images#updating-images
 	ImagePullPolicy v1.PullPolicy `json:"imagePullPolicy,omitempty" mapper:"enum=Always|IfNotPresent|Never,alias=pullPolicy"`
 
 	// Whether this container should allocate a buffer for stdin in the container runtime. If this is not set, reads from stdin in the container will always result in EOF. Default is false.
@@ -254,7 +253,7 @@ type VolumeTemplate struct {
 	// Resources represents the minimum resources the volume should have.
 	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
 	// +optional
-	StorageRequest resource.Quantity `json:"storage,omitempty" mapper:"quantity"`
+	StorageRequest int64 `json:"storage,omitempty" mapper:"quantity"`
 	// Name of the StorageClass required by the claim.
 	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1
 	StorageClassName string `json:"storageClassName,omitempty"`

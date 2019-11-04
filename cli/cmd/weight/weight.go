@@ -12,7 +12,6 @@ import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/kv"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -70,11 +69,9 @@ func scaleAndAllocate(ctx *clicontext.CLIContext, args []string, pause bool, inc
 			}
 			*service.Spec.Weight = scale
 			service.Spec.RolloutConfig = &riov1.RolloutConfig{
-				Pause:     pause,
-				Increment: increment,
-				Interval: metav1.Duration{
-					Duration: interval,
-				},
+				Pause:           pause,
+				Increment:       increment,
+				IntervalSeconds: int(interval / time.Second),
 			}
 			return nil
 		})
@@ -117,11 +114,9 @@ func scaleAndAllocate(ctx *clicontext.CLIContext, args []string, pause bool, inc
 			}
 			*s.Spec.Weight = weight
 			s.Spec.RolloutConfig = &riov1.RolloutConfig{
-				Pause:     pause,
-				Increment: increment,
-				Interval: metav1.Duration{
-					Duration: interval,
-				},
+				Pause:           pause,
+				Increment:       increment,
+				IntervalSeconds: int(interval / time.Second),
 			}
 			return nil
 		})

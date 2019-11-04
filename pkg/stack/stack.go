@@ -42,14 +42,21 @@ func (s *Stack) Questions() ([]v1.Question, error) {
 	return t.Questions()
 }
 
-func (s *Stack) Yaml(answers map[string]string) (string, error) {
-	rf, err := riofile.Parse(s.contents, template.AnswersFromMap(s.answers))
+func (s *Stack) Yaml(answers map[string]string, additionalObjects ...runtime.Object) (string, error) {
+	mergedAnswers := map[string]string{}
+	for k, v := range s.answers {
+		mergedAnswers[k] = v
+	}
+	for k, v := range answers {
+		mergedAnswers[k] = v
+	}
+	rf, err := riofile.Parse(s.contents, template.AnswersFromMap(mergedAnswers))
 	if err != nil {
 		return "", err
 	}
 
 	output := strings.Builder{}
-	objs := rf.Objects()
+	objs := append(rf.Objects(), additionalObjects...)
 	for _, obj := range objs {
 		data, err := json.Marshal(obj)
 		if err != nil {

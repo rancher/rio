@@ -2,7 +2,10 @@ package pod
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
+
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/rancher/rio/modules/service/controllers/service/populate/serviceports"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
@@ -32,6 +35,7 @@ var (
 		"requests/memory":            "requests.memory",
 		"requests/ephemeral-storage": "requests.ephemeral-storage",
 	}
+	prefix = regexp.MustCompile("^v?[0-9]")
 )
 
 func containers(service *riov1.Service, init bool) (result []v1.Container) {
@@ -65,6 +69,16 @@ func toContainer(containerName string, c *riov1.Container) v1.Container {
 		Env:             envs(containerName, c),
 		VolumeMounts:    mounts(containerName, c),
 		SecurityContext: securityContext(c),
+	}
+
+	if c.ImagePullPolicy == "" {
+		if !prefix.MatchString(c.Image) {
+			c.ImagePullPolicy = v1.PullAlways
+		}
+	}
+
+	if c.Image == "" {
+		c.ImagePullPolicy = v1.PullIfNotPresent
 	}
 
 	return con
@@ -220,7 +234,7 @@ func envs(containerName string, c *riov1.Container) (result []v1.EnvVar) {
 
 func ports(c *riov1.Container) (result []v1.ContainerPort) {
 	for _, port := range c.Ports {
-		port = serviceports.NormalizeContainerPort(port)
+		port = stringers.NormalizeContainerPort(port)
 		if port.Port == 0 {
 			continue
 		}
@@ -240,18 +254,19 @@ func ports(c *riov1.Container) (result []v1.ContainerPort) {
 }
 
 func resources(c *riov1.Container) (result v1.ResourceRequirements) {
-	if c.CPUs == nil || c.CPUs.IsZero() {
+	if c.CPUMillis == nil || *c.CPUMillis == 0 {
 		result.Requests = v1.ResourceList{
 			v1.ResourceCPU: defaultCPU,
 		}
 	} else {
+		q, _ := resource.ParseQuantity(fmt.Sprintf("%dm", *c.CPUMillis))
 		result.Requests = v1.ResourceList{
-			v1.ResourceCPU: *c.CPUs,
+			v1.ResourceCPU: q,
 		}
 
 	}
 
-	if c.Memory == nil || c.Memory.IsZero() {
+	if c.MemoryBytes == nil || *c.MemoryBytes == 0 {
 		if result.Requests == nil {
 			result.Requests = v1.ResourceList{}
 		}
@@ -260,7 +275,8 @@ func resources(c *riov1.Container) (result v1.ResourceRequirements) {
 		if result.Requests == nil {
 			result.Requests = v1.ResourceList{}
 		}
-		result.Requests[v1.ResourceMemory] = *c.Memory
+		q := resource.NewQuantity(*c.MemoryBytes, resource.BinarySI)
+		result.Requests[v1.ResourceMemory] = *q
 	}
 
 	return

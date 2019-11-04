@@ -7,7 +7,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/stack"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/kv"
 )
@@ -44,7 +43,6 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 		}
 	}
 
-	namespace, name := stack.NamespaceAndName(ctx, ctx.CLI.Args()[0])
-
-	return ctx.Create(riov1.NewExternalService(namespace, name, externalService))
+	r := ctx.ParseID(ctx.CLI.Args()[0])
+	return ctx.Create(riov1.NewExternalService(r.Namespace, r.Name, externalService))
 }

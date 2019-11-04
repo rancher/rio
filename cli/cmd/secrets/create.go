@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/stack"
 	"github.com/rancher/rio/cli/pkg/up/questions"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
@@ -147,8 +146,8 @@ func (s *Create) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("exact one argument is required")
 	}
 
-	namespace, name := stack.NamespaceAndName(ctx, ctx.CLI.Args()[0])
-	secret := constructors.NewSecret(namespace, name, v1.Secret{
+	r := ctx.ParseID(ctx.CLI.Args()[0])
+	secret := constructors.NewSecret(r.Namespace, r.Name, v1.Secret{
 		Type:       v1.SecretType(s.T_Type),
 		Data:       make(map[string][]byte),
 		StringData: make(map[string]string),
@@ -166,10 +165,11 @@ func (s *Create) Run(ctx *clicontext.CLIContext) error {
 		k, v := kv.Split(d, "=")
 		secret.StringData[k] = v
 	}
-	if _, err := ctx.Core.Secrets(namespace).Create(secret); err != nil {
+
+	if _, err := ctx.Core.Secrets(r.Namespace).Create(secret); err != nil {
 		return err
 	}
-	fmt.Printf("%s/%s\n", secret.Namespace, secret.Name)
+	fmt.Printf("%s:%s\n", secret.Namespace, secret.Name)
 
 	return nil
 }

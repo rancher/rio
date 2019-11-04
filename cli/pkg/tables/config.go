@@ -3,7 +3,7 @@ package tables
 import (
 	"encoding/base64"
 
-	units "github.com/docker/go-units"
+	"github.com/docker/go-units"
 	"github.com/rancher/rio/cli/pkg/table"
 	corev1 "k8s.io/api/core/v1"
 )

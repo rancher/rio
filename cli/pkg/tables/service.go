@@ -6,29 +6,32 @@ import (
 	"strings"
 
 	"github.com/rancher/rio/cli/pkg/table"
+	"github.com/rancher/rio/modules/service/controllers/service/populate/serviceports"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/controllers/pkg"
-	"github.com/rancher/rio/pkg/services"
+	"github.com/rancher/rio/pkg/riofile/stringers"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
 func NewService(cfg Config) TableWriter {
 	writer := table.NewWriter([][]string{
-		{"NAME", "{{.Name}}"},
-		{"IMAGE", "{{.Service | image}}"},
-		{"ENDPOINT", "{{arrayFirst .Service.Status.Endpoints}}"},
-		{"SCALE", "{{scale .Service .Service.Status.ScaleStatus}}"},
-		{"APP/VERSION", "{{.Service | appAndVersion}}"},
-		{"WEIGHT", "{{.Service | formatWeight}}"},
-		{"CREATED", "{{.Service.CreationTimestamp | ago}}"},
-		{"DETAIL", "{{serviceDetail .Service .Pods}}"},
+		{"NAME", "{{.Obj | id}}"},
+		{"IMAGE", "{{.Obj | image}}"},
+		{"ENDPOINT", "{{.Obj | formatEndpoint }}"},
+		{"PORTS", "{{.Obj | formatPorts}}"},
+		{"SCALE", "{{.Obj | scale}}"},
+		{"WEIGHT", "{{.Obj | formatWeight}}"},
+		{"CREATED", "{{.Obj.CreationTimestamp | ago}}"},
+		{"DETAIL", "{{serviceDetail .Obj .Data.Pods}}"},
 	}, cfg)
 
 	writer.AddFormatFunc("image", FormatImage)
 	writer.AddFormatFunc("scale", formatRevisionScale)
-	writer.AddFormatFunc("appAndVersion", appAndVersion)
+	writer.AddFormatFunc("formatPorts", formatPorts)
+	writer.AddFormatFunc("formatEndpoint", formatEndpoint)
 	writer.AddFormatFunc("formatWeight", formatWeight)
 	writer.AddFormatFunc("serviceDetail", serviceDetail)
 
@@ -37,18 +40,45 @@ func NewService(cfg Config) TableWriter {
 	}
 }
 
-func appAndVersion(data interface{}) string {
+func formatPorts(data interface{}) string {
 	s, ok := data.(*v1.Service)
 	if !ok {
 		return ""
 	}
-	appName, version := services.AppAndVersion(s)
-	return fmt.Sprintf("%s/%s", appName, version)
+
+	buf := strings.Builder{}
+	for _, port := range serviceports.ContainerPorts(s) {
+		cp := stringers.ContainerPortStringer{
+			ContainerPort: port,
+		}
+		if buf.Len() > 0 {
+			buf.WriteString(",")
+		}
+		s := cp.MaybeString()
+		if str, ok := s.(string); ok {
+			buf.WriteString(str)
+		}
+	}
+
+	return buf.String()
+}
+
+func formatEndpoint(data interface{}) string {
+	s, ok := data.(*v1.Service)
+	if !ok {
+		return ""
+	} else if len(s.Status.Endpoints) > 0 {
+		return s.Status.Endpoints[0]
+	}
+	return ""
 }
 
 func formatWeight(data interface{}) string {
 	s, ok := data.(*v1.Service)
 	if !ok {
+		return ""
+	}
+	if len(s.Status.Endpoints) == 0 {
 		return ""
 	}
 	if s.Status.ComputedWeight != nil {
@@ -112,15 +142,34 @@ func serviceDetail(data interface{}, pods []*corev1.Pod) string {
 	return ""
 }
 
-func formatRevisionScale(svc *riov1.Service, scaleStatus *v1.ScaleStatus) (string, error) {
-	scale := svc.Spec.Replicas
-	if svc.Status.ComputedReplicas != nil && services.AutoscaleEnable(svc) {
-		scale = svc.Status.ComputedReplicas
+func formatRevisionScale(data interface{}) (string, error) {
+	switch v := data.(type) {
+	case *v1.Service:
+		avail, unavail := 0, 0
+		if v.Status.ScaleStatus != nil {
+			avail = v.Status.ScaleStatus.Available
+			unavail = v.Status.ScaleStatus.Unavailable
+		}
+		return FormatScale(v.Status.ComputedReplicas, avail, unavail)
+	case *appsv1.DaemonSet:
+		scale := int(v.Status.DesiredNumberScheduled)
+		return FormatScale(&scale,
+			int(v.Status.NumberAvailable),
+			int(v.Status.NumberUnavailable))
+	case *appsv1.Deployment:
+		var scale *int
+		if v.Spec.Replicas != nil {
+			iScale := int(*v.Spec.Replicas)
+			scale = &iScale
+		}
+		return FormatScale(scale,
+			int(v.Status.AvailableReplicas),
+			int(v.Status.UnavailableReplicas))
 	}
-	return FormatScale(scale, scaleStatus)
+	return "", nil
 }
 
-func FormatScale(scale *int, scaleStatus *v1.ScaleStatus) (string, error) {
+func FormatScale(scale *int, available, unavailable int) (string, error) {
 	scaleNum := 1
 	if scale != nil {
 		scaleNum = *scale
@@ -128,21 +177,17 @@ func FormatScale(scale *int, scaleStatus *v1.ScaleStatus) (string, error) {
 
 	scaleStr := strconv.Itoa(scaleNum)
 
-	if scaleStatus == nil {
-		scaleStatus = &v1.ScaleStatus{}
-	}
-
 	if scaleNum == -1 {
-		return strconv.Itoa(scaleStatus.Available), nil
+		return strconv.Itoa(available), nil
 	}
 
-	if scaleStatus.Unavailable == 0 {
+	if unavailable == 0 {
 		return scaleStr, nil
 	}
 
 	var prefix string
 	percentage := ""
-	ready := scaleStatus.Available
+	ready := available
 	if scaleNum > 0 {
 		percentage = fmt.Sprintf(" %d%%", (ready*100)/scaleNum)
 	}
@@ -152,17 +197,38 @@ func FormatScale(scale *int, scaleStatus *v1.ScaleStatus) (string, error) {
 	return fmt.Sprintf("%s%d%s", prefix, scaleNum, percentage), nil
 }
 
-func FormatImage(data interface{}) (string, error) {
-	s, ok := data.(*v1.Service)
-	if !ok {
-		return fmt.Sprint(data), nil
-	}
-	image := ""
+func getServiceImage(s *v1.Service) string {
 	if s.Spec.Image == "" && len(s.Spec.Sidecars) > 0 {
-		image = s.Spec.Sidecars[0].Image
-	} else {
-		image = s.Spec.Image
+		return s.Spec.Sidecars[0].Image
 	}
+	return s.Spec.Image
+}
+
+func getDaemonSetImage(d *appsv1.DaemonSet) string {
+	if len(d.Spec.Template.Spec.Containers) > 0 {
+		return d.Spec.Template.Spec.Containers[0].Image
+	}
+	return ""
+}
+
+func getDeploymentImage(d *appsv1.Deployment) string {
+	if len(d.Spec.Template.Spec.Containers) > 0 {
+		return d.Spec.Template.Spec.Containers[0].Image
+	}
+	return ""
+}
+
+func FormatImage(data interface{}) (string, error) {
+	image := ""
+	switch v := data.(type) {
+	case *v1.Service:
+		image = getServiceImage(v)
+	case *appsv1.Deployment:
+		image = getDeploymentImage(v)
+	case *appsv1.DaemonSet:
+		image = getDaemonSetImage(v)
+	}
+
 	return strings.TrimPrefix(image, constants.LocalRegistry+"/"), nil
 }
 

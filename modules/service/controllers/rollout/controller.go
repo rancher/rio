@@ -98,7 +98,7 @@ func (rh *rolloutHandler) rollout(key string, svc *riov1.Service) (*riov1.Servic
 		if incrementalRollout(s.Spec.RolloutConfig) {
 			rh.lastWriteLock.Lock() // Don't allow anyone else to read while we might write, avoids competing writes. todo: Would be nice to convert this to key based locking.
 			lastSvcWrite := rh.lastWrite[serviceKey(s)]
-			if time.Now().Before(lastSvcWrite.Add(s.Spec.RolloutConfig.Interval.Duration)) {
+			if time.Now().Before(lastSvcWrite.Add(time.Duration(s.Spec.RolloutConfig.IntervalSeconds) * time.Second)) {
 				rh.lastWriteLock.Unlock()
 				continue // this protects the service from scaling early, can't trust that next enqueue is from here
 			}
@@ -142,10 +142,7 @@ func (rh *rolloutHandler) updateServices(svcs []*riov1.Service, updateNeeded []s
 
 // sleep in background and run again after interval period
 func (rh *rolloutHandler) enqueueService(s *riov1.Service) {
-	go func() {
-		time.Sleep(s.Spec.RolloutConfig.Interval.Duration)
-		rh.services.Enqueue(s.Namespace, s.Name)
-	}()
+	rh.services.EnqueueAfter(s.Namespace, s.Name, time.Duration(s.Spec.RolloutConfig.IntervalSeconds)*time.Second)
 }
 
 func serviceKey(s *riov1.Service) string {
@@ -159,7 +156,7 @@ func blocksRollout(rc *riov1.RolloutConfig) bool {
 
 // incrementalRollout returns whether we want to perform intervaled or immediate rollout
 func incrementalRollout(rc *riov1.RolloutConfig) bool {
-	return rc != nil && rc.Increment != 0 && rc.Interval.Duration != 0
+	return rc != nil && rc.Increment != 0 && rc.IntervalSeconds != 0
 }
 
 // Do any services have a ComutedWeight set ?

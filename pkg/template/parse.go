@@ -118,7 +118,7 @@ func (t *Template) parseContent(answersCB AnswerCallback) ([]byte, error) {
 		evaled       = string(t.Content)
 	)
 
-	if template.Meta.EnvSubst == nil || *template.Meta.EnvSubst {
+	if template.Meta.EnvSubst {
 		evaled, err = envsubst.Eval(evaled, func(key string) string {
 			if answersCB == nil {
 				return ""
@@ -148,7 +148,7 @@ func (t *Template) parseContent(answersCB AnswerCallback) ([]byte, error) {
 		return nil, mapper.NewErrors(callbackErrs...)
 	}
 
-	if template.Meta.GoTemplate == nil || *template.Meta.GoTemplate {
+	if template.Meta.GoTemplate {
 		return gotemplate.Apply([]byte(evaled), answers)
 	}
 
