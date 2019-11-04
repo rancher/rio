@@ -192,7 +192,6 @@ func (i *Install) getConfigMap(ctx *clicontext.CLIContext, ignoreCluster bool) (
 				return nil, err
 			}
 		}
-		cm = config
 	}
 
 	for _, f := range i.DisableFeatures {
