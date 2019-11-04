@@ -26,7 +26,7 @@ type TestConfig struct {
 func (tc *TestConfig) Create(t *testing.T, content []string) {
 	tc.T = t
 	name := GenerateName()
-	tc.Name = fmt.Sprintf("%s/%s/%s", "configmap", testingNamespace, name)
+	tc.Name = fmt.Sprintf("%s:%s/%s", TestingNamespace, "configmap", name)
 	err := tc.createTempFile(name, content)
 	defer os.Remove(tc.Filepath)
 	if err != nil {
@@ -60,7 +60,7 @@ func (tc *TestConfig) GetContent() []string {
 // GetKubeContent returns the kubectl configmap's Data.Content as list of strings, newline separated
 // CLI Command Run: kubectl get cm testname -n testing-ns -o json
 func (tc *TestConfig) GetKubeContent() []string {
-	args := []string{"get", "cm", tc.ConfigMap.Name, "-n", testingNamespace, "-o", "json"}
+	args := []string{"get", "cm", tc.ConfigMap.Name, "-n", TestingNamespace, "-o", "json"}
 	resultString, err := KubectlCmd(args)
 	if err != nil {
 		tc.T.Fatalf("Failed to get ConfigMaps:  %v", err.Error())

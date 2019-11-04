@@ -29,7 +29,7 @@ func (tr *TestRoute) Add(t *testing.T, domain string, routePath string, action s
 		domain = RandomString(5)
 	}
 	tr.Path = routePath
-	tr.Name = fmt.Sprintf("router/%s/%s", testingNamespace, domain)
+	tr.Name = fmt.Sprintf("%s:%s/%s", TestingNamespace, "router", domain)
 	route := fmt.Sprintf("%s%s", domain, routePath)
 	_, err := RioCmd([]string{"router", "add", route, action, fmt.Sprintf("%s,version=%s", target.App, target.Version)})
 	if err != nil {
@@ -45,7 +45,7 @@ func (tr *TestRoute) Add(t *testing.T, domain string, routePath string, action s
 func GetRoute(t *testing.T, name string, routePath string) TestRoute {
 	tr := TestRoute{
 		Router: riov1.Router{},
-		Name:   fmt.Sprintf("router/%s/%s", testingNamespace, name),
+		Name:   fmt.Sprintf("%s:%s/%s", TestingNamespace, "router", name),
 		Path:   routePath,
 		T:      t,
 	}
@@ -83,7 +83,7 @@ func (tr *TestRoute) GetEndpointResponse() string {
 // Returns responses if status code is 200 for all of them, otherwise it errors out
 func (tr *TestRoute) GetKubeEndpointResponse() string {
 	// Get Router object using kubectl
-	args := []string{"get", "routers", tr.Router.GetName(), "-n", testingNamespace, "-o", "json"}
+	args := []string{"get", "routers", tr.Router.GetName(), "-n", TestingNamespace, "-o", "json"}
 	resultString, err := KubectlCmd(args)
 	if err != nil {
 		tr.T.Fatalf("Failed to get rio.cattle.io.routers:  %v", err.Error())

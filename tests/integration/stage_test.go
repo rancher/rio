@@ -27,7 +27,7 @@ func stageTests(t *testing.T, when spec.G, it spec.S) {
 		it("should have proper fields assigned", func() {
 			stageVersion := "v3"
 			stagedService = service.Stage("ibuildthecloud/demo:v3", stageVersion)
-			stageName := fmt.Sprintf("%s-%s", service.App, stageVersion)
+			stageName := fmt.Sprintf("%s@%s", service.App, stageVersion)
 			assert.Equal(t, stageName, stagedService.Name, "should have correct name")
 			assert.Equal(t, 0, stagedService.GetSpecWeight(), "should have initial weight set to 0")
 			assert.Equal(t, stageVersion, stagedService.Service.Spec.Version, "should have supplied version")

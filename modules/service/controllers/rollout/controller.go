@@ -100,6 +100,7 @@ func (rh *rolloutHandler) rollout(key string, svc *riov1.Service) (*riov1.Servic
 			lastSvcWrite := rh.lastWrite[serviceKey(s)]
 			if time.Now().Before(lastSvcWrite.Add(time.Duration(s.Spec.RolloutConfig.IntervalSeconds) * time.Second)) {
 				rh.lastWriteLock.Unlock()
+				rh.enqueueService(s)
 				continue // this protects the service from scaling early, can't trust that next enqueue is from here
 			}
 			if abs(weightToAdjust) < s.Spec.RolloutConfig.Increment || (weightToAdjust > 0 && allOtherServicesOff(s, svcs)) { // adjust entire amount

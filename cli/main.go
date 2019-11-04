@@ -178,7 +178,7 @@ func main() {
 			""),
 		builder.Command(&stage.Stage{},
 			"Stage a new revision of a service",
-			appName+" stage [OPTIONS] SERVICE_NAME:NEW_REVISION",
+			appName+" stage [OPTIONS] SERVICE_NAME@NEW_REVISION",
 			""),
 		builder.Command(&promote.Promote{},
 			"Promote a staged version to latest",

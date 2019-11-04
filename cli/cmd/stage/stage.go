@@ -32,7 +32,7 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("more than one argument found")
 	}
 
-	serviceName, version := kv.Split(ctx.CLI.Args()[0], ":")
+	serviceName, version := kv.Split(ctx.CLI.Args()[0], "@")
 	if version == "" {
 		var err error
 		version, err = goutils.RandomNumeric(5)

@@ -33,7 +33,7 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 			for _, pod := range runningPods {
 				assert.Contains(t, pod, service.Service.Name)
 			}
-			// todo: fix flakey test below
+			// todo: fix flakey test below and move to scale tests
 			//service.GenerateLoad()
 			//assert.Greater(t, service.GetAvailableReplicas(), 1, "should have more than 1 available replica")
 			//runningPods = service.GetRunningPods()
@@ -44,7 +44,7 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 	when("run a service with a fixed scale", func() {
 
 		it.Before(func() {
-			service.Create(t, "--scale", "3", "https://github.com/rancher/rio-demo")
+			service.Create(t, "--scale", "3", "-p", "8080", "https://github.com/rancher/rio-demo")
 		})
 
 		it("should have the specified scale, no autoscaling, and be able to have its scale manually adjusted", func() {

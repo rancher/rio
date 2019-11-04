@@ -40,6 +40,7 @@ type Config struct {
 	K8s        *kubernetes.Clientset
 
 	Core       corev1.CoreV1Interface
+	Apps       appsv1.AppsV1Interface
 	Build      tektonv1alpha1.TektonV1alpha1Interface
 	Rio        riov1.RioV1Interface
 	Project    projectv1.AdminV1Interface
@@ -109,6 +110,7 @@ func (c *Config) Validate() error {
 	k8s := kubernetes.NewForConfigOrDie(restConfig)
 
 	c.Apply = apply.New(k8s.Discovery(), apply.NewClientFactory(restConfig))
+	c.Apps = apps
 	c.K8s = k8s
 	c.RestConfig = restConfig
 	c.Rio = rio

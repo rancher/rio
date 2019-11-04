@@ -44,7 +44,7 @@ func (u *TestUser) Create() {
 
 	client := kubernetes.NewForConfigOrDie(restConfig)
 	groupName := strings.Replace(u.Username, "-", ":", -1)
-	binding := rbac.NewBinding(testingNamespace, u.Username, nil)
+	binding := rbac.NewBinding(TestingNamespace, u.Username, nil)
 	binding.Subjects = []rbacv1.Subject{
 		{
 			Kind:     rbacv1.GroupKind,
@@ -58,7 +58,7 @@ func (u *TestUser) Create() {
 		Name:     u.Username,
 	}
 
-	client.RbacV1().RoleBindings(testingNamespace).Create(binding)
+	client.RbacV1().RoleBindings(TestingNamespace).Create(binding)
 
 	for _, user := range rawConfig.AuthInfos {
 		user.Impersonate = u.Username

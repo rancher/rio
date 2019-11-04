@@ -26,7 +26,7 @@ func NewService(cfg Config) TableWriter {
 		{"SCALE", "{{.Obj | scale}}"},
 		{"WEIGHT", "{{.Obj | formatWeight}}"},
 		{"CREATED", "{{.Obj.CreationTimestamp | ago}}"},
-		{"DETAIL", "{{serviceDetail .Service .Pods .GitWatcher}}"},
+		{"DETAIL", "{{serviceDetail .Data.Service .Data.Pods .Data.GitWatcher}}"},
 	}, cfg)
 
 	writer.AddFormatFunc("image", FormatImage)

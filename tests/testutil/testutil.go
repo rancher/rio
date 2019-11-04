@@ -21,7 +21,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-const testingNamespace = "testing-ns"
+const TestingNamespace = "testing-ns"
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
@@ -54,7 +54,7 @@ func ValidationPreCheck() {
 // RioCmd executes rio CLI commands with your arguments in testing namespace
 // Example: args=["run", "-n", "test", "nginx"] would run: "rio --namespace testing-namespace run -n test nginx"
 func RioCmd(args []string, envs ...string) (string, error) {
-	args = append([]string{"--namespace", testingNamespace}, args...)
+	args = append([]string{"--namespace", TestingNamespace}, args...)
 	cmd := exec.Command("rio", args...)
 	cmd.Env = envs
 	stdOutErr, err := cmd.CombinedOutput()

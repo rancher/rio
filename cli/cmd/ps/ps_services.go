@@ -10,6 +10,7 @@ import (
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -114,7 +115,7 @@ func (p *Ps) services(ctx *clicontext.CLIContext) error {
 			continue
 		}
 		var gitwatcher *webhookv1.GitWatcher
-		gitwatchers, err := ctx.Gitwatcher.GitWatchers(namespace).List(metav1.ListOptions{})
+		gitwatchers, err := ctx.Gitwatcher.GitWatchers(service.(*riov1.Service).Namespace).List(metav1.ListOptions{})
 		if err == nil {
 			for _, gw := range gitwatchers.Items {
 				if len(gw.OwnerReferences) > 0 && gw.OwnerReferences[0].UID == service.(*riov1.Service).UID {
