@@ -176,8 +176,7 @@ func (u *Up) up(content string, answers map[string]string, s *riov1.Stack, c *cl
 func (u *Up) saveStack(content string, answers map[string]string, c *clicontext.CLIContext) error {
 	s := riov1.NewStack(c.GetSetNamespace(), u.Name, riov1.Stack{
 		Spec: riov1.StackSpec{
-			Template: content,
-			Answers:  answers,
+			Answers: answers,
 		},
 	})
 
@@ -188,7 +187,6 @@ func (u *Up) saveStack(content string, answers map[string]string, c *clicontext.
 		}
 		return err
 	}
-	existing.Spec.Template = s.Spec.Template
 	existing.Spec.Answers = s.Spec.Answers
 	return c.UpdateObject(existing)
 }

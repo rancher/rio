@@ -5,10 +5,9 @@ import (
 	"io"
 	"os"
 
-	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
-
 	"github.com/pkg/errors"
 	webhookv1 "github.com/rancher/gitwatcher/pkg/generated/clientset/versioned/typed/gitwatcher.cattle.io/v1"
+	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	projectv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/apply"
@@ -17,6 +16,7 @@ import (
 	tektonv1alpha1 "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/typed/pipeline/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog"
@@ -44,9 +44,8 @@ type Config struct {
 	Rio        riov1.RioV1Interface
 	Project    projectv1.AdminV1Interface
 	Gitwatcher webhookv1.GitwatcherV1Interface
-
-	NoPrompt bool
-	Writer   io.Writer
+	NoPrompt   bool
+	Writer     io.Writer
 
 	DebugLevel string
 }
@@ -98,11 +97,15 @@ func (c *Config) Validate() error {
 		return err
 	}
 
-	gitwatcher, err := webhookv1.NewForConfig(restConfig)
+	apps, err := appsv1.NewForConfig(restConfig)
 	if err != nil {
 		return err
 	}
 
+	gitwatcher, err := webhookv1.NewForConfig(restConfig)
+	if err != nil {
+		return err
+	}
 	k8s := kubernetes.NewForConfigOrDie(restConfig)
 
 	c.Apply = apply.New(k8s.Discovery(), apply.NewClientFactory(restConfig))

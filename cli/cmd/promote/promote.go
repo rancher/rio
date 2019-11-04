@@ -10,7 +10,6 @@ import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -48,11 +47,9 @@ func (p *Promote) Run(ctx *clicontext.CLIContext) error {
 				return err
 			}
 			s.Spec.RolloutConfig = &riov1.RolloutConfig{
-				Pause:     p.Pause,
-				Increment: p.Increment,
-				Interval: metav1.Duration{
-					Duration: interval,
-				},
+				Pause:           p.Pause,
+				Increment:       p.Increment,
+				IntervalSeconds: int(interval / time.Second),
 			}
 			if s.Name == serviceName {
 				*s.Spec.Weight = 100

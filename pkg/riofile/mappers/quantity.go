@@ -5,7 +5,6 @@ import (
 	"github.com/rancher/norman/pkg/types"
 	"github.com/rancher/norman/pkg/types/mapper"
 	"github.com/rancher/rio/pkg/riofile/stringers"
-	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 type QuantityMapper struct {
@@ -17,17 +16,6 @@ func NewQuantity(field string, args ...string) types.Mapper {
 		DefaultMapper: mapper.DefaultMapper{
 			Field: field,
 		},
-	}
-}
-
-func (d QuantityMapper) FromInternal(data data.Object) {
-	v, ok := data[d.Field]
-	if !ok {
-		return
-	}
-
-	if q, ok := v.(resource.Quantity); ok {
-		data[d.Field] = q.String()
 	}
 }
 
@@ -43,7 +31,7 @@ func (d QuantityMapper) ToInternal(data data.Object) error {
 			return err
 		}
 		if !q.IsZero() {
-			data[d.Field] = q
+			data[d.Field], _ = q.AsInt64()
 		}
 	}
 

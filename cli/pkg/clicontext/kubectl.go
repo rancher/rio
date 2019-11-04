@@ -34,15 +34,16 @@ func (c *Config) Kubectl(namespace, command string, args ...string) error {
 		if err != nil {
 			return err
 		}
+		defer os.Remove(fp.Name())
 		if err := fp.Close(); err != nil {
 			return err
 		}
-		defer os.Remove(fp.Name())
 		if err := clientcmd.WriteToFile(rawconfig, fp.Name()); err != nil {
 			return err
 		}
 		c.Kubeconfig = fp.Name()
 	}
+
 	logrus.Debugf("kubectl %v, KUBECONFIG=%s", execArgs, c.Kubeconfig)
 	cmd := exec.Command("kubectl", execArgs...)
 	cmd.Env = append(os.Environ(), fmt.Sprintf("KUBECONFIG=%s", c.Kubeconfig))

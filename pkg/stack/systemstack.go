@@ -3,6 +3,8 @@ package stack
 import (
 	"io/ioutil"
 
+	"k8s.io/apimachinery/pkg/runtime"
+
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	adminv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
@@ -52,8 +54,7 @@ func NewSystemStack(apply apply.Apply, stacks adminv1controller.SystemStackClien
 	return s
 }
 
-func (s *SystemStack) Deploy(answers map[string]string) error {
-
+func (s *SystemStack) Deploy(answers map[string]string, additionalObjects ...runtime.Object) error {
 	content, err := s.content()
 	if err != nil {
 		return err
@@ -66,6 +67,7 @@ func (s *SystemStack) Deploy(answers map[string]string) error {
 
 	os := objectset.NewObjectSet()
 	os.Add(rf.Objects()...)
+	os.Add(additionalObjects...)
 	return s.apply.Apply(os)
 }
 

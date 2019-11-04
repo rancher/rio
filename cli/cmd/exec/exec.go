@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/rancher/rio/cli/cmd/util"
-
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"

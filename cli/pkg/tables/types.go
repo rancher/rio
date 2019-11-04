@@ -1,25 +1,34 @@
 package tables
 
 import (
-	"fmt"
 	"sort"
 
-	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
-
 	"github.com/rancher/rio/cli/pkg/table"
+	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type TableWriter interface {
 	Write(obs []runtime.Object) error
+	WriteObjects(obs []Object) error
 	TableWriter() table.Writer
+}
+
+type Object interface {
+	Object() runtime.Object
+}
+
+type ObjectHolder struct {
+	O runtime.Object
+}
+
+func (o ObjectHolder) Object() runtime.Object {
+	return o.O
 }
 
 type Config interface {
 	table.WriterConfig
-	GetDefaultNamespace() string
-	GetSetNamespace() string
 	Domain() (*v1.ClusterDomain, error)
 }
 
@@ -29,16 +38,24 @@ type tableWriter struct {
 }
 
 type data struct {
-	Name      string
 	Namespace string
 	Context   interface{}
+	Data      Object
 	Obj       runtime.Object
 }
 
 func (t *tableWriter) Write(objs []runtime.Object) (err error) {
+	var os []Object
+	for _, o := range objs {
+		os = append(os, ObjectHolder{o})
+	}
+	return t.WriteObjects(os)
+}
+
+func (t *tableWriter) WriteObjects(objs []Object) (err error) {
 	sort.Slice(objs, func(i, j int) bool {
-		leftMeta, _ := meta.Accessor(objs[i])
-		rightMeta, _ := meta.Accessor(objs[j])
+		leftMeta, _ := meta.Accessor(objs[i].Object())
+		rightMeta, _ := meta.Accessor(objs[j].Object())
 		if leftMeta.GetNamespace() != rightMeta.GetNamespace() {
 			return leftMeta.GetNamespace() < rightMeta.GetNamespace()
 		}
@@ -54,20 +71,16 @@ func (t *tableWriter) Write(objs []runtime.Object) (err error) {
 	}()
 
 	for _, obj := range objs {
-		metaObj, err := meta.Accessor(obj)
+		metaObj, err := meta.Accessor(obj.Object())
 		if err != nil {
 			return err
 		}
-		id := metaObj.GetName()
-		if metaObj.GetNamespace() != "" {
-			id = fmt.Sprintf("%s/%s", metaObj.GetNamespace(), id)
-		}
 
 		t.writer.Write(&data{
-			Name:      id,
 			Namespace: metaObj.GetNamespace(),
 			Context:   t.context,
-			Obj:       obj,
+			Data:      obj,
+			Obj:       obj.Object(),
 		})
 	}
 

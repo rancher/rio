@@ -13,25 +13,28 @@ func ListAppServicesFromServiceName(ctx *clicontext.CLIContext, serviceName stri
 	namespace := ctx.GetSetNamespace()
 	service, err := ctx.ByID(serviceName)
 	if err != nil {
-		return []riov1.Service{}, err
+		return nil, err
 	}
+
 	svc := service.Object.(*riov1.Service)
 	app, _ := services.AppAndVersion(svc)
-	if app == "" {
-		return []riov1.Service{}, errors.New("invalid app for service")
-	}
+
 	svcs, err := ctx.Rio.Services(namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return []riov1.Service{}, err
 	}
+
 	var revisions []riov1.Service
 	for _, rev := range svcs.Items {
-		if (app == rev.Spec.App || app == rev.Name) && !rev.Spec.Template {
+		revApp, _ := services.AppAndVersion(&rev)
+		if revApp == app {
 			revisions = append(revisions, rev)
 		}
 	}
+
 	if len(revisions) == 0 {
 		return []riov1.Service{}, errors.New("no services found")
 	}
+
 	return revisions, nil
 }

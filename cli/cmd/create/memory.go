@@ -11,7 +11,8 @@ func (c *Create) setMemory(spec *riov1.ServiceSpec) error {
 		if err != nil {
 			return err
 		}
-		spec.Memory = &memory
+		m := memory.AsDec().UnscaledBig().Int64()
+		spec.MemoryBytes = &m
 	}
 
 	return nil

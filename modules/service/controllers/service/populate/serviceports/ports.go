@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rancher/rio/pkg/riofile/stringers"
+
 	"github.com/rancher/rio/pkg/services"
 
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
@@ -24,22 +26,6 @@ func Protocol(proto riov1.Protocol) (protocol v1.Protocol) {
 	return
 }
 
-func NormalizeContainerPort(port riov1.ContainerPort) riov1.ContainerPort {
-	if port.Port == 0 {
-		port.Port = port.TargetPort
-	}
-
-	if port.TargetPort == 0 {
-		port.TargetPort = port.Port
-	}
-
-	if port.Protocol == "" {
-		port.Protocol = riov1.ProtocolHTTP
-	}
-
-	return port
-}
-
 func ContainerPorts(service *riov1.Service) []riov1.ContainerPort {
 	var (
 		ports   []riov1.ContainerPort
@@ -48,7 +34,7 @@ func ContainerPorts(service *riov1.Service) []riov1.ContainerPort {
 
 	for _, container := range services.ToNamedContainers(service) {
 		for _, port := range container.Ports {
-			port = NormalizeContainerPort(port)
+			port = stringers.NormalizeContainerPort(port)
 
 			if port.Port == 0 {
 				continue

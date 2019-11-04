@@ -4,15 +4,16 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"strings"
+	"os"
 
-	"github.com/rancher/mapper/slice"
+	"gopkg.in/yaml.v2"
+
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	corev1 "k8s.io/api/core/v1"
 )
 
 type Cat struct {
-	Key []string `desc:"specify which keys to cat"`
+	K_Key []string `desc:"specify which keys to cat"`
 }
 
 func (c *Cat) Run(ctx *clicontext.CLIContext) error {
@@ -28,34 +29,43 @@ func (c *Cat) Run(ctx *clicontext.CLIContext) error {
 
 		config := r.Object.(*corev1.ConfigMap)
 
-		if len(config.Data)+len(config.BinaryData) == 0 {
-			continue
-		}
-
-		builder := &strings.Builder{}
-		for k, v := range config.Data {
-			if len(c.Key) > 0 {
-				if !slice.ContainsString(c.Key, k) {
-					continue
+		switch {
+		case len(c.K_Key) == 0:
+			if config.Data == nil {
+				config.Data = map[string]string{}
+			}
+			for k, v := range config.BinaryData {
+				config.Data[k] = base64.StdEncoding.EncodeToString(v)
+			}
+			if len(config.Data) > 0 {
+				if err := yaml.NewEncoder(os.Stdout).Encode(config.Data); err != nil {
+					return err
 				}
 			}
-			builder.WriteString(k)
-			builder.WriteString(":")
-			builder.WriteString(" |- \n")
-			builder.WriteString(v)
-		}
-		for k, v := range config.BinaryData {
-			if len(c.Key) > 0 {
-				if !slice.ContainsString(c.Key, k) {
-					continue
+		case len(c.K_Key) == 1:
+			v := config.Data[c.K_Key[0]]
+			if v == "" {
+				v = base64.StdEncoding.EncodeToString(config.BinaryData[c.K_Key[0]])
+			}
+			fmt.Println(v)
+		case len(c.K_Key) > 1:
+			data := map[string]string{}
+			for k, v := range config.Data {
+				for _, t := range c.K_Key {
+					if t == k {
+						data[k] = v
+					}
 				}
 			}
-			builder.WriteString(k)
-			builder.WriteString(":")
-			builder.WriteString(" |- \n")
-			builder.WriteString(base64.StdEncoding.EncodeToString(v))
+			for k, v := range config.BinaryData {
+				config.Data[k] = base64.StdEncoding.EncodeToString(v)
+			}
+			if len(data) > 0 {
+				if err := yaml.NewEncoder(os.Stdout).Encode(data); err != nil {
+					return err
+				}
+			}
 		}
-		fmt.Println(builder.String())
 	}
 
 	return nil

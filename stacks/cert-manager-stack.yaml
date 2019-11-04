@@ -5381,3 +5381,6 @@ kubernetes:
       storedVersions: []
     ---
 
+
+template:
+  envSubst: true
