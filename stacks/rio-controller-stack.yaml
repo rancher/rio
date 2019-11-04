@@ -224,13 +224,13 @@ kubernetes:
     apiVersion: v1
     kind: Secret
     metadata:
-      name: auth-webhook
+      name: rio-api-validator
       namespace: ${NAMESPACE}
     ---
     apiVersion: v1
     kind: Service
     metadata:
-      name: auth-webhook
+      name: rio-api-validator
       namespace: ${NAMESPACE}
     spec:
       ports:
@@ -446,11 +446,11 @@ kubernetes:
         spec:
           serviceAccountName: rio-controller-serviceaccount
           volumes:
-          - name: secret-auth-webhook
+          - name: secret-api-validator
             secret:
               defaultMode: 420
               optional: true
-              secretName: auth-webhook
+              secretName: rio-api-validator
           containers:
           - image: ${IMAGE}
             imagePullPolicy: Always
@@ -467,7 +467,7 @@ kubernetes:
               value: ${HTTP_PROXY}
             volumeMounts:
             - mountPath: /var/run/rio/ssl
-              name: secret-auth-webhook
+              name: secret-api-validator
               readOnly: true
     {{- end}}
 

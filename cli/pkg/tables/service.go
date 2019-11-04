@@ -91,7 +91,7 @@ func formatWeight(data interface{}) string {
 
 func serviceDetail(data interface{}, pods []*corev1.Pod, gitwatcher *webhookv1.GitWatcher) string {
 	s, ok := data.(*v1.Service)
-	if !ok {
+	if !ok || s == nil {
 		return ""
 	}
 
@@ -103,6 +103,9 @@ func serviceDetail(data interface{}, pods []*corev1.Pod, gitwatcher *webhookv1.G
 
 	pd := ""
 	for _, pod := range pods {
+		if pod == nil {
+			continue
+		}
 		pd = pkg.PodDetail(pod)
 		if pd != "" {
 			break

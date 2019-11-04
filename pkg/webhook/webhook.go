@@ -139,7 +139,7 @@ func (w Webhook) reconcileWebhook(caBundle []byte) error {
 		},
 		Webhooks: []v1beta1.ValidatingWebhook{
 			{
-				Name: "auth-webhook.rio.io",
+				Name: "api-validator.rio.io",
 				NamespaceSelector: &metav1.LabelSelector{
 					MatchExpressions: []metav1.LabelSelectorRequirement{
 						{
@@ -151,7 +151,7 @@ func (w Webhook) reconcileWebhook(caBundle []byte) error {
 				ClientConfig: v1beta1.WebhookClientConfig{
 					Service: &v1beta1.ServiceReference{
 						Namespace: w.rContext.Namespace,
-						Name:      "auth-webhook",
+						Name:      constants.AuthWebhookServiceName,
 					},
 					CABundle: caBundle,
 				},

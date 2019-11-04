@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/rancher/rio/pkg/services"
+
 	"github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty"
 	"github.com/rancher/rio/cli/cmd/attach"
 	"github.com/rancher/rio/cli/cmd/create"
@@ -28,9 +30,12 @@ func (r *Run) Run(ctx *clicontext.CLIContext) error {
 		isatty.IsTerminal(os.Stderr.Fd()) &&
 		isatty.IsTerminal(os.Stdin.Fd())
 
+	app, version := services.AppAndVersion(service)
+	svcName := fmt.Sprintf("%s@%s", app, version)
+
 	if istty && service.Spec.Stdin && service.Spec.TTY {
 		fmt.Println("Attaching...")
-		return attach.RunAttach(ctx, time.Minute, service.Name, "")
+		return attach.RunAttach(ctx, time.Minute, svcName, "")
 	}
 
 	return nil
