@@ -3,6 +3,7 @@ package ps
 import (
 	"sort"
 
+	webhookv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/tables"
@@ -10,13 +11,15 @@ import (
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type ServiceData struct {
-	Name      string
-	Service   *riov1.Service
-	Namespace string
-	Pods      []*corev1.Pod
+	Name       string
+	Service    *riov1.Service
+	Namespace  string
+	Pods       []*corev1.Pod
+	GitWatcher *webhookv1.GitWatcher
 }
 
 func (p *Ps) services(ctx *clicontext.CLIContext) error {
@@ -49,11 +52,22 @@ func (p *Ps) services(ctx *clicontext.CLIContext) error {
 		if err != nil {
 			return err
 		}
+		var gitwatcher *webhookv1.GitWatcher
+		gitwatchers, err := ctx.Gitwatcher.GitWatchers(namespace).List(metav1.ListOptions{})
+		if err == nil {
+			for _, gw := range gitwatchers.Items {
+				if len(gw.OwnerReferences) > 0 && gw.OwnerReferences[0].UID == service.(*riov1.Service).UID {
+					gitwatcher = &gw
+					break
+				}
+			}
+		}
 		output = append(output, ServiceData{
-			Name:      id,
-			Service:   service.(*riov1.Service),
-			Namespace: service.(*riov1.Service).Namespace,
-			Pods:      podMap[service.(*riov1.Service).Name],
+			Name:       id,
+			Service:    service.(*riov1.Service),
+			Namespace:  service.(*riov1.Service).Namespace,
+			Pods:       podMap[service.(*riov1.Service).Name],
+			GitWatcher: gitwatcher,
 		})
 	}
 

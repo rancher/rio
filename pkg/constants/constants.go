@@ -13,6 +13,7 @@ const (
 	AutoscalerServiceName = "autoscaler"
 
 	DefaultGitCrendential    = "gitcredential"
+	DefaultGitCrendentialSSH = "gitcredential-ssh"
 	DefaultDockerCrendential = "dockerconfig"
 	DefaultGithubCrendential = "githubtoken"
 )

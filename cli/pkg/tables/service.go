@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	webhookv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
 	"github.com/rancher/rio/cli/pkg/table"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
@@ -23,7 +24,7 @@ func NewService(cfg Config) TableWriter {
 		{"APP/VERSION", "{{.Service | appAndVersion}}"},
 		{"WEIGHT", "{{.Service | formatWeight}}"},
 		{"CREATED", "{{.Service.CreationTimestamp | ago}}"},
-		{"DETAIL", "{{serviceDetail .Service .Pods}}"},
+		{"DETAIL", "{{serviceDetail .Service .Pods .GitWatcher}}"},
 	}, cfg)
 
 	writer.AddFormatFunc("image", FormatImage)
@@ -58,7 +59,7 @@ func formatWeight(data interface{}) string {
 	return "0%"
 }
 
-func serviceDetail(data interface{}, pods []*corev1.Pod) string {
+func serviceDetail(data interface{}, pods []*corev1.Pod, gitwatcher *webhookv1.GitWatcher) string {
 	s, ok := data.(*v1.Service)
 	if !ok {
 		return ""
@@ -84,6 +85,11 @@ func serviceDetail(data interface{}, pods []*corev1.Pod) string {
 	buffer.WriteString(pd)
 
 	if waitingOnBuild(s) {
+		if gitwatcher != nil && webhookv1.GitWebHookReceiverConditionRegistered.IsFalse(gitwatcher) {
+			message := webhookv1.GitWebHookReceiverConditionRegistered.GetMessage(gitwatcher)
+			reason := webhookv1.GitWebHookReceiverConditionRegistered.GetReason(gitwatcher)
+			return fmt.Sprintf("Failed to watch git repo: %s(%s)", message, reason)
+		}
 		if riov1.ServiceConditionImageReady.IsFalse(s) {
 			if buffer.Len() > 0 {
 				buffer.WriteString("; ")

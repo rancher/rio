@@ -23,7 +23,12 @@ type Create struct {
 	GithubWebhook bool     `desc:"Configure github token"`
 	Docker        bool     `desc:"Configure docker registry secret"`
 	GitBasicAuth  bool     `desc:"Configure git basic credential"`
+	GitSSHKeyAuth bool     `desc:"Configure git ssh key auth"`
 }
+
+const (
+	defaultDockerRegistry = "https://index.docker.io/v1/"
+)
 
 func (s *Create) Run(ctx *clicontext.CLIContext) error {
 	if s.GithubWebhook {
@@ -43,7 +48,7 @@ func (s *Create) Run(ctx *clicontext.CLIContext) error {
 		setDefaults(secret)
 		secret.Type = v1.SecretTypeOpaque
 
-		accessToken, err = questions.PromptPassword("accessToken[******]: ", accessToken)
+		accessToken, err = questions.PromptPassword("Github AccessToken[******]: ", accessToken)
 		if err != nil {
 			return err
 		}
@@ -59,39 +64,23 @@ func (s *Create) Run(ctx *clicontext.CLIContext) error {
 			return err
 		}
 
-		secret, err := ctx.Core.Secrets(ns).Get(constants.DefaultDockerCrendential, metav1.GetOptions{})
-		if err == nil {
-			url = secret.Annotations["tekton.dev/docker-0"]
-			username = string(secret.Data["username"])
-			password = string(secret.Data["password"])
-		} else {
-			secret = constructors.NewSecret(ns, constants.DefaultDockerCrendential, v1.Secret{})
-		}
-		setDefaults(secret)
-
-		url, err = questions.Prompt(fmt.Sprintf("Registry url[%s]: ", url), url)
+		url, err = questions.Prompt(fmt.Sprintf("Registry URL[%s]: ", defaultDockerRegistry), defaultDockerRegistry)
 		if err != nil {
 			return err
 		}
-		secret.Annotations["tekton.dev/docker-0"] = url
 
-		username, err = questions.Prompt(fmt.Sprintf("username[%s]: ", username), username)
+		username, err = questions.Prompt(fmt.Sprintf("Username[%s]: ", username), username)
 		if err != nil {
 			return err
 		}
-		secret.StringData["username"] = username
 
-		password, err = questions.PromptPassword("password[******]: ", password)
+		password, err = questions.PromptPassword("Password[******]: ", password)
 		if err != nil {
-			return err
-		}
-		secret.StringData["password"] = password
-		if err := createOrUpdate(secret, ctx); err != nil {
 			return err
 		}
 
 		generator := generateversioned.SecretForDockerRegistryGeneratorV1{
-			Name:     constants.DefaultDockerCrendential + "-" + "pull",
+			Name:     constants.DefaultDockerCrendential,
 			Username: username,
 			Password: password,
 			Server:   url,
@@ -100,7 +89,12 @@ func (s *Create) Run(ctx *clicontext.CLIContext) error {
 		if err != nil {
 			return err
 		}
+		setDefaults(pullSecret.(*v1.Secret))
 		pullSecret.(*v1.Secret).Namespace = ns
+		if pullSecret.(*v1.Secret).Annotations == nil {
+			pullSecret.(*v1.Secret).Annotations = map[string]string{}
+		}
+		pullSecret.(*v1.Secret).Annotations["tekton.dev/docker-0"] = url
 
 		return createOrUpdate(pullSecret.(*v1.Secret), ctx)
 	}
@@ -140,6 +134,32 @@ func (s *Create) Run(ctx *clicontext.CLIContext) error {
 			return err
 		}
 		secret.StringData["password"] = password
+		return createOrUpdate(secret, ctx)
+	}
+
+	if s.GitSSHKeyAuth {
+		var err error
+		var sshPrivateKeyPath, ns string
+
+		ns, err = questions.Prompt("Select namespace[default]: ", "default")
+		if err != nil {
+			return err
+		}
+
+		secret := constructors.NewSecret(ns, constants.DefaultGitCrendentialSSH, v1.Secret{})
+		setDefaults(secret)
+		secret.Type = v1.SecretTypeSSHAuth
+
+		sshPrivateKeyPath, err = questions.Prompt(fmt.Sprintf("ssh_key_path[%s]: ", sshPrivateKeyPath), sshPrivateKeyPath)
+		if err != nil {
+			return err
+		}
+		sshKey, err := ioutil.ReadFile(sshPrivateKeyPath)
+		if err != nil {
+			return err
+		}
+		secret.Data["ssh-privatekey"] = sshKey
+
 		return createOrUpdate(secret, ctx)
 	}
 
@@ -199,5 +219,8 @@ func setDefaults(secret *v1.Secret) {
 	}
 	if secret.StringData == nil {
 		secret.StringData = make(map[string]string)
+	}
+	if secret.Data == nil {
+		secret.Data = make(map[string][]byte)
 	}
 }

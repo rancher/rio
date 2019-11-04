@@ -8,6 +8,7 @@ import (
 	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 
 	"github.com/pkg/errors"
+	webhookv1 "github.com/rancher/gitwatcher/pkg/generated/clientset/versioned/typed/gitwatcher.cattle.io/v1"
 	projectv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/apply"
@@ -38,10 +39,11 @@ type Config struct {
 	RestConfig *rest.Config
 	K8s        *kubernetes.Clientset
 
-	Core    corev1.CoreV1Interface
-	Build   tektonv1alpha1.TektonV1alpha1Interface
-	Rio     riov1.RioV1Interface
-	Project projectv1.AdminV1Interface
+	Core       corev1.CoreV1Interface
+	Build      tektonv1alpha1.TektonV1alpha1Interface
+	Rio        riov1.RioV1Interface
+	Project    projectv1.AdminV1Interface
+	Gitwatcher webhookv1.GitwatcherV1Interface
 
 	NoPrompt bool
 	Writer   io.Writer
@@ -96,6 +98,11 @@ func (c *Config) Validate() error {
 		return err
 	}
 
+	gitwatcher, err := webhookv1.NewForConfig(restConfig)
+	if err != nil {
+		return err
+	}
+
 	k8s := kubernetes.NewForConfigOrDie(restConfig)
 
 	c.Apply = apply.New(k8s.Discovery(), apply.NewClientFactory(restConfig))
@@ -105,6 +112,7 @@ func (c *Config) Validate() error {
 	c.Project = project
 	c.Core = core
 	c.Build = build
+	c.Gitwatcher = gitwatcher
 
 	if c.DefaultNamespace == "" {
 		c.DefaultNamespace = defaultNs
