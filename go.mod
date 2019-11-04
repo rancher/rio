@@ -75,7 +75,7 @@ require (
 	github.com/rancher/mapper v0.0.0-20190814232720-058a8b7feb99
 	github.com/rancher/norman v0.0.0-20191030191625-ebecbda5fbe3
 	github.com/rancher/rdns-server v0.5.7-0.20190927164127-7128efe7d065
-	github.com/rancher/wrangler v0.2.1-0.20191101235852-ff10906d8415
+	github.com/rancher/wrangler v0.2.1-0.20191104064538-22e063a2a843
 	github.com/rancher/wrangler-api v0.2.1-0.20191025043713-b1ca9c21825a
 	github.com/sclevine/spec v1.3.0
 	github.com/sirupsen/logrus v1.4.2
@@ -88,6 +88,7 @@ require (
 	github.com/wercker/stern v1.11.0
 	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
+	gopkg.in/inf.v0 v0.9.1
 	gopkg.in/yaml.v2 v2.2.4
 	gotest.tools v2.2.0+incompatible
 	k8s.io/api v0.0.0
