@@ -3,6 +3,8 @@ package tables
 import (
 	"fmt"
 
+	"github.com/rancher/rio/modules/build/pkg"
+
 	"github.com/rancher/rio/cli/pkg/table"
 	"github.com/rancher/rio/cli/pkg/types"
 	"github.com/rancher/wrangler/pkg/condition"
@@ -49,11 +51,11 @@ func findService(data interface{}) (string, error) {
 	if !ok {
 		return "", nil
 	}
-	if m.Labels["service-name"] != "" {
-		name := m.Labels["service-name"]
+	if m.Labels[pkg.ServiceLabel] != "" {
+		name := m.Labels[pkg.ServiceLabel]
 		return fmt.Sprintf("%s/%s", types.ServiceType, name), nil
-	} else if m.Labels["stack-name"] != "" {
-		name := m.Labels["stack-name"]
+	} else if m.Labels[pkg.StackLabel] != "" {
+		name := m.Labels[pkg.StackLabel]
 		return fmt.Sprintf("%s/%s", types.StackType, name), nil
 	}
 	return "", nil
