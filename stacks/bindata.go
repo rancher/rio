@@ -2,6 +2,7 @@
 // sources:
 // stacks/build-stack.yaml
 // stacks/cert-manager-stack.yaml
+// stacks/dashboard-stack.yaml
 // stacks/gloo-stack.sh
 // stacks/gloo-stack.yaml
 // stacks/gloo-values.yaml
@@ -121,6 +122,26 @@ func stacksCertManagerStackYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "stacks/cert-manager-stack.yaml", size: 366024, mode: os.FileMode(420), modTime: time.Unix(1557785965, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _stacksDashboardStackYaml = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\xac\x92\x3f\x8f\xd4\x40\x0c\xc5\xfb\x7c\x8a\xd1\xf6\xc9\x01\xd5\x69\x24\x1a\x28\xe8\xaf\xa0\x45\xce\xcc\xdb\xac\xd9\xf9\x13\xd9\x9e\x95\x40\x7c\x78\xb4\x99\xdb\x7f\x12\x02\x09\x5d\x67\x3b\xcf\xbf\xf7\xe4\x8c\x42\x4e\x1c\xa0\x7e\x70\x2e\x92\x1e\xe6\x4a\x12\xcf\x8d\x73\x9c\x69\x81\x77\x3b\x9e\x1b\xa7\x68\x07\x84\x54\x5b\x7c\x12\x2a\xe1\x00\xf1\x11\xa7\x0f\xbb\x4d\xb8\x56\x31\xed\x3b\xa3\x7b\x7e\xb7\x15\x4b\xaa\x33\xa5\x6f\x2b\x24\xb3\x2a\xd7\x72\x15\x48\x4d\xf8\x18\x52\x53\x83\x8c\x14\x33\x97\x61\x38\xb6\x19\x52\x60\x3d\x47\xa6\xc2\x7b\xa8\x79\xf7\x6b\xdc\x96\x68\xe5\xaf\x90\x33\xc5\x3b\x99\x29\x4c\xd4\xec\x50\x85\x7f\x92\x71\x2d\xd3\xf1\x59\x27\xae\x4f\xa7\xf7\x9b\xf8\xc8\x25\x7a\xf7\xb9\x1b\xbc\xd4\x84\x6d\x9a\x61\x14\xc9\xa8\xa7\x70\xae\x50\x86\x77\x81\xcc\x12\xc6\x33\x0e\xc5\x38\x90\x21\x6e\x02\x69\x09\xd7\xc4\xb4\xf2\x17\xa9\x6d\xd5\xcb\xf2\xe8\x76\x99\x0a\x2d\xc8\x28\x36\x75\xc8\xc4\x75\xf7\xfa\x59\xa0\xb5\x49\xc0\x9d\xfe\xec\x10\x6a\xd9\xf3\xa2\xd7\x99\xc2\x8c\xcb\xdd\xa0\x29\xe4\xd6\xad\x82\x3d\x04\x25\xe0\x32\x3b\x41\xe6\x3b\xe6\x02\xbb\xd6\x89\xf5\xd6\xb4\x35\x92\x61\xe8\xe9\xc7\x71\x78\x83\x1b\x7e\xe2\x12\xb9\x2c\xff\x75\xca\x9a\xf0\x82\xfd\x45\x7d\x39\xe6\x5f\x52\xbc\x2a\xff\xfc\x23\xff\xe9\xa7\x6d\xfe\x8e\x70\x7b\x90\x1d\xb3\x79\x3e\x00\xf4\x87\x1a\xb2\xef\x1c\xff\xc8\xf9\x1d\x00\x00\xff\xff\xf5\xcc\xd9\xf0\x16\x03\x00\x00")
+
+func stacksDashboardStackYamlBytes() ([]byte, error) {
+	return bindataRead(
+		_stacksDashboardStackYaml,
+		"stacks/dashboard-stack.yaml",
+	)
+}
+
+func stacksDashboardStackYaml() (*asset, error) {
+	bytes, err := stacksDashboardStackYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "stacks/dashboard-stack.yaml", size: 790, mode: os.FileMode(420), modTime: time.Unix(1557785965, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -319,6 +340,7 @@ func AssetNames() []string {
 var _bindata = map[string]func() (*asset, error){
 	"stacks/build-stack.yaml":          stacksBuildStackYaml,
 	"stacks/cert-manager-stack.yaml":   stacksCertManagerStackYaml,
+	"stacks/dashboard-stack.yaml":      stacksDashboardStackYaml,
 	"stacks/gloo-stack.sh":             stacksGlooStackSh,
 	"stacks/gloo-stack.yaml":           stacksGlooStackYaml,
 	"stacks/gloo-values.yaml":          stacksGlooValuesYaml,
@@ -372,6 +394,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"stacks": &bintree{nil, map[string]*bintree{
 		"build-stack.yaml":          &bintree{stacksBuildStackYaml, map[string]*bintree{}},
 		"cert-manager-stack.yaml":   &bintree{stacksCertManagerStackYaml, map[string]*bintree{}},
+		"dashboard-stack.yaml":      &bintree{stacksDashboardStackYaml, map[string]*bintree{}},
 		"gloo-stack.sh":             &bintree{stacksGlooStackSh, map[string]*bintree{}},
 		"gloo-stack.yaml":           &bintree{stacksGlooStackYaml, map[string]*bintree{}},
 		"gloo-values.yaml":          &bintree{stacksGlooValuesYaml, map[string]*bintree{}},

@@ -20,6 +20,7 @@ package fake
 
 import (
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
+	managementv3 "github.com/rancher/rio/pkg/apis/management.cattle.io/v3"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -33,6 +34,7 @@ var codecs = serializer.NewCodecFactory(scheme)
 var parameterCodec = runtime.NewParameterCodec(scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
 	adminv1.AddToScheme,
+	managementv3.AddToScheme,
 	riov1.AddToScheme,
 }
 

@@ -22,6 +22,8 @@ import (
 	clientset "github.com/rancher/rio/pkg/generated/clientset/versioned"
 	adminv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/admin.rio.cattle.io/v1"
 	fakeadminv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/admin.rio.cattle.io/v1/fake"
+	managementv3 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/management.cattle.io/v3"
+	fakemanagementv3 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/management.cattle.io/v3/fake"
 	riov1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/rio.cattle.io/v1"
 	fakeriov1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/rio.cattle.io/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -81,6 +83,11 @@ var _ clientset.Interface = &Clientset{}
 // AdminV1 retrieves the AdminV1Client
 func (c *Clientset) AdminV1() adminv1.AdminV1Interface {
 	return &fakeadminv1.FakeAdminV1{Fake: &c.Fake}
+}
+
+// ManagementV3 retrieves the ManagementV3Client
+func (c *Clientset) ManagementV3() managementv3.ManagementV3Interface {
+	return &fakemanagementv3.FakeManagementV3{Fake: &c.Fake}
 }
 
 // RioV1 retrieves the RioV1Client

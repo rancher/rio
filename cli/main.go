@@ -10,6 +10,7 @@ import (
 	"github.com/rancher/rio/cli/cmd/attach"
 	"github.com/rancher/rio/cli/cmd/builds"
 	"github.com/rancher/rio/cli/cmd/config"
+	"github.com/rancher/rio/cli/cmd/dashboard"
 	"github.com/rancher/rio/cli/cmd/edit"
 	"github.com/rancher/rio/cli/cmd/endpoint"
 	"github.com/rancher/rio/cli/cmd/exec"
@@ -195,6 +196,10 @@ func main() {
 		builder.Command(&up.Up{},
 			"Apply a rio file",
 			appName+" up [OPTIONS]",
+			""),
+		builder.Command(&dashboard.Dashboard{},
+			"Open the dashboard in a browser",
+			appName+" dashboard [OPTIONS]",
 			""),
 		route.Route(app),
 		info.Info(app),

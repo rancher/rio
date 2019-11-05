@@ -23,8 +23,14 @@ type ExternalServiceSpec struct {
 	// External service located outside mesh, represented by DNS
 	FQDN string `json:"fqdn,omitempty"`
 
-	// In-Mesh service name in another namespace
-	TargetServiceName string `json:"targetServiceName,omitempty"`
+	// In-Mesh app in another namespace
+	TargetApp string `json:"targetApp,omitempty"`
+
+	// In-Mesh version in another namespace
+	TargetVersion string `json:"targetVersion,omitempty"`
+
+	// In-Mesh router in another namespace
+	TargetRouter string `json:"targetRouter,omitempty"`
 
 	// Namespace of in-mesh service in another namespace
 	TargetServiceNamespace string `json:"targetServiceNamespace,omitempty"`

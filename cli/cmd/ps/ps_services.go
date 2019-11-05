@@ -54,16 +54,6 @@ func findOwner(pod *corev1.Pod) string {
 }
 
 func (p *Ps) services(ctx *clicontext.CLIContext) error {
-	ds, err := ctx.List(clitypes.DaemonSetType)
-	if err != nil {
-		return err
-	}
-
-	deploys, err := ctx.List(clitypes.DeploymentType)
-	if err != nil {
-		return err
-	}
-
 	services, err := ctx.List(clitypes.ServiceType)
 	if err != nil {
 		return err
@@ -86,28 +76,40 @@ func (p *Ps) services(ctx *clicontext.CLIContext) error {
 
 	var output []tables.Object
 
-	for _, ds := range ds {
-		ds := ds.(*appsv1.DaemonSet)
-		if ds.Spec.Template.Labels["rio.cattle.io/service"] != "" {
-			continue
+	if p.W_Workloads {
+		ds, err := ctx.List(clitypes.DaemonSetType)
+		if err != nil {
+			return err
 		}
-		output = append(output, ServiceData{
-			DaemonSet: ds,
-			Namespace: ds.Namespace,
-			Pods:      podMap[ds.Namespace+"/ds/"+ds.Name],
-		})
-	}
 
-	for _, deploy := range deploys {
-		deploy := deploy.(*appsv1.Deployment)
-		if deploy.Spec.Template.Labels["rio.cattle.io/service"] != "" {
-			continue
+		deploys, err := ctx.List(clitypes.DeploymentType)
+		if err != nil {
+			return err
 		}
-		output = append(output, ServiceData{
-			Deployment: deploy,
-			Namespace:  deploy.Namespace,
-			Pods:       podMap[deploy.Namespace+"/deploy/"+deploy.Name],
-		})
+
+		for _, ds := range ds {
+			ds := ds.(*appsv1.DaemonSet)
+			if ds.Spec.Template.Labels["rio.cattle.io/service"] != "" {
+				continue
+			}
+			output = append(output, ServiceData{
+				DaemonSet: ds,
+				Namespace: ds.Namespace,
+				Pods:      podMap[ds.Namespace+"/ds/"+ds.Name],
+			})
+		}
+
+		for _, deploy := range deploys {
+			deploy := deploy.(*appsv1.Deployment)
+			if deploy.Spec.Template.Labels["rio.cattle.io/service"] != "" {
+				continue
+			}
+			output = append(output, ServiceData{
+				Deployment: deploy,
+				Namespace:  deploy.Namespace,
+				Pods:       podMap[deploy.Namespace+"/deploy/"+deploy.Name],
+			})
+		}
 	}
 
 	for _, service := range services {

@@ -25,8 +25,12 @@ func FormatTarget(obj interface{}) (string, error) {
 	switch item := obj.(*v1.ExternalService); {
 	case item.Spec.FQDN != "":
 		return item.Spec.FQDN, nil
-	case item.Spec.TargetServiceName != "":
-		return fmt.Sprintf("%s/%s", item.Spec.TargetServiceNamespace, item.Spec.TargetServiceName), nil
+	case item.Spec.TargetRouter != "":
+		return fmt.Sprintf("%s:router/%s", item.Spec.TargetServiceNamespace, item.Spec.TargetRouter), nil
+	case item.Spec.TargetApp != "" && item.Spec.TargetVersion != "":
+		return fmt.Sprintf("%s:%s@%s", item.Spec.TargetServiceNamespace, item.Spec.TargetApp, item.Spec.TargetVersion), nil
+	case item.Spec.TargetApp != "":
+		return fmt.Sprintf("%s:%s", item.Spec.TargetServiceNamespace, item.Spec.TargetApp), nil
 	case len(item.Spec.IPAddresses) > 0:
 		return strings.Join(item.Spec.IPAddresses, ","), nil
 	default:
