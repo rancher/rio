@@ -84,7 +84,7 @@ func (l *Logs) setupConfig(ctx *clicontext.CLIContext) (*stern.Config, error) {
 
 	config.ExcludeContainerQuery = nil
 	if l.A_All == false {
-		excludeContainer, err := regexp.Compile("linkerd-proxy")
+		excludeContainer, err := regexp.Compile("linkerd-proxy|linkerd-init")
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to compile regular expression for exclude container query")
 		}
