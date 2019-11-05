@@ -31,7 +31,7 @@ func weightTests(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, 0, stagedService.GetKubeCurrentWeight())
 		})
 		it("should be able to split weights between revisions", func() {
-			stagedService.Weight(40, "--increment=20", "--interval=1")
+			stagedService.Weight(40, "--increment=0", "--interval=0")
 			assert.Equal(t, 40, stagedService.GetCurrentWeight())
 			assert.Equal(t, 40, stagedService.GetKubeCurrentWeight())
 			assert.Equal(t, 100, service.GetCurrentWeight())

@@ -39,28 +39,24 @@ func rbacTests(t *testing.T, when spec.G, it spec.S) {
 		T:        t,
 	}
 	var testService testutil.TestService
+	adminUser.Create()
+	privilegedUser.Create()
+	standardUser.Create()
+	readonlyUser.Create()
 
-	it.Before(func() {
-		standardUser.Create()
-	})
+	it.Before(func() {})
 
 	it.After(func() {
 		testService.Remove()
-		adminUser.Cleanup()
-		privilegedUser.Cleanup()
-		standardUser.Cleanup()
-		readonlyUser.Cleanup()
 	})
 
 	when("user tries to create services with specific roles like rio-admin,rio-privileged,rio-standard,rio-readonly", func() {
 		it("rio-admin user should be to create service-mesh services", func() {
-			adminUser.Create()
 			testService.Kubeconfig = adminUser.Kubeconfig
 			testService.Create(t, "nginx")
 		})
 
 		it("rio-privileged user should be able to create service-emesh services", func() {
-			privilegedUser.Create()
 			testService.Kubeconfig = privilegedUser.Kubeconfig
 			testService.Create(t, "nginx")
 		})
@@ -87,7 +83,6 @@ func rbacTests(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("rio-readonly should not be able to create services", func() {
-			readonlyUser.Create()
 			testService.Kubeconfig = readonlyUser.Kubeconfig
 			err := testService.CreateExpectingError(t, "nginx")
 			if err == nil {
@@ -125,5 +120,5 @@ func rbacTests(t *testing.T, when spec.G, it spec.S) {
 
 		})
 
-	}, spec.Parallel(), spec.Flat())
+	}, spec.Flat())
 }

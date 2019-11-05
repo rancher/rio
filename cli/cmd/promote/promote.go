@@ -13,19 +13,28 @@ import (
 )
 
 type Promote struct {
-	Increment int  `desc:"Amount of weight to increment each interval" default:"5"`
+	Increment int  `desc:"Amount of weight to increment on each interval" default:"5"`
 	Interval  int  `desc:"Interval seconds between each increment" default:"5"`
 	Pause     bool `desc:"Whether to pause rollout or continue it. Default to false" default:"false"`
 }
 
 func (p *Promote) Run(ctx *clicontext.CLIContext) error {
 	ctx.NoPrompt = true
-	var allErrors []error
 	arg := ctx.CLI.Args()
 	if !arg.Present() {
 		return errors.New("at least one argument is needed")
 	}
 	serviceName := arg.First()
+	rolloutConfig := &riov1.RolloutConfig{
+		Pause:           p.Pause,
+		Increment:       p.Increment,
+		IntervalSeconds: p.Interval,
+	}
+	return PerformPromote(ctx, serviceName, rolloutConfig)
+}
+
+func PerformPromote(ctx *clicontext.CLIContext, serviceName string, rolloutConfig *riov1.RolloutConfig) error {
+	var allErrors []error
 	svcs, err := util.ListAppServicesFromServiceName(ctx, serviceName)
 	if err != nil {
 		return err
@@ -34,7 +43,6 @@ func (p *Promote) Run(ctx *clicontext.CLIContext) error {
 	if versionToPromote == "" {
 		return errors.New("invalid version specified")
 	}
-
 	for _, s := range svcs {
 		err := ctx.UpdateResource(types.Resource{
 			Namespace: s.Namespace,
@@ -47,11 +55,7 @@ func (p *Promote) Run(ctx *clicontext.CLIContext) error {
 			if s.Spec.Weight == nil {
 				s.Spec.Weight = new(int)
 			}
-			s.Spec.RolloutConfig = &riov1.RolloutConfig{
-				Pause:           p.Pause,
-				Increment:       p.Increment,
-				IntervalSeconds: p.Interval,
-			}
+			s.Spec.RolloutConfig = rolloutConfig
 			if s.Spec.Version == versionToPromote {
 				*s.Spec.Weight = 100
 				fmt.Printf("%s promoted\n", s.Name)

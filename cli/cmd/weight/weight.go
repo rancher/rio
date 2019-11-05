@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/rancher/mapper"
+	"github.com/rancher/rio/cli/cmd/promote"
+	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/kv"
@@ -14,7 +16,7 @@ import (
 )
 
 type Weight struct {
-	Increment int  `desc:"Amount of weight to increment each interval" default:"5"`
+	Increment int  `desc:"Amount of weight to increment on each interval" default:"5"`
 	Interval  int  `desc:"Interval seconds between each increment" default:"5"`
 	Pause     bool `desc:"Whether to pause rollout or continue it. Default to false" default:"false"`
 }
@@ -24,49 +26,28 @@ func (w *Weight) Run(ctx *clicontext.CLIContext) error {
 		return errors.New("at least one parameter is required. Run -h to see options")
 	}
 	ctx.NoPrompt = true
-	return scaleAndAllocate(ctx, ctx.CLI.Args(), w.Pause, w.Increment, w.Interval)
+	rolloutConfig := &riov1.RolloutConfig{
+		Pause:           w.Pause,
+		Increment:       w.Increment,
+		IntervalSeconds: w.Interval,
+	}
+	for _, arg := range ctx.CLI.Args() {
+		if strings.Contains(arg, "%") {
+			if len(ctx.CLI.Args()) > 1 {
+				return errors.New("only one percentage setting allowed per weight command")
+			}
+			return setPercentageWeight(ctx, ctx.CLI.Args()[0], rolloutConfig)
+		}
+	}
+	return setSpecWeight(ctx, ctx.CLI.Args(), rolloutConfig)
 }
 
-func scaleAndAllocate(ctx *clicontext.CLIContext, args []string, pause bool, increment int, interval int) error {
+func setSpecWeight(ctx *clicontext.CLIContext, args []string, rolloutConfig *riov1.RolloutConfig) error {
 	var errs []error
-	// todo: fixing below in https://github.com/rancher/rio/issues/682
-	//serviceName, _ := kv.Split(ctx.CLI.Args()[0], "=")
-	//svcs, err := util.ListAppServicesFromServiceName(ctx, serviceName)
-	//if err != nil {
-	//	return err
-	//}
-
-	//cmdSet := map[string]int{}
-	reminder := 100
-
-	// grab all services that already had weight allocated
-	//var toAllocate []riov1.Service
-	//total := 0
-	//for _, s := range svcs {
-	//	// Don't count ones specified in the weight cmd
-	//	if _, ok := cmdSet[s.Name]; ok {
-	//		continue
-	//	}
-	//	if s.Status.ComputedWeight != nil && *s.Status.ComputedWeight > 0 {
-	//		total += *s.Status.ComputedWeight
-	//		toAllocate = append(toAllocate, s)
-	//	}
-	//}
-
-	// First update spec weight on anything specified in command
 	for _, arg := range args {
-		serviceName, scaleStr := kv.Split(arg, "=")
-		//cmdSet[serviceName] = 1
-		scaleStr = strings.TrimSuffix(scaleStr, "%")
-		if scaleStr == "" {
-			return errors.New("weight params must be in the format of SERVICE=PERCENTAGE, for example: myservice=10%")
-		}
-		scale, err := strconv.Atoi(scaleStr)
+		serviceName, scale, err := validateArg(arg)
 		if err != nil {
-			return fmt.Errorf("failed to parse %s: %v", arg, err)
-		}
-		if scale > 100 || reminder < 0 {
-			return fmt.Errorf("scale can't not exceed 100")
+			return err
 		}
 		resource, err := ctx.ByID(serviceName)
 		if err != nil {
@@ -78,47 +59,69 @@ func scaleAndAllocate(ctx *clicontext.CLIContext, args []string, pause bool, inc
 				service.Spec.Weight = new(int)
 			}
 			*service.Spec.Weight = scale
-			service.Spec.RolloutConfig = &riov1.RolloutConfig{
-				Pause:           pause,
-				Increment:       increment,
-				IntervalSeconds: interval,
-			}
+			service.Spec.RolloutConfig = rolloutConfig
 			return nil
 		})
 		errs = append(errs, err)
-		//reminder -= scale
 	}
-
-	// now allocate any remaining weight across those pre-weighted services
-	//added := 0
-	//for i, rev := range toAllocate {
-	//	resource, err := ctx.ByID(rev.Name)
-	//	if err != nil {
-	//		return err
-	//	}
-	//	weight := 0
-	//	if i == len(toAllocate)-1 {
-	//		weight = reminder - added
-	//	} else {
-	//		weight = int(float64(*rev.Status.ComputedWeight) / float64(total) * float64(reminder))
-	//		added += weight
-	//	}
-	//	err = ctx.UpdateResource(resource, func(obj runtime.Object) error {
-	//		s := obj.(*riov1.Service)
-	//		if s.Spec.Weight == nil {
-	//			s.Spec.Weight = new(int)
-	//		}
-	//		*s.Spec.Weight = weight
-	//		s.Spec.RolloutConfig = &riov1.RolloutConfig{
-	//			Pause:           pause,
-	//			Increment:       increment,
-	//			IntervalSeconds: interval,
-	//		}
-	//		return nil
-	//	})
-	//
-	//	errs = append(errs, err)
-	//}
-
 	return mapper.NewErrors(errs...)
+}
+
+func setPercentageWeight(ctx *clicontext.CLIContext, arg string, rolloutConfig *riov1.RolloutConfig) error {
+	serviceName, scale, err := validateArg(arg)
+	if err != nil {
+		return err
+	}
+	resource, err := ctx.ByID(serviceName)
+	if err != nil {
+		return err
+	}
+	if scale == 100 {
+		return promote.PerformPromote(ctx, serviceName, rolloutConfig)
+	}
+	svcs, err := util.ListAppServicesFromServiceName(ctx, serviceName)
+	if err != nil {
+		return err
+	}
+	// first find all weight on other versions of this service
+	otherSvcTotalWeight := 0
+	svc := resource.Object.(*riov1.Service)
+	for _, s := range svcs {
+		if s.Name == svc.Name {
+			continue
+		}
+		if s.Status.ComputedWeight != nil && *s.Status.ComputedWeight > 0 {
+			otherSvcTotalWeight += *s.Status.ComputedWeight
+		}
+	}
+	// now calculate what computed weight should be to hit or percentage target, and set that
+	weight := scale
+	if otherSvcTotalWeight > 0 {
+		weight = int(float64(otherSvcTotalWeight)/(1-(float64(scale)/100))) - otherSvcTotalWeight
+	}
+	return ctx.UpdateResource(resource, func(obj runtime.Object) error {
+		s := obj.(*riov1.Service)
+		if s.Spec.Weight == nil {
+			s.Spec.Weight = new(int)
+		}
+		*s.Spec.Weight = weight
+		s.Spec.RolloutConfig = rolloutConfig
+		return nil
+	})
+}
+
+func validateArg(arg string) (string, int, error) {
+	serviceName, scaleStr := kv.Split(arg, "=")
+	scaleStr = strings.TrimSuffix(scaleStr, "%")
+	if scaleStr == "" {
+		return serviceName, 0, errors.New("weight params must be in the format of SERVICE=WEIGHT, for example: myservice=10% or myservice=20")
+	}
+	scale, err := strconv.Atoi(scaleStr)
+	if err != nil {
+		return serviceName, scale, fmt.Errorf("failed to parse %s: %v", arg, err)
+	}
+	if scale > 100 {
+		return serviceName, scale, fmt.Errorf("scale cannot exceed 100")
+	}
+	return serviceName, scale, nil
 }
