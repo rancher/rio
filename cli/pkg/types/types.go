@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+
 	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/services"
@@ -114,6 +116,8 @@ func FromObject(obj runtime.Object) (Resource, error) {
 		result.Type = PublicDomainType
 	case *riov1.Stack:
 		result.Type = StackType
+	case *v1alpha1.TaskRun:
+		result.Type = BuildType
 	default:
 		return result, fmt.Errorf("unrecognized type: %T", obj)
 	}
