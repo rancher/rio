@@ -30,7 +30,10 @@ func (p *Promote) Run(ctx *clicontext.CLIContext) error {
 	if err != nil {
 		return err
 	}
-	svc := ctx.ParseID(serviceName)
+	versionToPromote := ctx.ParseID(serviceName).Version
+	if versionToPromote == "" {
+		return errors.New("invalid version specified")
+	}
 
 	for _, s := range svcs {
 		err := ctx.UpdateResource(types.Resource{
@@ -49,7 +52,7 @@ func (p *Promote) Run(ctx *clicontext.CLIContext) error {
 				Increment:       p.Increment,
 				IntervalSeconds: p.Interval,
 			}
-			if s.Spec.Version == svc.Version {
+			if s.Spec.Version == versionToPromote {
 				*s.Spec.Weight = 100
 				fmt.Printf("%s promoted\n", s.Name)
 			} else {

@@ -165,8 +165,7 @@ func (ts *TestService) Weight(percentage int, args ...string) {
 
 // Call "rio stage --image={source} ns/name:{version}", this will return a new TestService
 func (ts *TestService) Stage(source, version string) TestService {
-	name := fmt.Sprintf("%s@%s", ts.Name, version)
-	_, err := RioCmd([]string{"stage", "--image", source, name})
+	_, err := RioCmd([]string{"stage", "--image", source, ts.Name, version})
 	if err != nil {
 		ts.T.Fatalf("stage command failed:  %v", err.Error())
 	}
@@ -190,7 +189,7 @@ func (ts *TestService) Promote(args ...string) {
 		append(args, ts.Name)...)
 	_, err := RioCmd(args)
 	if err != nil {
-		ts.T.Fatalf("stage command failed:  %v", err.Error())
+		ts.T.Fatalf("promote command failed:  %v", err.Error())
 	}
 	err = ts.waitForWeight(100)
 	if err != nil {
