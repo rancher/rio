@@ -26,6 +26,7 @@ import (
 	versioned "github.com/rancher/rio/pkg/generated/clientset/versioned"
 	adminriocattleio "github.com/rancher/rio/pkg/generated/informers/externalversions/admin.rio.cattle.io"
 	internalinterfaces "github.com/rancher/rio/pkg/generated/informers/externalversions/internalinterfaces"
+	managementcattleio "github.com/rancher/rio/pkg/generated/informers/externalversions/management.cattle.io"
 	riocattleio "github.com/rancher/rio/pkg/generated/informers/externalversions/rio.cattle.io"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -174,11 +175,16 @@ type SharedInformerFactory interface {
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
 	Admin() adminriocattleio.Interface
+	Management() managementcattleio.Interface
 	Rio() riocattleio.Interface
 }
 
 func (f *sharedInformerFactory) Admin() adminriocattleio.Interface {
 	return adminriocattleio.New(f, f.namespace, f.tweakListOptions)
+}
+
+func (f *sharedInformerFactory) Management() managementcattleio.Interface {
+	return managementcattleio.New(f, f.namespace, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Rio() riocattleio.Interface {

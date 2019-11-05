@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
+	v3 "github.com/rancher/rio/pkg/apis/management.cattle.io/v3"
 	riocattleiov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
@@ -62,6 +63,12 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Admin().V1().RioInfos().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("systemstacks"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Admin().V1().SystemStacks().Informer()}, nil
+
+		// Group=management.cattle.io, Version=v3
+	case v3.SchemeGroupVersion.WithResource("settings"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Management().V3().Settings().Informer()}, nil
+	case v3.SchemeGroupVersion.WithResource("users"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Management().V3().Users().Informer()}, nil
 
 		// Group=rio.cattle.io, Version=v1
 	case riocattleiov1.SchemeGroupVersion.WithResource("externalservices"):

@@ -53,6 +53,7 @@ require (
 	github.com/containerd/ttrpc v0.0.0-20191025122922-cf7f4d5f2d61 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deislabs/smi-sdk-go v0.0.0-20190819154013-e53a9b2d8c1a
+	github.com/docker/distribution v2.7.1+incompatible
 	github.com/docker/docker v1.14.0-0.20190319215453-e7b5f7dbe98c
 	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c // indirect
 	github.com/docker/go-units v0.4.0
@@ -68,6 +69,7 @@ require (
 	github.com/mattn/go-shellwords v1.0.5
 	github.com/moby/buildkit v0.6.2
 	github.com/onsi/ginkgo v1.10.1
+	github.com/pkg/browser v0.0.0-20170505125900-c90ca0c84f15
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4 // indirect
 	github.com/radovskyb/watcher v1.0.7 // indirect
