@@ -50,7 +50,7 @@ func endpointTests(t *testing.T, when spec.G, it spec.S) {
 			)
 			assert.Equal(t, "Hello World", service.GetAppEndpointResponse(), "Response should only be from original service")
 		})
-	})
+	}, spec.Parallel())
 
 	when("a staged service is promoted", func() {
 		it.Before(func() {
@@ -76,5 +76,5 @@ func endpointTests(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, 0, stagedService.GetKubeCurrentWeight())
 			assert.Equal(t, "Hello World", service.GetAppEndpointResponse())
 		})
-	})
+	}, spec.Parallel())
 }
