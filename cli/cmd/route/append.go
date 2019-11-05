@@ -5,7 +5,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 
@@ -32,18 +31,17 @@ type Create struct {
 }
 
 type Add struct {
-	Cookie          map[string]string `desc:"Match HTTP cookie (format key=value, value optional)"`
-	Header          map[string]string `desc:"Match HTTP header (format key=value, value optional)"`
-	FaultPercentage int               `desc:"Percentage of matching requests to fault"`
-	FaultDelay      string            `desc:"Inject a delay for fault (ms|s|m|h)" default:"0s"`
-	FaultHTTPCode   int               `desc:"HTTP code to send for fault injection"`
-	AddHeader       []string          `desc:"Add HTTP header to request (format key=value)"`
-	SetHeader       []string          `desc:"Override HTTP header to request (format key=value)"`
-	RemoveHeader    []string          `desc:"Remove HTTP header to request (format key=value)"`
-	RetryAttempts   int               `desc:"How many times to retry"`
-	RetryTimeout    string            `desc:"Timeout per retry (ms|s|m|h)" default:"0s"`
-	Timeout         string            `desc:"Timeout for all requests (ms|s|m|h)" default:"0s"`
-	Method          []string          `desc:"Match HTTP method, support comma-separated values"`
+	Header                 map[string]string `desc:"Match HTTP header (format key=value, value optional)"`
+	FaultPercentage        int               `desc:"Percentage of matching requests to fault"`
+	FaultDelayMilliSeconds int               `desc:"Inject a delay for fault in milliseconds"`
+	FaultHTTPCode          int               `desc:"HTTP code to send for fault injection"`
+	AddHeader              []string          `desc:"Add HTTP header to request (format key=value)"`
+	SetHeader              []string          `desc:"Override HTTP header to request (format key=value)"`
+	RemoveHeader           []string          `desc:"Remove HTTP header to request (format key=value)"`
+	RetryAttempts          int               `desc:"How many times to retry"`
+	RetryTimeoutSeconds    int               `desc:"Timeout per retry in seconds"`
+	TimeoutSeconds         int               `desc:"Timeout in seconds for all requests"`
+	Method                 []string          `desc:"Match HTTP method, support comma-separated values"`
 }
 
 type Action interface {
@@ -164,6 +162,8 @@ func (a *Add) buildRouteSpec(ctx *clicontext.CLIContext, args []string) (*riov1.
 	a.addRedirect(routeSpec, action, args[2])
 	a.addRewrite(routeSpec, action, args[2])
 	a.addTo(routeSpec, action, destinations)
+	a.addTimeout(routeSpec)
+	a.addRetry(routeSpec)
 
 	return routeSpec, nil
 }
@@ -227,12 +227,8 @@ func (a *Add) addFault(routeSpec *riov1.RouteSpec) error {
 		Percentage: a.FaultPercentage,
 	}
 
-	if a.FaultDelay != "0s" && a.FaultDelay != "" {
-		d, err := objectmappers.ParseDurationUnit(a.FaultDelay, "fault delay", time.Millisecond)
-		if err != nil {
-			return err
-		}
-		f.DelayMillis = d
+	if a.FaultDelayMilliSeconds != 0 {
+		f.DelayMillis = a.FaultDelayMilliSeconds
 		return nil
 	}
 
@@ -275,6 +271,21 @@ func (a *Add) addMatch(ctx *clicontext.CLIContext, matchString string, routeSpec
 	}
 
 	return nil
+}
+
+func (a *Add) addTimeout(routeSpec *riov1.RouteSpec) {
+	if a.TimeoutSeconds != 0 {
+		routeSpec.TimeoutSeconds = &a.TimeoutSeconds
+	}
+}
+
+func (a *Add) addRetry(routeSpec *riov1.RouteSpec) {
+	if a.RetryAttempts != 0 || a.RetryTimeoutSeconds != 0 {
+		routeSpec.Retry = &riov1.Retry{
+			TimeoutSeconds: a.RetryTimeoutSeconds,
+			Attempts:       a.RetryAttempts,
+		}
+	}
 }
 
 func convertHeader(data map[string]string) []riov1.HeaderMatch {

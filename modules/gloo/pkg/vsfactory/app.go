@@ -15,9 +15,7 @@ func (f *VirtualServiceFactory) ForApp(namespace, appName string, svcs []*riov1.
 		return nil, nil
 	}
 
-	vs := newVirtualService(namespace, appName, hostnames)
-	vs.Spec.VirtualHost.Routes[0].Action = newRouteAction(targets...)
-	vs.Spec.VirtualHost.Routes[0].RoutePlugins = newRoutePlugin(targets...)
+	vs := newVirtualService(namespace, appName, hostnames, targets...)
 
 	if err := f.InjectACME(vs); err != nil {
 		return nil, err

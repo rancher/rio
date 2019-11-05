@@ -70,6 +70,7 @@ type Create struct {
 	ReadOnly               bool              `desc:"Mount the container's root filesystem as read only"`
 	RolloutInterval        int               `desc:"Rollout interval in seconds"`
 	RolloutIncrement       int               `desc:"Rollout increment value"`
+	RequestTimeoutSeconds  int               `desc:"Set request timeout in seconds"`
 	Secret                 []string          `desc:"Secrets to inject to the service (format: name[/key]:target)"`
 	Template               bool              `desc:"If true new version is created per git commit. If false update in-place"`
 	T_Tty                  bool              `desc:"Allocate a pseudo-TTY"`
@@ -279,6 +280,10 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 	labels, err := parseLabels(c.LabelFile, c.L_Label)
 	if err != nil {
 		return nil, err
+	}
+
+	if c.RequestTimeoutSeconds != 0 {
+		spec.RequestTimeoutSeconds = &c.RequestTimeoutSeconds
 	}
 
 	if err := c.setMemory(&spec); err != nil {

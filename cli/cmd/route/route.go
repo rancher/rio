@@ -18,12 +18,12 @@ func Route(app *cli.App) cli.Command {
 		"To append a rule at the end, run `rio router add [$NAMESPACE/]$ROUTE_NAME to|redirect|mirror|rewrite [$NAMESPACE/]$SERVICE_NAME")
 	create.Aliases = []string{"add"}
 	return cli.Command{
-		Name:      "routers",
-		ShortName: "router",
-		Usage:     "Route traffic across the mesh",
-		Action:    clicontext.DefaultAction(ls.Action),
-		Flags:     table.WriterFlags(),
-		Category:  "SUB COMMANDS",
+		Name:     "routers",
+		Aliases:  []string{"router", "route"},
+		Usage:    "Route traffic across the mesh",
+		Action:   clicontext.DefaultAction(ls.Action),
+		Flags:    table.WriterFlags(),
+		Category: "SUB COMMANDS",
 		Subcommands: []cli.Command{
 			ls,
 			create,
