@@ -52,7 +52,7 @@ func NewResolver(ctx context.Context, namespace string,
 func lookupServices(namespace, name string, serviceCache riov1controller.ServiceCache, obj runtime.Object) ([]relatedresource.Key, error) {
 	switch obj := obj.(type) {
 	case *adminv1.PublicDomain:
-		if obj.Spec.TargetApp == "" {
+		if obj.Spec.TargetApp == "" && obj.Spec.TargetRouter == "" {
 			return nil, nil
 		}
 
@@ -63,14 +63,19 @@ func lookupServices(namespace, name string, serviceCache riov1controller.Service
 
 		var keys []relatedresource.Key
 
+		target := obj.Spec.TargetApp
+		if target == "" {
+			target = obj.Spec.TargetRouter
+		}
+
 		// router will always be app == name
 		keys = append(keys, relatedresource.Key{
 			Namespace: ns,
-			Name:      obj.Spec.TargetApp,
+			Name:      target,
 		})
 
 		// keys for services
-		apps, err := serviceCache.GetByIndex(indexes.ServiceByApp, fmt.Sprintf("%s/%s", ns, obj.Spec.TargetApp))
+		apps, err := serviceCache.GetByIndex(indexes.ServiceByApp, fmt.Sprintf("%s/%s", ns, target))
 		if err != nil {
 			return nil, err
 		}

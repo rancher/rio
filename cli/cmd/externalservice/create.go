@@ -5,6 +5,8 @@ import (
 	"net"
 	"strings"
 
+	"github.com/rancher/rio/cli/pkg/types"
+
 	"github.com/pkg/errors"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
@@ -23,19 +25,22 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 
 	for i, name := range ctx.CLI.Args().Tail() {
 		host, _ := kv.Split(name, ":")
-		switch ip := net.ParseIP(host); {
+		ip := net.ParseIP(host)
+		switch {
 		case ip != nil:
 			externalService.Spec.IPAddresses = append(externalService.Spec.IPAddresses, name)
 		case strings.ContainsRune(name, '.'):
 			externalService.Spec.FQDN = name
 		default:
-			ns, name := kv.Split(name, "/")
-			if name == "" {
-				name = ns
-				ns = ctx.GetSetNamespace()
+			ref := ctx.ParseID(name)
+			if ref.Type == types.RouterType {
+				externalService.Spec.TargetRouter = ref.Name
+				externalService.Spec.TargetServiceNamespace = ref.Namespace
+			} else {
+				externalService.Spec.TargetApp = ref.App
+				externalService.Spec.TargetVersion = ref.Version
+				externalService.Spec.TargetServiceNamespace = ref.Namespace
 			}
-			externalService.Spec.TargetServiceName = name
-			externalService.Spec.TargetServiceNamespace = ns
 		}
 
 		if i > 0 && len(externalService.Spec.IPAddresses) != (i+1) {

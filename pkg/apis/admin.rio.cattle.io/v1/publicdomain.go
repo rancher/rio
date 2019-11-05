@@ -23,8 +23,11 @@ type PublicDomainSpec struct {
 	// SecretName holding the TLS certificate for this domain.
 	SecretName string `json:"secretName,omitempty"`
 
-	// Target App Name.  Can be a Router name also
+	// Target App Name.  Only TargetAppName or TargetRouter can be set
 	TargetApp string `json:"targetApp,omitempty"`
+
+	// Target Router Name.  Only TargetAppName or TargetRouter can be set
+	TargetRouter string `json:"targetRouter,omitempty"`
 
 	// Target Version
 	TargetVersion string `json:"targetVersion,omitempty"`

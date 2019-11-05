@@ -42,14 +42,22 @@ func getSpec(es *riov1.ExternalService, os *objectset.ObjectSet) (v1.ServiceSpec
 		}, true
 	}
 
-	if es.Spec.TargetServiceName != "" {
+	service := es.Spec.TargetRouter
+	if es.Spec.TargetApp != "" {
+		service = es.Spec.TargetApp
+		if es.Spec.TargetVersion != "" {
+			service = service + "-" + es.Spec.TargetVersion
+		}
+	}
+
+	if service != "" {
 		ns := es.Spec.TargetServiceNamespace
 		if ns == "" {
 			ns = es.Namespace
 		}
 		return v1.ServiceSpec{
 			Type:         v1.ServiceTypeExternalName,
-			ExternalName: fmt.Sprintf("%s.%s", es.Spec.TargetServiceName, ns),
+			ExternalName: fmt.Sprintf("%s.%s", service, ns),
 		}, true
 	}
 
