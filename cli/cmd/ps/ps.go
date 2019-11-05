@@ -12,7 +12,8 @@ import (
 )
 
 type Ps struct {
-	A_All bool `desc:"print all resources, including router and externalservice"`
+	A_All       bool `desc:"print all resources, including router and externalservice"`
+	W_Workloads bool `desc:"include apps/v1 Deployments and DaemonSets in output"`
 }
 
 func (p *Ps) Customize(cmd *cli.Command) {
