@@ -15,7 +15,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestSuite(t *testing.T) {
-	suite := spec.New("integration suite", spec.Report(report.Terminal{}))
+	suite := spec.New("integration suite", spec.Report(report.Terminal{}), spec.Parallel())
 	specs := map[string]func(t *testing.T, when spec.G, it spec.S){
 		"run":             runTests,
 		"weight":          weightTests,

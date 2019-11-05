@@ -28,6 +28,6 @@ func exportTests(t *testing.T, when spec.G, it spec.S) {
 			exportedService := service.Export()
 			assert.Equal(t, serviceImage, exportedService.GetImage(), "should have correct image in standard format")
 		})
-	})
+	}, spec.Parallel())
 
 }

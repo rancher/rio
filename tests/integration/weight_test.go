@@ -40,5 +40,5 @@ func weightTests(t *testing.T, when spec.G, it spec.S) {
 			assert.Greater(t, responses["Hello World"], 2, "The application did not return enough responses from the service. which has slightly more weight than the staged service.")
 			assert.GreaterOrEqual(t, responses["Hello World v3"], 1, "The application did not return enough responses from the staged service. which has slightly less weight than the service.")
 		})
-	})
+	}, spec.Parallel())
 }
