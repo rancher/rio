@@ -56,6 +56,19 @@ func (o desiredSet) ApplyObjects(objs ...runtime.Object) error {
 	return o.Apply(os)
 }
 
+// WithGVK uses a known listing of existing gvks to modify the the prune types to allow for deletion of objects
+func (o desiredSet) WithGVK(gvks ...schema.GroupVersionKind) Apply {
+	pruneTypes := make(map[schema.GroupVersionKind]cache.SharedIndexInformer, len(gvks))
+	for k, v := range o.pruneTypes {
+		pruneTypes[k] = v
+	}
+	for _, gvk := range gvks {
+		pruneTypes[gvk] = nil
+	}
+	o.pruneTypes = pruneTypes
+	return o
+}
+
 func (o desiredSet) WithSetID(id string) Apply {
 	o.setID = id
 	return o
@@ -84,7 +97,7 @@ func (o desiredSet) WithInjectorName(injs ...string) Apply {
 }
 
 func (o desiredSet) WithCacheTypes(igs ...InformerGetter) Apply {
-	pruneTypes := map[schema.GroupVersionKind]cache.SharedIndexInformer{}
+	pruneTypes := make(map[schema.GroupVersionKind]cache.SharedIndexInformer, len(igs))
 	for k, v := range o.pruneTypes {
 		pruneTypes[k] = v
 	}

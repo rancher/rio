@@ -127,6 +127,7 @@ func isK8SYaml(contents []byte) (bool, []runtime.Object, error) {
 	return false, nil, nil
 }
 
+// Parse converts a textfile into a Riofile struct
 func Parse(contents []byte, answers template.AnswerCallback) (*Riofile, error) {
 	k8s, objs, err := isK8SYaml(contents)
 	if err != nil {

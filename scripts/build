@@ -18,4 +18,4 @@ if [ "$CROSS" = "true" ] && [ "$ARCH" = "amd64" ]; then
     GOOS=darwin go build -ldflags "$LINKFLAGS" -o bin/rio-darwin ./cli
     GOOS=windows go build -ldflags "$LINKFLAGS" -o bin/rio-windows ./cli
 fi
-CGO_ENABLED=0 go build -ldflags "$LINKFLAGS $OTHER_LINKFLAGS" -o bin/rio-controller
+GOOS=linux CGO_ENABLED=0 go build -ldflags "$LINKFLAGS $OTHER_LINKFLAGS" -o bin/rio-controller
