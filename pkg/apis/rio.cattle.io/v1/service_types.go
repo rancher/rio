@@ -111,6 +111,9 @@ type ServiceSpec struct {
 	// Whether to disable Service mesh for Service. If true, no mesh sidecar will be deployed along with the Service
 	ServiceMesh *bool `json:"serviceMesh,omitempty"`
 
+	// RequestTimeoutSeconds specify the timeout set on api gateway for each individual service
+	RequestTimeoutSeconds *int `json:"requestTimeoutSeconds,omitempty"`
+
 	// Permissions to the Services. It will create corresponding ServiceAccounts, Roles and RoleBinding.
 	Permissions []Permission `json:"permissions,omitempty" mapper:"permissions,alias=permission"`
 

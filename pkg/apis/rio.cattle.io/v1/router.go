@@ -54,6 +54,9 @@ type RouteSpec struct {
 	// Rewrite HTTP URIs and Authority headers. Rewrite cannot be used with Redirect primitive. Rewrite will be performed before forwarding.
 	Rewrite *Rewrite `json:"rewrite,omitempty"`
 
+	// Retries specifies the retry logic for each route
+	Retry *Retry `json:"retry,omitempty"`
+
 	//Header manipulation rules
 	Headers *HeaderOperations `json:"headers,omitempty"`
 
@@ -64,6 +67,9 @@ type RouteSpec struct {
 	// Mirrored traffic is on a best effort basis where the sidecar/gateway will not wait for the mirrored cluster to respond before returning the response from the original destination.
 	// Statistics will be generated for the mirrored destination.
 	Mirror *Destination `json:"mirror,omitempty"`
+
+	// TimeoutSeconds specifies timeout setting for each route
+	TimeoutSeconds *int `json:"timeoutSeconds,omitempty"`
 }
 
 // HeaderOperations Describes the header manipulations to apply
@@ -248,6 +254,11 @@ type Redirect struct {
 type Rewrite struct {
 	Host string `json:"host,omitempty"`
 	Path string `json:"path,omitempty"`
+}
+
+type Retry struct {
+	TimeoutSeconds int `json:"timeoutSeconds,omitempty"`
+	Attempts       int `json:"attempts,omitempty"`
 }
 
 type StringMatch struct {

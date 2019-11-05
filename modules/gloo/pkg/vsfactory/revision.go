@@ -1,6 +1,8 @@
 package vsfactory
 
 import (
+	"time"
+
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/services"
 	solov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
@@ -14,9 +16,12 @@ func (f *VirtualServiceFactory) ForRevision(svc *riov1.Service) ([]*solov1.Virtu
 		return nil, err
 	}
 
-	vs := newVirtualService(target.Namespace, target.Name, target.Hosts)
-	vs.Spec.VirtualHost.Routes[0].Action = newRouteAction(target)
-	vs.Spec.VirtualHost.Routes[0].RoutePlugins = newRoutePlugin(target)
+	vs := newVirtualService(target.Namespace, target.Name, target.Hosts, target)
+
+	if svc.Spec.RequestTimeoutSeconds != nil {
+		t := time.Duration(int64(*svc.Spec.RequestTimeoutSeconds)) * time.Second
+		vs.Spec.VirtualHost.Routes[0].RoutePlugins.Timeout = &t
+	}
 
 	if err := f.InjectACME(vs); err != nil {
 		return nil, err

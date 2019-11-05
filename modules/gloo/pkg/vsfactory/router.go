@@ -4,6 +4,8 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
+
 	"github.com/gogo/protobuf/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	name2 "github.com/rancher/wrangler/pkg/name"
@@ -132,16 +134,27 @@ func routeToRoute(namespace string, route riov1.RouteSpec) (result *gatewayv1.Ro
 
 	if route.Fault != nil {
 		addFault(route, result)
-	} else if route.Rewrite != nil {
+	}
+	if route.Rewrite != nil {
 		addRewrite(route, result)
-	} else if route.Redirect != nil {
+	}
+	if route.Redirect != nil {
 		addRedirect(route, result)
-	} else if route.Mirror != nil {
+	}
+	if route.Mirror != nil {
 		addMirror(namespace, route, result)
-	} else if len(route.To) == 1 {
+	}
+	if route.Retry != nil {
+		addRetry(route, result)
+	}
+	if len(route.To) == 1 {
 		addSingleDestination(namespace, route, result)
-	} else if len(route.To) > 1 {
+	}
+	if len(route.To) > 1 {
 		addMultiDestination(namespace, route, result)
+	}
+	if route.TimeoutSeconds != nil {
+		addTimeout(route, result)
 	}
 
 	return
@@ -239,8 +252,24 @@ func addRewrite(route riov1.RouteSpec, gatewayRoute *gatewayv1.Route) {
 	}
 }
 
+func addTimeout(route riov1.RouteSpec, gatewayRoute *gatewayv1.Route) {
+	t := time.Duration(int64(*route.TimeoutSeconds)) * time.Second
+	gatewayRoute.RoutePlugins.Timeout = &t
+}
+
 func addFault(route riov1.RouteSpec, gatewayRoute *gatewayv1.Route) {
 	gatewayRoute.RoutePlugins.Faults = faultToFault(route.Fault)
+}
+
+func addRetry(route riov1.RouteSpec, gatewayRoute *gatewayv1.Route) {
+	var t time.Duration
+	if route.TimeoutSeconds != nil {
+		t = time.Duration(*route.TimeoutSeconds) * time.Second
+	}
+	gatewayRoute.RoutePlugins.Retries = &retries.RetryPolicy{
+		NumRetries:    uint32(route.Retry.Attempts),
+		PerTryTimeout: &t,
+	}
 }
 
 func destinationToRef(namespace string, dest *riov1.Destination) *solovcorev1.ResourceRef {

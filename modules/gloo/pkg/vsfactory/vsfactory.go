@@ -37,8 +37,8 @@ func New(rContext *types.Context) *VirtualServiceFactory {
 	}
 }
 
-func newVirtualService(namespace, name string, hosts []string) *solov1.VirtualService {
-	return &solov1.VirtualService{
+func newVirtualService(namespace, name string, hosts []string, targets ...target) *solov1.VirtualService {
+	vs := &solov1.VirtualService{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -58,6 +58,11 @@ func newVirtualService(namespace, name string, hosts []string) *solov1.VirtualSe
 			},
 		},
 	}
+
+	vs.Spec.VirtualHost.Routes[0].Action = newRouteAction(targets...)
+	vs.Spec.VirtualHost.Routes[0].RoutePlugins = newRoutePlugin(targets...)
+
+	return vs
 }
 
 func tlsCopy(hostname, tlsNamespace, tlsName string, vs *solov1.VirtualService) *solov1.VirtualService {
