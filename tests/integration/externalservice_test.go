@@ -23,12 +23,12 @@ func externalServiceTests(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, "1.2.3.4", externalService.GetFirstIPAddress())
 			assert.Equal(t, externalService.GetFirstIPAddress(), externalService.GetKubeFirstIPAddress())
 		})
-	})
+	}, spec.Parallel())
 	when("a config is created with a FQDN", func() {
 		it("should have its FQDN field populated", func() {
 			externalService.Create(t, "test.example.com")
 			assert.Equal(t, "test.example.com", externalService.GetFQDN())
 			assert.Equal(t, externalService.GetFQDN(), externalService.GetKubeFQDN())
 		})
-	})
+	}, spec.Parallel())
 }

@@ -7,12 +7,15 @@ import (
 	"strings"
 	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
+
 	"github.com/docker/docker/pkg/namesgenerator"
 	"github.com/rancher/rio/cli/pkg/types"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
 	projectv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constructors"
+	"github.com/rancher/rio/pkg/services"
 	"github.com/rancher/wrangler/pkg/gvk"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -21,10 +24,16 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
 func (c *CLIContext) getResource(r types.Resource) (ret types.Resource, err error) {
 	switch r.Type {
+	case clitypes.PodType:
+		r.Object, err = c.Core.Pods(r.Namespace).Get(r.Name, metav1.GetOptions{})
 	case clitypes.ServiceType:
-		r.Object, err = c.Rio.Services(r.Namespace).Get(r.Name, metav1.GetOptions{})
+		r.Object, err = c.GetService(r)
 	case clitypes.ConfigType:
 		r.Object, err = c.Core.ConfigMaps(r.Namespace).Get(r.Name, metav1.GetOptions{})
 	case clitypes.RouterType:
@@ -41,6 +50,10 @@ func (c *CLIContext) getResource(r types.Resource) (ret types.Resource, err erro
 		r.Object, err = c.Core.Secrets(r.Namespace).Get(r.Name, metav1.GetOptions{})
 	case clitypes.StackType:
 		r.Object, err = c.Rio.Stacks(r.Namespace).Get(r.Name, metav1.GetOptions{})
+	case clitypes.DeploymentType:
+		r.Object, err = c.Apps.Deployments(r.Namespace).Get(r.Name, metav1.GetOptions{})
+	case clitypes.DaemonSetType:
+		r.Object, err = c.Apps.DaemonSets(r.Namespace).Get(r.Name, metav1.GetOptions{})
 	default:
 		return r, fmt.Errorf("unknown by id type %s", r.Type)
 	}
@@ -51,12 +64,36 @@ func (c *CLIContext) getResource(r types.Resource) (ret types.Resource, err erro
 	return r, err
 }
 
+func (c *CLIContext) GetService(res types.Resource) (*riov1.Service, error) {
+	svcs, err := c.Rio.Services(res.Namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, svc := range svcs.Items {
+		app, version := services.AppAndVersion(&svc)
+		if app == res.App && version == res.Version {
+			return &svc, gvk.Set(&svc)
+		}
+	}
+
+	return nil, fmt.Errorf("failed to find service %s", res.LookupName)
+}
+
 func (c *CLIContext) DeleteResource(r types.Resource) (err error) {
 	switch r.Type {
 	case clitypes.ServiceType:
-		err = c.Rio.Services(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
+		svc, err := c.GetService(r)
+		if err != nil {
+			return err
+		}
+		return c.Rio.Services(svc.Namespace).Delete(svc.Name, &metav1.DeleteOptions{})
 	case clitypes.PodType:
 		err = c.Core.Pods(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
+	case clitypes.DaemonSetType:
+		err = c.Apps.DaemonSets(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
+	case clitypes.DeploymentType:
+		err = c.Apps.Deployments(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
 	case clitypes.ConfigType:
 		err = c.Core.ConfigMaps(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
 	case clitypes.RouterType:
@@ -77,15 +114,18 @@ func (c *CLIContext) DeleteResource(r types.Resource) (err error) {
 	return
 }
 
+func RandomName() string {
+	return strings.Replace(namesgenerator.GetRandomName(0), "_", "-", -1)
+}
+
 func (c *CLIContext) Create(obj runtime.Object) (err error) {
 	metadata, err := meta.Accessor(obj)
 	if err != nil {
 		return err
 	}
 
-	rand.Seed(time.Now().UnixNano())
-	if metadata.GetName() == "" {
-		metadata.SetName(strings.Replace(namesgenerator.GetRandomName(2), "_", "-", -1))
+	if metadata.GetName() == "" && metadata.GetGenerateName() == "" {
+		metadata.SetName(RandomName())
 	}
 
 	_, err = c.Core.Namespaces().Get(metadata.GetNamespace(), metav1.GetOptions{})
@@ -102,8 +142,6 @@ func (c *CLIContext) Create(obj runtime.Object) (err error) {
 	switch o := obj.(type) {
 	case *riov1.Service:
 		_, err = c.Rio.Services(o.Namespace).Create(o)
-	case *corev1.Pod:
-		_, err = c.Core.Pods(o.Namespace).Create(o)
 	case *corev1.ConfigMap:
 		_, err = c.Core.ConfigMaps(o.Namespace).Create(o)
 	case *riov1.Router:
@@ -120,11 +158,11 @@ func (c *CLIContext) Create(obj runtime.Object) (err error) {
 	if err != nil {
 		return err
 	}
-	g, err := gvk.Get(obj)
+	r, err := types.FromObject(obj)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%s/%s/%s\n", strings.ToLower(g.Kind), metadata.GetNamespace(), metadata.GetName())
+	fmt.Printf("%s\n", r)
 	return nil
 }
 
@@ -144,6 +182,10 @@ func (c *CLIContext) UpdateObject(obj runtime.Object) (err error) {
 		_, err = c.Project.PublicDomains().Update(o)
 	case *riov1.Stack:
 		_, err = c.Rio.Stacks(o.Namespace).Update(o)
+	case *appsv1.Deployment:
+		_, err = c.Apps.Deployments(o.Namespace).Update(o)
+	case *appsv1.DaemonSet:
+		_, err = c.Apps.DaemonSets(o.Namespace).Update(o)
 	default:
 		return fmt.Errorf("unknown type %v", reflect.TypeOf(obj))
 	}
@@ -182,6 +224,24 @@ func (c *CLIContext) listNamespace(namespace, typeName string) (ret []runtime.Ob
 		return ret, err
 	case clitypes.ServiceType:
 		objs, err := c.Rio.Services(namespace).List(opts)
+		if err != nil {
+			return ret, err
+		}
+		for i := range objs.Items {
+			ret = append(ret, &objs.Items[i])
+		}
+		return ret, err
+	case clitypes.DaemonSetType:
+		objs, err := c.Apps.DaemonSets(namespace).List(opts)
+		if err != nil {
+			return ret, err
+		}
+		for i := range objs.Items {
+			ret = append(ret, &objs.Items[i])
+		}
+		return ret, err
+	case clitypes.DeploymentType:
+		objs, err := c.Apps.Deployments(namespace).List(opts)
 		if err != nil {
 			return ret, err
 		}

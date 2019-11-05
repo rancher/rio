@@ -36,14 +36,18 @@ import (
 	"github.com/rancher/rio/cli/cmd/weight"
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	_ "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io"
-	_ "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io"
 	"github.com/rancher/rio/pkg/version"
-	_ "github.com/rancher/wrangler-api/pkg/generated/controllers/core"
-	_ "github.com/rancher/wrangler-api/pkg/generated/controllers/tekton.dev"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+
+	// all auth plugins
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+
+	// ensure gvks are loaded
+	_ "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io"
+	_ "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io"
+	_ "github.com/rancher/wrangler-api/pkg/generated/controllers/core"
+	_ "github.com/rancher/wrangler-api/pkg/generated/controllers/tekton.dev"
 )
 
 var (
@@ -93,7 +97,7 @@ func main() {
 			EnvVar: "NAMESPACE",
 		},
 		cli.BoolFlag{
-			Name:        "all-namespaces,A",
+			Name:        "all-namespaces,a,A",
 			Usage:       "Whether to show all namespaces resources",
 			Destination: &cfg.AllNamespace,
 		},
@@ -174,7 +178,7 @@ func main() {
 			""),
 		builder.Command(&stage.Stage{},
 			"Stage a new revision of a service",
-			appName+" stage [OPTIONS] SERVICE_NAME:NEW_REVISION",
+			appName+" stage [OPTIONS] SERVICE_NAME@NEW_REVISION",
 			""),
 		builder.Command(&promote.Promote{},
 			"Promote a staged version to latest",

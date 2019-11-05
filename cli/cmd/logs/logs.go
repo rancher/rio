@@ -11,6 +11,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
+	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
 	"github.com/wercker/stern/stern"
@@ -55,10 +56,20 @@ func (l *Logs) setupConfig(ctx *clicontext.CLIContext) (*stern.Config, error) {
 		if obj.Object == nil {
 			return nil, errors.New("No object found")
 		}
+		config.Namespace = obj.Namespace
 		if obj.Type == clitypes.BuildType {
 			l.P_Previous = true
 		}
-		config.PodQuery, err = regexp.Compile(obj.Name)
+		podName, sel, err := util.ToPodNameOrSelector(obj.Object)
+		if err != nil {
+			return nil, err
+		}
+		if podName == "" {
+			config.LabelSelector = sel
+			config.PodQuery, err = regexp.Compile("")
+		} else {
+			config.PodQuery, err = regexp.Compile(regexp.QuoteMeta(podName))
+		}
 		if err != nil {
 			return nil, err
 		}

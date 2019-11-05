@@ -4,10 +4,6 @@ import (
 	"io"
 )
 
-func (c *CLIContext) IDs() bool {
-	return c.CLI.Bool("ids")
-}
-
 func (c *CLIContext) AllNamespaceSet() bool {
 	return c.AllNamespace
 }
@@ -34,13 +30,9 @@ func (c *CLIContext) GetSetNamespace() string {
 	}
 	ns := c.CLI.GlobalString("namespace")
 	if ns == "" {
-		return c.GetDefaultNamespace()
+		return c.DefaultNamespace
 	}
 	return ns
-}
-
-func (c *CLIContext) GetDefaultNamespace() string {
-	return c.DefaultNamespace
 }
 
 func (c *CLIContext) GetSystemNamespace() string {

@@ -26,7 +26,7 @@ func GenerateRandomDomain() string {
 // Executes "rio domain register {domain} {target}" and returns a TestDomain
 func (td *TestDomain) RegisterDomain(t *testing.T, domain string, target string) {
 	td.T = t
-	td.Name = fmt.Sprintf("%v/%v", "publicdomain", domain)
+	td.Name = fmt.Sprintf("%s:%s/%s", TestingNamespace, "publicdomain", domain)
 	_, err := RioCmd([]string{"domain", "register", domain, target})
 	if err != nil {
 		td.T.Fatalf("register domain command failed: %v", err.Error())
@@ -60,7 +60,7 @@ func (td *TestDomain) GetDomain() string {
 // CLI Command Run: "kubectl get publicdomains my-domain -n testing-ns -o json"
 func (td *TestDomain) GetKubeDomain() string {
 	td.reload()
-	args := []string{"get", "publicdomains", td.PublicDomain.GetName(), "-n", testingNamespace, "-o", "json"}
+	args := []string{"get", "publicdomains", td.PublicDomain.GetName(), "-n", TestingNamespace, "-o", "json"}
 	resultString, err := KubectlCmd(args)
 	if err != nil {
 		td.T.Fatalf("Failed to get admin.rio.cattle.io.publicdomains:  %v", err.Error())

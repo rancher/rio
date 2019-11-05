@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	isatty "github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty"
+	"github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty"
 	"github.com/rancher/rio/cli/cmd/attach"
 	"github.com/rancher/rio/cli/cmd/create"
 	"github.com/rancher/rio/cli/pkg/clicontext"

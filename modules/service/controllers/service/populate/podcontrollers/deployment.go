@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sort"
 
+	"k8s.io/apimachinery/pkg/api/resource"
+
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/rio/pkg/services"
@@ -96,6 +98,7 @@ func volumeClaimTemplates(templates map[string]riov1.VolumeTemplate) (result []v
 
 	for _, name := range names {
 		template := templates[name]
+		q := resource.NewQuantity(template.StorageRequest, resource.BinarySI)
 		result = append(result, v1.PersistentVolumeClaim{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:        "vol-" + name,
@@ -106,7 +109,7 @@ func volumeClaimTemplates(templates map[string]riov1.VolumeTemplate) (result []v
 				AccessModes: template.AccessModes,
 				Resources: v1.ResourceRequirements{
 					Requests: v1.ResourceList{
-						v1.ResourceStorage: template.StorageRequest,
+						v1.ResourceStorage: *q,
 					},
 				},
 				StorageClassName: &template.StorageClassName,

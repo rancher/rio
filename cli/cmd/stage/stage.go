@@ -5,16 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/rancher/rio/pkg/riofile/stringers"
-
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/aokoli/goutils"
 	"github.com/rancher/rio/cli/cmd/edit/edit"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/riofile/stringers"
 	"github.com/rancher/rio/pkg/services"
 	"github.com/rancher/wrangler/pkg/kv"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 )
 
@@ -34,7 +32,7 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("more than one argument found")
 	}
 
-	serviceName, version := kv.Split(ctx.CLI.Args()[0], ":")
+	serviceName, version := kv.Split(ctx.CLI.Args()[0], "@")
 	if version == "" {
 		var err error
 		version, err = goutils.RandomNumeric(5)

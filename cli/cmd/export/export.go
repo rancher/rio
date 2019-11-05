@@ -18,13 +18,17 @@ import (
 
 type Export struct {
 	Format  string `desc:"Specify output format, yaml/json. Defaults to yaml" default:"yaml"`
-	Riofile bool   `desc:"Export riofile format. Only works for namespace (example: rio export --riofile namespace/default)"`
+	Riofile bool   `desc:"Export riofile format. (example: rio export --riofile namespace/default)"`
 }
 
 func (e *Export) Run(ctx *clicontext.CLIContext) error {
 	output := &strings.Builder{}
 
-	var svcs []*riov1.Service
+	var (
+		svcs  []*riov1.Service
+		other []runtime.Object
+	)
+
 	for _, arg := range ctx.CLI.Args() {
 		r, err := ctx.ByID(arg)
 		if err != nil {
@@ -46,9 +50,14 @@ func (e *Export) Run(ctx *clicontext.CLIContext) error {
 			if err := exportObjects(objects, output, e.Riofile, e.Format); err != nil {
 				return err
 			}
-		case clitypes.StackType:
-			stack := r.Object.(*riov1.Stack)
-			output.Write([]byte(stack.Spec.Template))
+		default:
+			other = append(other, r.Object)
+		}
+	}
+
+	if len(other) > 0 {
+		if err := exportObjects(other, output, e.Riofile, e.Format); err != nil {
+			return err
 		}
 	}
 

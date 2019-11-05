@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/rancher/rio/modules/linkerd/controller/inject"
-
 	"github.com/rancher/rio/modules/linkerd/pkg/injector"
 	"github.com/rancher/rio/pkg/features"
 	"github.com/rancher/rio/pkg/stack"

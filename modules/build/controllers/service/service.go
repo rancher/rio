@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	webhookv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
 	"github.com/rancher/rio/modules/build/pkg"
@@ -160,6 +161,13 @@ func (p populator) populateBuild(buildKey, namespace string, build *riov1.ImageB
 		})
 	}
 
+	var timeout *metav1.Duration
+	if build.TimeoutSeconds != nil {
+		timeout = &metav1.Duration{
+			Duration: time.Duration(*build.TimeoutSeconds) * time.Second,
+		}
+	}
+
 	taskrun := constructors.NewTaskRun(namespace, trName, tektonv1alpha1.TaskRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
@@ -171,7 +179,7 @@ func (p populator) populateBuild(buildKey, namespace string, build *riov1.ImageB
 		},
 		Spec: tektonv1alpha1.TaskRunSpec{
 			ServiceAccountName: sa.Name,
-			Timeout:            build.Timeout,
+			Timeout:            timeout,
 			TaskSpec: &tektonv1alpha1.TaskSpec{
 				Inputs: &tektonv1alpha1.Inputs{
 					Params: []tektonv1alpha1.ParamSpec{

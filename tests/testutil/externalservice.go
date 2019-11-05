@@ -26,7 +26,7 @@ func (es *TestExternalService) Create(t *testing.T, target string) {
 	es.T = t
 	es.Target = target
 	name := GenerateName()
-	es.Name = fmt.Sprintf("%s/%s", "externalservice", name)
+	es.Name = fmt.Sprintf("%s:%s/%s", TestingNamespace, "externalservice", name)
 	_, err := RioCmd([]string{"externalservice", "create", name, target})
 	if err != nil {
 		es.T.Fatalf("external service create command failed: %v", err.Error())
@@ -41,7 +41,7 @@ func (es *TestExternalService) Create(t *testing.T, target string) {
 func GetExternalService(t *testing.T, name string) TestExternalService {
 	es := TestExternalService{
 		Target:          "",
-		Name:            fmt.Sprintf("externalservice/%s/%s", testingNamespace, name),
+		Name:            fmt.Sprintf("%s:%s/%s", TestingNamespace, "externalservice", name),
 		ExternalService: riov1.ExternalService{},
 		T:               t,
 	}
@@ -78,7 +78,7 @@ func (es *TestExternalService) GetFQDN() string {
 func (es *TestExternalService) GetKubeFirstIPAddress() string {
 	clientset := GetKubeClient()
 	endpointsList, err := clientset.CoreV1().
-		Endpoints(testingNamespace).
+		Endpoints(TestingNamespace).
 		List(metav1.ListOptions{FieldSelector: "metadata.name=" + es.ExternalService.Name})
 	if err != nil {
 		es.T.Fatalf(err.Error())
@@ -95,7 +95,7 @@ func (es *TestExternalService) GetKubeFirstIPAddress() string {
 func (es *TestExternalService) GetKubeFQDN() string {
 	clientset := GetKubeClient()
 	serviceList, err := clientset.CoreV1().
-		Services(testingNamespace).
+		Services(TestingNamespace).
 		List(metav1.ListOptions{LabelSelector: "rio.cattle.io/service=" + es.ExternalService.Name})
 	if err != nil {
 		es.T.Fatalf(err.Error())

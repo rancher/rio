@@ -472,6 +472,8 @@ kubernetes:
     {{- end}}
 
 template:
+  goTemplate: true
+  envSubst: true
   questions:
   - variable: NAMESPACE
     description: "namespace to deploy to"

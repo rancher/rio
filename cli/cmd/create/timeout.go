@@ -5,7 +5,6 @@ import (
 
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/services"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (c *Create) setBuildOrImage(imageName string, spec *riov1.ServiceSpec) error {
@@ -16,21 +15,21 @@ func (c *Create) setBuildOrImage(imageName string, spec *riov1.ServiceSpec) erro
 			Context:                c.BuildContext,
 			Revision:               c.BuildRevision,
 			WebhookSecretName:      c.BuildWebhookSecret,
-			CloneSecretName:        c.CloneGitSecret,
+			CloneSecretName:        c.BuildCloneSecret,
 			ImageName:              c.BuildImageName,
 			PushRegistry:           c.BuildRegistry,
 			PushRegistrySecretName: c.BuildDockerPushSecret,
 			Repo:                   imageName,
 			PR:                     c.BuildPr,
 		}
-		spec.Template = c.Template
 
 		if c.BuildTimeout != "" {
 			timeout, err := time.ParseDuration(c.BuildTimeout)
 			if err != nil {
 				return err
 			}
-			spec.ImageBuild.Timeout = &v1.Duration{Duration: timeout}
+			sec := int(timeout / time.Second)
+			spec.ImageBuild.TimeoutSeconds = &sec
 		}
 	} else {
 		spec.Image = imageName

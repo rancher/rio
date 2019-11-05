@@ -42,6 +42,10 @@ type PermissionStringer struct {
 }
 
 func (p PermissionStringer) MaybeString() interface{} {
+	if p.Role != "" {
+		return fmt.Sprintf("role=%s", p.Role)
+	}
+
 	sort.Strings(p.Verbs)
 
 	buf := strings.Builder{}

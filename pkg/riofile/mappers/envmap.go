@@ -2,6 +2,7 @@ package mappers
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/rancher/norman/pkg/data"
 	"github.com/rancher/norman/pkg/types"
@@ -20,8 +21,10 @@ func NewEnvMap(field string, opts ...string) types.Mapper {
 		},
 	}
 
-	if len(opts) > 0 {
-		e.Sep = opts[0]
+	for _, opt := range opts {
+		if strings.HasPrefix(opt, "sep=") {
+			e.Sep = strings.TrimPrefix(opt, "sep=")
+		}
 	}
 
 	return e

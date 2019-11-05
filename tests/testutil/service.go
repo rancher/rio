@@ -18,7 +18,7 @@ import (
 )
 
 type TestService struct {
-	Name       string // namespace/name
+	Name       string
 	App        string
 	Service    riov1.Service
 	Build      tektonv1alpha1.TaskRun
@@ -62,13 +62,18 @@ func (ts *TestService) createArgs(t *testing.T, source ...string) ([]string, []s
 	ts.Name = RandomString(5)
 	ts.App = ts.Name
 	if len(source) == 0 {
-		source = []string{"nginx"}
+		source = []string{"-p", "80/http", "nginx"}
 	}
-	// Ensure port 80/http unless the source is from github
-	if !ts.isGithubSource(source...) {
+	portFound := false
+	for _, s := range source {
+		if s == "-p" || s == "--port" {
+			portFound = true
+		}
+	}
+	if !portFound {
 		source = append([]string{"-p", "80/http"}, source...)
 	}
-	args := append([]string{"run", "--version", "v0", "-n", ts.Name}, source...)
+	args := append([]string{"run", "-n", ts.Name}, source...)
 
 	var envs []string
 	if ts.Kubeconfig != "" {
@@ -83,10 +88,14 @@ func (ts *TestService) isGithubSource(source ...string) bool {
 }
 
 // Takes name and version of existing service and returns loaded TestService
-func GetService(t *testing.T, name string, version string) TestService {
+func GetService(t *testing.T, name string, app string, version string) TestService {
+	if version != "" {
+		name = fmt.Sprintf("%s@%s", name, version)
+	}
 	ts := TestService{
 		Service: riov1.Service{},
 		Name:    name,
+		App:     app,
 		Version: version,
 		T:       t,
 	}
@@ -156,7 +165,7 @@ func (ts *TestService) Weight(percentage int, args ...string) {
 
 // Call "rio stage --image={source} ns/name:{version}", this will return a new TestService
 func (ts *TestService) Stage(source, version string) TestService {
-	name := fmt.Sprintf("%s:%s", ts.Name, version)
+	name := fmt.Sprintf("%s@%s", ts.Name, version)
 	_, err := RioCmd([]string{"stage", "--image", source, name})
 	if err != nil {
 		ts.T.Fatalf("stage command failed:  %v", err.Error())
@@ -164,7 +173,7 @@ func (ts *TestService) Stage(source, version string) TestService {
 	stagedService := TestService{
 		T:       ts.T,
 		App:     ts.Name,
-		Name:    fmt.Sprintf("%s-%s", ts.Name, version),
+		Name:    fmt.Sprintf("%s@%s", ts.Name, version),
 		Version: version,
 	}
 	err = stagedService.waitForReadyService()
@@ -296,8 +305,8 @@ func (ts *TestService) GetImage() string {
 func (ts *TestService) GetRunningPods() []string {
 	ts.reload()
 	args := append([]string{"get", "pods",
-		"-n", testingNamespace,
-		"-l", fmt.Sprintf("app=%s", ts.Service.Name),
+		"-n", TestingNamespace,
+		"-l", fmt.Sprintf("app=%s", ts.App),
 		"--field-selector", "status.phase=Running",
 		"--no-headers"})
 	out, err := KubectlCmd(args)
@@ -390,7 +399,7 @@ func (ts *TestService) GetKubeEndpointURLs() []string {
 		return []string{}
 	}
 	args := []string{"get", "service.rio.cattle.io",
-		"-n", testingNamespace,
+		"-n", TestingNamespace,
 		ts.Service.Name,
 		"-o", `jsonpath="{.status.endpoints}"`}
 	urls, err := KubectlCmd(args)
@@ -410,7 +419,7 @@ func (ts *TestService) GetKubeAppEndpointURLs() []string {
 		return []string{}
 	}
 	args := []string{"get", "service.rio.cattle.io",
-		"-n", testingNamespace,
+		"-n", TestingNamespace,
 		ts.Service.Name,
 		"-o", `jsonpath="{.status.appEndpoints}"`}
 	urls, err := KubectlCmd(args)
@@ -425,7 +434,7 @@ func (ts *TestService) GetKubeAppEndpointURLs() []string {
 // GetKubeCurrentWeight does the exact same thing as GetCurrentWeight but uses the kubectl command instead of rio
 func (ts *TestService) GetKubeCurrentWeight() int {
 	ts.reload()
-	args := []string{"get", "services.rio.cattle.io", ts.Name, "-n", testingNamespace, "-o", "json"}
+	args := []string{"get", "services.rio.cattle.io", ts.Service.Name, "-n", TestingNamespace, "-o", "json"}
 	resultString, err := KubectlCmd(args)
 	if err != nil {
 		ts.T.Fatalf("Failed to get services.rio.cattle.io:  %v", err.Error())
@@ -466,8 +475,8 @@ func (ts *TestService) PodsResponsesMatchAvailableReplicas(path string, numberOf
 func (ts *TestService) GetKubeAvailableReplicas() int {
 	clientset := GetKubeClient()
 	replicaSetList, err := clientset.AppsV1().
-		ReplicaSets(testingNamespace).
-		List(metav1.ListOptions{LabelSelector: "app=" + ts.Service.Name})
+		ReplicaSets(TestingNamespace).
+		List(metav1.ListOptions{LabelSelector: "app=" + ts.App})
 	if err != nil {
 		ts.T.Fatalf(err.Error())
 	}
@@ -517,7 +526,7 @@ func (ts *TestService) reload() error {
 // reloadBuild calls inspect on the build and uses that to reload our object
 func (ts *TestService) reloadBuild() error {
 	ts.reload()
-	out, err := KubectlCmd([]string{"get", "taskrun", "-n", testingNamespace, "-l", "gitwatcher.rio.cattle.io/service=" + ts.Service.GetName(), "-o", "json"})
+	out, err := KubectlCmd([]string{"get", "taskrun", "-n", TestingNamespace, "-l", "gitwatcher.rio.cattle.io/service=" + ts.Service.GetName(), "-o", "json"})
 	if err != nil {
 		return err
 	}

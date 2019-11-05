@@ -24,7 +24,7 @@ func (trf *TestRiofile) Up(t *testing.T, filename, stackName string) {
 	if stackName == "" {
 		stackName = RandomString(5)
 	}
-	trf.Name = fmt.Sprintf("stack/%s/%s", testingNamespace, stackName)
+	trf.Name = fmt.Sprintf("%s:%s/%s", TestingNamespace, "stack", stackName)
 	pwd, err := os.Getwd()
 	if err != nil {
 		trf.T.Fatal(err)

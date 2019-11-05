@@ -24,9 +24,6 @@ type StackSpec struct {
 	// Permissions used while deploying objects created by this stack
 	Permissions []Permission `json:"permissions,omitempty" mapper:"permissions,alias=permission"`
 
-	// Deprecated, do not use
-	Template string `json:"template,omitempty"`
-
 	// Additional GVKs not in the rio.cattle.io that have the rio.cattle.io/stack label. These objects
 	// are "owned" by this stack
 	AdditionalGroupVersionKinds []schema.GroupVersionKind `json:"additionalGroupVersionKinds,omitempty"`

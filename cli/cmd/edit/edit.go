@@ -6,7 +6,6 @@ import (
 
 	"github.com/rancher/rio/cli/cmd/edit/pretty"
 	"github.com/rancher/rio/cli/cmd/edit/raw"
-	"github.com/rancher/rio/cli/cmd/edit/stack"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
 	"github.com/rancher/wrangler/pkg/gvk"
@@ -17,17 +16,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
-)
-
-var (
-	editTypes = []string{
-		clitypes.NamespaceType,
-		clitypes.ServiceType,
-		clitypes.ConfigType,
-		clitypes.RouterType,
-		clitypes.ExternalServiceType,
-		clitypes.FeatureType,
-	}
 )
 
 type Edit struct {
@@ -117,10 +105,6 @@ func (u updater) GetGvk() schema.GroupVersionKind {
 }
 
 func (edit Edit) getEditor(t string, u updater) Editor {
-	if t == clitypes.StackType && !edit.Raw {
-		return stack.NewEditor(u)
-	}
-
 	if (t == clitypes.ServiceType || t == clitypes.ConfigType || t == clitypes.RouterType || t == clitypes.ExternalServiceType) && !edit.Raw {
 		return pretty.NewEditor(u)
 	}

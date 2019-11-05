@@ -3,14 +3,13 @@ package create
 import (
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/stack"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/riofile/stringers"
 	"github.com/rancher/wrangler/pkg/kv"
+	"gopkg.in/inf.v0"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -20,7 +19,6 @@ var (
 )
 
 type Create struct {
-	App                    string            `desc:"Specify the app name"`
 	AddHost                []string          `desc:"Add a custom host-to-IP mapping (host:ip)"`
 	Annotations            map[string]string `desc:"Annotations to attach to this service"`
 	BuildBranch            string            `desc:"Build repository branch" default:"master"`
@@ -28,7 +26,7 @@ type Create struct {
 	BuildContext           string            `desc:"Set build context, defaults to ."`
 	BuildWebhookSecret     string            `desc:"Set GitHub webhook secret name"`
 	BuildDockerPushSecret  string            `desc:"Set docker push secret name"`
-	CloneGitSecret         string            `desc:"Set git clone secret name"`
+	BuildCloneSecret       string            `desc:"Set git clone secret name"`
 	BuildImageName         string            `desc:"Specify custom image name to push"`
 	BuildRegistry          string            `desc:"Specify to push image to"`
 	BuildRevision          string            `desc:"Build git commit or tag"`
@@ -63,7 +61,7 @@ type Create struct {
 	LabelFile              []string          `desc:"Read in a line delimited file of labels"`
 	L_Label                map[string]string `desc:"Set meta data on a container"`
 	M_Memory               string            `desc:"Memory reservation (format: <number>[<unit>], where unit = b, k, m or g)"`
-	N_Name                 string            `desc:"Assign a name to the container. Use format ${namespace}/${name} to assign workload to a different namespace"`
+	N_Name                 string            `desc:"Assign a name to the container. Use format [namespace:]name[@version]"`
 	Permission             []string          `desc:"Permissions to grant to container's service account in current namespace"`
 	P_Ports                []string          `desc:"Publish a container's port(s) (format: svcport:containerport/protocol)"`
 	Privileged             bool              `desc:"Run container with privilege"`
@@ -73,10 +71,9 @@ type Create struct {
 	Secret                 []string          `desc:"Secrets to inject to the service (format: name[/key]:target)"`
 	Template               bool              `desc:"If true new version is created per git commit. If false update in-place"`
 	T_Tty                  bool              `desc:"Allocate a pseudo-TTY"`
-	Version                string            `desc:"Specify the revision"`
 	Scale                  string            `desc:"The number of replicas to run or a range for autoscaling (example 1-10)"`
 	U_User                 string            `desc:"UID[:GID] Sets the UID used and optionally GID for entrypoint process (format: <uid>[:<gid>])"`
-	Weight                 int               `desc:"Specify the weight for the revision" default:"100"`
+	Weight                 int               `desc:"Specify the weight for the revision"`
 	W_Workdir              string            `desc:"Working directory inside the container"`
 }
 
@@ -90,12 +87,10 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 func (c *Create) RunCallback(ctx *clicontext.CLIContext, cb func(service *riov1.Service) *riov1.Service) (*riov1.Service, error) {
 	var err error
 
-	service, err := c.ToService(ctx.CLI.Args())
+	service, err := c.ToService(ctx, ctx.CLI.Args())
 	if err != nil {
 		return nil, err
 	}
-
-	service.Namespace, service.Name = stack.NamespaceAndName(ctx, service.Name)
 
 	service = cb(service)
 	return service, ctx.Create(service)
@@ -104,17 +99,13 @@ func (c *Create) RunCallback(ctx *clicontext.CLIContext, cb func(service *riov1.
 func (c *Create) setRollout(spec *riov1.ServiceSpec) {
 	if c.RolloutIncrement > 0 || c.RolloutInterval > 0 {
 		spec.RolloutConfig = &riov1.RolloutConfig{
-			Increment: c.RolloutIncrement,
-			Interval: metav1.Duration{
-				Duration: time.Duration(c.RolloutInterval) * time.Second,
-			},
+			Increment:       c.RolloutIncrement,
+			IntervalSeconds: c.RolloutInterval,
 		}
 	} else if c.Template {
 		spec.RolloutConfig = &riov1.RolloutConfig{
-			Increment: 5,
-			Interval: metav1.Duration{
-				Duration: 5 * time.Second,
-			},
+			Increment:       5,
+			IntervalSeconds: 5,
 		}
 	}
 }
@@ -168,7 +159,7 @@ func (c *Create) setScale(spec *riov1.ServiceSpec) (err error) {
 	return nil
 }
 
-func (c *Create) ToService(args []string) (*riov1.Service, error) {
+func (c *Create) ToService(ctx *clicontext.CLIContext, args []string) (*riov1.Service, error) {
 	var (
 		err error
 	)
@@ -177,20 +168,28 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 		return nil, fmt.Errorf("at least one (1) argument is required")
 	}
 
-	if c.Version != "" && c.Template {
-		return nil, fmt.Errorf("version and template cannot be used together")
+	name := c.N_Name
+	if name == "" {
+		name = clicontext.RandomName()
+	}
+
+	r := ctx.ParseID(name)
+
+	if _, err := ctx.GetService(r); err == nil {
+		return nil, fmt.Errorf("%s already exists", r)
 	}
 
 	var spec riov1.ServiceSpec
 
-	spec.App = c.App
+	spec.App = r.App
 	spec.Args = args[1:]
 	spec.Hostname = c.Hostname
 	spec.HostNetwork = c.Net == "host"
 	spec.Stdin = c.I_Interactive
 	spec.TTY = c.T_Tty
-	spec.Version = c.Version
+	spec.Version = r.Version
 	spec.WorkingDir = c.W_Workdir
+	spec.Template = c.Template
 
 	if c.NoMesh {
 		mesh := !c.NoMesh
@@ -214,6 +213,10 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 	if err != nil {
 		return nil, err
 	}
+	if spec.ImagePullPolicy == v1.PullIfNotPresent {
+		spec.ImagePullPolicy = ""
+	}
+
 	spec.ImagePullSecrets = c.ImagePullSecrets
 
 	spec.HostAliases, err = stringers.ParseHostAliases(c.AddHost...)
@@ -226,7 +229,10 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 		if err != nil {
 			return nil, err
 		}
-		spec.CPUs = &cpus
+
+		v := cpus.ToDec().AsDec()
+		cpuMillis := v.Mul(v, inf.NewDec(1000, 1)).UnscaledBig().Int64()
+		spec.CPUMillis = &cpuMillis
 	}
 
 	if err := c.setBuildOrImage(args[0], &spec); err != nil {
@@ -285,20 +291,19 @@ func (c *Create) ToService(args []string) (*riov1.Service, error) {
 		return nil, err
 	}
 
-	if len(c.P_Ports) == 0 {
-		c.P_Ports = []string{"80:8080/http"}
-	}
-
 	spec.Ports, err = stringers.ParsePorts(c.P_Ports...)
 	if err != nil {
 		return nil, err
 	}
 
-	return riov1.NewService("", c.N_Name, riov1.Service{
+	svc := riov1.NewService(r.Namespace, "", riov1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels:      labels,
 			Annotations: c.Annotations,
 		},
 		Spec: spec,
-	}), nil
+	})
+	svc.GenerateName = spec.App + "-"
+
+	return svc, nil
 }

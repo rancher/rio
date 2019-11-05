@@ -21,6 +21,8 @@ routers:
         app: export-test-image
 services:
   export-test-image:
+    app: export-test-image
+    version: v0
     rolloutConfig:
       increment: 5
       interval: 5
@@ -33,10 +35,10 @@ services:
       concurrency: 10
       min: 1
       max: 10
-    version: v0
     weight: 100
   export-test-image-v3:
-    app: "export-test-image"
+    app: export-test-image
+    version: v3
     image: ibuildthecloud/demo:v3
     imagePullPolicy: IfNotPresent
     ports:
@@ -49,5 +51,4 @@ services:
       min: 1
       max: 10
     scale: 1
-    version: v3
     weight: 100

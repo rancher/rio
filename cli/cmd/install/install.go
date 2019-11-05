@@ -31,7 +31,6 @@ type Install struct {
 	HTTPProxy       string   `desc:"Set HTTP_PROXY environment variable for control plane"`
 	Yaml            bool     `desc:"Only print out k8s yaml manifest"`
 	Check           bool     `desc:"Only check status, don't deploy controller"`
-	Lite            bool     `desc:"Disable service-mesh, autoscaler and build feature"`
 }
 
 func (i *Install) Run(ctx *clicontext.CLIContext) error {
@@ -51,41 +50,39 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 	}
 
 	if i.Yaml {
-		yamlOutput, err := controllerStack.Yaml(answers)
+		cm, err := i.getConfigMap(ctx, true)
 		if err != nil {
 			return err
 		}
+
+		yamlOutput, err := controllerStack.Yaml(answers, cm)
+		if err != nil {
+			return err
+		}
+
 		fmt.Println(yamlOutput)
 		return nil
 	}
 
-	if err := i.preConfigure(ctx); err != nil {
+	cm, err := i.getConfigMap(ctx, false)
+	if err != nil {
 		return err
 	}
 
-	if err := i.configure(ctx, controllerStack); err != nil {
+	if err := i.preConfigure(ctx, false); err != nil {
 		return err
 	}
 
 	if !i.Check {
+		if err := i.configureNamespace(ctx, controllerStack); err != nil {
+			return err
+		}
+
 		fmt.Println("Deploying Rio control plane....")
-		if err := controllerStack.Deploy(answers); err != nil {
+		if err := controllerStack.Deploy(answers, cm); err != nil {
 			return err
 		}
 	}
-
-	var disabledFeatures []string
-	for _, dfs := range i.DisableFeatures {
-		parts := strings.Split(dfs, ",")
-		for _, p := range parts {
-			disabledFeatures = append(disabledFeatures, strings.Trim(p, " "))
-		}
-	}
-
-	if i.Lite {
-		disabledFeatures = append(disabledFeatures, "linkerd", "autoscaling", "build")
-	}
-	i.DisableFeatures = disabledFeatures
 
 	progress := progress.NewWriter()
 	for {
@@ -142,19 +139,10 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 	return nil
 }
 
-func (i *Install) preConfigure(ctx *clicontext.CLIContext) error {
-	var disabledFeatures []string
-	for _, dfs := range i.DisableFeatures {
-		parts := strings.Split(dfs, ",")
-		for _, p := range parts {
-			disabledFeatures = append(disabledFeatures, strings.Trim(p, " "))
-		}
+func (i *Install) preConfigure(ctx *clicontext.CLIContext, ignoreCluster bool) error {
+	if ignoreCluster {
+		return nil
 	}
-
-	if i.Lite {
-		disabledFeatures = append(disabledFeatures, "linkerd", "autoscaling", "build")
-	}
-	i.DisableFeatures = disabledFeatures
 
 	nodes, err := ctx.Core.Nodes().List(metav1.ListOptions{})
 	if err != nil {
@@ -174,6 +162,7 @@ func (i *Install) preConfigure(ctx *clicontext.CLIContext) error {
 			fmt.Println("Warning: detecting that your cluster doesn't have at least 3 GB of memory in total. Please try to increase memory for your nodes")
 		}
 	}
+
 	return nil
 }
 
@@ -185,61 +174,68 @@ func isDockerForMac(nodes *v1.NodeList) bool {
 	return len(nodes.Items) == 1 && nodes.Items[0].Name == "docker-for-desktop"
 }
 
-func (i *Install) configure(ctx *clicontext.CLIContext, systemStack *stack.SystemStack) error {
+func (i *Install) getConfigMap(ctx *clicontext.CLIContext, ignoreCluster bool) (*v1.ConfigMap, error) {
+	var (
+		cm = constructors.NewConfigMap(ctx.SystemNamespace, config2.ConfigName, v1.ConfigMap{
+			Data: map[string]string{},
+		})
+		cfg config2.Config
+	)
+
+	if !ignoreCluster {
+		config, err := ctx.Core.ConfigMaps(ctx.SystemNamespace).Get(config2.ConfigName, metav1.GetOptions{})
+		if err != nil && !errors.IsNotFound(err) {
+			return nil, err
+		} else if err == nil {
+			cfg, err = config2.FromConfigMap(config)
+			if err != nil {
+				return nil, err
+			}
+		}
+		cm = config
+	}
+
+	for _, f := range i.DisableFeatures {
+		if cfg.Features == nil {
+			cfg.Features = map[string]config2.FeatureConfig{}
+		}
+		cfg.Features[f] = config2.FeatureConfig{
+			Enabled: new(bool),
+		}
+	}
+
+	for _, ips := range i.IPAddress {
+		for _, ip := range strings.Split(ips, ",") {
+			found := false
+			for _, addr := range cfg.Gateway.StaticAddresses {
+				if addr.IP == ip {
+					found = true
+					break
+				}
+			}
+			if !found {
+				cfg.Gateway.StaticAddresses = append(cfg.Gateway.StaticAddresses, adminv1.Address{
+					IP: ip,
+				})
+			}
+		}
+	}
+
+	return config2.SetConfig(cm, cfg)
+}
+
+func (i *Install) configureNamespace(ctx *clicontext.CLIContext, systemStack *stack.SystemStack) error {
 	ns, err := ctx.Core.Namespaces().Get(ctx.GetSystemNamespace(), metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		ns, err = ctx.Core.Namespaces().Create(constructors.NewNamespace(ctx.GetSystemNamespace(), v1.Namespace{}))
 		if err != nil {
 			return err
 		}
+	} else if err != nil {
+		return err
 	}
 
 	systemStack.WithApply(ctx.Apply.WithOwner(ns).WithSetOwnerReference(true, true).WithDynamicLookup())
-
-	cfg := config2.Config{
-		Features:    map[string]config2.FeatureConfig{},
-		LetsEncrypt: config2.LetsEncrypt{},
-		Gateway:     config2.Gateway{},
-	}
-
-	disabled := false
-	for _, f := range i.DisableFeatures {
-		cfg.Features[f] = config2.FeatureConfig{
-			Enabled: &disabled,
-		}
-	}
-
-	ips := strings.Join(i.IPAddress, ",")
-	for _, ip := range strings.Split(ips, ",") {
-		if ip != "" {
-			cfg.Gateway.StaticAddresses = append(cfg.Gateway.StaticAddresses, adminv1.Address{
-				IP: ip,
-			})
-		}
-	}
-
-	if config, err := ctx.Core.ConfigMaps(ctx.SystemNamespace).Get(config2.ConfigName, metav1.GetOptions{}); err != nil {
-		if !errors.IsNotFound(err) {
-			return err
-		}
-		config := constructors.NewConfigMap(ctx.SystemNamespace, config2.ConfigName, v1.ConfigMap{})
-
-		config, err := config2.SetConfig(config, cfg)
-		if err != nil {
-			return err
-		}
-		if _, err := ctx.Core.ConfigMaps(ctx.SystemNamespace).Create(config); err != nil {
-			return err
-		}
-	} else {
-		config, err := config2.SetConfig(config, cfg)
-		if err != nil {
-			return err
-		}
-		if _, err := ctx.Core.ConfigMaps(ctx.SystemNamespace).Update(config); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 

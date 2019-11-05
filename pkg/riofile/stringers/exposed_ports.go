@@ -42,6 +42,8 @@ func normalizeProtocol(proto string) v1.Protocol {
 }
 
 func (e ContainerPortStringer) MaybeString() interface{} {
+	e.ContainerPort = NormalizeContainerPort(e.ContainerPort)
+
 	buf := &strings.Builder{}
 
 	port := e.Port
@@ -50,7 +52,7 @@ func (e ContainerPortStringer) MaybeString() interface{} {
 	}
 
 	buf.WriteString(fmt.Sprint(port))
-	if e.TargetPort > 0 {
+	if e.TargetPort > 0 && e.TargetPort != port {
 		buf.WriteString(fmt.Sprintf(":%d", e.TargetPort))
 	}
 
@@ -149,4 +151,20 @@ func ParsePort(spec string) (result v1.ContainerPort, err error) {
 	}
 
 	return
+}
+
+func NormalizeContainerPort(port v1.ContainerPort) v1.ContainerPort {
+	if port.Port == 0 {
+		port.Port = port.TargetPort
+	}
+
+	if port.TargetPort == 0 {
+		port.TargetPort = port.Port
+	}
+
+	if port.Protocol == "" {
+		port.Protocol = v1.ProtocolHTTP
+	}
+
+	return port
 }

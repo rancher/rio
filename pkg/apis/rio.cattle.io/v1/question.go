@@ -77,6 +77,6 @@ type TemplateMeta struct {
 	IconURL    string     `json:"iconUrl,omitempty"`
 	Readme     string     `json:"readme,omitempty"`
 	Questions  []Question `json:"questions,omitempty"`
-	GoTemplate *bool      `json:"goTemplate,omitempty"`
-	EnvSubst   *bool      `json:"envSubst,omitempty"`
+	GoTemplate bool       `json:"goTemplate,omitempty"`
+	EnvSubst   bool       `json:"envSubst,omitempty"`
 }

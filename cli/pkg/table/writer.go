@@ -10,32 +10,19 @@ import (
 	"text/template"
 	"time"
 
-	gvk2 "github.com/rancher/wrangler/pkg/gvk"
-
-	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/runtime"
-
-	yaml2 "sigs.k8s.io/yaml"
-
 	"github.com/Masterminds/sprig"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/docker/go-units"
 	"github.com/rancher/mapper/convert"
+	"github.com/rancher/rio/cli/pkg/types"
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	yaml2 "sigs.k8s.io/yaml"
 )
 
 var (
-	idsHeader = [][]string{
-		{"NAME", "Name"},
-	}
-
-	nsHeader = [][]string{
-		{"NAMESPACE", "Namespace"},
-	}
-
 	localFuncMap = map[string]interface{}{
-		"id":          FormatID,
 		"ago":         FormatCreated,
 		"json":        FormatJSON,
 		"jsoncompact": FormatJSONCompact,
@@ -72,26 +59,24 @@ type writer struct {
 type FormatFunc interface{}
 
 type WriterConfig interface {
-	IDs() bool
-	AllNamespaceSet() bool
+	GetSetNamespace() string
 	Quiet() bool
 	Format() string
 	Writer() io.Writer
-	WithWriter(writer io.Writer)
 }
 
 func NewWriter(values [][]string, config WriterConfig) Writer {
-	if config.IDs() {
-		values = append(idsHeader, values...)
-	}
-
-	if config.AllNamespaceSet() {
-		values = append(nsHeader, values...)
-	}
-
 	funcMap := sprig.TxtFuncMap()
 	for k, v := range localFuncMap {
 		funcMap[k] = v
+	}
+
+	funcMap["id"] = func(obj runtime.Object) (string, error) {
+		return FormatID(obj, config.GetSetNamespace())
+	}
+
+	funcMap["fullID"] = func(obj runtime.Object) (string, error) {
+		return FormatID(obj, "")
 	}
 
 	t := &writer{
@@ -108,7 +93,7 @@ func NewWriter(values [][]string, config WriterConfig) Writer {
 
 	if config.Quiet() {
 		t.HeaderFormat = ""
-		t.ValueFormat = "{{.Name}}\n"
+		t.ValueFormat = "{{.Obj | fullID }}\n"
 	}
 
 	switch customFormat := config.Format(); customFormat {
@@ -254,26 +239,9 @@ func Pointer(data interface{}) string {
 	return fmt.Sprint(data)
 }
 
-func FormatID(obj runtime.Object) (string, error) {
-	metaObj, err := meta.Accessor(obj)
-	if err != nil {
-		return "", err
-	}
-
-	kind := obj.GetObjectKind().GroupVersionKind().Kind
-	if kind == "" {
-		gvk, err := gvk2.Get(obj)
-		if err != nil {
-			return "", err
-		}
-		kind = gvk.Kind
-	}
-
-	if metaObj.GetNamespace() != "" {
-		return fmt.Sprintf("%s/%s/%s", strings.ToLower(kind), metaObj.GetNamespace(), metaObj.GetName()), nil
-	}
-	return fmt.Sprintf("%s/%s", strings.ToLower(kind), metaObj.GetName()), nil
-
+func FormatID(obj runtime.Object, namespace string) (string, error) {
+	r, err := types.FromObject(obj)
+	return r.StringDefaultNamespace(namespace), err
 }
 
 func FormatCreated(data interface{}) (string, error) {

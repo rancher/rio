@@ -885,4 +885,4 @@ kubernetes:
     ---
 
 template:
-  goTemplate: false
+  envSubst: true
