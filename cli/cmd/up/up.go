@@ -2,17 +2,11 @@ package up
 
 import (
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
 
-	"github.com/rancher/rio/cli/cmd/apply"
+	"github.com/rancher/rio/cli/cmd/up/pkg"
+
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/localbuilder"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/wrangler/pkg/gvk"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -31,21 +25,19 @@ type Up struct {
 }
 
 const (
-	defaultRiofile       = "Riofile"
-	defaultRiofileAnswer = "Riofile-answers"
-	stackLabel           = "rio.cattle.io/stack"
+	stackLabel = "rio.cattle.io/stack"
 )
 
 func (u *Up) Run(c *clicontext.CLIContext) error {
 	if u.Name == "" {
-		u.Name = getCurrentDir()
+		u.Name = pkg.GetCurrentDir()
 	}
 
 	if len(c.CLI.Args()) > 0 {
 		return u.setBuild(c)
 	}
 
-	content, answer, err := u.loadFile(c)
+	content, answer, err := u.loadFileAndAnswer(c)
 	if err != nil {
 		return err
 	}
@@ -88,27 +80,13 @@ func (u *Up) setBuild(c *clicontext.CLIContext) error {
 	return c.UpdateObject(existing)
 }
 
-func (u *Up) loadFile(c *clicontext.CLIContext) (string, map[string]string, error) {
-	if u.F_File == "" {
-		if _, err := os.Stat(defaultRiofile); err == nil {
-			u.F_File = defaultRiofile
-		}
-		if u.F_File == "" {
-			return "", nil, fmt.Errorf("can not found Riofile under current directory, must specify one. Example: rio up -f /path/to/Riofile.yaml")
-		}
-	}
-
-	if u.Answers == "" {
-		if _, err := os.Stat(defaultRiofileAnswer); err == nil {
-			u.Answers = defaultRiofileAnswer
-		}
-	}
-	answers, err := apply.ReadAnswers(u.Answers)
+func (u *Up) loadFileAndAnswer(c *clicontext.CLIContext) (string, map[string]string, error) {
+	answers, err := pkg.LoadAnswer(u.Answers)
 	if err != nil {
 		return "", nil, err
 	}
 
-	content, err := readFile(u.F_File)
+	content, err := pkg.LoadRiofile(u.F_File)
 	if err != nil {
 		return "", nil, err
 	}
@@ -122,26 +100,15 @@ func (u *Up) up(content string, answers map[string]string, s *riov1.Stack, c *cl
 		return err
 	}
 
-	if len(imageBuilds) > 0 {
-		localBuilder, err := localbuilder.NewLocalBuilder(c.Ctx, c.SystemNamespace, c.Apply, c.K8s)
-		if err != nil {
-			return err
-		}
-
-		images, err := localBuilder.Build(c.Ctx, imageBuilds, u.P_Parallel, c.GetSetNamespace())
-		if err != nil {
-			return err
-		}
-		for k, i := range images {
-			localRegsitry := constants.RegistryService
-			if strings.HasPrefix(i, localRegsitry) {
-				images[k] = strings.Replace(i, localRegsitry, constants.LocalRegistry, -1)
-			}
-		}
-		if err := deployStack.SetServiceImages(images); err != nil {
-			return err
-		}
+	images, err := pkg.Build(imageBuilds, c, u.P_Parallel)
+	if err != nil {
+		return err
 	}
+
+	if err := deployStack.SetServiceImages(images); err != nil {
+		return err
+	}
+
 	objs, err := deployStack.GetObjects()
 	if err != nil {
 		return err
@@ -189,27 +156,6 @@ func (u *Up) saveStack(content string, answers map[string]string, c *clicontext.
 	}
 	existing.Spec.Answers = s.Spec.Answers
 	return c.UpdateObject(existing)
-}
-
-func readFile(file string) ([]byte, error) {
-	if file == "-" {
-		return ioutil.ReadAll(os.Stdin)
-	}
-	if strings.HasPrefix(file, "http") {
-		resp, err := http.Get(file)
-		if err != nil {
-			return nil, err
-		}
-		defer resp.Body.Close()
-		return ioutil.ReadAll(resp.Body)
-	}
-	return ioutil.ReadFile(file)
-}
-
-func getCurrentDir() string {
-	workingDir, _ := os.Getwd()
-	dir := filepath.Base(workingDir)
-	return strings.ToLower(dir)
 }
 
 func setObjLabels(objs []runtime.Object, s *riov1.Stack) ([]runtime.Object, error) {

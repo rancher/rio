@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -101,14 +102,15 @@ func initializeClient(ctx context.Context, buildSpec riov1.ImageBuildSpec, port 
 		return nil, client.SolveOpt{}, err
 	}
 
+	dir, fileName := filepath.Join(buildSpec.Context, filepath.Dir(buildSpec.Dockerfile)), filepath.Base(buildSpec.Dockerfile)
 	solveOpt := client.SolveOpt{
 		Frontend: "dockerfile.v0",
 		FrontendAttrs: map[string]string{
-			"filename": buildSpec.Dockerfile,
+			"filename": fileName,
 		},
 		LocalDirs: map[string]string{
 			"context":    buildSpec.Context,
-			"dockerfile": buildSpec.Context,
+			"dockerfile": dir,
 		},
 		Session: attachable,
 	}
@@ -121,7 +123,6 @@ func initializeClient(ctx context.Context, buildSpec riov1.ImageBuildSpec, port 
 	if err != nil {
 		return nil, client.SolveOpt{}, err
 	}
-	solveOpt.FrontendAttrs["filename"] = buildSpec.Dockerfile
 	if buildSpec.NoCache {
 		solveOpt.FrontendAttrs["no-cache"] = ""
 	}

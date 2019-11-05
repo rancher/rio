@@ -91,7 +91,10 @@ type ContainerBuildKey struct {
 }
 
 func (c ContainerBuildKey) String() string {
-	return fmt.Sprintf("%s-%s", c.Service, c.Container)
+	if c.Service != c.Container {
+		return fmt.Sprintf("%s-%s", c.Service, c.Container)
+	}
+	return c.Service
 }
 
 func (s *Stack) GetImageBuilds() (map[ContainerBuildKey]riov1.ImageBuildSpec, error) {

@@ -17,6 +17,7 @@ import (
 	"github.com/rancher/rio/cli/cmd/exec"
 	"github.com/rancher/rio/cli/cmd/export"
 	"github.com/rancher/rio/cli/cmd/externalservice"
+	"github.com/rancher/rio/cli/cmd/images"
 	"github.com/rancher/rio/cli/cmd/info"
 	"github.com/rancher/rio/cli/cmd/inspect"
 	"github.com/rancher/rio/cli/cmd/install"
@@ -126,6 +127,11 @@ func main() {
 			"List services",
 			appName+" ps [OPTIONS]",
 			"To view all rio services, run `rio ps`"),
+
+		builder.Command(&images.Images{},
+			"List images built from local registry",
+			appName+" images",
+			""),
 
 		builder.Command(&run.Run{},
 			"Create and run a new service",
