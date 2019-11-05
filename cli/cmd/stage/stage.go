@@ -6,20 +6,23 @@ import (
 	"fmt"
 
 	"github.com/aokoli/goutils"
+	"github.com/rancher/mapper"
 	"github.com/rancher/rio/cli/cmd/edit/edit"
+	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/riofile/stringers"
 	"github.com/rancher/rio/pkg/services"
-	"github.com/rancher/wrangler/pkg/kv"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/yaml"
 )
 
 type Stage struct {
 	Image   string   `desc:"Runtime image (Docker image/OCI image)"`
-	E_Edit  bool     `desc:"Edit the config to change the spec in new revision"`
-	Env     []string `desc:"Set environment variables"`
+	Edit    bool     `desc:"Edit the config to change the spec in new revision"`
+	E_Env   []string `desc:"Set environment variables"`
 	EnvFile []string `desc:"Read in a file of environment variables"`
 }
 
@@ -28,11 +31,19 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("must specify the service to update")
 	}
 
-	if len(ctx.CLI.Args()) > 1 {
-		return fmt.Errorf("more than one argument found")
+	if len(ctx.CLI.Args()) > 2 {
+		return fmt.Errorf("more than two arguments found")
 	}
 
-	serviceName, version := kv.Split(ctx.CLI.Args()[0], "@")
+	serviceName := ctx.CLI.Args()[0]
+	service, err := ctx.ByID(serviceName)
+	if err != nil {
+		return err
+	}
+	version := ""
+	if len(ctx.CLI.Args()) == 2 {
+		version = ctx.CLI.Args()[1]
+	}
 	if version == "" {
 		var err error
 		version, err = goutils.RandomNumeric(5)
@@ -41,13 +52,19 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 		}
 		version = "v" + version
 	}
-
-	service, err := ctx.ByID(serviceName)
+	err = r.updatePromotedService(ctx, service, version)
 	if err != nil {
 		return err
 	}
+	err = r.updatePreviousServiceWeights(ctx, service, version) // this must come after stage call, if it fails old revisions shouldn't change
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
-	if r.E_Edit {
+func (r *Stage) updatePromotedService(ctx *clicontext.CLIContext, service types.Resource, version string) error {
+	if r.Edit {
 		byteContent, err := json.Marshal(service.Object)
 		if err != nil {
 			return err
@@ -91,6 +108,7 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 		if ctx.CLI.String("image") != "" {
 			spec.Image = ctx.CLI.String("image")
 		}
+		var err error
 		spec.Env, err = r.mergeEnvVars(spec.Env)
 		if err != nil {
 			return err
@@ -104,13 +122,50 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 		})
 		return ctx.Create(stagedService)
 	}
+	return nil
+}
 
+func (r *Stage) updatePreviousServiceWeights(ctx *clicontext.CLIContext, service types.Resource, version string) error {
+	var allErrors []error
+	svcs, err := util.ListAppServicesFromServiceName(ctx, service.Name)
+	if err != nil {
+		return err
+	}
+	var anyWeightSet bool
+	for _, s := range svcs {
+		if s.Spec.Version != version && s.Spec.Weight != nil && *s.Spec.Weight > 0 {
+			anyWeightSet = true
+			break
+		}
+	}
+	if !anyWeightSet {
+		for _, s := range svcs {
+			if s.Spec.Version != version {
+				err := ctx.UpdateResource(types.Resource{
+					Namespace: s.Namespace,
+					Name:      s.Name,
+					App:       s.Spec.App,
+					Version:   s.Spec.Version,
+					Type:      types.ServiceType,
+				}, func(obj runtime.Object) error {
+					s := obj.(*riov1.Service)
+					if s.Spec.Weight == nil {
+						s.Spec.Weight = new(int)
+					}
+					*s.Spec.Weight = 100
+					return nil
+				})
+				allErrors = append(allErrors, err)
+			}
+		}
+		return mapper.NewErrors(allErrors...)
+	}
 	return nil
 }
 
 // This keeps original and stage env vars in order and adds staged last, deletes any dups from original
 func (r *Stage) mergeEnvVars(currEnvs []riov1.EnvVar) ([]riov1.EnvVar, error) {
-	stageEnvs, err := stringers.ParseAllEnv(r.EnvFile, r.Env, true)
+	stageEnvs, err := stringers.ParseAllEnv(r.EnvFile, r.E_Env, true)
 	if err != nil {
 		return stageEnvs, err
 	}
