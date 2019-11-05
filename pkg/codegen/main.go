@@ -2,6 +2,7 @@ package main
 
 import (
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
+	v3 "github.com/rancher/rio/pkg/apis/management.cattle.io/v3"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	controllergen "github.com/rancher/wrangler/pkg/controller-gen"
 	"github.com/rancher/wrangler/pkg/controller-gen/args"
@@ -51,6 +52,13 @@ func main() {
 				ClientSetPackage: "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/client/clientset/versioned",
 				InformersPackage: "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/client/informers/externalversions",
 				ListersPackage:   "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/client/listers",
+			},
+			"management.cattle.io": {
+				Types: []interface{}{
+					v3.Setting{},
+					v3.User{},
+				},
+				GenerateTypes: true,
 			},
 		},
 	})

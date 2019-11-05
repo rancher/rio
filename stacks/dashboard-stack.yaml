@@ -1,0 +1,40 @@
+services:
+  dashboard:
+    image: "ibuildthecloud/rancher:dev2"
+    ports:
+    - 80
+    global_permissions:
+    - role=cluster-admin
+
+kubernetes:
+  manifest: |-
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: cattle-authenticated
+    rules:
+    - apiGroups:
+      - "management.cattle.io"
+      resources:
+      - authconfigs
+      - settings
+      - users
+      - preferences
+      verbs:
+      - get
+      - list
+      - update
+
+    ---
+
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: cattle-authenticated
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: cattle-authenticated
+    subjects:
+    - kind: Group
+      name: system:cattle:authenticated

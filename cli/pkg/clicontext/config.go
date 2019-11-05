@@ -5,6 +5,8 @@ import (
 	"io"
 	"os"
 
+	v3 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/management.cattle.io/v3"
+
 	"github.com/pkg/errors"
 	webhookv1 "github.com/rancher/gitwatcher/pkg/generated/clientset/versioned/typed/gitwatcher.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
@@ -44,9 +46,11 @@ type Config struct {
 	Build      tektonv1alpha1.TektonV1alpha1Interface
 	Rio        riov1.RioV1Interface
 	Project    projectv1.AdminV1Interface
+	Mgmt       v3.ManagementV3Interface
 	Gitwatcher webhookv1.GitwatcherV1Interface
-	NoPrompt   bool
-	Writer     io.Writer
+
+	NoPrompt bool
+	Writer   io.Writer
 
 	DebugLevel string
 }
@@ -107,6 +111,12 @@ func (c *Config) Validate() error {
 	if err != nil {
 		return err
 	}
+
+	mgmt, err := v3.NewForConfig(restConfig)
+	if err != nil {
+		return err
+	}
+
 	k8s := kubernetes.NewForConfigOrDie(restConfig)
 
 	c.Apply = apply.New(k8s.Discovery(), apply.NewClientFactory(restConfig))
@@ -118,6 +128,7 @@ func (c *Config) Validate() error {
 	c.Core = core
 	c.Build = build
 	c.Gitwatcher = gitwatcher
+	c.Mgmt = mgmt
 
 	if c.DefaultNamespace == "" {
 		c.DefaultNamespace = defaultNs
