@@ -45,6 +45,7 @@ replace (
 require (
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig v2.22.0+incompatible
+	github.com/ahmetb/gen-crd-api-reference-docs v0.1.5
 	github.com/aokoli/goutils v1.1.0
 	github.com/containerd/cgroups v0.0.0-20191011165608-5fbad35c2a7e // indirect
 	github.com/containerd/console v0.0.0-20181022165439-0650fd9eeb50
