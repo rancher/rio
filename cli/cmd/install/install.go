@@ -133,7 +133,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		fmt.Println("")
 		fmt.Println("Welcome to Rio!")
 		fmt.Println("")
-		fmt.Println("Run `rio run https://github.com/rancher/rio-demo` as an example")
+		fmt.Println("Run `rio run -p 80:8080 https://github.com/rancher/rio-demo` as an example")
 		break
 	}
 	return nil
