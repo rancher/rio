@@ -6,11 +6,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/rancher/rio/cli/cmd/dashboard"
+
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/rio/cli/cmd/attach"
 	"github.com/rancher/rio/cli/cmd/builds"
 	"github.com/rancher/rio/cli/cmd/config"
-	"github.com/rancher/rio/cli/cmd/dashboard"
 	"github.com/rancher/rio/cli/cmd/edit"
 	"github.com/rancher/rio/cli/cmd/endpoint"
 	"github.com/rancher/rio/cli/cmd/exec"
@@ -19,8 +20,10 @@ import (
 	"github.com/rancher/rio/cli/cmd/info"
 	"github.com/rancher/rio/cli/cmd/inspect"
 	"github.com/rancher/rio/cli/cmd/install"
+	"github.com/rancher/rio/cli/cmd/kill"
 	"github.com/rancher/rio/cli/cmd/linkerd"
 	"github.com/rancher/rio/cli/cmd/logs"
+	"github.com/rancher/rio/cli/cmd/pods"
 	"github.com/rancher/rio/cli/cmd/promote"
 	"github.com/rancher/rio/cli/cmd/ps"
 	"github.com/rancher/rio/cli/cmd/publicdomain"
@@ -117,6 +120,7 @@ func main() {
 		builds.Builds(app),
 		stacks.Stacks(app),
 		endpoint.Endpoints(app),
+		pods.Pods(app),
 
 		builder.Command(&ps.Ps{},
 			"List services",
@@ -200,6 +204,10 @@ func main() {
 		builder.Command(&dashboard.Dashboard{},
 			"Open the dashboard in a browser",
 			appName+" dashboard [OPTIONS]",
+			""),
+		builder.Command(&kill.Kill{},
+			"Kill pods or services",
+			appName+" kill [SERVICE_NAME/POD_NAME]",
 			""),
 		route.Route(app),
 		info.Info(app),

@@ -1,8 +1,8 @@
 package constants
 
 const (
-	AuthWebhookSecretName  = "auth-webhook"
-	AuthWebhookServiceName = "auth-webhook"
+	AuthWebhookSecretName  = "rio-api-validator"
+	AuthWebhookServiceName = "rio-api-validator"
 
 	DevWebhookPort   = ":7443"
 	RegistryService  = "localhost:80"
