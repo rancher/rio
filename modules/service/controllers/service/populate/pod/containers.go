@@ -5,14 +5,14 @@ import (
 	"regexp"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/api/resource"
-
+	"github.com/docker/distribution/reference"
 	"github.com/rancher/rio/modules/service/controllers/service/populate/serviceports"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/riofile/stringers"
 	"github.com/rancher/rio/pkg/services"
 	"github.com/rancher/wrangler/pkg/name"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 var (
@@ -71,14 +71,20 @@ func toContainer(containerName string, c *riov1.Container) v1.Container {
 		SecurityContext: securityContext(c),
 	}
 
-	if c.ImagePullPolicy == "" {
-		if !prefix.MatchString(c.Image) {
-			c.ImagePullPolicy = v1.PullAlways
+	if c.ImagePullPolicy == "" && c.Image != "" {
+		if named, err := reference.ParseNormalizedNamed(c.Image); err == nil {
+			if t, ok := named.(reference.Tagged); ok {
+				if !prefix.MatchString(t.Tag()) {
+					con.ImagePullPolicy = v1.PullAlways
+				}
+			} else {
+				con.ImagePullPolicy = v1.PullAlways
+			}
 		}
 	}
 
 	if c.Image == "" {
-		c.ImagePullPolicy = v1.PullIfNotPresent
+		con.ImagePullPolicy = v1.PullIfNotPresent
 	}
 
 	return con
