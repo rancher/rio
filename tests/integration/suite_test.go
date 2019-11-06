@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -9,10 +10,25 @@ import (
 	"github.com/sclevine/spec/report"
 )
 
+var context *testutil.TestContext
+
 func TestMain(m *testing.M) {
-	testutil.IntegrationPreCheck()
-	_, _ = testutil.KubectlCmd([]string{"create", "namespace", testutil.TestingNamespace})
-	os.Exit(m.Run())
+	os.Exit(testMain(m))
+}
+
+func testMain(m *testing.M) int {
+	err := testutil.IntegrationPreCheck()
+	if err != nil {
+		fmt.Println(err)
+		return 0
+	}
+	context, err = testutil.NewTestContext()
+	if err != nil {
+		fmt.Println(err)
+		return 1
+	}
+	defer context.Cleanup()
+	return m.Run()
 }
 
 func TestSuite(t *testing.T) {

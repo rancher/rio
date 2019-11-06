@@ -148,7 +148,7 @@ func (u *Up) up(content string, answers map[string]string, s *riov1.Stack, c *cl
 	}
 	gvks, err := convertObjs(objs)
 	if err != nil {
-		return fmt.Errorf("error converting objs to gvks, stack may be out of date: %w", err)
+		return fmt.Errorf("error converting objs to gvks, stack may be out of date: %v", err)
 	}
 
 	var knowngvks []schema.GroupVersionKind

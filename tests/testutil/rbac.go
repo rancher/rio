@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
-	"testing"
 
 	"github.com/rancher/rio/modules/service/controllers/service/populate/rbac"
 	"github.com/rancher/wrangler/pkg/kubeconfig"
@@ -27,19 +26,18 @@ const (
 type TestUser struct {
 	Username   string
 	Group      string
-	T          *testing.T
 	Kubeconfig string
 }
 
-func (u *TestUser) Create() {
+func (u *TestUser) Create() error {
 	loader := kubeconfig.GetInteractiveClientConfig(os.Getenv("KUBECONFIG"))
 	rawConfig, err := loader.RawConfig()
 	if err != nil {
-		u.T.Fatal(err)
+		return err
 	}
 	restConfig, err := loader.ClientConfig()
 	if err != nil {
-		u.T.Fatal(err)
+		return err
 	}
 
 	client := kubernetes.NewForConfigOrDie(restConfig)
@@ -61,18 +59,20 @@ func (u *TestUser) Create() {
 	client.RbacV1().RoleBindings(TestingNamespace).Create(binding)
 
 	for _, user := range rawConfig.AuthInfos {
+		user.Username = u.Username
 		user.Impersonate = u.Username
 		user.ImpersonateGroups = []string{u.Group}
 	}
 	tmpfile, err := ioutil.TempFile("", "kubeconfig-")
 	if err != nil {
-		u.T.Fatal(err)
+		return err
 	}
 	if err := clientcmd.WriteToFile(rawConfig, tmpfile.Name()); err != nil {
-		u.T.Fatal(err)
+		return err
 	}
 
 	u.Kubeconfig = tmpfile.Name()
+	return nil
 }
 
 func (u *TestUser) Cleanup() {

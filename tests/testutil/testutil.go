@@ -38,23 +38,94 @@ type stop struct {
 }
 
 // IntegrationPreCheck ensures CLI flag is passed, this way integration tests won't run during unit or validation tests
-func IntegrationPreCheck() {
+func IntegrationPreCheck() error {
 	runTests := flag.Bool("integration-tests", false, "must be provided to run the integration tests")
 	flag.Parse()
 	if !*runTests {
-		fmt.Fprintln(os.Stderr, "integration test must be enabled with --integration-tests")
-		os.Exit(0)
+		return errors.New("integration test must be enabled with --integration-tests")
 	}
+	return nil
 }
 
 // ValidationPreCheck ensures CLI flag is passed, this way validation tests won't run during unit or integration tests
-func ValidationPreCheck() {
+func ValidationPreCheck() error {
 	runTests := flag.Bool("validation-tests", false, "must be provided to run the validation tests")
 	flag.Parse()
 	if !*runTests {
-		fmt.Fprintln(os.Stderr, "validation test must be enabled with --validation-tests")
-		os.Exit(0)
+		return errors.New("validation test must be enabled with --validation-tests")
 	}
+	return nil
+}
+
+type TestContext struct {
+	Sequential     bool
+	StandardUser   TestUser
+	ReadOnlyUser   TestUser
+	PrivilegedUser TestUser
+	AdminUser      TestUser
+}
+
+func CreateNS() {
+	_, _ = KubectlCmd([]string{"create", "namespace", TestingNamespace})
+}
+
+func NewTestContext() (*TestContext, error) {
+	CreateNS()
+	fmt.Println("Creating test users")
+
+	adminUser := TestUser{
+		Username: AdminUserBindingName,
+		Group:    AdminUserGroupName,
+	}
+	err := adminUser.Create()
+	if err != nil {
+		return nil, err
+	}
+
+	privilegedUser := TestUser{
+		Username: PrivilegedBindingName,
+		Group:    PrivilegedGroupName,
+	}
+	err = privilegedUser.Create()
+	if err != nil {
+		return nil, err
+	}
+
+	standardUser := TestUser{
+		Username: StandardBindingName,
+		Group:    StandardGroupName,
+	}
+	err = standardUser.Create()
+	if err != nil {
+		return nil, err
+	}
+
+	readonlyUser := TestUser{
+		Username: ReadonlyBindingName,
+		Group:    ReadonlyGroupName,
+	}
+	err = readonlyUser.Create()
+	if err != nil {
+		return nil, err
+	}
+
+	// sleep two seconds to make sure binding takes effect
+	time.Sleep(time.Second * 2)
+
+	return &TestContext{
+		Sequential:     true,
+		StandardUser:   standardUser,
+		PrivilegedUser: privilegedUser,
+		AdminUser:      adminUser,
+		ReadOnlyUser:   readonlyUser,
+	}, nil
+}
+
+func (tc *TestContext) Cleanup() {
+	tc.ReadOnlyUser.Cleanup()
+	tc.PrivilegedUser.Cleanup()
+	tc.StandardUser.Cleanup()
+	tc.AdminUser.Cleanup()
 }
 
 // RioCmd executes rio CLI commands with your arguments in testing namespace

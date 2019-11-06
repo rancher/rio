@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -11,9 +12,17 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	testutil.ValidationPreCheck()
-	_, _ = testutil.KubectlCmd([]string{"create", "namespace", testutil.TestingNamespace})
-	os.Exit(m.Run())
+	os.Exit(testMain(m))
+}
+
+func testMain(m *testing.M) int {
+	err := testutil.ValidationPreCheck()
+	if err != nil {
+		fmt.Println(err)
+		return 0
+	}
+	testutil.CreateNS()
+	return m.Run()
 }
 
 func TestSuite(t *testing.T) {
