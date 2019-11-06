@@ -71,6 +71,9 @@ func formatEndpoint(data interface{}) string {
 	} else if len(s.Status.Endpoints) > 0 {
 		return s.Status.Endpoints[0]
 	}
+	if formatPorts(data) == "" {
+		return "No ports specified"
+	}
 	return ""
 }
 
