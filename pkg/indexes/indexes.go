@@ -34,7 +34,7 @@ func publicDomain(rContext *types.Context) {
 			return nil, nil
 		}
 
-		if obj.Spec.TargetRouter == "" {
+		if obj.Spec.TargetRouter != "" {
 			keys = append(keys, fmt.Sprintf("%s/%s", ns, obj.Spec.TargetRouter))
 		} else if obj.Spec.TargetVersion == "" {
 			keys = append(keys, fmt.Sprintf("%s/%s", ns, obj.Spec.TargetApp))

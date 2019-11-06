@@ -2,6 +2,7 @@ package publicdomain
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/rancher/rio/pkg/services"
 
@@ -11,8 +12,7 @@ import (
 )
 
 type Register struct {
-	Version string `desc:"target to specific version instead of whole app"`
-	Secret  string `desc:"use specified secret that contains TLS certs and key instead of build-in letsencrypt. The secret has to be created first in your system namespace(default: rio-system)"`
+	Secret string `desc:"use specified secret that contains TLS certs and key instead of build-in letsencrypt. The secret has to be created first in your system namespace(default: rio-system)"`
 }
 
 func (r *Register) Run(ctx *clicontext.CLIContext) error {
@@ -23,21 +23,24 @@ func (r *Register) Run(ctx *clicontext.CLIContext) error {
 	target := ctx.CLI.Args().Get(1)
 
 	var targetApp, targetVersion, targetNamespace string
+
 	result, err := ctx.ByID(target)
 	if err != nil {
 		return err
 	}
+
 	switch result.Object.(type) {
 	case *riov1.Service:
 		svc := result.Object.(*riov1.Service)
-		targetApp, _ = services.AppAndVersion(svc)
+		targetApp, targetVersion = services.AppAndVersion(svc)
+		if !strings.Contains(target, "@") {
+			targetVersion = ""
+		}
 		targetNamespace = svc.Namespace
 	case *riov1.Router:
 		router := result.Object.(*riov1.Router)
 		targetApp, targetNamespace = router.Name, router.Namespace
 	}
-
-	targetVersion = r.Version
 
 	pd := adminv1.PublicDomain{
 		Spec: adminv1.PublicDomainSpec{
