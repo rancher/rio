@@ -19,6 +19,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/route53"
 )
 
 const TestingNamespace = "testing-ns"
@@ -212,4 +216,102 @@ func homeDir() string {
 		return h
 	}
 	return os.Getenv("USERPROFILE") // windows
+}
+
+// CreateCNAME creates a CNAME if it doesn't exist or update if it exist already in the DNS Zone
+// We use AWS Route53 as DNS provider.
+func CreateCNAME(clusterDomain string) *route53.ChangeResourceRecordSetsOutput {
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session make sure to add credentials to ~/.aws/credentials,", err)
+		fmt.Println(err.Error())
+	}
+	cname := GetCNAMEInfo()
+	zoneID := getZoneIDInfo()
+	if cname == "" || clusterDomain == "" || zoneID == "" {
+		fmt.Println(fmt.Errorf("incomplete information: d: %s, t: %s, z: %s", cname, clusterDomain, zoneID))
+	}
+	svc := route53.New(sess)
+
+	params := &route53.ChangeResourceRecordSetsInput{
+		ChangeBatch: &route53.ChangeBatch{
+			Changes: []*route53.Change{
+				{
+					Action: aws.String("UPSERT"),
+					ResourceRecordSet: &route53.ResourceRecordSet{
+						Name: aws.String(cname),
+						Type: aws.String("CNAME"),
+						ResourceRecords: []*route53.ResourceRecord{
+							{
+								Value: aws.String(clusterDomain),
+							},
+						},
+						TTL: aws.Int64(10),
+					},
+				},
+			},
+			Comment: aws.String("Add CNAME to Rio Cluster Domain"),
+		},
+		HostedZoneId: aws.String(zoneID),
+	}
+	resp, err := svc.ChangeResourceRecordSets(params)
+
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return resp
+}
+
+// DeleteCNAME deletes a CNAME we provide as ENV var
+// We use AWS Route53 as DNS provider.
+func DeleteCNAME(clusterDomain string) *route53.ChangeResourceRecordSetsOutput {
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session make sure to add credentials to ~/.aws/credentials,", err)
+		fmt.Println(err.Error())
+	}
+	cname := GetCNAMEInfo()
+	zoneID := getZoneIDInfo()
+	if cname == "" || zoneID == "" {
+		fmt.Println(fmt.Errorf("incomplete information: d: %s, t: %s", cname, zoneID))
+	}
+	svc := route53.New(sess)
+
+	params := &route53.ChangeResourceRecordSetsInput{
+		ChangeBatch: &route53.ChangeBatch{
+			Changes: []*route53.Change{
+				{
+					Action: aws.String("DELETE"),
+					ResourceRecordSet: &route53.ResourceRecordSet{
+						Name: aws.String(cname),
+						Type: aws.String("CNAME"),
+						ResourceRecords: []*route53.ResourceRecord{
+							{
+								Value: aws.String(clusterDomain),
+							},
+						},
+						TTL: aws.Int64(10),
+					},
+				},
+			},
+			Comment: aws.String("Delete CNAME to Rio Cluster Domain"),
+		},
+		HostedZoneId: aws.String(zoneID),
+	}
+	resp, err := svc.ChangeResourceRecordSets(params)
+
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return resp
+}
+
+// GetCNAMEInfo retrieves the RIO_CNAME environment variable
+func GetCNAMEInfo() string {
+	return os.Getenv("RIO_CNAME")
+}
+
+// getZoneIDInfo retrieves the RIO_CNAME environment variable
+func getZoneIDInfo() string {
+	return os.Getenv("RIO_ROUTE53_ZONEID")
 }

@@ -409,6 +409,18 @@ func (ts *TestService) GetKubeEndpointURLs() []string {
 	return strings.Split(urls[2:len(urls)-2], " ")
 }
 
+// GetKubeFirstClusterDomain returns first cluster domain
+func (ts *TestService) GetKubeFirstClusterDomain() string {
+	args := []string{"get", "clusterdomains",
+		"-o", `jsonpath="{.items[0].metadata.name}"`}
+	clusterDomain, err := KubectlCmd(args)
+	if err != nil {
+		ts.T.Fatalf("Failed to get the first Cluster Domain:  %v", err.Error())
+		return ""
+	}
+	return strings.Trim(clusterDomain, "\"")
+}
+
 // GetKubeAppEndpointURLs returns the endpoint URL of the service's app
 // by using kubectl and returns it as string
 func (ts *TestService) GetKubeAppEndpointURLs() []string {
