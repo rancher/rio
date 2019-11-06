@@ -55,6 +55,7 @@ func (h *handler) generate(service *riov1.Service, status riov1.ServiceStatus) (
 	spec := service.Spec.DeepCopy()
 	spec.Template = false
 	spec.App = app
+	spec.Version = ""
 	spec.Weight = &[]int{100}[0]
 	setImageBuild(service, status, spec)
 	setPullSecrets(spec)
