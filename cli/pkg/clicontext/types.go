@@ -132,7 +132,9 @@ func (c *CLIContext) Create(obj runtime.Object) (err error) {
 	if err != nil {
 		if errors.IsNotFound(err) {
 			if _, err := c.Core.Namespaces().Create(constructors.NewNamespace(metadata.GetNamespace(), corev1.Namespace{})); err != nil {
-				return err
+				if !errors.IsAlreadyExists(err) {
+					return err
+				}
 			}
 		} else {
 			return err
