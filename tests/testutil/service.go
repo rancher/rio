@@ -140,11 +140,11 @@ func (ts *TestService) Scale(scaleTo int) {
 	}
 }
 
-// Weight calls "rio weight {args} service_name={percentage}" on this service.
-func (ts *TestService) Weight(percentage int, args ...string) {
+// Weight calls "rio weight {args} service_name={weightSpec}" on this service.
+func (ts *TestService) Weight(weightSpec int, args ...string) {
 	args = append(
 		[]string{"weight"},
-		append(args, fmt.Sprintf("%s=%d", ts.Name, percentage))...)
+		append(args, fmt.Sprintf("%s=%d", ts.Name, weightSpec))...)
 	_, err := RioCmd(args)
 	if err != nil {
 		ts.T.Fatalf("weight command failed:  %v", err.Error())
@@ -156,7 +156,7 @@ func (ts *TestService) Weight(percentage int, args ...string) {
 		}
 	}
 	if !paused {
-		err = ts.waitForWeight(percentage)
+		err = ts.waitForWeight(weightSpec)
 		if err != nil {
 			ts.T.Fatal(err.Error())
 		}
