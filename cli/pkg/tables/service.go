@@ -26,7 +26,7 @@ func NewService(cfg Config) TableWriter {
 		{"ENDPOINT", "{{.Obj | formatEndpoint }}"},
 		{"PORTS", "{{.Obj | formatPorts}}"},
 		{"SCALE", "{{.Obj | scale}}"},
-		{"WEIGHT", "{{.Obj | formatWeight}}"},
+		{"WEIGHT", "{{formatWeight .Obj .Data.Weight }}"},
 		{"CREATED", "{{.Obj.CreationTimestamp | ago}}"},
 		{"DETAIL", "{{serviceDetail .Data.Service .Data.Pods .Data.GitWatcher}}"},
 	}, cfg)
@@ -77,7 +77,7 @@ func formatEndpoint(data interface{}) string {
 	return ""
 }
 
-func formatWeight(data interface{}) string {
+func formatWeight(data interface{}, weight int) string {
 	s, ok := data.(*v1.Service)
 	if !ok {
 		return ""
@@ -85,11 +85,7 @@ func formatWeight(data interface{}) string {
 	if len(s.Status.Endpoints) == 0 {
 		return ""
 	}
-	if s.Status.ComputedWeight != nil {
-		return fmt.Sprintf("%s%%", strconv.Itoa(*s.Status.ComputedWeight))
-	}
-
-	return "0%"
+	return fmt.Sprintf("%v%%", weight)
 }
 
 func serviceDetail(data interface{}, pods []*corev1.Pod, gitwatcher *webhookv1.GitWatcher) string {

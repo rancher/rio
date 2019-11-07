@@ -3,9 +3,12 @@ package create
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rancher/rio/cli/cmd/weight"
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/riofile/stringers"
 	"github.com/rancher/wrangler/pkg/kv"
@@ -66,8 +69,7 @@ type Create struct {
 	P_Ports                []string          `desc:"Publish a container's port(s) (format: svcport:containerport/protocol)"`
 	Privileged             bool              `desc:"Run container with privilege"`
 	ReadOnly               bool              `desc:"Mount the container's root filesystem as read only"`
-	RolloutInterval        int               `desc:"Rollout interval in seconds"`
-	RolloutIncrement       int               `desc:"Rollout increment value"`
+	RolloutDuration        string            `desc:"How long the rollout should take" default:"0s"`
 	RequestTimeoutSeconds  int               `desc:"Set request timeout in seconds"`
 	Secret                 []string          `desc:"Secrets to inject to the service (format: name[/key]:target)"`
 	Template               bool              `desc:"If true new version is created per git commit. If false update in-place"`
@@ -96,20 +98,6 @@ func (c *Create) RunCallback(ctx *clicontext.CLIContext, cb func(service *riov1.
 
 	service = cb(service)
 	return service, ctx.Create(service)
-}
-
-func (c *Create) setRollout(spec *riov1.ServiceSpec) {
-	if c.RolloutIncrement > 0 || c.RolloutInterval > 0 {
-		spec.RolloutConfig = &riov1.RolloutConfig{
-			Increment:       c.RolloutIncrement,
-			IntervalSeconds: c.RolloutInterval,
-		}
-	} else if c.Template {
-		spec.RolloutConfig = &riov1.RolloutConfig{
-			Increment:       5,
-			IntervalSeconds: 5,
-		}
-	}
 }
 
 func (c *Create) setDNS(spec *riov1.ServiceSpec) (err error) {
@@ -199,10 +187,22 @@ func (c *Create) ToService(ctx *clicontext.CLIContext, args []string) (*riov1.Se
 	}
 
 	if c.Weight > 0 {
-		spec.Weight = &c.Weight
+		duration, err := time.ParseDuration(c.RolloutDuration)
+		if err != nil {
+			return nil, err
+		}
+		tempResource := types.Resource{
+			Name:      name,
+			App:       r.App,
+			Namespace: r.Namespace,
+		}
+		weight, rc, err := weight.GenerateWeightAndRolloutConfig(ctx, tempResource, c.Weight, duration, false)
+		if err != nil {
+			return nil, err
+		}
+		spec.Weight = &weight
+		spec.RolloutConfig = rc
 	}
-
-	c.setRollout(&spec)
 
 	if err := c.setDNS(&spec); err != nil {
 		return nil, err

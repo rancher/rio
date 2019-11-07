@@ -18,7 +18,11 @@ func ListAppServicesFromServiceName(ctx *clicontext.CLIContext, serviceName stri
 
 	svc := service.Object.(*riov1.Service)
 	app, _ := services.AppAndVersion(svc)
+	return ListAppServicesFromAppName(ctx, namespace, app)
 
+}
+
+func ListAppServicesFromAppName(ctx *clicontext.CLIContext, namespace, appName string) ([]riov1.Service, error) {
 	svcs, err := ctx.Rio.Services(namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return []riov1.Service{}, err
@@ -27,7 +31,7 @@ func ListAppServicesFromServiceName(ctx *clicontext.CLIContext, serviceName stri
 	var revisions []riov1.Service
 	for _, rev := range svcs.Items {
 		revApp, _ := services.AppAndVersion(&rev)
-		if revApp == app {
+		if revApp == appName {
 			revisions = append(revisions, rev)
 		}
 	}
