@@ -23,7 +23,7 @@ func autoscaleTests(t *testing.T, when spec.G, it spec.S) {
 
 		it("should autoscale down to 0", func() {
 			// Precondition
-			assert.Equal(t, 1, service.GetAvailableReplicas(), "should have one initial replica. Failed Precondition")
+			assert.True(t, service.IsReady())
 			assert.Equal(t, "Hello World", service.GetAppEndpointResponse())
 
 			// When no requests happen for a while, it should scale to 0
@@ -34,6 +34,7 @@ func autoscaleTests(t *testing.T, when spec.G, it spec.S) {
 
 			// Send a request and validate it still executes properly and makes one replica and pod available
 			assert.Equal(t, "Hello World", service.GetAppEndpointResponse())
+			assert.True(t, service.IsReady())
 			assert.Equal(t, 1, service.GetAvailableReplicas(), "should have 1 available replica after the endpoint is called once.")
 			runningPods = service.GetRunningPods()
 			assert.Len(t, runningPods, 1)

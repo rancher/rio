@@ -122,6 +122,15 @@ func (ts *TestService) Remove() {
 	}
 }
 
+// Attach attaches to the service: `rio --namespace testing-ns attach <service name>` and appends each line of output to an array
+func (ts *TestService) Attach() []string {
+	results, err := RioCmdWithTail(10, []string{"attach", ts.Name})
+	if err != nil {
+		ts.T.Fatalf("Failed to get attach output: %v", err.Error())
+	}
+	return results
+}
+
 // Call "rio scale ns/service={scaleTo}"
 func (ts *TestService) Scale(scaleTo int) {
 	_, err := RioCmd([]string{"scale", fmt.Sprintf("%s=%d", ts.Name, scaleTo)})
@@ -140,8 +149,8 @@ func (ts *TestService) Scale(scaleTo int) {
 	}
 }
 
-// Weight calls "rio weight {args} service_name={weightSpec}" on this service.
-func (ts *TestService) Weight(weightSpec int, args ...string) {
+// WeightWithoutWaiting calls "rio weight {args} service_name={weightSpec}" on this service.
+func (ts *TestService) WeightWithoutWaiting(weightSpec int, args ...string) {
 	args = append(
 		[]string{"weight"},
 		append(args, fmt.Sprintf("%s=%d", ts.Name, weightSpec))...)
@@ -149,14 +158,19 @@ func (ts *TestService) Weight(weightSpec int, args ...string) {
 	if err != nil {
 		ts.T.Fatalf("weight command failed:  %v", err.Error())
 	}
+}
+
+// Weight calls "rio weight {args} service_name={weightSpec}" on this service and waits until the service weight reaches the desired value.
+func (ts *TestService) Weight(weightSpec int, args ...string) {
+	ts.WeightWithoutWaiting(weightSpec, args...)
 	paused := false
 	for _, a := range args {
-		if strings.Contains(a, "pause") {
+		if a == "pause" || a == "pause=true" {
 			paused = true
 		}
 	}
 	if !paused {
-		err = ts.waitForWeight(weightSpec)
+		err := ts.waitForWeight(weightSpec)
 		if err != nil {
 			ts.T.Fatal(err.Error())
 		}
@@ -198,13 +212,15 @@ func (ts *TestService) Promote(args ...string) {
 }
 
 // Logs calls "rio logs ns/service" on this service
-func (ts *TestService) Logs(args ...string) string {
-	args = append([]string{"logs"}, append(args, ts.Name, "-a")...)
-	out, err := RioCmd(args)
+func (ts *TestService) Logs(args ...string) []string {
+	args = append(
+		[]string{"logs"},
+		append(args, ts.Name)...)
+	results, err := RioCmdWithTail(10, args)
 	if err != nil {
-		ts.T.Fatalf("logs command failed:  %v", err.Error())
+		ts.T.Fatalf("Failed to get logs output: %v", err.Error())
 	}
-	return out
+	return results
 }
 
 // Exec calls "rio exec ns/service {command}" on this service
@@ -299,6 +315,15 @@ func (ts *TestService) GetImage() string {
 	return ts.Service.Spec.Image
 }
 
+// IsReady gets whether the service is created successfully and able to be used or not
+func (ts *TestService) IsReady() bool {
+	ts.reload()
+	if ts.Service.Spec.Autoscale != nil {
+		return ts.Service.Status.DeploymentReady && ts.GetAvailableReplicas() >= int(*ts.Service.Spec.Autoscale.MinReplicas)
+	}
+	return ts.Service.Status.DeploymentReady && ts.GetAvailableReplicas() > 0
+}
+
 // GetRunningPods returns the kubectl overview of all running pods for this service in an array
 // Each value in the array is a string, separated by spaces, that will have the Pod's NAME  READY  STATUS  RESTARTS  AGE in that order.
 func (ts *TestService) GetRunningPods() []string {
@@ -346,7 +371,7 @@ func (ts *TestService) GetResponseCounts(responses []string, numRequests int) ma
 }
 
 // GenerateLoad queries the endpoint multiple times in order to put load on the service.
-// It will execute for up to 60 seconds until there are ready pods on the service or the the AvailableReplicas equal the MaxScale
+// It will execute for up to 120 seconds until there are ready pods on the service or the the AvailableReplicas equal the MaxScale
 func (ts *TestService) GenerateLoad() {
 	f := wait.ConditionFunc(func() (bool, error) {
 		maxReplicas := 0
@@ -584,7 +609,7 @@ func (ts *TestService) waitForReadyService() error {
 	f := wait.ConditionFunc(func() (bool, error) {
 		err := ts.reload()
 		if err == nil {
-			if ts.GetAvailableReplicas() > 0 {
+			if ts.IsReady() {
 				return true, nil
 			}
 		}

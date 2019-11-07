@@ -26,28 +26,25 @@ func endpointTests(t *testing.T, when spec.G, it spec.S) {
 		it("should have endpoints that are available on both with one app endpoint", func() {
 			stagedService = service.Stage("ibuildthecloud/demo:v3", "v3")
 
-			// Check the hostnames returned by Rio and Kubectl are equal
-			//assert.Equal(t,
-			//	testutil.GetHostname(service.GetKubeEndpointURLs()[0]),
-			//	testutil.GetHostname(service.GetEndpointURLs()[0]),
-			//)
 			assert.Equal(t,
-				testutil.GetHostname(stagedService.GetKubeEndpointURLs()[0]),
-				testutil.GetHostname(stagedService.GetEndpointURLs()[0]),
+				testutil.GetHostname(service.GetEndpointURLs()[0]),
+				testutil.GetHostname(service.GetKubeEndpointURLs()[0]),
 			)
-
-			assert.Equal(t, "Hello World", service.GetEndpointResponse())
-			assert.Equal(t, "Hello World v3", stagedService.GetEndpointResponse())
-
-			//assert.Equal(t,
-			//	testutil.GetHostname(service.GetKubeAppEndpointURLs()[0]),
-			//	testutil.GetHostname(service.GetAppEndpointURLs()[0]),
-			//)
-
+			assert.Equal(t,
+				testutil.GetHostname(stagedService.GetEndpointURLs()[0]),
+				testutil.GetHostname(stagedService.GetKubeEndpointURLs()[0]),
+			)
+			assert.Equal(t,
+				testutil.GetHostname(service.GetAppEndpointURLs()[0]),
+				testutil.GetHostname(service.GetKubeAppEndpointURLs()[0]),
+			)
 			assert.Equal(t,
 				testutil.GetHostname(service.GetAppEndpointURLs()[0]),
 				testutil.GetHostname(stagedService.GetAppEndpointURLs()[0]),
 			)
+
+			assert.Equal(t, "Hello World", service.GetEndpointResponse())
+			assert.Equal(t, "Hello World v3", stagedService.GetEndpointResponse())
 			assert.Equal(t, "Hello World", service.GetAppEndpointResponse(), "Response should only be from original service")
 		})
 	}, spec.Parallel())
