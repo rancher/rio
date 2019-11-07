@@ -198,10 +198,12 @@ func (r *Resolver) endpointsFromPublicDomain(namespace, app, version string) ([]
 
 	for _, pd := range pds {
 		scheme := "http"
+		endpoints = append(endpoints, fmt.Sprintf("%s://%s", scheme, pd.Name))
+
 		if pd.Status.HTTPSSupported {
 			scheme = "https"
+			endpoints = append(endpoints, fmt.Sprintf("%s://%s", scheme, pd.Name))
 		}
-		endpoints = append(endpoints, fmt.Sprintf("%s://%s", scheme, pd.Name))
 	}
 
 	return endpoints, nil

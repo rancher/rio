@@ -31,7 +31,11 @@ func (tr *TestRoute) Add(t *testing.T, domain string, routePath string, action s
 	tr.Path = routePath
 	tr.Name = fmt.Sprintf("%s:%s/%s", TestingNamespace, "router", domain)
 	route := fmt.Sprintf("%s%s", domain, routePath)
-	_, err := RioCmd([]string{"router", "add", route, action, fmt.Sprintf("%s,version=%s", target.App, target.Version)})
+	dest := target.App
+	if target.Version != "" {
+		dest = dest + "@" + target.Version
+	}
+	_, err := RioCmd([]string{"router", "add", route, action, dest})
 	if err != nil {
 		tr.T.Fatalf("route add command failed:  %v", err.Error())
 	}

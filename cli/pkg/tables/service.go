@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/rancher/rio/cli/cmd/util"
+
 	webhookv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
 	"github.com/rancher/rio/cli/pkg/table"
 	"github.com/rancher/rio/modules/service/controllers/service/populate/serviceports"
@@ -69,7 +71,8 @@ func formatEndpoint(data interface{}) string {
 	if !ok {
 		return ""
 	} else if len(s.Status.Endpoints) > 0 {
-		return s.Status.Endpoints[0]
+		endpoints := util.NormalizingEndpoints(s.Status.Endpoints, "")
+		return strings.Join(endpoints, ",")
 	}
 	return ""
 }

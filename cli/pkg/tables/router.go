@@ -2,10 +2,10 @@ package tables
 
 import (
 	"fmt"
-	"net/url"
 	"strconv"
 	"strings"
 
+	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/table"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 )
@@ -146,7 +146,7 @@ func FormatRouteTarget(obj interface{}) (string, error) {
 			if to.Port == 0 {
 				to.Port = uint32(80)
 			}
-			writeDest(buf, data.Obj.Namespace, to.App, to.Version, to.Port, to.Weight)
+			writeDest(buf, to.App, to.Version, to.Port, to.Weight)
 		}
 	case target == "redirect" && data.RouteSpec.Redirect != nil:
 		writeHostPath(buf, data.RouteSpec.Redirect.Host, data.RouteSpec.Redirect.Path)
@@ -154,7 +154,7 @@ func FormatRouteTarget(obj interface{}) (string, error) {
 		if data.RouteSpec.Mirror.Port == 0 {
 			data.RouteSpec.Mirror.Port = 80
 		}
-		writeDest(buf, data.Obj.Namespace, data.RouteSpec.Mirror.App,
+		writeDest(buf, data.RouteSpec.Mirror.App,
 			data.RouteSpec.Mirror.Version,
 			data.RouteSpec.Mirror.Port, 0)
 	case target == "rewrite" && data.RouteSpec.Rewrite != nil:
@@ -176,13 +176,10 @@ func writeHostPath(buf *strings.Builder, host, path string) {
 	}
 }
 
-func writeDest(buf *strings.Builder, namespace, service, revision string, port uint32, weight int) {
+func writeDest(buf *strings.Builder, service, revision string, port uint32, weight int) {
 	if buf.Len() > 0 {
 		buf.WriteString(",")
 	}
-
-	buf.WriteString(namespace)
-	buf.WriteString("/")
 
 	buf.WriteString(service)
 	if revision != "" && revision != "latest" {
@@ -244,21 +241,6 @@ func FormatURL(obj interface{}) (string, error) {
 	if len(data.Obj.Status.Endpoints) == 0 {
 		return "", nil
 	}
-	var endpoints []string
-	hostNameSeen := map[string]string{}
-	for _, e := range data.Obj.Status.Endpoints {
-		u, _ := url.Parse(e)
-		if u.Scheme == "https" {
-			hostNameSeen[u.Hostname()] = e + data.path()
-		} else {
-			if _, ok := hostNameSeen[u.Hostname()]; !ok {
-				hostNameSeen[u.Hostname()] = e + data.path()
-			}
-		}
-	}
-
-	for _, endpoint := range hostNameSeen {
-		endpoints = append(endpoints, endpoint)
-	}
+	endpoints := util.NormalizingEndpoints(data.Obj.Status.Endpoints, data.path())
 	return strings.Join(endpoints, ","), nil
 }
