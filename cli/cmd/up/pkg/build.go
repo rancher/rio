@@ -29,6 +29,9 @@ services:
 )
 
 func Build(builds map[stack.ContainerBuildKey]riov1.ImageBuildSpec, c *clicontext.CLIContext, parallel bool) (map[stack.ContainerBuildKey]string, error) {
+	if len(builds) == 0 {
+		return nil, nil
+	}
 	localBuilder, err := localbuilder.NewLocalBuilder(c.Ctx, c.SystemNamespace, c.Apply, c.K8s)
 	if err != nil {
 		return nil, err

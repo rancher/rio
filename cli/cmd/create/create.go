@@ -74,7 +74,8 @@ type Create struct {
 	T_Tty                  bool              `desc:"Allocate a pseudo-TTY"`
 	Scale                  string            `desc:"The number of replicas to run or a range for autoscaling (example 1-10)"`
 	U_User                 string            `desc:"UID[:GID] Sets the UID used and optionally GID for entrypoint process (format: <uid>[:<gid>])"`
-	Weight                 int               `desc:"Specify the weight for the revision"`
+	V_Volume               []string          `desc:"Specify volumes for for services"`
+	Weight                 int               `desc:"Specify the weight for the services"`
 	W_Workdir              string            `desc:"Working directory inside the container"`
 }
 
@@ -275,6 +276,11 @@ func (c *Create) ToService(ctx *clicontext.CLIContext, args []string) (*riov1.Se
 	}
 
 	spec.Env, err = stringers.ParseAllEnv(c.EnvFile, c.E_Env, true)
+	if err != nil {
+		return nil, err
+	}
+
+	spec.Volumes, err = stringers.ParseVolumes(c.V_Volume...)
 	if err != nil {
 		return nil, err
 	}

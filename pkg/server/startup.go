@@ -32,14 +32,12 @@ func Startup(ctx context.Context, systemNamespace, kubeConfig string) error {
 	ctx, rioContext := types.BuildContext(ctx, systemNamespace, restConfig)
 
 	// detect and bootstrap developer environment
-	devMode, err := bootstrapResources(rioContext, systemNamespace)
-	if err != nil {
+	if err := bootstrapResources(rioContext, systemNamespace); err != nil {
 		return err
 	}
-	constants.DevMode = devMode
 
 	// setting up auth webhook
-	w := webhook.New(rioContext, kubeConfig, devMode)
+	w := webhook.New(rioContext, kubeConfig, constants.DevMode)
 	if err := w.Setup(); err != nil {
 		return err
 	}
@@ -54,18 +52,18 @@ func Startup(ctx context.Context, systemNamespace, kubeConfig string) error {
 	return nil
 }
 
-func bootstrapResources(rioContext *types.Context, systemNamespace string) (bool, error) {
+func bootstrapResources(rioContext *types.Context, systemNamespace string) error {
 	if _, err := rioContext.Apps.Apps().V1().Deployment().Get(systemNamespace, "rio-controller", metav1.GetOptions{}); errors.IsNotFound(err) {
+		constants.DevMode = true
 		controllerStack := stack.NewSystemStack(rioContext.Apply, rioContext.Admin.Admin().V1().SystemStack(), systemNamespace, "rio-controller")
 		answer := map[string]string{
 			"NAMESPACE": systemNamespace,
 		}
 		if err := controllerStack.Deploy(answer); err != nil {
-			return false, err
+			return err
 		}
-		return true, nil
 	}
-	return false, nil
+	return nil
 }
 
 func Types(ctx context.Context, config *rest.Config) error {

@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"reflect"
 
 	"github.com/linkerd/linkerd2/controller/k8s"
 	"github.com/linkerd/linkerd2/controller/webhook"
@@ -23,7 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apiserver/pkg/authentication/user"
-	request2 "k8s.io/apiserver/pkg/endpoints/request"
+	k8srequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/client-go/tools/record"
 	rbacregistryvalidation "k8s.io/kubernetes/pkg/registry/rbac/validation"
 	"sigs.k8s.io/yaml"
@@ -37,10 +36,11 @@ var (
 
 	rioAPIGroup     = "rio.cattle.io"
 	rioService      = "services"
+	rioStack        = "stacks"
 	hostportVerb    = "rio-hostport"
 	hostnetworkVerb = "rio-hostnetwork"
 	privilegedVerb  = "rio-privileged"
-	hostmountVerb   = "rio-hostmount"
+	hostmountVerb   = "rio-hostpath"
 	servicemeshVerb = "rio-servicemesh"
 )
 
@@ -78,6 +78,68 @@ func (w Webhook) Setup() error {
 		return err
 	}
 	return w.run()
+}
+
+type handler struct {
+	systemNamespace      string
+	ruleSolver           rbacregistryvalidation.AuthorizationRuleResolver
+	ignoreServiceAccount string
+}
+
+func (h handler) ValidateAuth(api *k8s.API, request *admissionv1beta1.AdmissionRequest, _ record.EventRecorder) (*admissionv1beta1.AdmissionResponse, error) {
+	admissionResponse := &admissionv1beta1.AdmissionResponse{Allowed: false}
+	if request.UserInfo.Username == h.ignoreServiceAccount {
+		admissionResponse.Allowed = true
+		return admissionResponse, nil
+	}
+
+	if request.Operation == admissionv1beta1.Update && request.SubResource == "status" {
+		admissionResponse.Allowed = true
+		return admissionResponse, nil
+	}
+
+	var globalRules, rules []rbacv1.PolicyRule
+	if request.Kind.Kind == "Service" {
+		var service riov1.Service
+		err := yaml.Unmarshal(request.Object.Raw, &service)
+		if err != nil {
+			return admissionResponse, fmt.Errorf("failed to validate rio service: %v", err)
+		}
+		globalRules, rules, err = h.convertServiceToRule(service)
+		if err != nil {
+			return admissionResponse, fmt.Errorf("failed to validate rio service: %v", err)
+		}
+	} else if request.Kind.Kind == "Stack" {
+		var stack riov1.Stack
+		err := yaml.Unmarshal(request.Object.Raw, &stack)
+		if err != nil {
+			return admissionResponse, fmt.Errorf("failed to validate rio service: %v", err)
+		}
+		globalRules, rules, err = h.convertStackToRule(stack)
+		if err != nil {
+			return admissionResponse, fmt.Errorf("failed to validate rio service: %v", err)
+		}
+	}
+
+	var userInfo = &user.DefaultInfo{
+		Name:   request.UserInfo.Username,
+		UID:    request.UserInfo.UID,
+		Groups: request.UserInfo.Groups,
+		Extra:  toExtra(request.UserInfo.Extra),
+	}
+
+	globaleCtx := k8srequest.WithNamespace(k8srequest.WithUser(context.Background(), userInfo), "")
+	if err := rbacregistryvalidation.ConfirmNoEscalation(globaleCtx, h.ruleSolver, globalRules); err != nil {
+		return admissionResponse, fmt.Errorf("failed to validate rio service: %v", err)
+	}
+
+	ctx := k8srequest.WithNamespace(k8srequest.WithUser(context.Background(), userInfo), request.Namespace)
+	if err := rbacregistryvalidation.ConfirmNoEscalation(ctx, h.ruleSolver, rules); err != nil {
+		return admissionResponse, fmt.Errorf("failed to validate rio service: %v", err)
+	}
+
+	admissionResponse.Allowed = true
+	return admissionResponse, nil
 }
 
 func (w Webhook) setup() error {
@@ -164,7 +226,7 @@ func (w Webhook) reconcileWebhook(caBundle []byte) error {
 						},
 						Rule: v1beta1.Rule{
 							APIGroups:   []string{rioAPIGroup},
-							Resources:   []string{rioService},
+							Resources:   []string{rioService, rioStack},
 							APIVersions: []string{"v1"},
 						},
 					},
@@ -232,43 +294,11 @@ func (w Webhook) run() error {
 	return nil
 }
 
-type handler struct {
-	systemNamespace      string
-	ruleSolver           rbacregistryvalidation.AuthorizationRuleResolver
-	ignoreServiceAccount string
-}
-
-func (h handler) ValidateAuth(api *k8s.API, request *admissionv1beta1.AdmissionRequest, _ record.EventRecorder) (*admissionv1beta1.AdmissionResponse, error) {
-	admissionResponse := &admissionv1beta1.AdmissionResponse{Allowed: false}
-	if request.UserInfo.Username == h.ignoreServiceAccount {
-		admissionResponse.Allowed = true
-		return admissionResponse, nil
-	}
-
-	var service riov1.Service
-	err := yaml.Unmarshal(request.Object.Raw, &service)
-	if err != nil {
-		return admissionResponse, fmt.Errorf("failed to validate rio service: %v", err)
-	}
-	// todo: compare spec, it can be removed after status is moved to subresource
-	if request.Operation == admissionv1beta1.Update {
-		var oldService riov1.Service
-		err := yaml.Unmarshal(request.OldObject.Raw, &oldService)
-		if err != nil {
-			return admissionResponse, fmt.Errorf("failed to validate rio service, parsing old object: %v", err)
-		}
-		if reflect.DeepEqual(service.Spec, oldService.Spec) {
-			admissionResponse.Allowed = true
-			return admissionResponse, nil
-		}
-	}
-
-	var globalRules, rules []rbacv1.PolicyRule
-
+func (h handler) convertServiceToRule(service riov1.Service) (globalRules []rbacv1.PolicyRule, rules []rbacv1.PolicyRule, err error) {
 	for _, p := range service.Spec.GlobalPermissions {
 		policyRules, err := h.permToPolicyRule(p, true, "")
 		if err != nil {
-			return admissionResponse, fmt.Errorf("failed to validate rio service: %v", err)
+			return nil, nil, fmt.Errorf("failed to validate rio service: %v", err)
 		}
 		globalRules = append(globalRules, policyRules...)
 	}
@@ -276,56 +306,50 @@ func (h handler) ValidateAuth(api *k8s.API, request *admissionv1beta1.AdmissionR
 	for _, p := range service.Spec.Permissions {
 		policyRules, err := h.permToPolicyRule(p, false, service.Namespace)
 		if err != nil {
-			return admissionResponse, fmt.Errorf("failed to validate rio service: %v", err)
+			return nil, nil, fmt.Errorf("failed to validate rio service: %v", err)
 		}
 		rules = append(rules, policyRules...)
 	}
 
 	rules = append(rules, convertSecurityPolicyRule(service)...)
+	return globalRules, rules, nil
+}
 
-	var userInfo = &user.DefaultInfo{
-		Name:   request.UserInfo.Username,
-		UID:    request.UserInfo.UID,
-		Groups: request.UserInfo.Groups,
-		Extra:  toExtra(request.UserInfo.Extra),
+func (h handler) convertStackToRule(stack riov1.Stack) (globalRules []rbacv1.PolicyRule, rules []rbacv1.PolicyRule, err error) {
+	for _, p := range stack.Spec.Permissions {
+		policyRules, err := h.permToPolicyRule(p, false, stack.Namespace)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to validate rio service: %v", err)
+		}
+		rules = append(rules, policyRules...)
 	}
-
-	globaleCtx := request2.WithNamespace(request2.WithUser(context.Background(), userInfo), "")
-	if err := rbacregistryvalidation.ConfirmNoEscalation(globaleCtx, h.ruleSolver, globalRules); err != nil {
-		return admissionResponse, fmt.Errorf("failed to validate rio service: %v", err)
-	}
-
-	ctx := request2.WithNamespace(request2.WithUser(context.Background(), userInfo), service.Namespace)
-	if err := rbacregistryvalidation.ConfirmNoEscalation(ctx, h.ruleSolver, rules); err != nil {
-		return admissionResponse, fmt.Errorf("failed to validate rio service: %v", err)
-	}
-
-	admissionResponse.Allowed = true
-	return admissionResponse, nil
+	return globalRules, rules, nil
 }
 
 func convertSecurityPolicyRule(service riov1.Service) []rbacv1.PolicyRule {
 	var policyRules []rbacv1.PolicyRule
 
-	var useHostPort, useHostNetwork, usePriviledged, useHostMount, useServiceMesh bool
-
-	// checking hostport
-	ports := service.Spec.Ports
-	for _, c := range service.Spec.Sidecars {
-		ports = append(ports, c.Ports...)
-	}
-	for _, p := range ports {
-		if p.HostPort {
-			useHostPort = true
-			break
-		}
-	}
-
-	// todo: add privileged, hostmount
+	var useHostPort, useHostNetwork, usePriviledged, useHostPath, useServiceMesh bool
 
 	containers := []riov1.Container{service.Spec.Container}
 	for _, c := range service.Spec.Sidecars {
 		containers = append(containers, c.Container)
+	}
+
+	for _, con := range containers {
+		for _, p := range con.Ports {
+			if p.HostPort {
+				useHostPort = true
+				break
+			}
+		}
+
+		for _, v := range con.Volumes {
+			if v.HostPath != "" {
+				useHostPath = true
+				break
+			}
+		}
 	}
 
 	if service.Spec.HostNetwork {
@@ -352,7 +376,7 @@ func convertSecurityPolicyRule(service riov1.Service) []rbacv1.PolicyRule {
 		policyRules = append(policyRules, rule)
 	}
 
-	if useHostMount {
+	if useHostPath {
 		rule := newPolicyRule(service)
 		rule.Verbs = []string{hostmountVerb}
 		policyRules = append(policyRules, rule)

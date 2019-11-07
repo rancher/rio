@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/rancher/rio/cli/cmd/up/pkg"
-
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/riofile/stringers"
 	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/wrangler/pkg/gvk"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -16,12 +16,15 @@ import (
 )
 
 type Up struct {
-	Name       string `desc:"Set stack name, defaults to current directory name"`
-	Answers    string `desc:"Set answer file"`
-	F_File     string `desc:"Set rio file"`
-	P_Parallel bool   `desc:"Run builds in parallel"`
-	Branch     string `desc:"Set branch when pointing stack to git repo" default:"master"`
-	Revision   string `desc:"Set revision"`
+	Name               string   `desc:"Set stack name, defaults to current directory name"`
+	Answers            string   `desc:"Set answer file"`
+	F_File             string   `desc:"Set rio file"`
+	P_Parallel         bool     `desc:"Run builds in parallel"`
+	Branch             string   `desc:"Set branch when pointing stack to git repo" default:"master"`
+	Revision           string   `desc:"Set revision"`
+	BuildWebhookSecret string   `desc:"Set GitHub webhook secret name"`
+	BuildCloneSecret   string   `desc:"Set git clone secret name"`
+	Permission         []string `desc:"Permissions to grant to container's service account in current namespace"`
 }
 
 const (
@@ -33,8 +36,17 @@ func (u *Up) Run(c *clicontext.CLIContext) error {
 		u.Name = pkg.GetCurrentDir()
 	}
 
+	stack, err := u.ensureStack(c)
+	if err != nil {
+		return err
+	}
+
+	// if format is `rio up https://repo`, set build parameters
 	if len(c.CLI.Args()) > 0 {
-		return u.setBuild(c)
+		if err := u.setStack(c, stack); err != nil {
+			return err
+		}
+		return c.UpdateObject(stack)
 	}
 
 	content, answer, err := u.loadFileAndAnswer(c)
@@ -42,16 +54,26 @@ func (u *Up) Run(c *clicontext.CLIContext) error {
 		return err
 	}
 
-	if err = u.saveStack(content, answer, c); err != nil {
-		return err
-	}
+	return u.up(content, answer, stack, c)
+}
 
-	existing, err := c.Rio.Stacks(c.GetSetNamespace()).Get(u.Name, metav1.GetOptions{})
-	if err != nil {
-		return err
+func (u *Up) setStack(c *clicontext.CLIContext, existing *riov1.Stack) error {
+	if len(c.CLI.Args()) == 1 {
+		var err error
+		if existing.Spec.Build == nil {
+			existing.Spec.Build = &riov1.StackBuild{}
+		}
+		existing.Spec.Build.Repo = c.CLI.Args()[0]
+		existing.Spec.Build.Branch = u.Branch
+		existing.Spec.Build.Revision = u.Revision
+		existing.Spec.Build.WebhookSecretName = u.BuildWebhookSecret
+		existing.Spec.Build.CloneSecretName = u.BuildCloneSecret
+		existing.Spec.Permissions, err = stringers.ParsePermissions(u.Permission...)
+		if err != nil {
+			return err
+		}
 	}
-
-	return u.up(content, answer, existing, c)
+	return nil
 }
 
 func (u *Up) setBuild(c *clicontext.CLIContext) error {
@@ -139,27 +161,22 @@ func (u *Up) up(content string, answers map[string]string, s *riov1.Stack, c *cl
 	return c.UpdateObject(stackToUpdate)
 }
 
-// saveStack updates an existing stack or creates one if one does not exist
-func (u *Up) saveStack(content string, answers map[string]string, c *clicontext.CLIContext) error {
-	s := riov1.NewStack(c.GetSetNamespace(), u.Name, riov1.Stack{
-		Spec: riov1.StackSpec{
-			Answers: answers,
-		},
-	})
+// ensureStack creates one if one does not exist
+func (u *Up) ensureStack(c *clicontext.CLIContext) (*riov1.Stack, error) {
+	s := riov1.NewStack(c.GetSetNamespace(), u.Name, riov1.Stack{})
 
 	existing, err := c.Rio.Stacks(c.GetSetNamespace()).Get(u.Name, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			return c.Create(s)
+			return c.Rio.Stacks(c.GetSetNamespace()).Create(s)
 		}
-		return err
+		return nil, err
 	}
-	existing.Spec.Answers = s.Spec.Answers
-	return c.UpdateObject(existing)
+
+	return existing, err
 }
 
 func setObjLabels(objs []runtime.Object, s *riov1.Stack) ([]runtime.Object, error) {
-
 	for _, obj := range objs {
 
 		obj, ok := obj.(metav1.Object)
@@ -176,7 +193,6 @@ func setObjLabels(objs []runtime.Object, s *riov1.Stack) ([]runtime.Object, erro
 	}
 
 	return objs, nil
-
 }
 
 func convertObjs(objs []runtime.Object) ([]schema.GroupVersionKind, error) {
@@ -191,5 +207,15 @@ func convertObjs(objs []runtime.Object) ([]schema.GroupVersionKind, error) {
 		}
 		gvks = append(gvks, groupVersionKind)
 	}
-	return gvks, nil
+
+	seen := map[string]bool{}
+	var r []schema.GroupVersionKind
+	for _, gvk := range gvks {
+		if seen[gvk.String()] {
+			continue
+		}
+		r = append(r, gvk)
+		seen[gvk.String()] = true
+	}
+	return r, nil
 }

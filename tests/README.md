@@ -53,7 +53,7 @@ Goland is useful for debugging, setup with:
 
 * test kind: `package`
 * package: `github.com/rancher/rio/tests/integration`
-* environment: set your `KUBECONFIG`
+* environment: set your `KUBECONFIG`. `DEBUG_TEST` will print extra `rio` commands that were invoked.
 * program arguments: `--integration-tests`
 
 ### Full suite

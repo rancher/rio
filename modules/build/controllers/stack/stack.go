@@ -235,13 +235,59 @@ func populateRbac(stack *riov1.Stack, saName, systemNamespace, buildKitPodName s
 		},
 	}
 
-	// todo: add extra permission from stack
-
-	return []runtime.Object{
+	// extra permission from stack
+	roleExtraPermission := rbac.NewRole(stack.Namespace, fmt.Sprintf("%s-stack-extra-permissions", stack.Name), nil)
+	for _, perm := range stack.Spec.Permissions {
+		if perm.Role != "" {
+			continue
+		}
+		policyRule, ok := rbac.PermToPolicyRule(perm)
+		if ok {
+			roleExtraPermission.Rules = append(roleExtraPermission.Rules, policyRule)
+		}
+	}
+	roleBinding3 := rbac.NewBinding(stack.Namespace, fmt.Sprintf("%s-stack-extra-permissions", stack.Name), nil)
+	roleBinding3.RoleRef = v1.RoleRef{
+		Kind:     "Role",
+		Name:     roleExtraPermission.Name,
+		APIGroup: "rbac.authorization.k8s.io",
+	}
+	roleBinding3.Subjects = []v1.Subject{
+		{
+			Kind:      "ServiceAccount",
+			Namespace: stack.Namespace,
+			Name:      saName,
+		},
+	}
+	objects := []runtime.Object{
 		role1,
+		roleExtraPermission,
 		roleBinding1,
 		roleBinding2,
+		roleBinding3,
 	}
+
+	for _, role := range stack.Spec.Permissions {
+		if role.Role == "" {
+			continue
+		}
+		roleBinding := rbac.NewBinding(stack.Namespace, name.SafeConcatName("rio-stack", stack.Name, role.Role), nil)
+		roleBinding.Subjects = []v1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Namespace: stack.Namespace,
+				Name:      saName,
+			},
+		}
+		roleBinding.RoleRef = v1.RoleRef{
+			Name:     role.Role,
+			Kind:     "Role",
+			APIGroup: "rbac.authorization.k8s.io",
+		}
+		objects = append(objects, roleBinding)
+	}
+
+	return objects
 }
 
 func populateWebhookAndSecrets(webhookService *riov1.Service, stack *riov1.Stack, os *objectset.ObjectSet) {
