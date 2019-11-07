@@ -212,9 +212,9 @@ func main() {
 			appName+" dashboard [OPTIONS]",
 			""),
 		builder.Command(&kill.Kill{},
-			"Kill pods or services",
+			"Kill pods individually or all pods belonging to a service",
 			appName+" kill [SERVICE_NAME/POD_NAME]",
-			""),
+			"Specify a SERVICE_NAME to kill all pods belonging to that service. Otherwise specify a POD_NAME"),
 		route.Route(app),
 		info.Info(app),
 	}
