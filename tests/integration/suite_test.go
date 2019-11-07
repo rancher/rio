@@ -17,18 +17,20 @@ func TestMain(m *testing.M) {
 func TestSuite(t *testing.T) {
 	suite := spec.New("integration suite", spec.Report(report.Terminal{}), spec.Parallel())
 	specs := map[string]func(t *testing.T, when spec.G, it spec.S){
-		"run":             runTests,
-		"weight":          weightTests,
-		"stage":           stageTests,
-		"scale":           scaleTests,
-		"endpoint":        endpointTests,
-		"domain":          domainTests,
-		"route":           routeTests,
-		"export":          exportTests,
+		"attach":          attachTests,
 		"config":          configTests,
+		"domain":          domainTests,
+		"endpoint":        endpointTests,
+		"export":          exportTests,
 		"externalService": externalServiceTests,
-		"riofile":         riofileTests,
+		"log":             logTests,
 		"rbac":            rbacTests,
+		"riofile":         riofileTests,
+		"route":           routeTests,
+		"run":             runTests,
+		"scale":           scaleTests,
+		"stage":           stageTests,
+		"weight":          weightTests,
 	}
 	for desc, fnc := range specs {
 		suite(desc, fnc)

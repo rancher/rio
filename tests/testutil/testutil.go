@@ -1,6 +1,8 @@
 package testutil
 
 import (
+	"bufio"
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -66,6 +68,31 @@ func RioCmd(args []string, envs ...string) (string, error) {
 		return "", fmt.Errorf("%s: %s", err.Error(), stdOutErr)
 	}
 	return string(stdOutErr), nil
+}
+
+// RioCmdWithTail executes rio CLI commands that tail output with your arguments in testing namespace.
+// Example: args=["attach", "nginx"] would run: "rio --namespace testing-namespace attach nginx"
+func RioCmdWithTail(timeoutSeconds int, args []string, envs ...string) ([]string, error) {
+	var results []string
+	args = append([]string{"--namespace", TestingNamespace}, args...)
+	timeout, _ := time.ParseDuration(fmt.Sprintf("%vs", timeoutSeconds))
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "rio", args...)
+	out, _ := cmd.StdoutPipe()
+	cmd.Start()
+	scanner := bufio.NewScanner(out)
+	go func() {
+		for scanner.Scan() {
+			if scanner.Text() != "" || cmd.ProcessState.Exited() {
+				results = append(results, scanner.Text())
+			}
+		}
+	}()
+	cmd.Wait()
+
+	return results, nil
 }
 
 // KubectlCmd executes kubectl CLI commands with your arguments

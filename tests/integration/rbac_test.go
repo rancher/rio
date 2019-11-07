@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/rancher/rio/tests/testutil"
@@ -51,35 +50,38 @@ func rbacTests(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("user tries to create services with specific roles like rio-admin,rio-privileged,rio-standard,rio-readonly", func() {
-		it("rio-admin user should be to create service-mesh services", func() {
+		// TODO: Create a test to distinguish between admin and privileged
+		it("rio-admin user should be to create disabled service-mesh and privileged services", func() {
 			testService.Kubeconfig = adminUser.Kubeconfig
-			testService.Create(t, "nginx")
+			testService.Create(t, "--no-mesh", "--privileged", "nginx")
+			assert.True(t, testService.IsReady())
 		})
 
-		it("rio-privileged user should be able to create service-emesh services", func() {
+		it("rio-privileged user should be able to create disabled service-mesh and privileged services", func() {
 			testService.Kubeconfig = privilegedUser.Kubeconfig
-			testService.Create(t, "nginx")
+			testService.Create(t, "--no-mesh", "--privileged", "nginx")
+			assert.True(t, testService.IsReady())
 		})
 
-		it("rio-standard should not be able to create service-mesh services", func() {
+		it("rio-standard should not be able to create disabled service-mesh services", func() {
+			var testService testutil.TestService
 			testService.Kubeconfig = standardUser.Kubeconfig
 			err := testService.CreateExpectingError(t, "--no-mesh", "nginx")
 			if err == nil {
 				t.Fatal("rio-standard should not be able to create service that enable service mesh")
 			}
-			assert.True(t, strings.Contains(err.Error(), insuffienctPrivilegesMsg))
-			assert.True(t, strings.Contains(err.Error(), "rio-servicemesh"))
+			assert.Contains(t, err.Error(), insuffienctPrivilegesMsg)
+			assert.Contains(t, err.Error(), "rio-servicemesh")
 		})
 
-		// TODO: we need to add more test for custom verb: hostport, hostnet, hostmount, serviceMesh and privilege
 		it("rio-standard should not be able to create host-network services", func() {
 			testService.Kubeconfig = standardUser.Kubeconfig
 			err := testService.CreateExpectingError(t, "--net", "host", "nginx")
 			if err == nil {
 				t.Fatal("rio-standard should not be able to create service that enable host networking")
 			}
-			assert.True(t, strings.Contains(err.Error(), insuffienctPrivilegesMsg))
-			assert.True(t, strings.Contains(err.Error(), "rio-hostnetwork"))
+			assert.Contains(t, err.Error(), insuffienctPrivilegesMsg)
+			assert.Contains(t, err.Error(), "rio-hostnetwork")
 		})
 
 		it("rio-readonly should not be able to create services", func() {
@@ -88,7 +90,7 @@ func rbacTests(t *testing.T, when spec.G, it spec.S) {
 			if err == nil {
 				t.Fatal("rio-readonly user should not be able to create services")
 			}
-			assert.True(t, strings.Contains(err.Error(), "is forbidden"))
+			assert.Contains(t, err.Error(), "is forbidden")
 		})
 
 		it("rio-standard user should not be able to escalate privilege on global permissions", func() {
@@ -97,7 +99,7 @@ func rbacTests(t *testing.T, when spec.G, it spec.S) {
 			if err == nil {
 				t.Fatal("rio-standard should not be able to escalate privilege on global permissions")
 			}
-			assert.True(t, strings.Contains(err.Error(), insuffienctPrivilegesMsg))
+			assert.Contains(t, err.Error(), insuffienctPrivilegesMsg)
 		})
 
 		it("rio-standard user should not be able to create privileges it doesn't have in the current namespace", func() {
@@ -106,18 +108,19 @@ func rbacTests(t *testing.T, when spec.G, it spec.S) {
 			if err == nil {
 				t.Fatal("rio-standard should not be able to create privileges it doesn't have")
 			}
-			assert.True(t, strings.Contains(err.Error(), insuffienctPrivilegesMsg))
+			assert.Contains(t, err.Error(), insuffienctPrivilegesMsg)
 		})
 
 		it("rio-standard user should be able to create privileges it already has 1", func() {
 			testService.Kubeconfig = standardUser.Kubeconfig
 			testService.Create(t, "--permission", "list rio.cattle.io/services", "nginx")
+			assert.True(t, testService.IsReady())
 		})
 
 		it("rio-standard user should be able to create privileges it already has 2", func() {
 			testService.Kubeconfig = standardUser.Kubeconfig
 			testService.Create(t, "--permission", "watch rio.cattle.io/services", "nginx")
-
+			assert.True(t, testService.IsReady())
 		})
 
 	}, spec.Flat())
