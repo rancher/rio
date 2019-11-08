@@ -1,6 +1,7 @@
 package ps
 
 import (
+	"math"
 	"strings"
 
 	webhookv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
@@ -17,6 +18,7 @@ import (
 type ServiceData struct {
 	Name       string
 	Service    *riov1.Service
+	Weight     int
 	Deployment *appsv1.Deployment
 	DaemonSet  *appsv1.DaemonSet
 	Namespace  string
@@ -116,6 +118,18 @@ func (p *Ps) services(ctx *clicontext.CLIContext) error {
 		if service.(*riov1.Service).Spec.Template && !p.A_All {
 			continue
 		}
+
+		weight := 0
+		if service.(*riov1.Service).Status.ComputedWeight != nil && *service.(*riov1.Service).Status.ComputedWeight > 0 {
+			totalWeight := 0
+			for _, subService := range services {
+				if service.(*riov1.Service).Spec.App == subService.(*riov1.Service).Spec.App && subService.(*riov1.Service).Status.ComputedWeight != nil {
+					totalWeight += *subService.(*riov1.Service).Status.ComputedWeight
+				}
+			}
+			weight = int(math.Round((float64(*service.(*riov1.Service).Status.ComputedWeight) / float64(totalWeight)) / 0.01)) // round to nearest percent
+		}
+
 		var gitwatcher *webhookv1.GitWatcher
 		gitwatchers, err := ctx.Gitwatcher.GitWatchers(service.(*riov1.Service).Namespace).List(metav1.ListOptions{})
 		if err == nil {
@@ -128,6 +142,7 @@ func (p *Ps) services(ctx *clicontext.CLIContext) error {
 		}
 		output = append(output, ServiceData{
 			Service:    service.(*riov1.Service),
+			Weight:     weight,
 			Namespace:  service.(*riov1.Service).Namespace,
 			Pods:       podMap[service.(*riov1.Service).Namespace+"/"+service.(*riov1.Service).Name],
 			GitWatcher: gitwatcher,

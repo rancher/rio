@@ -29,7 +29,7 @@ func weightTests(t *testing.T, when spec.G, it spec.S) {
 		it("should slowly increase weight on the staged service and leave service weight unchanged", func() {
 			// The time from rollout to obtaining the current weight, without Sleep, is 2 seconds.
 			// Sleeping 8 seconds here with a rollout-interval of 4 seconds to guarantee 2 rollout ticks, plus the initial tick, with 2 seconds to spare.
-			stagedService.WeightWithoutWaiting(80, "--increment=10", "--interval=4")
+			stagedService.WeightWithoutWaiting(80, "--duration=1m")
 			time.Sleep(8 * time.Second)
 
 			stagedWeightAfter10Seconds := stagedService.GetCurrentWeight()
