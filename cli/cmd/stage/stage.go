@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/aokoli/goutils"
-	"github.com/rancher/mapper"
 	"github.com/rancher/rio/cli/cmd/edit/edit"
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
@@ -14,6 +13,7 @@ import (
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/riofile/stringers"
 	"github.com/rancher/rio/pkg/services"
+	"github.com/rancher/wrangler/pkg/merr"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/yaml"
@@ -158,7 +158,7 @@ func (r *Stage) updatePreviousServiceWeights(ctx *clicontext.CLIContext, service
 				allErrors = append(allErrors, err)
 			}
 		}
-		return mapper.NewErrors(allErrors...)
+		return merr.NewErrors(allErrors...)
 	}
 	return nil
 }

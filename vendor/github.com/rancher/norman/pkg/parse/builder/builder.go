@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rancher/mapper"
-	"github.com/rancher/mapper/convert"
-	"github.com/rancher/mapper/definition"
-	"github.com/rancher/mapper/httperror"
+	"github.com/rancher/norman/pkg/httperror"
+	"github.com/rancher/norman/pkg/types"
+	"github.com/rancher/norman/pkg/types/convert"
+	"github.com/rancher/norman/pkg/types/definition"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
 
@@ -27,28 +27,45 @@ func (o Operation) IsList() bool {
 	return strings.HasPrefix(string(o), "list")
 }
 
-type Builder struct {
-	Schemas *mapper.Schemas
-	Edit    bool
-	Export  bool
-	Yaml    bool
+type Builder interface {
+	Construct(schema *types.Schema, input types.APIObject, op Operation) (types.APIObject, error)
 }
 
-func NewBuilder(schemas *mapper.Schemas) *Builder {
-	return &Builder{
-		Schemas: schemas,
+type builder struct {
+	apiOp        *types.APIRequest
+	Schemas      *types.Schemas
+	RefValidator types.ReferenceValidator
+	edit         bool
+	export       bool
+	yaml         bool
+}
+
+func NewBuilder(apiOp *types.APIRequest) *builder {
+	return &builder{
+		apiOp:        apiOp,
+		yaml:         apiOp.ResponseFormat == "yaml",
+		edit:         apiOp.Option("edit") == "true",
+		export:       apiOp.Option("export") == "true",
+		Schemas:      apiOp.Schemas,
+		RefValidator: apiOp.ReferenceValidator,
 	}
 }
 
-func (b *Builder) Construct(schema *mapper.Schema, input map[string]interface{}, op Operation) (map[string]interface{}, error) {
-	result, err := b.copyFields(schema, input, op)
+func (b *builder) Construct(schema *types.Schema, input types.APIObject, op Operation) (types.APIObject, error) {
+	resultMap, err := b.copyFields(schema, input.Map(), op)
 	if err != nil {
-		return nil, err
+		return types.APIObject{}, err
+	}
+	result := types.ToAPI(resultMap)
+	if (op == Create || op == Update) && schema.Validator != nil {
+		if err := schema.Validator(b.apiOp, schema, result); err != nil {
+			return types.APIObject{}, err
+		}
 	}
 	return result, nil
 }
 
-func (b *Builder) copyInputs(schema *mapper.Schema, input map[string]interface{}, op Operation, result map[string]interface{}) error {
+func (b *builder) copyInputs(schema *types.Schema, input map[string]interface{}, op Operation, result map[string]interface{}) error {
 	for fieldName, value := range input {
 		field, ok := schema.ResourceFields[fieldName]
 		if !ok {
@@ -84,7 +101,7 @@ func (b *Builder) copyInputs(schema *mapper.Schema, input map[string]interface{}
 			}
 			result[fieldName] = value
 
-			if op.IsList() && field.Type == "date" && value != "" && !b.Edit {
+			if op.IsList() && field.Type == "date" && value != "" && !b.edit {
 				ts, err := convert.ToTimestamp(value)
 				if err == nil {
 					result[fieldName+"TS"] = ts
@@ -93,11 +110,8 @@ func (b *Builder) copyInputs(schema *mapper.Schema, input map[string]interface{}
 		}
 	}
 
-	if op.IsList() && !b.Edit && !b.Export {
-		if !convert.IsAPIObjectEmpty(input["type"]) {
-			result["type"] = input["type"]
-		}
-		if !convert.IsAPIObjectEmpty(input["id"]) {
+	if op.IsList() && !b.edit && !b.export {
+		if !convert.IsEmptyValue(input["id"]) {
 			result["id"] = input["id"]
 		}
 	}
@@ -105,7 +119,7 @@ func (b *Builder) copyInputs(schema *mapper.Schema, input map[string]interface{}
 	return nil
 }
 
-func (b *Builder) checkDefaultAndRequired(schema *mapper.Schema, input map[string]interface{}, op Operation, result map[string]interface{}) error {
+func (b *builder) checkDefaultAndRequired(schema *types.Schema, input map[string]interface{}, op Operation, result map[string]interface{}) error {
 	for fieldName, field := range schema.ResourceFields {
 		val, hasKey := result[fieldName]
 		if op == Create && (!hasKey || val == "") && field.Default != nil {
@@ -136,18 +150,18 @@ func (b *Builder) checkDefaultAndRequired(schema *mapper.Schema, input map[strin
 		}
 	}
 
-	if op.IsList() && b.Edit {
+	if op.IsList() && b.edit {
 		b.populateMissingFieldsForEdit(schema, result)
 	}
 
-	if op.IsList() && b.Export {
+	if op.IsList() && b.export {
 		b.dropDefaultsAndReadOnly(schema, result)
 	}
 
 	return nil
 }
 
-func (b *Builder) dropDefaultsAndReadOnly(schema *mapper.Schema, result map[string]interface{}) {
+func (b *builder) dropDefaultsAndReadOnly(schema *types.Schema, result map[string]interface{}) {
 	for name, existingVal := range result {
 		field, ok := schema.ResourceFields[name]
 		if !ok {
@@ -170,14 +184,14 @@ func (b *Builder) dropDefaultsAndReadOnly(schema *mapper.Schema, result map[stri
 			continue
 		}
 
-		if convert.IsAPIObjectEmpty(existingVal) {
+		if convert.IsEmptyValue(existingVal) {
 			delete(result, name)
 			continue
 		}
 	}
 }
 
-func (b *Builder) populateMissingFieldsForEdit(schema *mapper.Schema, result map[string]interface{}) {
+func (b *builder) populateMissingFieldsForEdit(schema *types.Schema, result map[string]interface{}) {
 	for name, field := range schema.ResourceFields {
 		if !field.Update {
 			if name != "name" {
@@ -211,9 +225,15 @@ func (b *Builder) populateMissingFieldsForEdit(schema *mapper.Schema, result map
 	}
 }
 
-func (b *Builder) copyFields(schema *mapper.Schema, input map[string]interface{}, op Operation) (map[string]interface{}, error) {
+func (b *builder) copyFields(schema *types.Schema, input map[string]interface{}, op Operation) (map[string]interface{}, error) {
 	result := map[string]interface{}{}
 
+	if schema.Dynamic {
+		for k, v := range input {
+			result[k] = v
+		}
+		return result, nil
+	}
 	if err := b.copyInputs(schema, input, op, result); err != nil {
 		return nil, err
 	}
@@ -221,7 +241,7 @@ func (b *Builder) copyFields(schema *mapper.Schema, input map[string]interface{}
 	return result, b.checkDefaultAndRequired(schema, input, op, result)
 }
 
-func CheckFieldCriteria(fieldName string, field mapper.Field, value interface{}) error {
+func CheckFieldCriteria(fieldName string, field types.Field, value interface{}) error {
 	numVal, isNum := value.(int64)
 	strVal := ""
 	hasStrVal := false
@@ -250,7 +270,7 @@ func CheckFieldCriteria(fieldName string, field mapper.Field, value interface{})
 		}
 	}
 
-	if hasStrVal {
+	if hasStrVal || value == "" {
 		if field.MinLength != nil && int64(len(strVal)) < *field.MinLength {
 			return httperror.NewFieldAPIError(httperror.MinLengthExceeded, fieldName, "")
 		}
@@ -373,7 +393,7 @@ func ConvertSimple(fieldType string, value interface{}, op Operation) (interface
 	return nil, ErrComplexType
 }
 
-func (b *Builder) convert(fieldType string, value interface{}, op Operation) (interface{}, error) {
+func (b *builder) convert(fieldType string, value interface{}, op Operation) (interface{}, error) {
 	if value == nil {
 		return value, nil
 	}
@@ -394,7 +414,7 @@ func (b *Builder) convert(fieldType string, value interface{}, op Operation) (in
 	return newValue, err
 }
 
-func (b *Builder) convertType(fieldType string, value interface{}, op Operation) (interface{}, error) {
+func (b *builder) convertType(fieldType string, value interface{}, op Operation) (interface{}, error) {
 	schema := b.Schemas.Schema(fieldType)
 	if schema == nil {
 		return nil, httperror.NewAPIError(httperror.InvalidType, "Failed to find type "+fieldType)
@@ -405,15 +425,23 @@ func (b *Builder) convertType(fieldType string, value interface{}, op Operation)
 		return nil, httperror.NewAPIError(httperror.InvalidFormat, fmt.Sprintf("Value can not be converted to type %s: %v", fieldType, value))
 	}
 
-	return b.Construct(schema, mapValue, op)
+	result, err := b.Construct(schema, types.ToAPI(mapValue), op)
+	if err != nil {
+		return nil, err
+	}
+	return result.Map(), nil
 }
 
-func (b *Builder) convertReferenceType(fieldType string, value interface{}) (string, error) {
+func (b *builder) convertReferenceType(fieldType string, value interface{}) (string, error) {
+	subType := definition.SubType(fieldType)
 	strVal := convert.ToString(value)
+	if b.RefValidator != nil && !b.RefValidator.Validate(subType, strVal) {
+		return "", httperror.NewAPIError(httperror.InvalidReference, fmt.Sprintf("Not found type: %s id: %s", subType, strVal))
+	}
 	return strVal, nil
 }
 
-func (b *Builder) convertArray(fieldType string, value interface{}, op Operation) ([]interface{}, error) {
+func (b *builder) convertArray(fieldType string, value interface{}, op Operation) ([]interface{}, error) {
 	if strSliceValue, ok := value.([]string); ok {
 		// Form data will be []string
 		var result []interface{}
@@ -442,7 +470,7 @@ func (b *Builder) convertArray(fieldType string, value interface{}, op Operation
 	return result, nil
 }
 
-func (b *Builder) convertMap(fieldType string, value interface{}, op Operation) (map[string]interface{}, error) {
+func (b *builder) convertMap(fieldType string, value interface{}, op Operation) (map[string]interface{}, error) {
 	mapValue, ok := value.(map[string]interface{})
 	if !ok {
 		return nil, nil
@@ -462,7 +490,7 @@ func (b *Builder) convertMap(fieldType string, value interface{}, op Operation) 
 	return result, nil
 }
 
-func fieldMatchesOp(field mapper.Field, op Operation) bool {
+func fieldMatchesOp(field types.Field, op Operation) bool {
 	switch op {
 	case Create:
 		return field.Create

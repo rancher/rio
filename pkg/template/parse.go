@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/drone/envsubst"
-	"github.com/rancher/mapper"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/template/gotemplate"
+	"github.com/rancher/wrangler/pkg/merr"
 	"github.com/rancher/wrangler/pkg/yaml"
 )
 
@@ -145,7 +145,7 @@ func (t *Template) parseContent(answersCB AnswerCallback) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	} else if len(callbackErrs) > 0 {
-		return nil, mapper.NewErrors(callbackErrs...)
+		return nil, merr.NewErrors(callbackErrs...)
 	}
 
 	if template.Meta.GoTemplate {

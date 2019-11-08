@@ -4,11 +4,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/rancher/mapper"
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/wrangler/pkg/merr"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -66,5 +66,5 @@ func PerformPromote(ctx *clicontext.CLIContext, serviceName string, rolloutConfi
 		})
 		allErrors = append(allErrors, err)
 	}
-	return mapper.NewErrors(allErrors...)
+	return merr.NewErrors(allErrors...)
 }

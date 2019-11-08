@@ -497,19 +497,12 @@ github.com/rancher/gitwatcher/pkg/generated/informers/externalversions/gitwatche
 github.com/rancher/gitwatcher/pkg/generated/informers/externalversions/gitwatcher.cattle.io/v1
 github.com/rancher/gitwatcher/pkg/generated/informers/externalversions/internalinterfaces
 github.com/rancher/gitwatcher/pkg/generated/listers/gitwatcher.cattle.io/v1
-# github.com/rancher/mapper v0.0.0-20190814232720-058a8b7feb99
-github.com/rancher/mapper
-github.com/rancher/mapper/builder
-github.com/rancher/mapper/convert
-github.com/rancher/mapper/definition
-github.com/rancher/mapper/httperror
-github.com/rancher/mapper/mappers
-github.com/rancher/mapper/values
 # github.com/rancher/norman v0.0.0-20191030191625-ebecbda5fbe3
 github.com/rancher/norman/pkg/data
 github.com/rancher/norman/pkg/debug
 github.com/rancher/norman/pkg/httperror
 github.com/rancher/norman/pkg/openapi
+github.com/rancher/norman/pkg/parse/builder
 github.com/rancher/norman/pkg/types
 github.com/rancher/norman/pkg/types/convert
 github.com/rancher/norman/pkg/types/definition
