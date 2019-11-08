@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/wrangler/pkg/yaml"
 )
 
 type TestRiofile struct {
@@ -76,22 +77,30 @@ func (trf *TestRiofile) Remove() {
 	}
 }
 
-// Return "rio export --stack {name}" as string
-func (trf *TestRiofile) ExportStack() string {
-	out, err := RioCmd([]string{"export", "--riofile", trf.Name})
+// Return "rio export --stack {name}"
+func (trf *TestRiofile) ExportStack() (map[string]interface{}, error) {
+	content, err := RioCmd([]string{"export", "--riofile", trf.Name})
 	if err != nil {
 		trf.T.Log(err.Error())
 	}
-	return strings.TrimSuffix(out, "\n")
+	data := map[string]interface{}{}
+	if err := yaml.Unmarshal([]byte(content), &data); err != nil {
+		return nil, err
+	}
+	return data, nil
 }
 
-// Returns raw Riofile as string
-func (trf *TestRiofile) Readfile() string {
-	contents, err := ioutil.ReadFile(trf.Filepath)
+// Returns raw Riofile
+func (trf *TestRiofile) Readfile() (map[string]interface{}, error) {
+	content, err := ioutil.ReadFile(trf.Filepath)
 	if err != nil {
 		trf.T.Log(err.Error())
 	}
-	return strings.TrimSuffix(string(contents), "\n")
+	data := map[string]interface{}{}
+	if err := yaml.Unmarshal(content, &data); err != nil {
+		return nil, err
+	}
+	return data, nil
 }
 
 //////////////////

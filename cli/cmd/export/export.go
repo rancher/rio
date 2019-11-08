@@ -10,10 +10,12 @@ import (
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/riofile"
 	"github.com/rancher/wrangler/pkg/gvk"
+	name "github.com/rancher/wrangler/pkg/name"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/yaml"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 )
 
 type Export struct {
@@ -46,7 +48,15 @@ func (e *Export) Run(ctx *clicontext.CLIContext) error {
 			if err != nil {
 				return err
 			}
-
+			if err := exportObjects(objects, output, e.Riofile, e.Format); err != nil {
+				return err
+			}
+		case clitypes.StackType:
+			stack := r.Object.(*riov1.Stack)
+			objects, err := collectObjectsFromStack(ctx, stack)
+			if err != nil {
+				return err
+			}
 			if err := exportObjects(objects, output, e.Riofile, e.Format); err != nil {
 				return err
 			}
@@ -80,6 +90,74 @@ func (e *Export) Run(ctx *clicontext.CLIContext) error {
 
 	fmt.Println(output.String())
 	return nil
+}
+
+func collectObjectsFromStack(ctx *clicontext.CLIContext, stack *riov1.Stack) ([]runtime.Object, error) {
+	var objects []runtime.Object
+	client, err := dynamic.NewForConfig(ctx.Config.RestConfig)
+	if err != nil {
+		return nil, err
+	}
+	for _, gvk := range stack.Spec.AdditionalGroupVersionKinds {
+		gvr := schema.GroupVersionResource{
+			Group:    gvk.Group,
+			Version:  gvk.Version,
+			Resource: strings.ToLower(name.GuessPluralName(gvk.Kind)),
+		}
+		resourceClient := client.Resource(gvr)
+		ul, err := resourceClient.Namespace(stack.Namespace).List(metav1.ListOptions{
+			LabelSelector: "rio.cattle.io/stack=" + stack.Name,
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range ul.Items {
+			if item.GroupVersionKind().Group == "rio.cattle.io" {
+				data, err := item.MarshalJSON()
+				if err != nil {
+					return nil, err
+				}
+				if item.GetKind() == "Service" {
+					svc := riov1.Service{}
+					if err := json.Unmarshal(data, &svc); err != nil {
+						return nil, err
+					}
+					objects = append(objects, &svc)
+				} else if item.GetKind() == "ExternalService" {
+					es := &riov1.ExternalService{}
+					if err := json.Unmarshal(data, es); err != nil {
+						return nil, err
+					}
+					objects = append(objects, es)
+				} else if item.GetKind() == "ConfigMap" {
+					cm := &corev1.ConfigMap{}
+					if err := json.Unmarshal(data, cm); err != nil {
+						return nil, err
+					}
+					objects = append(objects, cm)
+				} else if item.GetKind() == "Router" {
+					rt := &riov1.Router{}
+					if err := json.Unmarshal(data, rt); err != nil {
+						return nil, err
+					}
+					objects = append(objects, rt)
+				}
+			} else {
+				// From here down we only want to export non-rio created objects which would already be exported above
+				stackObj := true
+				for k, v := range item.GetAnnotations() {
+					if stackObj == true && k == "objectset.rio.cattle.io/owner-gvk" && v != "rio.cattle.io/v1, Kind=Stack" {
+						stackObj = false
+						break
+					}
+				}
+				if stackObj == true {
+					objects = append(objects, item.DeepCopyObject())
+				}
+			}
+		}
+	}
+	return objects, nil
 }
 
 func collectObjectsFromNs(ctx *clicontext.CLIContext, ns string) ([]runtime.Object, error) {
@@ -136,8 +214,8 @@ func configmapsFromService(ctx *clicontext.CLIContext, svc riov1.Service) ([]run
 	return objects, nil
 }
 
-func exportObjects(objects []runtime.Object, output *strings.Builder, riofile bool, format string) error {
-	if !riofile {
+func exportObjects(objects []runtime.Object, output *strings.Builder, riofileFormat bool, format string) error {
+	if !riofileFormat {
 		return exportObjectsNative(objects, output, format)
 	}
 
@@ -156,7 +234,7 @@ func exportObjectStack(objects []runtime.Object, output *strings.Builder) error 
 
 func exportObjectsNative(objects []runtime.Object, output *strings.Builder, format string) error {
 	for _, obj := range objects {
-		result, err := objToYaml(obj, format)
+		result, err := riofile.ObjToYaml(obj, format)
 		if err != nil {
 			return err
 		}
@@ -167,22 +245,4 @@ func exportObjectsNative(objects []runtime.Object, output *strings.Builder, form
 		}
 	}
 	return nil
-}
-
-func objToYaml(obj runtime.Object, format string) (string, error) {
-	data, err := json.MarshalIndent(obj, "", " ")
-	if err != nil {
-		return "", err
-	}
-
-	if format == "json" {
-		return string(data), nil
-	}
-
-	r, err := yaml.JSONToYAML(data)
-	if err != nil {
-		return "", err
-	}
-
-	return string(r), nil
 }

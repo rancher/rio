@@ -1,54 +1,86 @@
 externalservices:
-  es-foo:
-    fqdn: www.example.com
   es-bar:
     ipAddresses:
-    - 1.1.1.1
+      - 1.1.1.1
+  es-foo:
+    fqdn: www.example.com
 routers:
   route-foo:
     routes:
-    - match:
-        path:
-          exact: /v0
-      to:
-      - version: v0
-        app: export-test-image
-    - match:
-        path:
-          exact: /v3
-      to:
-      - version: v3
-        app: export-test-image
+      - match:
+          path:
+            exact: /v0
+        to:
+          - app: export-test-image
+            version: v0
+      - match:
+          path:
+            exact: /v3
+        to:
+          - app: export-test-image
+            version: v3
 services:
   export-test-image:
     app: export-test-image
-    version: v0
-    rolloutConfig:
-      increment: 5
-      interval: 5
+    autoscale:
+      concurrency: 10
+      maxReplicas: 10
+      minReplicas: 1
     image: ibuildthecloud/demo:v1
     imagePullPolicy: IfNotPresent
     ports:
-    - "80"
-    scale: 1
-    autoscale:
-      concurrency: 10
-      min: 1
-      max: 10
+      - "80"
+    replicas: 1
+    version: v0
     weight: 100
   export-test-image-v3:
     app: export-test-image
-    version: v3
+    autoscale:
+      concurrency: 10
+      maxReplicas: 10
+      minReplicas: 1
     image: ibuildthecloud/demo:v3
     imagePullPolicy: IfNotPresent
     ports:
       - "80"
-    rolloutConfig:
-      increment: 5
-      interval: 5
-    autoscale:
-      concurrency: 10
-      min: 1
-      max: 10
-    scale: 1
+    replicas: 1
+    version: v3
     weight: 100
+kubernetes:
+  manifest: |-
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: nginx
+      labels:
+       app: nginx
+       tier: backend
+       role: master
+    spec:
+      ports:
+      - port: 80
+        targetPort: 80
+      selector:
+        app: nginx
+        tier: backend
+        role: master
+    ---
+    apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+    kind: Deployment
+    metadata:
+      name: nginx-deployment
+    spec:
+      selector:
+        matchLabels:
+          app: nginx
+      replicas: 2 # tells deployment to run 2 pods matching the template
+      template:
+        metadata:
+          labels:
+            app: nginx
+        spec:
+          containers:
+            - name: nginx
+              image: nginx:1.7.9
+              ports:
+                - containerPort: 80
