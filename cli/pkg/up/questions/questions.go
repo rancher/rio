@@ -10,9 +10,9 @@ import (
 
 	"github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty"
 	"github.com/pkg/errors"
-	"github.com/rancher/mapper"
-	"github.com/rancher/mapper/builder"
-	"github.com/rancher/mapper/convert"
+	"github.com/rancher/norman/pkg/parse/builder"
+	"github.com/rancher/norman/pkg/types"
+	"github.com/rancher/norman/pkg/types/convert"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/kv"
 	"golang.org/x/crypto/ssh/terminal"
@@ -221,7 +221,7 @@ func (q *question) prompt() (string, error) {
 }
 
 func validate(val string, q v1.Question) error {
-	field := &mapper.Field{}
+	field := &types.Field{}
 	err := convert.ToObj(q, field)
 	if err != nil {
 		return err

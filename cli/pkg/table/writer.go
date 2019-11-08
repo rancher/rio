@@ -13,7 +13,7 @@ import (
 	"github.com/Masterminds/sprig"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/docker/go-units"
-	"github.com/rancher/mapper/convert"
+	"github.com/rancher/norman/pkg/types/convert"
 	"github.com/rancher/rio/cli/pkg/types"
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

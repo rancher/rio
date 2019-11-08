@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rancher/mapper"
 	"github.com/rancher/rio/cli/cmd/promote"
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/kv"
+	"github.com/rancher/wrangler/pkg/merr"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -64,7 +64,7 @@ func setSpecWeight(ctx *clicontext.CLIContext, args []string, rolloutConfig *rio
 		})
 		errs = append(errs, err)
 	}
-	return mapper.NewErrors(errs...)
+	return merr.NewErrors(errs...)
 }
 
 func setPercentageWeight(ctx *clicontext.CLIContext, arg string, rolloutConfig *riov1.RolloutConfig) error {

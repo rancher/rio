@@ -3,10 +3,10 @@ package features
 import (
 	"context"
 
-	ntypes "github.com/rancher/mapper"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/rio/types"
+	"github.com/rancher/wrangler/pkg/merr"
 )
 
 type ControllerRegister func(ctx context.Context, rContext *types.Context) error
@@ -73,7 +73,7 @@ func (f *FeatureController) Stop() error {
 		}
 	}
 
-	return ntypes.NewErrors(errs...)
+	return merr.NewErrors(errs...)
 }
 
 func (f *FeatureController) Start(ctx context.Context) error {
@@ -92,7 +92,7 @@ func (f *FeatureController) Start(ctx context.Context) error {
 	}
 
 	if len(errs) > 0 {
-		return ntypes.NewErrors(errs...)
+		return merr.NewErrors(errs...)
 	}
 	rContext := types.From(ctx)
 	for _, reg := range f.Controllers {

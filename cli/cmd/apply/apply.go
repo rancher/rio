@@ -3,7 +3,7 @@ package apply
 import (
 	"os"
 
-	"github.com/rancher/mapper/convert"
+	"github.com/rancher/norman/pkg/types/convert"
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/wrangler/pkg/yaml"
 )
