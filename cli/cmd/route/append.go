@@ -6,14 +6,12 @@ import (
 	"strconv"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/api/errors"
-
-	"github.com/rancher/rio/cli/pkg/types"
-
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/pretty/objectmappers"
+	"github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/kv"
+	"k8s.io/apimachinery/pkg/api/errors"
 )
 
 var (
@@ -136,7 +134,7 @@ func (a *Add) buildRouteSpec(ctx *clicontext.CLIContext, args []string) (*riov1.
 		return nil, fmt.Errorf("for %s actions only one target is allowed, found %d", actionsString(false), len(args)-2)
 	}
 
-	destinations, err := ParseDestinations(args[2:])
+	destinations, err := ParseDestinations(ctx, args[2:])
 	if err != nil {
 		return nil, err
 	}
@@ -301,22 +299,20 @@ func convertHeader(data map[string]string) []riov1.HeaderMatch {
 	return result
 }
 
-func ParseDestinations(targets []string) ([]riov1.WeightedDestination, error) {
+func ParseDestinations(ctx *clicontext.CLIContext, targets []string) ([]riov1.WeightedDestination, error) {
 	var result []riov1.WeightedDestination
 	for _, target := range targets {
 		target, optStr := kv.Split(target, ",")
 		opts := kv.SplitMap(optStr, ",")
 
-		// take the last part splitted by /
-		parts := strings.Split(target, "/")
+		_, target = kv.RSplit(target, ":")
+		app, version := kv.Split(target, "@")
 		wd := riov1.WeightedDestination{
 			Destination: riov1.Destination{
-				App: parts[len(parts)-1],
+				App:     app,
+				Version: version,
 			},
 		}
-
-		version := opts["version"]
-		wd.Version = version
 
 		weight := opts["weight"]
 		if weight != "" {

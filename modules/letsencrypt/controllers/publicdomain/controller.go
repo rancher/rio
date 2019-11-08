@@ -71,7 +71,7 @@ func (f *certsHandler) Handle(obj *v1.PublicDomain, status v1.PublicDomainStatus
 	if status.AssignedSecretName == "" {
 		status.HTTPSSupported = false
 	} else {
-		_, err := f.secretsCache.Get(obj.Namespace, status.AssignedSecretName)
+		_, err := f.secretsCache.Get(f.namespace, status.AssignedSecretName)
 		status.HTTPSSupported = err == nil
 	}
 

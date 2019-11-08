@@ -1,9 +1,7 @@
 package endpoint
 
 import (
-	"net/url"
-	"sort"
-
+	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
@@ -58,24 +56,7 @@ func (e *Endpoint) Run(ctx *clicontext.CLIContext) error {
 		if seen[app] {
 			continue
 		}
-		var endpoints []string
-		hostNameSeen := map[string]string{}
-		for _, e := range service.Status.AppEndpoints {
-			u, _ := url.Parse(e)
-			if u.Scheme == "https" {
-				hostNameSeen[u.Hostname()] = e
-			} else {
-				if _, ok := hostNameSeen[u.Hostname()]; !ok {
-					hostNameSeen[u.Hostname()] = e
-				}
-			}
-		}
-
-		for _, v := range hostNameSeen {
-			endpoints = append(endpoints, v)
-		}
-		sort.Strings(endpoints)
-
+		endpoints := util.NormalizingEndpoints(service.Status.AppEndpoints, "")
 		if len(endpoints) > 0 {
 			seen[app] = true
 			data = append(data, Data{
@@ -89,24 +70,7 @@ func (e *Endpoint) Run(ctx *clicontext.CLIContext) error {
 	for _, router := range routers {
 		r := router.(*riov1.Router)
 
-		var endpoints []string
-		hostNameSeen := map[string]string{}
-		for _, e := range r.Status.Endpoints {
-			u, _ := url.Parse(e)
-			if u.Scheme == "https" {
-				hostNameSeen[u.Hostname()] = e
-			} else {
-				if _, ok := hostNameSeen[u.Hostname()]; !ok {
-					hostNameSeen[u.Hostname()] = e
-				}
-			}
-		}
-
-		for _, v := range hostNameSeen {
-			endpoints = append(endpoints, v)
-		}
-		sort.Strings(endpoints)
-
+		endpoints := util.NormalizingEndpoints(r.Status.Endpoints, "")
 		if len(endpoints) > 0 {
 			data = append(data, Data{
 				Name:      r.Name,
