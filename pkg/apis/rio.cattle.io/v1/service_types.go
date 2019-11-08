@@ -38,7 +38,7 @@ type AutoscaleConfig struct {
 
 // RolloutConfig specifies the configuration when promoting a new revision
 type RolloutConfig struct {
-	// Increment Value each Rollout can scale up or down
+	// Increment Value each Rollout can scale up or down, always a positive number
 	Increment int `json:"increment,omitempty"`
 
 	// Interval between each Rollout in seconds

@@ -66,8 +66,6 @@ type Create struct {
 	P_Ports                []string          `desc:"Publish a container's port(s) (format: svcport:containerport/protocol)"`
 	Privileged             bool              `desc:"Run container with privilege"`
 	ReadOnly               bool              `desc:"Mount the container's root filesystem as read only"`
-	RolloutInterval        int               `desc:"Rollout interval in seconds"`
-	RolloutIncrement       int               `desc:"Rollout increment value"`
 	RequestTimeoutSeconds  int               `desc:"Set request timeout in seconds"`
 	Secret                 []string          `desc:"Secrets to inject to the service (format: name[/key]:target)"`
 	Template               bool              `desc:"If true new version is created per git commit. If false update in-place"`
@@ -95,20 +93,6 @@ func (c *Create) RunCallback(ctx *clicontext.CLIContext, cb func(service *riov1.
 
 	service = cb(service)
 	return service, ctx.Create(service)
-}
-
-func (c *Create) setRollout(spec *riov1.ServiceSpec) {
-	if c.RolloutIncrement > 0 || c.RolloutInterval > 0 {
-		spec.RolloutConfig = &riov1.RolloutConfig{
-			Increment:       c.RolloutIncrement,
-			IntervalSeconds: c.RolloutInterval,
-		}
-	} else if c.Template {
-		spec.RolloutConfig = &riov1.RolloutConfig{
-			Increment:       5,
-			IntervalSeconds: 5,
-		}
-	}
 }
 
 func (c *Create) setDNS(spec *riov1.ServiceSpec) (err error) {
@@ -200,8 +184,6 @@ func (c *Create) ToService(ctx *clicontext.CLIContext, args []string) (*riov1.Se
 	if c.Weight > 0 {
 		spec.Weight = &c.Weight
 	}
-
-	c.setRollout(&spec)
 
 	if err := c.setDNS(&spec); err != nil {
 		return nil, err

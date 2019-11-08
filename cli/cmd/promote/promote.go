@@ -2,16 +2,15 @@ package promote
 
 import (
 	"errors"
+	"time"
 
-	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/cmd/weight"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 )
 
 type Promote struct {
-	Increment int  `desc:"Percentage of weight to increment on each interval" default:"5"`
-	Interval  int  `desc:"Interval seconds between each increment" default:"0"`
-	Pause     bool `desc:"Whether to pause rollout or continue it. Default to false" default:"false"`
+	Duration string `desc:"How long the rollout should take" default:"0s"`
+	Pause    bool   `desc:"Whether to pause rollout or continue it. Default to false" default:"false"`
 }
 
 func (p *Promote) Run(ctx *clicontext.CLIContext) error {
@@ -21,10 +20,17 @@ func (p *Promote) Run(ctx *clicontext.CLIContext) error {
 		return errors.New("at least one argument is needed")
 	}
 	serviceName := arg.First()
-	svcs, err := util.ListAppServicesFromServiceName(ctx, serviceName)
+	resource, err := ctx.ByID(serviceName)
 	if err != nil {
 		return err
 	}
-	rolloutConfig := weight.GenerateAppRolloutConfig(svcs, p.Pause, p.Increment, p.Interval)
-	return weight.PromoteService(ctx, serviceName, rolloutConfig)
+	duration, err := time.ParseDuration(p.Duration)
+	if err != nil {
+		return err
+	}
+	promoteWeight, rolloutConfig, err := weight.GenerateWeightAndRolloutConfig(ctx, resource, 100, duration, p.Pause)
+	if err != nil {
+		return err
+	}
+	return weight.PromoteService(ctx, resource, rolloutConfig, promoteWeight)
 }

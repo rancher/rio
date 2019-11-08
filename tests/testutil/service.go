@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -199,7 +200,7 @@ func (ts *TestService) Stage(source, version string) TestService {
 // Promote calls "rio promote [args] service_name" to instantly promote a revision
 func (ts *TestService) Promote(args ...string) {
 	args = append(
-		[]string{"promote", "--pause=false", "--increment=0", "--interval=0"},
+		[]string{"promote", "--pause=false", "--duration=0s"},
 		append(args, ts.Name)...)
 	_, err := RioCmd(args)
 	if err != nil {
@@ -296,6 +297,7 @@ func (ts *TestService) GetScale() int {
 
 // Return service's goal weight, this is different from weight service is currently at
 func (ts *TestService) GetSpecWeight() int {
+	ts.reload()
 	if ts.Service.Spec.Weight != nil {
 		return *ts.Service.Spec.Weight
 	}
@@ -304,9 +306,19 @@ func (ts *TestService) GetSpecWeight() int {
 
 // Return service's computed (actual) weight, not the spec (end-goal) weight
 func (ts *TestService) GetCurrentWeight() int {
-	ts.reload()
-	if ts.Service.Status.ComputedWeight != nil {
-		return *ts.Service.Status.ComputedWeight
+	out, err := RioCmd([]string{"ps", "--format", "{{.Obj | id}}::{{.Data.Weight}}"})
+	if err != nil {
+		ts.T.Fatal(err)
+	}
+	for _, line := range strings.Split(out, "\n") {
+		name := strings.Split(line, "::")[0]
+		if name == ts.Name {
+			weight, err := strconv.Atoi(strings.Split(line, "::")[1])
+			if err != nil {
+				ts.T.Fatal(err)
+			}
+			return weight
+		}
 	}
 	return 0
 }
@@ -467,24 +479,25 @@ func (ts *TestService) GetKubeAppEndpointURLs() []string {
 	return strings.Split(urls[2:len(urls)-2], " ")
 }
 
+// todo: needs to get updated so it takes into account all service weights
 // GetKubeCurrentWeight does the exact same thing as GetCurrentWeight but uses the kubectl command instead of rio
-func (ts *TestService) GetKubeCurrentWeight() int {
-	ts.reload()
-	args := []string{"get", "services.rio.cattle.io", ts.Service.Name, "-n", TestingNamespace, "-o", "json"}
-	resultString, err := KubectlCmd(args)
-	if err != nil {
-		ts.T.Fatalf("Failed to get services.rio.cattle.io:  %v", err.Error())
-	}
-	var svc riov1.Service
-	err = json.Unmarshal([]byte(resultString), &svc)
-	if err != nil {
-		ts.T.Fatalf("Failed to unmarshal service results: %s with error: %v", resultString, err.Error())
-	}
-	if svc.Status.ComputedWeight != nil {
-		return *svc.Status.ComputedWeight
-	}
-	return 0
-}
+//func (ts *TestService) GetKubeCurrentWeight() int {
+//	ts.reload()
+//	args := []string{"get", "services.rio.cattle.io", ts.Service.Name, "-n", TestingNamespace, "-o", "json"}
+//	resultString, err := KubectlCmd(args)
+//	if err != nil {
+//		ts.T.Fatalf("Failed to get services.rio.cattle.io:  %v", err.Error())
+//	}
+//	var svc riov1.Service
+//	err = json.Unmarshal([]byte(resultString), &svc)
+//	if err != nil {
+//		ts.T.Fatalf("Failed to unmarshal service results: %s with error: %v", resultString, err.Error())
+//	}
+//	if svc.Status.ComputedWeight != nil {
+//		return *svc.Status.ComputedWeight
+//	}
+//	return 0
+//}
 
 // PodsResponsesMatchAvailableReplicas does a GetURL in the App endpoint and stores the response in a slice
 // the length of the resulting slice should represent the number of responsive pods in a service.
@@ -678,13 +691,10 @@ func (ts *TestService) waitForScale(want int) error {
 }
 
 // Wait until a service has the computed weight we want, note this is not spec weight but actual weight
-func (ts *TestService) waitForWeight(percentage int) error {
+func (ts *TestService) waitForWeight(target int) error {
 	f := wait.ConditionFunc(func() (bool, error) {
-		ts.reload()
-		if ts.Service.Status.ComputedWeight != nil {
-			if percentage == *ts.Service.Status.ComputedWeight {
-				return true, nil
-			}
+		if ts.GetCurrentWeight() == target {
+			return true, nil
 		}
 		return false, nil
 	})

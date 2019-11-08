@@ -3,8 +3,10 @@ package weight
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/rancher/mapper"
 	"github.com/rancher/rio/cli/cmd/util"
@@ -16,10 +18,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
+const DefaultInterval = 2
+
 type Weight struct {
-	Increment int  `desc:"Percentage of weight to increment on each interval" default:"5"`
-	Interval  int  `desc:"Interval seconds between each increment" default:"0"`
-	Pause     bool `desc:"Whether to pause rollout or continue it. Default to false" default:"false"`
+	Duration string `desc:"How long the rollout should take" default:"0s"`
+	Pause    bool   `desc:"Whether to pause rollout or continue it. Default to false" default:"false"`
 }
 
 func (w *Weight) Run(ctx *clicontext.CLIContext) error {
@@ -34,7 +37,11 @@ func (w *Weight) Run(ctx *clicontext.CLIContext) error {
 			}
 		}
 	}
-	serviceName, scale, err := validateArg(ctx.CLI.Args().First())
+	duration, err := time.ParseDuration(w.Duration)
+	if err != nil {
+		return err
+	}
+	serviceName, target, err := validateArg(ctx.CLI.Args().First())
 	if err != nil {
 		return err
 	}
@@ -42,29 +49,12 @@ func (w *Weight) Run(ctx *clicontext.CLIContext) error {
 	if err != nil {
 		return err
 	}
-	svcs, err := util.ListAppServicesFromServiceName(ctx, serviceName)
+	weight, rolloutConfig, err := GenerateWeightAndRolloutConfig(ctx, resource, target, duration, w.Pause)
 	if err != nil {
 		return err
 	}
-	rolloutConfig := GenerateAppRolloutConfig(svcs, w.Pause, w.Increment, w.Interval)
-	if scale == 100 {
-		return PromoteService(ctx, serviceName, rolloutConfig)
-	}
-	// first find all weight on other versions of this service
-	otherSvcTotalWeight := 0
-	svc := resource.Object.(*riov1.Service)
-	for _, s := range svcs {
-		if s.Name == svc.Name {
-			continue
-		}
-		if s.Status.ComputedWeight != nil && *s.Status.ComputedWeight > 0 {
-			otherSvcTotalWeight += *s.Status.ComputedWeight
-		}
-	}
-	// now calculate what computed weight should be to hit or percentage target, and set that
-	weight := scale
-	if otherSvcTotalWeight > 0 {
-		weight = int(float64(otherSvcTotalWeight)/(1-(float64(scale)/100))) - otherSvcTotalWeight
+	if target == 100 {
+		return PromoteService(ctx, resource, rolloutConfig, weight)
 	}
 	return ctx.UpdateResource(resource, func(obj runtime.Object) error {
 		s := obj.(*riov1.Service)
@@ -77,49 +67,57 @@ func (w *Weight) Run(ctx *clicontext.CLIContext) error {
 	})
 }
 
-func validateArg(arg string) (string, int, error) {
-	serviceName, scaleStr := kv.Split(arg, "=")
-	scaleStr = strings.TrimSuffix(scaleStr, "%")
-	if scaleStr == "" {
-		return serviceName, 0, errors.New("weight params must be in the format of SERVICE=WEIGHT, for example: myservice=10% or myservice=20")
-	}
-	scale, err := strconv.Atoi(scaleStr)
+func GenerateWeightAndRolloutConfig(ctx *clicontext.CLIContext, resource types.Resource, targetPercentage int, duration time.Duration, pause bool) (int, *riov1.RolloutConfig, error) {
+	svcs, err := util.ListAppServicesFromServiceName(ctx, resource.Name)
 	if err != nil {
-		return serviceName, scale, fmt.Errorf("failed to parse %s: %v", arg, err)
+		return 0, nil, err
 	}
-	if scale > 100 {
-		return serviceName, scale, fmt.Errorf("scale cannot exceed 100")
-	}
-	return serviceName, scale, nil
-}
 
-func GenerateAppRolloutConfig(svcs []riov1.Service, pause bool, increment int, interval int) *riov1.RolloutConfig {
-	total := 0
+	svc := resource.Object.(*riov1.Service)
+	currComputedWeight := 0
+	if svc.Status.ComputedWeight != nil && *svc.Status.ComputedWeight > 0 {
+		currComputedWeight = *svc.Status.ComputedWeight
+	}
+
+	totalCurrWeight := 0
 	for _, s := range svcs {
-		if s.Status.ComputedWeight != nil {
-			total += *s.Status.ComputedWeight
+		if s.Status.ComputedWeight != nil && *s.Status.ComputedWeight > 0 {
+			totalCurrWeight += *s.Status.ComputedWeight
 		}
+	}
+	totalCurrWeightOtherSvcs := totalCurrWeight - currComputedWeight
+
+	newWeight := targetPercentage
+	if targetPercentage == 100 {
+		newWeight = 10000
+	} else if totalCurrWeightOtherSvcs > 0 {
+		newWeight = int(float64(totalCurrWeightOtherSvcs)/(1-(float64(targetPercentage)/100))) - totalCurrWeightOtherSvcs
+	}
+
+	// if not immediate rollout figure out increment
+	increment := 0
+	if duration.Seconds() >= 1.0 {
+		steps := duration.Seconds() / float64(DefaultInterval)             // First get rough amount of steps we want to take
+		totalNewWeight := totalCurrWeightOtherSvcs + newWeight             // Given the future total weight which includes our newWeight...
+		difference := totalNewWeight - totalCurrWeight                     // Find the difference between future total weight and current total weight
+		increment = int(math.Abs(math.Round(float64(difference) / steps))) // And divide by steps to get rough increment
 	}
 	rolloutConfig := &riov1.RolloutConfig{
 		Pause:           pause,
-		Increment:       int(float64(increment) * (float64(total) / 100.0)),
-		IntervalSeconds: interval,
+		Increment:       increment,
+		IntervalSeconds: DefaultInterval,
 	}
-	return rolloutConfig
+	return newWeight, rolloutConfig, nil
 }
 
-func PromoteService(ctx *clicontext.CLIContext, serviceName string, rolloutConfig *riov1.RolloutConfig) error {
+func PromoteService(ctx *clicontext.CLIContext, resource types.Resource, rolloutConfig *riov1.RolloutConfig, promoteWeight int) error {
 	var allErrors []error
-	svcs, err := util.ListAppServicesFromServiceName(ctx, serviceName)
+	svcs, err := util.ListAppServicesFromServiceName(ctx, resource.Name)
 	if err != nil {
 		return err
 	}
-	versionToPromote := ctx.ParseID(serviceName).Version
-	if versionToPromote == "" {
-		return errors.New("invalid version specified")
-	}
 	for _, s := range svcs {
-		if s.Spec.Version == versionToPromote || (s.Status.ComputedWeight != nil && *s.Status.ComputedWeight > 0) { // don't update non-promoted svcs without weight allocated
+		if s.Spec.Version == resource.Version || (s.Status.ComputedWeight != nil && *s.Status.ComputedWeight > 0) { // don't update non-promoted svcs without weight allocated
 			err := ctx.UpdateResource(types.Resource{
 				Namespace: s.Namespace,
 				Name:      s.Name,
@@ -128,12 +126,12 @@ func PromoteService(ctx *clicontext.CLIContext, serviceName string, rolloutConfi
 				Type:      types.ServiceType,
 			}, func(obj runtime.Object) error {
 				s := obj.(*riov1.Service)
+				s.Spec.RolloutConfig = rolloutConfig
 				if s.Spec.Weight == nil {
 					s.Spec.Weight = new(int)
 				}
-				s.Spec.RolloutConfig = rolloutConfig
-				if s.Spec.Version == versionToPromote {
-					*s.Spec.Weight = 100
+				if s.Spec.Version == resource.Version {
+					*s.Spec.Weight = promoteWeight
 					id, _ := table.FormatID(obj, s.Namespace)
 					fmt.Printf("%s promoted\n", id)
 				} else {
@@ -145,4 +143,20 @@ func PromoteService(ctx *clicontext.CLIContext, serviceName string, rolloutConfi
 		}
 	}
 	return mapper.NewErrors(allErrors...)
+}
+
+func validateArg(arg string) (string, int, error) {
+	serviceName, scaleStr := kv.Split(arg, "=")
+	scaleStr = strings.TrimSuffix(scaleStr, "%")
+	if scaleStr == "" {
+		return serviceName, 0, errors.New("weight params must be in the format of SERVICE=WEIGHT, for example: myservice=10%")
+	}
+	scale, err := strconv.Atoi(scaleStr)
+	if err != nil {
+		return serviceName, scale, fmt.Errorf("failed to parse %s: %v", arg, err)
+	}
+	if scale > 100 {
+		return serviceName, scale, fmt.Errorf("scale cannot exceed 100")
+	}
+	return serviceName, scale, nil
 }
