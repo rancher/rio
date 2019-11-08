@@ -64,6 +64,10 @@ func RioCmd(args []string, envs ...string) (string, error) {
 	cmd := exec.Command("rio", args...)
 	cmd.Env = envs
 	stdOutErr, err := cmd.CombinedOutput()
+	if os.Getenv("DEBUG_TEST") != "" {
+		fmt.Println(args)
+		fmt.Println(envs)
+	}
 	if err != nil {
 		return "", fmt.Errorf("%s: %s", err.Error(), stdOutErr)
 	}

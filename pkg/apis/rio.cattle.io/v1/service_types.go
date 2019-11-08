@@ -282,7 +282,7 @@ type Volume struct {
 	// That path on the host to mount into this container
 	HostPath string `json:"hostpath,omitempty"`
 
-	// The
+	// HostPathType specify HostPath type
 	HostPathType *v1.HostPathType `json:"hostPathType,omitempty" protobuf:"bytes,2,opt,name=type"`
 
 	// If Persistent is true then this volume refers to a PersistentVolumeClaim in this namespace. The

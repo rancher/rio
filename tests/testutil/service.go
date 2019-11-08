@@ -108,6 +108,9 @@ func GetService(t *testing.T, name string, app string, version string) TestServi
 
 // Remove calls "rio rm" on this service. Logs error but does not fail test.
 func (ts *TestService) Remove() {
+	if ts.T == nil {
+		return
+	}
 	if ts.Kubeconfig != "" {
 		err := os.RemoveAll(ts.Kubeconfig)
 		if err != nil {

@@ -101,7 +101,7 @@ func addRules(labels map[string]string, subject v1.Subject, service *riov1.Servi
 		if perm.Role != "" {
 			continue
 		}
-		policyRule, ok := permToPolicyRule(perm)
+		policyRule, ok := PermToPolicyRule(perm)
 		if ok {
 			role.Rules = append(role.Rules, policyRule)
 		}
@@ -129,7 +129,7 @@ func addClusterRules(labels map[string]string, subject v1.Subject, service *riov
 		if perm.Role != "" {
 			continue
 		}
-		policyRule, ok := permToPolicyRule(perm)
+		policyRule, ok := PermToPolicyRule(perm)
 		if ok {
 			role.Rules = append(role.Rules, policyRule)
 		}
@@ -151,7 +151,12 @@ func addClusterRules(labels map[string]string, subject v1.Subject, service *riov
 	}
 }
 
-func permToPolicyRule(perm riov1.Permission) (v1.PolicyRule, bool) {
+func addServiceAccount(labels map[string]string, subject v1.Subject, os *objectset.ObjectSet) {
+	sa := newServiceAccount(subject.Namespace, subject.Name, labels)
+	os.Add(sa)
+}
+
+func PermToPolicyRule(perm riov1.Permission) (v1.PolicyRule, bool) {
 	policyRule := v1.PolicyRule{}
 	valid := false
 
@@ -178,11 +183,6 @@ func permToPolicyRule(perm riov1.Permission) (v1.PolicyRule, bool) {
 	}
 
 	return policyRule, valid
-}
-
-func addServiceAccount(labels map[string]string, subject v1.Subject, os *objectset.ObjectSet) {
-	sa := newServiceAccount(subject.Namespace, subject.Name, labels)
-	os.Add(sa)
 }
 
 func newServiceAccount(namespace, name string, labels map[string]string) *corev1.ServiceAccount {
