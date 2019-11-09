@@ -22,34 +22,31 @@ func (r *Register) Run(ctx *clicontext.CLIContext) error {
 	domainName := ctx.CLI.Args().Get(0)
 	target := ctx.CLI.Args().Get(1)
 
-	var targetApp, targetVersion, targetNamespace string
-
 	result, err := ctx.ByID(target)
 	if err != nil {
 		return err
 	}
 
+	pd := adminv1.PublicDomain{
+		Spec: adminv1.PublicDomainSpec{
+			SecretName: r.Secret,
+		},
+	}
 	switch result.Object.(type) {
 	case *riov1.Service:
 		svc := result.Object.(*riov1.Service)
-		targetApp, targetVersion = services.AppAndVersion(svc)
+		targetApp, targetVersion := services.AppAndVersion(svc)
 		if !strings.Contains(target, "@") {
 			targetVersion = ""
 		}
-		targetNamespace = svc.Namespace
+		pd.Spec.TargetApp = targetApp
+		pd.Spec.TargetVersion = targetVersion
+		pd.Spec.TargetNamespace = svc.Namespace
 	case *riov1.Router:
 		router := result.Object.(*riov1.Router)
-		targetApp, targetNamespace = router.Name, router.Namespace
+		pd.Spec.TargetRouter = router.Name
+		pd.Spec.TargetNamespace = router.Namespace
 	}
 
-	pd := adminv1.PublicDomain{
-		Spec: adminv1.PublicDomainSpec{
-			SecretName:      r.Secret,
-			TargetApp:       targetApp,
-			TargetVersion:   targetVersion,
-			TargetNamespace: targetNamespace,
-		},
-	}
-
-	return ctx.Create(adminv1.NewPublicDomain(targetNamespace, domainName, pd))
+	return ctx.Create(adminv1.NewPublicDomain(pd.Spec.TargetNamespace, domainName, pd))
 }
