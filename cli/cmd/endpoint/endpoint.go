@@ -1,6 +1,8 @@
 package endpoint
 
 import (
+	"fmt"
+
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
@@ -53,12 +55,13 @@ func (e *Endpoint) Run(ctx *clicontext.CLIContext) error {
 		service := svc.(*riov1.Service)
 
 		app, _ := services2.AppAndVersion(service)
-		if seen[app] {
+		key := fmt.Sprintf("%s/%s", service.Namespace, app)
+		if seen[key] {
 			continue
 		}
 		endpoints := util.NormalizingEndpoints(service.Status.AppEndpoints, "")
 		if len(endpoints) > 0 {
-			seen[app] = true
+			seen[key] = true
 			data = append(data, Data{
 				Name:      app,
 				Namespace: service.Namespace,
