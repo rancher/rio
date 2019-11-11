@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/rancher/rio/modules"
-	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/controllers"
 	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/rio/pkg/webhook"
@@ -12,8 +11,6 @@ import (
 	"github.com/rancher/wrangler/pkg/crd"
 	"github.com/rancher/wrangler/pkg/kubeconfig"
 	"github.com/rancher/wrangler/pkg/leader"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/rest"
 )
@@ -31,13 +28,12 @@ func Startup(ctx context.Context, systemNamespace, kubeConfig string) error {
 
 	ctx, rioContext := types.BuildContext(ctx, systemNamespace, restConfig)
 
-	// detect and bootstrap developer environment
 	if err := bootstrapResources(rioContext, systemNamespace); err != nil {
 		return err
 	}
 
 	// setting up auth webhook
-	w := webhook.New(rioContext, kubeConfig, constants.DevMode)
+	w := webhook.New(rioContext, kubeConfig)
 	if err := w.Setup(); err != nil {
 		return err
 	}
@@ -53,17 +49,11 @@ func Startup(ctx context.Context, systemNamespace, kubeConfig string) error {
 }
 
 func bootstrapResources(rioContext *types.Context, systemNamespace string) error {
-	if _, err := rioContext.Apps.Apps().V1().Deployment().Get(systemNamespace, "rio-controller", metav1.GetOptions{}); errors.IsNotFound(err) {
-		constants.DevMode = true
-		controllerStack := stack.NewSystemStack(rioContext.Apply, rioContext.Admin.Admin().V1().SystemStack(), systemNamespace, "rio-controller")
-		answer := map[string]string{
-			"NAMESPACE": systemNamespace,
-		}
-		if err := controllerStack.Deploy(answer); err != nil {
-			return err
-		}
+	controllerStack := stack.NewSystemStack(rioContext.Apply, rioContext.Admin.Admin().V1().SystemStack(), systemNamespace, "rio-bootstrap")
+	answer := map[string]string{
+		"NAMESPACE": systemNamespace,
 	}
-	return nil
+	return controllerStack.Deploy(answer)
 }
 
 func Types(ctx context.Context, config *rest.Config) error {

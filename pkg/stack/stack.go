@@ -42,6 +42,10 @@ func (s *Stack) Questions() ([]v1.Question, error) {
 	return t.Questions()
 }
 
+func (s *Stack) WithAnswer(answer map[string]string) {
+	s.answers = answer
+}
+
 func (s *Stack) Yaml(answers map[string]string, additionalObjects ...runtime.Object) (string, error) {
 	mergedAnswers := map[string]string{}
 	for k, v := range s.answers {

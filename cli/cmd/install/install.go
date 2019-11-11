@@ -28,7 +28,6 @@ type Install struct {
 	IPAddress       []string `desc:"Manually specify IP addresses to generate rdns domain, supports comma separated values" name:"ip-address"`
 	DisableFeatures []string `desc:"Manually specify features to disable, supports comma separated values"`
 	EnableDebug     bool     `desc:"Enable debug logging in controller"`
-	HTTPProxy       string   `desc:"Set HTTP_PROXY environment variable for control plane"`
 	Yaml            bool     `desc:"Only print out k8s yaml manifest"`
 	Check           bool     `desc:"Only check status, don't deploy controller"`
 }
@@ -39,23 +38,30 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 	}
 
 	namespace := ctx.SystemNamespace
+	bootstrapStack := stack.NewSystemStack(ctx.Apply, nil, namespace, "rio-bootstrap")
 	controllerStack := stack.NewSystemStack(ctx.Apply, nil, namespace, "rio-controller")
 
 	answers := map[string]string{
-		"NAMESPACE":      namespace,
-		"DEBUG":          strconv.FormatBool(i.EnableDebug),
-		"IMAGE":          fmt.Sprintf("%s:%s", constants.ControllerImage, constants.ControllerImageTag),
-		"HTTP_PROXY":     i.HTTPProxy,
-		"RUN_CONTROLLER": "true",
+		"NAMESPACE":         namespace,
+		"RIO_DEBUG":         strconv.FormatBool(i.EnableDebug),
+		"IMAGE":             fmt.Sprintf("%s:%s", constants.ControllerImage, constants.ControllerImageTag),
+		"RUN_API_VALIDATOR": "\"TRUE\"",
 	}
+	bootstrapStack.WithAnswer(answers)
+	controllerStack.WithAnswer(answers)
 
 	if i.Yaml {
+		bootstrapObjects, err := bootstrapStack.GetObjects()
+		if err != nil {
+			return err
+		}
+
 		cm, err := i.getConfigMap(ctx, true)
 		if err != nil {
 			return err
 		}
 
-		yamlOutput, err := controllerStack.Yaml(answers, cm)
+		yamlOutput, err := controllerStack.Yaml(nil, append(bootstrapObjects, cm)...)
 		if err != nil {
 			return err
 		}
@@ -79,6 +85,9 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		}
 
 		fmt.Println("Deploying Rio control plane....")
+		if err := bootstrapStack.Deploy(answers); err != nil {
+			return err
+		}
 		if err := controllerStack.Deploy(answers, cm); err != nil {
 			return err
 		}

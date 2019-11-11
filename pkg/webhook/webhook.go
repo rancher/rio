@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/rancher/rio/pkg/config"
+
 	"github.com/linkerd/linkerd2/controller/k8s"
 	"github.com/linkerd/linkerd2/controller/webhook"
 	"github.com/linkerd/linkerd2/pkg/tls"
@@ -47,31 +49,30 @@ var (
 type Webhook struct {
 	rContext   *types.Context
 	kubeconfig string
-	devMode    bool
 	listenHost string
 	port       string
 }
 
-func New(rContext *types.Context, kc string, devMode bool) Webhook {
+func New(rContext *types.Context, kc string) Webhook {
 	w := Webhook{
 		rContext:   rContext,
 		kubeconfig: kc,
-		devMode:    devMode,
 		listenHost: fmt.Sprintf("%s.%s.svc", constants.AuthWebhookServiceName, rContext.Namespace),
 		port:       ":443",
 	}
-	if devMode {
-		w.listenHost = os.Getenv("WEBHOOK_LISTEN")
-		if w.listenHost == "" {
-			w.listenHost = "127.0.0.1"
-		}
-		w.port = constants.DevWebhookPort
+	if config.ConfigController.WebhookHost != "" {
+		w.listenHost = config.ConfigController.WebhookHost
 	}
+
+	if config.ConfigController.WebhookPort != "" {
+		w.port = config.ConfigController.WebhookPort
+	}
+
 	return w
 }
 
 func (w Webhook) Setup() error {
-	if constants.DevMode && os.Getenv("RUN_WEBHOOK") == "" {
+	if !config.ConfigController.RunAPIValidatorWebhook {
 		return nil
 	}
 	if err := w.setup(); err != nil {
@@ -172,7 +173,8 @@ func (w Webhook) reconcileSecret() ([]byte, error) {
 		}
 	}
 
-	if w.devMode {
+	// if WebhookHost is not empty set up webhook locally
+	if config.ConfigController.WebhookHost != "" {
 		tlsKeyPath = fmt.Sprintf("%s/.local/ssl/tls.key", os.Getenv("HOME"))
 		tlsCrtPath = fmt.Sprintf("%s/.local/ssl/tls.crt", os.Getenv("HOME"))
 		if err := os.MkdirAll(filepath.Dir(tlsKeyPath), 0755); err != nil {
@@ -235,7 +237,8 @@ func (w Webhook) reconcileWebhook(caBundle []byte) error {
 		},
 	}
 
-	if w.devMode {
+	// if WebhookHost is not empty set up webhook locally
+	if config.ConfigController.WebhookHost != "" {
 		validatingWebhook.Webhooks[0].ClientConfig = v1beta1.WebhookClientConfig{
 			URL:      &[]string{fmt.Sprintf("https://%s%s", w.listenHost, constants.DevWebhookPort)}[0],
 			CABundle: caBundle,
@@ -259,10 +262,6 @@ func (w Webhook) reconcileWebhook(caBundle []byte) error {
 }
 
 func (w Webhook) run() error {
-	port := w.port
-	if constants.DevMode {
-		port = constants.DevWebhookPort
-	}
 	k8sAPI, err := k8s.InitializeAPI(w.kubeconfig)
 	if err != nil {
 		log.Fatalf("failed to initialize Kubernetes API: %s", err)
@@ -285,7 +284,7 @@ func (w Webhook) run() error {
 		ignoreServiceAccount: fmt.Sprintf(rioAdminAccount, w.rContext.Namespace),
 	}
 
-	s, err := webhook.NewServer(k8sAPI, port, cred, h.ValidateAuth, constants.AuthWebhookServiceName)
+	s, err := webhook.NewServer(k8sAPI, w.port, cred, h.ValidateAuth, constants.AuthWebhookServiceName)
 	if err != nil {
 		log.Fatalf("failed to initialize the webhook server: %s", err)
 	}

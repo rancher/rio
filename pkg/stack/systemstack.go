@@ -1,12 +1,7 @@
 package stack
 
 import (
-	"io/ioutil"
-
-	"k8s.io/apimachinery/pkg/runtime"
-
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
-	"github.com/rancher/rio/pkg/constants"
 	adminv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/riofile"
 	"github.com/rancher/rio/pkg/template"
@@ -16,6 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
 )
 
@@ -83,8 +79,5 @@ func (s *SystemStack) WithApply(apply apply.Apply) {
 }
 
 func (s *SystemStack) content() ([]byte, error) {
-	if constants.DevMode {
-		return ioutil.ReadFile("stacks/" + s.name + "-stack.yaml")
-	}
 	return stacks.Asset("stacks/" + s.name + "-stack.yaml")
 }

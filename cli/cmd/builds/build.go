@@ -5,9 +5,9 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/rancher/rio/cli/cmd/up/pkg"
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/cli/pkg/up"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/stack"
 	"github.com/urfave/cli"
@@ -37,12 +37,12 @@ type Build struct {
 }
 
 func (b *Build) Run(ctx *clicontext.CLIContext) error {
-	content, err := pkg.LoadRiofile(b.F_File)
+	content, err := up.LoadRiofile(b.F_File)
 	if err != nil {
 		return err
 	}
 
-	answers, err := pkg.LoadAnswer("")
+	answers, err := up.LoadAnswer("")
 	if err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ func (b *Build) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	images, err := pkg.Build(imageBuilds, ctx, false)
+	images, err := up.Build(imageBuilds, ctx, false)
 	if err != nil {
 		return err
 	}

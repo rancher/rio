@@ -4,14 +4,22 @@ import (
 	"encoding/json"
 	"strings"
 
-	v1 "k8s.io/api/core/v1"
-
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 var (
 	ConfigName = "rio-config"
+
+	ConfigController = ControllerConfig{}
 )
+
+type ControllerConfig struct {
+	RunAPIValidatorWebhook bool
+	WebhookPort            string
+	WebhookHost            string
+	IPAddresses            string
+}
 
 type Config struct {
 	Features    map[string]FeatureConfig `json:"features,omitempty"`
