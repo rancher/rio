@@ -168,7 +168,12 @@ func (u *Up) ensureStack(c *clicontext.CLIContext) (*riov1.Stack, error) {
 	existing, err := c.Rio.Stacks(c.GetSetNamespace()).Get(u.Name, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			return c.Rio.Stacks(c.GetSetNamespace()).Create(s)
+			stack, err := c.Rio.Stacks(c.GetSetNamespace()).Create(s)
+			if err != nil {
+				return nil, err
+			}
+			fmt.Printf("%s:%s/%s\n", stack.Namespace, "stack", stack.Name)
+			return stack, nil
 		}
 		return nil, err
 	}
