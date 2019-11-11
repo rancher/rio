@@ -88,7 +88,6 @@ func (s *Create) Run(ctx *clicontext.CLIContext) error {
 		if err != nil {
 			return err
 		}
-		setDefaults(pullSecret.(*v1.Secret))
 		pullSecret.(*v1.Secret).Namespace = ns
 		if pullSecret.(*v1.Secret).Annotations == nil {
 			pullSecret.(*v1.Secret).Annotations = map[string]string{}
@@ -208,7 +207,7 @@ func createOrUpdate(secret *v1.Secret, ctx *clicontext.CLIContext) error {
 			return err
 		}
 	}
-	fmt.Printf("%s/%s\n", secret.Namespace, secret.Name)
+	fmt.Printf("%s:%s/%s\n", secret.Namespace, "secret", secret.Name)
 	return nil
 }
 
