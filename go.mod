@@ -77,7 +77,7 @@ require (
 	github.com/rancher/gitwatcher v0.4.1
 	github.com/rancher/norman v0.0.0-20191030191625-ebecbda5fbe3
 	github.com/rancher/rdns-server v0.5.7-0.20190927164127-7128efe7d065
-	github.com/rancher/wrangler v0.2.1-0.20191104064538-22e063a2a843
+	github.com/rancher/wrangler v0.2.1-0.20191109002915-2a833f7e410d
 	github.com/rancher/wrangler-api v0.2.1-0.20191025043713-b1ca9c21825a
 	github.com/sclevine/spec v1.3.0
 	github.com/sirupsen/logrus v1.4.2
