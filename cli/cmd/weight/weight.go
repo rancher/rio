@@ -13,6 +13,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/table"
 	"github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/services"
 	"github.com/rancher/wrangler/pkg/kv"
 	"github.com/rancher/wrangler/pkg/merr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -120,12 +121,13 @@ func PromoteService(ctx *clicontext.CLIContext, resource types.Resource, rollout
 		return err
 	}
 	for _, s := range svcs {
-		if s.Spec.Version == resource.Version || (s.Status.ComputedWeight != nil && *s.Status.ComputedWeight > 0) { // don't update non-promoted svcs without weight allocated
+		app, version := services.AppAndVersion(&s)
+		if version == resource.Version || (s.Status.ComputedWeight != nil && *s.Status.ComputedWeight > 0) { // don't update non-promoted svcs without weight allocated
 			err := ctx.UpdateResource(types.Resource{
 				Namespace: s.Namespace,
 				Name:      s.Name,
-				App:       s.Spec.App,
-				Version:   s.Spec.Version,
+				App:       app,
+				Version:   version,
 				Type:      types.ServiceType,
 			}, func(obj runtime.Object) error {
 				s := obj.(*riov1.Service)
@@ -133,7 +135,7 @@ func PromoteService(ctx *clicontext.CLIContext, resource types.Resource, rollout
 				if s.Spec.Weight == nil {
 					s.Spec.Weight = new(int)
 				}
-				if s.Spec.Version == resource.Version {
+				if version == resource.Version {
 					*s.Spec.Weight = promoteWeight
 					id, _ := table.FormatID(obj, s.Namespace)
 					fmt.Printf("%s promoted\n", id)

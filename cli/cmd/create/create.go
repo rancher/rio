@@ -72,6 +72,7 @@ type Create struct {
 	RolloutDuration        string            `desc:"How long the rollout should take" default:"0s"`
 	RequestTimeoutSeconds  int               `desc:"Set request timeout in seconds"`
 	Secret                 []string          `desc:"Secrets to inject to the service (format: name[/key]:target)"`
+	StageOnly              bool              `desc:"Only stage service when generating new services. Can only be used when template is true"`
 	Template               bool              `desc:"If true new version is created per git commit. If false update in-place"`
 	T_Tty                  bool              `desc:"Allocate a pseudo-TTY"`
 	Scale                  string            `desc:"The number of replicas to run or a range for autoscaling (example 1-10)"`
@@ -180,6 +181,7 @@ func (c *Create) ToService(ctx *clicontext.CLIContext, args []string) (*riov1.Se
 	spec.Version = r.Version
 	spec.WorkingDir = c.W_Workdir
 	spec.Template = c.Template
+	spec.StageOnly = c.StageOnly
 
 	if c.NoMesh {
 		mesh := !c.NoMesh

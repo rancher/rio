@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	webhookv1controller "github.com/rancher/gitwatcher/pkg/generated/controllers/gitwatcher.cattle.io/v1"
 	"github.com/rancher/rio/modules/build/pkg"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
@@ -20,7 +21,8 @@ import (
 
 func Register(ctx context.Context, rContext *types.Context) error {
 	h := &handler{
-		services: rContext.Rio.Rio().V1().Service(),
+		services:   rContext.Rio.Rio().V1().Service(),
+		gitcommits: rContext.Webhook.Gitwatcher().V1().GitCommit().Cache(),
 	}
 
 	riov1controller.RegisterServiceGeneratingHandler(ctx,
@@ -37,7 +39,8 @@ func Register(ctx context.Context, rContext *types.Context) error {
 }
 
 type handler struct {
-	services riov1controller.ServiceController
+	gitcommits webhookv1controller.GitCommitCache
+	services   riov1controller.ServiceController
 }
 
 func (h *handler) generate(service *riov1.Service, status riov1.ServiceStatus) ([]runtime.Object, riov1.ServiceStatus, error) {
@@ -56,21 +59,18 @@ func (h *handler) generate(service *riov1.Service, status riov1.ServiceStatus) (
 	spec.Template = false
 	spec.App = app
 	spec.Version = ""
-	spec.Weight = &[]int{100}[0]
 	setImageBuild(service, status, spec)
 	setPullSecrets(spec)
 
-	if !service.Spec.StageOnly {
+	generatedFromPR, err := h.generatedFromPR(service)
+	if err != nil {
+		return nil, status, err
+	}
+	if !service.Spec.StageOnly && !generatedFromPR {
 		if err := h.scaleDownRevisions(service.Namespace, app, name); err != nil {
 			return nil, status, nil
 		}
-	} else {
-		// if it is first generated service, set generated service to 1
-		if len(status.GeneratedServices) == 0 {
-			spec.Weight = &[]int{100}[0]
-		} else {
-			spec.Weight = &[]int{0}[0]
-		}
+		spec.Weight = &[]int{100}[0]
 	}
 
 	if status.ShouldClean[name] || status.GeneratedServices[name] {
@@ -90,6 +90,19 @@ func (h *handler) generate(service *riov1.Service, status riov1.ServiceStatus) (
 			Spec: *spec,
 		},
 	}, status, nil
+}
+
+func (h *handler) generatedFromPR(service *riov1.Service) (bool, error) {
+	if len(service.Status.GitCommits) == 0 {
+		return false, nil
+	}
+
+	gc, err := h.gitcommits.Get(service.Namespace, last(service.Status.GitCommits))
+	if err != nil {
+		return false, err
+	}
+
+	return gc.Spec.PR != "", nil
 }
 
 func (h *handler) cleanup(service *riov1.Service) error {
