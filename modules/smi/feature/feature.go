@@ -13,6 +13,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		FeatureName: "smi",
 		FeatureSpec: features.FeatureSpec{
 			Description: "Program SMI rules for services",
+			Enabled:     true,
 		},
 		Controllers: []features.ControllerRegister{
 			app.Register,
