@@ -2,6 +2,7 @@ package riofile
 
 import (
 	"bytes"
+	"encoding/json"
 	"strings"
 
 	"github.com/rancher/norman/pkg/types/convert"
@@ -14,6 +15,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	k8yaml "sigs.k8s.io/yaml"
 )
 
 type Riofile struct {
@@ -93,12 +95,17 @@ func Render(objects []runtime.Object) ([]byte, error) {
 	}
 
 	if len(other) > 0 {
-		bytes, err := yaml.ToBytes(other)
-		if err != nil {
-			return nil, err
+		var otherContent string
+		for _, o := range other {
+			str, err := ObjToYaml(o, "yaml")
+			if err != nil {
+				return nil, err
+			}
+			otherContent += str
+			otherContent += "---\n"
 		}
 		rf.Kubernetes = &schema.Kubernetes{
-			Manifest: string(bytes),
+			Manifest: otherContent,
 		}
 	}
 
@@ -276,4 +283,70 @@ func toRiofile(rf *schema.ExternalRiofile) (*Riofile, error) {
 	}
 
 	return riofile, nil
+}
+
+func ObjToYaml(obj runtime.Object, format string) (string, error) {
+	data, err := json.MarshalIndent(obj, "", " ")
+	if err != nil {
+		return "", err
+	}
+
+	m := make(map[string]interface{})
+	if err := json.Unmarshal(data, &m); err != nil {
+		return "", err
+	}
+
+	modifiedMap := make(map[string]interface{})
+	newMeta := map[string]interface{}{}
+	if meta, ok := m["metadata"].(map[string]interface{}); ok {
+		if meta["labels"] != nil {
+			labels := cleanLabels(meta["labels"].(map[string]interface{}))
+			if len(labels) != 0 {
+				newMeta["labels"] = labels
+			}
+		}
+		if meta["annotations"] != nil {
+			anno := cleanLabels(meta["annotations"].(map[string]interface{}))
+			if len(anno) != 0 {
+				newMeta["annotations"] = anno
+			}
+		}
+		newMeta["name"] = meta["name"]
+		newMeta["namespace"] = meta["namespace"]
+	}
+	modifiedMap["apiVersion"] = m["apiVersion"]
+	modifiedMap["kind"] = m["kind"]
+	modifiedMap["metadata"] = newMeta
+	if _, ok := m["spec"]; ok {
+		modifiedMap["spec"] = m["spec"]
+	}
+	if m["data"] != nil {
+		modifiedMap["data"] = m["data"]
+	}
+
+	data, err = json.MarshalIndent(modifiedMap, "", " ")
+	if err != nil {
+		return "", err
+	}
+
+	if format == "json" {
+		return string(data), nil
+	}
+
+	r, err := k8yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+
+	return string(r), nil
+}
+
+func cleanLabels(m map[string]interface{}) map[string]interface{} {
+	r := make(map[string]interface{})
+	for k, v := range m {
+		if !strings.Contains(k, "rio.cattle.io") {
+			r[k] = v
+		}
+	}
+	return r
 }
