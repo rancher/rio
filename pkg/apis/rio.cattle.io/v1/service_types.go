@@ -193,7 +193,7 @@ type Container struct {
 	Env []EnvVar `json:"env,omitempty" mapper:"env,envmap=sep==,alias=environment"`
 
 	// CPU, in cores
-	CPUMillis *int64 `json:"cpuMillis,omitempty" mapper:"alias=cpu|cpus"`
+	CPUMillis *int64 `json:"cpuMillis,omitempty" mapper:"quantity,alias=cpu|cpus"`
 
 	// Memory, in bytes
 	MemoryBytes *int64 `json:"memoryBytes,omitempty" mapper:"quantity,alias=mem|memory"`
