@@ -1,0 +1,28 @@
+kubernetes:
+  manifest: |-
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      generateName: linkerd-install-
+      namespace: ${NAMESPACE}
+    spec:
+      backoffLimit: 1
+      completions: 1
+      parallelism: 1
+      template:
+        spec:
+          containers:
+          - env:
+            - name: ARGS
+              value: ${INSTALL_ARGS}
+            - name: LINKERD_UPGRADE
+              value: ${LINKERD_UPGRADE}
+            image: ${LINKERD_INSTALL_IMAGE}
+            name: linkerd-install
+          restartPolicy: Never
+          serviceAccount: rio-controller-serviceaccount
+          serviceAccountName: rio-controller-serviceaccount
+          terminationGracePeriodSeconds: 30
+
+template:
+  envSubst: true

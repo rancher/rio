@@ -27,7 +27,8 @@ if [[ ${ARCH} == amd64 ]]; then
       fatal "Integration tests must not be focused"
     fi
 
-    go test -cover -tags=test ./...
+    BUILDTAGS="test,static"
+    go test -cover -tags "$BUILDTAGS" ./...
 
     k3s server --no-deploy traefik >/dev/null 2>&1 &
     sleep 30
@@ -35,7 +36,7 @@ if [[ ${ARCH} == amd64 ]]; then
     export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
     export PATH=$(pwd)/bin:$PATH
 
-    RUN_WEBHOOK=true rio-controller & > ./rio-controller-log &
+    RUN_API_VALIDATOR=true RUN_API_VALIDATOR_PORT=:7443 RUN_API_VALIDATOR_HOST=127.0.0.1 rio-controller & > ./rio-controller-log &
     rio install --check 2>&1
 
     kubectl get po -n rio-system

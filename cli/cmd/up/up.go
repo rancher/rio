@@ -3,8 +3,8 @@ package up
 import (
 	"fmt"
 
-	"github.com/rancher/rio/cli/cmd/up/pkg"
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/cli/pkg/up"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/riofile/stringers"
 	"github.com/rancher/rio/pkg/stack"
@@ -33,7 +33,7 @@ const (
 
 func (u *Up) Run(c *clicontext.CLIContext) error {
 	if u.Name == "" {
-		u.Name = pkg.GetCurrentDir()
+		u.Name = up.GetCurrentDir()
 	}
 
 	stack, err := u.ensureStack(c)
@@ -103,12 +103,12 @@ func (u *Up) setBuild(c *clicontext.CLIContext) error {
 }
 
 func (u *Up) loadFileAndAnswer(c *clicontext.CLIContext) (string, map[string]string, error) {
-	answers, err := pkg.LoadAnswer(u.Answers)
+	answers, err := up.LoadAnswer(u.Answers)
 	if err != nil {
 		return "", nil, err
 	}
 
-	content, err := pkg.LoadRiofile(u.F_File)
+	content, err := up.LoadRiofile(u.F_File)
 	if err != nil {
 		return "", nil, err
 	}
@@ -122,7 +122,7 @@ func (u *Up) up(content string, answers map[string]string, s *riov1.Stack, c *cl
 		return err
 	}
 
-	images, err := pkg.Build(imageBuilds, c, u.P_Parallel)
+	images, err := up.Build(imageBuilds, c, u.P_Parallel)
 	if err != nil {
 		return err
 	}
@@ -151,7 +151,15 @@ func (u *Up) up(content string, answers map[string]string, s *riov1.Stack, c *cl
 		knowngvks = s.Spec.AdditionalGroupVersionKinds
 	}
 
-	err = c.Apply.WithListerNamespace(c.GetSetNamespace()).WithDefaultNamespace(c.GetSetNamespace()).WithOwner(s).WithSetOwnerReference(true, true).WithGVK(knowngvks...).WithDynamicLookup().ApplyObjects(objs...)
+	err = c.Apply.
+		WithListerNamespace(c.GetSetNamespace()).
+		WithDefaultNamespace(c.GetSetNamespace()).
+		WithOwner(s).
+		WithSetOwnerReference(true, true).
+		WithGVK(knowngvks...).
+		WithRestrictClusterScoped().
+		WithDynamicLookup().
+		ApplyObjects(objs...)
 	if err != nil {
 		return err
 	}

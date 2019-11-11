@@ -1,5 +1,5 @@
 //go:generate go run pkg/codegen/cleanup/main.go
-//go:generate go run ./vendor/github.com/go-bindata/go-bindata/go-bindata -o ./stacks/bindata.go -ignore bindata.go -pkg stacks -modtime 1557785965 -mode 0644 ./stacks/
+//go:generate go run ./vendor/github.com/go-bindata/go-bindata/go-bindata -tags static -o ./stacks/bindata.go -ignore bindata.go -pkg stacks -modtime 1557785965 -mode 0644 ./stacks/
 //go:generate go fmt stacks/bindata.go
 //go:generate go run pkg/codegen/main.go
 
@@ -11,6 +11,8 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+
+	"github.com/rancher/rio/pkg/config"
 
 	"github.com/rancher/norman/pkg/debug"
 	"github.com/rancher/rio/pkg/server"
@@ -41,6 +43,29 @@ func main() {
 			EnvVar:      "RIO_NAMESPACE",
 			Value:       "rio-system",
 			Destination: &namespace,
+		},
+		cli.BoolFlag{
+			Name:        "run_api_validator",
+			Usage:       "Whether to run api validator webhook",
+			EnvVar:      "RUN_API_VALIDATOR",
+			Destination: &config.ConfigController.RunAPIValidatorWebhook,
+		},
+		cli.StringFlag{
+			Name:        "webhook_port",
+			Usage:       "Specify which port webhook should listen on",
+			EnvVar:      "RUN_API_VALIDATOR_PORT",
+			Destination: &config.ConfigController.WebhookPort,
+		},
+		cli.StringFlag{
+			Name:        "webhook_host",
+			Usage:       "Specify which host webhook should listen on",
+			EnvVar:      "RUN_API_VALIDATOR_HOST",
+			Destination: &config.ConfigController.WebhookHost,
+		},
+		cli.StringFlag{
+			Name:        "ip_address",
+			Usage:       "Specify which ip address RDNS should generate record for",
+			Destination: &config.ConfigController.IPAddresses,
 		},
 	}
 	app.Flags = append(app.Flags, debug.Flags(&debugConfig)...)

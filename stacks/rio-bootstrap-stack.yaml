@@ -1,0 +1,435 @@
+kubernetes:
+  manifest: |-
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: ${NAMESPACE}
+      labels:
+       rio.cattle.io/is-system: "true"
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: rio-cluster-admin
+    rules:
+    - apiGroups:
+      - ""
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - nonResourceURLs:
+      - "*"
+      verbs:
+      - '*'
+    - apiGroups:
+      - "apiregistration.k8s.io"
+      resources:
+      - "apiservices"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "admissionregistration.k8s.io"
+      resources:
+      - "mutatingwebhookconfigurations"
+      - "validatingwebhookconfigurations"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "extensions"
+      - "apps"
+      resources:
+      - "replicasets"
+      - "deployments"
+      - "daemonsets"
+      - "statefulsets"
+      verbs:
+      - '*'
+    - apiGroups:
+      - "build.knative.dev"
+      - "caching.internal.knative.dev"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "cert-manager.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "networking.k8s.io"
+      - "extensions"
+      resources:
+      - "ingresses"
+      - "ingresses/status"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "batch"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "autoscaling"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "rbac.authorization.k8s.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "admin.rio.cattle.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "rio.cattle.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "gitwatcher.cattle.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "linkerd.io"
+      resources:
+      - "serviceprofiles"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "apiextensions.k8s.io"
+      resources:
+      - "customresourcedefinitions"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "authentication.istio.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "policy"
+      resources:
+      - "podsecuritypolicies"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "split.smi-spec.io"
+      resources:
+      - "trafficsplits"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "storage.k8s.io"
+      resources:
+      - "storageclasses"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "gateway.solo.io.v2"
+      - "gateway.solo.io"
+      - "gloo.solo.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - tekton.dev
+      resources:
+      - tasks
+      - clustertasks
+      - taskruns
+      - pipelines
+      - pipelineruns
+      - pipelineresources
+      verbs:
+      - get
+      - list
+      - create
+      - update
+      - delete
+      - patch
+      - watch
+    - apiGroups:
+      - tekton.dev
+      resources:
+      - taskruns/finalizers
+      - pipelineruns/finalizers
+      verbs:
+      - get
+      - list
+      - create
+      - update
+      - delete
+      - patch
+      - watch
+    - apiGroups:
+      - tekton.dev
+      resources:
+      - tasks/status
+      - clustertasks/status
+      - taskruns/status
+      - pipelines/status
+      - pipelineruns/status
+      - pipelineresources/status
+      verbs:
+      - get
+      - list
+      - create
+      - update
+      - delete
+      - patch
+      - watch
+    - apiGroups:
+      - policy
+      resourceNames:
+      - tekton-pipelines
+      resources:
+      - podsecuritypolicies
+      verbs:
+      - use
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: rio-controller-binding
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: rio-cluster-admin
+    subjects:
+    - kind: ServiceAccount
+      name: rio-controller-serviceaccount
+      namespace: ${NAMESPACE}
+    ---
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: rio-controller-serviceaccount
+      namespace: ${NAMESPACE}
+    ---
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: rio-api-validator
+      namespace: ${NAMESPACE}
+    ---
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: rio-api-validator
+      namespace: ${NAMESPACE}
+    spec:
+      ports:
+      - name: https-443
+        port: 443
+        protocol: TCP
+        targetPort: 443
+      selector:
+        rio-controller: "true"
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: rio-admin
+    rules:
+    - apiGroups:
+      - rio.cattle.io
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - admin.rio.cattle.io
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - autoscale.rio.cattle.io
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - tekton.dev
+      resources:
+      - "taskruns"
+      verbs:
+      - "*"
+    - apiGroups:
+      - ""
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "apps"
+      - "extensions"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "certmanager.k8s.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "split.smi-spec.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - "linkerd.io"
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - ""
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: rio-readonly
+    rules:
+    - apiGroups:
+      - rio.cattle.io
+      resources:
+      - "*"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+    - apiGroups:
+      - tekton.dev
+      resources:
+      - "taskruns"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+    - apiGroups:
+      - ""
+      resources:
+      - "*"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+    - apiGroups:
+      - "apps"
+      - "extensions"
+      resources:
+      - "*"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: rio-privileged
+    rules:
+    - apiGroups:
+      - rio.cattle.io
+      resources:
+      - "*"
+      verbs:
+      - "*"
+    - apiGroups:
+      - tekton.dev
+      resources:
+      - "taskruns"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+    - apiGroups:
+      - ""
+      resources:
+      - "*"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+      - "create"
+    - apiGroups:
+      - "apps"
+      - "extensions"
+      resources:
+      - "*"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: rio-standard
+    rules:
+    - apiGroups:
+      - rio.cattle.io
+      resources:
+      - "*"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+      - "create"
+      - "update"
+      - "delete"
+      - "patch"
+    - apiGroups:
+      - tekton.dev
+      resources:
+      - "taskruns"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+    - apiGroups:
+      - ""
+      resources:
+      - "*"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+      - "create"
+    - apiGroups:
+      - "apps"
+      - "extensions"
+      resources:
+      - "*"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+    ---
+
+template:
+  goTemplate: true
+  envSubst: true

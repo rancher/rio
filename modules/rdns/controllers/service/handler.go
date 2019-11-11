@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
-	"os"
+	"strings"
 
 	approuter "github.com/rancher/rdns-server/client"
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
@@ -159,13 +159,16 @@ func (h *handler) generate(svc *corev1.Service, status corev1.ServiceStatus) ([]
 }
 
 func (h *handler) staticAddress() ([]adminv1.Address, error) {
-	if constants.DevMode && os.Getenv("IP_ADDRESS") != "" {
-		return []adminv1.Address{
-			{
-				IP:       os.Getenv("IP_ADDRESS"),
+	if config.ConfigController.IPAddresses != "" {
+		ips := strings.Split(config.ConfigController.IPAddresses, ",")
+		var addresses []adminv1.Address
+		for _, ip := range ips {
+			addresses = append(addresses, adminv1.Address{
+				IP:       ip,
 				Hostname: "",
-			},
-		}, nil
+			})
+		}
+		return addresses, nil
 	}
 	cm, err := h.configMapCache.Get(h.systemNamespace, config.ConfigName)
 	if err != nil {

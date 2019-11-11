@@ -13,9 +13,10 @@ LINKFLAGS="-X github.com/rancher/rio/pkg/version.Version=$VERSION"
 LINKFLAGS="-X github.com/rancher/rio/pkg/version.GitCommit=$COMMIT $LINKFLAGS"
 LINKFLAGS="-X github.com/rancher/rio/pkg/constants.ControllerImage=${REPO}/rio-controller $LINKFLAGS"
 LINKFLAGS="-X github.com/rancher/rio/pkg/constants.ControllerImageTag=${TAG} $LINKFLAGS"
-GOOS=linux CGO_ENABLED=0 go build -ldflags "$LINKFLAGS $OTHER_LINKFLAGS" -o bin/rio ./cli
+BUILDTAGS="static"
+GOOS=linux CGO_ENABLED=0 go build -tags "$BUILDTAGS" -ldflags "$LINKFLAGS $OTHER_LINKFLAGS" -o bin/rio ./cli
 if [ "$CROSS" = "true" ] && [ "$ARCH" = "amd64" ]; then
-    GOOS=darwin go build -ldflags "$LINKFLAGS" -o bin/rio-darwin ./cli
-    GOOS=windows go build -ldflags "$LINKFLAGS" -o bin/rio-windows ./cli
+    GOOS=darwin go build -tags "$BUILDTAGS" -ldflags "$LINKFLAGS" -o bin/rio-darwin ./cli
+    GOOS=windows go build -tags "$BUILDTAGS" -ldflags "$LINKFLAGS" -o bin/rio-windows ./cli
 fi
-GOOS=linux CGO_ENABLED=0 go build -ldflags "$LINKFLAGS $OTHER_LINKFLAGS" -o bin/rio-controller
+GOOS=linux CGO_ENABLED=0 go build -tags "$BUILDTAGS" -ldflags "$LINKFLAGS $OTHER_LINKFLAGS" -o bin/rio-controller
