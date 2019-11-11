@@ -2,9 +2,12 @@ package ingress
 
 import (
 	"context"
+	"fmt"
 
 	rioadminv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/indexes"
+	services2 "github.com/rancher/rio/pkg/services"
 	"github.com/rancher/rio/types"
 	networkingv1beta1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/extensions/v1beta1"
 	"k8s.io/api/extensions/v1beta1"
@@ -49,7 +52,20 @@ func (h handler) generate(obj *v1beta1.Ingress, status v1beta1.IngressStatus) ([
 			return nil, status, nil
 		}
 		if pd.Spec.TargetApp != "" {
-			h.services.Enqueue(pd.Spec.TargetNamespace, pd.Spec.TargetApp)
+			services, err := h.services.Cache().GetByIndex(indexes.ServiceByApp, fmt.Sprintf("%s/%s", pd.Spec.TargetNamespace, pd.Spec.TargetApp))
+			if err != nil {
+				return nil, status, err
+			}
+			if pd.Spec.TargetVersion != "" {
+				for _, service := range services {
+					_, version := services2.AppAndVersion(service)
+					if version == pd.Spec.TargetVersion {
+						h.services.Enqueue(pd.Spec.TargetNamespace, service.Name)
+					}
+				}
+			} else if len(services) > 0 {
+				h.services.Enqueue(pd.Spec.TargetNamespace, services[0].Name)
+			}
 		}
 		if pd.Spec.TargetRouter != "" {
 			h.routers.Enqueue(pd.Spec.TargetNamespace, pd.Spec.TargetApp)

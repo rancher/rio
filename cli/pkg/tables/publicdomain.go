@@ -24,18 +24,14 @@ func NewPublicDomain(cfg Config) TableWriter {
 func formatTargetName(obj runtime.Object) string {
 	domain := obj.(*adminv1.PublicDomain)
 
-	writeNs := true
-	if domain.Namespace == domain.Spec.TargetNamespace {
-		writeNs = false
-	}
-
 	target := domain.Spec.TargetApp
+	if target == "" {
+		target = domain.Spec.TargetRouter
+	}
 	if domain.Spec.TargetVersion != "" {
-		target = fmt.Sprintf("%s:%s", target, domain.Spec.TargetVersion)
+		target = fmt.Sprintf("%s@%s", target, domain.Spec.TargetVersion)
 	}
+	target = fmt.Sprintf("%s:%s", domain.Spec.TargetNamespace, target)
 
-	if writeNs {
-		target = fmt.Sprintf("%s/%s", domain.Spec.TargetNamespace, target)
-	}
 	return target
 }

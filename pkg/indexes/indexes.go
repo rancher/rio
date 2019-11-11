@@ -30,7 +30,7 @@ func publicDomain(rContext *types.Context) {
 		}
 
 		var keys []string
-		if obj.Spec.TargetApp == "" {
+		if obj.Spec.TargetApp == "" && obj.Spec.TargetRouter == "" {
 			return nil, nil
 		}
 
