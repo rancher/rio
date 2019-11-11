@@ -45,6 +45,8 @@ github.com/Microsoft/hcsshim/internal/wclayer
 github.com/PuerkitoBio/purell
 # github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
 github.com/PuerkitoBio/urlesc
+# github.com/ahmetb/gen-crd-api-reference-docs v0.1.5
+github.com/ahmetb/gen-crd-api-reference-docs
 # github.com/aokoli/goutils v1.1.0
 github.com/aokoli/goutils
 # github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da

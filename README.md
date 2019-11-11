@@ -11,7 +11,7 @@ Connect with us on the #rio channel on the [rancher slack](https://slack.rancher
 
 ## Quick Start
 
-1. Have a Kubernetes 1.13 or newer cluster running.
+1. Have a Kubernetes 1.15 or newer cluster running.
 
    [k3s](https://k3s.io/), [RKE](https://github.com/rancher/rke), [Minikube](https://kubernetes.io/docs/setup/minikube/), [Docker For Mac Edge](https://docs.docker.com/docker-for-mac/edge-release-notes/), [GKE](https://cloud.google.com/kubernetes-engine/), [AKS](https://docs.microsoft.com/en-us/azure/aks/), [EKS](https://aws.amazon.com/eks/),
 
@@ -34,7 +34,6 @@ $ rio run https://github.com/rancher/rio-demo
 
 # Check the status
 $ rio ps
-$ rio console
 $ rio info
 ```
 
