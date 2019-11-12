@@ -9,6 +9,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/tables"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/services"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -56,7 +57,7 @@ func findOwner(pod *corev1.Pod) string {
 }
 
 func (p *Ps) services(ctx *clicontext.CLIContext) error {
-	services, err := ctx.List(clitypes.ServiceType)
+	svcs, err := ctx.List(clitypes.ServiceType)
 	if err != nil {
 		return err
 	}
@@ -114,16 +115,18 @@ func (p *Ps) services(ctx *clicontext.CLIContext) error {
 		}
 	}
 
-	for _, service := range services {
+	for _, service := range svcs {
 		if service.(*riov1.Service).Spec.Template && !p.A_All {
 			continue
 		}
 
 		weight := 0
 		if service.(*riov1.Service).Status.ComputedWeight != nil && *service.(*riov1.Service).Status.ComputedWeight > 0 {
+			app, _ := services.AppAndVersion(service.(*riov1.Service))
 			totalWeight := 0
-			for _, subService := range services {
-				if service.(*riov1.Service).Spec.App == subService.(*riov1.Service).Spec.App && subService.(*riov1.Service).Status.ComputedWeight != nil {
+			for _, subService := range svcs {
+				subApp, _ := services.AppAndVersion(subService.(*riov1.Service))
+				if app == subApp && subService.(*riov1.Service).Status.ComputedWeight != nil {
 					totalWeight += *subService.(*riov1.Service).Status.ComputedWeight
 				}
 			}
