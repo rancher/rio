@@ -125,6 +125,10 @@ func (h handler) onChange(key string, obj *v1.ConfigMap) (*v1.ConfigMap, error) 
 	}
 
 	if obj.Namespace == linkerdNamespace && obj.Name == prometheusConfigMapName {
+		if obj.Data[configKey] == content {
+			return obj, nil
+		}
+
 		dp := obj.DeepCopy()
 		dp.Data[configKey] = content
 		updated, err := h.configmaps.Update(dp)
