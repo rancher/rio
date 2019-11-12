@@ -17,7 +17,7 @@ func routeTests(t *testing.T, when spec.G, it spec.S) {
 	var routeB testutil.TestRoute
 
 	it.Before(func() {
-		service.Create(t, "ibuildthecloud/demo:v1")
+		service.Create(t, "--weight", "100", "ibuildthecloud/demo:v1")
 		stagedService = service.Stage("ibuildthecloud/demo:v3", "v3")
 	})
 

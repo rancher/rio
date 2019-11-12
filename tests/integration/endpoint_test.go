@@ -16,7 +16,7 @@ func endpointTests(t *testing.T, when spec.G, it spec.S) {
 	when("a service is running and another is staged", func() {
 
 		it.Before(func() {
-			service.Create(t, "ibuildthecloud/demo:v1")
+			service.Create(t, "--weight", "100", "ibuildthecloud/demo:v1")
 		})
 		it.After(func() {
 			service.Remove()
@@ -51,7 +51,7 @@ func endpointTests(t *testing.T, when spec.G, it spec.S) {
 
 	when("a staged service is promoted", func() {
 		it.Before(func() {
-			service.Create(t, "ibuildthecloud/demo:v1")
+			service.Create(t, "--weight", "100", "ibuildthecloud/demo:v1")
 			stagedService = service.Stage("ibuildthecloud/demo:v3", "v3")
 			stagedService.Promote()
 		})

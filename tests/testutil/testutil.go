@@ -74,6 +74,16 @@ func RioCmd(args []string, envs ...string) (string, error) {
 	return string(stdOutErr), nil
 }
 
+// RioCmdWithRetry executes rio CLI commands with your arguments in testing namespace
+// Example: args=["run", "-n", "test", "nginx"] would run: "rio --namespace testing-namespace run -n test nginx"
+func RioCmdWithRetry(args []string, envs ...string) (string, error) {
+	out, err := retry(5, 1, RioCmd, args, envs...)
+	if err != nil {
+		return "", fmt.Errorf("%s: %s", err.Error(), out)
+	}
+	return string(out), nil
+}
+
 // RioCmdWithTail executes rio CLI commands that tail output with your arguments in testing namespace.
 // Example: args=["attach", "nginx"] would run: "rio --namespace testing-namespace attach nginx"
 func RioCmdWithTail(timeoutSeconds int, args []string, envs ...string) ([]string, error) {
@@ -345,4 +355,22 @@ func GetCNAMEInfo() string {
 // getZoneIDInfo retrieves the RIO_CNAME environment variable
 func getZoneIDInfo() string {
 	return os.Getenv("RIO_ROUTE53_ZONEID")
+}
+
+// retry function is intended for retrying command line commands invocations that collisioned while updating kubernetes objects
+func retry(attempts int, sleep time.Duration, f func(args []string, envs ...string) (string, error), args []string, envs ...string) (string, error) {
+	strOut, err := f(args, envs...)
+	if err != nil {
+		if s, ok := err.(stop); ok {
+			return strOut, s.error
+		}
+		if attempts--; attempts > 0 {
+			jitter := time.Duration(rand.Int63n(int64(sleep)))
+			sleep = sleep + jitter/2
+			time.Sleep(sleep)
+			return retry(attempts, 2*sleep, f, args, envs...)
+		}
+		return strOut, err
+	}
+	return strOut, nil
 }
