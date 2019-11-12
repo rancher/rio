@@ -10,7 +10,6 @@ import (
 
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
-	"github.com/rancher/rio/cli/pkg/table"
 	"github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/services"
@@ -69,6 +68,9 @@ func (w *Weight) Run(ctx *clicontext.CLIContext) error {
 }
 
 func GenerateWeightAndRolloutConfig(ctx *clicontext.CLIContext, obj types.Resource, targetPercentage int, duration time.Duration, pause bool) (int, *riov1.RolloutConfig, error) {
+	if duration.Hours() > 10 {
+		return 0, nil, errors.New("cannot perform rollout longer than 10 hours") // over 10 hours we go under increment of 1/10k, given 2 second. Also see safety valve below in increment.
+	}
 	svcs, err := util.ListAppServicesFromAppName(ctx, obj.Namespace, obj.App)
 	if err != nil {
 		return 0, nil, err
@@ -87,6 +89,9 @@ func GenerateWeightAndRolloutConfig(ctx *clicontext.CLIContext, obj types.Resour
 			totalCurrWeight += *s.Status.ComputedWeight
 		}
 	}
+	if targetPercentage == int(math.Round(float64(currComputedWeight)/float64(totalCurrWeight)/0.01)) {
+		return 0, nil, errors.New("cannot rollout, already at target percentage")
+	}
 	totalCurrWeightOtherSvcs := totalCurrWeight - currComputedWeight
 
 	newWeight := targetPercentage
@@ -100,11 +105,14 @@ func GenerateWeightAndRolloutConfig(ctx *clicontext.CLIContext, obj types.Resour
 
 	// if not immediate rollout figure out increment
 	increment := 0
-	if duration.Seconds() >= 1.0 {
+	if duration.Seconds() >= 2.0 {
 		steps := duration.Seconds() / float64(DefaultInterval)             // First get rough amount of steps we want to take
 		totalNewWeight := totalCurrWeightOtherSvcs + newWeight             // Given the future total weight which includes our newWeight...
 		difference := totalNewWeight - totalCurrWeight                     // Find the difference between future total weight and current total weight
 		increment = int(math.Abs(math.Round(float64(difference) / steps))) // And divide by steps to get rough increment
+		if increment == 0 {                                                // Error out if increment was below 1, and thus rounded to 0
+			return 0, nil, errors.New("Unable to perform rollout, given duration too long for current weight")
+		}
 	}
 	rolloutConfig := &riov1.RolloutConfig{
 		Pause:           pause,
@@ -137,8 +145,6 @@ func PromoteService(ctx *clicontext.CLIContext, resource types.Resource, rollout
 				}
 				if version == resource.Version {
 					*s.Spec.Weight = promoteWeight
-					id, _ := table.FormatID(obj, s.Namespace)
-					fmt.Printf("%s promoted\n", id)
 				} else {
 					*s.Spec.Weight = 0
 				}
