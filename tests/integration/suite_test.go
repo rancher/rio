@@ -11,6 +11,7 @@ import (
 
 func TestMain(m *testing.M) {
 	testutil.IntegrationPreCheck()
+	_, _ = testutil.KubectlCmd([]string{"create", "namespace", testutil.TestingNamespace})
 	os.Exit(m.Run())
 }
 

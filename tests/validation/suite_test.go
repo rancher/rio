@@ -12,6 +12,7 @@ import (
 
 func TestMain(m *testing.M) {
 	testutil.ValidationPreCheck()
+	_, _ = testutil.KubectlCmd([]string{"create", "namespace", testutil.TestingNamespace})
 	os.Exit(m.Run())
 }
 
