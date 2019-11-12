@@ -20,7 +20,7 @@ import (
 	"k8s.io/api/core/v1"
 )
 
-type ContainerState string
+type ContainerState []string
 
 const (
 	RUNNING    = "running"
@@ -28,20 +28,37 @@ const (
 	TERMINATED = "terminated"
 )
 
-func NewContainerState(stateConfig string) (ContainerState, error) {
-	if stateConfig == RUNNING {
-		return RUNNING, nil
-	} else if stateConfig == WAITING {
-		return WAITING, nil
-	} else if stateConfig == TERMINATED {
-		return TERMINATED, nil
+func NewContainerState(stateConfig []string) (ContainerState, error) {
+	var containerState []string
+	for _, p := range stateConfig {
+		if p == RUNNING || p == WAITING || p == TERMINATED {
+			containerState = append(containerState, p)
+		}
 	}
-
-	return "", errors.New("containerState should be one of 'running', 'waiting', or 'terminated'")
+	if len(containerState) == 0 {
+		return []string{}, errors.New("containerState should include 'running', 'waiting', or 'terminated'")
+	}
+	return containerState, nil
 }
 
 func (stateConfig ContainerState) Match(containerState v1.ContainerState) bool {
-	return (stateConfig == RUNNING && containerState.Running != nil) ||
-		(stateConfig == WAITING && containerState.Waiting != nil) ||
-		(stateConfig == TERMINATED && containerState.Terminated != nil)
+	if containerState.Running != nil && stateConfig.has(RUNNING) {
+		return true
+	}
+	if containerState.Waiting != nil && stateConfig.has(WAITING) {
+		return true
+	}
+	if containerState.Terminated != nil && stateConfig.has(TERMINATED) {
+		return true
+	}
+	return false
+}
+
+func (stateConfig ContainerState) has(state string) bool {
+	for _, s := range stateConfig {
+		if s == state {
+			return true
+		}
+	}
+	return false
 }

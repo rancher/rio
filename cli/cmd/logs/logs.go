@@ -104,9 +104,9 @@ func (l *Logs) setupConfig(ctx *clicontext.CLIContext) (*stern.Config, error) {
 		return nil, err
 	}
 
-	config.ContainerState = stern.RUNNING
+	config.ContainerState = []string{stern.RUNNING, stern.WAITING}
 	if l.P_Previous {
-		config.ContainerState = stern.TERMINATED
+		config.ContainerState = []string{stern.TERMINATED}
 	}
 
 	return config, nil
