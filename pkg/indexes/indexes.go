@@ -50,7 +50,7 @@ func publicDomain(rContext *types.Context) {
 			return nil, nil
 		}
 		return []string{
-			fmt.Sprintf("%s/%s", obj.Namespace, obj.Status.AssignedSecretName),
+			fmt.Sprintf("%s/%s", rContext.Namespace, obj.Status.AssignedSecretName),
 		}, nil
 	})
 }
