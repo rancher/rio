@@ -89,6 +89,9 @@ func GenerateWeightAndRolloutConfig(ctx *clicontext.CLIContext, obj types.Resour
 			totalCurrWeight += *s.Status.ComputedWeight
 		}
 	}
+	if targetPercentage == int(math.Round(float64(currComputedWeight)/float64(totalCurrWeight)/0.01)) {
+		return 0, nil, errors.New("cannot rollout, already at target percentage")
+	}
 	totalCurrWeightOtherSvcs := totalCurrWeight - currComputedWeight
 
 	newWeight := targetPercentage
@@ -108,7 +111,7 @@ func GenerateWeightAndRolloutConfig(ctx *clicontext.CLIContext, obj types.Resour
 		difference := totalNewWeight - totalCurrWeight                     // Find the difference between future total weight and current total weight
 		increment = int(math.Abs(math.Round(float64(difference) / steps))) // And divide by steps to get rough increment
 		if increment == 0 {                                                // Error out if increment was below 1, and thus rounded to 0
-			return 0, nil, errors.New("Unable to perform rollout, given duration too long")
+			return 0, nil, errors.New("Unable to perform rollout, given duration too long for current weight")
 		}
 	}
 	rolloutConfig := &riov1.RolloutConfig{
