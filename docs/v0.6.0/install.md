@@ -2,17 +2,30 @@
 
 Rio can be installed from both CLI or kubernetes manifest.
 
-1. Download the latest release. `curl -sfL https://get.rio.io | sh - `
+1. Download the latest release. 
 
-Note: by default it will only download the latest release from github. To test a pre-release or alpha build, run `curl -sfL https://get.rio.io | INSTALL_RIO_VERSION=$VERSION sh - `.
+```bash
+$ curl -sfL https://get.rio.io | sh - 
+```
 
-2. Prepare a Kubernetes cluster. Setup KUBECONFIG environment variable to point to your kubernetes cluster. To choose a kubernetes cluster, check [here](https://kubernetes.io/docs/setup/) 
+Note: by default it will only download the latest release from github. To test a pre-release or alpha build, run.
 
-Note: 1.15 or higher version of kubernetes is recommended.
+```bash
+# For example, to download v0.6.0-alpha1 build
+$ curl -sfL https://get.rio.io | INSTALL_RIO_VERSION=v0.6.0-alpha1 sh - 
+```
 
-3.  Run `rio install`.
+2. Prepare a Kubernetes cluster. Setup KUBECONFIG environment variable to point to your kubernetes cluster. To choose a kubernetes cluster, check [here](https://kubernetes.io/docs/setup/). 
 
-Note: to install rio from kubernetes manifest, run `rio install --yaml`. It will print out kubernetes manifest instead of 
+   Note: 1.15 or higher version of kubernetes is recommended.
+
+3. Run 
+
+```bash
+$ rio install
+```
+
+    Note: to install rio from kubernetes manifest, run `rio install --yaml`. It will print out kubernetes manifest instead of 
 installing rio directly, so that you can apply the manifest later.
 
 #### Options
@@ -22,7 +35,6 @@ installing rio directly, so that you can apply the manifest later.
 | `--ip-address` | string array | Manually specify IP addresses to generate rdns domain, supports comma separated values | 
 | `--disable-features` | string array | Manually specify features to disable, supports comma separated values |
 | `--enable-debug` | boolean | Enable debug logging in rio-controller pod |
-| `--httpproxy` | string | Set HTTP_PROXY environment variable for control plane |
 | `--yaml` | boolean | Only print out k8s yaml manifest |
 | `--check` | boolean | Only check status, don't deploy controller |
 
@@ -60,10 +72,6 @@ $ rio install --disable-features autoscaling --disable-features linkerd
 **--enable-debug**
 
 Enable debug logging in rio control plane
-
-**--httpproxy**
-
-Set up HTTP_PROXY environment variable in rio control plane
 
 **--yaml**
 
