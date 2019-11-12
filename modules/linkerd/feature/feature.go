@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/rancher/rio/modules/linkerd/controller/inject"
+	"github.com/rancher/rio/modules/linkerd/controller/prometheus"
 	"github.com/rancher/rio/modules/linkerd/pkg/injector"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/features"
@@ -35,6 +36,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		},
 		Controllers: []features.ControllerRegister{
 			inject.Register,
+			prometheus.Register,
 		},
 		FixedAnswers: map[string]string{
 			"LINKERD_UPGRADE":       linkerdUpgrade,
