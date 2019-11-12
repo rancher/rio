@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/aokoli/goutils"
 	"github.com/rancher/rio/cli/cmd/edit/edit"
@@ -116,8 +117,8 @@ func (r *Stage) updatePromotedService(ctx *clicontext.CLIContext, service types.
 		stagedService := riov1.NewService(svc.Namespace, spec.App+"-"+version, riov1.Service{
 			Spec: *spec,
 			ObjectMeta: v1.ObjectMeta{
-				Labels:      svc.Labels,
-				Annotations: svc.Annotations,
+				Labels:      cleanMeta(svc.Labels),
+				Annotations: cleanMeta(svc.Annotations),
 			},
 		})
 		return ctx.Create(stagedService)
@@ -183,4 +184,14 @@ func (r *Stage) mergeEnvVars(currEnvs []riov1.EnvVar) ([]riov1.EnvVar, error) {
 		}
 	}
 	return append(orig, stageEnvs...), nil
+}
+
+func cleanMeta(m map[string]string) map[string]string {
+	r := make(map[string]string)
+	for k, v := range m {
+		if !strings.Contains(k, "rio.cattle.io") {
+			r[k] = v
+		}
+	}
+	return r
 }

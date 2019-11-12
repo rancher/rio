@@ -2,7 +2,10 @@ package promote
 
 import (
 	"errors"
+	"fmt"
 	"time"
+
+	"github.com/rancher/rio/cli/pkg/table"
 
 	"github.com/rancher/rio/cli/cmd/weight"
 	"github.com/rancher/rio/cli/pkg/clicontext"
@@ -32,5 +35,11 @@ func (p *Promote) Run(ctx *clicontext.CLIContext) error {
 	if err != nil {
 		return err
 	}
-	return weight.PromoteService(ctx, resource, rolloutConfig, promoteWeight)
+	err = weight.PromoteService(ctx, resource, rolloutConfig, promoteWeight)
+	if err != nil {
+		return err
+	}
+	id, _ := table.FormatID(resource.Object, resource.Namespace)
+	fmt.Printf("%s promoted\n", id)
+	return nil
 }
