@@ -74,6 +74,9 @@ func formatEndpoint(data interface{}) string {
 		endpoints := util.NormalizingEndpoints(s.Status.Endpoints, "")
 		return strings.Join(endpoints, ",")
 	}
+	if formatPorts(data) == "" {
+		return "No ports specified"
+	}
 	return ""
 }
 
