@@ -14,6 +14,7 @@ import (
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
+	"github.com/urfave/cli"
 	"github.com/wercker/stern/stern"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -30,6 +31,10 @@ type Logs struct {
 }
 
 // This is based on both wercker/stern and linkerd/stern implementations
+
+func (l *Logs) Customize(cmd *cli.Command) {
+	cmd.ShortName = "log"
+}
 
 func (l *Logs) Run(ctx *clicontext.CLIContext) error {
 	conf, err := l.setupConfig(ctx)
