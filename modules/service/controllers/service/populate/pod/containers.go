@@ -13,6 +13,7 @@ import (
 	"github.com/rancher/wrangler/pkg/name"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 var (
@@ -58,8 +59,8 @@ func toContainer(containerName string, c *riov1.Container) v1.Container {
 		Command:         c.Command,
 		Args:            c.Args,
 		WorkingDir:      c.WorkingDir,
-		LivenessProbe:   c.LivenessProbe,
-		ReadinessProbe:  c.ReadinessProbe,
+		LivenessProbe:   convertProbePorts(c.LivenessProbe),
+		ReadinessProbe:  convertProbePorts(c.ReadinessProbe),
 		ImagePullPolicy: c.ImagePullPolicy,
 		Stdin:           c.Stdin,
 		StdinOnce:       c.StdinOnce,
@@ -88,6 +89,20 @@ func toContainer(containerName string, c *riov1.Container) v1.Container {
 	}
 
 	return con
+}
+
+// norman only takes string for intstr types, but K8s only takes int, so always do conversion here
+func convertProbePorts(probe *v1.Probe) *v1.Probe {
+	if probe == nil {
+		return probe
+	}
+	if probe.HTTPGet != nil && probe.HTTPGet.Port.StrVal != "" {
+		probe.HTTPGet.Port = intstr.FromInt(probe.HTTPGet.Port.IntValue())
+	}
+	if probe.TCPSocket != nil && probe.TCPSocket.Port.StrVal != "" {
+		probe.TCPSocket.Port = intstr.FromInt(probe.TCPSocket.Port.IntValue())
+	}
+	return probe
 }
 
 func securityContext(c *riov1.Container) *v1.SecurityContext {

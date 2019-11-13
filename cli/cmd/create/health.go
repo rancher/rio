@@ -3,7 +3,6 @@ package create
 import (
 	"fmt"
 	"net/url"
-	"strconv"
 	"time"
 
 	"github.com/mattn/go-shellwords"
@@ -69,19 +68,14 @@ func (c *Create) setHealthCheck(spec *riov1.ServiceSpec) error {
 		if portStr == "" {
 			return fmt.Errorf("missing port in health-url %s", c.HealthURL)
 		}
-		port, err := strconv.Atoi(portStr)
-		if err != nil {
-			return err
-		}
-
 		if u.Scheme == "tcp" {
 			hc.TCPSocket = &v1.TCPSocketAction{
-				Port: intstr.FromInt(port),
+				Port: intstr.FromString(portStr),
 			}
 		} else {
 			hc.HTTPGet = &v1.HTTPGetAction{
-				Port: intstr.FromInt(port),
-				Host: u.Host,
+				Port: intstr.FromString(portStr),
+				Host: u.Hostname(),
 				Path: u.Path,
 			}
 

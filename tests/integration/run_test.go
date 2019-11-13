@@ -67,4 +67,12 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 			}
 		})
 	}, spec.Parallel())
+
+	when("run a service with liveness check", func() {
+		it("should come become available", func() {
+			service.Create(t, "-p", "80", "--health-url", "http://:80", "--health-initial-delay", "1s", "--health-interval", "1s", "--health-failure-threshold", "1", "--health-timeout", "1s", "ibuildthecloud/demo:v1")
+			assert.Equal(t, 1, service.GetAvailableReplicas(), "should have two available replicas")
+			assert.Equal(t, "Hello World", service.GetAppEndpointResponse())
+		})
+	}, spec.Parallel())
 }
