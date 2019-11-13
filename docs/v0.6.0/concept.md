@@ -10,6 +10,11 @@ Service is the core concept in Rio. Services are a scalable set of identical con
 When you run containers in Rio you create a Service. `rio run` will
 create a service. You can scale that service with `rio scale`. Services are assigned a DNS name so that it can be discovered and accessed from other services.
 
+### Stack
+
+Stack is abstraction of `Riofile`. Riofile is similar to docker-compose which you can define multiple Rio services(or other rio types) in a single file with simplified syntax that is easy to memorize.
+Stack allows you to define Rio services, router, externalservices and other arbitrary kubernetes resources.
+
 ### Router
 
 Router is a resource that manages load balancing and traffic routing rules. Routing rules can route based
