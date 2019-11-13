@@ -34,7 +34,7 @@ func Config(app *cli.App) cli.Command {
 				app.Name+" config ls",
 				""),
 			builder.Command(&Create{},
-				"Create a config",
+				"Create a config from a file",
 				app.Name+" config create NAME FILE|-",
 				""),
 			NewCatCommand(" config", app),

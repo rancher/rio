@@ -56,7 +56,7 @@ type Create struct {
 	HealthInterval         string            `desc:"Time between running the check (ms|s|m|h)" default:"0s"`
 	HealthSuccessThreshold int               `desc:"Consecutive successes needed to report healthy"`
 	HealthTimeout          string            `desc:"Maximum time to allow one check to run (ms|s|m|h)" default:"0s"`
-	HealthURL              string            `desc:"URL to hit to check health (example: http://localhost:8080/ping)"`
+	HealthURL              string            `desc:"URL to hit to check health (example: http://:8080/ping)"`
 	Hostname               string            `desc:"Container host name"`
 	I_Interactive          bool              `desc:"Keep STDIN open even if not attached"`
 	ImagePullPolicy        string            `desc:"Behavior determining when to pull the image (never|always|not-present)" default:"not-present"`
