@@ -15,7 +15,7 @@ func stageTests(t *testing.T, when spec.G, it spec.S) {
 	var stagedService testutil.TestService
 
 	it.Before(func() {
-		service.Create(t, "--label", "x=y", "--annotations", "a=b", "ibuildthecloud/demo:v1")
+		service.Create(t, "--weight", "100", "--label", "x=y", "--annotations", "a=b", "ibuildthecloud/demo:v1")
 	})
 
 	it.After(func() {

@@ -32,7 +32,7 @@ type TestService struct {
 // returns a new TestService with it attached. Guarantees ready state but not live endpoint
 func (ts *TestService) Create(t *testing.T, source ...string) {
 	args, envs := ts.createArgs(t, source...)
-	_, err := RioCmd(args, envs...)
+	_, err := RioCmdWithRetry(args, envs...)
 	if err != nil {
 		ts.T.Fatalf("Failed to create service %s: %v", ts.Name, err.Error())
 	}
@@ -119,7 +119,7 @@ func (ts *TestService) Remove() {
 		}
 	}
 	if ts.Service.Status.DeploymentReady {
-		_, err := RioCmd([]string{"rm", ts.Name})
+		_, err := RioCmdWithRetry([]string{"rm", ts.Name})
 		if err != nil {
 			ts.T.Log(err.Error())
 		}
@@ -137,7 +137,7 @@ func (ts *TestService) Attach() []string {
 
 // Call "rio scale ns/service={scaleTo}"
 func (ts *TestService) Scale(scaleTo int) {
-	_, err := RioCmd([]string{"scale", fmt.Sprintf("%s=%d", ts.Name, scaleTo)})
+	_, err := RioCmdWithRetry([]string{"scale", fmt.Sprintf("%s=%d", ts.Name, scaleTo)})
 	if err != nil {
 		ts.T.Fatalf("scale command failed:  %v", err.Error())
 	}
@@ -158,7 +158,7 @@ func (ts *TestService) WeightWithoutWaiting(weightSpec int, args ...string) {
 	args = append(
 		[]string{"weight"},
 		append(args, fmt.Sprintf("%s=%d", ts.Name, weightSpec))...)
-	_, err := RioCmd(args)
+	_, err := RioCmdWithRetry(args)
 	if err != nil {
 		ts.T.Fatalf("weight command failed:  %v", err.Error())
 	}
@@ -183,7 +183,7 @@ func (ts *TestService) Weight(weightSpec int, args ...string) {
 
 // Call "rio stage --image={source} ns/name:{version}", this will return a new TestService
 func (ts *TestService) Stage(source, version string) TestService {
-	_, err := RioCmd([]string{"stage", "--image", source, ts.Name, version})
+	_, err := RioCmdWithRetry([]string{"stage", "--image", source, ts.Name, version})
 	if err != nil {
 		ts.T.Fatalf("stage command failed:  %v", err.Error())
 	}
@@ -205,7 +205,7 @@ func (ts *TestService) Promote(args ...string) {
 	args = append(
 		[]string{"promote", "--pause=false", "--duration=0s"},
 		append(args, ts.Name)...)
-	_, err := RioCmd(args)
+	_, err := RioCmdWithRetry(args)
 	if err != nil {
 		ts.T.Fatalf("promote command failed:  %v", err.Error())
 	}
@@ -229,7 +229,7 @@ func (ts *TestService) Logs(args ...string) []string {
 
 // Exec calls "rio exec ns/service {command}" on this service
 func (ts *TestService) Exec(command ...string) string {
-	out, err := RioCmd(append([]string{"exec", ts.Name}, command...))
+	out, err := RioCmdWithRetry(append([]string{"exec", ts.Name}, command...))
 	if err != nil {
 		ts.T.Fatalf("exec command failed:  %v", err.Error())
 	}
@@ -309,7 +309,7 @@ func (ts *TestService) GetSpecWeight() int {
 
 // Return service's computed (actual) weight, not the spec (end-goal) weight
 func (ts *TestService) GetCurrentWeight() int {
-	out, err := RioCmd([]string{"ps", "--format", "{{.Obj | id}}::{{.Data.Weight}}"})
+	out, err := RioCmdWithRetry([]string{"ps", "--format", "{{.Obj | id}}::{{.Data.Weight}}"})
 	if err != nil {
 		ts.T.Fatal(err)
 	}
@@ -564,7 +564,7 @@ func (ts *TestService) WaitForScaleDown() error {
 
 // reload calls inspect on the service and uses that to reload our object
 func (ts *TestService) reload() error {
-	out, err := RioCmd([]string{"inspect", "--format", "json", ts.Name})
+	out, err := RioCmdWithRetry([]string{"inspect", "--format", "json", ts.Name})
 	if err != nil {
 		return err
 	}
@@ -594,7 +594,7 @@ func (ts *TestService) reloadBuild() error {
 
 // load a "rio export..." response into a new TestService obj
 func (ts *TestService) loadExport(args []string) (TestService, error) {
-	out, err := RioCmd(args)
+	out, err := RioCmdWithRetry(args)
 	if err != nil {
 		return TestService{}, fmt.Errorf("export command failed: %v", err.Error())
 	}

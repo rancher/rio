@@ -14,7 +14,7 @@ func weightTests(t *testing.T, when spec.G, it spec.S) {
 	var stagedService testutil.TestService
 
 	it.Before(func() {
-		service.Create(t, "ibuildthecloud/demo:v1")
+		service.Create(t, "--weight", "100", "ibuildthecloud/demo:v1")
 		stagedService = service.Stage("ibuildthecloud/demo:v3", "v3")
 	})
 
