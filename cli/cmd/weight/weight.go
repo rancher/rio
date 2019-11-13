@@ -76,10 +76,11 @@ func GenerateWeightAndRolloutConfig(ctx *clicontext.CLIContext, obj types.Resour
 		return 0, nil, errors.New("cannot perform rollout longer than 10 hours") // over 10 hours we go under increment of 1/10k, given 2 second. Also see safety valve below in increment.
 	}
 	svcs, err := util.ListAppServicesFromAppName(ctx, obj.Namespace, obj.App)
-	if err != nil && err.Error() == "no services found" || len(svcs) == 0 { // todo: make this string check less brittle
-		return targetPercentage * 100, &riov1.RolloutConfig{}, nil
-	} else if err != nil {
+	if err != nil {
 		return 0, nil, err
+	}
+	if len(svcs) == 0 {
+		return targetPercentage * 100, &riov1.RolloutConfig{}, nil
 	}
 
 	currComputedWeight := 0
@@ -123,6 +124,9 @@ func PromoteService(ctx *clicontext.CLIContext, resource types.Resource, rollout
 	svcs, err := util.ListAppServicesFromAppName(ctx, resource.Namespace, resource.App)
 	if err != nil {
 		return err
+	}
+	if len(svcs) == 0 {
+		return errors.New("no services found")
 	}
 	for _, s := range svcs {
 		app, version := services.AppAndVersion(&s)

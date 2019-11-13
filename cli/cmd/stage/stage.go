@@ -3,6 +3,7 @@ package stage
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -132,6 +133,9 @@ func (r *Stage) updatePreviousServiceWeights(ctx *clicontext.CLIContext, service
 	svcs, err := util.ListAppServicesFromServiceName(ctx, service.Name)
 	if err != nil {
 		return err
+	}
+	if len(svcs) == 0 {
+		return errors.New("no services found")
 	}
 	var anyWeightSet bool
 	for _, s := range svcs {

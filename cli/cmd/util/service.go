@@ -1,8 +1,6 @@
 package util
 
 import (
-	"errors"
-
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/services"
@@ -35,10 +33,5 @@ func ListAppServicesFromAppName(ctx *clicontext.CLIContext, namespace, appName s
 			revisions = append(revisions, rev)
 		}
 	}
-
-	if len(revisions) == 0 {
-		return []riov1.Service{}, errors.New("no services found")
-	}
-
 	return revisions, nil
 }
