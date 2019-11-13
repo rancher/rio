@@ -6,13 +6,14 @@ services:
     - '* autoscale.rio.cattle.io/servicescalerecommendations'
     - '* rio.cattle.io/services'
     - '* rio.cattle.io/services/status'
-    image: strongmonkey1992/autoscaler:dev
+    image: rancher/rio-autoscaler:v0.1.3
     imagePullPolicy: always
     env:
     - NAMESPACE=${NAMESPACE}
     ports:
     - 80:80,expose=false
     args:
+    - rio-autoscaler
     - --debug
 
 template:
