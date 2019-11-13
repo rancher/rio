@@ -67,6 +67,7 @@ func (h *handler) start() {
 	h.started = true
 	go func() {
 		for range ticker.Context(h.ctx, 6*time.Hour) {
+			logrus.Infof("Renewing rdns domain")
 			if err := h.renew(); err != nil {
 				logrus.Errorf("failed to renew domain: %v", err)
 			}
