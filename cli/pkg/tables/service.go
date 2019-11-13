@@ -113,11 +113,21 @@ func serviceDetail(data interface{}, pods []*corev1.Pod, gitwatcher *webhookv1.G
 			break
 		}
 	}
+
 	if pd == "" && !s.Status.DeploymentReady {
 		buffer.WriteString(s.Name + ": ")
 		pd = "not ready"
 	}
 	buffer.WriteString(pd)
+
+	for _, con := range s.Status.Conditions {
+		if con.Status != corev1.ConditionTrue {
+			if buffer.Len() > 0 {
+				buffer.WriteString("; ")
+			}
+			buffer.WriteString(fmt.Sprintf("%s: %s(%s)", con.Type, con.Message, con.Reason))
+		}
+	}
 
 	if waitingOnBuild(s) {
 		if gitwatcher != nil && webhookv1.GitWebHookReceiverConditionRegistered.IsFalse(gitwatcher) {
@@ -142,12 +152,6 @@ func serviceDetail(data interface{}, pods []*corev1.Pod, gitwatcher *webhookv1.G
 	}
 	if buffer.Len() > 0 {
 		return buffer.String()
-	}
-
-	for _, con := range s.Status.Conditions {
-		if con.Status != corev1.ConditionTrue {
-			return fmt.Sprintf("%s: %s(%s)", con.Type, con.Message, con.Reason)
-		}
 	}
 
 	return ""
