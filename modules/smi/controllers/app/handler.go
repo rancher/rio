@@ -56,6 +56,9 @@ func (h *handler) generate(service *corev1.Service, status corev1.ServiceStatus)
 	}
 
 	ts := h.getSplit(service.Namespace, svcs)
+	if ts == nil {
+		return nil, status, nil
+	}
 	return []runtime.Object{
 		ts,
 	}, status, nil
@@ -84,6 +87,10 @@ func (h *handler) getSplit(namespace string, svcs []*riov1.Service) *v1alpha1.Tr
 	sort.Slice(backends, func(i, j int) bool {
 		return backends[i].Service < backends[j].Service
 	})
+
+	if service == "" {
+		return nil
+	}
 
 	return &v1alpha1.TrafficSplit{
 		ObjectMeta: metav1.ObjectMeta{
