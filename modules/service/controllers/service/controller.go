@@ -44,7 +44,8 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			rContext.Apps.Apps().V1().DaemonSet(),
 			rContext.Core.Core().V1().ServiceAccount(),
 			rContext.Core.Core().V1().Service(),
-			rContext.Core.Core().V1().Secret()).
+			rContext.Core.Core().V1().Secret(),
+			rContext.Core.Core().V1().PersistentVolumeClaim()).
 			WithInjectorName("mesh").
 			WithRateLimiting(20),
 		"ServiceDeployed",
