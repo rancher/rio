@@ -51,7 +51,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 	controllerStack.WithAnswer(answers)
 
 	if i.Yaml {
-		bootstrapObjects, err := bootstrapStack.GetObjects()
+		controllerObjects, err := controllerStack.GetObjects()
 		if err != nil {
 			return err
 		}
@@ -61,7 +61,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 			return err
 		}
 
-		yamlOutput, err := controllerStack.Yaml(nil, append(bootstrapObjects, cm)...)
+		yamlOutput, err := bootstrapStack.Yaml(nil, append(controllerObjects, cm)...)
 		if err != nil {
 			return err
 		}
@@ -132,7 +132,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 				}
 			}
 		} else {
-			progress.Display("Waiting for system components. Not ready deployments: %v", 2, notReadyList.String())
+			progress.Display("Waiting for system components: %v", 2, notReadyList.String())
 			continue
 		}
 
