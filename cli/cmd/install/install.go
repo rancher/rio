@@ -7,8 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rancher/wrangler/pkg/kv"
-
+	"github.com/Masterminds/semver"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/progress"
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
@@ -17,6 +16,7 @@ import (
 	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/rio/pkg/version"
+	"github.com/rancher/wrangler/pkg/kv"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -31,6 +31,10 @@ type Install struct {
 	Yaml            bool     `desc:"Only print out k8s yaml manifest"`
 	Check           bool     `desc:"Only check status, don't deploy controller"`
 }
+
+var (
+	MinSupportedMinorK8sVersion = 15
+)
 
 func (i *Install) Run(ctx *clicontext.CLIContext) error {
 	if ctx.K8s == nil {
@@ -161,6 +165,7 @@ func (i *Install) preConfigure(ctx *clicontext.CLIContext, ignoreCluster bool) e
 	var totalMemory int64
 	for _, node := range nodes.Items {
 		totalMemory += node.Status.Capacity.Memory().Value()
+		checkKubernetesVersion(node.Status.NodeInfo.KubeletVersion)
 	}
 	if totalMemory < 2147000000 {
 		if isMinikubeCluster(nodes) {
@@ -173,6 +178,15 @@ func (i *Install) preConfigure(ctx *clicontext.CLIContext, ignoreCluster bool) e
 	}
 
 	return nil
+}
+
+func checkKubernetesVersion(version string) {
+	v, err := semver.NewVersion(version)
+	if err == nil {
+		if int(v.Minor()) < MinSupportedMinorK8sVersion {
+			fmt.Println("Warning: Rio only supports Kubernetes versions 1.15 and greater")
+		}
+	}
 }
 
 func isMinikubeCluster(nodes *v1.NodeList) bool {
