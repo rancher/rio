@@ -163,9 +163,12 @@ func (i *Install) preConfigure(ctx *clicontext.CLIContext, ignoreCluster bool) e
 	}
 
 	var totalMemory int64
+	versionWarning := false
 	for _, node := range nodes.Items {
 		totalMemory += node.Status.Capacity.Memory().Value()
-		checkKubernetesVersion(node.Status.NodeInfo.KubeletVersion)
+		if !versionWarning {
+			versionWarning = checkKubernetesVersion(node.Status.NodeInfo.KubeletVersion)
+		}
 	}
 	if totalMemory < 2147000000 {
 		if isMinikubeCluster(nodes) {
@@ -180,13 +183,15 @@ func (i *Install) preConfigure(ctx *clicontext.CLIContext, ignoreCluster bool) e
 	return nil
 }
 
-func checkKubernetesVersion(version string) {
+func checkKubernetesVersion(version string) bool {
 	v, err := semver.NewVersion(version)
 	if err == nil {
 		if int(v.Minor()) < MinSupportedMinorK8sVersion {
 			fmt.Println("Warning: Rio only supports Kubernetes versions 1.15 and greater")
+			return true
 		}
 	}
+	return false
 }
 
 func isMinikubeCluster(nodes *v1.NodeList) bool {
