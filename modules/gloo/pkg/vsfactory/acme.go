@@ -3,6 +3,8 @@ package vsfactory
 import (
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+
 	"github.com/sirupsen/logrus"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	solov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
@@ -23,9 +25,11 @@ func (f *VirtualServiceFactory) InjectACME(vs *solov1.VirtualService) error {
 					logrus.Infof("injecting acme http-01 path for domain %s", domain)
 					vs.Spec.VirtualHost.Routes = append([]*gatewayv1.Route{
 						{
-							Matcher: &v1.Matcher{
-								PathSpecifier: &v1.Matcher_Exact{
-									Exact: ing.Spec.Rules[0].HTTP.Paths[0].Path,
+							Matchers: []*matchers.Matcher{
+								{
+									PathSpecifier: &matchers.Matcher_Exact{
+										Exact: ing.Spec.Rules[0].HTTP.Paths[0].Path,
+									},
 								},
 							},
 							Action: &gatewayv1.Route_RouteAction{

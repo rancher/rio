@@ -9,6 +9,7 @@ kubernetes:
         "helm.sh/hook": crd-install
       labels:
         gloo: settings
+        installationId: 5wBOsxcZVrbtlLExSVfq
     spec:
       group: gloo.solo.io
       names:
@@ -29,11 +30,13 @@ kubernetes:
     apiVersion: apiextensions.k8s.io/v1beta1
     kind: CustomResourceDefinition
     metadata:
-      name: gateways.gateway.solo.io.v2
+      name: gateways.gateway.solo.io
       annotations:
         "helm.sh/hook": crd-install
+      labels:
+        installationId: 5wBOsxcZVrbtlLExSVfq
     spec:
-      group: gateway.solo.io.v2
+      group: gateway.solo.io
       names:
         kind: Gateway
         listKind: GatewayList
@@ -42,9 +45,9 @@ kubernetes:
           - gw
         singular: gateway
       scope: Namespaced
-      version: v2
+      version: v1
       versions:
-        - name: v2
+        - name: v1
           storage: true
           served: true
     
@@ -56,6 +59,8 @@ kubernetes:
       name: virtualservices.gateway.solo.io
       annotations:
         "helm.sh/hook": crd-install
+      labels:
+        installationId: 5wBOsxcZVrbtlLExSVfq
     spec:
       group: gateway.solo.io
       names:
@@ -80,6 +85,8 @@ kubernetes:
       name: routetables.gateway.solo.io
       annotations:
         "helm.sh/hook": crd-install
+      labels:
+        installationId: 5wBOsxcZVrbtlLExSVfq
     spec:
       group: gateway.solo.io
       names:
@@ -104,6 +111,8 @@ kubernetes:
       name: proxies.gloo.solo.io
       annotations:
         "helm.sh/hook": crd-install
+      labels:
+        installationId: 5wBOsxcZVrbtlLExSVfq
     spec:
       group: gloo.solo.io
       names:
@@ -128,6 +137,8 @@ kubernetes:
       name: upstreams.gloo.solo.io
       annotations:
         "helm.sh/hook": crd-install
+      labels:
+        installationId: 5wBOsxcZVrbtlLExSVfq
     spec:
       group: gloo.solo.io
       names:
@@ -152,6 +163,8 @@ kubernetes:
       name: upstreamgroups.gloo.solo.io
       annotations:
         "helm.sh/hook": crd-install
+      labels:
+        installationId: 5wBOsxcZVrbtlLExSVfq
     spec:
       group: gloo.solo.io
       names:
@@ -176,6 +189,8 @@ kubernetes:
       name: authconfigs.enterprise.gloo.solo.io
       annotations:
         "helm.sh/hook": crd-install
+      labels:
+        installationId: 5wBOsxcZVrbtlLExSVfq
     spec:
       group: enterprise.gloo.solo.io
       names:
@@ -199,6 +214,7 @@ kubernetes:
       labels:
         app: gloo
         gloo: gloo
+        installationId: qIPd9ajL3Eoq5RlU20LW
       annotations:
         "helm.sh/hook": "pre-install"
         "helm.sh/hook-weight": "5"
@@ -212,6 +228,7 @@ kubernetes:
       labels:
         app: gloo
         gloo: discovery
+        installationId: qIPd9ajL3Eoq5RlU20LW
       annotations:
         "helm.sh/hook": "pre-install"
         "helm.sh/hook-weight": "5"
@@ -225,6 +242,7 @@ kubernetes:
       labels:
         app: gloo
         gloo: gateway
+        installationId: qIPd9ajL3Eoq5RlU20LW
       annotations:
         "helm.sh/hook": "pre-install"
         "helm.sh/hook-weight": "5"
@@ -241,6 +259,7 @@ kubernetes:
       labels:
         app: gloo
         gloo: gateway-proxy
+        installationId: qIPd9ajL3Eoq5RlU20LW
       annotations:
         "helm.sh/hook": "pre-install"
         "helm.sh/hook-weight": "5"
@@ -253,10 +272,11 @@ kubernetes:
     kind: ClusterRole
     apiVersion: rbac.authorization.k8s.io/v1
     metadata:
-        name: kube-resource-watcher
+        name: kube-resource-watcher-${NAMESPACE}
         labels:
             app: gloo
             gloo: rbac
+            installationId: qIPd9ajL3Eoq5RlU20LW
         annotations:
           "helm.sh/hook": "pre-install"
           "helm.sh/hook-weight": "10"
@@ -270,10 +290,11 @@ kubernetes:
     kind: ClusterRole
     apiVersion: rbac.authorization.k8s.io/v1
     metadata:
-        name: gloo-upstream-mutator
+        name: gloo-upstream-mutator-${NAMESPACE}
         labels:
             app: gloo
             gloo: rbac
+            installationId: qIPd9ajL3Eoq5RlU20LW
         annotations:
           "helm.sh/hook": "pre-install"
           "helm.sh/hook-weight": "10"
@@ -288,27 +309,11 @@ kubernetes:
     kind: ClusterRole
     apiVersion: rbac.authorization.k8s.io/v1
     metadata:
-        name: kube-crd-creator
+        name: gloo-resource-reader-${NAMESPACE}
         labels:
             app: gloo
             gloo: rbac
-        annotations:
-          "helm.sh/hook": "pre-install"
-          "helm.sh/hook-weight": "10"
-    rules:
-    - apiGroups: ["apiextensions.k8s.io"]
-      resources: ["customresourcedefinitions"]
-      verbs: ["get", "create", "update"]
-    
-    ---
-    
-    kind: ClusterRole
-    apiVersion: rbac.authorization.k8s.io/v1
-    metadata:
-        name: gloo-resource-reader
-        labels:
-            app: gloo
-            gloo: rbac
+            installationId: qIPd9ajL3Eoq5RlU20LW
         annotations:
           "helm.sh/hook": "pre-install"
           "helm.sh/hook-weight": "10"
@@ -326,10 +331,11 @@ kubernetes:
     kind: ClusterRole
     apiVersion: rbac.authorization.k8s.io/v1
     metadata:
-        name: settings-user
+        name: settings-user-${NAMESPACE}
         labels:
             app: gloo
             gloo: rbac
+            installationId: qIPd9ajL3Eoq5RlU20LW
         annotations:
           "helm.sh/hook": "pre-install"
           "helm.sh/hook-weight": "10"
@@ -344,10 +350,11 @@ kubernetes:
     kind: ClusterRole
     apiVersion: rbac.authorization.k8s.io/v1
     metadata:
-        name: gloo-resource-mutator
+        name: gloo-resource-mutator-${NAMESPACE}
         labels:
             app: gloo
             gloo: rbac
+            installationId: qIPd9ajL3Eoq5RlU20LW
         annotations:
           "helm.sh/hook": "pre-install"
           "helm.sh/hook-weight": "10"
@@ -361,10 +368,11 @@ kubernetes:
     kind: ClusterRole
     apiVersion: rbac.authorization.k8s.io/v1
     metadata:
-        name: gateway-resource-reader
+        name: gateway-resource-reader-${NAMESPACE}
         labels:
             app: gloo
             gloo: rbac
+            installationId: qIPd9ajL3Eoq5RlU20LW
         annotations:
           "helm.sh/hook": "pre-install"
           "helm.sh/hook-weight": "10"
@@ -377,10 +385,6 @@ kubernetes:
       resources: ["gateways"]
       # update is needed for status updates, create for creating the default ones.
       verbs: ["get", "list", "watch", "create", "update"]
-    - apiGroups: ["gateway.solo.io.v2"]
-      resources: ["gateways"]
-      # update is needed for status updates
-      verbs: ["get", "list", "watch", "create", "update"]
     ---
     
     kind: ClusterRoleBinding
@@ -390,6 +394,7 @@ kubernetes:
       labels:
         app: gloo
         gloo: rbac
+        installationId: qIPd9ajL3Eoq5RlU20LW
       annotations:
         "helm.sh/hook": "pre-install"
         "helm.sh/hook-weight": "15"
@@ -402,7 +407,7 @@ kubernetes:
       namespace: ${NAMESPACE}
     roleRef:
       kind: ClusterRole
-      name: kube-resource-watcher
+      name: kube-resource-watcher-${NAMESPACE}
       apiGroup: rbac.authorization.k8s.io
     
     ---
@@ -414,6 +419,7 @@ kubernetes:
       labels:
         app: gloo
         gloo: rbac
+        installationId: qIPd9ajL3Eoq5RlU20LW
       annotations:
         "helm.sh/hook": "pre-install"
         "helm.sh/hook-weight": "15"
@@ -423,7 +429,7 @@ kubernetes:
       namespace: ${NAMESPACE}
     roleRef:
       kind: ClusterRole
-      name: gloo-upstream-mutator
+      name: gloo-upstream-mutator-${NAMESPACE}
       apiGroup: rbac.authorization.k8s.io
     
     ---
@@ -435,6 +441,7 @@ kubernetes:
       labels:
         app: gloo
         gloo: rbac
+        installationId: qIPd9ajL3Eoq5RlU20LW
       annotations:
         "helm.sh/hook": "pre-install"
         "helm.sh/hook-weight": "15"
@@ -444,7 +451,7 @@ kubernetes:
       namespace: ${NAMESPACE}
     roleRef:
       kind: ClusterRole
-      name: gloo-resource-reader
+      name: gloo-resource-reader-${NAMESPACE}
       apiGroup: rbac.authorization.k8s.io
     
     ---
@@ -456,6 +463,7 @@ kubernetes:
       labels:
         app: gloo
         gloo: rbac
+        installationId: qIPd9ajL3Eoq5RlU20LW
       annotations:
         "helm.sh/hook": "pre-install"
         "helm.sh/hook-weight": "15"
@@ -471,7 +479,7 @@ kubernetes:
       namespace: ${NAMESPACE}
     roleRef:
       kind: ClusterRole
-      name: settings-user
+      name: settings-user-${NAMESPACE}
       apiGroup: rbac.authorization.k8s.io
     
     ---
@@ -483,6 +491,7 @@ kubernetes:
       labels:
         app: gloo
         gloo: rbac
+        installationId: qIPd9ajL3Eoq5RlU20LW
       annotations:
         "helm.sh/hook": "pre-install"
         "helm.sh/hook-weight": "15"
@@ -492,7 +501,7 @@ kubernetes:
       namespace: ${NAMESPACE}
     roleRef:
       kind: ClusterRole
-      name: gloo-resource-mutator
+      name: gloo-resource-mutator-${NAMESPACE}
       apiGroup: rbac.authorization.k8s.io
     
     ---
@@ -504,6 +513,7 @@ kubernetes:
       labels:
         app: gloo
         gloo: rbac
+        installationId: qIPd9ajL3Eoq5RlU20LW
       annotations:
         "helm.sh/hook": "pre-install"
         "helm.sh/hook-weight": "15"
@@ -513,17 +523,18 @@ kubernetes:
       namespace: ${NAMESPACE}
     roleRef:
       kind: ClusterRole
-      name: gateway-resource-reader
+      name: gateway-resource-reader-${NAMESPACE}
       apiGroup: rbac.authorization.k8s.io
     ---
     
-    apiVersion: gateway.solo.io.v2/v2
+    apiVersion: gateway.solo.io/v1
     kind: Gateway
     metadata:
-      name: gateway-proxy-v2
+      name: gateway-proxy
       namespace: ${NAMESPACE}
       labels:
         app: gloo
+        installationId: qIPd9ajL3Eoq5RlU20LW
       annotations:
         "helm.sh/hook": "pre-install"
         "helm.sh/hook-weight": "5"
@@ -531,26 +542,27 @@ kubernetes:
       bindAddress: "::"
       bindPort: 8080
       httpGateway:
-        plugins:
+        options:
           httpConnectionManagerSettings:
             useRemoteAddress: true
         
       useProxyProto: false
       ssl: false
       proxyNames:
-      - gateway-proxy-v2
+      - gateway-proxy
     
     
     ---
     
     
-    apiVersion: gateway.solo.io.v2/v2
+    apiVersion: gateway.solo.io/v1
     kind: Gateway
     metadata:
-      name: gateway-proxy-v2-ssl
+      name: gateway-proxy-ssl
       namespace: ${NAMESPACE}
       labels:
         app: gloo
+        installationId: qIPd9ajL3Eoq5RlU20LW
       annotations:
         "helm.sh/hook": "pre-install"
         "helm.sh/hook-weight": "5"
@@ -558,14 +570,14 @@ kubernetes:
       bindAddress: "::"
       bindPort: 8443
       httpGateway:
-          plugins:
+          options:
             httpConnectionManagerSettings:
               useRemoteAddress: true
           
       useProxyProto: false
       ssl: true
       proxyNames:
-      - gateway-proxy-v2
+      - gateway-proxy
     ---
     
     
@@ -574,6 +586,7 @@ kubernetes:
     metadata:
       labels:
         app: gloo
+        installationId: qIPd9ajL3Eoq5RlU20LW
       name: default
       namespace: ${NAMESPACE}
       annotations:
@@ -581,7 +594,12 @@ kubernetes:
         "helm.sh/hook-weight": "5"
     spec:
       gloo:
-       xdsBindAddr: 0.0.0.0:9977
+        xdsBindAddr: 0.0.0.0:9977
+        invalidConfigPolicy:
+          invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should
+            run `glooctl check` to find and fix config errors.
+          invalidRouteResponseCode: 404
+          
       discoveryNamespace: ${NAMESPACE}
       kubernetesArtifactSource: {}
       kubernetesConfigSource: {}
@@ -598,6 +616,7 @@ kubernetes:
       labels:
         app: gloo
         gloo: gloo-usage
+        installationId: rm0LDLbRm3KHPMAShRMt
     data:
     
     ---
@@ -606,12 +625,13 @@ kubernetes:
     apiVersion: v1
     kind: ConfigMap
     metadata:
-      name: gateway-proxy-v2-envoy-config
+      name: gateway-proxy-envoy-config
       namespace: ${NAMESPACE}
       labels:
         app: gloo
         gloo: gateway-proxy
-        gateway-proxy-id: gateway-proxy-v2
+        gateway-proxy-id: gateway-proxy
+        installationId: rm0LDLbRm3KHPMAShRMt
     data:
     
       envoy.yaml: |
@@ -620,7 +640,7 @@ kubernetes:
           id: "{{.PodName}}.{{.PodNamespace}}"
           metadata:
             # role's value is the key for the in-memory xds cache (projects/gloo/pkg/xds/envoy.go)
-            role: "{{.PodNamespace}}~gateway-proxy-v2"
+            role: "{{.PodNamespace}}~gateway-proxy"
         stats_sinks:
           - name: envoy.metrics_service
             config:
@@ -682,6 +702,7 @@ kubernetes:
       labels:
         app: gloo
         gloo: gloo
+        installationId: rm0LDLbRm3KHPMAShRMt
       name: gloo
       namespace: ${NAMESPACE}
     spec:
@@ -706,8 +727,9 @@ kubernetes:
       labels:
         app: gloo
         gloo: gateway-proxy
-        gateway-proxy-id: gateway-proxy-v2
-      name: gateway-proxy-v2
+        gateway-proxy-id: gateway-proxy
+        installationId: rm0LDLbRm3KHPMAShRMt
+      name: gateway-proxy
       namespace: ${NAMESPACE}
     spec:
       ports:
@@ -720,7 +742,7 @@ kubernetes:
         protocol: TCP
         name: https
       selector:
-        gateway-proxy-id: gateway-proxy-v2
+        gateway-proxy-id: gateway-proxy
         gateway-proxy: live
       type: LoadBalancer
     
@@ -733,6 +755,7 @@ kubernetes:
       labels:
         app: gloo
         gloo: gloo
+        installationId: rm0LDLbRm3KHPMAShRMt
       name: gloo
       namespace: ${NAMESPACE}
     spec:
@@ -746,8 +769,15 @@ kubernetes:
             gloo: gloo
         spec:
           serviceAccountName: gloo
+          volumes:
+          - name: labels-volume
+            downwardAPI:
+              items:
+                - path: "labels"
+                  fieldRef:
+                    fieldPath: metadata.labels
           containers:
-          - image: quay.io/solo-io/gloo:0.20.8
+          - image: quay.io/solo-io/gloo:1.0.0
             imagePullPolicy: IfNotPresent
             name: gloo
             resources:
@@ -769,6 +799,10 @@ kubernetes:
             - containerPort: 9988
               name: grpc-validation
               protocol: TCP
+            volumeMounts:
+            - name: labels-volume
+              mountPath: /etc/gloo
+              readOnly: true
             env:
               - name: POD_NAMESPACE
                 valueFrom:
@@ -789,7 +823,8 @@ kubernetes:
       labels:
         app: gloo
         gloo: gateway
-      name: gateway-v2
+        installationId: rm0LDLbRm3KHPMAShRMt
+      name: gateway
       namespace: ${NAMESPACE}
     spec:
       replicas: 1
@@ -803,7 +838,7 @@ kubernetes:
         spec:
           serviceAccountName: gateway
           containers:
-          - image: quay.io/solo-io/gateway:0.20.8
+          - image: strongmonkey1992/gateway:v1.0.0-rio
             imagePullPolicy: IfNotPresent
             name: gateway
     
@@ -828,20 +863,21 @@ kubernetes:
       labels:
         app: gloo
         gloo: gateway-proxy
-        gateway-proxy-id: gateway-proxy-v2
-      name: gateway-proxy-v2
+        gateway-proxy-id: gateway-proxy
+        installationId: rm0LDLbRm3KHPMAShRMt
+      name: gateway-proxy
       namespace: ${NAMESPACE}
     spec:
       replicas: 1
       selector:
         matchLabels:
           gloo: gateway-proxy
-          gateway-proxy-id: gateway-proxy-v2
+          gateway-proxy-id: gateway-proxy
       template:
         metadata:
           labels:
             gloo: gateway-proxy
-            gateway-proxy-id: gateway-proxy-v2
+            gateway-proxy-id: gateway-proxy
             gateway-proxy: live
     
         spec:
@@ -857,9 +893,9 @@ kubernetes:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-            image: quay.io/solo-io/gloo-envoy-wrapper:0.20.8
+            image: quay.io/solo-io/gloo-envoy-wrapper:1.0.0
             imagePullPolicy: IfNotPresent
-            name: gateway-proxy-v2
+            name: gateway-proxy
             securityContext:
               readOnlyRootFilesystem: true
               allowPrivilegeEscalation: false
@@ -880,9 +916,10 @@ kubernetes:
               name: envoy-config
           volumes:
           - configMap:
-              name: gateway-proxy-v2-envoy-config
+              name: gateway-proxy-envoy-config
             name: envoy-config
     ---
 
 template:
   envSubst: true
+  goTemplate: false

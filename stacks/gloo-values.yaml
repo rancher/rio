@@ -2,22 +2,25 @@ discovery:
   enabled: false
   
 gateway:
-  certGenJob: false
+  certGenJob:
+    enabled: false
   upgrade: false
-  validation: false
+  validation:
+    enabled: false
   deployment:
     stats: false
 
 gatewayProxies:
-  gatewayProxyV2:
+  gatewayProxy:
+    upgrade: false
     stats: false
     gatewaySettings:
-      customHttpsGateway:
-        plugins:
+      customHttpGateway:
+        options:
           httpConnectionManagerSettings:
             useRemoteAddress: true
-      customHttpGateway:
-        plugins:
+      customHttpsGateway:
+        options:
           httpConnectionManagerSettings:
             useRemoteAddress: true
 

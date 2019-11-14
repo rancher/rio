@@ -20,7 +20,7 @@ func (f *VirtualServiceFactory) ForRevision(svc *riov1.Service) ([]*solov1.Virtu
 
 	if svc.Spec.RequestTimeoutSeconds != nil {
 		t := time.Duration(int64(*svc.Spec.RequestTimeoutSeconds)) * time.Second
-		vs.Spec.VirtualHost.Routes[0].RoutePlugins.Timeout = &t
+		vs.Spec.VirtualHost.Routes[0].Options.Timeout = &t
 	}
 
 	if err := f.InjectACME(vs); err != nil {
