@@ -718,7 +718,7 @@ github.com/tonistiigi/fsutil
 github.com/tonistiigi/units
 # github.com/urfave/cli v1.22.1
 github.com/urfave/cli
-# github.com/wercker/stern v1.11.0 => github.com/rancher/stern v0.0.0-20191112212754-e4067d535fbf
+# github.com/wercker/stern v1.11.0 => github.com/rancher/stern v0.0.0-20191114200800-b31e21d4e493
 github.com/wercker/stern/stern
 github.com/wercker/stern/kubernetes
 # go.opencensus.io v0.22.0

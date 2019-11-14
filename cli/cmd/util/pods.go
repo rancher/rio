@@ -4,6 +4,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	services2 "github.com/rancher/rio/pkg/services"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	appv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -51,6 +52,8 @@ func ToPodNameOrSelector(obj runtime.Object) (string, labels.Selector, error) {
 			"app":     app,
 			"version": version,
 		}), nil
+	case *v1alpha1.TaskRun:
+		return v.Status.PodName, nil, nil
 	case *appv1.Deployment:
 		return toSelector(v.Spec.Selector)
 	case *appv1.DaemonSet:

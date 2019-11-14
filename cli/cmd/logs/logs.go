@@ -20,14 +20,15 @@ import (
 )
 
 type Logs struct {
-	S_Since      string `desc:"Logs since a certain time, either duration (5s, 2m, 3h) or RFC3339" default:"24h"`
-	T_Timestamps bool   `desc:"Print the logs with timestamp" default:"false"`
-	N_Tail       int    `desc:"Number of recent lines to print, -1 for all" default:"200"`
-	C_Container  string `desc:"Print the logs of a specific container, use -a for system containers"`
-	P_Previous   bool   `desc:"Print the logs for the previous instance of the container in a pod if it exists, excludes running"`
-	A_All        bool   `desc:"Include hidden or systems logs when logging" default:"false"`
-	NC_NoColor   bool   `desc:"Dont show color when logging" default:"false"`
-	O_Output     string `desc:"Output format: [default, raw, json]"`
+	S_Since        string `desc:"Logs since a certain time, either duration (5s, 2m, 3h) or RFC3339" default:"24h"`
+	T_Timestamps   bool   `desc:"Print the logs with timestamp" default:"false"`
+	N_Tail         int    `desc:"Number of recent lines to print, -1 for all" default:"200"`
+	C_Container    string `desc:"Print the logs of a specific container, use -a for system containers"`
+	P_Previous     bool   `desc:"Print the logs for the previous instance of the container in a pod if it exists, excludes running"`
+	InitContainers bool   `desc:"Include or exclude init containers" default:"true"`
+	A_All          bool   `desc:"Include hidden or systems logs when logging" default:"false"`
+	NC_NoColor     bool   `desc:"Dont show color when logging" default:"false"`
+	O_Output       string `desc:"Output format: [default, raw, json]"`
 }
 
 // This is based on both wercker/stern and linkerd/stern implementations
@@ -47,9 +48,10 @@ func (l *Logs) Run(ctx *clicontext.CLIContext) error {
 func (l *Logs) setupConfig(ctx *clicontext.CLIContext) (*stern.Config, error) {
 	var err error
 	config := &stern.Config{
-		LabelSelector: labels.Everything(),
-		Timestamps:    l.T_Timestamps,
-		Namespace:     ctx.GetSetNamespace(),
+		LabelSelector:  labels.Everything(),
+		Timestamps:     l.T_Timestamps,
+		Namespace:      ctx.GetSetNamespace(),
+		InitContainers: l.InitContainers,
 	}
 
 	if len(ctx.CLI.Args()) > 0 {
@@ -63,7 +65,8 @@ func (l *Logs) setupConfig(ctx *clicontext.CLIContext) (*stern.Config, error) {
 		}
 		config.Namespace = obj.Namespace
 		if obj.Type == clitypes.BuildType {
-			l.P_Previous = true
+			config.ContainerState = []string{stern.RUNNING, stern.WAITING, stern.TERMINATED}
+			config.InitContainers = false
 		}
 		podName, sel, err := util.ToPodNameOrSelector(obj.Object)
 		if err != nil {
@@ -109,9 +112,12 @@ func (l *Logs) setupConfig(ctx *clicontext.CLIContext) (*stern.Config, error) {
 		return nil, err
 	}
 
-	config.ContainerState = []string{stern.RUNNING, stern.WAITING}
-	if l.P_Previous {
-		config.ContainerState = []string{stern.TERMINATED}
+	if len(config.ContainerState) == 0 {
+		if l.P_Previous {
+			config.ContainerState = []string{stern.TERMINATED}
+		} else {
+			config.ContainerState = []string{stern.RUNNING, stern.WAITING}
+		}
 	}
 
 	return config, nil
@@ -144,6 +150,7 @@ func (l *Logs) Output(ctx *clicontext.CLIContext, conf *stern.Config) error {
 		conf.PodQuery,
 		conf.ContainerQuery,
 		conf.ExcludeContainerQuery,
+		conf.InitContainers,
 		conf.ContainerState,
 		conf.LabelSelector,
 	)
