@@ -38,7 +38,9 @@ func (c *Create) Run(ctx *clicontext.CLIContext) error {
 				externalService.Spec.TargetServiceNamespace = ref.Namespace
 			} else {
 				externalService.Spec.TargetApp = ref.App
-				externalService.Spec.TargetVersion = ref.Version
+				if strings.Contains(name, "@") {
+					externalService.Spec.TargetVersion = ref.Version
+				}
 				externalService.Spec.TargetServiceNamespace = ref.Namespace
 			}
 		}
