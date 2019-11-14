@@ -76,7 +76,7 @@ require (
 	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4 // indirect
 	github.com/radovskyb/watcher v1.0.7 // indirect
 	github.com/rancher/gitwatcher v0.4.1
-	github.com/rancher/norman v0.0.0-20191030191625-ebecbda5fbe3
+	github.com/rancher/norman v0.0.0-20191114233102-966e8db9e670
 	github.com/rancher/rdns-server v0.5.7-0.20190927164127-7128efe7d065
 	github.com/rancher/wrangler v0.2.1-0.20191109002915-2a833f7e410d
 	github.com/rancher/wrangler-api v0.2.1-0.20191025043713-b1ca9c21825a

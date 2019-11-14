@@ -868,6 +868,8 @@ github.com/rancher/kubernetes/staging/src/k8s.io/metrics v1.16.2-k3s.1/go.mod h1
 github.com/rancher/kubernetes/staging/src/k8s.io/sample-apiserver v1.16.2-k3s.1/go.mod h1:E3i4wscD52Qj6PEcgUjvCd81Tl6Mghk1GHtEzoaaqwU=
 github.com/rancher/norman v0.0.0-20191030191625-ebecbda5fbe3 h1:JBZachl1kOyK730yUQr/X/o+/D440bBEEM6XE0tWGao=
 github.com/rancher/norman v0.0.0-20191030191625-ebecbda5fbe3/go.mod h1:zOBq0bQmo9slllyM1kcKpKr1RH5IWodjySaffLKSOx0=
+github.com/rancher/norman v0.0.0-20191114233102-966e8db9e670 h1:EM5VxDfLyKFTEPVV6rEWoPHE3gn/fbd2AXS9KE7U3rE=
+github.com/rancher/norman v0.0.0-20191114233102-966e8db9e670/go.mod h1:zOBq0bQmo9slllyM1kcKpKr1RH5IWodjySaffLKSOx0=
 github.com/rancher/rdns-server v0.5.7-0.20190927164127-7128efe7d065 h1:K2/79Jdw0viw+ryWSJQcIMYJf2vc5yQXlEHPTbpVPVs=
 github.com/rancher/rdns-server v0.5.7-0.20190927164127-7128efe7d065/go.mod h1:/yw1tSnAWDSDSmhKpYNA/FBA49fbbtNfh/IHT31v7jE=
 github.com/rancher/stern v0.0.0-20191112212754-e4067d535fbf h1:WMuNPpOa96kBqQ3dqKjTyzx3xNNVRhIHBH167/rZM3A=
