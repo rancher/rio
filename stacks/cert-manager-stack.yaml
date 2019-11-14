@@ -1,5 +1,6 @@
 services:
   cert-manager:
+    version: v0
     global_permissions:
     - '* cert-manager.io/*'
     - '* acme.cert-manager.io/*'

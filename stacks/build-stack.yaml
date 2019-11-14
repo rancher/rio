@@ -15,6 +15,7 @@ configs:
 
 services:
   buildkitd:
+    version: v0
     serviceMesh: false
     image: "moby/buildkit:v0.6.1"
     ports:
@@ -30,6 +31,7 @@ services:
       ports:
       - 80:80/tcp,registry,expose=false
   webhook:
+    version: v0
     global_permissions:
     - "* gitwatcher.cattle.io/gitwatchers"
     - "* gitwatcher.cattle.io/gitcommits"
