@@ -1,5 +1,6 @@
 services:
   autoscaler:
+    version: v0
     global_permissions:
     - '* pods'
     - '* configmaps'
