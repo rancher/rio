@@ -6,8 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
-
 	"github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/solo-io/go-utils/kubeutils"
@@ -23,6 +21,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/vault"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -107,7 +106,7 @@ func newResourceClient(factory ResourceClientFactory, params NewResourceClientPa
 			namespaceWhitelist,
 			opts.ResyncPeriod,
 		)
-		return clusterClient(client, opts.Cluster), nil
+		return wrapper.NewClusterResourceClient(client, opts.Cluster), nil
 
 	case *ConsulResourceClientFactory:
 		versionedResource, ok := params.ResourceType.(resources.VersionedResource)
@@ -130,7 +129,7 @@ func newResourceClient(factory ResourceClientFactory, params NewResourceClientPa
 		if err != nil {
 			return nil, err
 		}
-		return clusterClient(client, opts.Cluster), nil
+		return wrapper.NewClusterResourceClient(client, opts.Cluster), nil
 	case *KubeSecretClientFactory:
 		if opts.Cache == nil {
 			return nil, errors.Errorf("invalid opts, secret client requires a kube core cache")
@@ -142,7 +141,7 @@ func newResourceClient(factory ResourceClientFactory, params NewResourceClientPa
 		if err != nil {
 			return nil, err
 		}
-		return clusterClient(client, opts.Cluster), nil
+		return wrapper.NewClusterResourceClient(client, opts.Cluster), nil
 	case *VaultSecretClientFactory:
 		versionedResource, ok := params.ResourceType.(resources.VersionedResource)
 		if !ok {
@@ -248,11 +247,4 @@ type VaultSecretClientFactory struct {
 
 func (f *VaultSecretClientFactory) NewResourceClient(params NewResourceClientParams) (clients.ResourceClient, error) {
 	return newResourceClient(f, params)
-}
-
-func clusterClient(client clients.ResourceClient, cluster string) clients.ResourceClient {
-	if cluster == "" {
-		return client
-	}
-	return wrapper.NewClusterClient(client, cluster)
 }
