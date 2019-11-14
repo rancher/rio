@@ -96,6 +96,7 @@ func (h *handler) onConfigMapChange(key string, cm *corev1.ConfigMap) (*corev1.C
 	if config.Gateway.ServiceName != h.gatewayName || config.Gateway.ServiceNamespace != h.gatewayNamespace {
 		h.gatewayName = config.Gateway.ServiceName
 		h.gatewayNamespace = config.Gateway.ServiceNamespace
+		h.start()
 	}
 
 	if h.gatewayName != "" && h.gatewayNamespace != "" {
