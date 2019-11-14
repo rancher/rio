@@ -316,7 +316,7 @@ func (c *Create) ToService(ctx *clicontext.CLIContext, args []string) (*riov1.Se
 		},
 		Spec: spec,
 	})
-	svc.GenerateName = spec.App + "-"
+	svc.GenerateName = spec.App + "-" + spec.Version
 
 	return svc, nil
 }

@@ -53,7 +53,7 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 		}
 		version = "v" + version
 	}
-	err = r.updatePromotedService(ctx, service, version)
+	err = r.stageService(ctx, service, version)
 	if err != nil {
 		return err
 	}
@@ -64,7 +64,7 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 	return nil
 }
 
-func (r *Stage) updatePromotedService(ctx *clicontext.CLIContext, service types.Resource, version string) error {
+func (r *Stage) stageService(ctx *clicontext.CLIContext, service types.Resource, version string) error {
 	if r.Edit {
 		byteContent, err := json.Marshal(service.Object)
 		if err != nil {
@@ -86,7 +86,7 @@ func (r *Stage) updatePromotedService(ctx *clicontext.CLIContext, service types.
 				Spec: obj.Spec,
 			})
 			app, _ := services.AppAndVersion(svc)
-			svc.Name = app + "-" + version
+			svc.GenerateName = app + "-" + version
 			svc.Spec.Version = version
 			if obj.Spec.App != "" {
 				svc.Spec.App = obj.Spec.App
@@ -114,13 +114,14 @@ func (r *Stage) updatePromotedService(ctx *clicontext.CLIContext, service types.
 		if err != nil {
 			return err
 		}
-		stagedService := riov1.NewService(svc.Namespace, spec.App+"-"+version, riov1.Service{
+		stagedService := riov1.NewService(svc.Namespace, "", riov1.Service{
 			Spec: *spec,
 			ObjectMeta: v1.ObjectMeta{
 				Labels:      cleanMeta(svc.Labels),
 				Annotations: cleanMeta(svc.Annotations),
 			},
 		})
+		stagedService.GenerateName = spec.App + "-" + version
 		return ctx.Create(stagedService)
 	}
 	return nil
