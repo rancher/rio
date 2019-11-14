@@ -36,7 +36,7 @@ $ rio run -p 80/http,web nginx
 $ rio run -p 80,web,expose=false nginx
 
 # To expose services through hostport 80
-$ rio run -p 80,web,hostport=true nginx
+$ rio run -p 8080:80,web,hostport=true nginx
 ```
 
 ### Examples
@@ -101,7 +101,7 @@ To deploy another version with version v3
 $ rio stage --image ibuildthecloud/demo:v3 demo@v1 v3 
 
 # Manually stage using run
-$ rio run --name demo@v3 ibuildthecloud/demo:v3 
+$ rio run --name demo@v3 --ports 80 ibuildthecloud/demo:v3 
 ```
 
 Now that you have defined two service with app `demo` and version `v1` and `v3`. To access the global endpoint that serves
