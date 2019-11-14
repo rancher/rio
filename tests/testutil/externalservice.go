@@ -125,7 +125,7 @@ func (es *TestExternalService) reload() error {
 func (es *TestExternalService) waitForExternalService() error {
 	f := wait.ConditionFunc(func() (bool, error) {
 		err := es.reload()
-		if err == nil && (len(es.ExternalService.Spec.IPAddresses) > 0 || es.ExternalService.Spec.FQDN != "") {
+		if err == nil && (len(es.ExternalService.Spec.IPAddresses) > 0 || es.ExternalService.Spec.FQDN != "" || es.ExternalService.Spec.TargetApp != "" || es.ExternalService.Spec.TargetRouter != "") {
 			return true, nil
 		}
 		return false, nil

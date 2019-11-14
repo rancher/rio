@@ -57,7 +57,7 @@ func getSpec(es *riov1.ExternalService, os *objectset.ObjectSet) (v1.ServiceSpec
 		}
 		return v1.ServiceSpec{
 			Type:         v1.ServiceTypeExternalName,
-			ExternalName: fmt.Sprintf("%s.%s", service, ns),
+			ExternalName: fmt.Sprintf("%s.%s.svc.cluster.local", service, ns),
 		}, true
 	}
 
