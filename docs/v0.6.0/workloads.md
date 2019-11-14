@@ -18,6 +18,8 @@ a certificate for the cluster domain so that all services support HTTPS by defau
 For example, when you deploy your workload, you can access your workload in HTTPS. The domain always follows the format
 of ${app}-${namespace}.\${cluster-domain}. You can see your cluster domain by running `rio info`.
 
+Note: If linkerd feature is enabled, Rio will automatically inject linkerd-proxy into your workload. If you would like disable that, run `rio run --no-mesh`.
+
 ### Expose your service
 
 Note: In order to expose your service you have pass `--port`(short flag `-p`). The format is `[service_port:]container_port[/protocol]`
@@ -65,7 +67,7 @@ $ rio run --no-mesh nginx
 $ rio run --privileged nginx
 
 # Running container with environment variables
-$ rio run --env FOO=BAR --env= FOO1=BAR1 nginx
+$ rio run --env FOO=BAR --env FOO1=BAR1 nginx
 
 # Running container and attach to it
 $ rio run -it nginx bash
@@ -130,6 +132,28 @@ $ rio promote demo@v3
 Note: services are discoverable inside cluster by their short DNS name. For example services demo@v1 and demo@v3 are discoverable through
 `demo-v1` and `demo-v3`. `demo` is also discoverable to serve traffic from both versions.
 
+### Running stateful application (experimental)
+
+Rio support running stateful application leveraging kubernetes [persistentvolume](https://kubernetes.io/docs/concepts/storage/persistent-volumes/).
 
 
+To mount a volume into container (By default it will create [emptydir](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir) volume):
+
+```bash
+$ rio run -v foo:/data nginx
+```
+
+To mount a persistent volume into container (By default it will create persistent volume if cluster has default storageclass, otherwise it will use existing pvc with the same name):
+
+```bash
+$ rio run -v foo:/data,persistent=true nginx
+```
+
+To mount a hostpath volume into container
+
+```bash
+$ rio run -v rio run -v foo:/etc,hosttype=directoryorcreate nginx
+``` 
+
+Note: hostpath type can be found in [here](https://kubernetes.io/docs/concepts/storage/volumes/#hostpath)
 
