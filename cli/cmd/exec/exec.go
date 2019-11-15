@@ -11,7 +11,7 @@ import (
 
 type Exec struct {
 	C_Container string `desc:"Specify container in pod, default is first container"`
-	Pod         string `desc:"Specify pod, default is first container"`
+	Pod         string `desc:"Specify pod, default is first pod found"`
 	I_Stdin     bool   `desc:"Pass stdin to the container"`
 	T_Tty       bool   `desc:"Stdin is a TTY"`
 }

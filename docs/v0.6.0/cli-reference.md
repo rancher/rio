@@ -118,8 +118,6 @@ List images built from local registry
 rio image
 ```
 
-No arguments
-
 
 ## run
 todo
@@ -133,8 +131,6 @@ Delete resources
 rio rm [TYPE/]RESOURCE_NAME
 ```
 
-no arguments
-
 
 ## scale
 
@@ -146,7 +142,6 @@ rio scale [SERVICE=NUMBER_OR_MIN-MAX...]
 ```
 
 ##### Examples
-no arguments
 
 ```shell script
 rio scale foo=5
@@ -261,7 +256,36 @@ rio cat --key=a configmap/config-foo
 
 
 ## exec
-todo
+
+Run a command in a running container
+
+##### Usage
+```
+rio exec [OPTIONS] CONTAINER COMMAND [ARG...]
+```
+
+##### Options
+
+| flag              | aliases  | description                                          | default |
+|-------------------|----------|------------------------------------------------------|---------|
+| --stdin           | -i       | Pass stdin to the container                          |         |
+| --tty             | -t       | Stdin is a TTY                                       |         |
+| --container value | -c value | Specify container in pod, default is first container |         |
+| --pod value       |          | Specify pod, default is first pod found              |         |
+
+##### Examples
+
+```shell script
+# ssh into running container
+rio exec -it demo sh
+
+# this is equivalent of doing
+rio exec --tty --stdin demo sh
+
+# choose pod and container
+rio exec -it --pod mypod --container server demo sh
+```
+
 
 ## attach
 todo
@@ -419,9 +443,6 @@ Print the logs from Rio management plane
 rio systemlogs
 ```
 
-No arguments
-
-
 ## up
 
 Apply a Riofile
@@ -496,8 +517,6 @@ Kill pods individually or all pods belonging to a service
 rio kill [SERVICE_NAME/POD_NAME]
 ```
 
-No arguments
-
 ##### Examples
 
 ```shell script
@@ -518,5 +537,3 @@ Show system info
 ```
 rio info
 ```
-
-No arguments
