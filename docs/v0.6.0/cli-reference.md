@@ -286,9 +286,28 @@ rio exec --tty --stdin demo sh
 rio exec -it --pod mypod --container server demo sh
 ```
 
-
 ## attach
-todo
+
+Attach to a process running in a container
+
+##### Usage
+```
+rio attach [OPTIONS] CONTAINER
+```
+
+##### Options
+| flag            | aliases | description                                                  | default |
+|-----------------|---------|--------------------------------------------------------------|---------|
+| --timeout value |         | Timeout waiting for the container to be created to attach to | 1m      |
+| --pod value     |         | Specify pod, default is first pod found                      |         |
+
+##### Examples
+
+```shell script
+rio attach demo
+
+rio attach --timeout 30s --pod mydemopod demo
+```
 
 ## logs
 
@@ -525,7 +544,7 @@ rio kill demo
 
 # kill individual pods
 rio pods # first get pod name
-rio kill pod/test-v042dxp-5fb7d8f677-f9xgn
+rio kill pod/demo-v042dxp-5fb7d8f677-f9xgn
 ```
 
 
