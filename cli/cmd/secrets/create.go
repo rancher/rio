@@ -44,8 +44,7 @@ func (s *Create) Run(ctx *clicontext.CLIContext) error {
 		} else {
 			secret = constructors.NewSecret(ns, constants.DefaultGithubCrendential, v1.Secret{})
 		}
-		setDefaults(secret)
-		secret.Type = v1.SecretTypeOpaque
+		setDefaults(secret, v1.SecretTypeOpaque)
 
 		accessToken, err = questions.PromptPassword("Github AccessToken[******]: ", accessToken)
 		if err != nil {
@@ -113,7 +112,7 @@ func (s *Create) Run(ctx *clicontext.CLIContext) error {
 		} else {
 			secret = constructors.NewSecret(ns, constants.DefaultGitCrendential, v1.Secret{})
 		}
-		setDefaults(secret)
+		setDefaults(secret, v1.SecretTypeBasicAuth)
 
 		url, err = questions.Prompt(fmt.Sprintf("git url[%s]: ", url), url)
 		if err != nil {
@@ -137,16 +136,27 @@ func (s *Create) Run(ctx *clicontext.CLIContext) error {
 
 	if s.GitSSHKeyAuth {
 		var err error
-		var sshPrivateKeyPath, ns string
+		var url, sshPrivateKeyPath, ns string
 
 		ns, err = questions.Prompt("Select namespace[default]: ", "default")
 		if err != nil {
 			return err
 		}
 
-		secret := constructors.NewSecret(ns, constants.DefaultGitCrendentialSSH, v1.Secret{})
-		setDefaults(secret)
-		secret.Type = v1.SecretTypeSSHAuth
+		secret, err := ctx.Core.Secrets(ns).Get(constants.DefaultGitCrendentialSSH, metav1.GetOptions{})
+		if err == nil {
+			url = secret.Annotations["tekton.dev/git-0"]
+		} else {
+			secret = constructors.NewSecret(ns, constants.DefaultGitCrendentialSSH, v1.Secret{})
+			secret.Type = v1.SecretTypeSSHAuth
+		}
+		setDefaults(secret, v1.SecretTypeSSHAuth)
+
+		url, err = questions.Prompt(fmt.Sprintf("git url[%s]: ", url), url)
+		if err != nil {
+			return err
+		}
+		secret.Annotations["tekton.dev/git-0"] = url
 
 		sshPrivateKeyPath, err = questions.Prompt(fmt.Sprintf("ssh_key_path[%s]: ", sshPrivateKeyPath), sshPrivateKeyPath)
 		if err != nil {
@@ -211,8 +221,8 @@ func createOrUpdate(secret *v1.Secret, ctx *clicontext.CLIContext) error {
 	return nil
 }
 
-func setDefaults(secret *v1.Secret) {
-	secret.Type = v1.SecretTypeBasicAuth
+func setDefaults(secret *v1.Secret, secretType v1.SecretType) {
+	secret.Type = secretType
 	if secret.Annotations == nil {
 		secret.Annotations = make(map[string]string)
 	}
