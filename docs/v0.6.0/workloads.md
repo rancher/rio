@@ -41,6 +41,8 @@ $ rio run -p 8080:80,web,hostport=true nginx
 
 ### Examples
 
+Note: some of these examples need proper RBAC setup, for more information check [here](./rbac.md).  
+
 ```bash
 # Running container with configMap mounted into containers, requires configMap to exist in the same namespace
 $ rio run --config config/nginx.conf:/etc/nginx/nginx.conf nginx
