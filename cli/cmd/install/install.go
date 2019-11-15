@@ -268,7 +268,7 @@ func (i *Install) configureNamespace(ctx *clicontext.CLIContext, systemStack *st
 }
 
 var checkFeatures = map[string][]string{
-	"gateway":     {"rio-system/gateway-v2", "rio-system/gateway-proxy-v2", "rio-system/gloo"},
+	"gloo":        {"rio-system/gateway-v2", "rio-system/gateway-proxy-v2", "rio-system/gloo"},
 	"build":       {"rio-system/buildkitd", "rio-system/webhook", "tekton-pipelines/tekton-pipelines-webhook", "tekton-pipelines/tekton-pipelines-controller"},
 	"letsencrypt": {"rio-system/cert-manager"},
 	"autoscaling": {"rio-system/autoscaler"},
