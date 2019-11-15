@@ -41,7 +41,9 @@ $ rio run -p 8080:80,web,hostport=true nginx
 
 ### Examples
 
-Note: some of these examples need proper RBAC setup, for more information check [here](./rbac.md).  
+Notes: 
+- none of these examples have the port specified, so there will not be an available app endpoint
+- some of these examples need proper RBAC setup, for more information check [here](./rbac.md).  
 
 ```bash
 # Running container with configMap mounted into containers, requires configMap to exist in the same namespace
@@ -60,7 +62,7 @@ $ rio run --secret certs/tls.crt:/etc/ssl/tls.key nginx
 $ rio run --secret certs:/etc/ssl/ nginx
 
 # Running container with secret as environment variable.
-$ rio run --env FOO=secret://certs/tls.crt
+$ rio run --env FOO=secret://certs/tls.crt nginx
 
 # Running container with no service mesh
 $ rio run --no-mesh nginx
@@ -154,7 +156,7 @@ $ rio run -v foo:/data,persistent=true nginx
 To mount a hostpath volume into container
 
 ```bash
-$ rio run -v rio run -v foo:/etc,hosttype=directoryorcreate nginx
+$ rio run -v foo:/etc,hosttype=directoryorcreate nginx
 ``` 
 
 Note: hostpath type can be found in [here](https://kubernetes.io/docs/concepts/storage/volumes/#hostpath)

@@ -26,11 +26,11 @@ $ curl -sfL https://get.rio.io | sh -   # or manually from https://github.com/ra
 # Setup your cluster for Rio
 $ rio install
 
-# Make sure all the pods are up and running. These takes several minutes.
-$ kubectl get po -n rio-system
+# Make sure all the pods are up and running. These may take several minutes.
+$ rio -n rio-system pods
 
 # Run a sample service
-$ rio run https://github.com/rancher/rio-demo
+$ rio run -p 80:8080 https://github.com/rancher/rio-demo
 
 # Check the status
 $ rio ps
