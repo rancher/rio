@@ -74,11 +74,11 @@ $ rio external create ext foo:demo@v1
 To add externalservice pointing to app `demo` 
 
 ```bash
-$ rio external create `ext` demo
+$ rio external create ext demo
 ```
 
 To add externalservice pointing to route `prod`
 
 ```bash
-$ rio external create `ext` router/prod
+$ rio external create ext router/prod
 ```
