@@ -38,6 +38,7 @@ You can setup Rio to watch for Riofile changes in a Github repository and deploy
 $ rio up https://github.com/username/repo
 ```
 
+
 By default, Rio will poll the branch in 15 second intervals, but can be configured to use a webhook instead. See [Webhook docs](./webhooks.md) for info.
 
 #### Riofile reference
@@ -98,7 +99,7 @@ services:
       pushRegistrySecretName: secretDocker # Specify secret name for pushing to docker registry. [link](#set-custom-build-arguments-and-docker-registry)
       stageOnly: true # If set, newly created revision will get any traffic. Defaults to false.
       webhookSecretName: secretGithub # Specify the github secret name. Used to create Github webhook, the secret key has to be `accessToken`
-      cloneSecretName: secretGit // Specify secret name for checking our git resources
+      cloneSecretName: secretGit # Specify secret name for checking our git resources
       pr: true # Enable pull request feature. Defaults to false
       timeout: 10 # build timeout setting in seconds
     command: # Container entrypoint, not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided.
@@ -261,5 +262,22 @@ routers:
         retry:
           attempts: 10 # Retry attempts
           timeoutSeconds: 1 # Retry timeout (milli-seconds)
+
+# Use Riofile's answer/question templating
+template:
+  goTemplate: true # use go templating
+  envSubst: true # use ENV vars during templating  
+  questions:  # now make some questions that we provide answers too
+  - variable: NAMESPACE 
+    description: "namespace to deploy to"
+  - variable: RIO_DEBUG
+  - variable: RUN_API_VALIDATOR
+
+# Supply arbitrary kubernetes manifest yaml
+kubernetes:
+  manifest: |-
+    apiVersion: apps/v1
+    kind: Deployment
+    ....
 
 ``` 

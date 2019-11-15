@@ -161,7 +161,7 @@ func main() {
 
 		builder.Command(&inspect.Inspect{},
 			"Print the raw API output of a resource",
-			appName+" inspect [TYPE/][NAMESPACE/]SERVICE_NAME",
+			appName+" inspect [TYPE/]RESOURCE_NAME",
 			""),
 
 		builder.Command(&install.Install{},
@@ -185,7 +185,7 @@ func main() {
 			""),
 
 		builder.Command(&promote.Promote{},
-			"Promote a staged version to latest and scale down other app versions",
+			"Send all traffic to an app version and scale down other versions",
 			appName+" promote [OPTIONS] SERVICE_NAME",
 			"Defaults to an immediate rollout, set interval greater than one to perform a gradual rollout"),
 
@@ -225,14 +225,14 @@ func main() {
 			""),
 
 		builder.Command(&up.Up{},
-			"Apply a rio file",
+			"Apply a Riofile",
 			appName+" up [OPTIONS]",
 			""),
 
 		builder.Command(&weight.Weight{},
-			"Weight a service to specific weight or percentage of total app traffic",
-			appName+" weight [OPTIONS] SERVICE_NAME=WEIGHT/PERCENTAGE",
-			"Defaults to an immediate rollout, set interval greater than one to perform a gradual rollout"),
+			"Weight a service to specific percentage of total app traffic",
+			appName+" weight [OPTIONS] SERVICE_NAME=PERCENTAGE",
+			"Defaults to an immediate rollout, set duration to perform a gradual rollout"),
 	}
 	app.Before = func(ctx *cli.Context) error {
 		if err := cfg.Validate(); err != nil {
