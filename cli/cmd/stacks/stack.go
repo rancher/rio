@@ -28,8 +28,8 @@ func Stacks(app *cli.App) cli.Command {
 		Category:  "SUB COMMANDS",
 		Subcommands: []cli.Command{
 			ls,
-			update,
 			info,
+			update,
 		},
 	}
 }

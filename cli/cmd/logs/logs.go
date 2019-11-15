@@ -20,15 +20,15 @@ import (
 )
 
 type Logs struct {
-	S_Since        string `desc:"Logs since a certain time, either duration (5s, 2m, 3h) or RFC3339" default:"24h"`
-	T_Timestamps   bool   `desc:"Print the logs with timestamp" default:"false"`
-	N_Tail         int    `desc:"Number of recent lines to print, -1 for all" default:"200"`
-	C_Container    string `desc:"Print the logs of a specific container, use -a for system containers"`
-	P_Previous     bool   `desc:"Print the logs for the previous instance of the container in a pod if it exists, excludes running"`
-	InitContainers bool   `desc:"Include or exclude init containers" default:"true"`
 	A_All          bool   `desc:"Include hidden or systems logs when logging" default:"false"`
+	C_Container    string `desc:"Print the logs of a specific container, use -a for system containers"`
+	InitContainers bool   `desc:"Include or exclude init containers" default:"true"`
 	NC_NoColor     bool   `desc:"Dont show color when logging" default:"false"`
 	O_Output       string `desc:"Output format: [default, raw, json]"`
+	P_Previous     bool   `desc:"Print the logs for the previous instance of the container in a pod if it exists, excludes running"`
+	S_Since        string `desc:"Logs since a certain time, either duration (5s, 2m, 3h) or RFC3339" default:"24h"`
+	N_Tail         int    `desc:"Number of recent lines to print, -1 for all" default:"200"`
+	T_Timestamps   bool   `desc:"Print the logs with timestamp" default:"false"`
 }
 
 // This is based on both wercker/stern and linkerd/stern implementations

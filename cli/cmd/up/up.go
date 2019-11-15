@@ -16,15 +16,15 @@ import (
 )
 
 type Up struct {
-	Name               string   `desc:"Set stack name, defaults to current directory name"`
 	Answers            string   `desc:"Set answer file"`
-	F_File             string   `desc:"Set rio file"`
-	P_Parallel         bool     `desc:"Run builds in parallel"`
 	Branch             string   `desc:"Set branch when pointing stack to git repo" default:"master"`
-	Revision           string   `desc:"Set revision"`
-	BuildWebhookSecret string   `desc:"Set GitHub webhook secret name"`
 	BuildCloneSecret   string   `desc:"Set git clone secret name"`
+	BuildWebhookSecret string   `desc:"Set GitHub webhook secret name"`
+	F_File             string   `desc:"Set rio file"`
+	Name               string   `desc:"Set stack name, defaults to current directory name"`
+	P_Parallel         bool     `desc:"Run builds in parallel"`
 	Permission         []string `desc:"Permissions to grant to container's service account in current namespace"`
+	Revision           string   `desc:"Set revision"`
 }
 
 const (

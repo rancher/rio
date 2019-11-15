@@ -36,19 +36,16 @@ type Create struct {
 	BuildPr                bool              `desc:"Enable pull request builds"`
 	BuildTimeout           string            `desc:"Timeout for build, default to 10m (ms|s|m|h)"`
 	Command                []string          `desc:"Overwrite the default ENTRYPOINT of the image"`
-	Concurrency            int               `desc:"The maximum concurrent request a container can handle (autoscaling)" default:"10"`
 	Config                 []string          `desc:"Configs to expose to the service (format: name[/key]:target)"`
+	Concurrency            int               `desc:"The maximum concurrent request a container can handle (autoscaling)" default:"10"`
 	Cpus                   string            `desc:"Number of CPUs"`
+	DNS                    []string          `desc:"Set custom DNS servers"`
 	DNSOption              []string          `desc:"Set DNS options (format: key:value or key)"`
 	DNSSearch              []string          `desc:"Set custom DNS search domains"`
-	DNS                    []string          `desc:"Set custom DNS servers"`
-	HostDNS                bool              `desc:"Use the host level DNS and not the cluster level DNS"`
-	NoMesh                 bool              `desc:"Disable service mesh"`
 	E_Env                  []string          `desc:"Set environment variables"`
 	EnvFile                []string          `desc:"Read in a file of environment variables"`
 	GlobalPermission       []string          `desc:"Permissions to grant to container's service account for all namespaces"`
 	Group                  string            `desc:"The GID to run the entrypoint of the container process"`
-	Net                    string            `desc:"Set network mode (host)"`
 	HealthCmd              string            `desc:"Command to run to check health"`
 	HealthFailureThreshold int               `desc:"Consecutive failures needed to report unhealthy"`
 	HealthHeader           map[string]string `desc:"HTTP Headers to send in GET request for healthcheck"`
@@ -57,25 +54,28 @@ type Create struct {
 	HealthSuccessThreshold int               `desc:"Consecutive successes needed to report healthy"`
 	HealthTimeout          string            `desc:"Maximum time to allow one check to run (ms|s|m|h)" default:"0s"`
 	HealthURL              string            `desc:"URL to hit to check health (example: http://:8080/ping)"`
+	HostDNS                bool              `desc:"Use the host level DNS and not the cluster level DNS"`
 	Hostname               string            `desc:"Container host name"`
-	I_Interactive          bool              `desc:"Keep STDIN open even if not attached"`
 	ImagePullPolicy        string            `desc:"Behavior determining when to pull the image (never|always|not-present)" default:"not-present"`
 	ImagePullSecrets       []string          `desc:"Specify image pull secrets"`
+	I_Interactive          bool              `desc:"Keep STDIN open even if not attached"`
 	LabelFile              []string          `desc:"Read in a line delimited file of labels"`
 	L_Label                map[string]string `desc:"Set meta data on a container"`
 	M_Memory               string            `desc:"Memory reservation (format: <number>[<unit>], where unit = b, k, m or g)"`
 	N_Name                 string            `desc:"Assign a name to the container. Use format [namespace:]name[@version]"`
+	Net                    string            `desc:"Set network mode (host)"`
+	NoMesh                 bool              `desc:"Disable service mesh"`
 	Permission             []string          `desc:"Permissions to grant to container's service account in current namespace"`
 	P_Ports                []string          `desc:"Publish a container's port(s) (format: svcport:containerport/protocol)"`
 	Privileged             bool              `desc:"Run container with privilege"`
 	ReadOnly               bool              `desc:"Mount the container's root filesystem as read only"`
 	RolloutDuration        string            `desc:"How long the rollout should take" default:"0s"`
 	RequestTimeoutSeconds  int               `desc:"Set request timeout in seconds"`
+	Scale                  string            `desc:"The number of replicas to run or a range for autoscaling (example 1-10)"`
 	Secret                 []string          `desc:"Secrets to inject to the service (format: name[/key]:target)"`
 	StageOnly              bool              `desc:"Only stage service when generating new services. Can only be used when template is true"`
 	Template               bool              `desc:"If true new version is created per git commit. If false update in-place"`
 	T_Tty                  bool              `desc:"Allocate a pseudo-TTY"`
-	Scale                  string            `desc:"The number of replicas to run or a range for autoscaling (example 1-10)"`
 	U_User                 string            `desc:"UID[:GID] Sets the UID used and optionally GID for entrypoint process (format: <uid>[:<gid>])"`
 	V_Volume               []string          `desc:"Specify volumes for for services"`
 	Weight                 int               `desc:"Specify the weight for the services"`

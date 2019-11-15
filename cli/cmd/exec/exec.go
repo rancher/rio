@@ -10,10 +10,10 @@ import (
 )
 
 type Exec struct {
-	I_Stdin     bool   `desc:"Pass stdin to the container"`
-	T_Tty       bool   `desc:"Stdin is a TTY"`
 	C_Container string `desc:"Specify container in pod, default is first container"`
 	Pod         string `desc:"Specify pod, default is first container"`
+	I_Stdin     bool   `desc:"Pass stdin to the container"`
+	T_Tty       bool   `desc:"Stdin is a TTY"`
 }
 
 func (e *Exec) Run(ctx *clicontext.CLIContext) error {
