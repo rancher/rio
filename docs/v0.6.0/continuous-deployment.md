@@ -15,27 +15,18 @@ You should notice that within 15 seconds, rio rebuilds your workload (`rio build
 
 
 ### Advanced Usage
-#### Configuring Webhook
-By default, rio will automatically poll your git repo and check if repo code has changed.
-You can also configure a webhook to automatically push any events to Rio to trigger the build.
-```bash
-$ rio secret add --github-webhook
-Select namespace[default]: $(put the same namespace with your workload)
-accessToken: $(github_accesstoken) # the token has to be able create webhook in your github repo.
-```
-
-
 #### Pull Request Builds
 This feature uses a webhook to create a deployment when submitting a Pull Request to your tracked branch (master by default).
 A new workload version will be staged in rio, associated to the same app that was initially created. 
 You can view the endpoint results directly from the PR by clicking "View deployment" in Github. 
 If the pull request is merged, it will then update the app endpoint in rio to point to this new version.
 
-It only takes a maximum of 3 steps:
+It only takes 2 steps:
 
-1. [Configure Webhook](#configuring-webhook) for your repository
-2. Create credentials secret to access your repository (if needed)
-3. `rio run -p 8080 -n example-cd --build-webhook-secret=githubtoken --build-pr --template https://github.com/example/example-repo`
+1. [Configure Webhook](./webhooks.md) for your repository. For this example, you only need to set the webhook up.
+2. `rio run -p 8080 -n example-cd --build-webhook-secret=githubtoken --build-pr --template https://github.com/example/example-repo`
+
+NOTE: if your repository is private, you will also need to [create credentials secret](#private-github-repo) and use the correct additional flags when running your workload.
 
 
 #### Automatic Versioning
@@ -93,6 +84,7 @@ There are many options available for use when running workloads in rio. These ar
 | `--build-branch` | string | Build repository branch (default: "master") | 
 | `--build-dockerfile` | string | Set Dockerfile name, defaults to Dockerfile |
 | `--build-context` | string | Set build context, defaults to . |
+| `--build-webhook-secret` | string | Set GitHub webhook secret name |
 | `--build-clone-secret` | string | Set git clone secret name |
 | `--build-image-name` | string | Specify custom image name to push |
 | `--build-pr` | boolean | Enable pull request builds |

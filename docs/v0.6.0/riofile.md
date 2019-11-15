@@ -38,7 +38,7 @@ You can setup Rio to watch for Riofile changes in a Github repository and deploy
 $ rio up https://github.com/username/repo
 ```
 
-By default, Rio will pull and check the branch at a 15 second interval, but can be configured to use a webhook instead. See [Webhook docs](./webhooks.md) for info.
+By default, Rio will poll the branch in 15 second intervals, but can be configured to use a webhook instead. See [Webhook docs](./webhooks.md) for info.
 
 #### Riofile reference
 
@@ -162,6 +162,7 @@ services:
     # Containers: Specify sidecars. Other options are available in container section above, this is limited example
     containers:
     - init: true # Init container
+      name: my-init
       image: ubuntu
       args:
       - "echo"
