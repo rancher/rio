@@ -60,7 +60,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 			return err
 		}
 
-		cm, err := i.getConfigMap(ctx, true)
+		_, cm, err := i.getConfigMap(ctx, true)
 		if err != nil {
 			return err
 		}
@@ -74,7 +74,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		return nil
 	}
 
-	cm, err := i.getConfigMap(ctx, false)
+	cfg, cm, err := i.getConfigMap(ctx, false)
 	if err != nil {
 		return err
 	}
@@ -118,7 +118,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 			continue
 		}
 
-		if ready, notReadyList, err := i.checkDeployment(ctx); err != nil {
+		if ready, notReadyList, err := i.checkDeployment(ctx, cfg); err != nil {
 			return err
 		} else if ready {
 			clusterDomain, err := ctx.Domain()
@@ -202,7 +202,7 @@ func isDockerForMac(nodes *v1.NodeList) bool {
 	return len(nodes.Items) == 1 && nodes.Items[0].Name == "docker-for-desktop"
 }
 
-func (i *Install) getConfigMap(ctx *clicontext.CLIContext, ignoreCluster bool) (*v1.ConfigMap, error) {
+func (i *Install) getConfigMap(ctx *clicontext.CLIContext, ignoreCluster bool) (config2.Config, *v1.ConfigMap, error) {
 	var (
 		cm = constructors.NewConfigMap(ctx.SystemNamespace, config2.ConfigName, v1.ConfigMap{
 			Data: map[string]string{},
@@ -213,11 +213,11 @@ func (i *Install) getConfigMap(ctx *clicontext.CLIContext, ignoreCluster bool) (
 	if !ignoreCluster {
 		config, err := ctx.Core.ConfigMaps(ctx.SystemNamespace).Get(config2.ConfigName, metav1.GetOptions{})
 		if err != nil && !errors.IsNotFound(err) {
-			return nil, err
+			return cfg, nil, err
 		} else if err == nil {
 			cfg, err = config2.FromConfigMap(config)
 			if err != nil {
-				return nil, err
+				return cfg, nil, err
 			}
 		}
 	}
@@ -248,7 +248,8 @@ func (i *Install) getConfigMap(ctx *clicontext.CLIContext, ignoreCluster bool) (
 		}
 	}
 
-	return config2.SetConfig(cm, cfg)
+	cm, err := config2.SetConfig(cm, cfg)
+	return cfg, cm, err
 }
 
 func (i *Install) configureNamespace(ctx *clicontext.CLIContext, systemStack *stack.SystemStack) error {
@@ -286,20 +287,11 @@ func (l list) String() string {
 	return fmt.Sprint(l.notReady)
 }
 
-func (i *Install) checkDeployment(ctx *clicontext.CLIContext) (bool, list, error) {
+func (i *Install) checkDeployment(ctx *clicontext.CLIContext, cm config2.Config) (bool, list, error) {
 	notReadyList := list{}
-	config, err := ctx.Core.ConfigMaps(ctx.SystemNamespace).Get(config2.ConfigName, metav1.GetOptions{})
-	if err != nil {
-		return false, notReadyList, err
-	}
-
-	conf, err := config2.FromConfigMap(config)
-	if err != nil {
-		return false, notReadyList, err
-	}
 
 	for feature, toChecks := range checkFeatures {
-		if f, ok := conf.Features[feature]; ok && f.Enabled != nil && !*f.Enabled {
+		if f, ok := cm.Features[feature]; ok && f.Enabled != nil && !*f.Enabled {
 			continue
 		}
 
