@@ -133,16 +133,18 @@ func HeyCmd(url string, time string, c int) {
 
 // Wait until a URL has a response that returns 200 status code, else return error
 func WaitForURLResponse(endpoint string) (string, error) {
+	var globalErr error
 	f := wait.ConditionFunc(func() (bool, error) {
 		_, err := GetURL(endpoint)
 		if err == nil {
 			return true, nil
 		}
+		globalErr = err
 		return false, nil
 	})
 	err := wait.Poll(2*time.Second, 240*time.Second, f)
 	if err != nil {
-		return "", errors.New("endpoint did not return 200")
+		return "", fmt.Errorf("endpoint did not return 200, err: %v", globalErr)
 	}
 	resp, _ := GetURL(endpoint)
 	for i := 0; i < 5; i++ {

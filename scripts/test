@@ -14,6 +14,7 @@ print_log()
     EXIT=$?
     if [ $EXIT -ne 0 ]; then
         echo '***RIO LOGS***'
+        kubectl logs $(kubectl get po -n rio-system | grep ^gateway- | grep -v gateway-proxy | awk '{print $1}') -n rio-system -c gateway
         cat ./rio-controller-log
         echo '***END RIO LOGS***'
     fi
