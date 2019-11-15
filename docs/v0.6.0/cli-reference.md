@@ -1,34 +1,5 @@
 # CLI Reference
 
-############################
-TEMPLATE - REMOVE THIS
-
-##### Usage
-```
-```
-
-##### Options
-
-| flag       | aliases | description                                  | default |
-|------------|---------|----------------------------------------------|---------|
-| 
-
-##### Examples
-
-```shell script
-```
-
-############################
-
-
-
-
-
-
-
-
-
-
 
 ## build
 
@@ -120,7 +91,22 @@ rio image
 
 
 ## run
-todo
+
+##### Usage
+```
+```
+
+##### Options
+
+| flag       | aliases | description                                  | default |
+|------------|---------|----------------------------------------------|---------|
+| 
+
+##### Examples
+
+```shell script
+```
+
 
 ## rm
 
@@ -355,10 +341,40 @@ rio logs -p -a  --output json demo
 
 
 ## install
-todo
+
+##### Usage
+```
+```
+
+##### Options
+
+| flag       | aliases | description                                  | default |
+|------------|---------|----------------------------------------------|---------|
+| 
+
+##### Examples
+
+```shell script
+```
+
 
 ## uninstall
-todo
+
+##### Usage
+```
+```
+
+##### Options
+
+| flag       | aliases | description                                  | default |
+|------------|---------|----------------------------------------------|---------|
+| 
+
+##### Examples
+
+```shell script
+```
+
 
 ## Stage
 
