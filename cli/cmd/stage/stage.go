@@ -21,10 +21,10 @@ import (
 )
 
 type Stage struct {
-	Image   string   `desc:"Runtime image (Docker image/OCI image)"`
 	Edit    bool     `desc:"Edit the config to change the spec in new revision"`
 	E_Env   []string `desc:"Set environment variables"`
 	EnvFile []string `desc:"Read in a file of environment variables"`
+	Image   string   `desc:"Runtime image (Docker image/OCI image)"`
 }
 
 func (r *Stage) Run(ctx *clicontext.CLIContext) error {

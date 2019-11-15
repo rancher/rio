@@ -25,11 +25,11 @@ import (
 )
 
 type Install struct {
-	IPAddress       []string `desc:"Manually specify IP addresses to generate rdns domain, supports comma separated values" name:"ip-address"`
+	Check           bool     `desc:"Only check status, don't deploy controller"`
 	DisableFeatures []string `desc:"Manually specify features to disable, supports comma separated values"`
 	EnableDebug     bool     `desc:"Enable debug logging in controller"`
+	IPAddress       []string `desc:"Manually specify IP addresses to generate rdns domain, supports comma separated values" name:"ip-address"`
 	Yaml            bool     `desc:"Only print out k8s yaml manifest"`
-	Check           bool     `desc:"Only check status, don't deploy controller"`
 }
 
 var (
