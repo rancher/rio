@@ -24,7 +24,7 @@ type Up struct {
 	Name               string   `desc:"Set stack name, defaults to current directory name"`
 	P_Parallel         bool     `desc:"Run builds in parallel"`
 	Permission         []string `desc:"Permissions to grant to container's service account in current namespace"`
-	Revision           string   `desc:"Set revision"`
+	Revision           string   `desc:"Use a specific commit hash"`
 }
 
 const (
