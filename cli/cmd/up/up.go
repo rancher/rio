@@ -20,6 +20,7 @@ type Up struct {
 	Branch             string   `desc:"Set branch when pointing stack to git repo" default:"master"`
 	BuildCloneSecret   string   `desc:"Set git clone secret name"`
 	BuildWebhookSecret string   `desc:"Set GitHub webhook secret name"`
+	PushRegistrySecret string   `desc:"Set secret for pushing to custom registry"`
 	F_File             string   `desc:"Set rio file"`
 	Name               string   `desc:"Set stack name, defaults to current directory name"`
 	P_Parallel         bool     `desc:"Run builds in parallel"`
@@ -68,7 +69,9 @@ func (u *Up) setStack(c *clicontext.CLIContext, existing *riov1.Stack) error {
 		existing.Spec.Build.Revision = u.Revision
 		existing.Spec.Build.WebhookSecretName = u.BuildWebhookSecret
 		existing.Spec.Build.CloneSecretName = u.BuildCloneSecret
+		existing.Spec.Build.PushRegistrySecretName = u.PushRegistrySecret
 		existing.Spec.Permissions, err = stringers.ParsePermissions(u.Permission...)
+		existing.Spec.Build.Riofile = u.F_File
 		if err != nil {
 			return err
 		}

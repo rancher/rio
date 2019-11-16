@@ -45,6 +45,9 @@ type StackBuild struct {
 	// Git secret name for repository
 	CloneSecretName string `json:"cloneSecretName,omitempty"`
 
+	// Specify secret for pushing to custom registry
+	PushRegistrySecretName string `json:"pushRegistrySecretName,omitempty"`
+
 	// Specify the name of the Riofile in the Repo. This is the full path relative to the repo root. Defaults to `Riofile`.
 	Riofile string `json:"rioFile,omitempty"`
 

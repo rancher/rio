@@ -92,12 +92,29 @@ func (p populator) populateBuild(stack *riov1.Stack, systemNamespace string, os 
 	if rev == "" {
 		return nil
 	}
+	rioUpArgs := []string{
+		"-n",
+		stack.Namespace,
+		"up",
+		"--name",
+		stack.Name,
+	}
+	if stack.Spec.Build.Riofile != "" {
+
+		rioUpArgs = append(rioUpArgs, "--file", stack.Spec.Build.Riofile)
+
+	}
 
 	trName := name.SafeConcatName(stack.Namespace, stack.Name+"-stack", name.Hex(stack.Spec.Build.Repo, 5), name.Hex(rev, 5))
 	sa := constructors.NewServiceAccount(stack.Namespace, trName+"-stack", corev1.ServiceAccount{})
 	if stack.Spec.Build.CloneSecretName != "" {
 		sa.Secrets = append(sa.Secrets, corev1.ObjectReference{
 			Name: stack.Spec.Build.CloneSecretName,
+		})
+	}
+	if stack.Spec.Build.PushRegistrySecretName != "" {
+		sa.Secrets = append(sa.Secrets, corev1.ObjectReference{
+			Name: stack.Spec.Build.PushRegistrySecretName,
 		})
 	}
 	os.Add(sa)
@@ -152,13 +169,7 @@ func (p populator) populateBuild(stack *riov1.Stack, systemNamespace string, os 
 							Command: []string{
 								"rio",
 							},
-							Args: []string{
-								"-n",
-								stack.Namespace,
-								"up",
-								"--name",
-								stack.Name,
-							},
+							Args: rioUpArgs,
 						},
 					},
 				},
