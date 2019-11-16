@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
@@ -35,7 +36,9 @@ func (h *handler) getDomain(addrs []adminv1.Address) (string, error) {
 
 func (h *handler) ensureDomainExists(hosts []string, cname bool) error {
 	domain, err := h.rDNSClient.GetDomain(cname)
-	if err != nil || domain != nil {
+	if err != nil && strings.Contains(err.Error(), "forbidden to use") {
+		// intentional fall through
+	} else if err != nil || domain != nil {
 		return err
 	}
 
