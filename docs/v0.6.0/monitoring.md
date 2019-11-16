@@ -1,10 +1,10 @@
 # Monitoring 
 
-Rio deploy linkerd to collect metrics from workloads. You can use Rio dashboard or linkerd dashboard to monitoring traffic for your applications.
+Rio deploys [linkerd](https://linkerd.io/) to collect metrics from workloads. You can use Rio dashboard or linkerd dashboard to monitor traffic for your applications.
 
 To run Rio dashboard, check [here](./dashboard.md).
 
-To run linkerd dashboard, run:
+To run linkerd dashboard:
 
 ```bash
 $ rio linkerd

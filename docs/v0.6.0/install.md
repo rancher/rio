@@ -39,10 +39,10 @@ installing rio directly, so that you can apply the manifest later.
 
 **--ip-address**
 
-Manually specify IPAddress for API gateway services. The IP will be used to generate A record for cluster domain. By default User don't
-have set it, it will use IP of [Service Loadbalancer](https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/) that points to API gateway, or node IP address if service loadbalancer can't be provisioned. 
+Manually specify IPAddress for API gateway services. The IP will be used to generate a record for the cluster domain. 
+By default, if this flag is not specified, rio will use the IP of [Service Loadbalancer](https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/) that points to API gateway. 
 
-Note: If service loadbalancer can't be provision, [Nodeport](https://kubernetes.io/docs/concepts/services-networking/service/#nodeport) is used to expose API gateway.
+Note: If service loadbalancer cannot be provisioned, [Nodeport](https://kubernetes.io/docs/concepts/services-networking/service/#nodeport) is used to expose API gateway.
 
 **--disable-features**
 
@@ -78,5 +78,6 @@ Print out kubernetes manifests that are needed to install Rio
 
 **--check**
 
-Check if rio is installed in the current cluster without deploying rio controller
+Check if rio is installed in the current cluster without deploying rio controller. 
+If rio has not been installed, this command might hang on `Waiting for rio controller to initialize`.
 

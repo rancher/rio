@@ -1,7 +1,7 @@
 # Developing application using Rio
 
-Rio CLI provides a easy way to build and deploy your applications into k8s cluster. It takes advantage of [Riofile](./riofile.md) and [buildkit](https://github.com/moby/buildkit) to
-build images and update images to deployment.
+Rio CLI provides an easy way to build and deploy your applications into a k8s cluster. It takes advantage of [Riofile](./riofile.md) and [buildkit](https://github.com/moby/buildkit) to
+build images and update deployments with them.
 
 #### Using Riofile to develop applications
 
@@ -36,13 +36,13 @@ $ rio up
 
 5. Check with `rio ps`. It should create a service with URL serving the content. It should be serving Blue cows.
 
-6. Open to `Dockerfile` and change `ENV COW_COLOR` from `blue` to `red`.
+6. Open the `Dockerfile` and change `ENV COW_COLOR` from `blue` to `red`.
 
-7. Re-run `rio up`. Once it is finished, it should already be updated with new images and start serving red cows now.
+7. Re-run `rio up`. Once it is finished, it should already be updated with new images and start serving red cows.
 
-By following the example above, you can now develop your code locally and run `rio up` to see your code changes automatically
+By following the example above, you can now develop your code locally and run `rio up` to see your code changes automatically.
 
-**Note**: This feature requires you to have Dockerfile in hand. 
+**Note**: This feature requires a Dockerfile. 
 
 #### Manually build and run
 
