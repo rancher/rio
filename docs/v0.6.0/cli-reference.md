@@ -92,15 +92,75 @@ rio image
 
 ## run
 
+Create and run a new service
+
 ##### Usage
 ```
+rio run [OPTIONS] IMAGE [COMMAND] [ARG...]
 ```
 
 ##### Options
 
-| flag       | aliases | description                                  | default |
-|------------|---------|----------------------------------------------|---------|
-| 
+| flag                       | aliases | description                                                                                   | default                |
+|----------------------------|---------|-----------------------------------------------------------------------------------------------|------------------------|
+| --add-host                 |         | Add a custom host-to-IP mapping (host:ip)                                                     |                        |
+| --annotations              |         | Annotations to attach to this service                                                         |                        |
+| --build-branch             |         | Build repository branch                                                                       | master                 |
+| --build-dockerfile         |         | Set Dockerfile name                                                                           | defaults to Dockerfile |
+| --build-context            |         | Set build context                                                                             | .                      |
+| --build-webhook-secret     |         | Set GitHub webhook secret name                                                                |                        |
+| --build-docker-push-secret |         | Set docker push secret name                                                                   |                        |
+| --build-clone-secret       |         | Set git clone secret name                                                                     |                        |
+| --build-image-name         |         | Specify custom image name to push                                                             |                        |
+| --build-registry           |         | Specify to push image to                                                                      |                        |
+| --build-revision           |         | Build git commit or tag                                                                       |                        |
+| --build-pr                 |         | Enable pull request builds                                                                    |                        |
+| --build-timeout            |         | Timeout for build, ( (ms/s/m/h))                                                              | 10m                    |
+| --command                  |         | Overwrite the default ENTRYPOINT of the image                                                 |                        |
+| --config                   |         | Configs to expose to the service (format: name[/key]:target)                                  |                        |
+| --concurrency              |         | The maximum concurrent request a container can handle (autoscaling)                           | 10                     |
+| --cpus                     |         | Number of CPUs                                                                                |                        |
+| --dns                      |         | Set custom DNS servers                                                                        |                        |
+| --dnsoption                |         | Set DNS options (format: key:value or key)                                                    |                        |
+| --dnssearch                |         | Set custom DNS search domains                                                                 |                        |
+| --env                      | -e      | Set environment variables                                                                     |                        |
+| --env-file                 |         | Read in a file of environment variables                                                       |                        |
+| --global-permission        |         | Permissions to grant to container's service account for all namespaces                        |                        |
+| --group                    |         | The GID to run the entrypoint of the container process                                        |                        |
+| --health-cmd               |         | Command to run to check health                                                                |                        |
+| --health-failure-threshold |         | Consecutive failures needed to report unhealthy                                               | 0                      |
+| --health-header            |         | HTTP Headers to send in GET request for healthcheck                                           |                        |
+| --health-initial-delay     |         | Start period for the container to initialize before starting healthchecks ( (ms/s/m/h))       | "0s"                   |
+| --health-interval          |         | Time between running the check ( (ms/s/m/h))                                                  | "0s"                   |
+| --health-success-threshold |         | Consecutive successes needed to report healthy                                                | 0                      |
+| --health-timeout           |         | Maximum time to allow one check to run ( (ms/s/m/h))                                          | "0s"                   |
+| --health-url               |         | URL to hit to check health (example: http://:8080/ping)                                       |                        |
+| --host-dns                 |         | Use the host level DNS and not the cluster level DNS                                          |                        |
+| --hostname                 |         | Container host name                                                                           |                        |
+| --image-pull-policy        |         | Behavior determining when to pull the image (never/always/not-present)                        | "not-present"          |
+| --image-pull-secrets       |         | Specify image pull secrets                                                                    |                        |
+| --interactive              | -i      | Keep STDIN open even if not attached                                                          |                        |
+| --label-file               |         | Read in a line delimited file of labels                                                       |                        |
+| --label                    | -l      | Set meta data on a container                                                                  |                        |
+| --memory                   | -m      | Memory reservation (format: <number>[<unit>], where unit = b, k, m or g)                      |                        |
+| --name                     | -n      | Assign a name to the container. Use format [namespace:]name[@version]                         |                        |
+| --net                      |         | Set network mode (host)                                                                       |                        |
+| --no-mesh                  |         | Disable service mesh                                                                          |                        |
+| --permission               |         | Permissions to grant to container's service account in current namespace                      |                        |
+| --ports                    | -p      | Publish a container's port(s) (format: svcport:containerport/protocol)                        |                        |
+| --privileged               |         | Run container with privilege                                                                  |                        |
+| --read-only                |         | Mount the container's root filesystem as read only                                            |                        |
+| --rollout-duration         |         | How long the rollout should take                                                              | "0s"                   |
+| --request-timeout-seconds  |         | Set request timeout in seconds                                                                | 0                      |
+| --scale                    |         | The number of replicas to run or a range for autoscaling (example 1-10)                       |                        |
+| --secret                   |         | Secrets to inject to the service (format: name[/key]:target)                                  |                        |
+| --stage-only               |         | Only stage service when generating new services. Can only be used when template is true       |                        |
+| --template                 |         | If true new version is created per git commit. If false update in-place                       |                        |
+| --tty                      | -t      | Allocate a pseudo-TTY                                                                         |                        |
+| --user                     | -u      | UID[:GID] Sets the UID used and optionally GID for entrypoint process (format: <uid>[:<gid>]) |                        |
+| --volume                   | -v      | Specify volumes for for services                                                              |                        |
+| --weight                   |         | Specify the weight for the services                                                           | 0                      |
+| --workdir                  | -w      | Working directory inside the container                                                        |                        |
 
 ##### Examples
 
@@ -342,15 +402,22 @@ rio logs -p -a  --output json demo
 
 ## install
 
+Install rio management plane
+
 ##### Usage
 ```
+rio install [OPTIONS]
 ```
 
 ##### Options
 
-| flag       | aliases | description                                  | default |
-|------------|---------|----------------------------------------------|---------|
-| 
+| flag                     | aliases | description                                                                            | default |
+|--------------------------|---------|----------------------------------------------------------------------------------------|---------|
+| --check                  |         | Only check status, don't deploy controller                                             |         |
+| --disable-features value |         | Manually specify features to disable, supports comma separated values                  |         |
+| --enable-debug           |         | Enable debug logging in controller                                                     |         |
+| --ip-address value       |         | Manually specify IP addresses to generate rdns domain, supports comma separated values |         |
+| --yaml                   |         | Only print out k8s yaml manifest                                                       |         |
 
 ##### Examples
 
@@ -360,19 +427,25 @@ rio logs -p -a  --output json demo
 
 ## uninstall
 
+Uninstall rio
+
 ##### Usage
 ```
+rio uninstall [OPTIONS]
 ```
 
 ##### Options
 
-| flag       | aliases | description                                  | default |
-|------------|---------|----------------------------------------------|---------|
-| 
+| flag              | aliases | description                           | default      |
+|-------------------|---------|---------------------------------------|--------------|
+| --namespace value |         | namespace to install system resources | "rio-system" |
 
 ##### Examples
 
 ```shell script
+rio uninstall
+
+rio uninstall --namespace alt-namespace
 ```
 
 
