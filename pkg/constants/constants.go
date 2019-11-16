@@ -29,6 +29,5 @@ var (
 
 	DevMode = false
 
-	DefaultStorageClass = false
 	RegistryStorageSize = "20Gi"
 )

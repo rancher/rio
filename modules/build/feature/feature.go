@@ -11,9 +11,22 @@ import (
 	"github.com/rancher/rio/pkg/features"
 	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/rio/types"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
+	persistent := "false"
+	scs, err := rContext.Storage.Storage().V1().StorageClass().List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	for _, sc := range scs.Items {
+		if sc.Annotations["storageclass.kubernetes.io/is-default-class"] == "true" {
+			persistent = "true"
+			break
+		}
+	}
+
 	apply := rContext.Apply.WithCacheTypes(rContext.Rio.Rio().V1().Service(), rContext.Core.Core().V1().ConfigMap())
 	feature := &features.FeatureController{
 		FeatureName: "build",
@@ -34,7 +47,8 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			stack1.Register,
 		},
 		FixedAnswers: map[string]string{
-			"NAMESPACE": rContext.Namespace,
+			"NAMESPACE":  rContext.Namespace,
+			"PERSISTENT": persistent,
 		},
 	}
 	return feature.Register()
