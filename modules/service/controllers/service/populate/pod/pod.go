@@ -49,7 +49,7 @@ func PersistVolume(service *riov1.Service, os *objectset.ObjectSet) {
 	}
 
 	for _, v := range volumes {
-		if v.Persistent && constants.DefaultStorageClass {
+		if v.Persistent {
 			pv := constructors.NewPersistentVolumeClaim(service.Namespace, v.Name, v1.PersistentVolumeClaim{
 				Spec: v1.PersistentVolumeClaimSpec{
 					AccessModes: []v1.PersistentVolumeAccessMode{

@@ -35,10 +35,6 @@ func (s *Stack) Questions() ([]v1.Question, error) {
 		Content: s.contents,
 	}
 
-	if err := t.Validate(); err != nil {
-		return nil, err
-	}
-
 	return t.Questions()
 }
 

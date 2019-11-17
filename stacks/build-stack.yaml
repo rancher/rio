@@ -30,6 +30,8 @@ services:
       - REGISTRY_HTTP_ADDR=0.0.0.0:80
       ports:
       - 80:80/tcp,registry,expose=false
+      volume:
+      - rio-registry:/var/lib/registry,persistent=${PERSISTENT}
   webhook:
     version: v0
     global_permissions:
@@ -48,3 +50,9 @@ services:
     imagePullPolicy: always
     ports:
     - 8090/http,http-webhook
+
+template:
+  envSubst: true
+  questions:
+  - variable: PERSISTENT
+    description: "Use PV to store registry data"

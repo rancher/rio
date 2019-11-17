@@ -17,12 +17,7 @@ type templateFile struct {
 }
 
 func (t *Template) Questions() ([]v1.Question, error) {
-	content, err := t.parseContent(nil)
-	if err != nil {
-		return nil, err
-	}
-
-	tf, err := t.readTemplateFile(content)
+	tf, err := t.readTemplate()
 	if err != nil {
 		return nil, err
 	}
@@ -70,16 +65,6 @@ func (t *Template) Parse(answers AnswerCallback) ([]byte, error) {
 	return t.parseContent(answers)
 }
 
-func (t *Template) Validate() error {
-	content, err := t.parseContent(nil)
-	if err != nil {
-		return err
-	}
-
-	_, err = t.readTemplateFile(content)
-	return err
-}
-
 func (t *Template) afterTemplate(content []byte) []byte {
 	found := false
 
@@ -101,13 +86,17 @@ func (t *Template) afterTemplate(content []byte) []byte {
 	return content
 }
 
-func (t *Template) parseContent(answersCB AnswerCallback) ([]byte, error) {
+func (t *Template) readTemplate() (*templateFile, error) {
 	content, err := gotemplate.Apply(t.afterTemplate(t.Content), nil)
 	if err != nil {
-		return nil, err
+		return nil, nil
 	}
 
-	template, err := t.readTemplateFile(content)
+	return t.readTemplateFile(content)
+}
+
+func (t *Template) parseContent(answersCB AnswerCallback) ([]byte, error) {
+	template, err := t.readTemplate()
 	if err != nil {
 		return nil, err
 	}
@@ -134,6 +123,7 @@ func (t *Template) parseContent(answersCB AnswerCallback) ([]byte, error) {
 
 	for _, q := range template.Meta.Questions {
 		if answersCB == nil {
+			answers[q.Variable] = q.Default
 			break
 		}
 		val, err := answersCB(q.Variable, template.Meta.Questions)
