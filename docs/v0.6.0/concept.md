@@ -7,13 +7,13 @@ The power of Rio resides in its ability to utilize the power of Kubernetes, Link
 ### Service
 
 Service is the core concept in Rio. Services are a scalable set of identical containers.
-When you run containers in Rio you create a Service. `rio run` will
-create a service. You can scale that service with `rio scale`. Services are assigned a DNS name so that it can be discovered and accessed from other services.
+Running containers in Rio (`rio run`) creates a Service. That can be manually scaled with `rio scale`. 
+Services are assigned a DNS name so that they can be discovered and accessed by other services.
 
 ### Stack
 
-Stack is abstraction of `Riofile`. Riofile is similar to docker-compose which you can define multiple Rio services(or other rio types) in a single file with simplified syntax that is easy to memorize.
-Stack allows you to define Rio services, router, externalservices and other arbitrary kubernetes resources.
+Stack is an abstraction of `Riofile`. Riofile is a file that is similar to docker-compose. 
+In it, multiple Rio resources (services, routers, etc.) can be defined in a single file with simplified syntax that is easy to memorize.
 
 ### Router
 
@@ -23,6 +23,7 @@ on hostname, path, HTTP headers, protocol, and source.
 ### External Service
 
 External Service provides a way to register external IPs or hostnames in the service mesh so they can be accessed by Rio services.
+Also, rio services running in one namespace can be declared as ExternalServices in another namespace.
 
 ### Public Domain
 
@@ -30,13 +31,14 @@ Public Domain can be configured to assign a service or router a vanity domain li
 
 ### Cluster Domain
 
-Cluster Domain is a dns name that can be configured globally on each service so that each service will have endpoint like $service_name-$namespace.xxx.clusterdomain.
-By default Rio will create and assign `on-rio.io` dns name on each service, so you will get a dns name like `$name-$namespace.xxx.on-rio.io`.
+Cluster Domain is a dns name that can be configured globally on each service so that each service will have an endpoint like $service_name-$namespace.xxx.clusterdomain.
+By default Rio will create and assign the `on-rio.io` dns name to each service, so it will have a dns name like `$name-$namespace.xxx.on-rio.io`.
 
 ### Configs
 
-ConfigMaps are a standard Kubernetes resource and can be referenced by Rio services. It is a piece of configuration which can be mounted into pods so that configuration data can be separated from image artifacts.
+ConfigMaps are a standard Kubernetes resource and can be referenced by Rio services. 
+They are pieces of configuration that can be mounted into pods so that configuration data can be separated from image artifacts.
 
 ### Secrets
 
-Secrets are a standard Kubernetes resource and can be referenced by rio services. It contains sensitive data which can be mounted into pods. 
+Secrets are a standard Kubernetes resource and can be referenced by rio services. They contain sensitive data that can be mounted into pods. 

@@ -1,9 +1,11 @@
-# Quick start
+# Quick Start
+Exposing the service requires passing the `-p` flag to expose ports from the container
 
-To run a container with docker images
+---
+
+#### Running a container from a docker image
 
 ```bash
-# To expose service you have to pass -p flag to expose ports from container
 $ rio run -p 80 --name demo nginx
 
 # You will get an endpoint URL for your service
@@ -13,13 +15,21 @@ $ rio ps
 curl https://demo-v0-default.xxxxx.on-rio.io
 ```
 
-Rio allows user to run a container directly from source code. Here is an example of running a container from github repository.
+#### Running a container from a github repository
+Rio allows user to run a container directly from source code. 
+By pointing to git repository that contains a Dockerfile, Rio will clone the source code, build the docker image, and deploy it into the cluster.
+Also Rio will watch for changes to the repo and automatically update the deployment.
 
 ```bash
-# by pointing to git repository, Rio will clone and build source code to docker image, and deploy it into cluster.
-Also Rio will watch sequential change from git and automatically update deployment.
-
 $ rio run -p 8080 --name demo-2 https://github.com/rancher/rio-demo
+
+# You will get an endpoint URL for your service
+$ rio ps
+
+# Access endpoint URL
+curl https://demo-2-v0-default.xxxxx.on-rio.io
 ```
+
+---
 
 For more advanced use cases, check [Running workload in Rio](./workloads.md)

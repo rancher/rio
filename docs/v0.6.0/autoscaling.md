@@ -1,8 +1,9 @@
 # Autoscaling 
 
-Rio deploys a simple autoscaler to watch metrics from workloads and scale application based on current in-flight request.
+Rio deploys a simple autoscaler to watch metrics from workloads and scale application based on current in-flight requests.
 
 Note: Metric is scraped from linkerd-proxy sidecar, this requires your application to be injected with linkerd sidecar.
+This will happen by default when running new workloads.
 
 To enable autoscaling:
 
@@ -25,7 +26,7 @@ hey -z 3m -c 60 http://xxx-xx.xxxxxx.on-rio-io
 $ watch rio ps
 ```
 
-Note: `concurrency` means the maximum in-flight requests per pod can take. If your total in-flight request is 60 and concurrency 
+Note: `concurrency` means the maximum in-flight requests each pod can take. If your total in-flight request is 60 and concurrency 
 is 10, Rio will scale workloads to 6 replicas.
 
-Note: When scale application to zero, the first request will take longer.
+Note: When scaling application to zero, the first request will take longer.
