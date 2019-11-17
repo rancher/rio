@@ -1,6 +1,59 @@
 # CLI Reference
 
 
+## Table of Contents
+
+- [attach](#attach)
+- [build](#build)
+- [cat](#cat)
+- [dashboard](#dashboard)
+- [edit](#edit)
+- [exec](#exec)
+- [export](#export)
+- [image](#image)
+- [info](#info)
+- [inspect](#inspect)
+- [install](#install)
+- [kill](#kill)
+- [logs](#logs)
+- [promote](#promote)
+- [ps](#ps)
+- [run](#run)
+- [rm](#rm)
+- [scale](#scale)
+- [stage](#stage)
+- [systemlogs](#systemlogs)
+- [uninstall](#uninstall)
+- [up](#up)
+- [weight](#weight)
+
+
+
+## attach
+
+Attach to a process running in a container
+
+##### Usage
+```
+rio attach [OPTIONS] CONTAINER
+```
+
+##### Options
+| flag            | aliases | description                                                  | default |
+|-----------------|---------|--------------------------------------------------------------|---------|
+| --timeout value |         | Timeout waiting for the container to be created to attach to | 1m      |
+| --pod value     |         | Specify pod, default is first pod found                      |         |
+
+##### Examples
+
+```shell script
+rio attach demo
+
+rio attach --timeout 30s --pod mydemopod demo
+```
+
+---
+
 ## build
 
 Build a docker image using buildkitd
@@ -47,6 +100,325 @@ rio build -t test:v2
 rio stage --image localhost:5442/default/test:v2 test v2
 ```
 
+---
+
+## cat
+
+Print the contents of a config
+
+##### Usage
+```
+rio cat [OPTIONS] [NAME...]
+```
+
+##### Options
+
+| flag  | aliases | description             | default |
+|-------|---------|-------------------------|---------|
+| --key | -k      | The values which to cat |         |
+
+##### Examples
+
+```shell script
+# cat a configmap
+rio cat configmap/config-foo
+
+# cat a key from a configmap
+rio cat --key=a configmap/config-foo
+```
+
+---
+
+## dashboard
+
+Open the dashboard in a browser
+
+##### Usage
+```
+rio dashboard [OPTIONS]
+```
+
+##### Options
+
+| flag          | aliases | description          | default |
+|---------------|---------|----------------------|---------|
+| --reset-admin |         | Reset admin password |         |
+
+
+##### Examples
+
+```shell script
+# reset admin pw
+rio dashboard --reset-admin 
+```
+
+---
+
+## edit
+
+Edit resources
+
+##### Usage
+```
+rio edit [TYPE/]RESOURCE_NAME
+```
+
+##### Options
+
+| flag  | aliases | description                                           | default |
+|-------|---------|-------------------------------------------------------|---------|
+| --raw |         | Edit the raw API object, not the pretty formatted one |         |
+
+
+##### Examples
+
+```shell script
+rio edit demo@v4
+
+rio edit router/myrouter
+```
+
+---
+
+## exec
+
+Run a command in a running container
+
+##### Usage
+```
+rio exec [OPTIONS] CONTAINER COMMAND [ARG...]
+```
+
+##### Options
+
+| flag              | aliases  | description                                          | default |
+|-------------------|----------|------------------------------------------------------|---------|
+| --stdin           | -i       | Pass stdin to the container                          |         |
+| --tty             | -t       | Stdin is a TTY                                       |         |
+| --container value | -c value | Specify container in pod, default is first container |         |
+| --pod value       |          | Specify pod, default is first pod found              |         |
+
+##### Examples
+
+```shell script
+# ssh into running container
+rio exec -it demo sh
+
+# this is equivalent of doing
+rio exec --tty --stdin demo sh
+
+# choose pod and container
+rio exec -it --pod mypod --container server demo sh
+```
+
+---
+
+## export
+
+Export a namespace or service
+
+##### Usage
+```
+rio export [TYPE/]NAMESPACE_OR_SERVICE
+```
+
+##### Options
+
+| flag           | aliases | description                                        | default |
+|----------------|---------|----------------------------------------------------|---------|
+| --format value |         | Specify output format, yaml/json. Defaults to yaml | yaml    |
+| --riofile      |         | Export riofile format                              |         |
+
+
+##### Examples
+
+```shell script
+# export a service
+rio export demo
+
+# export a namespace in riofile format
+rio export --riofile namespace/default
+```
+
+---
+
+## image
+
+List images built from local registry
+
+##### Usage
+```
+rio image
+```
+
+---
+
+## info
+
+Show system info
+
+##### Usage
+```
+rio info
+```
+
+---
+
+## inspect
+
+Inspect resources
+
+##### Usage
+```
+rio inspect [TYPE/][NAMESPACE/]SERVICE_NAME
+```
+
+##### Options
+
+| flag     | aliases | description                                           | default |
+|----------|---------|-------------------------------------------------------|---------|
+| --format |         | Edit the raw API object, not the pretty formatted one |         |
+
+
+##### Examples
+
+```shell script
+rio inspect svc@v2
+
+# inspect a build
+rio inspect taskrun/affectionate-mirzakhani-mfp5q-ee709-4e40c
+```
+
+---
+
+## install
+
+Install rio management plane
+
+##### Usage
+```
+rio install [OPTIONS]
+```
+
+##### Options
+
+| flag                     | aliases | description                                                                            | default |
+|--------------------------|---------|----------------------------------------------------------------------------------------|---------|
+| --check                  |         | Only check status, don't deploy controller                                             |         |
+| --disable-features value |         | Manually specify features to disable, supports comma separated values                  |         |
+| --enable-debug           |         | Enable debug logging in controller                                                     |         |
+| --ip-address value       |         | Manually specify IP addresses to generate rdns domain, supports comma separated values |         |
+| --yaml                   |         | Only print out k8s yaml manifest                                                       |         |
+
+##### Examples
+
+```shell script
+```
+
+
+---
+
+## kill
+
+Kill pods individually or all pods belonging to a service
+
+##### Usage
+```
+rio kill [SERVICE_NAME/POD_NAME]
+```
+
+##### Examples
+
+```shell script
+# kill a service
+rio kill demo
+
+# kill individual pods
+rio pods # first get pod name
+rio kill pod/demo-v042dxp-5fb7d8f677-f9xgn
+```
+
+---
+
+
+## logs
+
+Print logs from services or containers
+
+##### Usage
+```
+rio logs [OPTIONS] SERVICE/BUILD
+```
+
+##### Options
+
+| flag              | aliases  | description                                                                                       | default |
+|-------------------|----------|---------------------------------------------------------------------------------------------------|---------|
+| --since value     | -s value | Logs since a certain time, either duration (5s, 2m, 3h) or RFC3339                                | "24h"   |
+| --timestamps      | -t       | Print the logs with timestamp                                                                     |         |
+| --tail value      | -n value | Number of recent lines to print, -1 for all                                                       | 200     |
+| --container value | -c value | Print the logs of a specific container, use -a for system containers                              |         |
+| --previous        | -p       | Print the logs for the previous instance of the container in a pod if it exists, excludes running |         |
+| --init-containers |          | Include or exclude init containers                                                                |         |
+| --all             | -a       | Include hidden or systems logs when logging                                                       |         |
+| --no-color        | --nc     | Dont show color when logging                                                                      |         |
+| --output value    | -o value | Output format: [default, raw, json]                                                               | default |
+
+
+##### Examples
+
+```shell script
+# get logs from a service
+rio logs demo
+
+# Get logs from a build
+rio build history
+rio logs taskrun/affectionate-mirzakhani-mfp5q-ee709-4e40c
+
+# get 1 previous log line for the linkerd-proxy in demo service
+rio logs --tail 1 --container linkerd-proxy -a demo
+
+# ignore init-containers and filter to waiting or terminated pods, include timestamps
+rio logs --container-state "terminated,waiting" --init-containers=false --timestamps demo
+
+# target terminated pods of all kinds, format as json
+rio logs -p -a  --output json demo
+```
+
+---
+
+## Promote
+
+Send 100% of traffic to an app version and scale down other versions. See also weight. 
+
+##### Usage
+
+```
+rio promote [OPTIONS] SERVICE_NAME
+```
+
+##### Options
+
+| flag       | aliases | description                                  | default |
+|------------|---------|----------------------------------------------|---------|
+| --duration | none    | How long the rollout should take             | 0s      |
+| --pause    | none    | Whether to pause all rollouts on current app | false   |
+
+##### Examples
+
+```shell script
+# promote n@v2 
+rio promote n@v2
+
+# promote n@v2 over 1 hour 
+rio promote --duration=1h n@v2
+
+# pause last command
+rio promote --pause=true n@v2
+```
+
+
+---
 
 ## ps
 
@@ -80,15 +452,7 @@ rio ps --format json
 rio ps --format "{{.Obj.Name}} -> {{.Data.Weight}}" 
 ```
 
-## image
-
-List images built from local registry
-
-##### Usage
-```
-rio image
-```
-
+---
 
 ## run
 
@@ -167,6 +531,7 @@ rio run [OPTIONS] IMAGE [COMMAND] [ARG...]
 ```shell script
 ```
 
+---
 
 ## rm
 
@@ -177,6 +542,7 @@ Delete resources
 rio rm [TYPE/]RESOURCE_NAME
 ```
 
+---
 
 ## scale
 
@@ -196,260 +562,9 @@ rio scale foo=5
 rio scale foo=1-5
 ```
 
+---
 
-## inspect
-
-Inspect resources
-
-##### Usage
-```
-rio inspect [TYPE/][NAMESPACE/]SERVICE_NAME
-```
-
-##### Options
-
-| flag     | aliases | description                                           | default |
-|----------|---------|-------------------------------------------------------|---------|
-| --format |         | Edit the raw API object, not the pretty formatted one |         |
-
-
-##### Examples
-
-```shell script
-rio inspect svc@v2
-
-# inspect a build
-rio inspect taskrun/affectionate-mirzakhani-mfp5q-ee709-4e40c
-```
-
-
-## edit
-
-Edit resources
-
-##### Usage
-```
-rio edit [TYPE/]RESOURCE_NAME
-```
-
-##### Options
-
-| flag  | aliases | description                                           | default |
-|-------|---------|-------------------------------------------------------|---------|
-| --raw |         | Edit the raw API object, not the pretty formatted one |         |
-
-
-##### Examples
-
-```shell script
-rio edit demo@v4
-
-rio edit router/myrouter
-```
-
-## export
-
-Export a namespace or service
-
-##### Usage
-```
-rio export [TYPE/]NAMESPACE_OR_SERVICE
-```
-
-##### Options
-
-| flag           | aliases | description                                        | default |
-|----------------|---------|----------------------------------------------------|---------|
-| --format value |         | Specify output format, yaml/json. Defaults to yaml | yaml    |
-| --riofile      |         | Export riofile format                              |         |
-
-
-##### Examples
-
-```shell script
-# export a service
-rio export demo
-
-# export a namespace in riofile format
-rio export --riofile namespace/default
-```
-
-
-## cat
-
-Print the contents of a config
-
-##### Usage
-```
-rio cat [OPTIONS] [NAME...]
-```
-
-##### Options
-
-| flag  | aliases | description             | default |
-|-------|---------|-------------------------|---------|
-| --key | -k      | The values which to cat |         |
-
-##### Examples
-
-```shell script
-# cat a configmap
-rio cat configmap/config-foo
-
-# cat a key from a configmap
-rio cat --key=a configmap/config-foo
-```
-
-
-## exec
-
-Run a command in a running container
-
-##### Usage
-```
-rio exec [OPTIONS] CONTAINER COMMAND [ARG...]
-```
-
-##### Options
-
-| flag              | aliases  | description                                          | default |
-|-------------------|----------|------------------------------------------------------|---------|
-| --stdin           | -i       | Pass stdin to the container                          |         |
-| --tty             | -t       | Stdin is a TTY                                       |         |
-| --container value | -c value | Specify container in pod, default is first container |         |
-| --pod value       |          | Specify pod, default is first pod found              |         |
-
-##### Examples
-
-```shell script
-# ssh into running container
-rio exec -it demo sh
-
-# this is equivalent of doing
-rio exec --tty --stdin demo sh
-
-# choose pod and container
-rio exec -it --pod mypod --container server demo sh
-```
-
-## attach
-
-Attach to a process running in a container
-
-##### Usage
-```
-rio attach [OPTIONS] CONTAINER
-```
-
-##### Options
-| flag            | aliases | description                                                  | default |
-|-----------------|---------|--------------------------------------------------------------|---------|
-| --timeout value |         | Timeout waiting for the container to be created to attach to | 1m      |
-| --pod value     |         | Specify pod, default is first pod found                      |         |
-
-##### Examples
-
-```shell script
-rio attach demo
-
-rio attach --timeout 30s --pod mydemopod demo
-```
-
-## logs
-
-Print logs from services or containers
-
-##### Usage
-```
-rio logs [OPTIONS] SERVICE/BUILD
-```
-
-##### Options
-
-```| flag              | aliases  | description                                                                                       | default |
-|-------------------|----------|---------------------------------------------------------------------------------------------------|---------|
-| --since value     | -s value | Logs since a certain time, either duration (5s, 2m, 3h) or RFC3339                                | "24h"   |
-| --timestamps      | -t       | Print the logs with timestamp                                                                     |         |
-| --tail value      | -n value | Number of recent lines to print, -1 for all                                                       | 200     |
-| --container value | -c value | Print the logs of a specific container, use -a for system containers                              |         |
-| --previous        | -p       | Print the logs for the previous instance of the container in a pod if it exists, excludes running |         |
-| --init-containers |          | Include or exclude init containers                                                                |         |
-| --all             | -a       | Include hidden or systems logs when logging                                                       |         |
-| --no-color        | --nc     | Dont show color when logging                                                                      |         |
-| --output value    | -o value | Output format: [default, raw, json]                                                               | default |
-```
-
-##### Examples
-
-```shell script
-# get logs from a service
-rio logs demo
-
-# Get logs from a build
-rio build history
-rio logs taskrun/affectionate-mirzakhani-mfp5q-ee709-4e40c
-
-# get 1 previous log line for the linkerd-proxy in demo service
-rio logs --tail 1 --container linkerd-proxy -a demo
-
-# ignore init-containers and filter to waiting or terminated pods, include timestamps
-rio logs --container-state "terminated,waiting" --init-containers=false --timestamps demo
-
-# target terminated pods of all kinds, format as json
-rio logs -p -a  --output json demo
-```
-
-
-## install
-
-Install rio management plane
-
-##### Usage
-```
-rio install [OPTIONS]
-```
-
-##### Options
-
-| flag                     | aliases | description                                                                            | default |
-|--------------------------|---------|----------------------------------------------------------------------------------------|---------|
-| --check                  |         | Only check status, don't deploy controller                                             |         |
-| --disable-features value |         | Manually specify features to disable, supports comma separated values                  |         |
-| --enable-debug           |         | Enable debug logging in controller                                                     |         |
-| --ip-address value       |         | Manually specify IP addresses to generate rdns domain, supports comma separated values |         |
-| --yaml                   |         | Only print out k8s yaml manifest                                                       |         |
-
-##### Examples
-
-```shell script
-```
-
-
-## uninstall
-
-Uninstall rio
-
-##### Usage
-```
-rio uninstall [OPTIONS]
-```
-
-##### Options
-
-| flag              | aliases | description                           | default      |
-|-------------------|---------|---------------------------------------|--------------|
-| --namespace value |         | namespace to install system resources | "rio-system" |
-
-##### Examples
-
-```shell script
-rio uninstall
-
-rio uninstall --namespace alt-namespace
-```
-
-
-## Stage
+## stage
 
 Stage a new revision of a service
 
@@ -478,69 +593,7 @@ rio stage --image ibuildthecloud/demo:v3 demo v2
 rio stage --env abc=xyz demo v2
 ```
 
-
-## weight
-
-Set the percentage of traffic to allocate to a given service version. See also promote. 
-
-Defaults to an immediate rollout, set duration to perform a gradual rollout
-
-##### Usage
-```
-rio weight [OPTIONS] SERVICE_NAME=PERCENTAGE
-```
-
-##### Options
-
-| flag       | aliases | description                                  | default |
-|------------|---------|----------------------------------------------|---------|
-| --duration | none    | How long the rollout should take             | 0s      |
-| --pause    | none    | Whether to pause all rollouts on current app | false   |
-
-##### Examples
-
-```shell script
-# immediately shift 100% of traffic to app n@v0
-rio weight n=100 
-
-# shift n@v2 to 50% of traffic gradually over 5m
-rio weight --duration=5m n@v2=50 
-
-# Pause last command at current state, will pause all rollouts on versions in app
-rio weight --pause=true n@v2=50
-```
-
-
-## Promote
-
-Send 100% of traffic to an app version and scale down other versions. See also weight. 
-
-##### Usage
-
-```
-rio promote [OPTIONS] SERVICE_NAME
-```
-
-##### Options
-
-| flag       | aliases | description                                  | default |
-|------------|---------|----------------------------------------------|---------|
-| --duration | none    | How long the rollout should take             | 0s      |
-| --pause    | none    | Whether to pause all rollouts on current app | false   |
-
-##### Examples
-
-```shell script
-# promote n@v2 
-rio promote n@v2
-
-# promote n@v2 over 1 hour 
-rio promote --duration=1h n@v2
-
-# pause last command
-rio promote --pause=true n@v2
-```
-
+---
 
 ## systemlogs
 
@@ -550,6 +603,35 @@ Print the logs from Rio management plane
 ```
 rio systemlogs
 ```
+
+---
+
+
+## uninstall
+
+Uninstall rio
+
+##### Usage
+```
+rio uninstall [OPTIONS]
+```
+
+##### Options
+
+| flag              | aliases | description                           | default      |
+|-------------------|---------|---------------------------------------|--------------|
+| --namespace value |         | namespace to install system resources | "rio-system" |
+
+##### Examples
+
+```shell script
+rio uninstall
+
+rio uninstall --namespace alt-namespace
+```
+
+---
+
 
 ## up
 
@@ -591,57 +673,35 @@ rio up --branch branchname --build-webhook-secret=githubtoken --build-clone-secr
 rio up  --permissions '* configmaps' --answers answerfile.yaml
 ```
 
+---
 
-## dashboard
+## weight
 
-Open the dashboard in a browser
+Set the percentage of traffic to allocate to a given service version. See also promote. 
+
+Defaults to an immediate rollout, set duration to perform a gradual rollout
 
 ##### Usage
 ```
-rio dashboard [OPTIONS]
+rio weight [OPTIONS] SERVICE_NAME=PERCENTAGE
 ```
 
 ##### Options
 
-| flag          | aliases | description          | default |
-|---------------|---------|----------------------|---------|
-| --reset-admin |         | Reset admin password |         |
-
-
-##### Examples
-
-```shell script
-# reset admin pw
-rio dashboard --reset-admin 
-```
-
-
-## kill
-
-Kill pods individually or all pods belonging to a service
-
-##### Usage
-```
-rio kill [SERVICE_NAME/POD_NAME]
-```
+| flag       | aliases | description                                  | default |
+|------------|---------|----------------------------------------------|---------|
+| --duration | none    | How long the rollout should take             | 0s      |
+| --pause    | none    | Whether to pause all rollouts on current app | false   |
 
 ##### Examples
 
 ```shell script
-# kill a service
-rio kill demo
+# immediately shift 100% of traffic to app n@v0
+rio weight n=100 
 
-# kill individual pods
-rio pods # first get pod name
-rio kill pod/demo-v042dxp-5fb7d8f677-f9xgn
-```
+# shift n@v2 to 50% of traffic gradually over 5m
+rio weight --duration=5m n@v2=50 
 
-
-## info
-
-Show system info
-
-##### Usage
-```
-rio info
+# Pause last command at current state, will pause all rollouts on versions in app
+rio weight --pause=true n@v2=50
 ```
