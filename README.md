@@ -9,6 +9,9 @@ Rio is currently in Alpha.
 
 Connect with us on the #rio channel on the [rancher slack](https://slack.rancher.io/)
 
+## Documentation
+See the [docs folder](/docs/README.md) for detailed documentation and guides.
+
 ## Quick Start
 
 1. Have a Kubernetes 1.15 or newer cluster running.
@@ -36,9 +39,6 @@ $ rio run -p 80:8080 https://github.com/rancher/rio-demo
 $ rio ps
 $ rio info
 ```
-
-## Documentation
-Detailed documentation can be found in [here](/docs/README.md).
 
 ## License
 
