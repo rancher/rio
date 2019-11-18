@@ -708,16 +708,6 @@ string
 </tr>
 <tr>
 <td>
-<code>ready</code></br>
-<em>
-bool
-</em>
-</td>
-<td>
-</td>
-</tr>
-<tr>
-<td>
 <code>systemComponentReadyMap</code></br>
 <em>
 map[string]string
@@ -3642,7 +3632,7 @@ int
 </em>
 </td>
 <td>
-<p>Increment Value each Rollout can scale up or down</p>
+<p>Increment Value each Rollout can scale up or down, always a positive number</p>
 </td>
 </tr>
 <tr>
@@ -4918,7 +4908,7 @@ Kubernetes core/v1.HostPathType
 </em>
 </td>
 <td>
-<p>The</p>
+<p>HostPathType specify HostPath type</p>
 </td>
 </tr>
 <tr>
@@ -5087,5 +5077,5 @@ int
 <hr/>
 <p><em>
 Generated with <code>gen-crd-api-reference-docs</code>
-on git commit <code>a593a33c</code>.
+on git commit <code>7e0dd7a98</code>.
 </em></p>
