@@ -295,6 +295,8 @@ rio inspect taskrun/affectionate-mirzakhani-mfp5q-ee709-4e40c
 
 Install rio management plane
 
+See the [install docs](install.md) for more info.
+
 ##### Usage
 ```
 rio install [OPTIONS]
@@ -310,14 +312,41 @@ rio install [OPTIONS]
 | --ip-address value       |         | Manually specify IP addresses to generate rdns domain, supports comma separated values |         |
 | --yaml                   |         | Only print out k8s yaml manifest                                                       |         |
 
+
+**--check**
+
+Check if rio is installed in the current cluster without deploying rio controller.
+If rio has not been installed, this command might hang on `Waiting for rio controller to initialize`.
+
+**--disable-features**
+
+Choose features to be disabled when starting rio control plane. Below are a list of available features
+
+| Feature     | Description                                       |
+|-------------|---------------------------------------------------|
+| autoscaling | Auto-scaling services based on in-flight requests |
+| build       | Rio Build, from source code to deployment         |
+| gloo        | API gateway backed by gloo                        |
+| linkerd     | Linkerd service mesh                              |
+| letsencrypt | Let's Encrypt                                     |
+| rdns        | Acquire DNS from public Rancher DNS service       |
+| dashboard   | Rio UI                                            |
+
+**--ip-address**
+
+Manually specify IPAddress for API gateway services. The IP will be used to generate a record for the cluster domain.
+By default, if this flag is not specified, rio will use the IP of [Service Loadbalancer](https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/) that points to API gateway.
+
+Note: If service loadbalancer cannot be provisioned, [Nodeport](https://kubernetes.io/docs/concepts/services-networking/service/#nodeport) is used to expose API gateway.
+
 ##### Examples
 
 ```shell script
 # basic install
 rio install
 
-# install with debug and disable letsencrypt
-rio install --enable-debug --disable-features letsencrypt
+# install with debug and disable some features
+rio install --enable-debug  --disable-features autoscaling --disable-features linkerd
 
 # print yaml to run manually, with custom ip-address
 rio install --yaml --ip-address 127.0.0.1
@@ -562,6 +591,15 @@ Delete resources
 rio rm [TYPE/]RESOURCE_NAME
 ```
 
+##### Examples
+
+```shell script
+# delete service foo
+rio rm foo
+
+# delete multiple resources of different types
+rio rm svc1 svc2 router/route1 externalservice/foo
+```
 ---
 
 ## scale
@@ -588,6 +626,7 @@ rio scale foo=1-5
 
 Stage a new revision of a service
 
+Note that when using `--edit` certain values (like `spec.weight`) will be overwritten, and other flags (like `--env`) won't take effect.
 
 ##### Usage
 ```
@@ -610,7 +649,10 @@ rio stage [OPTIONS] SERVICE NEW_REVISION
 rio stage --image ibuildthecloud/demo:v3 demo v2
 
 # stage the same image with different env variables
-rio stage --env abc=xyz demo v2
+rio stage -e abc=xyz demo v2
+
+# stage but edit first
+rio stage --edit demo v2
 ```
 
 ---
@@ -699,6 +741,9 @@ rio up  --permissions '* configmaps' --answers answerfile.yaml
 Set the percentage of traffic to allocate to a given service version. See also promote. 
 
 Defaults to an immediate rollout, set duration to perform a gradual rollout
+
+Note that once a service version is set to 100% of weight, you must assign weight to other services in order to route traffic to them.
+For instance if you have svc-a and svc-b, and you set svc-a=100% and then svc-a=50%, svc-b will still have 0% weight and svc-a will still have 100%. You must set svc-b=50% to give it weight.
 
 ##### Usage
 ```

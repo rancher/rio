@@ -14,9 +14,7 @@ Note: by default it will only download the latest release from github. To test a
 $ curl -sfL https://get.rio.io | INSTALL_RIO_VERSION=${version} sh - 
 ```
 
-2. Prepare a Kubernetes cluster. Setup KUBECONFIG environment variable to point to your kubernetes cluster. To choose a kubernetes cluster, check [here](https://kubernetes.io/docs/setup/). 
-
-Note: 1.15 or higher version of kubernetes is recommended.
+2. Prepare a Kubernetes cluster, see [Clusters and Providers](#clusters-and-providers). Setup KUBECONFIG environment variable to point to your kubernetes cluster.
 
 3. Run 
 
@@ -27,57 +25,34 @@ $ rio install
 Note: to install rio from kubernetes manifest, run `rio install --yaml`. It will print out kubernetes manifest instead of 
 installing rio directly, so that you can apply the manifest later.
 
-#### Options
+## Options
 
-| Option | Type | Description |
-|------|----| -------------|
-| `--ip-address` | string array | Manually specify IP addresses to generate rdns domain, supports comma separated values | 
-| `--disable-features` | string array | Manually specify features to disable, supports comma separated values |
-| `--enable-debug` | boolean | Enable debug logging in rio-controller pod |
-| `--yaml` | boolean | Only print out k8s yaml manifest |
-| `--check` | boolean | Only check status, don't deploy controller |
+See the [CLI install reference docs](cli-reference.md#install) for complete list of options.
 
-**--ip-address**
+## Clusters and Providers
 
-Manually specify IPAddress for API gateway services. The IP will be used to generate a record for the cluster domain. 
-By default, if this flag is not specified, rio will use the IP of [Service Loadbalancer](https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/) that points to API gateway. 
+A 1.15 or higher version of kubernetes is recommended.
 
-Note: If service loadbalancer cannot be provisioned, [Nodeport](https://kubernetes.io/docs/concepts/services-networking/service/#nodeport) is used to expose API gateway.
+See the kubernetes [getting started guide](https://kubernetes.io/docs/setup/) to help choose a cluster type.
 
-**--disable-features**
+**Internal vs external IP address**
 
-Choose features to be disabled when starting rio control plane. Below are a list of available features
+Some cloud providers will use an internal IP address by default and Rio will use that for its cluster domain.
+You can override this during cluster setup by configuring external IP's, or by using a cloud-provider to setup a load balancer which will have an external IP.
 
-| Feature | Description |
-|----------|----------------|
-| autoscaling | Auto-scaling services based on in-flight requests
-| build | Rio Build, from source code to deployment
-| gloo | API gateway backed by gloo
-| linkerd | Linkerd service mesh
-| letsencrypt | Let's Encrypt
-| rdns | Acquire DNS from public Rancher DNS service
-| dashboard | Rio UI
+For an example of installing a cluster with a cloud provider on Linode using Rancher, see [bullet #8 on this doc](https://www.linode.com/docs/kubernetes/how-to-deploy-kubernetes-on-linode-with-rancher-2-x/#provision-a-cluster).
 
-Examples:
+**k3s**
 
-```bash
-# disable autoscaling feature
-$ rio install --disable-features autoscaling
+When installing on k3s use the `--no-deploy traefik` flag.
 
-# disable autoscaling, linkerd 
-$ rio install --disable-features autoscaling --disable-features linkerd
-```
+**EKS**
 
-**--enable-debug**
+Ensure you are running enough nodes with proper instance types to allow for the rio and kubernetes systems to run at least 45 pods.
+See the docs to help determine proper sizes:
 
-Enable debug logging in rio control plane
+* Guide: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-eni.html#AvailableIpPerENI
+* Total limits: https://github.com/awslabs/amazon-eks-ami/blob/master/files/eni-max-pods.txt
 
-**--yaml**
-
-Print out kubernetes manifests that are needed to install Rio
-
-**--check**
-
-Check if rio is installed in the current cluster without deploying rio controller. 
-If rio has not been installed, this command might hang on `Waiting for rio controller to initialize`.
-
+For example: you have a workload that requires 15 pods and you want to run 2 nodes.
+15+45 is a 60 pod minimum requirement, so running 2 t3.large nodes (2*35=70) would be just enough.
