@@ -98,7 +98,22 @@ func (c *Create) RunCallback(ctx *clicontext.CLIContext, cb func(service *riov1.
 	}
 
 	service = cb(service)
-	return service, ctx.Create(service)
+	err = ctx.Create(service)
+	if err != nil {
+		return nil, err
+	}
+	if c.Weight == 100 {
+		err = weight.PromoteService(ctx, types.Resource{
+			Name:      service.Name,
+			App:       service.Spec.App,
+			Version:   service.Spec.Version,
+			Namespace: service.Namespace,
+		}, service.Spec.RolloutConfig, *service.Spec.Weight)
+		if err != nil {
+			return service, err
+		}
+	}
+	return service, nil
 }
 
 func (c *Create) setDNS(spec *riov1.ServiceSpec) (err error) {
@@ -196,13 +211,14 @@ func (c *Create) ToService(ctx *clicontext.CLIContext, args []string) (*riov1.Se
 		tempResource := types.Resource{
 			Name:      name,
 			App:       r.App,
+			Version:   r.Version,
 			Namespace: r.Namespace,
 		}
-		weight, rc, err := weight.GenerateWeightAndRolloutConfig(ctx, tempResource, c.Weight, duration, false)
+		newWeight, rc, err := weight.GenerateWeightAndRolloutConfig(ctx, tempResource, c.Weight, duration, false)
 		if err != nil {
 			return nil, err
 		}
-		spec.Weight = &weight
+		spec.Weight = &newWeight
 		spec.RolloutConfig = rc
 	}
 

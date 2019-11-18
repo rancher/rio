@@ -43,5 +43,6 @@ if [[ ${ARCH} == amd64 ]]; then
 
     trap print_log exit
 
-    go test -v ./tests/integration/... --integration-tests
+    echo 'Running integration tests...'
+    go test ./tests/integration/... --integration-tests
 fi

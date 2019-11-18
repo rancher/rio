@@ -15,6 +15,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const PromoteWeight = 10000
+
 type rolloutHandler struct {
 	services      riov1controller.ServiceController
 	serviceCache  riov1controller.ServiceCache
@@ -62,14 +64,14 @@ func (rh *rolloutHandler) rollout(key string, svc *riov1.Service) (*riov1.Servic
 	var updatedNeeded []string
 	if !computedWeightsExist(svcs) {
 		var added int
-		add := int(100.0 / float64(len(svcs)))
+		add := int(float64(PromoteWeight) / float64(len(svcs)))
 		for i, s := range svcs {
 			s.Status.ComputedWeight = new(int)
 			if i != len(svcs)-1 {
 				*s.Status.ComputedWeight = add
 				added += add
 			} else {
-				*s.Status.ComputedWeight = 100 - added
+				*s.Status.ComputedWeight = PromoteWeight - added
 			}
 			updatedNeeded = append(updatedNeeded, serviceKey(s))
 		}
