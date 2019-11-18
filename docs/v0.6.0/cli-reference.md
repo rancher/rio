@@ -312,14 +312,41 @@ rio install [OPTIONS]
 | --ip-address value       |         | Manually specify IP addresses to generate rdns domain, supports comma separated values |         |
 | --yaml                   |         | Only print out k8s yaml manifest                                                       |         |
 
+
+**--check**
+
+Check if rio is installed in the current cluster without deploying rio controller.
+If rio has not been installed, this command might hang on `Waiting for rio controller to initialize`.
+
+**--disable-features**
+
+Choose features to be disabled when starting rio control plane. Below are a list of available features
+
+| Feature     | Description                                       |
+|-------------|---------------------------------------------------|
+| autoscaling | Auto-scaling services based on in-flight requests |
+| build       | Rio Build, from source code to deployment         |
+| gloo        | API gateway backed by gloo                        |
+| linkerd     | Linkerd service mesh                              |
+| letsencrypt | Let's Encrypt                                     |
+| rdns        | Acquire DNS from public Rancher DNS service       |
+| dashboard   | Rio UI                                            |
+
+**--ip-address**
+
+Manually specify IPAddress for API gateway services. The IP will be used to generate a record for the cluster domain.
+By default, if this flag is not specified, rio will use the IP of [Service Loadbalancer](https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/) that points to API gateway.
+
+Note: If service loadbalancer cannot be provisioned, [Nodeport](https://kubernetes.io/docs/concepts/services-networking/service/#nodeport) is used to expose API gateway.
+
 ##### Examples
 
 ```shell script
 # basic install
 rio install
 
-# install with debug and disable letsencrypt
-rio install --enable-debug --disable-features letsencrypt
+# install with debug and disable some features
+rio install --enable-debug  --disable-features autoscaling --disable-features linkerd
 
 # print yaml to run manually, with custom ip-address
 rio install --yaml --ip-address 127.0.0.1

@@ -25,60 +25,22 @@ $ rio install
 Note: to install rio from kubernetes manifest, run `rio install --yaml`. It will print out kubernetes manifest instead of 
 installing rio directly, so that you can apply the manifest later.
 
-#### Options
+## Options
 
 See the [CLI install reference docs](cli-reference.md#install) for complete list of options.
 
-**--ip-address**
-
-Manually specify IPAddress for API gateway services. The IP will be used to generate a record for the cluster domain. 
-By default, if this flag is not specified, rio will use the IP of [Service Loadbalancer](https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/) that points to API gateway. 
-
-Note: If service loadbalancer cannot be provisioned, [Nodeport](https://kubernetes.io/docs/concepts/services-networking/service/#nodeport) is used to expose API gateway.
-
-**--disable-features**
-
-Choose features to be disabled when starting rio control plane. Below are a list of available features
-
-| Feature | Description |
-|----------|----------------|
-| autoscaling | Auto-scaling services based on in-flight requests
-| build | Rio Build, from source code to deployment
-| gloo | API gateway backed by gloo
-| linkerd | Linkerd service mesh
-| letsencrypt | Let's Encrypt
-| rdns | Acquire DNS from public Rancher DNS service
-| dashboard | Rio UI
-
-Examples:
-
-```bash
-# disable autoscaling feature
-$ rio install --disable-features autoscaling
-
-# disable autoscaling, linkerd 
-$ rio install --disable-features autoscaling --disable-features linkerd
-```
-
-**--enable-debug**
-
-Enable debug logging in rio control plane
-
-**--yaml**
-
-Print out kubernetes manifests that are needed to install Rio
-
-**--check**
-
-Check if rio is installed in the current cluster without deploying rio controller. 
-If rio has not been installed, this command might hang on `Waiting for rio controller to initialize`.
-
-
-#### Clusters and Providers
+## Clusters and Providers
 
 A 1.15 or higher version of kubernetes is recommended.
 
 See the kubernetes [getting started guide](https://kubernetes.io/docs/setup/) to help choose a cluster type.
+
+**Internal vs external IP address**
+
+Some cloud providers will use an internal IP address by default and Rio will use that for its cluster domain.
+You can override this during cluster setup by configuring external IP's, or by using a cloud-provider to setup a load balancer which will have an external IP.
+
+For an example of installing a cluster with a cloud provider on Linode using Rancher, see [bullet #8 on this doc](https://www.linode.com/docs/kubernetes/how-to-deploy-kubernetes-on-linode-with-rancher-2-x/#provision-a-cluster).
 
 **k3s**
 
