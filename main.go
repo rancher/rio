@@ -2,7 +2,6 @@
 //go:generate go run ./vendor/github.com/go-bindata/go-bindata/go-bindata -tags static -o ./stacks/bindata.go -ignore bindata.go -pkg stacks -modtime 1557785965 -mode 0644 ./stacks/
 //go:generate go fmt stacks/bindata.go
 //go:generate go run pkg/codegen/main.go
-//go:generate go run ./vendor/github.com/ahmetb/gen-crd-api-reference-docs/main.go -config ./apidocs/doc-config.json -api-dir "github.com/rancher/rio/pkg/apis/" -out-file ./docs/api-docs.md --template-dir ./apidocs
 
 package main
 
