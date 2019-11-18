@@ -31,7 +31,7 @@ func ParseHostAliases(hosts ...string) (result []v1.HostAlias, err error) {
 func ParseHostAlias(host string) (v1.HostAlias, error) {
 	hostnames, ip := kv.Split(host, "=")
 	if ip == "" {
-		return v1.HostAlias{}, fmt.Errorf("%s does not match format host[,host]:ip", host)
+		return v1.HostAlias{}, fmt.Errorf("%s does not match format host[,host]=ip", host)
 	}
 
 	parsed := net.ParseIP(ip)
