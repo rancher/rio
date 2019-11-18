@@ -14,9 +14,7 @@ Note: by default it will only download the latest release from github. To test a
 $ curl -sfL https://get.rio.io | INSTALL_RIO_VERSION=${version} sh - 
 ```
 
-2. Prepare a Kubernetes cluster. Setup KUBECONFIG environment variable to point to your kubernetes cluster. To choose a kubernetes cluster, check [here](https://kubernetes.io/docs/setup/). 
-
-Note: 1.15 or higher version of kubernetes is recommended.
+2. Prepare a Kubernetes cluster, see [Clusters and Providers](#clusters-and-providers). Setup KUBECONFIG environment variable to point to your kubernetes cluster.
 
 3. Run 
 
@@ -29,13 +27,7 @@ installing rio directly, so that you can apply the manifest later.
 
 #### Options
 
-| Option | Type | Description |
-|------|----| -------------|
-| `--ip-address` | string array | Manually specify IP addresses to generate rdns domain, supports comma separated values | 
-| `--disable-features` | string array | Manually specify features to disable, supports comma separated values |
-| `--enable-debug` | boolean | Enable debug logging in rio-controller pod |
-| `--yaml` | boolean | Only print out k8s yaml manifest |
-| `--check` | boolean | Only check status, don't deploy controller |
+See the [CLI install reference docs](cli-reference.md#install) for complete list of options.
 
 **--ip-address**
 
@@ -81,3 +73,24 @@ Print out kubernetes manifests that are needed to install Rio
 Check if rio is installed in the current cluster without deploying rio controller. 
 If rio has not been installed, this command might hang on `Waiting for rio controller to initialize`.
 
+
+#### Clusters and Providers
+
+A 1.15 or higher version of kubernetes is recommended.
+
+See the kubernetes [getting started guide](https://kubernetes.io/docs/setup/) to help choose a cluster type.
+
+**k3s**
+
+When installing on k3s use the `--no-deploy traefik` flag.
+
+**EKS**
+
+Ensure you are running enough nodes with proper instance types to allow for the rio and kubernetes systems to run at least 45 pods.
+See the docs to help determine proper sizes:
+
+* Guide: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-eni.html#AvailableIpPerENI
+* Total limits: https://github.com/awslabs/amazon-eks-ami/blob/master/files/eni-max-pods.txt
+
+For example: you have a workload that requires 15 pods and you want to run 2 nodes.
+15+45 is a 60 pod minimum requirement, so running 2 t3.large nodes (2*35=70) would be just enough.
