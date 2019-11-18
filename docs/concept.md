@@ -23,7 +23,7 @@ on hostname, path, HTTP headers, protocol, and source.
 ### External Service
 
 External Service provides a way to register external IPs or hostnames in the service mesh so they can be accessed by Rio services.
-Also, rio services running in one namespace can be declared as ExternalServices in another namespace.
+Also, Rio services running in one namespace can be declared as ExternalServices in another namespace.
 
 ### Public Domain
 
@@ -31,8 +31,8 @@ Public Domain can be configured to assign a service or router a vanity domain li
 
 ### Cluster Domain
 
-Cluster Domain is a dns name that can be configured globally on each service so that each service will have an endpoint like $service_name-$namespace.xxx.clusterdomain.
-By default Rio will create and assign the `on-rio.io` dns name to each service, so it will have a dns name like `$name-$namespace.xxx.on-rio.io`.
+Cluster Domain is a DNS name that can be configured globally on each service so that each service will have an endpoint like $service_name-$namespace.xxx.clusterdomain.
+By default Rio will create and assign the `on-rio.io` DNS name to each service, so it will have a DNS name like `$name-$namespace.xxx.on-rio.io`.
 
 ### Configs
 
@@ -41,4 +41,4 @@ They are pieces of configuration that can be mounted into pods so that configura
 
 ### Secrets
 
-Secrets are a standard Kubernetes resource and can be referenced by rio services. They contain sensitive data that can be mounted into pods. 
+Secrets are a standard Kubernetes resource and can be referenced by Rio services. They contain sensitive data that can be mounted into pods. 

@@ -4,7 +4,7 @@ Rio allows you to add a vanity domain, such as `www.myproductionsite.com`, to yo
 
 For example:
 
-1. Setup a CNAME record from your domain to rio cluster domain. You should be able to see cluster domain when running `rio info`.
+1. Setup a CNAME record from your domain to the Rio cluster domain. You should be able to see the cluster domain when running `rio info`.
 
     myproduction.com -----> CNAME -------> xxxxxx.on-rio.io
 
@@ -22,25 +22,25 @@ $ rio endpoint
 
 In the above example, `$target` can be a service(`app@version`), a group of services(`app`) or a router(`router`)
 
-For example, to register domain with app `demo` and version `v1`:
+For example, to register a domain with app `demo` and version `v1`:
 
 ```bash
 $ rio domain register myproductionsite.com demo@v1
 ```
 
-To register domain with app `demo`:
+To register a domain with app `demo`:
 
 ```bash
 $ rio domain register  myproductionsite.com demo
 ```
 
-To register domain with router `prod`:
+To register a domain with router `prod`:
 
 ```bash
 $ rio domain register  myproductionsite.com router/prod
 ```
 
-To unregister domain:
+To unregister a domain:
 
 ```bash
 $ rio unregister publicdomain/myproductionsite.com 

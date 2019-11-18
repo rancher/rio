@@ -11,7 +11,7 @@ $ rio [-n $namespace] route add $name to $target
 ```
 
 Note: $name will be the router name. $target can point to individual services or a group of services.
-Target service has to be in the same namespace as the router.
+The target service has to be in the same namespace as the router.
 
 For example, to point to app `demo` and version `v1`:
 
@@ -19,7 +19,7 @@ For example, to point to app `demo` and version `v1`:
 $ rio route add prod to demo@v1
 ```
 
-To point to all weighted versions of app `demo`
+To point to all weighted versions of app `demo`:
 
 ```bash
 $ rio route add prod to demo
@@ -59,7 +59,7 @@ $ rio route add --header USER=VALUE $name to $target
 
 #### Route Based on HTTP Method
 
-Create route based on HTTP method
+Create route based on HTTP method:
 ```bash
 $ rio route add --method GET $name to $target
 ```
@@ -85,7 +85,7 @@ $ rio route add $name mirror $target
 
 #### Rewrite to host/path
 
-Rewrite host header and path
+Rewrite host header and path:
 ```bash
 $ rio route add $name rewrite $rewrite_host/$rewrite_path
 ```
@@ -93,7 +93,7 @@ $ rio route add $name rewrite $rewrite_host/$rewrite_path
 
 #### Redirect
 
-Redirect to another service
+Redirect to another service:
 ```bash
 $ rio route add $name redirect $target_service/path
 ```
@@ -101,7 +101,7 @@ $ rio route add $name redirect $target_service/path
 
 #### Timeout
 
-Add timeout
+Add timeout:
 ```bash
 $ rio route add --timeout-seconds $value $name to $target
 ```
@@ -109,7 +109,7 @@ $ rio route add --timeout-seconds $value $name to $target
 
 #### Fault injection
 
-Add fault injection
+Add fault injection:
 ```bash
 $ rio route add --fault-httpcode 502 --fault-delay-milli-seconds 1000 --fault-percentage 80 $name to $target
 ```
@@ -117,7 +117,7 @@ $ rio route add --fault-httpcode 502 --fault-delay-milli-seconds 1000 --fault-pe
 
 #### Retry logic
 
-Add retry logic
+Add retry logic:
 ```bash
 $ rio route add --retry-attempts 5 --retry-timeout-seconds 1s $name to $target
 ```
@@ -125,7 +125,7 @@ $ rio route add --retry-attempts 5 --retry-timeout-seconds 1s $name to $target
 
 #### Split traffic in router
 
-Create router to different revision and different weight
+Create router to different revision and different weight:
 ```bash
 $ rio route add $name to $service@v0,weight=50 $service@v1,weight=50
 ```
@@ -133,7 +133,7 @@ $ rio route add $name to $service@v0,weight=50 $service@v1,weight=50
 
 #### Insert Rules
 
-Insert a router rule instead of append so that it will be evaluated first
+Insert a router rule instead of append so that it will be evaluated first:
 ```bash
 $ rio route add --insert $name to $target
 ```

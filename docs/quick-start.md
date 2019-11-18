@@ -3,7 +3,7 @@ Exposing the service requires passing the `-p` flag to expose ports from the con
 
 ---
 
-#### Running a container from a docker image
+#### Running a container from a Docker image
 
 ```bash
 $ rio run -p 80 --name demo nginx
@@ -15,9 +15,9 @@ $ rio ps
 curl https://demo-v0-default.xxxxx.on-rio.io
 ```
 
-#### Running a container from a github repository
-Rio allows user to run a container directly from source code. 
-By pointing to git repository that contains a Dockerfile, Rio will clone the source code, build the docker image, and deploy it into the cluster.
+#### Running a container from a GitHub repository
+Rio allows a user to run a container directly from source code. 
+By pointing to git repository that contains a Dockerfile, Rio will clone the source code, build the Docker image, and deploy it into the cluster.
 Also Rio will watch for changes to the repo and automatically update the deployment.
 
 ```bash
