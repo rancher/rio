@@ -15,17 +15,10 @@ import (
 )
 
 func Builds(app *cli.App) cli.Command {
-	ls := builder.Command(&History{},
-		"List Build History",
-		app.Name+" build history [OPTIONS]",
-		"")
 	build := builder.Command(&Build{},
 		"Build docker image using buildkitd",
 		app.Name+" build [OPTIONS] PATH",
 		"")
-	build.Subcommands = []cli.Command{
-		ls,
-	}
 	return build
 }
 
