@@ -2,6 +2,7 @@ package stringers
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -51,7 +52,8 @@ func ParseVolume(v string) (volume v1.Volume, err error) {
 		k = strings.ToLower(k)
 		switch k {
 		case "persistent":
-			volume.Persistent = true
+			value, _ := strconv.ParseBool(v)
+			volume.Persistent = value
 		case "hosttype":
 			if volume.HostPath == "" && volume.Name != "" {
 				volume.HostPath = volume.Name
