@@ -18,3 +18,14 @@ rio run -p 80 --build-webhook-secret=githubtoken https://github.com/example/exam
 
 3. Go to your Github repo, it should have webhook configured to point to one of our webhook service.
 
+# Webhook for Riofile
+
+Setup webhook and private git clone secret for git repository that contains Riofile:
+
+```bash
+$ rio up --build-clone-secret gitsecret --build-webhook-secret webhook https://github.com/example/example
+```
+
+For how to add git and webhook secret, check [here](./continuous-deployment.md).
+
+Note: `Riofile` and `Riofile-answers` in the root directory are automatically applied.

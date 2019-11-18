@@ -22,7 +22,7 @@ var (
 )
 
 type Create struct {
-	AddHost                []string          `desc:"Add a custom host-to-IP mapping (host:ip)"`
+	AddHost                []string          `desc:"Add a custom host-to-IP mapping (host=ip)"`
 	Annotations            map[string]string `desc:"Annotations to attach to this service"`
 	BuildBranch            string            `desc:"Build repository branch" default:"master"`
 	BuildDockerfile        string            `desc:"Set Dockerfile name, defaults to Dockerfile"`

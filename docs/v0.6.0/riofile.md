@@ -38,7 +38,6 @@ You can setup Rio to watch for Riofile changes in a Github repository and deploy
 $ rio up https://github.com/username/repo
 ```
 
-
 By default, Rio will poll the branch in 15 second intervals, but can be configured to use a webhook instead. See [Webhook docs](./webhooks.md) for info.
 
 #### Riofile reference
@@ -270,8 +269,6 @@ template:
   questions:  # now make some questions that we provide answers too
   - variable: NAMESPACE
     description: "namespace to deploy to"
-  - variable: RIO_DEBUG
-  - variable: RUN_API_VALIDATOR
 
 # Supply arbitrary kubernetes manifest yaml
 kubernetes:
@@ -327,7 +324,7 @@ services:
 Next, we can augment this service with the Kubernetes [sample guestbook](https://kubernetes.io/docs/tutorials/stateless-application/guestbook/)
 
 
-```
+```yaml
 configs:
     conf:
         index.html: |-
@@ -365,7 +362,7 @@ kubernetes:
           app: redis
           tier: backend
           role: master
----
+      ---
       apiVersion: apps/v1 #  for k8s versions before 1.9.0 use apps/v1beta2  and before 1.8.0 use extensions/v1beta1
       kind: Deployment
       metadata:
@@ -393,7 +390,7 @@ kubernetes:
                   memory: 100Mi
               ports:
               - containerPort: 6379
----
+      ---
       apiVersion: v1
       kind: Service
       metadata:
@@ -409,7 +406,7 @@ kubernetes:
           app: redis
           tier: backend
           role: slave
----
+      ---
       apiVersion: apps/v1 #  for k8s versions before 1.9.0 use apps/v1beta2  and before 1.8.0 use extensions/v1beta1
       kind: Deployment
       metadata:
@@ -445,7 +442,7 @@ kubernetes:
                 # value: env
               ports:
               - containerPort: 6379
----
+      ---
       apiVersion: v1
       kind: Service
       metadata:
@@ -462,7 +459,7 @@ kubernetes:
         selector:
           app: guestbook
           tier: frontend
----
+      ---
       apiVersion: apps/v1 #  for k8s versions before 1.9.0 use apps/v1beta2  and before 1.8.0 use extensions/v1beta1
       kind: Deployment
       metadata:
@@ -526,3 +523,62 @@ guestbook   https://guestbook-default.enu90s.on-rio.io
 We can now access this endpoint over encrypted https!
 
 
+#### Using answer file 
+
+Rio allows user to answer file to customize `Riofile`. Go template and [envSubst](https://github.com/drone/envsubst) can used to apply answers.
+
+Answer file is a yaml manifest with key-value pairs:
+
+```yaml
+FOO: BAR
+```
+
+For example, to use go templating:
+
+```yaml
+services:
+{{- if eq .Values.FOO "BAR" }
+  demo:
+    image: ibuilthecloud/demo:v1
+{{- end}
+
+template:
+  goTemplate: true # use go templating
+  envSubst: true # use ENV vars during templating  
+  questions:  # now make some questions that we provide answers too
+  - variable: FOO
+    description: ""
+```
+
+Rio also supports a bash style envsubst replacement, with the following format:
+
+```yaml
+${var^}
+${var^^}
+${var,}
+${var,,}
+${var:position}
+${var:position:length}
+${var#substring}
+${var##substring}
+${var%substring}
+${var%%substring}
+${var/substring/replacement}
+${var//substring/replacement}
+${var/#substring/replacement}
+${var/%substring/replacement}
+${#var}
+${var=default}
+${var:=default}
+${var:-default}
+```
+
+A Riofile example with envsubst:
+
+```yaml
+services:
+  demo:
+    image: ibuilthecloud/demo:v1
+    env:
+    - FOO=${FOO}
+```

@@ -503,7 +503,7 @@ rio run [OPTIONS] IMAGE [COMMAND] [ARG...]
 ##### Options
 | flag                             | aliases  | description                                                                                   | default                |
 |----------------------------------|----------|-----------------------------------------------------------------------------------------------|------------------------|
-| --add-host value                 |          | Add a custom host-to-IP mapping (host:ip)                                                     |                        |
+| --add-host value                 |          | Add a custom host-to-IP mapping (host=ip)                                                     |                        |
 | --annotations value              |          | Annotations to attach to this service                                                         |                        |
 | --build-branch value             |          | Build repository branch                                                                       | master                 |
 | --build-dockerfile value         |          | Set Dockerfile name                                                                           | defaults to Dockerfile |
@@ -577,6 +577,14 @@ rio run --weight 50 -n mysvc@v2 -p 80 nginx
 # set custom readiness probe
 rio run --health-url http://:8080/status --health-initial-delay 10s --health-interval 5s --health-failure-threshold 5 --health-timeout 5s -p 8080 cbron/mybusybox:dev
 
+# set permission for containers. By setting permissions, rio will assign a serviceaccount to the pod which will have the corresponding permissions. Global permission means permissions across all namespaces.
+rio run --global-permission "create,update,delete services" --permission "* apps/deployments" nginx
+
+# set host:ip entry in container
+rio run --add-host db=1.2.3.4 nginx
+
+# set build parameters
+rio run --build-branch dev --build-dockerfile Dockerfile.production --build-context . --build-webhook-secret webhook https://github.com/example/exmaple 
 
 ```
 
