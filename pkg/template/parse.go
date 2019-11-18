@@ -10,6 +10,7 @@ import (
 	"github.com/rancher/rio/pkg/template/gotemplate"
 	"github.com/rancher/wrangler/pkg/merr"
 	"github.com/rancher/wrangler/pkg/yaml"
+	"github.com/sirupsen/logrus"
 )
 
 type templateFile struct {
@@ -58,7 +59,10 @@ func (t *Template) RequiredEnv() ([]string, error) {
 
 func (t *Template) readTemplateFile(content []byte) (*templateFile, error) {
 	templateFile := &templateFile{}
-	return templateFile, yaml.Unmarshal(content, templateFile)
+	if err := yaml.Unmarshal(content, templateFile); err != nil {
+		logrus.Debugf("Error unmarshalling template: %v", err)
+	}
+	return templateFile, nil
 }
 
 func (t *Template) Parse(answers AnswerCallback) ([]byte, error) {

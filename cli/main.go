@@ -6,12 +6,13 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rancher/rio/cli/cmd/dashboard"
+	"github.com/rancher/rio/cli/cmd/buildhistory"
 
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/rancher/rio/cli/cmd/attach"
 	"github.com/rancher/rio/cli/cmd/builds"
 	"github.com/rancher/rio/cli/cmd/config"
+	"github.com/rancher/rio/cli/cmd/dashboard"
 	"github.com/rancher/rio/cli/cmd/edit"
 	"github.com/rancher/rio/cli/cmd/endpoint"
 	"github.com/rancher/rio/cli/cmd/exec"
@@ -129,6 +130,7 @@ func main() {
 			""),
 
 		builds.Builds(app),
+		buildhistory.History(app),
 
 		config.NewCatCommand("", app),
 
