@@ -1,6 +1,6 @@
 # Dashboard 
 
-Rio ships with a built-in dashboard. To enable dashboard:
+Rio ships with a built-in dashboard. To enable the dashboard:
 
 ```bash
 $ rio dashboard

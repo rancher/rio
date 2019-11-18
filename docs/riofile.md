@@ -4,7 +4,7 @@
 Rio works with standard Kubernetes YAML files. Rio additionally supports a more user-friendly `docker-compose`-style config file called `Riofile`.
 This allows you define rio services, routes, external services, configs, and secrets.
 
-For example, this is an example of an nginx application:
+For example, here is an nginx application:
 
 ```yaml
 configs:
@@ -28,7 +28,7 @@ services:
 ```
 
 Once you have defined `Riofile`, simply run `rio up`.
-Any change you made for `Riofile`, re-run `rio up` to pick the change.
+If you made any change to the `Riofile`, re-run `rio up` to pick up the change.
 To use a file not named "Riofile" use `rio up -f nginx.yaml`.
 
 #### Watching Riofile
@@ -38,7 +38,7 @@ You can setup Rio to watch for Riofile changes in a Github repository and deploy
 $ rio up https://github.com/username/repo
 ```
 
-By default, Rio will poll the branch in 15 second intervals, but can be configured to use a webhook instead. See [Webhook docs](./webhooks.md) for info.
+By default, Rio will poll the branch in 15 second intervals, but this can be configured to use a webhook instead. See [Webhook docs](./webhooks.md) for info.
 
 #### Riofile reference
 
@@ -499,15 +499,15 @@ Typically you would track your Riofile with some form of VCS but for now simply 
 
 Next, run `rio up` in that directory.
 
-You can watch Rio service come up with `rio ps` and the kubernetes deployments with `kubectl get deployments -w`.
+You can watch Rio service come up with `rio ps` and the Kubernetes deployments with `kubectl get deployments -w`.
 
-You can check the sample service came up by going to the endpoint given by `rio ps`
+You can check that the sample service came up by going to the endpoint given by `rio ps`
 ```
 NAME      IMAGE     ENDPOINT                                          SCALE     APP       VERSION    WEIGHT    CREATED       DETAIL
 nginx     nginx     https://nginx-2c21baa1-default.enu90s.on-rio.io   1         nginx     2c21baa1   100%      4 hours ago
 ```
 
-We can use rio to expose the service and provision a LetsEncrypt certificate for it.
+We can use Rio to expose the service and provision a LetsEncrypt certificate for it.
 
 ` rio router add guestbook to frontend,port=80 `
 
@@ -525,7 +525,7 @@ We can now access this endpoint over encrypted https!
 
 #### Using answer file 
 
-Rio allows user to answer file to customize `Riofile`. Go template and [envSubst](https://github.com/drone/envsubst) can used to apply answers.
+Rio allows the user to leverage an answer file to customize `Riofile`. Go template and [envSubst](https://github.com/drone/envsubst) can used to apply answers.
 
 Answer file is a yaml manifest with key-value pairs:
 

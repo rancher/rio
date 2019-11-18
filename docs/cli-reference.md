@@ -244,7 +244,7 @@ rio export --riofile namespace/default
 
 ## image
 
-List images built from local registry
+List images built from the local registry
 
 ##### Usage
 ```
@@ -293,7 +293,7 @@ rio inspect taskrun/affectionate-mirzakhani-mfp5q-ee709-4e40c
 
 ## install
 
-Install rio management plane
+Install the Rio management plane
 
 See the [install docs](install.md) for more info.
 
@@ -315,12 +315,12 @@ rio install [OPTIONS]
 
 **--check**
 
-Check if rio is installed in the current cluster without deploying rio controller.
-If rio has not been installed, this command might hang on `Waiting for rio controller to initialize`.
+Check if Rio is installed in the current cluster without deploying the Rio controller.
+If Rio has not been installed, this command might hang on `Waiting for rio controller to initialize`.
 
 **--disable-features**
 
-Choose features to be disabled when starting rio control plane. Below are a list of available features
+Choose features to be disabled when starting the Rio control plane. Below are a list of available features
 
 | Feature     | Description                                       |
 |-------------|---------------------------------------------------|
@@ -335,7 +335,7 @@ Choose features to be disabled when starting rio control plane. Below are a list
 **--ip-address**
 
 Manually specify IPAddress for API gateway services. The IP will be used to generate a record for the cluster domain.
-By default, if this flag is not specified, rio will use the IP of [Service Loadbalancer](https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/) that points to API gateway.
+By default, if this flag is not specified, Rio will use the IP of [Service Loadbalancer](https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/) that points to API gateway.
 
 Note: If service loadbalancer cannot be provisioned, [Nodeport](https://kubernetes.io/docs/concepts/services-networking/service/#nodeport) is used to expose API gateway.
 
@@ -667,7 +667,7 @@ rio stage --edit demo v2
 
 ## systemlogs
 
-Print the logs from Rio management plane
+Print the logs from the Rio management plane
 
 ##### Usage
 ```

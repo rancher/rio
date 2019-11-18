@@ -2,7 +2,7 @@
 
 Rio can be configured and used in a multi-tenant environment while providing the best practices for security.
 
-This section requires basic knowledge of kubernetes RBAC. To understand kubernetes RBAC, go [here](https://kubernetes.io/docs/reference/access-authn-authz/rbac/).
+This section requires basic knowledge of Kubernetes RBAC. To learn more about RBAC, go [here](https://kubernetes.io/docs/reference/access-authn-authz/rbac/).
 
 By default Rio creates four roles `rio-admin`, `rio-privileged`, `rio-readonly`, `rio-standard`. Detailed permissions can be found in [here](https://github.com/rancher/rio/blob/master/stacks/rio-bootstrap-stack.yaml).
 

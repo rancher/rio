@@ -1,6 +1,6 @@
 # Running workloads
 
-### Deploying Container Into Rio
+### Deploying a Container Into Rio
 
 ```bash
 # Exposing the service requires passing the `-p` flag to expose ports from the container
@@ -18,12 +18,12 @@ a certificate for the cluster domain so that all services support HTTPS by defau
 For example, when you deploy your workload, you can access your workload in HTTPS. The domain always follows the format
 of ${app}-${namespace}.\${cluster-domain}. You can see your cluster domain by running `rio info`.
 
-Note: If linkerd feature is enabled, Rio will automatically inject linkerd-proxy into your workload. If you would like to disable that, run `rio run --no-mesh`.
+Note: Linkerd is enabled by default, so Rio will automatically inject linkerd-proxy into your workload. If you would like to disable that, run `rio run --no-mesh`.
 
 ### Expose your service
 
-Note: In order to expose your service you have pass the flag `--port`(shorthand `-p`). The format is `[service_port:]container_port[/protocol]`
-If you don't pass port the service will be private by default (only accessible inside cluster).
+Note: In order to expose your service you have to pass the flag `--port`(shorthand `-p`). The format is `[service_port:]container_port[/protocol]`
+If you don't pass the flag, the service will be private by default (only accessible inside the cluster).
 
 ```bash
 # To expose services through 80/http
@@ -86,10 +86,10 @@ $ rio run --net=host nginx
 For more examples, check [here](./cli-reference.md)
 
 ### Split Traffic Between Revisions
-Rio natively supports splitting traffic between revisions. Splitting Traffic can be quite useful in canary deployment, Blue/Green deployment and A/B testing. 
+Rio natively supports splitting traffic between revisions. Splitting Traffic can be quite useful in a canary deployment, a Blue/Green deployment and A/B testing. 
 
 Each Rio service you deploy will have two unique label identifiers across current namespace: `app` and `version`.
-Based on `app` and `version` user is allowed to assign weight between each revision to manage traffic.
+Based on `app` and `version`, the user is allowed to assign weight between each revision to manage traffic.
 
 To deploy a demo application with version v1
 
@@ -117,11 +117,11 @@ $ rio endpoints
 NAME              ENDPOINTS
 demo              https://demo-default.xxxxxx.on-rio.io
 ```
-Note: This endpoint will only return versions that have weight greater than 0%. Versions with a higher weight percentage will be returned more often.
+Note: This endpoint will only return versions that have a weight greater than 0%. Versions with a higher weight percentage will be returned more often.
 
 #### Assign weight between each revision
 
-Now assign weight 50% to demo@v3
+Now assign a weight of 50% to demo@v3
 
 ```bash
 # Weight is immediately assigned by default
@@ -134,27 +134,27 @@ $ rio weight --duration 10m demo@v3=50%
 $ rio promote demo@v3
 ```
 
-Note: services are discoverable inside cluster by their short DNS name. For example services demo@v1 and demo@v3 are discoverable through
+Note: services are discoverable inside the cluster by their short DNS name. For example services demo@v1 and demo@v3 are discoverable through
 `demo-v1` and `demo-v3`. `demo` is also discoverable to serve traffic from both versions.
 
-### Running Stateful Application (experimental)
+### Running Stateful Applications (experimental)
 
-Rio supports running stateful applications by leveraging kubernetes [persistentvolume](https://kubernetes.io/docs/concepts/storage/persistent-volumes/).
+Rio supports running stateful applications by leveraging Kubernetes' [persistentvolume](https://kubernetes.io/docs/concepts/storage/persistent-volumes/).
 
 
-To mount a volume into container (By default it will create [emptydir](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir) volume):
+To mount a volume into a container (By default it will create an [emptydir](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir) volume):
 
 ```bash
 $ rio run -v foo:/data nginx
 ```
 
-To mount a persistent volume into container (By default it will create persistent volume if cluster has default storageclass, otherwise it will use existing pvc with the same name):
+To mount a persistent volume into a container (By default it will create a persistent volume if the cluster has a default storageclass, otherwise it will use the existing pvc with the same name):
 
 ```bash
 $ rio run -v foo:/data,persistent=true nginx
 ```
 
-To mount a hostpath volume into container
+To mount a hostpath volume into a container
 
 ```bash
 $ rio run -v foo:/etc,hosttype=directoryorcreate nginx
