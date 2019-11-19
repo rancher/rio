@@ -5,6 +5,7 @@
 
 - [attach](#attach)
 - [build](#build)
+- [build-history](#build-history)
 - [cat](#cat)
 - [dashboard](#dashboard)
 - [edit](#edit)
@@ -78,8 +79,6 @@ rio build command [command options] [arguments...]
 ##### Examples
 
 ```shell script
-# see previous builds from stacks or workloads
-rio build history
 
 # Navigate to directory with Dockerfile and build it into local registry
 rio build -t test:v1
@@ -98,6 +97,36 @@ rio build -t test:v2
 
 # Now stage the 2nd image
 rio stage --image localhost:5442/default/test:v2 test v2
+```
+
+---
+
+## build-history
+
+Show previous builds
+
+##### Usage
+
+```
+rio build-history [command options] [arguments...]
+```
+
+##### Options
+
+| flag           | aliases | description                                                  | default |
+|----------------|---------|--------------------------------------------------------------|---------|
+| --quiet        | -q      | Only display Names                                           |         |
+| --format value |         | 'json' or 'yaml' or Custom format: '{{.Obj.Name}}' [$FORMAT] |         |
+
+
+##### Examples
+
+```shell script
+# see previous builds from stacks or workloads
+rio build-history
+
+# custom output format
+rio build-history --format "{{.Obj.Name}}"
 ```
 
 ---
@@ -409,7 +438,7 @@ rio logs [OPTIONS] SERVICE/BUILD
 rio logs demo
 
 # Get logs from a build
-rio build history
+rio build-history
 rio logs taskrun/affectionate-mirzakhani-mfp5q-ee709-4e40c
 
 # get 1 previous log line for the linkerd-proxy in demo service
