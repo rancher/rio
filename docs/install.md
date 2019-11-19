@@ -44,7 +44,7 @@ For an example of installing a cluster with a cloud provider on Linode using Ran
 
 **K3s**
 
-When installing on K3s use the `--no-deploy traefik` flag.
+When installing a K3s cluster, use the `--no-deploy traefik` flag.
 
 **EKS**
 
