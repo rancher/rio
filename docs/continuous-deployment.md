@@ -11,7 +11,7 @@ Deploy a workload with Rio from a public GitHub repository that you have push ac
 `rio run -n cd-demo -p 8080 https://github.com/rancher/rio-demo`
 
 Make a commit to the master branch of the repo. 
-You should notice that within 15 seconds, Rio rebuilds your workload (`rio build history`) and updates it to match the committed changes.
+You should notice that within 15 seconds, Rio rebuilds your workload (`rio build-history`) and updates it to match the committed changes.
 
 
 ### Advanced Usage
