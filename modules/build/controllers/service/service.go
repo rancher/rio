@@ -358,7 +358,12 @@ func ImageName(rev string, namespace, name string, build *riov1.ImageBuildSpec) 
 		imageName = build.ImageName
 	}
 
-	return fmt.Sprintf("%s/%s:%s", registry, imageName, rev[:5])
+	suffix := rev
+	if len(rev) > 5 {
+		suffix = rev[:5]
+	}
+
+	return fmt.Sprintf("%s/%s:%s", registry, imageName, suffix)
 }
 
 func PullImageName(rev string, namespace, name string, build *riov1.ImageBuildSpec) string {
@@ -371,5 +376,10 @@ func PullImageName(rev string, namespace, name string, build *riov1.ImageBuildSp
 		imageName = build.ImageName
 	}
 
-	return fmt.Sprintf("%s/%s:%s", registry, imageName, rev[:5])
+	suffix := rev
+	if len(rev) > 5 {
+		suffix = rev[:5]
+	}
+
+	return fmt.Sprintf("%s/%s:%s", registry, imageName, suffix)
 }
