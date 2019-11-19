@@ -70,8 +70,9 @@ func (u *Up) setStack(c *clicontext.CLIContext, existing *riov1.Stack) error {
 		existing.Spec.Build.WebhookSecretName = u.BuildWebhookSecret
 		existing.Spec.Build.CloneSecretName = u.BuildCloneSecret
 		existing.Spec.Build.PushRegistrySecretName = u.PushRegistrySecret
-		existing.Spec.Permissions, err = stringers.ParsePermissions(u.Permission...)
 		existing.Spec.Build.Riofile = u.F_File
+		existing.Spec.Build.RiofileAnswers = u.Answers
+		existing.Spec.Permissions, err = stringers.ParsePermissions(u.Permission...)
 		if err != nil {
 			return err
 		}
@@ -110,7 +111,10 @@ func (u *Up) loadFileAndAnswer(c *clicontext.CLIContext) (string, map[string]str
 	if err != nil {
 		return "", nil, err
 	}
-
+	if answers == nil {
+		answers = map[string]string{}
+	}
+	answers["namespace"] = c.GetSetNamespace()
 	content, err := up.LoadRiofile(u.F_File)
 	if err != nil {
 		return "", nil, err

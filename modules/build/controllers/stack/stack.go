@@ -104,6 +104,11 @@ func (p populator) populateBuild(stack *riov1.Stack, systemNamespace string, os 
 		rioUpArgs = append(rioUpArgs, "--file", stack.Spec.Build.Riofile)
 
 	}
+	if stack.Spec.Build.RiofileAnswers != "" {
+
+		rioUpArgs = append(rioUpArgs, "--answers", stack.Spec.Build.RiofileAnswers)
+
+	}
 
 	trName := name.SafeConcatName(stack.Namespace, stack.Name+"-stack", name.Hex(stack.Spec.Build.Repo, 5), name.Hex(rev, 5))
 	sa := constructors.NewServiceAccount(stack.Namespace, trName+"-stack", corev1.ServiceAccount{})

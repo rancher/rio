@@ -51,6 +51,9 @@ type StackBuild struct {
 	// Specify the name of the Riofile in the Repo. This is the full path relative to the repo root. Defaults to `Riofile`.
 	Riofile string `json:"rioFile,omitempty"`
 
+	// Specify the name of the Riofile-answers in the Repo. This is the full path relative to the repo root. Defaults to `Riofile`.
+	RiofileAnswers string `json:"rioFileAnswers,omitempty"`
+
 	// Specify the github secret name. Used to create Github webhook, the secret key has to be `accessToken`
 	WebhookSecretName string `json:"webhookSecretName,omitempty"`
 }
