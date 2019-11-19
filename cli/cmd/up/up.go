@@ -114,7 +114,7 @@ func (u *Up) loadFileAndAnswer(c *clicontext.CLIContext) (string, map[string]str
 	if answers == nil {
 		answers = map[string]string{}
 	}
-	answers["namespace"] = c.GetSetNamespace()
+	answers["NAMESPACE"] = c.GetSetNamespace()
 	content, err := up.LoadRiofile(u.F_File)
 	if err != nil {
 		return "", nil, err
