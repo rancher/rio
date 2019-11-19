@@ -16,7 +16,7 @@ var (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Service acts as a top level resource for a container and its sidecars and routing resources.
-// Each service represents an individual revision, group by Spec.App(defaults to Service.Name), and Spec.Version(defaults to v0)
+// Each service represents an individual revision, grouped by Spec.App(defaults to Service.Name), and Spec.Version(defaults to v0)
 type Service struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -52,33 +52,33 @@ type RolloutConfig struct {
 type ServiceSpec struct {
 	PodConfig
 
-	// Template this service is a template for new versions to be created base on changes
+	// This service is a template for new versions to be created based on changes
 	// from the build.repo
 	Template bool `json:"template,omitempty"`
 
-	// StageOnly whether to only stage services that are generated through template from build.repo
+	// Whether to only stage services that are generated through the template from build.repo
 	StageOnly bool `json:"stageOnly,omitempty"`
 
-	// Version version of this service
+	// Version of this service
 	Version string `json:"version,omitempty"`
 
-	// App The exposed app name, if no value is set, then metadata.name of the Service is used
+	// The exposed app name, if no value is set, then metadata.name of the Service is used
 	App string `json:"app,omitempty"`
 
-	// Weight The weight among services with matching app field to determine how much traffic is load balanced
-	// to this service.  If rollout is set, the weight become the target weight of the rollout.
+	// The weight among services with matching app field to determine how much traffic is load balanced
+	// to this service.  If rollout is set, the weight becomes the target weight of the rollout.
 	Weight *int `json:"weight,omitempty"`
 
 	// Number of desired pods. This is a pointer to distinguish between explicit zero and not specified. Defaults to 1 in deployment.
 	Replicas *int `json:"replicas,omitempty" mapper:"alias=scale"`
 
 	// The maximum number of pods that can be unavailable during the update.
-	// Value can be an absolute number (ex: 5) or a percentage of desired pods (ex: 10%).
-	// Absolute number is calculated from percentage by rounding down.
-	// This can not be 0 if MaxSurge is 0.
+	// The value can be an absolute number (ex: 5) or a percentage of desired pods (ex: 10%).
+	// An absolute number is calculated from percentage by rounding down.
+	// This cannot be 0 if MaxSurge is 0.
 	// Defaults to 25%.
 	// Example: when this is set to 30%, the old ReplicaSet can be scaled down to 70% of desired pods
-	// immediately when the rolling update starts. Once new pods are ready, old ReplicaSet
+	// immediately when the rolling update starts. Once new pods are ready, the old ReplicaSet
 	// can be scaled down further, followed by scaling up the new ReplicaSet, ensuring
 	// that the total number of pods available at all times during the update is at
 	// least 70% of desired pods.
@@ -87,14 +87,14 @@ type ServiceSpec struct {
 
 	// The maximum number of pods that can be scheduled above the desired number of
 	// pods.
-	// Value can be an absolute number (ex: 5) or a percentage of desired pods (ex: 10%).
+	// The value can be an absolute number (ex: 5) or a percentage of desired pods (ex: 10%).
 	// This can not be 0 if MaxUnavailable is 0.
-	// Absolute number is calculated from percentage by rounding up.
+	// An absolute number is calculated from percentage by rounding up.
 	// Defaults to 25%.
 	// Example: when this is set to 30%, the new ReplicaSet can be scaled up immediately when
 	// the rolling update starts, such that the total number of old and new pods do not exceed
-	// 130% of desired pods. Once old pods have been killed,
-	// new ReplicaSet can be scaled up further, ensuring that total number of pods running
+	// 130% of desired pods. Once the old pods have been killed,
+	// the new ReplicaSet can be scaled up further, ensuring that total number of pods running
 	// at any time during the update is at most 130% of desired pods.
 	// +optional
 	MaxSurge *intstr.IntOrString `json:"maxSurge,omitempty"`
@@ -108,10 +108,10 @@ type ServiceSpec struct {
 	// Place one pod per node that matches the scheduling rules
 	Global bool `json:"global,omitempty"`
 
-	// Whether to disable Service mesh for Service. If true, no mesh sidecar will be deployed along with the Service
+	// Whether to disable Service mesh for the Service. If true, no mesh sidecar will be deployed along with the Service
 	ServiceMesh *bool `json:"serviceMesh,omitempty"`
 
-	// RequestTimeoutSeconds specify the timeout set on api gateway for each individual service
+	// RequestTimeoutSeconds specifies the timeout set on api gateway for each individual service
 	RequestTimeoutSeconds *int `json:"requestTimeoutSeconds,omitempty"`
 
 	// Permissions to the Services. It will create corresponding ServiceAccounts, Roles and RoleBinding.
@@ -192,7 +192,7 @@ type Container struct {
 	// List of environment variables to set in the container. Cannot be updated.
 	Env []EnvVar `json:"env,omitempty" mapper:"env,envmap=sep==,alias=environment"`
 
-	// CPU, in cores
+	// CPU, in milliCPU (e.g. 500 = .5 CPU cores)
 	CPUMillis *int64 `json:"cpuMillis,omitempty" mapper:"quantity,alias=cpu|cpus"`
 
 	// Memory, in bytes
