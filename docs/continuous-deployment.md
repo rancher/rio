@@ -67,7 +67,7 @@ You can do this with Git Basic Auth or SSH Auth:
         ssh_key_path[]: $(type the path to your ssh private key)
         ```
        
-    2. Create workload pointing to your repo using ssh checkout. For example:
+    2. Tell rio to do ssh checkout from git. For example:
         `rio run --build-clone-secret gitcredential-ssh -p 8080 git@github.com:example/example.git`
 
 
