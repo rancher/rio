@@ -349,6 +349,9 @@ func DeleteCNAME(clusterDomain string) *route53.ChangeResourceRecordSetsOutput {
 
 // GetCNAMEInfo retrieves the RIO_CNAME environment variable
 func GetCNAMEInfo() string {
+	if os.Getenv("RIO_CNAME") == "" {
+		return "riotestautomation." + os.Getenv("RIO_ROUTE53_ZONENAME")
+	}
 	return os.Getenv("RIO_CNAME")
 }
 

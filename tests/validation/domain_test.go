@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"os"
 	"testing"
 
 	"github.com/sclevine/spec"
@@ -25,7 +26,9 @@ func domainTests(t *testing.T, when spec.G, it spec.S) {
 
 		it.After(func() {
 			domain.UnRegister()
-			testutil.DeleteCNAME(service.GetKubeFirstClusterDomain())
+			if os.Getenv("RIO_CNAME") != "" {
+				testutil.DeleteCNAME(service.GetKubeFirstClusterDomain())
+			}
 		})
 
 		it("should create a new DNS CNAME for the cluster domain and retrieve the service content using it", func() {
@@ -34,8 +37,10 @@ func domainTests(t *testing.T, when spec.G, it spec.S) {
 			domain.RegisterDomain(t, testutil.GetCNAMEInfo(), service.Name)
 			assert.Equal(t, testutil.GetCNAMEInfo(), domain.GetDomain())
 			assert.Equal(t, testutil.GetCNAMEInfo(), domain.GetKubeDomain())
-			urlResponse, _ := testutil.WaitForURLResponse("https://" + testutil.GetCNAMEInfo())
-			assert.Equal(t, "Hi there, I am rio:production6", urlResponse)
+			urlHTTPResponse, _ := testutil.WaitForURLResponse("http://" + testutil.GetCNAMEInfo())
+			assert.Equal(t, "Hi there, I am rio:production6", urlHTTPResponse)
+			urlHTTPSResponse, _ := testutil.WaitForURLResponse("https://" + testutil.GetCNAMEInfo())
+			assert.Equal(t, "Hi there, I am rio:production6", urlHTTPSResponse)
 		})
-	})
+	}, spec.Parallel())
 }

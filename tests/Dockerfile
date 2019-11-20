@@ -22,9 +22,8 @@ COPY . .
 RUN chmod +x ./tests/entrypoint.sh
 
 # Set environment variables for tests to run properly and to ensure the correct rio version is being tested
-ENV INSTALL_RIO_VERSION=v0.6.0-alpha.3
 ENV KUBECONFIG /usr/local/projects/rio/.kube/config
-ENV test validation
+ENV test integration
 
 # Install Rio if needed and run tests
 ENTRYPOINT [ "./tests/entrypoint.sh" ]

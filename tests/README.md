@@ -2,20 +2,21 @@
 
 All commands run from root dir
 
-- [Unit tests](#unit-tests)
-- [Integration tests](#integration-tests)
+- [Unit Tests](#unit-tests)
+- [Integration Tests](#integration-tests)
+- [Validation Tests](#validation-tests)
 - [Full Suite](#full-suite)
-- [Notes](#notes)
+- [Running in Docker](#running-in-docker)
 
 
-### Unit tests
+### Unit Tests
 
 ```
 go test -race -cover -tags=test ./...
 ```
 
 
-### Integration tests
+### Integration Tests
 
 Integration tests live inside the /tests/integration dir. They require a working cluster with KUBECONFIG env var set, and rio already installed.
 
@@ -26,7 +27,7 @@ go test -v -race ./tests/integration/... -integration-tests
 Every spec should be in the `when x, it should y` format.
 
 
-### Validation tests
+### Validation Tests
 
 Validation tests live inside the /tests/validation dir. They require a working cluster with KUBECONFIG env var set, and rio already installed.
 In the future, rio will be installed as part of the tests.
@@ -62,4 +63,21 @@ Goland is useful for debugging, setup with:
 make ci
 ```
 
+### Running in Docker
+Integration and Validation tests can be run with docker:
+1. Add a KUBECONFIG file to /path/to/rio/.kube/config
+2. Make sure you have docker installed, then run the following in a terminal:
+
+```bash
+$ cd /path/to/rio
+$ docker build -f "./tests/Dockerfile" -t rio-test .
+
+# To run integration tests
+$ docker run --rm -e test=integration rio-test:latest
+# To run validation tests:
+$ docker run --rm -e test=integration -e AWS_ACCESS_KEY_ID=[keyid] -e AWS_SECRET_ACCESS_KEY=[secret] -e RIO_ROUTE53_ZONEID=[zoneid] -e RIO_ROUTE53_ZONENAME=[your.zone.name] rio-test:latest
+
+# To run with a specific version of RIO installed. Tests are always optimized for the latest version.
+$ docker run --rm -e test=integration -e INSTALL_RIO_VERSION=v0.6.0-rc2 rio-test:latest
+```
 
