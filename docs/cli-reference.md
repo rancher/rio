@@ -753,6 +753,7 @@ rio up [OPTIONS]
 | --revision value             |          | Use a specific commit hash                                               |         |
 | --build-webhook-secret value |          | Set GitHub webhook secret name                                           |         |
 | --build-clone-secret value   |          | Set name of secret to use with git clone                                 |         |
+| --push-registry-secret value |          | Set secret for pushing to custom registry                                |         |
 | --permission value           |          | Permissions to grant to container's service account in current namespace |         |
 
 ##### Examples
