@@ -42,6 +42,7 @@ If the `--template` flag is not set, then every subsequent build will overwrite 
 You can do this with Git Basic Auth or SSH Auth:
 - Git Basic Auth:
     1. Configure git basic auth credential secrets:
+    
         ```bash
         $ rio secret create --git-basic-auth
         Select namespace[default]: $(put the same namespace with your workload)
@@ -49,22 +50,30 @@ You can do this with Git Basic Auth or SSH Auth:
         username[]: $(your GH username)
         password[******]: $(your GH password)
         ```
+       
     2. Create a workload pointing to your repo using standard git checkout. For example:
-        `rio run -p 8080 https://github.com/example/example-private-repo`
+        
+        ```bash
+        rio run -p 8080 https://github.com/example/example-private-repo
+       ```
+       
 - SSH Auth:
     1. Configure git sshkey auth credential secrets. This should use a key that does not have a password associated to it:
+       
         ```bash
         $ rio secret create --git-sshkey-auth
         Select namespace[default]: $(put the same namespace with your workload)
         git url[]: $(put your github url. Leave out http/https. Example: github.com)
         ssh_key_path[]: $(type the path to your ssh private key)
         ```
+       
     2. Create workload pointing to your repo using ssh checkout. For example:
         `rio run --build-clone-secret gitcredential-ssh -p 8080 git@github.com:example/example.git`
 
 
 #### Private Docker Registry
 1. Configure the Docker credential secret.
+
 ```bash
 $ rio secret create --docker
 Select namespace[default]: $(put the same namespace with your workload)
@@ -72,8 +81,12 @@ Registry URL[https://index.docker.io/v1/]: $(found with "docker info | grep Regi
 username[]: $(your docker username)
 password[******]: $(your docker password)
 ```
-2. Create a workload pointing to your image. For example:
-`rio run --image-pull-secrets dockerconfig -p 8080 imageorg/imagename:version`
+
+2. Push your image to docker registry:
+
+```bash
+rio run --image-pull-secrets dockerconfig --build-docker-push-secret dockerconfig -p 8080 --build-registry index.docker.io --build-image-name $username/repo https://github.com/example/example.git
+```
 
 
 ### Useful Options

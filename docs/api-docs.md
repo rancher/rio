@@ -146,8 +146,8 @@ ClusterDomainStatus
 <h3 id="PublicDomain">PublicDomain
 </h3>
 <p>
-<p>PublicDomain is a top-level resource to allow user to its own public domain for the services inside cluster. It can be pointed to
-Router or Service. It is user&rsquo;s responsibility to setup a CNAME or A record to the clusterDomain or ingress IP.</p>
+<p>PublicDomain is a top-level resource which allows a user to access its own public domain for the services inside cluster.
+It can be pointed to a Router or a Service. It is the user&rsquo;s responsibility to setup a CNAME or A record to the clusterDomain or ingress IP.</p>
 </p>
 <table>
 <thead>
@@ -1081,7 +1081,7 @@ ExternalServiceSpec
 </em>
 </td>
 <td>
-<p>External service located outside mesh, represented by IPs</p>
+<p>External service located outside the mesh, represented by IPs</p>
 </td>
 </tr>
 <tr>
@@ -1092,7 +1092,7 @@ string
 </em>
 </td>
 <td>
-<p>External service located outside mesh, represented by DNS</p>
+<p>External service located outside the mesh, represented by DNS</p>
 </td>
 </tr>
 <tr>
@@ -1259,7 +1259,7 @@ RouterStatus
 </h3>
 <p>
 <p>Service acts as a top level resource for a container and its sidecars and routing resources.
-Each service represents an individual revision, group by Spec.App(defaults to Service.Name), and Spec.Version(defaults to v0)</p>
+Each service represents an individual revision, grouped by Spec.App(defaults to Service.Name), and Spec.Version(defaults to v0)</p>
 </p>
 <table>
 <thead>
@@ -1333,7 +1333,7 @@ bool
 </em>
 </td>
 <td>
-<p>Template this service is a template for new versions to be created base on changes
+<p>This service is a template for new versions to be created based on changes
 from the build.repo</p>
 </td>
 </tr>
@@ -1345,7 +1345,7 @@ bool
 </em>
 </td>
 <td>
-<p>StageOnly whether to only stage services that are generated through template from build.repo</p>
+<p>Whether to only stage services that are generated through the template from build.repo</p>
 </td>
 </tr>
 <tr>
@@ -1356,7 +1356,7 @@ string
 </em>
 </td>
 <td>
-<p>Version version of this service</p>
+<p>Version of this service</p>
 </td>
 </tr>
 <tr>
@@ -1367,7 +1367,7 @@ string
 </em>
 </td>
 <td>
-<p>App The exposed app name, if no value is set, then metadata.name of the Service is used</p>
+<p>The exposed app name, if no value is set, then metadata.name of the Service is used</p>
 </td>
 </tr>
 <tr>
@@ -1378,8 +1378,8 @@ int
 </em>
 </td>
 <td>
-<p>Weight The weight among services with matching app field to determine how much traffic is load balanced
-to this service.  If rollout is set, the weight become the target weight of the rollout.</p>
+<p>The weight among services with matching app field to determine how much traffic is load balanced
+to this service.  If rollout is set, the weight becomes the target weight of the rollout.</p>
 </td>
 </tr>
 <tr>
@@ -1405,12 +1405,12 @@ k8s.io/apimachinery/pkg/util/intstr.IntOrString
 <td>
 <em>(Optional)</em>
 <p>The maximum number of pods that can be unavailable during the update.
-Value can be an absolute number (ex: 5) or a percentage of desired pods (ex: 10%).
-Absolute number is calculated from percentage by rounding down.
-This can not be 0 if MaxSurge is 0.
+The value can be an absolute number (ex: 5) or a percentage of desired pods (ex: 10%).
+An absolute number is calculated from percentage by rounding down.
+This cannot be 0 if MaxSurge is 0.
 Defaults to 25%.
 Example: when this is set to 30%, the old ReplicaSet can be scaled down to 70% of desired pods
-immediately when the rolling update starts. Once new pods are ready, old ReplicaSet
+immediately when the rolling update starts. Once new pods are ready, the old ReplicaSet
 can be scaled down further, followed by scaling up the new ReplicaSet, ensuring
 that the total number of pods available at all times during the update is at
 least 70% of desired pods.</p>
@@ -1429,14 +1429,14 @@ k8s.io/apimachinery/pkg/util/intstr.IntOrString
 <em>(Optional)</em>
 <p>The maximum number of pods that can be scheduled above the desired number of
 pods.
-Value can be an absolute number (ex: 5) or a percentage of desired pods (ex: 10%).
+The value can be an absolute number (ex: 5) or a percentage of desired pods (ex: 10%).
 This can not be 0 if MaxUnavailable is 0.
-Absolute number is calculated from percentage by rounding up.
+An absolute number is calculated from percentage by rounding up.
 Defaults to 25%.
 Example: when this is set to 30%, the new ReplicaSet can be scaled up immediately when
 the rolling update starts, such that the total number of old and new pods do not exceed
-130% of desired pods. Once old pods have been killed,
-new ReplicaSet can be scaled up further, ensuring that total number of pods running
+130% of desired pods. Once the old pods have been killed,
+the new ReplicaSet can be scaled up further, ensuring that total number of pods running
 at any time during the update is at most 130% of desired pods.</p>
 </td>
 </tr>
@@ -1485,7 +1485,7 @@ bool
 </em>
 </td>
 <td>
-<p>Whether to disable Service mesh for Service. If true, no mesh sidecar will be deployed along with the Service</p>
+<p>Whether to disable Service mesh for the Service. If true, no mesh sidecar will be deployed along with the Service</p>
 </td>
 </tr>
 <tr>
@@ -1496,7 +1496,7 @@ int
 </em>
 </td>
 <td>
-<p>RequestTimeoutSeconds specify the timeout set on api gateway for each individual service</p>
+<p>RequestTimeoutSeconds specifies the timeout set on api gateway for each individual service</p>
 </td>
 </tr>
 <tr>
@@ -1861,7 +1861,7 @@ int64
 </em>
 </td>
 <td>
-<p>CPU, in cores</p>
+<p>CPU, in milliCPU (e.g. 500 = .5 CPU cores)</p>
 </td>
 </tr>
 <tr>
@@ -2417,7 +2417,7 @@ string
 </em>
 </td>
 <td>
-<p>External service located outside mesh, represented by IPs</p>
+<p>External service located outside the mesh, represented by IPs</p>
 </td>
 </tr>
 <tr>
@@ -2428,7 +2428,7 @@ string
 </em>
 </td>
 <td>
-<p>External service located outside mesh, represented by DNS</p>
+<p>External service located outside the mesh, represented by DNS</p>
 </td>
 </tr>
 <tr>
@@ -3699,7 +3699,7 @@ The rule is matched if any one of the match blocks succeed.</p>
 </em>
 </td>
 <td>
-<p>A http rule can either redirect or forward (default) traffic. The forwarding target can be one of several versions of a service (see glossary in beginning of document).
+<p>An http rule can either redirect or forward (default) traffic. The forwarding target can be one of several versions of a service (see glossary in beginning of document).
 Weights associated with the service version determine the proportion of traffic it receives.</p>
 </td>
 </tr>
@@ -3713,7 +3713,7 @@ Redirect
 </em>
 </td>
 <td>
-<p>A http rule can either redirect or forward (default) traffic. If traffic passthrough option is specified in the rule, route/redirect will be ignored.
+<p>An http rule can either redirect or forward (default) traffic. If traffic passthrough option is specified in the rule, route/redirect will be ignored.
 The redirect primitive can be used to send a HTTP 301 redirect to a different URI or Authority.</p>
 </td>
 </tr>
@@ -3958,7 +3958,7 @@ bool
 </em>
 </td>
 <td>
-<p>Template this service is a template for new versions to be created base on changes
+<p>This service is a template for new versions to be created based on changes
 from the build.repo</p>
 </td>
 </tr>
@@ -3970,7 +3970,7 @@ bool
 </em>
 </td>
 <td>
-<p>StageOnly whether to only stage services that are generated through template from build.repo</p>
+<p>Whether to only stage services that are generated through the template from build.repo</p>
 </td>
 </tr>
 <tr>
@@ -3981,7 +3981,7 @@ string
 </em>
 </td>
 <td>
-<p>Version version of this service</p>
+<p>Version of this service</p>
 </td>
 </tr>
 <tr>
@@ -3992,7 +3992,7 @@ string
 </em>
 </td>
 <td>
-<p>App The exposed app name, if no value is set, then metadata.name of the Service is used</p>
+<p>The exposed app name, if no value is set, then metadata.name of the Service is used</p>
 </td>
 </tr>
 <tr>
@@ -4003,8 +4003,8 @@ int
 </em>
 </td>
 <td>
-<p>Weight The weight among services with matching app field to determine how much traffic is load balanced
-to this service.  If rollout is set, the weight become the target weight of the rollout.</p>
+<p>The weight among services with matching app field to determine how much traffic is load balanced
+to this service.  If rollout is set, the weight becomes the target weight of the rollout.</p>
 </td>
 </tr>
 <tr>
@@ -4030,12 +4030,12 @@ k8s.io/apimachinery/pkg/util/intstr.IntOrString
 <td>
 <em>(Optional)</em>
 <p>The maximum number of pods that can be unavailable during the update.
-Value can be an absolute number (ex: 5) or a percentage of desired pods (ex: 10%).
-Absolute number is calculated from percentage by rounding down.
-This can not be 0 if MaxSurge is 0.
+The value can be an absolute number (ex: 5) or a percentage of desired pods (ex: 10%).
+An absolute number is calculated from percentage by rounding down.
+This cannot be 0 if MaxSurge is 0.
 Defaults to 25%.
 Example: when this is set to 30%, the old ReplicaSet can be scaled down to 70% of desired pods
-immediately when the rolling update starts. Once new pods are ready, old ReplicaSet
+immediately when the rolling update starts. Once new pods are ready, the old ReplicaSet
 can be scaled down further, followed by scaling up the new ReplicaSet, ensuring
 that the total number of pods available at all times during the update is at
 least 70% of desired pods.</p>
@@ -4054,14 +4054,14 @@ k8s.io/apimachinery/pkg/util/intstr.IntOrString
 <em>(Optional)</em>
 <p>The maximum number of pods that can be scheduled above the desired number of
 pods.
-Value can be an absolute number (ex: 5) or a percentage of desired pods (ex: 10%).
+The value can be an absolute number (ex: 5) or a percentage of desired pods (ex: 10%).
 This can not be 0 if MaxUnavailable is 0.
-Absolute number is calculated from percentage by rounding up.
+An absolute number is calculated from percentage by rounding up.
 Defaults to 25%.
 Example: when this is set to 30%, the new ReplicaSet can be scaled up immediately when
 the rolling update starts, such that the total number of old and new pods do not exceed
-130% of desired pods. Once old pods have been killed,
-new ReplicaSet can be scaled up further, ensuring that total number of pods running
+130% of desired pods. Once the old pods have been killed,
+the new ReplicaSet can be scaled up further, ensuring that total number of pods running
 at any time during the update is at most 130% of desired pods.</p>
 </td>
 </tr>
@@ -4110,7 +4110,7 @@ bool
 </em>
 </td>
 <td>
-<p>Whether to disable Service mesh for Service. If true, no mesh sidecar will be deployed along with the Service</p>
+<p>Whether to disable Service mesh for the Service. If true, no mesh sidecar will be deployed along with the Service</p>
 </td>
 </tr>
 <tr>
@@ -4121,7 +4121,7 @@ int
 </em>
 </td>
 <td>
-<p>RequestTimeoutSeconds specify the timeout set on api gateway for each individual service</p>
+<p>RequestTimeoutSeconds specifies the timeout set on api gateway for each individual service</p>
 </td>
 </tr>
 <tr>
@@ -5077,5 +5077,5 @@ int
 <hr/>
 <p><em>
 Generated with <code>gen-crd-api-reference-docs</code>
-on git commit <code>7e0dd7a98</code>.
+on git commit <code>d9b7db62e</code>.
 </em></p>

@@ -34,3 +34,31 @@ If you are sure there are no typos in your command, feel free to submit an issue
 
 If instead you wish to remove a specific resource, then remove it from the Riofile and reapply it: `rio up`
 ##
+
+**Q:** How to configure custom domain instead of xxxxxx.on-rio.io?
+
+**A:** Rio allows you to configure multiple cluster domains that are generated for endpoint URL. By default you get `${namespace}-${name}.xxxxxx.on-rio.io`, if you
+have configured your own cluster domain you will get endpoint like `${namespace}-${name}.you.company.com`.
+
+1. Run `rio info`. Take the cluster domain and create a CNAME record from your own wildcard domain to rio cluster domain.
+
+2. Create a wildcard TLS secret for your own domain.
+
+```bash
+kubectl -n rio-system create secret tls your.company.com-tls --cert=/path/to/your.cert --key=/path/to/your.key
+```
+
+3. Create a clusterDomain.yaml and `kubectl apply -f ./clusterDomain.yaml`
+
+```yaml
+apiVersion: admin.rio.cattle.io/v1
+kind: ClusterDomain
+metadata:
+  name: your.company.com
+spec:
+  secretName: your.company.com-tls 
+  httpPort: 80
+  httpsPort: 443
+```
+
+4. Rio will serve your own wildcard domain and your own certs now.

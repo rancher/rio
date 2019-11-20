@@ -30,3 +30,11 @@ Note: `concurrency` means the maximum in-flight requests each pod can take. If y
 is 10, Rio will scale workloads to 6 replicas.
 
 Note: When scaling an application to zero, the first request will take longer.
+
+##### Troubleshooting
+
+Check autoscaler logs for more details on how metrics are collected and scale decision was made.
+
+```bash
+$ rio -s logs autoscaler
+```
