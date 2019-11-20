@@ -3,6 +3,7 @@ package rollout
 import (
 	"context"
 	"fmt"
+	"math"
 	"sync"
 	"time"
 
@@ -109,10 +110,11 @@ func (rh *rolloutHandler) rollout(key string, svc *riov1.Service) (*riov1.Servic
 				computedWeight += weightToAdjust
 			} else { // only adjust one increment
 				oneIncrement := s.Spec.RolloutConfig.Increment
+				fluxedIncrement := incrementFlux(oneIncrement, *s.Spec.Weight, computedWeight)
 				if weightToAdjust < 0 {
-					oneIncrement = -oneIncrement
+					fluxedIncrement = -fluxedIncrement
 				}
-				computedWeight += oneIncrement
+				computedWeight += fluxedIncrement
 			}
 			*s.Status.ComputedWeight = computedWeight
 			rh.lastWrite[serviceKey(s)] = metav1.NewTime(time.Now())
@@ -199,4 +201,29 @@ func contains(s []string, e string) bool {
 		}
 	}
 	return false
+}
+
+// Scale increment dynamically based on currWeight's percentage of goalWeight.
+// Less than 50% currWeight from goalWeight is slower, greater is faster. And inverse when going down.
+func incrementFlux(increment, goalWeight, currWeight int) int {
+	if goalWeight < 100 {
+		return increment // don't attempt to downscale promote's (goal is zero) or small changes
+	}
+	if currWeight < 1 {
+		currWeight = 1
+	}
+	diff := float64(currWeight) / float64(goalWeight)
+	var rate float64
+	if currWeight > goalWeight {
+		rate = diff - 0.5
+	} else {
+		rate = diff + 0.5
+	}
+	if rate > 1.25 {
+		rate = 1.25 // max high rate is low to avoid small changes going too quickly
+	}
+	if rate < 0.5 {
+		rate = 0.5 // slow early changes are good
+	}
+	return int(math.Floor(float64(increment) * rate))
 }

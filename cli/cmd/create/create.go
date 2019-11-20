@@ -203,6 +203,10 @@ func (c *Create) ToService(ctx *clicontext.CLIContext, args []string) (*riov1.Se
 		spec.ServiceMesh = &mesh
 	}
 
+	if c.Weight > 100 {
+		return nil, fmt.Errorf("weight cannot exceed 100")
+	}
+
 	if c.Weight > 0 {
 		duration, err := time.ParseDuration(c.RolloutDuration)
 		if err != nil {

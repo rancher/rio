@@ -178,7 +178,7 @@ func validateArg(arg string) (string, int, error) {
 		return serviceName, scale, fmt.Errorf("failed to parse %s: %v", arg, err)
 	}
 	if scale > 100 {
-		return serviceName, scale, fmt.Errorf("scale cannot exceed 100")
+		return serviceName, scale, fmt.Errorf("weight cannot exceed 100")
 	}
 	return serviceName, scale, nil
 }

@@ -43,7 +43,7 @@ replace (
 )
 
 require (
-	github.com/Masterminds/semver v1.5.0 // indirect
+	github.com/Masterminds/semver v1.5.0
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/ahmetb/gen-crd-api-reference-docs v0.1.5
 	github.com/aokoli/goutils v1.1.0
