@@ -17,10 +17,10 @@ type ExternalService struct {
 }
 
 type ExternalServiceSpec struct {
-	// External service located outside mesh, represented by IPs
+	// External service located outside the mesh, represented by IPs
 	IPAddresses []string `json:"ipAddresses,omitempty"`
 
-	// External service located outside mesh, represented by DNS
+	// External service located outside the mesh, represented by DNS
 	FQDN string `json:"fqdn,omitempty"`
 
 	// In-Mesh app in another namespace

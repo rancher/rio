@@ -43,11 +43,11 @@ type RouteSpec struct {
 	// The rule is matched if any one of the match blocks succeed.
 	Match Match `json:"match,omitempty"`
 
-	// A http rule can either redirect or forward (default) traffic. The forwarding target can be one of several versions of a service (see glossary in beginning of document).
+	// An http rule can either redirect or forward (default) traffic. The forwarding target can be one of several versions of a service (see glossary in beginning of document).
 	// Weights associated with the service version determine the proportion of traffic it receives.
 	To []WeightedDestination `json:"to,omitempty"`
 
-	// A http rule can either redirect or forward (default) traffic. If traffic passthrough option is specified in the rule, route/redirect will be ignored.
+	// An http rule can either redirect or forward (default) traffic. If traffic passthrough option is specified in the rule, route/redirect will be ignored.
 	// The redirect primitive can be used to send a HTTP 301 redirect to a different URI or Authority.
 	Redirect *Redirect `json:"redirect,omitempty"`
 

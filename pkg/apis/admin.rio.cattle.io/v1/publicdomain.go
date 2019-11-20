@@ -9,8 +9,8 @@ import (
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// PublicDomain is a top-level resource to allow user to its own public domain for the services inside cluster. It can be pointed to
-// Router or Service. It is user's responsibility to setup a CNAME or A record to the clusterDomain or ingress IP.
+// PublicDomain is a top-level resource which allows a user to access its own public domain for the services inside cluster.
+// It can be pointed to a Router or a Service. It is the user's responsibility to setup a CNAME or A record to the clusterDomain or ingress IP.
 type PublicDomain struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
