@@ -109,12 +109,11 @@ func (rh *rolloutHandler) rollout(key string, svc *riov1.Service) (*riov1.Servic
 			if abs(weightToAdjust) < s.Spec.RolloutConfig.Increment || (weightToAdjust > 0 && allOtherServicesOff(s, svcs)) { // adjust entire amount
 				computedWeight += weightToAdjust
 			} else { // only adjust one increment
-				oneIncrement := s.Spec.RolloutConfig.Increment
-				fluxedIncrement := incrementFlux(oneIncrement, *s.Spec.Weight, computedWeight)
+				oneIncrement := incrementFlux(s.Spec.RolloutConfig.Increment, *s.Spec.Weight, computedWeight)
 				if weightToAdjust < 0 {
-					fluxedIncrement = -fluxedIncrement
+					oneIncrement = -oneIncrement
 				}
-				computedWeight += fluxedIncrement
+				computedWeight += oneIncrement
 			}
 			*s.Status.ComputedWeight = computedWeight
 			rh.lastWrite[serviceKey(s)] = metav1.NewTime(time.Now())
