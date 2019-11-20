@@ -51,7 +51,7 @@ You can do this with Git Basic Auth or SSH Auth:
         password[******]: $(your GH password)
         ```
        
-    2. Create a workload pointing to your repo using standard git checkout. For example:
+    2. Rio will automatically use this secret now when doing standard git checkout, so no additional flags need to be passed. For example:
         
         ```bash
         rio run -p 8080 https://github.com/example/example-private-repo
