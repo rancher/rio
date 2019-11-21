@@ -45,7 +45,7 @@ func routeTests(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, "Hello World v3", routeB.GetEndpointResponse())
 			assert.Equal(t, "Hello World", routeA.GetKubeEndpointResponse())
 			assert.Equal(t, "Hello World v3", routeB.GetKubeEndpointResponse())
-			assert.Equal(t, routeA.Router.Status.Endpoints, routeB.Router.Status.Endpoints)
+			assert.Equal(t, testutil.GetHostname(routeA.GetEndpointURLs()...), testutil.GetHostname(routeB.GetEndpointURLs()...))
 		})
 	}, spec.Parallel())
 }
