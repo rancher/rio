@@ -70,6 +70,16 @@ func (tr *TestRoute) Remove() {
 	}
 }
 
+// GetEndpointURLs returns the URLs for this service
+func (tr *TestRoute) GetEndpointURLs() []string {
+	err := tr.waitForRoute()
+	if err != nil {
+		tr.T.Fatalf("Failed to get the router endpoint urls:  %v", err.Error())
+		return []string{}
+	}
+	return tr.Router.Status.Endpoints
+}
+
 // GetEndpointResponse performs an http.get against the route's full domain and path and
 // returns response if status code is 200, otherwise it errors out
 func (tr *TestRoute) GetEndpointResponse() string {

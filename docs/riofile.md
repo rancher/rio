@@ -267,8 +267,8 @@ template:
   goTemplate: true # use go templating
   envSubst: true # use ENV vars during templating
   questions:  # now make some questions that we provide answers too
-  - variable: NAMESPACE
-    description: "namespace to deploy to"
+  - variable: FOO # This will be available with go templates in the field `.Values.FOO`
+    description: "Some question we want an answer to."
 
 # Supply arbitrary kubernetes manifest yaml
 kubernetes:
@@ -525,7 +525,8 @@ We can now access this endpoint over encrypted https!
 
 #### Using answer file 
 
-Rio allows the user to leverage an answer file to customize `Riofile`. Go template and [envSubst](https://github.com/drone/envsubst) can used to apply answers.
+Rio allows the user to leverage an answer file to customize `Riofile`. 
+Go template and [envSubst](https://github.com/drone/envsubst) can used to apply answers. By default, the `NAMESPACE` variable is available.
 
 Answer file is a yaml manifest with key-value pairs:
 
@@ -533,14 +534,17 @@ Answer file is a yaml manifest with key-value pairs:
 FOO: BAR
 ```
 
-For example, to use go templating:
+For example, to use go templating to apply a service when provided with the above answers file and running in the `test` namespace:
 
+1. Create Riofile
 ```yaml
 services:
-{{- if eq .Values.FOO "BAR" }
+{{- if eq .Values.FOO "BAR" and eq .Values.NAMESPACE "test" }}
   demo:
-    image: ibuilthecloud/demo:v1
-{{- end}
+    image: ibuildthecloud/demo:v1
+    ports:
+    - 80
+{{- end}}
 
 template:
   goTemplate: true # use go templating
@@ -549,6 +553,8 @@ template:
   - variable: FOO
     description: ""
 ```
+2. `kubectl create namespace test`
+3. `cd /path/to/Riofile && rio -n test up`
 
 Rio also supports a bash style envsubst replacement, with the following format:
 
