@@ -40,12 +40,12 @@ func routeTests(t *testing.T, when spec.G, it spec.S) {
 		it("should be accessible from one domain", func() {
 			routeA.Add(t, "test-route-root", "/first", "to", service)
 			routeB.Add(t, "test-route-root", "/to-svc-v3", "to", stagedService)
-			assert.Equal(t, routeA.Router.Status.Endpoints, routeB.Router.Status.Endpoints)
 			assert.Equal(t, routeA.Name, routeB.Name)
 			assert.Equal(t, "Hello World", routeA.GetEndpointResponse())
 			assert.Equal(t, "Hello World v3", routeB.GetEndpointResponse())
 			assert.Equal(t, "Hello World", routeA.GetKubeEndpointResponse())
 			assert.Equal(t, "Hello World v3", routeB.GetKubeEndpointResponse())
+			assert.Equal(t, routeA.Router.Status.Endpoints, routeB.Router.Status.Endpoints)
 		})
 	}, spec.Parallel())
 }

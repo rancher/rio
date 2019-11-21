@@ -128,7 +128,7 @@ func (ts *TestService) Remove() {
 
 // Attach attaches to the service: `rio --namespace testing-ns attach <service name>` and appends each line of output to an array
 func (ts *TestService) Attach() []string {
-	results, err := RioCmdWithTail(10, []string{"attach", ts.Name})
+	results, err := RioCmdWithTail(15, []string{"attach", ts.Name})
 	if err != nil {
 		ts.T.Fatalf("Failed to get attach output: %v", err.Error())
 	}
@@ -229,7 +229,7 @@ func (ts *TestService) Logs(args ...string) []string {
 
 // Exec calls "rio exec ns/service {command}" on this service
 func (ts *TestService) Exec(command ...string) string {
-	out, err := RioCmdWithRetry(append([]string{"exec", ts.Name}, command...))
+	out, err := RioCmdWithRetry(append([]string{"exec", "-it", ts.Name}, command...))
 	if err != nil {
 		ts.T.Fatalf("exec command failed:  %v", err.Error())
 	}
@@ -326,6 +326,15 @@ func (ts *TestService) GetCurrentWeight() int {
 	return 0
 }
 
+// Return service's computed weight value
+func (ts *TestService) GetComputedWeight() int {
+	ts.reload()
+	if ts.Service.Status.ComputedWeight != nil {
+		return *ts.Service.Status.ComputedWeight
+	}
+	return 0
+}
+
 func (ts *TestService) GetImage() string {
 	return ts.Service.Spec.Image
 }
@@ -385,9 +394,19 @@ func (ts *TestService) GetResponseCounts(responses []string, numRequests int) ma
 	return responseCounts
 }
 
+// GetPodsAndReplicas waits until the service has reached its desired replica count, then returns the running pods and available replicas
+func (ts *TestService) GetPodsAndReplicas() ([]string, int) {
+	err := ts.waitForReadyService()
+	if err != nil {
+		ts.T.Fatalf("Service replicas never reached desired state of %v.  %v", *ts.Service.Status.ComputedReplicas, err.Error())
+	}
+	return ts.GetRunningPods(), ts.GetAvailableReplicas()
+}
+
 // GenerateLoad queries the endpoint multiple times in order to put load on the service.
 // It will execute for up to 120 seconds until there are ready pods on the service or the the AvailableReplicas equal the MaxScale
-func (ts *TestService) GenerateLoad() {
+func (ts *TestService) GenerateLoad(timeIncrements string, concurrency int) {
+	dur, _ := time.ParseDuration(timeIncrements)
 	f := wait.ConditionFunc(func() (bool, error) {
 		maxReplicas := 0
 		minReplicas := 0
@@ -396,18 +415,18 @@ func (ts *TestService) GenerateLoad() {
 			minReplicas = int(*ts.Service.Spec.Autoscale.MinReplicas)
 		}
 		if maxReplicas > 0 {
-			HeyCmd(GetHostname(ts.GetEndpointURLs()...), "5s", 10*maxReplicas)
+			HeyCmd(GetHostname(ts.GetEndpointURLs()...), timeIncrements, concurrency)
 			ts.reload()
 			if ts.GetAvailableReplicas() > minReplicas {
 				return true, nil
 			}
 
 		} else {
-			HeyCmd(GetHostname(ts.GetEndpointURLs()...), "5s", 100)
+			HeyCmd(GetHostname(ts.GetEndpointURLs()...), timeIncrements, concurrency)
 		}
 		return false, nil
 	})
-	wait.Poll(5*time.Second, 120*time.Second, f)
+	wait.Poll(dur, 120*time.Second, f)
 }
 
 // GetEndpointURLs returns the URLs for this service
@@ -440,13 +459,13 @@ func (ts *TestService) GetKubeEndpointURLs() []string {
 	args := []string{"get", "service.rio.cattle.io",
 		"-n", TestingNamespace,
 		ts.Service.Name,
-		"-o", `jsonpath="{.status.endpoints}"`}
+		"-o", `jsonpath="{.status.endpoints[*]}"`}
 	urls, err := KubectlCmd(args)
 	if err != nil {
 		ts.T.Fatalf("Failed to get endpoint urls:  %v", err.Error())
 		return []string{}
 	}
-	return strings.Split(urls[2:len(urls)-2], " ")
+	return strings.Split(urls[1:len(urls)-1], " ")
 }
 
 // GetKubeFirstClusterDomain returns first cluster domain
@@ -472,35 +491,14 @@ func (ts *TestService) GetKubeAppEndpointURLs() []string {
 	args := []string{"get", "service.rio.cattle.io",
 		"-n", TestingNamespace,
 		ts.Service.Name,
-		"-o", `jsonpath="{.status.appEndpoints}"`}
+		"-o", `jsonpath="{.status.appEndpoints[*]}"`}
 	urls, err := KubectlCmd(args)
 	if err != nil {
 		ts.T.Fatalf("Failed to get app endpoint urls:  %v", err.Error())
 		return []string{}
 	}
-
-	return strings.Split(urls[2:len(urls)-2], " ")
+	return strings.Split(urls[1:len(urls)-1], " ")
 }
-
-// todo: needs to get updated so it takes into account all service weights
-// GetKubeCurrentWeight does the exact same thing as GetCurrentWeight but uses the kubectl command instead of rio
-//func (ts *TestService) GetKubeCurrentWeight() int {
-//	ts.reload()
-//	args := []string{"get", "services.rio.cattle.io", ts.Service.Name, "-n", TestingNamespace, "-o", "json"}
-//	resultString, err := KubectlCmd(args)
-//	if err != nil {
-//		ts.T.Fatalf("Failed to get services.rio.cattle.io:  %v", err.Error())
-//	}
-//	var svc riov1.Service
-//	err = json.Unmarshal([]byte(resultString), &svc)
-//	if err != nil {
-//		ts.T.Fatalf("Failed to unmarshal service results: %s with error: %v", resultString, err.Error())
-//	}
-//	if svc.Status.ComputedWeight != nil {
-//		return *svc.Status.ComputedWeight
-//	}
-//	return 0
-//}
 
 // PodsResponsesMatchAvailableReplicas does a GetURL in the App endpoint and stores the response in a slice
 // the length of the resulting slice should represent the number of responsive pods in a service.
@@ -729,6 +727,7 @@ func (ts *TestService) waitForEndpointDNS() ([]string, error) {
 }
 
 func (ts *TestService) waitForAppEndpointDNS() ([]string, error) {
+	ts.reload()
 	if len(ts.Service.Status.AppEndpoints) > 0 {
 		return ts.Service.Status.AppEndpoints, nil
 	}
