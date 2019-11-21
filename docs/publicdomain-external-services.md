@@ -4,21 +4,45 @@ Rio allows you to add a vanity domain, such as `www.myproductionsite.com`, to yo
 
 For example:
 
-1. Setup a CNAME record from your domain to the Rio cluster domain. You should be able to see the cluster domain when running `rio info`.
+1. 
 
-    myproduction.com -----> CNAME -------> xxxxxx.on-rio.io
+* **1a)** If you enabled rdns feature, Setup a CNAME record from your domain to the Rio cluster domain. You should be able to see the cluster domain when running `rio info`.
+
+        myproduction.com -----> CNAME -------> xxxxxx.on-rio.io
+
+* **1b)** If you disabled rdns feature, you won't be able to get `xxxxxx.on-rio.io` domain. Instead, create A record to IP of API gateway
+    
+    Get the ip of the service loadbalancer that points to API gateway
+
+    ```bash
+      kubectl get svc gateway-proxy-v2 -n rio-system  -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+    ```
+
+    Create DNS record
+
+        myproduction.com -----> A -------> IP
 
 2. Register the domain in rio
-```bash
-# Register a target service with the domain
-$ rio domain register myproductionsite.com $target
 
-# Use your own certs by providing a secret that contains a tls cert and key instead of the default LetsEncrypt certs. The secret has to be created first in system namespace.
-$ rio domain register --secret $secret_name www.myproductionsite.com $target
+    ```bash
+    # Register a target service with the domain
+    $ rio domain register myproductionsite.com $target
 
-# Access your domain 
-$ rio endpoint
-```
+    # Access your domain 
+    $ rio endpoint
+    ```
+
+    You can provide your own certificates instead of using letsencrypt. To create a secret that contains your tls.crt and tls.key:
+
+    ```bash
+    kubectl -n rio-system create secret tls www.myproductionsite.com-tls --cert=/path/to/your.cert --key=/path/to/your.key
+    ```
+
+    Register domain with secret you just created 
+
+    ```bash
+    $ rio domain register --secret www.myproductionsite.com-tls www.myproductionsite.com $target
+    ```
 
 In the above example, `$target` can be a service(`app@version`), a group of services(`app`) or a router(`router`)
 

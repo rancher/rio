@@ -37,10 +37,35 @@ If instead you wish to remove a specific resource, then remove it from the Riofi
 
 **Q:** How to configure custom domain instead of xxxxxx.on-rio.io?
 
-**A:** Rio allows you to configure multiple cluster domains that are generated for endpoint URL. By default you get `${namespace}-${name}.xxxxxx.on-rio.io`, if you
-have configured your own cluster domain you will get endpoint like `${namespace}-${name}.you.company.com`.
+**A:** Rio allows you to configure multiple cluster domains that are generated for endpoint URL. By default you get 
+    
+```text
+${namespace}-${name}.xxxxxx.on-rio.io
+```
+     
+if you have configured your own cluster domain you will get endpoint like:
 
-1. Run `rio info`. Take the cluster domain and create a CNAME record from your own wildcard domain to rio cluster domain.
+```text
+${namespace}-${name}.you.company.com
+```
+
+1. Run `rio info`. 
+
+* 1a) If you enabled rdns feature, you can take the cluster domain and create a CNAME record from your own wildcard domain to rio cluster domain.
+
+        *.your.company.com -----> CNAME ------> xxx.on-rio.io 
+
+* 1b) If you disabled rdns feature, you won't be able to get `xxxxxx.on-rio.io` domain. Create A record from your domain to gateway IP.
+
+        *.your.company.com -----> A ------> IP
+
+     To get gateway IP run:
+
+    ```bash
+    kubetl get svc gateway-proxy-v2 -n rio-system  -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+    ```
+
+    Also you are responsible for updating dns record if load balancer IP has changed.
 
 2. Create a wildcard TLS secret for your own domain.
 
