@@ -29,6 +29,12 @@ installing Rio directly, so that you can apply the manifest later.
 
 See the [CLI install reference docs](cli-reference.md#install) for complete list of options.
 
+To lower footprint of rio, use the `disable-features` flag. Just be aware that you are disabling features of Rio. Example:
+
+```shell script
+rio install --disable-features linkerd --disable-features letsencrypt --disable-features dashboard
+```
+
 ## Clusters and Providers
 
 A 1.15 or higher version of Kubernetes is recommended.
