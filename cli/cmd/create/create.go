@@ -69,7 +69,7 @@ type Create struct {
 	P_Ports                []string          `desc:"Publish a container's port(s) (format: svcport:containerport/protocol)"`
 	Privileged             bool              `desc:"Run container with privilege"`
 	ReadOnly               bool              `desc:"Mount the container's root filesystem as read only"`
-	RolloutDuration        string            `desc:"How long the rollout should take" default:"0s"`
+	RolloutDuration        string            `desc:"How long the rollout should take.  An approximation, actual time may fluctuate" default:"0s"`
 	RequestTimeoutSeconds  int               `desc:"Set request timeout in seconds"`
 	Scale                  string            `desc:"The number of replicas to run or a range for autoscaling (example 1-10)"`
 	Secret                 []string          `desc:"Secrets to inject to the service (format: name[/key]:target)"`
@@ -103,15 +103,12 @@ func (c *Create) RunCallback(ctx *clicontext.CLIContext, cb func(service *riov1.
 		return nil, err
 	}
 	if c.Weight == 100 {
-		err = weight.PromoteService(ctx, types.Resource{
+		return service, weight.PromoteService(ctx, types.Resource{
 			Name:      service.Name,
 			App:       service.Spec.App,
 			Version:   service.Spec.Version,
 			Namespace: service.Namespace,
 		}, service.Spec.RolloutConfig, *service.Spec.Weight)
-		if err != nil {
-			return service, err
-		}
 	}
 	return service, nil
 }

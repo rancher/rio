@@ -465,10 +465,10 @@ rio promote [OPTIONS] SERVICE_NAME
 
 ##### Options
 
-| flag       | aliases | description                                  | default |
-|------------|---------|----------------------------------------------|---------|
-| --duration | none    | How long the rollout should take             | 0s      |
-| --pause    | none    | Whether to pause all rollouts on current app | false   |
+| flag       | aliases | description                                                                   | default |
+|------------|---------|-------------------------------------------------------------------------------|---------|
+| --duration | none    | How long the rollout should take. An approximation, actual time may fluctuate | 0s      |
+| --pause    | none    | Whether to pause all rollouts on current app                                  | false   |
 
 ##### Examples
 
@@ -530,6 +530,7 @@ rio run [OPTIONS] IMAGE [COMMAND] [ARG...]
 ```
 
 ##### Options
+
 | flag                             | aliases  | description                                                                                   | default                |
 |----------------------------------|----------|-----------------------------------------------------------------------------------------------|------------------------|
 | --add-host value                 |          | Add a custom host-to-IP mapping (host=ip)                                                     |                        |
@@ -579,7 +580,7 @@ rio run [OPTIONS] IMAGE [COMMAND] [ARG...]
 | --ports value                    | -p value | Publish a container's port(s) (format: svcport:containerport/protocol)                        |                        |
 | --privileged                     |          | Run container with privilege                                                                  |                        |
 | --read-only                      |          | Mount the container's root filesystem as read only                                            |                        |
-| --rollout-duration value         |          | How long the rollout should take                                                              | "0s"                   |
+| --rollout-duration value         |          | How long the rollout should take. An approximation, actual time may fluctuate                 | "0s"                   |
 | --request-timeout-seconds value  |          | Set request timeout in seconds                                                                | 0                      |
 | --scale value                    |          | The number of replicas to run or a range for autoscaling (example 1-10)                       |                        |
 | --secret value                   |          | Secrets to inject to the service (format: name[/key]:target)                                  |                        |
@@ -789,10 +790,10 @@ rio weight [OPTIONS] SERVICE_NAME=PERCENTAGE
 
 ##### Options
 
-| flag       | aliases | description                                  | default |
-|------------|---------|----------------------------------------------|---------|
-| --duration |         | How long the rollout should take             | 0s      |
-| --pause    |         | Whether to pause all rollouts on current app | false   |
+| flag       | aliases | description                                                                   | default |
+|------------|---------|-------------------------------------------------------------------------------|---------|
+| --duration |         | How long the rollout should take. An approximation, actual time may fluctuate | 0s      |
+| --pause    |         | Whether to pause all rollouts on current app                                  | false   |
 
 ##### Examples
 
