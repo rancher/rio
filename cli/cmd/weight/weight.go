@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -18,10 +19,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-const DefaultInterval = 2
+const (
+	DefaultInterval = 4
+	PromoteWeight   = 10000
+)
 
 type Weight struct {
-	Duration string `desc:"How long the rollout should take" default:"0s"`
+	Duration string `desc:"How long the rollout should take. An approximation, actual time may fluctuate" default:"0s"`
 	Pause    bool   `desc:"Whether to pause rollout or continue it. Default to false" default:"false"`
 }
 
@@ -73,7 +77,7 @@ func GenerateWeightAndRolloutConfig(ctx *clicontext.CLIContext, obj types.Resour
 	}
 	svcs, err := util.ListAppServicesFromAppName(ctx, obj.Namespace, obj.App)
 	if err != nil && err.Error() == "no services found" || len(svcs) == 0 { // todo: make this string check less brittle
-		return targetPercentage, &riov1.RolloutConfig{}, nil
+		return targetPercentage * 100, &riov1.RolloutConfig{}, nil
 	} else if err != nil {
 		return 0, nil, err
 	}
@@ -91,29 +95,18 @@ func GenerateWeightAndRolloutConfig(ctx *clicontext.CLIContext, obj types.Resour
 			totalCurrWeight += *s.Status.ComputedWeight
 		}
 	}
-	if targetPercentage == int(math.Round(float64(currComputedWeight)/float64(totalCurrWeight)/0.01)) {
+	if targetPercentage == CalcWeightPercentage(currComputedWeight, totalCurrWeight) {
 		return 0, nil, errors.New("cannot rollout, already at target percentage")
 	}
 	totalCurrWeightOtherSvcs := totalCurrWeight - currComputedWeight
-
-	newWeight := targetPercentage
-	if targetPercentage == 100 {
-		newWeight = 10000
-	} else if totalCurrWeightOtherSvcs > 0 {
-		// find the weight that would hit our target percentage without touching other service weights
-		// ie: if 2 svcs at 50/50 and you want one at 75%, newWeight would be 150
-		newWeight = int(float64(totalCurrWeightOtherSvcs)/(1-(float64(targetPercentage)/100))) - totalCurrWeightOtherSvcs
-	}
+	newComputedWeight := calcComputedWeight(targetPercentage, totalCurrWeightOtherSvcs)
 
 	// if not immediate rollout figure out increment
 	increment := 0
 	if duration.Seconds() >= 2.0 {
-		steps := duration.Seconds() / float64(DefaultInterval)             // First get rough amount of steps we want to take
-		totalNewWeight := totalCurrWeightOtherSvcs + newWeight             // Given the future total weight which includes our newWeight...
-		difference := totalNewWeight - totalCurrWeight                     // Find the difference between future total weight and current total weight
-		increment = int(math.Abs(math.Round(float64(difference) / steps))) // And divide by steps to get rough increment
-		if increment == 0 {                                                // Error out if increment was below 1, and thus rounded to 0
-			return 0, nil, errors.New("Unable to perform rollout, given duration too long for current weight")
+		increment, err = calcIncrement(duration, targetPercentage, totalCurrWeight, totalCurrWeightOtherSvcs)
+		if err != nil {
+			return 0, nil, err
 		}
 	}
 	rolloutConfig := &riov1.RolloutConfig{
@@ -121,18 +114,19 @@ func GenerateWeightAndRolloutConfig(ctx *clicontext.CLIContext, obj types.Resour
 		Increment:       increment,
 		IntervalSeconds: DefaultInterval,
 	}
-	return newWeight, rolloutConfig, nil
+	return newComputedWeight, rolloutConfig, nil
 }
 
+// PromoteService sets one svc to weight 100% and all others to 0%. If the svc doesn't need updating it is skipped to avoid conflicts.
 func PromoteService(ctx *clicontext.CLIContext, resource types.Resource, rolloutConfig *riov1.RolloutConfig, promoteWeight int) error {
 	var allErrors []error
-	svcs, err := util.ListAppServicesFromServiceName(ctx, resource.Name)
+	svcs, err := util.ListAppServicesFromAppName(ctx, resource.Namespace, resource.App)
 	if err != nil {
 		return err
 	}
 	for _, s := range svcs {
 		app, version := services.AppAndVersion(&s)
-		if version == resource.Version || (s.Status.ComputedWeight != nil && *s.Status.ComputedWeight > 0) { // don't update non-promoted svcs without weight allocated
+		if (version == resource.Version && promotedSvcNeedsUpdate(&s, promoteWeight, rolloutConfig) == true) || (version != resource.Version && s.Status.ComputedWeight != nil && *s.Status.ComputedWeight > 0) {
 			err := ctx.UpdateResource(types.Resource{
 				Namespace: s.Namespace,
 				Name:      s.Name,
@@ -169,7 +163,66 @@ func validateArg(arg string) (string, int, error) {
 		return serviceName, scale, fmt.Errorf("failed to parse %s: %v", arg, err)
 	}
 	if scale > 100 {
-		return serviceName, scale, fmt.Errorf("scale cannot exceed 100")
+		return serviceName, scale, fmt.Errorf("weight cannot exceed 100")
 	}
 	return serviceName, scale, nil
+}
+
+// Only update promoted service if something needs to change
+// `rio run` cmd sets details and then promote call comes in immediately after
+func promotedSvcNeedsUpdate(svc *riov1.Service, weight int, rc *riov1.RolloutConfig) bool {
+	if svc.Spec.Weight == nil {
+		return true
+	}
+	if *svc.Spec.Weight != weight {
+		return true
+	}
+	if !reflect.DeepEqual(rc, svc.Spec.RolloutConfig) {
+		return true
+	}
+	return false
+
+}
+
+// Get curr weight as percentage, rounded to nearest percent
+func CalcWeightPercentage(weight, totalWeight int) int {
+	if totalWeight == 0 || weight == 0 {
+		return 0
+	}
+	return int(math.Round(float64(weight) / float64(totalWeight) / 0.01))
+}
+
+// Find the weight that would hit our target percentage without touching other service weights
+// ie: if 2 svcs at 50/50 and you want one at 75%, newComputedWeight would be 150
+func calcComputedWeight(targetPercentage int, totalCurrWeightOtherSvcs int) int {
+	if targetPercentage == 100 {
+		return PromoteWeight
+	} else if totalCurrWeightOtherSvcs > 0 {
+		return int(float64(totalCurrWeightOtherSvcs)/(1-(float64(targetPercentage)/100))) - totalCurrWeightOtherSvcs
+	}
+	return targetPercentage
+}
+
+// Determine increment we should step by given duration
+// Note that we don't care (because blind to direction of scaling) if increment is larger than newComputedWeight, rollout controller will handle overflow case
+func calcIncrement(duration time.Duration, targetPercentage, totalCurrWeight, totalCurrWeightOtherSvcs int) (int, error) {
+	steps := duration.Seconds() / float64(DefaultInterval) // First get rough amount of steps we want to take
+	if steps < 1.0 {
+		steps = 1.0
+	}
+	newComputedWeight := calcComputedWeight(targetPercentage, totalCurrWeightOtherSvcs)
+	totalNewWeight := totalCurrWeightOtherSvcs + newComputedWeight // Given the future total weight which includes our newWeight...
+	difference := totalNewWeight - totalCurrWeight                 // Find the difference between future total weight and current total weight
+	if targetPercentage == 100 {
+		difference = PromoteWeight // In this case the future total weight is now only our newComputedWeight and difference is always 1k
+	}
+	if difference == 0 {
+		return 0, nil // if there is no difference return now so we don't error out below
+	}
+	increment := int(math.Abs(math.Round(float64(difference) / steps))) // Divide by steps to get rough increment
+	if increment == 0 {                                                 // Error out if increment was below 1, and thus rounded to 0
+		return 0, errors.New("unable to perform rollout, given duration too long for current weight")
+	}
+	return increment, nil
+
 }

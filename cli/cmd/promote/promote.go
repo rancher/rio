@@ -12,7 +12,7 @@ import (
 )
 
 type Promote struct {
-	Duration string `desc:"How long the rollout should take" default:"0s"`
+	Duration string `desc:"How long the rollout should take. An approximation, actual time may fluctuate" default:"0s"`
 	Pause    bool   `desc:"Whether to pause rollout or continue it. Default to false" default:"false"`
 }
 

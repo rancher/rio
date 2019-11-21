@@ -1,10 +1,10 @@
 package ps
 
 import (
-	"math"
 	"strings"
 
 	webhookv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
+	cliWeight "github.com/rancher/rio/cli/cmd/weight"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/tables"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
@@ -130,7 +130,7 @@ func (p *Ps) services(ctx *clicontext.CLIContext) error {
 					totalWeight += *subService.(*riov1.Service).Status.ComputedWeight
 				}
 			}
-			weight = int(math.Round((float64(*service.(*riov1.Service).Status.ComputedWeight) / float64(totalWeight)) / 0.01)) // round to nearest percent
+			weight = cliWeight.CalcWeightPercentage(*service.(*riov1.Service).Status.ComputedWeight, totalWeight)
 		}
 
 		var gitwatcher *webhookv1.GitWatcher

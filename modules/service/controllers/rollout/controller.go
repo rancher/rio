@@ -3,6 +3,7 @@ package rollout
 import (
 	"context"
 	"fmt"
+	"math"
 	"sync"
 	"time"
 
@@ -14,6 +15,8 @@ import (
 	"github.com/rancher/wrangler/pkg/generic"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+const PromoteWeight = 10000
 
 type rolloutHandler struct {
 	services      riov1controller.ServiceController
@@ -62,14 +65,14 @@ func (rh *rolloutHandler) rollout(key string, svc *riov1.Service) (*riov1.Servic
 	var updatedNeeded []string
 	if !computedWeightsExist(svcs) {
 		var added int
-		add := int(100.0 / float64(len(svcs)))
+		add := int(float64(PromoteWeight) / float64(len(svcs)))
 		for i, s := range svcs {
 			s.Status.ComputedWeight = new(int)
 			if i != len(svcs)-1 {
 				*s.Status.ComputedWeight = add
 				added += add
 			} else {
-				*s.Status.ComputedWeight = 100 - added
+				*s.Status.ComputedWeight = PromoteWeight - added
 			}
 			updatedNeeded = append(updatedNeeded, serviceKey(s))
 		}
@@ -106,7 +109,7 @@ func (rh *rolloutHandler) rollout(key string, svc *riov1.Service) (*riov1.Servic
 			if abs(weightToAdjust) < s.Spec.RolloutConfig.Increment || (weightToAdjust > 0 && allOtherServicesOff(s, svcs)) { // adjust entire amount
 				computedWeight += weightToAdjust
 			} else { // only adjust one increment
-				oneIncrement := s.Spec.RolloutConfig.Increment
+				oneIncrement := incrementFlux(s.Spec.RolloutConfig.Increment, *s.Spec.Weight, computedWeight)
 				if weightToAdjust < 0 {
 					oneIncrement = -oneIncrement
 				}
@@ -197,4 +200,29 @@ func contains(s []string, e string) bool {
 		}
 	}
 	return false
+}
+
+// Scale increment dynamically based on currWeight's percentage of goalWeight.
+// Less than 50% currWeight from goalWeight is slower, greater is faster. And inverse when going down.
+func incrementFlux(increment, goalWeight, currWeight int) int {
+	if goalWeight < 100 {
+		return increment // don't attempt to downscale promote's (goal is zero) or small changes
+	}
+	if currWeight < 1 {
+		currWeight = 1
+	}
+	diff := float64(currWeight) / float64(goalWeight)
+	var rate float64
+	if currWeight > goalWeight {
+		rate = diff - 0.5
+	} else {
+		rate = diff + 0.5
+	}
+	if rate > 1.25 {
+		rate = 1.25 // max high rate is low to avoid small changes going too quickly
+	}
+	if rate < 0.5 {
+		rate = 0.5 // slow early changes are good
+	}
+	return int(math.Floor(float64(increment) * rate))
 }

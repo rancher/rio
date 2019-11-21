@@ -69,7 +69,7 @@ type Create struct {
 	P_Ports                []string          `desc:"Publish a container's port(s) (format: svcport:containerport/protocol)"`
 	Privileged             bool              `desc:"Run container with privilege"`
 	ReadOnly               bool              `desc:"Mount the container's root filesystem as read only"`
-	RolloutDuration        string            `desc:"How long the rollout should take" default:"0s"`
+	RolloutDuration        string            `desc:"How long the rollout should take.  An approximation, actual time may fluctuate" default:"0s"`
 	RequestTimeoutSeconds  int               `desc:"Set request timeout in seconds"`
 	Scale                  string            `desc:"The number of replicas to run or a range for autoscaling (example 1-10)"`
 	Secret                 []string          `desc:"Secrets to inject to the service (format: name[/key]:target)"`
@@ -98,7 +98,19 @@ func (c *Create) RunCallback(ctx *clicontext.CLIContext, cb func(service *riov1.
 	}
 
 	service = cb(service)
-	return service, ctx.Create(service)
+	err = ctx.Create(service)
+	if err != nil {
+		return nil, err
+	}
+	if c.Weight == 100 {
+		return service, weight.PromoteService(ctx, types.Resource{
+			Name:      service.Name,
+			App:       service.Spec.App,
+			Version:   service.Spec.Version,
+			Namespace: service.Namespace,
+		}, service.Spec.RolloutConfig, *service.Spec.Weight)
+	}
+	return service, nil
 }
 
 func (c *Create) setDNS(spec *riov1.ServiceSpec) (err error) {
@@ -188,6 +200,10 @@ func (c *Create) ToService(ctx *clicontext.CLIContext, args []string) (*riov1.Se
 		spec.ServiceMesh = &mesh
 	}
 
+	if c.Weight > 100 {
+		return nil, fmt.Errorf("weight cannot exceed 100")
+	}
+
 	if c.Weight > 0 {
 		duration, err := time.ParseDuration(c.RolloutDuration)
 		if err != nil {
@@ -196,13 +212,14 @@ func (c *Create) ToService(ctx *clicontext.CLIContext, args []string) (*riov1.Se
 		tempResource := types.Resource{
 			Name:      name,
 			App:       r.App,
+			Version:   r.Version,
 			Namespace: r.Namespace,
 		}
-		weight, rc, err := weight.GenerateWeightAndRolloutConfig(ctx, tempResource, c.Weight, duration, false)
+		newWeight, rc, err := weight.GenerateWeightAndRolloutConfig(ctx, tempResource, c.Weight, duration, false)
 		if err != nil {
 			return nil, err
 		}
-		spec.Weight = &weight
+		spec.Weight = &newWeight
 		spec.RolloutConfig = rc
 	}
 
