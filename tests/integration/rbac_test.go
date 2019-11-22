@@ -18,7 +18,10 @@ func rbacTests(t *testing.T, when spec.G, it spec.S) {
 	var riofile testutil.TestRiofile
 
 	it.Before(func() {
-		fmt.Println(context.StandardUser.Kubeconfig)
+		fmt.Println("standard", context.StandardUser.Kubeconfig)
+		fmt.Println("read", context.ReadOnlyUser.Kubeconfig)
+		fmt.Println("admin", context.AdminUser.Kubeconfig)
+		fmt.Println("priv", context.PrivilegedUser.Kubeconfig)
 	})
 
 	it.After(func() {
@@ -40,7 +43,7 @@ func rbacTests(t *testing.T, when spec.G, it spec.S) {
 			assert.True(t, testService.IsReady())
 		})
 
-		it("rio-standard should not be able to create disabled service-mesh services", func() {
+		it.Focus("rio-standard should not be able to create disabled service-mesh services", func() {
 			testService.Kubeconfig = context.StandardUser.Kubeconfig
 			fmt.Println(testService.Kubeconfig)
 			err := testService.CreateExpectingError(t, "--no-mesh", "nginx")
