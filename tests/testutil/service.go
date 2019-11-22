@@ -284,7 +284,7 @@ func (ts *TestService) GetAppEndpointResponse() string {
 
 // Returns count of ready and available pods
 func (ts *TestService) GetAvailableReplicas() int {
-	if ts.Service.Status.DeploymentReady && ts.Service.Status.ScaleStatus != nil {
+	if ts.Service.Status.DeploymentReady && ts.Service.Status.ScaleStatus != nil || (&ts.Service.Status.DeploymentReady == nil && ts.Service.Status.ScaleStatus != nil) {
 		return ts.Service.Status.ScaleStatus.Available
 	}
 	return 0
@@ -398,7 +398,7 @@ func (ts *TestService) GetResponseCounts(responses []string, numRequests int) ma
 func (ts *TestService) GetPodsAndReplicas() ([]string, int) {
 	err := ts.waitForReadyService()
 	if err != nil {
-		ts.T.Fatalf("Service replicas never reached desired state of %v.  %v", *ts.Service.Status.ComputedReplicas, err.Error())
+		ts.T.Fatalf("Service never fully reached ready state.  %v", err.Error())
 	}
 	return ts.GetRunningPods(), ts.GetAvailableReplicas()
 }
