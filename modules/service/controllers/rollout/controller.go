@@ -174,7 +174,7 @@ func computedWeightsExist(svcs []*riov1.Service) bool {
 }
 
 // are all other services besides this service at zero or nil computedWeight ?
-// Purpose: if we have svc-a at 60 and svc-b at 0, then just bump svc-a direct to 100
+// Purpose: if we have svc-a at 60 and svc-b at 0, then just bump svc-a direct to 100%
 func allOtherServicesOff(curr *riov1.Service, svcs []*riov1.Service) bool {
 	for _, z := range svcs {
 		if z.Name != curr.Name {

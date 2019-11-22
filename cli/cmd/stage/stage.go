@@ -10,6 +10,7 @@ import (
 	"github.com/aokoli/goutils"
 	"github.com/rancher/rio/cli/cmd/edit/edit"
 	"github.com/rancher/rio/cli/cmd/util"
+	"github.com/rancher/rio/cli/cmd/weight"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
@@ -32,7 +33,6 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 	if len(ctx.CLI.Args()) == 0 {
 		return fmt.Errorf("must specify the service to update")
 	}
-
 	if len(ctx.CLI.Args()) > 2 {
 		return fmt.Errorf("more than two arguments found")
 	}
@@ -58,7 +58,7 @@ func (r *Stage) Run(ctx *clicontext.CLIContext) error {
 	if err != nil {
 		return err
 	}
-	err = r.updatePreviousServiceWeights(ctx, service, version) // this must come after stage call, if it fails old revisions shouldn't change
+	err = r.updatePreviousServiceWeights(ctx, service, version) // this must come after stage call, if stage fails then old revisions shouldn't change
 	if err != nil {
 		return err
 	}
@@ -128,6 +128,7 @@ func (r *Stage) stageService(ctx *clicontext.CLIContext, service types.Resource,
 	return nil
 }
 
+// if no weight is set on this app's svcs (ignoring new staged service) then assign them all equally to PromoteWeight
 func (r *Stage) updatePreviousServiceWeights(ctx *clicontext.CLIContext, service types.Resource, version string) error {
 	var allErrors []error
 	svcs, err := util.ListAppServicesFromServiceName(ctx, service.Name)
@@ -137,36 +138,33 @@ func (r *Stage) updatePreviousServiceWeights(ctx *clicontext.CLIContext, service
 	if len(svcs) == 0 {
 		return errors.New("no services found")
 	}
-	var anyWeightSet bool
+	// check if any weight set on other services in this app, and if so return
 	for _, s := range svcs {
 		if s.Spec.Version != version && s.Spec.Weight != nil && *s.Spec.Weight > 0 {
-			anyWeightSet = true
-			break
+			return nil
 		}
 	}
-	if !anyWeightSet {
-		for _, s := range svcs {
-			if s.Spec.Version != version {
-				err := ctx.UpdateResource(types.Resource{
-					Namespace: s.Namespace,
-					Name:      s.Name,
-					App:       s.Spec.App,
-					Version:   s.Spec.Version,
-					Type:      types.ServiceType,
-				}, func(obj runtime.Object) error {
-					s := obj.(*riov1.Service)
-					if s.Spec.Weight == nil {
-						s.Spec.Weight = new(int)
-					}
-					*s.Spec.Weight = 100
-					return nil
-				})
-				allErrors = append(allErrors, err)
-			}
+	// if no weight found then assign them all weight
+	for _, s := range svcs {
+		if s.Spec.Version != version {
+			err := ctx.UpdateResource(types.Resource{
+				Namespace: s.Namespace,
+				Name:      s.Name,
+				App:       s.Spec.App,
+				Version:   s.Spec.Version,
+				Type:      types.ServiceType,
+			}, func(obj runtime.Object) error {
+				s := obj.(*riov1.Service)
+				if s.Spec.Weight == nil {
+					s.Spec.Weight = new(int)
+				}
+				*s.Spec.Weight = weight.PromoteWeight
+				return nil
+			})
+			allErrors = append(allErrors, err)
 		}
-		return merr.NewErrors(allErrors...)
 	}
-	return nil
+	return merr.NewErrors(allErrors...)
 }
 
 // This keeps original and stage env vars in order and adds staged last, deletes any dups from original
