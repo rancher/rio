@@ -398,7 +398,10 @@ func (ts *TestService) GetResponseCounts(responses []string, numRequests int) ma
 func (ts *TestService) GetPodsAndReplicas() ([]string, int) {
 	err := ts.waitForReadyService()
 	if err != nil {
-		ts.T.Fatalf("Service replicas never reached desired state of %v.  %v", *ts.Service.Status.ComputedReplicas, err.Error())
+		ts.T.Fatalf("Service never fully reached ready state.  %v", err.Error())
+	}
+	if ts.Service.Status.ComputedReplicas != nil {
+		_ = ts.waitForAvailableReplicas(*ts.Service.Status.ComputedReplicas)
 	}
 	return ts.GetRunningPods(), ts.GetAvailableReplicas()
 }
