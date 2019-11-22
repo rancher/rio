@@ -14,6 +14,7 @@ import (
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/urfave/cli"
 	"github.com/wercker/stern/stern"
 	"k8s.io/apimachinery/pkg/labels"
@@ -62,6 +63,9 @@ func (l *Logs) setupConfig(ctx *clicontext.CLIContext) (*stern.Config, error) {
 		}
 		if obj.Object == nil {
 			return nil, errors.New("No object found")
+		}
+		if obj.Object.(*riov1.Service).Status.DeploymentReady == true && obj.Object.(*riov1.Service).Status.ScaleStatus != nil && obj.Object.(*riov1.Service).Status.ScaleStatus.Available == 0 {
+			return nil, errors.New("Service has scale of 0")
 		}
 		config.Namespace = obj.Namespace
 		if obj.Type == clitypes.BuildType {
