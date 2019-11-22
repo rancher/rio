@@ -73,7 +73,7 @@ func NewTestContext() (*TestContext, error) {
 	CreateNS()
 	fmt.Println("Creating test users")
 
-	adminUser := TestUser{
+	adminUser := &TestUser{
 		Username: AdminUserBindingName,
 		Group:    AdminUserGroupName,
 	}
@@ -82,7 +82,7 @@ func NewTestContext() (*TestContext, error) {
 		return nil, err
 	}
 
-	privilegedUser := TestUser{
+	privilegedUser := &TestUser{
 		Username: PrivilegedBindingName,
 		Group:    PrivilegedGroupName,
 	}
@@ -91,7 +91,7 @@ func NewTestContext() (*TestContext, error) {
 		return nil, err
 	}
 
-	standardUser := TestUser{
+	standardUser := &TestUser{
 		Username: StandardBindingName,
 		Group:    StandardGroupName,
 	}
@@ -100,7 +100,7 @@ func NewTestContext() (*TestContext, error) {
 		return nil, err
 	}
 
-	readonlyUser := TestUser{
+	readonlyUser := &TestUser{
 		Username: ReadonlyBindingName,
 		Group:    ReadonlyGroupName,
 	}
@@ -114,10 +114,10 @@ func NewTestContext() (*TestContext, error) {
 
 	return &TestContext{
 		Sequential:     true,
-		StandardUser:   &standardUser,
-		PrivilegedUser: &privilegedUser,
-		AdminUser:      &adminUser,
-		ReadOnlyUser:   &readonlyUser,
+		StandardUser:   standardUser,
+		PrivilegedUser: privilegedUser,
+		AdminUser:      adminUser,
+		ReadOnlyUser:   readonlyUser,
 	}, nil
 }
 
