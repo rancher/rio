@@ -62,6 +62,7 @@ func rbacTests(t *testing.T, when spec.G, it spec.S) {
 
 		it("rio-standard should not be able to create host-port services", func() {
 			testService.Kubeconfig = context.StandardUser.Kubeconfig
+			fmt.Println(testService.Kubeconfig)
 			err := testService.CreateExpectingError(t, "-p", "80,hostport", "nginx")
 			if assert.Error(t, err, "rio-standard should not be able to create service that enable hostport") {
 				assert.Contains(t, err.Error(), insuffienctPrivilegesMsg)
@@ -71,6 +72,7 @@ func rbacTests(t *testing.T, when spec.G, it spec.S) {
 
 		it("rio-standard should not be able to create privileged services", func() {
 			testService.Kubeconfig = context.StandardUser.Kubeconfig
+			fmt.Println(testService.Kubeconfig)
 			err := testService.CreateExpectingError(t, "--privileged", "nginx")
 			if assert.Error(t, err, "rio-standard should not be able to create service that enable privileged") {
 				assert.Contains(t, err.Error(), insuffienctPrivilegesMsg)
@@ -80,6 +82,7 @@ func rbacTests(t *testing.T, when spec.G, it spec.S) {
 
 		it("rio-standard should not be able to create hostpath services", func() {
 			testService.Kubeconfig = context.StandardUser.Kubeconfig
+			fmt.Println(testService.Kubeconfig)
 			err := testService.CreateExpectingError(t, "-v", "/foo:/bar,hostPathType=directoryorcreate", "nginx")
 			if assert.Error(t, err, "rio-standard should not be able to create service that enable host path") {
 				assert.Contains(t, err.Error(), insuffienctPrivilegesMsg)

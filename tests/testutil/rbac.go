@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -75,5 +76,6 @@ func (u *TestUser) Create() error {
 }
 
 func (u *TestUser) Cleanup() {
-	os.RemoveAll(u.Kubeconfig)
+	//os.RemoveAll(u.Kubeconfig)
+	fmt.Println("not doing cleanup")
 }
