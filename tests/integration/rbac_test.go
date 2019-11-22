@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/rancher/rio/tests/testutil"
@@ -15,6 +16,10 @@ const (
 func rbacTests(t *testing.T, when spec.G, it spec.S) {
 	var testService testutil.TestService
 	var riofile testutil.TestRiofile
+
+	it.Before(func() {
+		fmt.Println(context.StandardUser.Kubeconfig)
+	})
 
 	it.After(func() {
 		riofile.Remove()
@@ -36,8 +41,8 @@ func rbacTests(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("rio-standard should not be able to create disabled service-mesh services", func() {
-			var testService testutil.TestService
 			testService.Kubeconfig = context.StandardUser.Kubeconfig
+			fmt.Println(testService.Kubeconfig)
 			err := testService.CreateExpectingError(t, "--no-mesh", "nginx")
 			if assert.Error(t, err, "rio-standard should not be able to create service that enable service mesh") {
 				assert.Contains(t, err.Error(), insuffienctPrivilegesMsg)
@@ -47,6 +52,7 @@ func rbacTests(t *testing.T, when spec.G, it spec.S) {
 
 		it("rio-standard should not be able to create host-network services", func() {
 			testService.Kubeconfig = context.StandardUser.Kubeconfig
+			fmt.Println(testService.Kubeconfig)
 			err := testService.CreateExpectingError(t, "--net", "host", "nginx")
 			if assert.Error(t, err, "rio-standard should not be able to create service that enable host networking") {
 				assert.Contains(t, err.Error(), insuffienctPrivilegesMsg)
@@ -130,5 +136,5 @@ func rbacTests(t *testing.T, when spec.G, it spec.S) {
 				assert.Contains(t, err.Error(), insuffienctPrivilegesMsg)
 			}
 		})
-	}, spec.Parallel(), spec.Flat())
+	}, spec.Flat())
 }
