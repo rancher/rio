@@ -43,7 +43,7 @@ func rbacTests(t *testing.T, when spec.G, it spec.S) {
 			assert.True(t, testService.IsReady())
 		})
 
-		it.Focus("rio-standard should not be able to create disabled service-mesh services", func() {
+		it("rio-standard should not be able to create disabled service-mesh services", func() {
 			testService.Kubeconfig = context.StandardUser.Kubeconfig
 			fmt.Println(testService.Kubeconfig)
 			err := testService.CreateExpectingError(t, "--no-mesh", "nginx")
@@ -142,5 +142,5 @@ func rbacTests(t *testing.T, when spec.G, it spec.S) {
 				assert.Contains(t, err.Error(), insuffienctPrivilegesMsg)
 			}
 		})
-	}, spec.Flat())
+	}, spec.Flat(), spec.Sequential())
 }
