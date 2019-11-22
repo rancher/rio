@@ -87,7 +87,7 @@ require (
 	github.com/solo-io/solo-kit v0.11.6
 	github.com/stretchr/testify v1.4.0
 	github.com/tektoncd/pipeline v0.8.0
-	github.com/urfave/cli v1.22.1
+	github.com/urfave/cli v1.22.2
 	github.com/wercker/stern v1.11.0
 	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
