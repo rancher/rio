@@ -16,6 +16,11 @@ func rbacTests(t *testing.T, when spec.G, it spec.S) {
 	var testService testutil.TestService
 	var riofile testutil.TestRiofile
 
+	_ = context.AdminUser.Create()
+	_ = context.PrivilegedUser.Create()
+	_ = context.StandardUser.Create()
+	_ = context.ReadOnlyUser.Create()
+
 	it.After(func() {
 		riofile.Remove()
 		testService.Remove()

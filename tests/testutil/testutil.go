@@ -77,37 +77,37 @@ func NewTestContext() (*TestContext, error) {
 		Username: AdminUserBindingName,
 		Group:    AdminUserGroupName,
 	}
-	err := adminUser.Create()
-	if err != nil {
-		return nil, err
-	}
+	//err := adminUser.Create()
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	privilegedUser := TestUser{
 		Username: PrivilegedBindingName,
 		Group:    PrivilegedGroupName,
 	}
-	err = privilegedUser.Create()
-	if err != nil {
-		return nil, err
-	}
+	//err = privilegedUser.Create()
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	standardUser := TestUser{
 		Username: StandardBindingName,
 		Group:    StandardGroupName,
 	}
-	err = standardUser.Create()
-	if err != nil {
-		return nil, err
-	}
+	//err = standardUser.Create()
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	readonlyUser := TestUser{
 		Username: ReadonlyBindingName,
 		Group:    ReadonlyGroupName,
 	}
-	err = readonlyUser.Create()
-	if err != nil {
-		return nil, err
-	}
+	//err = readonlyUser.Create()
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	// sleep two seconds to make sure binding takes effect
 	time.Sleep(time.Second * 2)
