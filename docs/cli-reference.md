@@ -19,6 +19,7 @@
 - [logs](#logs)
 - [promote](#promote)
 - [ps](#ps)
+- [router](#router)
 - [run](#run)
 - [rm](#rm)
 - [scale](#scale)
@@ -517,6 +518,75 @@ rio ps --format json
 # display name and weight in custom format
 rio ps --format "{{.Obj.Name}} -> {{.Data.Weight}}" 
 ```
+
+---
+
+## router
+
+Route traffic across the mesh
+
+##### Usage
+```
+rio routers command [command options] [arguments...]
+```
+
+##### Options
+
+| flag        | aliases | description                                                            | default |
+|-------------|---------|------------------------------------------------------------------------|---------|
+| --quiet     | -q      | Only display Names                                                     |         |
+| --format    |         | 'json' or 'yaml' or Custom format: '{{.Name}} {{.Obj.Name}}' [$FORMAT] |         |
+
+
+##### Examples
+
+```shell script
+# show existing routers
+rio route
+```
+
+#### add/create
+
+Create a router. By default appends at the end.
+
+Services specified without a version are assumed to be apps. For example `rio route add x to svc` would target the svc app endpoint,
+not the `svc@v0` version.
+
+##### Usage
+```
+rio router create/add MATCH ACTION [TARGET...]
+```
+
+##### Options
+
+| flag                              | aliases | description                                          | default |
+|-----------------------------------|---------|------------------------------------------------------|---------|
+| --insert                          |         | Insert the rule at the beginning instead of the end  |         |
+| --header value                    |         | Match HTTP header (format key=value, value optional) |         |
+| --fault-percentage value          |         | Percentage of matching requests to fault             | 0       |
+| --fault-delay-milli-seconds value |         | Inject a delay for fault in milliseconds             | 0       |
+| --fault-httpcode value            |         | HTTP code to send for fault injection                | 0       |
+| --add-header value                |         | Add HTTP header to request (format key=value)        |         |
+| --set-header value                |         | Override HTTP header to request (format key=value)   |         |
+| --remove-header value             |         | Remove HTTP header to request (format key=value)     |         |
+| --retry-attempts value            |         | How many times to retry                              | 0       |
+| --retry-timeout-seconds value     |         | Timeout per retry in seconds                         | 0       |
+| --timeout-seconds value           |         | Timeout in seconds for all requests                  | 0       |
+| --method value                    |         | Match HTTP method, support comma-separated values    |         |
+
+##### Examples
+
+```shell script
+
+# route to the demo app endpoint
+rio route add myroute to demo
+
+# route a specific path to the demo app's version 0, and insert into first slot
+rio route add --insert myroute/name.html to demo@v0
+```
+
+See the [routers readme](router.md) for advanced example usage.
+
 
 ---
 

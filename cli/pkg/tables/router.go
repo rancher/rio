@@ -176,15 +176,17 @@ func writeHostPath(buf *strings.Builder, host, path string) {
 	}
 }
 
-func writeDest(buf *strings.Builder, service, revision string, port uint32, weight int) {
+func writeDest(buf *strings.Builder, service, version string, port uint32, weight int) {
 	if buf.Len() > 0 {
 		buf.WriteString(",")
 	}
 
 	buf.WriteString(service)
-	if revision != "" && revision != "latest" {
-		buf.WriteString(":")
-		buf.WriteString(revision)
+	if version != "" && version != "latest" {
+		buf.WriteString("@")
+		buf.WriteString(version)
+	} else {
+		buf.WriteString("(app)")
 	}
 
 	if port > 0 {
