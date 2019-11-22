@@ -56,10 +56,9 @@ func (u *TestUser) Create() error {
 		Name:     u.Username,
 	}
 
-	client.RbacV1().RoleBindings(TestingNamespace).Create(binding)
+	_, _ = client.RbacV1().RoleBindings(TestingNamespace).Create(binding)
 
 	for _, user := range rawConfig.AuthInfos {
-		user.Username = u.Username
 		user.Impersonate = u.Username
 		user.ImpersonateGroups = []string{u.Group}
 	}
