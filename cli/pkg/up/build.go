@@ -14,7 +14,6 @@ import (
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/stack"
-	"sigs.k8s.io/yaml"
 )
 
 const (
@@ -58,13 +57,8 @@ func GetCurrentDir() string {
 
 func LoadRiofile(path string) ([]byte, error) {
 	if path != "" {
-		content, err := readFile(path)
-		if err != nil {
-			return nil, err
-		}
-		var r map[string]interface{}
-		if err := yaml.Unmarshal(content, &r); err == nil {
-			return content, nil
+		if _, err := os.Stat(path); err == nil {
+			return ioutil.ReadFile(path)
 		}
 	}
 
