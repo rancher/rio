@@ -20,6 +20,7 @@ func TestSuite(t *testing.T) {
 	specs := map[string]func(t *testing.T, when spec.G, it spec.S){
 		"attach":          attachTests,
 		"autoscale":       autoscaleTests,
+		"build":           buildTests,
 		"config":          configTests,
 		"domain":          domainTests,
 		"export":          exportTests,
