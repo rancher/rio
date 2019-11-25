@@ -14,6 +14,7 @@ import (
 	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	clitypes "github.com/rancher/rio/cli/pkg/types"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/urfave/cli"
 	"github.com/wercker/stern/stern"
 	"k8s.io/apimachinery/pkg/labels"
@@ -62,6 +63,9 @@ func (l *Logs) setupConfig(ctx *clicontext.CLIContext) (*stern.Config, error) {
 		}
 		if obj.Object == nil {
 			return nil, errors.New("No object found")
+		}
+		if obj.Object.(*riov1.Service).Status.DeploymentReady == true && obj.Object.(*riov1.Service).Status.ScaleStatus != nil && obj.Object.(*riov1.Service).Status.ScaleStatus.Available == 0 {
+			fmt.Println("Waiting for pods...")
 		}
 		config.Namespace = obj.Namespace
 		if obj.Type == clitypes.BuildType {
@@ -144,7 +148,7 @@ func (l *Logs) Output(ctx *clicontext.CLIContext, conf *stern.Config) error {
 		}
 	}()
 
-	added, _, err := stern.Watch(
+	added, removed, err := stern.Watch(
 		logCtx,
 		podInterface,
 		conf.PodQuery,
@@ -160,6 +164,10 @@ func (l *Logs) Output(ctx *clicontext.CLIContext, conf *stern.Config) error {
 
 	go func() {
 		for a := range added {
+			id := a.GetID()
+			if tails[id] != nil {
+				continue
+			}
 			tailOpts := &stern.TailOptions{
 				SinceSeconds: int64(conf.Since.Seconds()),
 				Timestamps:   conf.Timestamps,
@@ -168,12 +176,22 @@ func (l *Logs) Output(ctx *clicontext.CLIContext, conf *stern.Config) error {
 				Include:      conf.Include,
 				Namespace:    true,
 			}
-
 			newTail := stern.NewTail(a.Namespace, a.Pod, a.Container, conf.Template, tailOpts)
 			if _, ok := tails[a.GetID()]; !ok {
 				tails[a.GetID()] = newTail
 			}
 			newTail.Start(logCtx, podInterface, logC)
+		}
+	}()
+
+	go func() {
+		for r := range removed {
+			id := r.GetID()
+			if tails[id] == nil {
+				continue
+			}
+			tails[id].Close()
+			delete(tails, id)
 		}
 	}()
 
