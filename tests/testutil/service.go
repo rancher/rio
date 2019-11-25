@@ -135,6 +135,43 @@ func (ts *TestService) Attach() []string {
 	return results
 }
 
+// BuildAndCreate builds a local image and runs a service using it
+func (ts *TestService) BuildAndCreate(t *testing.T, imageName string, imageVersion string, args ...string) {
+	err := ts.BuildImage(imageName, imageVersion, args...)
+	if err != nil {
+		ts.T.Fatal(err)
+	}
+	ts.Create(t, fmt.Sprintf("localhost:5442/%s/%s:%s", TestingNamespace, imageName, imageVersion))
+}
+
+// BuildAndStage builds a local image and stages it onto another running service
+func (ts *TestService) BuildAndStage(t *testing.T, imageName string, imageVersion string, args ...string) TestService {
+	err := ts.BuildImage(imageName, imageVersion, args...)
+	if err != nil {
+		ts.T.Fatal(err)
+	}
+	return ts.Stage(fmt.Sprintf("localhost:5442/%s/%s:%s", TestingNamespace, imageName, imageVersion), imageVersion)
+}
+
+// BuildAndCreate builds a local image and runs a service using it
+func (ts *TestService) BuildImage(imageName string, imageVersion string, args ...string) error {
+	pwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("Could not retrieve working directory.  %v", err.Error())
+	}
+	if strings.Contains(pwd, "tests/integration") {
+		pwd = "./fixtures/Dockerfile" //
+	} else {
+		pwd = "./tests/integration/fixtures/Dockerfile"
+	}
+	args = append([]string{"build", "-f", pwd, "-t", fmt.Sprintf("%s:%s", imageName, imageVersion)}, args...)
+	_, err = RioCmd(args)
+	if err != nil {
+		return fmt.Errorf("Failed to build image %s:%s.  %v", imageName, imageVersion, err.Error())
+	}
+	return nil
+}
+
 // Call "rio scale ns/service={scaleTo}"
 func (ts *TestService) Scale(scaleTo int) {
 	_, err := RioCmdWithRetry([]string{"scale", fmt.Sprintf("%s=%d", ts.Name, scaleTo)})
