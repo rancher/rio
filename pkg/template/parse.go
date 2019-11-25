@@ -104,6 +104,9 @@ func (t *Template) parseContent(answersCB AnswerCallback) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if template == nil {
+		return t.Content, nil
+	}
 
 	var (
 		callbackErrs []error

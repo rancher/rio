@@ -1,6 +1,7 @@
 package up
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -56,22 +57,30 @@ func GetCurrentDir() string {
 	return strings.ToLower(dir)
 }
 
+// LoadRiofile handles the following scenarios:
+// An assumed Riofile: rio up
+// An assumed Dockerfile: rio up
+// A named Riofile: rio up -f myRiofile
+// A named Dockerfile: rio up -f myDockerfile
 func LoadRiofile(path string) ([]byte, error) {
 	if path != "" {
 		content, err := readFile(path)
 		if err != nil {
 			return nil, err
 		}
+		// named Riofile, has either valid yaml or templating
 		var r map[string]interface{}
-		if err := yaml.Unmarshal(content, &r); err == nil {
+		if err := yaml.Unmarshal(content, &r); err == nil || bytes.Contains(content, []byte("goTemplate:")) {
 			return content, nil
 		}
+		// named Dockerfile
+		return []byte(fmt.Sprintf(defaultRiofileContent, GetCurrentDir())), nil
 	}
-
+	// assumed Riofile
 	if _, err := os.Stat(defaultRiofile); err == nil {
 		return ioutil.ReadFile(defaultRiofile)
 	}
-
+	// assumed Dockerfile
 	return []byte(fmt.Sprintf(defaultRiofileContent, GetCurrentDir())), nil
 }
 
