@@ -64,8 +64,10 @@ func (l *Logs) setupConfig(ctx *clicontext.CLIContext) (*stern.Config, error) {
 		if obj.Object == nil {
 			return nil, errors.New("No object found")
 		}
-		if obj.Object.(*riov1.Service).Status.DeploymentReady == true && obj.Object.(*riov1.Service).Status.ScaleStatus != nil && obj.Object.(*riov1.Service).Status.ScaleStatus.Available == 0 {
-			fmt.Println("Waiting for pods...")
+		if svc, ok := obj.Object.(*riov1.Service); ok {
+			if svc.Status.DeploymentReady == true && svc.Status.ScaleStatus != nil && svc.Status.ScaleStatus.Available == 0 {
+				fmt.Println("Waiting for pods...")
+			}
 		}
 		config.Namespace = obj.Namespace
 		if obj.Type == clitypes.BuildType {
