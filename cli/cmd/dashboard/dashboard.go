@@ -16,6 +16,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	dashboardAdmin = "rio-dashboard-admin"
+	firstLogin     = "first-login"
+)
+
 type Dashboard struct {
 	ResetAdmin bool `desc:"Reset admin password"`
 }
@@ -53,20 +58,20 @@ func (d *Dashboard) Run(ctx *clicontext.CLIContext) error {
 }
 
 func reset(ctx *clicontext.CLIContext) error {
-	err := ctx.Mgmt.Users().Delete("admin", nil)
+	err := ctx.Mgmt.Users().Delete(dashboardAdmin, nil)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	}
 
-	err = ctx.Mgmt.Settings().Delete("first-login", nil)
+	err = ctx.Mgmt.Settings().Delete(firstLogin, nil)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	}
 
 	p := progress.NewWriter()
 	for {
-		_ = ctx.Mgmt.Users().Delete("admin", nil)
-		_, err := ctx.Mgmt.Users().Get("admin", metav1.GetOptions{})
+		_ = ctx.Mgmt.Users().Delete(dashboardAdmin, nil)
+		_, err := ctx.Mgmt.Users().Get(dashboardAdmin, metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return nil
 		}
@@ -81,7 +86,7 @@ func setup(ctx *clicontext.CLIContext, resetAdmin bool) (string, error) {
 		}
 	}
 
-	adm, err := ctx.Mgmt.Users().Get("admin", metav1.GetOptions{})
+	adm, err := ctx.Mgmt.Users().Get(dashboardAdmin, metav1.GetOptions{})
 	if err == nil {
 		if strings.HasPrefix(adm.Password, "$") {
 			return "", nil
@@ -89,14 +94,14 @@ func setup(ctx *clicontext.CLIContext, resetAdmin bool) (string, error) {
 		return adm.Password, nil
 	}
 
-	err = ctx.Mgmt.Settings().Delete("first-login", nil)
+	err = ctx.Mgmt.Settings().Delete(firstLogin, nil)
 	if err != nil && !errors.IsNotFound(err) {
 		return "", err
 	}
 
 	ctx.Mgmt.Settings().Create(&v3.Setting{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "first-login",
+			Name: firstLogin,
 		},
 		Default:    "true",
 		Value:      "true",
@@ -110,9 +115,9 @@ func setup(ctx *clicontext.CLIContext, resetAdmin bool) (string, error) {
 
 	_, err = ctx.Mgmt.Users().Create(&v3.User{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "admin",
+			Name: dashboardAdmin,
 		},
-		Username:           "admin",
+		Username:           dashboardAdmin,
 		Password:           token,
 		MustChangePassword: true,
 	})
