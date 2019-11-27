@@ -13,6 +13,7 @@ replace (
 	github.com/jaguilar/vt100 => github.com/tonistiigi/vt100 v0.0.0-20190402012908-ad4c4a574305
 	github.com/jetstack/cert-manager v0.11.0 => github.com/rancher/cert-manager v0.5.1-0.20191021233300-3a070253aeda
 	github.com/linkerd/linkerd2 => github.com/StrongMonkey/linkerd2 v0.0.0-20191021165729-976fad67457a
+	github.com/pseudomuto/protoc-gen-doc => github.com/pseudomuto/protoc-gen-doc v1.0.0
 	github.com/wercker/stern v1.11.0 => github.com/rancher/stern v0.0.0-20191203174401-30397523f082
 	golang.org/x/crypto v0.0.0-20190129210102-0709b304e793 => golang.org/x/crypto v0.0.0-20180904163835-0709b304e793
 	k8s.io/api => github.com/rancher/kubernetes/staging/src/k8s.io/api v1.16.2-k3s.1
@@ -82,9 +83,9 @@ require (
 	github.com/rancher/wrangler-api v0.2.1-0.20191025043713-b1ca9c21825a
 	github.com/sclevine/spec v1.3.0
 	github.com/sirupsen/logrus v1.4.2
-	github.com/solo-io/gloo v0.20.10-0.20191024223947-69a04e343c3c
+	github.com/solo-io/gloo v1.0.0
 	github.com/solo-io/go-utils v0.10.21 // indirect
-	github.com/solo-io/solo-kit v0.11.6
+	github.com/solo-io/solo-kit v0.11.11
 	github.com/stretchr/testify v1.4.0
 	github.com/tektoncd/pipeline v0.8.0
 	github.com/urfave/cli v1.22.2

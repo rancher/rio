@@ -591,7 +591,7 @@ github.com/sethgrid/pester
 github.com/shurcooL/sanitized_anchor_name
 # github.com/sirupsen/logrus v1.4.2
 github.com/sirupsen/logrus
-# github.com/solo-io/gloo v0.20.10-0.20191024223947-69a04e343c3c
+# github.com/solo-io/gloo v1.0.0
 github.com/solo-io/gloo/projects/gateway/pkg/api/v1
 github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1
 github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/clientset/versioned
@@ -603,13 +603,16 @@ github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/informers/extern
 github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/informers/externalversions/internalinterfaces
 github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/listers/gateway.solo.io/v1
 github.com/solo-io/gloo/projects/gloo/constants
+github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation
 github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/waf
 github.com/solo-io/gloo/projects/gloo/pkg/api/v1
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/jwt
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/rbac
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/waf
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/dlp
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/jwt
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/rbac
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/waf
 github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1
 github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/client/clientset/versioned
 github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/client/clientset/versioned/scheme
@@ -619,31 +622,30 @@ github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/client/informers/externalv
 github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/client/informers/externalversions/gloo.solo.io/v1
 github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/client/informers/externalversions/internalinterfaces
 github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/client/listers/gloo.solo.io/v1
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/als
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/azure
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/consul
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/cors
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/faultinjection
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc_web
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hcm
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/headers
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/healthcheck
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hostrewrite
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/lbhash
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/pipe
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/rest
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/shadowing
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/stats
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/tcp
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/tracing
-github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/azure
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_web
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/healthcheck
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/lbhash
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/pipe
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/shadowing
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tcp
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing
+github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation
 # github.com/solo-io/go-utils v0.10.21
 github.com/solo-io/go-utils/clicore/constants
 github.com/solo-io/go-utils/contextutils
@@ -654,10 +656,11 @@ github.com/solo-io/go-utils/kubeutils
 github.com/solo-io/go-utils/log
 github.com/solo-io/go-utils/stringutils
 github.com/solo-io/go-utils/versionutils/kubeapi
-# github.com/solo-io/solo-kit v0.11.6
+# github.com/solo-io/solo-kit v0.11.11
 github.com/solo-io/solo-kit/api/external/kubernetes/configmap
 github.com/solo-io/solo-kit/api/external/kubernetes/customresourcedefinition
 github.com/solo-io/solo-kit/api/external/kubernetes/deployment
+github.com/solo-io/solo-kit/api/external/kubernetes/job
 github.com/solo-io/solo-kit/api/external/kubernetes/namespace
 github.com/solo-io/solo-kit/api/external/kubernetes/pod
 github.com/solo-io/solo-kit/api/external/kubernetes/service
