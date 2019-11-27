@@ -526,7 +526,7 @@ We can now access this endpoint over encrypted https!
 #### Using answer file 
 
 Rio allows the user to leverage an answer file to customize `Riofile`. 
-Go template and [envSubst](https://github.com/drone/envsubst) can used to apply answers. By default, the `NAMESPACE` variable is available.
+Go template and [envSubst](https://github.com/drone/envsubst) can used to apply answers. By default, the `NAMESPACE` variable is available when defined in the template questions.
 
 Answer file is a yaml manifest with key-value pairs:
 
@@ -538,8 +538,8 @@ For example, to use go templating to apply a service when provided with the abov
 
 1. Create Riofile
 ```yaml
+{{- if (and (eq .Values.NAMESPACE "test") (eq .Values.FOO "BAR")) }}
 services:
-{{- if eq .Values.FOO "BAR" and eq .Values.NAMESPACE "test" }}
   demo:
     image: ibuildthecloud/demo:v1
     ports:
@@ -551,10 +551,12 @@ template:
   envSubst: true # use ENV vars during templating  
   questions:  # now make some questions that we provide answers too
   - variable: FOO
-    description: ""
+    description: "My custom thing"
+  - variable: NAMESPACE
+    description: "The namespace"
 ```
 2. `kubectl create namespace test`
-3. `cd /path/to/Riofile && rio -n test up`
+3. `cd /path/to/Riofile && rio -n test up --answers answers.yaml`
 
 Rio also supports a bash style envsubst replacement, with the following format:
 
