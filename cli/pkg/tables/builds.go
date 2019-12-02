@@ -3,10 +3,9 @@ package tables
 import (
 	"fmt"
 
-	"github.com/rancher/rio/modules/build/pkg"
-
 	"github.com/rancher/rio/cli/pkg/table"
 	"github.com/rancher/rio/cli/pkg/types"
+	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/wrangler/pkg/condition"
 	tektonv1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 )
@@ -51,11 +50,11 @@ func findService(data interface{}) (string, error) {
 	if !ok {
 		return "", nil
 	}
-	if m.Labels[pkg.ServiceLabel] != "" {
-		name := m.Labels[pkg.ServiceLabel]
+	if m.Labels[constants.ServiceLabel] != "" {
+		name := m.Labels[constants.ServiceLabel]
 		return fmt.Sprintf("%s/%s", types.ServiceType, name), nil
-	} else if m.Labels[pkg.StackLabel] != "" {
-		name := m.Labels[pkg.StackLabel]
+	} else if m.Labels[constants.StackLabel] != "" {
+		name := m.Labels[constants.StackLabel]
 		return fmt.Sprintf("%s/%s", types.StackType, name), nil
 	}
 	return "", nil

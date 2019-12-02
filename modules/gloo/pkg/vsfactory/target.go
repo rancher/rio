@@ -8,10 +8,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rancher/rio/modules/service/controllers/service/populate/serviceports"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/indexes"
+	"github.com/rancher/rio/pkg/serviceports"
 	"github.com/rancher/rio/pkg/services"
 	"github.com/rancher/wrangler/pkg/name"
 	"k8s.io/apimachinery/pkg/labels"

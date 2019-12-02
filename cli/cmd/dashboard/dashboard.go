@@ -4,14 +4,13 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/pkg/browser"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/progress"
 	v3 "github.com/rancher/rio/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rio/pkg/config"
 	"github.com/rancher/rio/pkg/randomtoken"
+	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

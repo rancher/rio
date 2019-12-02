@@ -6,8 +6,8 @@ import (
 
 	webhookv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
 	webhookv1controller "github.com/rancher/gitwatcher/pkg/generated/controllers/gitwatcher.cattle.io/v1"
-	"github.com/rancher/rio/modules/build/pkg"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
 )
@@ -75,7 +75,7 @@ func (h Handler) updateGitcommit(key string, obj *riov1.Service) (*riov1.Service
 		return obj, nil
 	}
 
-	if obj.Annotations[pkg.GitCommitLabel] == "" {
+	if obj.Annotations[constants.GitCommitLabel] == "" {
 		return obj, nil
 	}
 
@@ -84,7 +84,7 @@ func (h Handler) updateGitcommit(key string, obj *riov1.Service) (*riov1.Service
 		return obj, nil
 	}
 
-	gitcommit, err := h.gitcommits.Cache().Get(obj.Namespace, obj.Annotations[pkg.GitCommitLabel])
+	gitcommit, err := h.gitcommits.Cache().Get(obj.Namespace, obj.Annotations[constants.GitCommitLabel])
 	if err != nil {
 		return obj, err
 	}

@@ -4,11 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	v1 "k8s.io/api/core/v1"
-
 	"github.com/rancher/rio/cli/cmd/util"
-
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	v1 "k8s.io/api/core/v1"
 )
 
 type Attach struct {

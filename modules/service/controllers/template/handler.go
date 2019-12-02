@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	webhookv1controller "github.com/rancher/gitwatcher/pkg/generated/controllers/gitwatcher.cattle.io/v1"
-	"github.com/rancher/rio/modules/build/pkg"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/indexes"
 	"github.com/rancher/rio/pkg/services"
@@ -84,7 +84,7 @@ func (h *handler) generate(service *riov1.Service, status riov1.ServiceStatus) (
 				Name:      name,
 				Namespace: service.Namespace,
 				Annotations: map[string]string{
-					pkg.GitCommitLabel: last(service.Status.GitCommits),
+					constants.GitCommitLabel: last(service.Status.GitCommits),
 				},
 			},
 			Spec: *spec,

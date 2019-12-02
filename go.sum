@@ -637,8 +637,6 @@ github.com/libopenstorage/openstorage v1.0.0/go.mod h1:Sp1sIObHjat1BeXhfMqLZ14wn
 github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de/go.mod h1:zAbeS9B/r2mtpb6U+EI2rYA5OAXxsYw6wTamcNW+zcE=
 github.com/linkerd/linkerd2-proxy-api v0.1.9/go.mod h1:2WJHEYXoww5ALM6c1QspRFiROGZg08tGxCO1js0tTVA=
 github.com/linkerd/linkerd2-proxy-init v1.1.0/go.mod h1:JNuEmZkYNFgBrd/89LMDRG4vDq3qEeU4qYm33M+UulU=
-github.com/linkerd/stern v0.0.0-20190907020106-201e8ccdff9c h1:v8RmXOGO65HHLqcDpVNGGe3krA8FptfxcYS3wSS8bJU=
-github.com/linkerd/stern v0.0.0-20190907020106-201e8ccdff9c/go.mod h1:aaP5eLMmFcyJUsZB6FwAO+0eILWeBKvupuHeeEuY0qQ=
 github.com/lithammer/dedent v1.1.0/go.mod h1:jrXYCQtgg0nJiN+StA2KgR7w6CiQNv9Fd/Z9BP0jIOc=
 github.com/lpabon/godbc v0.1.1/go.mod h1:Jo9QV0cf3U6jZABgiJ2skINAXb9j8m51r07g4KI92ZA=
 github.com/lucas-clemente/aes12 v0.0.0-20171027163421-cd47fb39b79f/go.mod h1:JpH9J1c9oX6otFSgdUHwUBUizmKlrMjxWnIAjff4m04=
@@ -866,14 +864,10 @@ github.com/rancher/kubernetes/staging/src/k8s.io/legacy-cloud-providers v1.16.2-
 github.com/rancher/kubernetes/staging/src/k8s.io/legacy-cloud-providers v1.16.2-k3s.1/go.mod h1:OpqDei2/Qdg+5YGQYPiEuQ4vlFoiAJy0Ysn8aLKP7Cs=
 github.com/rancher/kubernetes/staging/src/k8s.io/metrics v1.16.2-k3s.1/go.mod h1:vQHTmz0IaEb7/OXPSor1uga8Er0V+2M5aSdXG832NbU=
 github.com/rancher/kubernetes/staging/src/k8s.io/sample-apiserver v1.16.2-k3s.1/go.mod h1:E3i4wscD52Qj6PEcgUjvCd81Tl6Mghk1GHtEzoaaqwU=
-github.com/rancher/norman v0.0.0-20191030191625-ebecbda5fbe3 h1:JBZachl1kOyK730yUQr/X/o+/D440bBEEM6XE0tWGao=
-github.com/rancher/norman v0.0.0-20191030191625-ebecbda5fbe3/go.mod h1:zOBq0bQmo9slllyM1kcKpKr1RH5IWodjySaffLKSOx0=
 github.com/rancher/norman v0.0.0-20191114233102-966e8db9e670 h1:EM5VxDfLyKFTEPVV6rEWoPHE3gn/fbd2AXS9KE7U3rE=
 github.com/rancher/norman v0.0.0-20191114233102-966e8db9e670/go.mod h1:zOBq0bQmo9slllyM1kcKpKr1RH5IWodjySaffLKSOx0=
 github.com/rancher/rdns-server v0.5.7-0.20190927164127-7128efe7d065 h1:K2/79Jdw0viw+ryWSJQcIMYJf2vc5yQXlEHPTbpVPVs=
 github.com/rancher/rdns-server v0.5.7-0.20190927164127-7128efe7d065/go.mod h1:/yw1tSnAWDSDSmhKpYNA/FBA49fbbtNfh/IHT31v7jE=
-github.com/rancher/stern v0.0.0-20191112212754-e4067d535fbf h1:WMuNPpOa96kBqQ3dqKjTyzx3xNNVRhIHBH167/rZM3A=
-github.com/rancher/stern v0.0.0-20191112212754-e4067d535fbf/go.mod h1:aaP5eLMmFcyJUsZB6FwAO+0eILWeBKvupuHeeEuY0qQ=
 github.com/rancher/stern v0.0.0-20191114200800-b31e21d4e493 h1:ebywCd5IyRRNzXgQWPsGW1xQbND9M88ZyjMS80M3a9U=
 github.com/rancher/stern v0.0.0-20191114200800-b31e21d4e493/go.mod h1:aaP5eLMmFcyJUsZB6FwAO+0eILWeBKvupuHeeEuY0qQ=
 github.com/rancher/wrangler v0.1.4/go.mod h1:EYP7cqpg42YqElaCm+U9ieSrGQKAXxUH5xsr+XGpWyE=
