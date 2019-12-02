@@ -14,7 +14,6 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		FeatureName: "dashboard",
 		FeatureSpec: features.FeatureSpec{
 			Description: "Rio UI",
-			Enabled:     true,
 		},
 		SystemStacks: []*stack.SystemStack{
 			stack.NewSystemStack(apply, rContext.Admin.Admin().V1().SystemStack(), rContext.Namespace, "dashboard"),
