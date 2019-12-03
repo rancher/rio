@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/wercker/stern/kubernetes"
@@ -58,6 +59,7 @@ func Run(ctx context.Context, config *Config) error {
 	}
 
 	tails := make(map[string]*Tail)
+	tailsMutex := sync.RWMutex{}
 	logC := make(chan string, 1024)
 
 	go func() {
@@ -74,10 +76,19 @@ func Run(ctx context.Context, config *Config) error {
 	go func() {
 		for p := range added {
 			id := p.GetID()
-			if tails[id] != nil {
-				continue
+			tailsMutex.RLock()
+			existing := tails[id]
+			tailsMutex.RUnlock()
+			if existing != nil {
+				if existing.Active == true {
+					continue
+				} else { // cleanup failed tail to restart
+					tailsMutex.Lock()
+					tails[id].Close()
+					delete(tails, id)
+					tailsMutex.Unlock()
+				}
 			}
-
 			tail := NewTail(p.Namespace, p.Pod, p.Container, config.Template, &TailOptions{
 				Timestamps:   config.Timestamps,
 				SinceSeconds: int64(config.Since.Seconds()),
@@ -86,8 +97,9 @@ func Run(ctx context.Context, config *Config) error {
 				Namespace:    config.AllNamespaces,
 				TailLines:    config.TailLines,
 			})
+			tailsMutex.Lock()
 			tails[id] = tail
-
+			tailsMutex.Unlock()
 			tail.Start(ctx, clientset.CoreV1().Pods(p.Namespace), logC)
 		}
 	}()
@@ -95,11 +107,16 @@ func Run(ctx context.Context, config *Config) error {
 	go func() {
 		for p := range removed {
 			id := p.GetID()
-			if tails[id] == nil {
+			tailsMutex.RLock()
+			existing := tails[id]
+			tailsMutex.RUnlock()
+			if existing == nil {
 				continue
 			}
+			tailsMutex.Lock()
 			tails[id].Close()
 			delete(tails, id)
+			tailsMutex.Unlock()
 		}
 	}()
 
