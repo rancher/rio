@@ -119,10 +119,14 @@ func initializeClient(ctx context.Context, buildSpec riov1.ImageBuildSpec, port 
 	for _, arg := range buildSpec.Args {
 		buildArgs = append(buildArgs, fmt.Sprintf("build-arg:%s", arg))
 	}
-	solveOpt.FrontendAttrs, err = build.ParseOpt(buildArgs, nil)
+	frontendAttrsArgs, err := build.ParseOpt(buildArgs, nil)
 	if err != nil {
 		return nil, client.SolveOpt{}, err
 	}
+	for k, v := range frontendAttrsArgs {
+		solveOpt.FrontendAttrs[k] = v
+	}
+
 	if buildSpec.NoCache {
 		solveOpt.FrontendAttrs["no-cache"] = ""
 	}
