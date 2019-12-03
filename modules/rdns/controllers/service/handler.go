@@ -11,9 +11,11 @@ import (
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/types"
 	corev1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/core/v1"
+	v1beta12 "github.com/rancher/wrangler-api/pkg/generated/controllers/extensions/v1beta1"
 	"github.com/rancher/wrangler/pkg/generic"
 	"github.com/rancher/wrangler/pkg/relatedresource"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -35,6 +37,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		nodeCache:       rContext.Core.Core().V1().Node().Cache(),
 		services:        rContext.Core.Core().V1().Service(),
 		rDNSClient:      rDNSClient,
+		ingresses:       rContext.K8sNetworking.Extensions().V1beta1().Ingress(),
 	}
 
 	corev1controller.RegisterServiceGeneratingHandler(ctx,
@@ -42,7 +45,17 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		rContext.Apply.WithCacheTypes(rContext.Admin.Admin().V1().ClusterDomain()),
 		"",
 		"rdns-service",
-		h.generate,
+		h.generateFromService,
+		&generic.GeneratingHandlerOptions{
+			AllowClusterScoped: true,
+		})
+
+	v1beta12.RegisterIngressGeneratingHandler(ctx,
+		rContext.K8sNetworking.Extensions().V1beta1().Ingress(),
+		rContext.Apply.WithCacheTypes(rContext.Admin.Admin().V1().ClusterDomain()),
+		"",
+		"rdns-ingress",
+		h.generateFromIngress,
 		&generic.GeneratingHandlerOptions{
 			AllowClusterScoped: true,
 		})
@@ -73,6 +86,8 @@ type handler struct {
 	started          bool
 	gatewayName      string
 	gatewayNamespace string
+	ingressName      string
+	ingressNamespace string
 	systemNamespace  string
 	configKey        string
 	configMapCache   corev1controller.ConfigMapCache
@@ -80,6 +95,7 @@ type handler struct {
 	podCache         corev1controller.PodCache
 	nodeCache        corev1controller.NodeCache
 	services         corev1controller.ServiceController
+	ingresses        v1beta12.IngressController
 	rDNSClient       *approuter.Client
 }
 
@@ -99,14 +115,24 @@ func (h *handler) onConfigMapChange(key string, cm *corev1.ConfigMap) (*corev1.C
 		h.start()
 	}
 
+	if config.Gateway.IngressName != h.ingressName || config.Gateway.IngressNamespace != h.ingressNamespace {
+		h.ingressName = config.Gateway.IngressName
+		h.ingressNamespace = config.Gateway.IngressNamespace
+		h.start()
+	}
+
 	if h.gatewayName != "" && h.gatewayNamespace != "" {
 		h.services.Enqueue(h.gatewayNamespace, h.gatewayName)
+	}
+
+	if h.ingressName != "" && h.ingressNamespace != "" {
+		h.ingresses.Enqueue(h.ingressNamespace, h.ingressName)
 	}
 
 	return cm, nil
 }
 
-func (h *handler) generate(svc *corev1.Service, status corev1.ServiceStatus) ([]runtime.Object, corev1.ServiceStatus, error) {
+func (h *handler) generateFromService(svc *corev1.Service, status corev1.ServiceStatus) ([]runtime.Object, corev1.ServiceStatus, error) {
 	if h.gatewayName == "" || h.gatewayNamespace == "" || svc.Namespace != h.gatewayNamespace || svc.Name != h.gatewayName {
 		return nil, status, generic.ErrSkip
 	}
@@ -152,6 +178,49 @@ func (h *handler) generate(svc *corev1.Service, status corev1.ServiceStatus) ([]
 		} else if port.Name == "https" {
 			clusterDomain.Spec.HTTPSPort = portNum
 		}
+	}
+
+	return []runtime.Object{
+		clusterDomain,
+	}, status, nil
+}
+
+func (h *handler) generateFromIngress(ingress *v1beta1.Ingress, status v1beta1.IngressStatus) ([]runtime.Object, v1beta1.IngressStatus, error) {
+	if h.ingressName == "" || h.ingressNamespace == "" || ingress.Namespace != h.ingressNamespace || ingress.Name != h.ingressName {
+		return nil, status, generic.ErrSkip
+	}
+
+	var addresses []adminv1.Address
+	for _, ing := range ingress.Status.LoadBalancer.Ingress {
+		if ing.IP != "" || ing.Hostname != "" {
+			addresses = append(addresses, adminv1.Address{
+				IP:       ing.IP,
+				Hostname: ing.Hostname,
+			})
+		}
+	}
+
+	if len(addresses) == 0 {
+		return nil, status, nil
+	}
+
+	domainName, err := h.getDomain(addresses)
+	if err != nil {
+		return nil, status, err
+	}
+
+	if domainName == "" {
+		return nil, status, nil
+	}
+
+	clusterDomain := &adminv1.ClusterDomain{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      domainName,
+			Namespace: ingress.Namespace,
+		},
+		Spec: adminv1.ClusterDomainSpec{
+			Addresses: addresses,
+		},
 	}
 
 	return []runtime.Object{

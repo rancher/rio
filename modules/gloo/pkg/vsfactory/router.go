@@ -32,7 +32,7 @@ func (f *VirtualServiceFactory) ForRouter(router *riov1.Router) ([]*solov1.Virtu
 		vs,
 	}
 
-	tls, err := f.findTLS(router.Namespace, router.Name, "", vs.Spec.VirtualHost.Domains)
+	tls, err := f.FindTLS(router.Namespace, router.Name, "", vs.Spec.VirtualHost.Domains)
 	if err != nil {
 		return nil, err
 	}

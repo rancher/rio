@@ -32,7 +32,6 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		FeatureName: "build",
 		FeatureSpec: features.FeatureSpec{
 			Description: "Rio Build, from source code to deployment",
-			Enabled:     true,
 		},
 		SystemStacks: []*stack.SystemStack{
 			stack.NewSystemStack(apply, rContext.Admin.Admin().V1().SystemStack(), rContext.Namespace, "build"),

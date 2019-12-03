@@ -317,6 +317,11 @@ func (in *RioInfoStatus) DeepCopyInto(out *RioInfoStatus) {
 			(*out)[key] = val
 		}
 	}
+	if in.EnabledFeatures != nil {
+		in, out := &in.EnabledFeatures, &out.EnabledFeatures
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

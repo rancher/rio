@@ -2,8 +2,11 @@ package server
 
 import (
 	"context"
+	"strings"
 
 	"github.com/rancher/rio/modules"
+	"github.com/rancher/rio/pkg/config"
+	"github.com/rancher/rio/pkg/constructors"
 	"github.com/rancher/rio/pkg/controllers"
 	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/rio/pkg/webhook"
@@ -11,6 +14,8 @@ import (
 	"github.com/rancher/wrangler/pkg/crd"
 	"github.com/rancher/wrangler/pkg/kubeconfig"
 	"github.com/rancher/wrangler/pkg/leader"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/rest"
 )
@@ -29,6 +34,10 @@ func Startup(ctx context.Context, systemNamespace, kubeConfig string) error {
 	ctx, rioContext := types.BuildContext(ctx, systemNamespace, restConfig)
 
 	if err := bootstrapResources(rioContext, systemNamespace); err != nil {
+		return err
+	}
+
+	if err := configureFeature(rioContext, systemNamespace); err != nil {
 		return err
 	}
 
@@ -54,6 +63,47 @@ func bootstrapResources(rioContext *types.Context, systemNamespace string) error
 		"NAMESPACE": systemNamespace,
 	}
 	return controllerStack.Deploy(answer)
+}
+
+func configureFeature(rioContext *types.Context, systemNamespace string) error {
+	conf, err := config.GetConfig(systemNamespace, rioContext.Core.Core().V1().ConfigMap())
+	if err != nil {
+		return err
+	}
+
+	if conf.Features == nil {
+		conf.Features = map[string]config.FeatureConfig{}
+	}
+	t := true
+	if config.ConfigController.Features == "*" {
+		f := conf.Features["*"]
+		f.Enabled = &t
+		conf.Features["*"] = f
+	} else {
+		for _, feature := range strings.Split(config.ConfigController.Features, ",") {
+			if feature == "" {
+				continue
+			}
+			f := conf.Features[feature]
+			f.Enabled = &t
+			conf.Features[feature] = f
+		}
+	}
+
+	featureConfig, err := config.SetConfig(constructors.NewConfigMap(systemNamespace, config.ConfigName, v1.ConfigMap{}), conf)
+	if err != nil {
+		return err
+	}
+
+	if _, err := rioContext.Core.Core().V1().ConfigMap().Update(featureConfig); err != nil {
+		if errors.IsNotFound(err) {
+			if _, err = rioContext.Core.Core().V1().ConfigMap().Create(featureConfig); err != nil {
+				return err
+			}
+		}
+		return err
+	}
+	return err
 }
 
 func Types(ctx context.Context, config *rest.Config) error {

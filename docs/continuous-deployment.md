@@ -8,7 +8,10 @@ The most versatile use case is in [this example](#pull-request-builds).
 
 ### Basic Example
 Deploy a workload with Rio from a public GitHub repository that you have push access to:
-`rio run -n cd-demo -p 8080 https://github.com/rancher/rio-demo`
+
+```bash
+rio run -n cd-demo -p 8080 https://github.com/rancher/rio-demo
+```
 
 Make a commit to the master branch of the repo. 
 You should notice that within 15 seconds, Rio rebuilds your workload (`rio build-history`) and updates it to match the committed changes.
@@ -24,7 +27,11 @@ If the pull request is merged, it will then update the app endpoint in Rio to po
 It only takes 2 steps:
 
 1. [Configure Webhook](./webhooks.md) for your repository. For this example, you only need to set the webhook up.
-2. `rio run -p 8080 -n example-cd --build-webhook-secret=githubtoken --build-pr --template https://github.com/example/example-repo`
+2. Run
+
+```bash
+rio run -p 8080 -n example-cd --build-webhook-secret=githubtoken --build-pr --template https://github.com/example/example-repo
+```
 
 NOTE: if your repository is private, you will also need to [create a credentials secret](#private-github-repo) and use the correct additional flags when running your workload.
 
@@ -53,8 +60,8 @@ You can do this with Git Basic Auth or SSH Auth:
        
     2. Rio will automatically use this secret now when doing standard git checkout, so no additional flags need to be passed. For example:
         
-        ```bash
-        rio run -p 8080 https://github.com/example/example-private-repo
+       ```bash
+       rio run -p 8080 https://github.com/example/example-private-repo
        ```
        
 - SSH Auth:
@@ -68,7 +75,10 @@ You can do this with Git Basic Auth or SSH Auth:
         ```
        
     2. Tell rio to do ssh checkout from git. For example:
-        `rio run --build-clone-secret gitcredential-ssh -p 8080 git@github.com:example/example.git`
+    
+       ```bash
+       rio run --build-clone-secret gitcredential-ssh -p 8080 git@github.com:example/example.git
+       ```
 
 
 #### Private Docker Registry

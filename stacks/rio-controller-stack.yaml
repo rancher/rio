@@ -30,6 +30,8 @@ kubernetes:
             {{- if eq .Values.RIO_DEBUG "true" }}
             - --debug
             {{- end}}
+            - --features
+            - ""
             env:
             - name: RUN_API_VALIDATOR
               value: ${RUN_API_VALIDATOR}

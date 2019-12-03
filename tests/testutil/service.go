@@ -137,7 +137,7 @@ func (ts *TestService) Attach() []string {
 
 // BuildAndCreate builds a local image and runs a service using it
 func (ts *TestService) BuildAndCreate(t *testing.T, imageName string, imageVersion string, args ...string) {
-	err := ts.BuildImage(imageName, imageVersion, args...)
+	err := ts.BuildImage(t, imageName, imageVersion, args...)
 	if err != nil {
 		ts.T.Fatal(err)
 	}
@@ -146,7 +146,7 @@ func (ts *TestService) BuildAndCreate(t *testing.T, imageName string, imageVersi
 
 // BuildAndStage builds a local image and stages it onto another running service
 func (ts *TestService) BuildAndStage(t *testing.T, imageName string, imageVersion string, args ...string) TestService {
-	err := ts.BuildImage(imageName, imageVersion, args...)
+	err := ts.BuildImage(t, imageName, imageVersion, args...)
 	if err != nil {
 		ts.T.Fatal(err)
 	}
@@ -154,7 +154,8 @@ func (ts *TestService) BuildAndStage(t *testing.T, imageName string, imageVersio
 }
 
 // BuildAndCreate builds a local image and runs a service using it
-func (ts *TestService) BuildImage(imageName string, imageVersion string, args ...string) error {
+func (ts *TestService) BuildImage(t *testing.T, imageName string, imageVersion string, args ...string) error {
+	ts.T = t
 	pwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("Could not retrieve working directory.  %v", err.Error())

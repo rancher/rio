@@ -16,6 +16,7 @@ import (
 	"github.com/rancher/rio/modules/gloo/controller/service"
 	"github.com/rancher/rio/modules/gloo/controller/setting"
 	"github.com/rancher/rio/modules/gloo/pkg/injector"
+	"github.com/rancher/rio/pkg/arch"
 	"github.com/rancher/rio/pkg/features"
 	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/rio/types"
@@ -38,7 +39,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	feature := &features.FeatureController{
 		FeatureName: "gloo",
 		FeatureSpec: features.FeatureSpec{
-			Enabled:     true,
+			Enabled:     arch.IsAmd64(),
 			Description: "Run Gloo API gateway",
 		},
 		FixedAnswers: map[string]string{

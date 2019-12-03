@@ -6,7 +6,9 @@ import (
 
 	"github.com/rancher/rio/pkg/config"
 	"github.com/rancher/rio/pkg/features"
+	adminv1 "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
+	"github.com/rancher/wrangler/pkg/slice"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -26,9 +28,11 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	}
 
 	fh := &featureHandler{
-		key:      fmt.Sprintf("%s/%s", rContext.Namespace, config.ConfigName),
-		rContext: rContext,
-		ctx:      ctx,
+		key:       fmt.Sprintf("%s/%s", rContext.Namespace, config.ConfigName),
+		infos:     rContext.Admin.Admin().V1().RioInfo(),
+		rContext:  rContext,
+		ctx:       ctx,
+		namespace: rContext.Namespace,
 	}
 
 	rContext.Core.Core().V1().ConfigMap().OnChange(ctx, "config", fh.onChange)
@@ -40,6 +44,8 @@ type featureHandler struct {
 	ctx          context.Context
 	rContext     *types.Context
 	featureState sets.String
+	infos        adminv1.RioInfoClient
+	namespace    string
 }
 
 func (f *featureHandler) getFeatureConfig(obj *corev1.ConfigMap) (enabled sets.String, err error) {
@@ -151,5 +157,15 @@ func (f *featureHandler) onChange(key string, obj *corev1.ConfigMap) (*corev1.Co
 	}
 
 	f.featureState = newState
+	info, err := f.infos.Get("rio", metav1.GetOptions{})
+	if err != nil {
+		return obj, err
+	}
+	if !slice.StringsEqual(info.Status.EnabledFeatures, newState.List()) {
+		info.Status.EnabledFeatures = newState.List()
+		if _, err := f.infos.Update(info); err != nil {
+			return obj, err
+		}
+	}
 	return obj, f.rContext.Start(f.ctx)
 }

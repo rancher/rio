@@ -8,6 +8,7 @@ import (
 	"github.com/rancher/rio/modules/dashboard"
 	"github.com/rancher/rio/modules/gloo"
 	"github.com/rancher/rio/modules/info"
+	"github.com/rancher/rio/modules/ingress"
 	"github.com/rancher/rio/modules/letsencrypt"
 	"github.com/rancher/rio/modules/linkerd"
 	"github.com/rancher/rio/modules/rdns"
@@ -48,6 +49,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		return err
 	}
 	if err := dashboard.Register(ctx, rContext); err != nil {
+		return err
+	}
+	if err := ingress.Register(ctx, rContext); err != nil {
 		return err
 	}
 	return nil

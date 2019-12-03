@@ -27,4 +27,5 @@ type RioInfoStatus struct {
 	SystemNamespace         string                              `json:"systemNamespace,omitempty"`
 	Conditions              []genericcondition.GenericCondition `json:"conditions,omitempty"`
 	SystemComponentReadyMap map[string]string                   `json:"systemComponentReadyMap,omitempty"`
+	EnabledFeatures         []string                            `json:"enabledFeatures,omitempty"`
 }

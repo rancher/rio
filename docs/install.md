@@ -126,7 +126,38 @@ $ rio install --disable-features linkerd
 If you would like to use your own cluster domain and certificates instead of rdns and letsencrypt, you can disable these two features:
 
 ```bash
-$ rio install --disable-features rdns --disable-features letsencrypt 
+$ rio install --disable-features rdns,letsencrypt 
 ```
 
 And follow docs in [here](./faq.md) to see how to bring your own cluster domain and certs.
+
+### Flipping features after installation
+
+Rio manages features in a configMap called `rio-config` in `rio-system` namespace. It follows the format: 
+
+```json
+{
+  "features": {
+    "autoscaling": {
+      "enabled": true
+    },
+    "build": {
+      "enabled": true
+    },
+    "dashboard": {
+      "enabled": true
+    }
+  },
+  "letsEncrypt": {},
+  "gateway": {
+    "serviceName": "gateway-proxy-v2",
+    "serviceNamespace": "rio-system"
+  }
+}
+```
+
+To edit the configMap, run 
+
+```bash
+rio -s edit configmap/rio-config 
+```

@@ -80,7 +80,7 @@ func getTarget(obj *riov1.Service, systemNamespace string) (result target, err e
 	return
 }
 
-func (f *VirtualServiceFactory) findTLS(namespace, app, version string, hostnames []string) (map[string]string, error) {
+func (f *VirtualServiceFactory) FindTLS(namespace, app, version string, hostnames []string) (map[string]string, error) {
 	result := map[string]string{}
 
 	domains, err := f.clusterDomainCache.List(labels.Everything())

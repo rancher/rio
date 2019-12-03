@@ -17,6 +17,7 @@ import (
 	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/rio/pkg/version"
 	"github.com/rancher/wrangler/pkg/kv"
+	"github.com/rancher/wrangler/pkg/slice"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -113,12 +114,12 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 
 		// Checking systemInfo and components
 		info, err := ctx.Project.RioInfos().Get("rio", metav1.GetOptions{})
-		if err != nil || info.Status.Version == "" {
+		if err != nil || info.Status.Version == "" || len(info.Status.EnabledFeatures) == 0 {
 			progress.Display("Waiting for rio controller to initialize", 2)
 			continue
 		}
 
-		if ready, notReadyList, err := i.checkDeployment(ctx, cfg); err != nil {
+		if ready, notReadyList, err := i.checkDeployment(ctx, cfg, info); err != nil {
 			return err
 		} else if ready {
 			clusterDomain, err := ctx.Domain()
@@ -162,21 +163,10 @@ func (i *Install) preConfigure(ctx *clicontext.CLIContext, ignoreCluster bool) e
 		return err
 	}
 
-	var totalMemory int64
 	versionWarning := false
 	for _, node := range nodes.Items {
-		totalMemory += node.Status.Capacity.Memory().Value()
 		if !versionWarning {
 			versionWarning = checkKubernetesVersion(node.Status.NodeInfo.KubeletVersion)
-		}
-	}
-	if totalMemory < 2147000000 {
-		if isMinikubeCluster(nodes) {
-			fmt.Println("Warning: detecting that your minikube cluster doesn't have at least 3 GB of memory. Please try to increase memory by running `minikube start --memory 4098`")
-		} else if isDockerForMac(nodes) {
-			fmt.Println("Warning: detecting that your Docker For Mac cluster doesn't have at least 3 GB of memory. Please try to increase memory by following the doc https://docs.docker.com/v17.12/docker-for-mac.")
-		} else {
-			fmt.Println("Warning: detecting that your cluster doesn't have at least 3 GB of memory in total. Please try to increase memory for your nodes")
 		}
 	}
 
@@ -192,14 +182,6 @@ func checkKubernetesVersion(version string) bool {
 		}
 	}
 	return false
-}
-
-func isMinikubeCluster(nodes *v1.NodeList) bool {
-	return len(nodes.Items) == 1 && nodes.Items[0].Name == "minikube"
-}
-
-func isDockerForMac(nodes *v1.NodeList) bool {
-	return len(nodes.Items) == 1 && nodes.Items[0].Name == "docker-for-desktop"
 }
 
 func (i *Install) getConfigMap(ctx *clicontext.CLIContext, ignoreCluster bool) (config2.Config, *v1.ConfigMap, error) {
@@ -222,12 +204,17 @@ func (i *Install) getConfigMap(ctx *clicontext.CLIContext, ignoreCluster bool) (
 		}
 	}
 
-	for _, f := range i.DisableFeatures {
-		if cfg.Features == nil {
-			cfg.Features = map[string]config2.FeatureConfig{}
-		}
-		cfg.Features[f] = config2.FeatureConfig{
-			Enabled: new(bool),
+	for _, features := range i.DisableFeatures {
+		for _, f := range strings.Split(features, ",") {
+			if f == "" {
+				continue
+			}
+			if cfg.Features == nil {
+				cfg.Features = map[string]config2.FeatureConfig{}
+			}
+			cfg.Features[strings.TrimSpace(f)] = config2.FeatureConfig{
+				Enabled: new(bool),
+			}
 		}
 	}
 
@@ -287,11 +274,15 @@ func (l list) String() string {
 	return fmt.Sprint(l.notReady)
 }
 
-func (i *Install) checkDeployment(ctx *clicontext.CLIContext, cm config2.Config) (bool, list, error) {
+func (i *Install) checkDeployment(ctx *clicontext.CLIContext, cm config2.Config, info *adminv1.RioInfo) (bool, list, error) {
 	notReadyList := list{}
 
 	for feature, toChecks := range checkFeatures {
 		if f, ok := cm.Features[feature]; ok && f.Enabled != nil && !*f.Enabled {
+			continue
+		}
+
+		if !slice.ContainsString(info.Status.EnabledFeatures, feature) {
 			continue
 		}
 
