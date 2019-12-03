@@ -27,6 +27,13 @@ services:
   %s:
     image: ./
     ports: 80:8080/http`
+
+	defaultRiofileContentWithDockerfile = `
+services:
+  %s:
+    build:
+      dockerfile: %s
+    ports: 80:8080/http`
 )
 
 func Build(builds map[stack.ContainerBuildKey]riov1.ImageBuildSpec, c *clicontext.CLIContext, parallel bool) (map[stack.ContainerBuildKey]string, error) {
@@ -74,7 +81,7 @@ func LoadRiofile(path string) ([]byte, error) {
 			return content, nil
 		}
 		// named Dockerfile
-		return []byte(fmt.Sprintf(defaultRiofileContent, GetCurrentDir())), nil
+		return []byte(fmt.Sprintf(defaultRiofileContentWithDockerfile, GetCurrentDir(), path)), nil
 	}
 	// assumed Riofile
 	if _, err := os.Stat(defaultRiofile); err == nil {
