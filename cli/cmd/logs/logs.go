@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sync"
 	"text/template"
 	"time"
 
@@ -136,6 +137,7 @@ func (l *Logs) Output(ctx *clicontext.CLIContext, conf *stern.Config) error {
 
 	podInterface := ctx.Core.Pods(conf.Namespace)
 	tails := make(map[string]*stern.Tail)
+	tailsMutex := sync.RWMutex{}
 
 	// See: https://github.com/linkerd/linkerd2/blob/c5a85e587c143d31f814d807e0e39cb4ad5e3572/cli/cmd/logs.go#L223-L227
 	logC := make(chan string, 1024)
@@ -167,8 +169,18 @@ func (l *Logs) Output(ctx *clicontext.CLIContext, conf *stern.Config) error {
 	go func() {
 		for a := range added {
 			id := a.GetID()
-			if tails[id] != nil {
-				continue
+			tailsMutex.RLock()
+			existing := tails[id]
+			tailsMutex.RUnlock()
+			if existing != nil {
+				if existing.Active == true {
+					continue
+				} else { // cleanup failed tail to restart
+					tailsMutex.Lock()
+					tails[id].Close()
+					delete(tails, id)
+					tailsMutex.Unlock()
+				}
 			}
 			tailOpts := &stern.TailOptions{
 				SinceSeconds: int64(conf.Since.Seconds()),
@@ -179,9 +191,9 @@ func (l *Logs) Output(ctx *clicontext.CLIContext, conf *stern.Config) error {
 				Namespace:    true,
 			}
 			newTail := stern.NewTail(a.Namespace, a.Pod, a.Container, conf.Template, tailOpts)
-			if _, ok := tails[a.GetID()]; !ok {
-				tails[a.GetID()] = newTail
-			}
+			tailsMutex.Lock()
+			tails[id] = newTail
+			tailsMutex.Unlock()
 			newTail.Start(logCtx, podInterface, logC)
 		}
 	}()
@@ -189,11 +201,16 @@ func (l *Logs) Output(ctx *clicontext.CLIContext, conf *stern.Config) error {
 	go func() {
 		for r := range removed {
 			id := r.GetID()
-			if tails[id] == nil {
+			tailsMutex.RLock()
+			existing := tails[id]
+			tailsMutex.RUnlock()
+			if existing == nil {
 				continue
 			}
+			tailsMutex.Lock()
 			tails[id].Close()
 			delete(tails, id)
+			tailsMutex.Unlock()
 		}
 	}()
 
