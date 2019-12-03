@@ -266,11 +266,13 @@ func CreateCNAME(clusterDomain string) *route53.ChangeResourceRecordSetsOutput {
 	if err != nil {
 		fmt.Println("failed to create session make sure to add credentials to ~/.aws/credentials,", err)
 		fmt.Println(err.Error())
+		os.Exit(1)
 	}
 	cname := GetCNAMEInfo()
 	zoneID := getZoneIDInfo()
 	if cname == "" || clusterDomain == "" || zoneID == "" {
 		fmt.Println(fmt.Errorf("incomplete information: d: %s, t: %s, z: %s", cname, clusterDomain, zoneID))
+		os.Exit(1)
 	}
 	svc := route53.New(sess)
 
@@ -299,6 +301,7 @@ func CreateCNAME(clusterDomain string) *route53.ChangeResourceRecordSetsOutput {
 
 	if err != nil {
 		fmt.Println(err.Error())
+		os.Exit(1)
 	}
 	return resp
 }
