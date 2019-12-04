@@ -1,11 +1,13 @@
 ---
 name: Bug report
-about: Create a report to help us improve
+about: Describe a bug to help us improve Rio
 title: ''
-labels: ''
+labels: 'bug'
 assignees: ''
 
 ---
+
+Note: Please add dashboard specific bugs to the dashboard repo: https://github.com/rancher/dashboard/issues
 
 **Describe the bug**
 A clear and concise description of what the bug is.
