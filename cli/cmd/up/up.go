@@ -55,6 +55,21 @@ func (u *Up) Run(c *clicontext.CLIContext) error {
 		return err
 	}
 
+	rev := ""
+	if stack.Spec.Build != nil {
+		rev = stack.Spec.Build.Revision
+	}
+
+	if rev == "" {
+		rev = stack.Status.Revision
+	}
+
+	if answer == nil {
+		answer = map[string]string{}
+	}
+	answer["REVISION"] = rev
+	answer["NAMESPACE"] = c.GetSetNamespace()
+
 	return u.up(content, answer, stack, c)
 }
 
