@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	dashboardAdmin = "rio-dashboard-admin"
+	dashboardAdmin = "admin"
 	firstLogin     = "first-login"
 )
 
