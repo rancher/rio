@@ -81,6 +81,8 @@ func (f *featureHandler) getFeatureConfig(obj *corev1.ConfigMap) (enabled sets.S
 		}
 		if !*f.Enabled {
 			enabled.Delete(name)
+		} else {
+			enabled.Insert(name)
 		}
 	}
 
