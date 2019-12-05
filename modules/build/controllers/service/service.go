@@ -8,7 +8,6 @@ import (
 	"time"
 
 	webhookv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
-	"github.com/rancher/rio/modules/build/pkg"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/constructors"
@@ -173,10 +172,10 @@ func (p populator) populateBuild(buildKey, namespace string, build *riov1.ImageB
 	taskrun := constructors.NewTaskRun(namespace, trName, tektonv1alpha1.TaskRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				pkg.ContainerLabel: buildKey,
-				pkg.ServiceLabel:   svc.Name,
-				pkg.GitCommitLabel: svc.Annotations[pkg.GitCommitLabel],
-				pkg.LogTokenLabel:  status.BuildLogToken,
+				constants.ContainerLabel: buildKey,
+				constants.ServiceLabel:   svc.Name,
+				constants.GitCommitLabel: svc.Annotations[constants.GitCommitLabel],
+				constants.LogTokenLabel:  status.BuildLogToken,
 			},
 		},
 		Spec: tektonv1alpha1.TaskRunSpec{
@@ -313,8 +312,8 @@ func (p populator) populateWebhookAndSecrets(build *riov1.ImageBuildSpec, status
 	})
 
 	webhookReceiver.Annotations = map[string]string{
-		pkg.ServiceLabel:   svcName,
-		pkg.ContainerLabel: containerName,
+		constants.ServiceLabel:   svcName,
+		constants.ContainerLabel: containerName,
 	}
 
 	if webhook != nil && len(webhook.Status.Endpoints) > 0 {

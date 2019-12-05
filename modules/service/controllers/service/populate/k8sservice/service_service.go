@@ -2,9 +2,9 @@ package k8sservice
 
 import (
 	"github.com/rancher/rio/modules/service/controllers/service/populate/servicelabels"
-	"github.com/rancher/rio/modules/service/controllers/service/populate/serviceports"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constructors"
+	"github.com/rancher/rio/pkg/serviceports"
 	"github.com/rancher/rio/pkg/services"
 	"github.com/rancher/wrangler/pkg/objectset"
 	v1 "k8s.io/api/core/v1"

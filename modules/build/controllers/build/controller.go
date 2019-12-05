@@ -6,8 +6,8 @@ import (
 
 	webhookv1controller "github.com/rancher/gitwatcher/pkg/generated/controllers/gitwatcher.cattle.io/v1"
 	"github.com/rancher/rio/modules/build/controllers/service"
-	"github.com/rancher/rio/modules/build/pkg"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constants"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/services"
 	"github.com/rancher/rio/types"
@@ -39,7 +39,7 @@ func (h handler) updateService(key string, build *tektonv1alpha1.TaskRun) (*tekt
 		return build, nil
 	}
 
-	namespace, svcName, conName := build.Namespace, build.Labels[pkg.ServiceLabel], build.Labels[pkg.ContainerLabel]
+	namespace, svcName, conName := build.Namespace, build.Labels[constants.ServiceLabel], build.Labels[constants.ContainerLabel]
 	svc, err := h.services.Cache().Get(namespace, svcName)
 	if err != nil {
 		return build, nil
@@ -56,8 +56,8 @@ func (h handler) updateService(key string, build *tektonv1alpha1.TaskRun) (*tekt
 		state = "in_progress"
 	}
 
-	if build.Labels[pkg.GitCommitLabel] != "" {
-		gitcommit, err := h.gitcommits.Cache().Get(build.Namespace, build.Labels[pkg.GitCommitLabel])
+	if build.Labels[constants.GitCommitLabel] != "" {
+		gitcommit, err := h.gitcommits.Cache().Get(build.Namespace, build.Labels[constants.GitCommitLabel])
 		if err != nil {
 			return build, err
 		}
