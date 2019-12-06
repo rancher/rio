@@ -65,11 +65,20 @@ services:
   service-foo:
 
     # Scale setting
-    scale: 2 # Specify scale of the service. If you pass range `1-10`, it will enable autoscaling which can be scale from 1 to 10. Default to 1 if omitted
-
+    scale: 2 # Specify scale of the service. You may use this if you wish to make sure that this service comes up with the specified number of pods. (type int, make sure the type of the parameter is respected, consider the following examples in that light.)
+    
+    # if you wish to enable autoscaling
+    autoscale:
+      concurrency: 10 # specify concurrent request each pod can handle(soft limit, used to scale service)
+      maxReplicas: 10
+      minReplicas: 1
+    # template is false by default, for canary deployments, template could be made true
+    template: false
     # Revision setting
     app: my-app # Specify app name. Defaults to service name. This is used to aggregate services that belongs to the same app.
-    version: v0 # Specify version name. Defaults to v0.
+    # Specify version name. Defaults to v0. If the specified versin is v0, rio ps will show the service, say my-app as my-app itself
+    # When you specify any other version name, say v22, rio ps will show the service as my-app@v22,
+    version: v0 
     weight: 80 # Weight assigned to this revision. Defaults to 100.
 
     # Traffic rollout config. Optional
@@ -77,9 +86,6 @@ services:
       increment: 5 # traffic percentage increment(%) for each interval.
       interval: 2 # traffic increment interval(seconds).
       pause: false # whether to perform rollout or not
-
-    # Autoscaling setting. Only required if autoscaling is set
-    concurrency: 10 # specify concurrent request each pod can handle(soft limit, used to scale service)
 
     # Container configuration
     image: nginx # Container image. Required if not setting build
@@ -264,6 +270,7 @@ routers:
 
 # Use Riofile's answer/question templating
 template:
+  # when template is enabled, rio will inject two variables, NAMESPACE and REVISION which could be used in your template.
   goTemplate: true # use go templating
   envSubst: true # use ENV vars during templating
   questions:  # now make some questions that we provide answers too
@@ -526,7 +533,7 @@ We can now access this endpoint over encrypted https!
 #### Using answer file 
 
 Rio allows the user to leverage an answer file to customize `Riofile`. 
-Go template and [envSubst](https://github.com/drone/envsubst) can used to apply answers. By default, the `NAMESPACE` variable is available when defined in the template questions.
+Go template and [envSubst](https://github.com/drone/envsubst) can used to apply answers. By default, the `NAMESPACE` and `REVISION` variable is available when defined in the template questions.
 
 Answer file is a yaml manifest with key-value pairs:
 
@@ -589,4 +596,99 @@ services:
     image: ibuilthecloud/demo:v1
     env:
     - FOO=${FOO}
+    - MYNAMESPACE=${NAMESPACE}
+  
+template:
+  goTemplate: true # use go templating
+  envSubst: true # use ENV vars during templating  
+  questions:  # now make some questions that we provide answers too
+  - variable: FOO
+    description: "My custom thing"
 ```
+
+Rio example for watching a repo
+
+```bash
+namespace=something
+kubectl create namespace ${namespace}
+# based on your situation, you may have application level secrets to be created
+# kubectl apply -f deployments/secrets
+# if you have a private git repo, docker registry, you can use the above approach or you can create them using rio itself
+# if you have build instructions and want to push to a private registry
+# rio secrets create --docker
+# since you wish to watch a repo for changes on the stack definition, rio must have the ability to create a webhook in your repository
+# rio secrets create --github-webhook 
+# try rio secrets create --help to see other options.
+# make sure you pass --build-clone-secret gitcredential if you are having a private git repo
+# see a nodejs example here https://github.com/lucidprogrammer/rio-samples.git
+
+rio -n ${namespace} up --name somename  --push-registry-secret dockerconfig \
+    --file deployments/my-stack.yaml --build-webhook-secret githubtoken\
+    --answers deployments/values-my-stack.json https://github.com/lucidprogrammer/rio-samples.git
+
+# you should be able to see the autoscaling in action with the following
+
+hey -z 600s -c 60 endpointurlofweb1service
+```
+
+```yaml
+template:
+  goTemplate: true
+  envSubst: true
+  questions:
+    - variable: NAMESPACE
+      description: "namespace to deploy to"
+    - variable: REVISION
+      description: "Current commit"
+    # make sure you respect the type of the variable used.
+    - variable: MAX_SCALE
+      type: "int"
+      description: "maximum scale number"
+services:
+  web1:
+    version: v0
+    weight: 100
+    stageOnly: false
+    autoscale:
+      concurrency: 10
+      maxReplicas: ${MAX_SCALE}
+      minReplicas: 1
+    ports:
+    - 80:3000/http
+    env:
+    - NAMESPACE=${NAMESPACE}
+    # say you want to have a way to show the version/commit in your application.
+    - REVISION=${REVISION}
+    # let's say you want to access a super secret as env, you may do as follows
+    # - REDIS_PASSWORD=secret://spec/REDIS_PASSWORD
+    build:
+      branch: master
+      context: ./src/web1
+      pushRegistry: docker.io
+      # everytime you do a push to the repo, REVISION will match the specific commit hash and an image is created and pushed.
+      imageName: lucidprogrammer/web1:${REVISION}
+  
+  # an example to use init containers
+  web2:
+    version: v0
+    weight: 100
+    ports:
+    - 80:80/http
+    image: nginx:alpine
+    volumes:
+    - name: html
+      path: /usr/share/nginx/html
+    containers:
+    - init: true
+      name: web2-init
+      image: busybox
+      volumes:
+      - name: html
+        path: /work-dir
+      command:
+        - wget
+        - "-O"
+        - "/work-dir/index.html"
+        - http://kubernetes.io
+```
+

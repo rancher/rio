@@ -126,10 +126,6 @@ func (u *Up) loadFileAndAnswer(c *clicontext.CLIContext) (string, map[string]str
 	if err != nil {
 		return "", nil, err
 	}
-	if answers == nil {
-		answers = map[string]string{}
-	}
-	answers["NAMESPACE"] = c.GetSetNamespace()
 	content, err := up.LoadRiofile(u.F_File)
 	if err != nil {
 		return "", nil, err
