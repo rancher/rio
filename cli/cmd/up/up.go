@@ -50,26 +50,10 @@ func (u *Up) Run(c *clicontext.CLIContext) error {
 		return c.UpdateObject(stack)
 	}
 
-	content, answer, err := u.loadFileAndAnswer(c)
+	content, answer, err := u.loadFileAndAnswer(c, stack)
 	if err != nil {
 		return err
 	}
-
-	rev := ""
-	if stack.Spec.Build != nil {
-		rev = stack.Spec.Build.Revision
-	}
-
-	if rev == "" {
-		rev = stack.Status.Revision
-	}
-
-	if answer == nil {
-		answer = map[string]string{}
-	}
-	answer["REVISION"] = rev
-	answer["NAMESPACE"] = c.GetSetNamespace()
-
 	return u.up(content, answer, stack, c)
 }
 
@@ -121,7 +105,7 @@ func (u *Up) setBuild(c *clicontext.CLIContext) error {
 	return c.UpdateObject(existing)
 }
 
-func (u *Up) loadFileAndAnswer(c *clicontext.CLIContext) (string, map[string]string, error) {
+func (u *Up) loadFileAndAnswer(c *clicontext.CLIContext, stack *riov1.Stack) (string, map[string]string, error) {
 	answers, err := up.LoadAnswer(u.Answers)
 	if err != nil {
 		return "", nil, err
@@ -129,6 +113,15 @@ func (u *Up) loadFileAndAnswer(c *clicontext.CLIContext) (string, map[string]str
 	content, err := up.LoadRiofile(u.F_File)
 	if err != nil {
 		return "", nil, err
+	}
+	if answers == nil {
+		answers = map[string]string{}
+	}
+	answers["NAMESPACE"] = c.GetSetNamespace()
+	if stack.Spec.Build != nil && stack.Spec.Build.Revision != "" {
+		answers["REVISION"] = stack.Spec.Build.Revision
+	} else {
+		answers["REVISION"] = stack.Status.Revision
 	}
 	return string(content), answers, nil
 }

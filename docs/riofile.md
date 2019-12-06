@@ -1,5 +1,20 @@
 # Riofile
 
+## Table of Contents
+
+- [Intro](#intro)
+  - [Watching a Riofile](#watching-a-riofile)
+- [Reference](#riofile-reference)
+- [Templating](#templating)
+  - [Using answer file](#using-answer-file)
+  - [Using environment substitution](#using-environment-substitution)
+- [Examples](#examples)
+  - [How to use Rio to deploy an application with arbitary YAML](#How-to-use-Rio-to-deploy-an-application-with-arbitary-YAML)
+  - [How to watch a repo](#How-to-watch-a-repo)
+
+
+## Intro
+
 
 Rio works with standard Kubernetes YAML files. Rio additionally supports a more user-friendly `docker-compose`-style config file called `Riofile`.
 This allows you define rio services, routes, external services, configs, and secrets.
@@ -31,7 +46,7 @@ Once you have defined `Riofile`, simply run `rio up`.
 If you made any change to the `Riofile`, re-run `rio up` to pick up the change.
 To use a file not named "Riofile" use `rio up -f nginx.yaml`.
 
-#### Watching Riofile
+#### Watching a Riofile
 
 You can setup Rio to watch for Riofile changes in a Github repository and deploy Riofile changes automatically. For example:
 ```bash
@@ -40,7 +55,7 @@ $ rio up https://github.com/username/repo
 
 By default, Rio will poll the branch in 15 second intervals, but this can be configured to use a webhook instead. See [Webhook docs](./webhooks.md) for info.
 
-#### Riofile reference
+## Riofile Reference
 
 ```yaml
 # Configmap
@@ -63,23 +78,17 @@ externalservices:
 # Service
 services:
   service-foo:
+    app: my-app # Specify app name. Defaults to service name. This is used to aggregate services that belongs to the same app.
+    version: v0 # Specify the version of app this service represents. Defaults to v0. Displayed as app@version, unless version is v0 where it will be omitted.
+    scale: 2 # Specify scale of the service, defaults to 1. Use this to have service come up with the specified number of pods.
+    template: false # Set this service as a template to build service versions from instead of overwriting on each build, false by default. See https://github.com/rancher/rio/blob/master/docs/continuous-deployment.md#automatic-versioning
+    weight: 80 # Percentage of weight assigned to this revision. Defaults to 100.
 
-    # Scale setting
-    scale: 2 # Specify scale of the service. You may use this if you wish to make sure that this service comes up with the specified number of pods. (type int, make sure the type of the parameter is respected, consider the following examples in that light.)
-    
-    # if you wish to enable autoscaling
+    # To enable autoscaling:
     autoscale:
       concurrency: 10 # specify concurrent request each pod can handle(soft limit, used to scale service)
       maxReplicas: 10
       minReplicas: 1
-    # template is false by default, for canary deployments, template could be made true
-    template: false
-    # Revision setting
-    app: my-app # Specify app name. Defaults to service name. This is used to aggregate services that belongs to the same app.
-    # Specify version name. Defaults to v0. If the specified versin is v0, rio ps will show the service, say my-app as my-app itself
-    # When you specify any other version name, say v22, rio ps will show the service as my-app@v22,
-    version: v0 
-    weight: 80 # Weight assigned to this revision. Defaults to 100.
 
     # Traffic rollout config. Optional
     rollout:
@@ -269,8 +278,8 @@ routers:
           timeoutSeconds: 1 # Retry timeout (milli-seconds)
 
 # Use Riofile's answer/question templating
+# When you define NAMESPACE and REVISION variables in questions section rio will automatically inject their values.
 template:
-  # when template is enabled, rio will inject two variables, NAMESPACE and REVISION which could be used in your template.
   goTemplate: true # use go templating
   envSubst: true # use ENV vars during templating
   questions:  # now make some questions that we provide answers too
@@ -286,9 +295,88 @@ kubernetes:
 
 ```
 
+## Templating
 
-### How to use Rio to deploy an application with arbitary YAML
-_for Rio v0.6.0 and greater_
+#### Using answer file
+
+Rio allows the user to leverage an answer file to customize `Riofile`.
+Go template and [envSubst](https://github.com/drone/envsubst) can used to apply answers. By default, the `NAMESPACE` and `REVISION` variable is available when defined in the template questions.
+
+Answer file is a yaml manifest with key-value pairs:
+
+```yaml
+FOO: BAR
+```
+
+For example, to use go templating to apply a service when provided with the above answers file and running in the `test` namespace:
+
+1. Create Riofile
+```yaml
+{{- if (and (eq .Values.NAMESPACE "test") (eq .Values.FOO "BAR")) }}
+services:
+  demo:
+    image: ibuildthecloud/demo:v1
+    ports:
+    - 80
+{{- end}}
+
+template:
+  goTemplate: true # use go templating
+  envSubst: true # use ENV vars during templating
+  questions:  # now make some questions that we provide answers too
+  - variable: FOO
+    description: "My custom thing"
+  - variable: NAMESPACE
+    description: "The namespace"
+```
+2. `kubectl create namespace test`
+3. `cd /path/to/Riofile && rio -n test up --answers answers.yaml`
+
+Rio also supports a bash style envsubst replacement, with the following format:
+
+```yaml
+${var^}
+${var^^}
+${var,}
+${var,,}
+${var:position}
+${var:position:length}
+${var#substring}
+${var##substring}
+${var%substring}
+${var%%substring}
+${var/substring/replacement}
+${var//substring/replacement}
+${var/#substring/replacement}
+${var/%substring/replacement}
+${#var}
+${var=default}
+${var:=default}
+${var:-default}
+```
+
+#### Using environment substitution
+
+```yaml
+services:
+  demo:
+    image: ibuilthecloud/demo:v1
+    env:
+    - FOO=${FOO}
+    - MYNAMESPACE=${NAMESPACE}
+  
+template:
+  goTemplate: true # use go templating
+  envSubst: true # use ENV vars during templating  
+  questions:  # now make some questions that we provide answers too
+  - variable: FOO
+    description: "My custom thing"
+```
+
+
+## Examples
+
+#### How to use Rio to deploy an application with arbitary YAML
 
 In this example we will see how to define both a normal Rio service and arbitary Kubernetse manifests and deploy both of these with Rio. Follow the quickstart to get Rio installed into your cluster and ensure the output of `rio info` looks similar to this:
 ```
@@ -530,83 +618,7 @@ guestbook   https://guestbook-default.enu90s.on-rio.io
 We can now access this endpoint over encrypted https!
 
 
-#### Using answer file 
-
-Rio allows the user to leverage an answer file to customize `Riofile`. 
-Go template and [envSubst](https://github.com/drone/envsubst) can used to apply answers. By default, the `NAMESPACE` and `REVISION` variable is available when defined in the template questions.
-
-Answer file is a yaml manifest with key-value pairs:
-
-```yaml
-FOO: BAR
-```
-
-For example, to use go templating to apply a service when provided with the above answers file and running in the `test` namespace:
-
-1. Create Riofile
-```yaml
-{{- if (and (eq .Values.NAMESPACE "test") (eq .Values.FOO "BAR")) }}
-services:
-  demo:
-    image: ibuildthecloud/demo:v1
-    ports:
-    - 80
-{{- end}}
-
-template:
-  goTemplate: true # use go templating
-  envSubst: true # use ENV vars during templating  
-  questions:  # now make some questions that we provide answers too
-  - variable: FOO
-    description: "My custom thing"
-  - variable: NAMESPACE
-    description: "The namespace"
-```
-2. `kubectl create namespace test`
-3. `cd /path/to/Riofile && rio -n test up --answers answers.yaml`
-
-Rio also supports a bash style envsubst replacement, with the following format:
-
-```yaml
-${var^}
-${var^^}
-${var,}
-${var,,}
-${var:position}
-${var:position:length}
-${var#substring}
-${var##substring}
-${var%substring}
-${var%%substring}
-${var/substring/replacement}
-${var//substring/replacement}
-${var/#substring/replacement}
-${var/%substring/replacement}
-${#var}
-${var=default}
-${var:=default}
-${var:-default}
-```
-
-A Riofile example with envsubst:
-
-```yaml
-services:
-  demo:
-    image: ibuilthecloud/demo:v1
-    env:
-    - FOO=${FOO}
-    - MYNAMESPACE=${NAMESPACE}
-  
-template:
-  goTemplate: true # use go templating
-  envSubst: true # use ENV vars during templating  
-  questions:  # now make some questions that we provide answers too
-  - variable: FOO
-    description: "My custom thing"
-```
-
-Rio example for watching a repo
+#### How to watch a repo
 
 ```bash
 namespace=something
