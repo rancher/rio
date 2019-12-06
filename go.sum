@@ -868,8 +868,6 @@ github.com/rancher/norman v0.0.0-20191114233102-966e8db9e670 h1:EM5VxDfLyKFTEPVV
 github.com/rancher/norman v0.0.0-20191114233102-966e8db9e670/go.mod h1:zOBq0bQmo9slllyM1kcKpKr1RH5IWodjySaffLKSOx0=
 github.com/rancher/rdns-server v0.5.7-0.20190927164127-7128efe7d065 h1:K2/79Jdw0viw+ryWSJQcIMYJf2vc5yQXlEHPTbpVPVs=
 github.com/rancher/rdns-server v0.5.7-0.20190927164127-7128efe7d065/go.mod h1:/yw1tSnAWDSDSmhKpYNA/FBA49fbbtNfh/IHT31v7jE=
-github.com/rancher/stern v0.0.0-20191114200800-b31e21d4e493 h1:ebywCd5IyRRNzXgQWPsGW1xQbND9M88ZyjMS80M3a9U=
-github.com/rancher/stern v0.0.0-20191114200800-b31e21d4e493/go.mod h1:aaP5eLMmFcyJUsZB6FwAO+0eILWeBKvupuHeeEuY0qQ=
 github.com/rancher/stern v0.0.0-20191203174401-30397523f082 h1:rDHE/uQXR2tjyik9kkVI8SN3eSliuqbjouC427M8VUM=
 github.com/rancher/stern v0.0.0-20191203174401-30397523f082/go.mod h1:aaP5eLMmFcyJUsZB6FwAO+0eILWeBKvupuHeeEuY0qQ=
 github.com/rancher/wrangler v0.1.4/go.mod h1:EYP7cqpg42YqElaCm+U9ieSrGQKAXxUH5xsr+XGpWyE=

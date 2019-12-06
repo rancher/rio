@@ -97,6 +97,31 @@ func (u Uninstall) Run(ctx *clicontext.CLIContext) error {
 	if err := ctx.K8s.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Delete(constants.AuthWebhookSecretName, &metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
 		return err
 	}
+	clusterRoles, err := ctx.K8s.RbacV1beta1().ClusterRoles().List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	for _, clusterRole := range clusterRoles.Items {
+		if _, ok := clusterRole.Annotations["objectset.rio.cattle.io/owner-gvk"]; ok {
+			err = ctx.K8s.RbacV1beta1().ClusterRoles().Delete(clusterRole.Name, &metav1.DeleteOptions{})
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	clusterRoleBindings, err := ctx.K8s.RbacV1beta1().ClusterRoleBindings().List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	for _, clusterRoleBinding := range clusterRoleBindings.Items {
+		if _, ok := clusterRoleBinding.Annotations["objectset.rio.cattle.io/owner-gvk"]; ok {
+			err = ctx.K8s.RbacV1beta1().ClusterRoleBindings().Delete(clusterRoleBinding.Name, &metav1.DeleteOptions{})
+			if err != nil {
+				return err
+			}
+		}
+	}
 
 	fmt.Println("Rio is uninstalled from your cluster")
 	return nil
