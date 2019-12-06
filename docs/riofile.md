@@ -300,7 +300,7 @@ kubernetes:
 #### Using answer file
 
 Rio allows the user to leverage an answer file to customize `Riofile`.
-Go template and [envSubst](https://github.com/drone/envsubst) can used to apply answers. By default, the `NAMESPACE` and `REVISION` variable is available when defined in the template questions.
+Go template and [envSubst](https://github.com/drone/envsubst) can be used to apply answers. By default, the `NAMESPACE` and `REVISION` variables are available when defined in the template questions.
 
 Answer file is a yaml manifest with key-value pairs:
 
@@ -703,4 +703,3 @@ services:
         - "/work-dir/index.html"
         - http://kubernetes.io
 ```
-
