@@ -23,7 +23,7 @@ func Builds(app *cli.App) cli.Command {
 }
 
 type Build struct {
-	F_File   string   `desc:"Name of the file to look for build, support both Riofile and Dockerfile"`
+	F_File   string   `desc:"Name of the file to look for build, supports both Riofile and Dockerfile"`
 	T_Tag    string   `desc:"Name and optionally a tag in the 'name:tag' format"`
 	BuildArg []string `desc:"Set build-time variables"`
 	NoCache  bool     `desc:"Do not use cache when building the image"`
