@@ -81,6 +81,7 @@ func riofileTests(t *testing.T, when spec.G, it spec.S) {
 
 		it.After(func() {
 			riofile.Remove()
+			frontendRoute.Remove()
 		})
 
 		it("should bring up the k8s sample app", func() {

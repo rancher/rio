@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	serviceName = "gateway-proxy-v2"
+	serviceName = "gateway-proxy"
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {

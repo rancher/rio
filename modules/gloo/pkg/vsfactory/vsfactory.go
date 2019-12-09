@@ -11,7 +11,8 @@ import (
 	solov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/headers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -48,9 +49,11 @@ func newVirtualService(namespace, name string, hosts []string, targets ...target
 				Domains: hosts,
 				Routes: []*soloapiv1.Route{
 					{
-						Matcher: &gloov1.Matcher{
-							PathSpecifier: &gloov1.Matcher_Prefix{
-								Prefix: "/",
+						Matchers: []*matchers.Matcher{
+							{
+								PathSpecifier: &matchers.Matcher_Prefix{
+									Prefix: "/",
+								},
 							},
 						},
 					},
@@ -60,7 +63,7 @@ func newVirtualService(namespace, name string, hosts []string, targets ...target
 	}
 
 	vs.Spec.VirtualHost.Routes[0].Action = newRouteAction(targets...)
-	vs.Spec.VirtualHost.Routes[0].RoutePlugins = newRoutePlugin(targets...)
+	vs.Spec.VirtualHost.Routes[0].Options = newRoutePlugin(targets...)
 
 	return vs
 }
@@ -140,10 +143,10 @@ func single(target target) *soloapiv1.Route_RouteAction {
 	}
 }
 
-func newRoutePlugin(targets ...target) *v1.RoutePlugins {
+func newRoutePlugin(targets ...target) *v1.RouteOptions {
 	for _, t := range targets {
 		if t.ScaleIsZero {
-			return &v1.RoutePlugins{
+			return &v1.RouteOptions{
 				HeaderManipulation: &headers.HeaderManipulation{
 					RequestHeadersToAdd: []*headers.HeaderValueOption{
 						{

@@ -16,3 +16,11 @@ func NewClusterClient(base clients.ResourceClient, cluster string) *Client {
 		},
 	}
 }
+
+// Convenience function for wrapping clients only if they point to remote clusters.
+func NewClusterResourceClient(base clients.ResourceClient, cluster string) clients.ResourceClient {
+	if cluster == "" {
+		return base
+	}
+	return NewClusterClient(base, cluster)
+}
