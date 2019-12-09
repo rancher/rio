@@ -33,6 +33,7 @@ services:
   %s:
     build:
       dockerfile: %s
+      context: %s
     ports: 80:8080/http`
 )
 
@@ -67,8 +68,8 @@ func GetCurrentDir() string {
 // LoadRiofile handles the following scenarios:
 // An assumed Riofile: rio up
 // An assumed Dockerfile: rio up
-// A named Riofile: rio up -f myRiofile
-// A named Dockerfile: rio up -f myDockerfile
+// A named Riofile: rio up -f ./path/to/myRiofile
+// A named Dockerfile: rio up -f /path/to/myDockerfile
 func LoadRiofile(path string) ([]byte, error) {
 	if path != "" {
 		content, err := readFile(path)
@@ -81,7 +82,7 @@ func LoadRiofile(path string) ([]byte, error) {
 			return content, nil
 		}
 		// named Dockerfile
-		return []byte(fmt.Sprintf(defaultRiofileContentWithDockerfile, GetCurrentDir(), path)), nil
+		return []byte(fmt.Sprintf(defaultRiofileContentWithDockerfile, GetCurrentDir(), filepath.Base(path), filepath.Dir(path))), nil
 	}
 	// assumed Riofile
 	if _, err := os.Stat(defaultRiofile); err == nil {
