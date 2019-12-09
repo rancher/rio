@@ -6,5 +6,6 @@ kubernetes:
 $(glooctl install gateway -n '${NAMESPACE}' --values ./gloo-values.yaml --dry-run | sed 's/^/    /g')
 
 template:
+  envSubst: true
   goTemplate: false
 EOF
