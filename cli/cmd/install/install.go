@@ -268,10 +268,10 @@ func (i *Install) configureNamespace(ctx *clicontext.CLIContext, systemStack *st
 }
 
 var checkFeatures = map[string][]string{
-	"gateway":     {"rio-system/gateway", "rio-system/gateway-proxy", "rio-system/gloo"},
-	"build":       {"rio-system/buildkitd", "rio-system/webhook", "tekton-pipelines/tekton-pipelines-webhook", "tekton-pipelines/tekton-pipelines-controller"},
-	"letsencrypt": {"rio-system/cert-manager"},
-	"autoscaling": {"rio-system/autoscaler"},
+	"gloo":        {"gateway", "gateway-proxy", "gloo"},
+	"build":       {"buildkitd", "webhook", "tekton-pipelines/tekton-pipelines-webhook", "tekton-pipelines/tekton-pipelines-controller"},
+	"letsencrypt": {"cert-manager"},
+	"autoscaling": {"autoscaler"},
 	"linkerd":     {"linkerd/linkerd-identity", "linkerd/linkerd-tap", "linkerd/linkerd-sp-validator", "linkerd/linkerd-proxy-injector", "linkerd/linkerd-controller", "linkerd/linkerd-grafana", "linkerd/linkerd-web", "linkerd/linkerd-destination", "linkerd/linkerd-prometheus"},
 }
 
@@ -296,10 +296,13 @@ func (i *Install) checkDeployment(ctx *clicontext.CLIContext, cm config2.Config)
 		}
 
 		for _, name := range toChecks {
-			ns, n := kv.Split(name, "/")
+			ns, n := kv.RSplit(name, "/")
+			if ns == "" {
+				ns = ctx.GetSystemNamespace()
+			}
 			deploy, err := ctx.K8s.AppsV1().Deployments(ns).Get(n, metav1.GetOptions{})
 			if err != nil || !isReady(deploy.Status) {
-				notReadyList.notReady = append(notReadyList.notReady, name)
+				notReadyList.notReady = append(notReadyList.notReady, fmt.Sprintf("%s/%s", ns, n))
 			}
 		}
 	}
