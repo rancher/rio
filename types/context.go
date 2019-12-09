@@ -50,8 +50,9 @@ type Context struct {
 	Storage       *storage.Factory
 	Webhook       *webhookinator.Factory
 
-	Config Config
-	Apply  apply.Apply
+	RestConfig *rest.Config
+	Config     Config
+	Apply      apply.Apply
 }
 
 func From(ctx context.Context) *Context {
@@ -77,6 +78,7 @@ func NewContext(namespace string, config *rest.Config) *Context {
 		K8s:           kubernetes.NewForConfigOrDie(config),
 		Gateway:       gateway.NewFactoryFromConfigOrDie(config),
 		Gloo:          gloo.NewFactoryFromConfigOrDie(config),
+		RestConfig:    config,
 	}
 
 	context.Apply = apply.New(context.K8s.Discovery(), apply.NewClientFactory(config)).WithRateLimiting(20.0)

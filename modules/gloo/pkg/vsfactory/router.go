@@ -4,18 +4,16 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
-
 	"github.com/gogo/protobuf/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	name2 "github.com/rancher/wrangler/pkg/name"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	solov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/faultinjection"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/headers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hostrewrite"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 	solovcorev1 "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -122,12 +120,12 @@ func headersToHeaders(hs *riov1.HeaderOperations) *headers.HeaderManipulation {
 
 func routeToRoute(namespace string, route riov1.RouteSpec) (result *gatewayv1.Route) {
 	result = &gatewayv1.Route{
-		RoutePlugins: &gloov1.RoutePlugins{},
-		Matcher:      matchToMatch(route.Match),
+		Options:  &gloov1.RouteOptions{},
+		Matchers: []*matchers.Matcher{matchToMatch(route.Match)},
 	}
 
 	if route.Headers != nil {
-		result.RoutePlugins = &gloov1.RoutePlugins{
+		result.Options = &gloov1.RouteOptions{
 			HeaderManipulation: headersToHeaders(route.Headers),
 		}
 	}
@@ -238,27 +236,25 @@ func addRedirect(route riov1.RouteSpec, gatewayRoute *gatewayv1.Route) {
 
 func addRewrite(route riov1.RouteSpec, gatewayRoute *gatewayv1.Route) {
 	if route.Rewrite.Path != "" {
-		gatewayRoute.RoutePlugins.PrefixRewrite = &transformation.PrefixRewrite{
-			PrefixRewrite: route.Rewrite.Path,
+		gatewayRoute.Options.PrefixRewrite = &types.StringValue{
+			Value: route.Rewrite.Path,
 		}
 	}
 
 	if route.Rewrite.Host != "" {
-		gatewayRoute.RoutePlugins.HostRewrite = &hostrewrite.HostRewrite{
-			HostRewriteType: &hostrewrite.HostRewrite_HostRewrite{
-				HostRewrite: route.Rewrite.Host,
-			},
+		gatewayRoute.Options.HostRewriteType = &gloov1.RouteOptions_HostRewrite{
+			HostRewrite: route.Rewrite.Host,
 		}
 	}
 }
 
 func addTimeout(route riov1.RouteSpec, gatewayRoute *gatewayv1.Route) {
 	t := time.Duration(int64(*route.TimeoutSeconds)) * time.Second
-	gatewayRoute.RoutePlugins.Timeout = &t
+	gatewayRoute.Options.Timeout = &t
 }
 
 func addFault(route riov1.RouteSpec, gatewayRoute *gatewayv1.Route) {
-	gatewayRoute.RoutePlugins.Faults = faultToFault(route.Fault)
+	gatewayRoute.Options.Faults = faultToFault(route.Fault)
 }
 
 func addRetry(route riov1.RouteSpec, gatewayRoute *gatewayv1.Route) {
@@ -266,7 +262,7 @@ func addRetry(route riov1.RouteSpec, gatewayRoute *gatewayv1.Route) {
 	if route.TimeoutSeconds != nil {
 		t = time.Duration(*route.TimeoutSeconds) * time.Second
 	}
-	gatewayRoute.RoutePlugins.Retries = &retries.RetryPolicy{
+	gatewayRoute.Options.Retries = &retries.RetryPolicy{
 		NumRetries:    uint32(route.Retry.Attempts),
 		PerTryTimeout: &t,
 	}
@@ -308,32 +304,32 @@ func faultToFault(fault *riov1.Fault) *faultinjection.RouteFaults {
 	return result
 }
 
-func matchToMatch(match riov1.Match) (result *gloov1.Matcher) {
-	result = &gloov1.Matcher{}
+func matchToMatch(match riov1.Match) (result *matchers.Matcher) {
+	result = &matchers.Matcher{}
 
 	if match.Path != nil {
 		switch {
 		case match.Path.Regexp != "":
-			result.PathSpecifier = &gloov1.Matcher_Regex{
+			result.PathSpecifier = &matchers.Matcher_Regex{
 				Regex: match.Path.Regexp,
 			}
 		case match.Path.Prefix != "":
-			result.PathSpecifier = &gloov1.Matcher_Prefix{
+			result.PathSpecifier = &matchers.Matcher_Prefix{
 				Prefix: match.Path.Prefix,
 			}
 		case match.Path.Exact != "":
-			result.PathSpecifier = &gloov1.Matcher_Exact{
+			result.PathSpecifier = &matchers.Matcher_Exact{
 				Exact: match.Path.Exact,
 			}
 		}
 	} else {
-		result.PathSpecifier = &gloov1.Matcher_Prefix{
+		result.PathSpecifier = &matchers.Matcher_Prefix{
 			Prefix: "/",
 		}
 	}
 
 	for _, match := range match.Headers {
-		m := &gloov1.HeaderMatcher{
+		m := &matchers.HeaderMatcher{
 			Name: match.Name,
 		}
 

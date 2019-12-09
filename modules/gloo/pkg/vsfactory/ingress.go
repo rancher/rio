@@ -3,6 +3,7 @@ package vsfactory
 import (
 	gloov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -14,9 +15,11 @@ func (f *VirtualServiceFactory) ForIngress(ingress *v1beta1.Ingress) ([]runtime.
 		vs.Spec.VirtualHost.Domains = append(vs.Spec.VirtualHost.Domains, rule.Host)
 		for _, path := range rule.HTTP.Paths {
 			vs.Spec.VirtualHost.Routes = append(vs.Spec.VirtualHost.Routes, &gloov1.Route{
-				Matcher: &v1.Matcher{
-					PathSpecifier: &v1.Matcher_Exact{
-						Exact: path.Path,
+				Matchers: []*matchers.Matcher{
+					{
+						PathSpecifier: &matchers.Matcher_Exact{
+							Exact: path.Path,
+						},
 					},
 				},
 				Action: &gloov1.Route_RouteAction{
