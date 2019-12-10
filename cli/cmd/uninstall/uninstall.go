@@ -8,6 +8,7 @@ import (
 	gitwatcherv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/apis/rio.cattle.io"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	batchv1 "k8s.io/api/batch/v1"
@@ -102,10 +103,12 @@ func (u Uninstall) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 	for _, clusterRole := range clusterRoles.Items {
-		if _, ok := clusterRole.Annotations["objectset.rio.cattle.io/owner-gvk"]; ok {
+		if matchRioServiceGVK(clusterRole.Annotations) {
 			err = ctx.K8s.RbacV1beta1().ClusterRoles().Delete(clusterRole.Name, &metav1.DeleteOptions{})
 			if err != nil {
-				return err
+				if !errors.IsNotFound(err) {
+					return err
+				}
 			}
 		}
 	}
@@ -115,16 +118,27 @@ func (u Uninstall) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 	for _, clusterRoleBinding := range clusterRoleBindings.Items {
-		if _, ok := clusterRoleBinding.Annotations["objectset.rio.cattle.io/owner-gvk"]; ok {
+		if matchRioServiceGVK(clusterRoleBinding.Annotations) {
 			err = ctx.K8s.RbacV1beta1().ClusterRoleBindings().Delete(clusterRoleBinding.Name, &metav1.DeleteOptions{})
 			if err != nil {
-				return err
+				if !errors.IsNotFound(err) {
+					return err
+				}
 			}
 		}
 	}
 
 	fmt.Println("Rio is uninstalled from your cluster")
 	return nil
+}
+
+func matchRioServiceGVK(annotations map[string]string) bool {
+	if anno, ok := annotations["objectset.rio.cattle.io/owner-gvk"]; ok {
+		if anno == rio.GroupName+"/v1, Kind=Service" {
+			return true
+		}
+	}
+	return false
 }
 
 func (u Uninstall) uninstallLinkerd(ctx *clicontext.CLIContext) error {
