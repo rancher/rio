@@ -66,6 +66,7 @@ func (f *certsHandler) onCertChange(key string, obj *certmanagerv1alpha2.Certifi
 func (f *certsHandler) Handle(obj *v1.ClusterDomain, status v1.ClusterDomainStatus) ([]runtime.Object, v1.ClusterDomainStatus, error) {
 	if obj.Spec.SecretName != "" {
 		status.AssignedSecretName = obj.Spec.SecretName
+		status.HTTPSSupported = true
 		return nil, status, nil
 	}
 

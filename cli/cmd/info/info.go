@@ -3,6 +3,7 @@ package info
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/rancher/rio/cli/pkg/clicontext"
@@ -36,6 +37,12 @@ func info(ctx *clicontext.CLIContext) error {
 		return fmt.Errorf("no system information is generated")
 	}
 
+	var names []string
+	var certs []string
+	for _, cd := range clusterDomains.Items {
+		names = append(names, cd.Name)
+		certs = append(certs, fmt.Sprintf("%s(%s)", cd.Name, strconv.FormatBool(cd.Status.HTTPSSupported)))
+	}
 	clusterDomain := clusterDomains.Items[0]
 
 	var addresses []string
@@ -45,10 +52,10 @@ func info(ctx *clicontext.CLIContext) error {
 
 	builder.WriteString(fmt.Sprintf("Rio Version: %s (%s)\n", info.Status.Version, info.Status.GitCommit))
 	builder.WriteString(fmt.Sprintf("Rio CLI Version: %s (%s)\n", version.Version, version.GitCommit))
-	builder.WriteString(fmt.Sprintf("Cluster Domain: %s\n", clusterDomain.Name))
+	builder.WriteString(fmt.Sprintf("Cluster Domain: %v\n", strings.Join(names, ",")))
 	builder.WriteString(fmt.Sprintf("Cluster Domain IPs: %s\n", strings.Join(addresses, ",")))
 	builder.WriteString(fmt.Sprintf("System Namespace: %s\n", info.Status.SystemNamespace))
-	builder.WriteString(fmt.Sprintf("Wildcard certificates: %v\n", clusterDomain.Status.HTTPSSupported))
+	builder.WriteString(fmt.Sprintf("Wildcard certificates: %v\n", strings.Join(certs, ",")))
 
 	var keys []string
 	for k := range info.Status.SystemComponentReadyMap {
