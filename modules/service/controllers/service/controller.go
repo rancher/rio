@@ -5,11 +5,16 @@ import (
 
 	"github.com/rancher/rio/modules/service/controllers/service/populate"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/arch"
+	"github.com/rancher/rio/pkg/config"
 	adminv1 "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/services"
 	"github.com/rancher/rio/types"
+	corev1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/pkg/generic"
 	"github.com/rancher/wrangler/pkg/objectset"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -19,6 +24,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		namespace:          rContext.Namespace,
 		publicDomainCache:  rContext.Admin.Admin().V1().PublicDomain().Cache(),
 		clusterDomainCache: rContext.Admin.Admin().V1().ClusterDomain().Cache(),
+		configmaps:         rContext.Core.Core().V1().ConfigMap(),
 	}
 
 	riov1controller.RegisterServiceGeneratingHandler(ctx,
@@ -47,11 +53,16 @@ type serviceHandler struct {
 
 	clusterDomainCache adminv1.ClusterDomainCache
 	publicDomainCache  adminv1.PublicDomainCache
+	configmaps         corev1controller.ConfigMapClient
 }
 
 func (s *serviceHandler) populate(service *riov1.Service, status riov1.ServiceStatus) ([]runtime.Object, riov1.ServiceStatus, error) {
 	if service.Spec.Template {
 		return nil, status, generic.ErrSkip
+	}
+
+	if err := s.ensureFeatures(service); err != nil {
+		return nil, status, err
 	}
 
 	os := objectset.NewObjectSet()
@@ -60,4 +71,49 @@ func (s *serviceHandler) populate(service *riov1.Service, status riov1.ServiceSt
 	}
 
 	return os.All(), status, nil
+}
+
+func (s *serviceHandler) ensureFeatures(service *riov1.Service) error {
+	cm, err := s.configmaps.Get(s.namespace, config.ConfigName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	conf, err := config.FromConfigMap(cm)
+	if err != nil {
+		return err
+	}
+
+	t := true
+	if services.AutoscaleEnable(service) && arch.IsAmd64() {
+		if conf.Features == nil {
+			conf.Features = map[string]config.FeatureConfig{}
+		}
+		f := conf.Features["autoscaling"]
+		f.Enabled = &t
+		conf.Features["autoscaling"] = f
+	}
+
+	for _, con := range services.ToNamedContainers(service) {
+		if con.ImageBuild != nil && con.ImageBuild.Repo != "" && arch.IsAmd64() {
+			if conf.Features == nil {
+				conf.Features = map[string]config.FeatureConfig{}
+			}
+			f := conf.Features["build"]
+			f.Enabled = &t
+			conf.Features["build"] = f
+			break
+		}
+	}
+
+	cm, err = config.SetConfig(cm, conf)
+	if err != nil {
+		return err
+	}
+
+	if _, err := s.configmaps.Update(cm); err != nil {
+		return err
+	}
+
+	return nil
 }

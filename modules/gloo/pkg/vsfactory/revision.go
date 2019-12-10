@@ -35,7 +35,7 @@ func (f *VirtualServiceFactory) ForRevision(svc *riov1.Service) ([]*solov1.Virtu
 		vs,
 	}
 
-	tls, err := f.findTLS(svc.Namespace, app, version, target.Hosts)
+	tls, err := f.FindTLS(svc.Namespace, app, version, target.Hosts)
 	if err != nil {
 		return result, err
 	}

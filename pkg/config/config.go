@@ -5,7 +5,11 @@ import (
 	"strings"
 
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/constructors"
+	corev1 "github.com/rancher/wrangler-api/pkg/generated/controllers/core/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -19,6 +23,7 @@ type ControllerConfig struct {
 	WebhookPort            string
 	WebhookHost            string
 	IPAddresses            string
+	Features               string
 }
 
 type Config struct {
@@ -31,6 +36,9 @@ type Gateway struct {
 	StaticAddresses  []adminv1.Address `json:"staticAddresses,omitempty"`
 	ServiceName      string            `json:"serviceName,omitempty"`
 	ServiceNamespace string            `json:"serviceNamespace,omitempty"`
+
+	IngressName      string `json:"ingressName,omitempty"`
+	IngressNamespace string `json:"ingressNamespace,omitempty"`
 }
 
 type LetsEncrypt struct {
@@ -71,4 +79,16 @@ func SetConfig(cm *v1.ConfigMap, config Config) (*v1.ConfigMap, error) {
 	}
 	cm.Data["config"] = string(bytes)
 	return cm, nil
+}
+
+func GetConfig(namespace string, client corev1.ConfigMapClient) (Config, error) {
+	config, err := client.Get(namespace, ConfigName, metav1.GetOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			config = constructors.NewConfigMap(namespace, ConfigName, v1.ConfigMap{})
+		} else {
+			return Config{}, err
+		}
+	}
+	return FromConfigMap(config)
 }

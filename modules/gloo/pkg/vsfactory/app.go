@@ -25,7 +25,7 @@ func (f *VirtualServiceFactory) ForApp(namespace, appName string, svcs []*riov1.
 		vs,
 	}
 
-	tls, err := f.findTLS(namespace, appName, "", hostnames)
+	tls, err := f.FindTLS(namespace, appName, "", hostnames)
 	if err != nil {
 		return nil, err
 	}

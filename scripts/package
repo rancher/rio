@@ -13,7 +13,7 @@ for i in darwin windows; do
     fi
 done
 
-IMAGE=${REPO}/rio-controller:${TAG}
+IMAGE=${REPO}/rio-controller:${VERSION}${SUFFIX}
 DOCKERFILE=package/Dockerfile
 if [ -e ${DOCKERFILE}.${ARCH} ]; then
     DOCKERFILE=${DOCKERFILE}.${ARCH}

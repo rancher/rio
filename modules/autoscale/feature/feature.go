@@ -14,7 +14,6 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		FeatureName: "autoscaling",
 		FeatureSpec: features.FeatureSpec{
 			Description: "Auto-scaling services based on in-flight requests",
-			Enabled:     true,
 		},
 		SystemStacks: []*stack.SystemStack{
 			stack.NewSystemStack(apply, rContext.Admin.Admin().V1().SystemStack(), rContext.Namespace, "rio-autoscaler"),

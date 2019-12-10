@@ -67,6 +67,12 @@ func main() {
 			Usage:       "Specify which ip address RDNS should generate record for",
 			Destination: &config.ConfigController.IPAddresses,
 		},
+		cli.StringFlag{
+			Name:        "features",
+			Usage:       "Specify which feature must be turned on",
+			Destination: &config.ConfigController.Features,
+			Value:       "autoscaling,build",
+		},
 	}
 	app.Flags = append(app.Flags, debug.Flags(&debugConfig)...)
 	app.Action = run
