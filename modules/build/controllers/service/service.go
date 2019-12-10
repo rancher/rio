@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	webhookv1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
@@ -139,13 +140,11 @@ func (p populator) populateBuild(buildKey, namespace string, build *riov1.ImageB
 	if svc.Spec.Template {
 		return nil
 	}
-
-	rev := build.Revision
-	if rev == "" {
+	if build.Revision == "" {
 		return nil
 	}
 
-	trName := name.SafeConcatName(buildKey, name.Hex(build.Repo, 5), name.Hex(rev, 5))
+	trName := name.SafeConcatName(buildKey, name.Hex(build.Repo, 5), name.Hex(build.Revision, 5))
 
 	p.setDefaults(build, namespace)
 
@@ -239,7 +238,7 @@ func (p populator) populateBuild(buildKey, namespace string, build *riov1.ImageB
 						Name: "image",
 						Value: tektonv1alpha1.ArrayOrString{
 							Type:      tektonv1alpha1.ParamTypeString,
-							StringVal: ImageName(rev, namespace, buildKey, build),
+							StringVal: ImageName(namespace, buildKey, build),
 						},
 					},
 					{
@@ -270,7 +269,7 @@ func (p populator) populateBuild(buildKey, namespace string, build *riov1.ImageB
 									},
 									{
 										Name:  "revision",
-										Value: rev,
+										Value: build.Revision,
 									},
 								},
 							},
@@ -347,38 +346,30 @@ func (p populator) setDefaults(build *riov1.ImageBuildSpec, namespace string) {
 	}
 }
 
-func ImageName(rev string, namespace, name string, build *riov1.ImageBuildSpec) string {
+func ImageName(namespace, name string, build *riov1.ImageBuildSpec) string {
 	registry := constants.RegistryService
-	if build.PushRegistry != "" {
-		registry = build.PushRegistry
-	}
-	imageName := namespace + "-" + name
-	if build.ImageName != "" {
-		imageName = build.ImageName
-	}
-
-	suffix := rev
-	if len(rev) > 5 {
-		suffix = rev[:5]
-	}
-
-	return fmt.Sprintf("%s/%s:%s", registry, imageName, suffix)
+	return generateImageNamePath(registry, namespace, name, build)
 }
 
-func PullImageName(rev string, namespace, name string, build *riov1.ImageBuildSpec) string {
+func PullImageName(namespace, name string, build *riov1.ImageBuildSpec) string {
 	registry := constants.LocalRegistry
+	return generateImageNamePath(registry, namespace, name, build)
+}
+
+func generateImageNamePath(registry, namespace, name string, build *riov1.ImageBuildSpec) string {
 	if build.PushRegistry != "" {
 		registry = build.PushRegistry
 	}
 	imageName := namespace + "-" + name
 	if build.ImageName != "" {
 		imageName = build.ImageName
+		if strings.Contains(imageName, ":") {
+			return fmt.Sprintf("%s/%s", registry, imageName)
+		}
 	}
-
-	suffix := rev
-	if len(rev) > 5 {
-		suffix = rev[:5]
+	suffix := build.Revision // no tag specified, use rev as tag
+	if len(suffix) > 5 {
+		suffix = suffix[:5]
 	}
-
 	return fmt.Sprintf("%s/%s:%s", registry, imageName, suffix)
 }

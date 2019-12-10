@@ -72,12 +72,11 @@ func (h handler) updateService(key string, build *tektonv1alpha1.TaskRun) (*tekt
 
 	if condition.Cond("Succeeded").IsTrue(build) {
 		if conName == services.RootContainerName(svc) {
-			rev := svc.Spec.ImageBuild.Revision
-			imageName := service.PullImageName(rev, namespace, conName, svc.Spec.ImageBuild)
+			imageName := service.PullImageName(namespace, conName, svc.Spec.ImageBuild)
 			if svc.Spec.Image != imageName {
 				deepCopy := svc.DeepCopy()
 				v1.ServiceConditionImageReady.SetError(deepCopy, "", nil)
-				deepCopy.Spec.Image = service.PullImageName(rev, namespace, conName, svc.Spec.ImageBuild)
+				deepCopy.Spec.Image = service.PullImageName(namespace, conName, svc.Spec.ImageBuild)
 				if _, err := h.services.Update(deepCopy); err != nil {
 					return build, err
 				}
@@ -85,12 +84,11 @@ func (h handler) updateService(key string, build *tektonv1alpha1.TaskRun) (*tekt
 		} else {
 			for i, con := range svc.Spec.Sidecars {
 				if con.Name == conName {
-					rev := con.ImageBuild.Revision
-					imageName := service.PullImageName(rev, namespace, conName, con.ImageBuild)
+					imageName := service.PullImageName(namespace, conName, con.ImageBuild)
 					if con.Image != imageName {
 						deepCopy := svc.DeepCopy()
 						v1.ServiceConditionImageReady.SetError(deepCopy, "", nil)
-						deepCopy.Spec.Sidecars[i].Image = service.PullImageName(rev, namespace, conName, con.ImageBuild)
+						deepCopy.Spec.Sidecars[i].Image = service.PullImageName(namespace, conName, con.ImageBuild)
 						if _, err := h.services.Update(deepCopy); err != nil {
 							return build, err
 						}
