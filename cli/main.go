@@ -35,6 +35,7 @@ import (
 	"github.com/rancher/rio/cli/cmd/secrets"
 	"github.com/rancher/rio/cli/cmd/stacks"
 	"github.com/rancher/rio/cli/cmd/stage"
+	"github.com/rancher/rio/cli/cmd/systemconfig"
 	"github.com/rancher/rio/cli/cmd/systemlogs"
 	"github.com/rancher/rio/cli/cmd/uninstall"
 	"github.com/rancher/rio/cli/cmd/up"
@@ -218,6 +219,11 @@ func main() {
 		builder.Command(&systemlogs.SystemLogs{},
 			"View system log for Rio management plane",
 			appName+" systemlogs",
+			""),
+
+		builder.Command(&systemconfig.SystemConfig{},
+			"View/Edit system configuration",
+			appName+" systemconfig",
 			""),
 
 		builder.Command(&uninstall.Uninstall{},

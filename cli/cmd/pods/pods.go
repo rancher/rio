@@ -9,9 +9,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-type Pod struct {
-	C_Containers bool `desc:"print containers, not services"`
-}
+type Pod struct{}
 
 func (p *Pod) Customize(cmd *cli.Command) {
 	cmd.Flags = append(table.WriterFlags(), cmd.Flags...)

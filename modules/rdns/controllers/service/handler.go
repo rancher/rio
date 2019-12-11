@@ -220,6 +220,8 @@ func (h *handler) generateFromIngress(ingress *v1beta1.Ingress, status v1beta1.I
 		},
 		Spec: adminv1.ClusterDomainSpec{
 			Addresses: addresses,
+			HTTPSPort: 443,
+			HTTPPort:  80,
 		},
 	}
 

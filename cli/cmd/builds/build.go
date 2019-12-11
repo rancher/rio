@@ -5,11 +5,13 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/rancher/rio/cli/pkg/build"
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/up"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/stack"
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 	"sigs.k8s.io/yaml"
 )
@@ -30,6 +32,10 @@ type Build struct {
 }
 
 func (b *Build) Run(ctx *clicontext.CLIContext) error {
+	if err := build.EnableBuildAndWait(ctx); err != nil {
+		logrus.Warn(err)
+	}
+
 	content, err := up.LoadRiofile(b.F_File)
 	if err != nil {
 		return err

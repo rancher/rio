@@ -64,10 +64,6 @@ func (c *Config) Validate() error {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
-	if c.ShowSystemNamespace {
-		c.DefaultNamespace = c.SystemNamespace
-	}
-
 	loader := kubeconfig.GetInteractiveClientConfig(c.Kubeconfig)
 
 	defaultNs, _, err := loader.Namespace()
@@ -136,6 +132,10 @@ func (c *Config) Validate() error {
 
 	if info, err := project.RioInfos().Get("rio", metav1.GetOptions{}); err == nil {
 		c.SystemNamespace = info.Status.SystemNamespace
+	}
+
+	if c.ShowSystemNamespace {
+		c.DefaultNamespace = c.SystemNamespace
 	}
 
 	c.Writer = os.Stdout

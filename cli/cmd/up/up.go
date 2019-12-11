@@ -3,12 +3,14 @@ package up
 import (
 	"fmt"
 
+	"github.com/rancher/rio/cli/pkg/build"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/up"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/riofile/stringers"
 	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/wrangler/pkg/gvk"
+	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -59,6 +61,10 @@ func (u *Up) Run(c *clicontext.CLIContext) error {
 
 func (u *Up) setStack(c *clicontext.CLIContext, existing *riov1.Stack) error {
 	if len(c.CLI.Args()) == 1 {
+		if err := build.EnableBuildAndWait(c); err != nil {
+			logrus.Warn(err)
+		}
+
 		var err error
 		if existing.Spec.Build == nil {
 			existing.Spec.Build = &riov1.StackBuild{}

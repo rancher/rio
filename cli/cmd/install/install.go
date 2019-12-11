@@ -9,6 +9,7 @@ import (
 
 	"github.com/Masterminds/semver"
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/cli/pkg/deploymentstatus"
 	"github.com/rancher/rio/cli/pkg/progress"
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	config2 "github.com/rancher/rio/pkg/config"
@@ -18,8 +19,6 @@ import (
 	"github.com/rancher/rio/pkg/version"
 	"github.com/rancher/wrangler/pkg/kv"
 	"github.com/rancher/wrangler/pkg/slice"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -106,7 +105,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 			if err != nil {
 				return err
 			}
-			if !isReady(dep.Status) {
+			if !deploymentstatus.IsReady(dep.Status) {
 				progress.Display("Waiting for deployment %s/%s to become ready", 2, dep.Namespace, dep.Name)
 				continue
 			}
@@ -292,7 +291,7 @@ func (i *Install) checkDeployment(ctx *clicontext.CLIContext, cm config2.Config,
 				ns = ctx.GetSystemNamespace()
 			}
 			deploy, err := ctx.K8s.AppsV1().Deployments(ns).Get(n, metav1.GetOptions{})
-			if err != nil || !isReady(deploy.Status) {
+			if err != nil || !deploymentstatus.IsReady(deploy.Status) {
 				notReadyList.notReady = append(notReadyList.notReady, fmt.Sprintf("%s/%s", ns, n))
 			}
 		}
@@ -303,13 +302,4 @@ func (i *Install) checkDeployment(ctx *clicontext.CLIContext, cm config2.Config,
 	}
 
 	return true, notReadyList, nil
-}
-
-func isReady(status appsv1.DeploymentStatus) bool {
-	for _, con := range status.Conditions {
-		if con.Type == appsv1.DeploymentAvailable && con.Status == corev1.ConditionTrue {
-			return true
-		}
-	}
-	return false
 }

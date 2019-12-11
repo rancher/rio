@@ -1,11 +1,13 @@
 package buildhistory
 
 import (
+	"github.com/rancher/rio/cli/pkg/build"
 	"github.com/rancher/rio/cli/pkg/builder"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
 	"github.com/rancher/rio/cli/pkg/tables"
 	"github.com/rancher/rio/cli/pkg/types"
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 
@@ -30,6 +32,10 @@ func (b *BuildHistory) Customize(cmd *cli.Command) {
 }
 
 func (b BuildHistory) Run(ctx *clicontext.CLIContext) error {
+	if err := build.EnableBuildAndWait(ctx); err != nil {
+		logrus.Warn(err)
+	}
+
 	objs, err := ctx.List(types.BuildType)
 	if err != nil {
 		return err
