@@ -2,6 +2,7 @@
 
 Router is a set of L7 load-balancing rules that can route between your services. 
 It can add header-based routing, path-based routing, cookies, and other rules.
+Routing uses the Gloo feature under the hood, so ensure that is enabled before continuing! See [Install Docs](./install.md) to learn how to enable this feature. It will be enabled by default.
 
 #### Create Routers
 

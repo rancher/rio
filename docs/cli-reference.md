@@ -376,7 +376,7 @@ Note: If service loadbalancer cannot be provisioned, [Nodeport](https://kubernet
 rio install
 
 # install with debug and disable some features
-rio install --enable-debug  --disable-features autoscaling --disable-features linkerd
+rio install --enable-debug --disable-features linkerd,gloo
 
 # print yaml to run manually, with custom ip-address
 rio install --yaml --ip-address 127.0.0.1
