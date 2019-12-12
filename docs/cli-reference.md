@@ -25,6 +25,7 @@
 - [scale](#scale)
 - [stage](#stage)
 - [systemlogs](#systemlogs)
+- [systemconfig](#systemconfig)
 - [uninstall](#uninstall)
 - [up](#up)
 - [weight](#weight)
@@ -772,6 +773,21 @@ Print the logs from the Rio management plane
 ##### Usage
 ```
 rio systemlogs
+```
+
+---
+
+## systemconfig
+
+View/Edit system configuration
+
+##### Uasge
+```bash
+# view system config
+rio systemconfig
+
+# edit system config
+rio systemconfig --edit
 ```
 
 ---

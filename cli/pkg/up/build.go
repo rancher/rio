@@ -10,11 +10,13 @@ import (
 	"strings"
 
 	"github.com/rancher/rio/cli/cmd/apply"
+	"github.com/rancher/rio/cli/pkg/build"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/localbuilder"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/pkg/stack"
+	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/yaml"
 )
 
@@ -41,6 +43,11 @@ func Build(builds map[stack.ContainerBuildKey]riov1.ImageBuildSpec, c *clicontex
 	if len(builds) == 0 {
 		return nil, nil
 	}
+
+	if err := build.EnableBuildAndWait(c); err != nil {
+		logrus.Warn(err)
+	}
+
 	localBuilder, err := localbuilder.NewLocalBuilder(c.Ctx, c.SystemNamespace, c.Apply, c.K8s)
 	if err != nil {
 		return nil, err
