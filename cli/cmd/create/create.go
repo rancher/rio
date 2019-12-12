@@ -32,8 +32,11 @@ type Create struct {
 	BuildCloneSecret       string            `desc:"Set git clone secret name"`
 	BuildImageName         string            `desc:"Specify custom image name to push"`
 	BuildRegistry          string            `desc:"Specify to push image to"`
-	BuildRevision          string            `desc:"Build git commit or tag"`
-	BuildPr                bool              `desc:"Enable pull request builds"`
+	BuildRevision          string            `desc:"Build a specific git commit or tag"`
+	BuildPr                bool              `desc:"Enable builds on new pull requests"`
+	BuildTag               bool              `desc:"Enable builds on any new tags instead of new commits on a branch, requires webhook, does not support polling"`
+	BuildTagInclude        string            `desc:"Pattern that tags must match"`
+	BuildTagExclude        string            `desc:"Pattern that excludes tags"`
 	BuildTimeout           string            `desc:"Timeout for build, default to 10m (ms|s|m|h)"`
 	Command                []string          `desc:"Overwrite the default ENTRYPOINT of the image"`
 	Config                 []string          `desc:"Configs to expose to the service (format: name[/key]:target)"`

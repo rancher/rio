@@ -309,8 +309,10 @@ func populateWebhookAndSecrets(webhookService *riov1.Service, stack *riov1.Stack
 		Spec: webhookv1.GitWatcherSpec{
 			RepositoryURL:                  stack.Spec.Build.Repo,
 			Enabled:                        true,
-			Push:                           true,
-			Tag:                            true,
+			Push:                           !stack.Spec.Build.Tag,
+			Tag:                            stack.Spec.Build.Tag,
+			TagIncludeRegexp:               stack.Spec.Build.TagIncludeRegexp,
+			TagExcludeRegexp:               stack.Spec.Build.TagExcludeRegexp,
 			Branch:                         stack.Spec.Build.Branch,
 			RepositoryCredentialSecretName: stack.Spec.Build.CloneSecretName,
 			GithubWebhookToken:             stack.Spec.Build.WebhookSecretName,

@@ -300,8 +300,10 @@ func (p populator) populateWebhookAndSecrets(build *riov1.ImageBuildSpec, status
 		Spec: webhookv1.GitWatcherSpec{
 			RepositoryURL:                  build.Repo,
 			Enabled:                        true,
-			Push:                           true,
-			Tag:                            true,
+			Push:                           !build.Tag,
+			Tag:                            build.Tag,
+			TagIncludeRegexp:               build.TagIncludeRegexp,
+			TagExcludeRegexp:               build.TagExcludeRegexp,
 			PR:                             build.PR,
 			Branch:                         build.Branch,
 			RepositoryCredentialSecretName: build.CloneSecretName,

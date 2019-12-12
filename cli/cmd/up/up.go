@@ -22,6 +22,9 @@ type Up struct {
 	Branch             string   `desc:"Set branch when pointing stack to git repo" default:"master"`
 	BuildCloneSecret   string   `desc:"Set git clone secret name"`
 	BuildWebhookSecret string   `desc:"Set GitHub webhook secret name"`
+	BuildTag           bool     `desc:"Enable builds on any new tags instead of new commits on a branch, requires webhook, does not support polling"`
+	BuildTagInclude    string   `desc:"Pattern that tags must match"`
+	BuildTagExclude    string   `desc:"Pattern that excludes tags"`
 	PushRegistrySecret string   `desc:"Set secret for pushing to custom registry"`
 	F_File             string   `desc:"Set rio file"`
 	N_Name             string   `desc:"Set stack name, defaults to current directory name"`
@@ -72,6 +75,9 @@ func (u *Up) setStack(c *clicontext.CLIContext, existing *riov1.Stack) error {
 		existing.Spec.Build.Repo = c.CLI.Args()[0]
 		existing.Spec.Build.Branch = u.Branch
 		existing.Spec.Build.Revision = u.Revision
+		existing.Spec.Build.Tag = u.BuildTag
+		existing.Spec.Build.TagIncludeRegexp = u.BuildTagInclude
+		existing.Spec.Build.TagExcludeRegexp = u.BuildTagExclude
 		existing.Spec.Build.WebhookSecretName = u.BuildWebhookSecret
 		existing.Spec.Build.CloneSecretName = u.BuildCloneSecret
 		existing.Spec.Build.PushRegistrySecretName = u.PushRegistrySecret

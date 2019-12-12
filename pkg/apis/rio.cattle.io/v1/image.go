@@ -43,6 +43,12 @@ type ImageBuildSpec struct {
 	// Whether to enable builds for tags
 	Tag bool `json:"tag,omitempty" mapper:"alias=onTag"`
 
+	// Match string that includes tags that match
+	TagIncludeRegexp string `json:"tagInclude,omitempty"`
+
+	// Match string that excludes tags which match
+	TagExcludeRegexp string `json:"tagExclude,omitempty"`
+
 	// Build image with no cache
 	NoCache bool `json:"noCache,omitempty"`
 

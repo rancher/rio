@@ -56,6 +56,15 @@ type StackBuild struct {
 
 	// Specify the github secret name. Used to create Github webhook, the secret key has to be `accessToken`
 	WebhookSecretName string `json:"webhookSecretName,omitempty"`
+
+	// Whether to enable builds for tags
+	Tag bool `json:"tag,omitempty" mapper:"alias=onTag"`
+
+	// Match string that includes tags that match
+	TagIncludeRegexp string `json:"tagInclude,omitempty"`
+
+	// Match string that excludes tags which match
+	TagExcludeRegexp string `json:"tagExclude,omitempty"`
 }
 
 type StackStatus struct {
