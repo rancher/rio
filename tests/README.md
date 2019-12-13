@@ -81,3 +81,13 @@ $ docker run --rm -e test=integration -e AWS_ACCESS_KEY_ID=[keyid] -e AWS_SECRET
 $ docker run --rm -e test=integration -e INSTALL_RIO_VERSION=v0.6.0-rc2 rio-test:latest
 ```
 
+
+### Fuzzing
+
+We fuzz inputs to the system using [go-fuzz](https://github.com/dvyukov/go-fuzz).
+
+```
+cd tests/fuzz/parser
+go-fuzz-build
+go-fuzz -bin=./{generated_zip_file}
+```

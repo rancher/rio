@@ -1,6 +1,9 @@
 *.swp
+*.zip
+*.DS_Store
 /.dapper
-/.idea
+*.idea
+*.vscode
 /.trash-cache
 /.vagrant
 /*.log
@@ -15,4 +18,6 @@ __pycache__
 /tests/.vscode
 /tests/.idea
 /tests/MANIFEST
+/tests/fuzz/*/crashers
+/tests/fuzz/*/suppressions
 main
