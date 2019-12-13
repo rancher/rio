@@ -219,11 +219,11 @@ func GetHostname(urls ...string) string {
 			return ""
 		}
 		if u1.Scheme == "http" || u1.Scheme == "https" {
-			return u
+			return u1.Hostname()
 		}
 	}
 
-	return ""
+	return strings.Join(urls, "")
 }
 
 // stringInSlice returns true if string a value is equals to any element of the slice otherwise false

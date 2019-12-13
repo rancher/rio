@@ -216,6 +216,9 @@ func (ts *TestService) Weight(weightSpec int, args ...string) {
 		if err != nil {
 			ts.T.Fatal(err.Error())
 		}
+		if weightSpec == 100 {
+			time.Sleep(5 * time.Second)
+		}
 	}
 }
 
@@ -251,6 +254,7 @@ func (ts *TestService) Promote(args ...string) {
 	if err != nil {
 		ts.T.Fatalf(err.Error())
 	}
+	time.Sleep(5 * time.Second)
 }
 
 // Logs calls "rio logs ns/service" on this service
@@ -467,7 +471,7 @@ func (ts *TestService) GenerateLoad(timeIncrements string, concurrency int) {
 		}
 		return false, nil
 	})
-	wait.Poll(dur, 120*time.Second, f)
+	wait.Poll(dur, 240*time.Second, f)
 }
 
 // GetEndpointURLs returns the URLs for this service
