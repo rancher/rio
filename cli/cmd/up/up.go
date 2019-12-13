@@ -24,7 +24,7 @@ type Up struct {
 	BuildWebhookSecret string   `desc:"Set GitHub webhook secret name"`
 	PushRegistrySecret string   `desc:"Set secret for pushing to custom registry"`
 	F_File             string   `desc:"Set rio file"`
-	Name               string   `desc:"Set stack name, defaults to current directory name"`
+	N_Name             string   `desc:"Set stack name, defaults to current directory name"`
 	P_Parallel         bool     `desc:"Run builds in parallel"`
 	Permission         []string `desc:"Permissions to grant to container's service account in current namespace"`
 	Revision           string   `desc:"Use a specific commit hash"`
@@ -35,8 +35,8 @@ const (
 )
 
 func (u *Up) Run(c *clicontext.CLIContext) error {
-	if u.Name == "" {
-		u.Name = up.GetCurrentDir()
+	if u.N_Name == "" {
+		u.N_Name = up.GetCurrentDir()
 	}
 
 	stack, err := u.ensureStack(c)
@@ -86,7 +86,7 @@ func (u *Up) setStack(c *clicontext.CLIContext, existing *riov1.Stack) error {
 }
 
 func (u *Up) setBuild(c *clicontext.CLIContext) error {
-	s := riov1.NewStack(c.GetSetNamespace(), u.Name, riov1.Stack{
+	s := riov1.NewStack(c.GetSetNamespace(), u.N_Name, riov1.Stack{
 		Spec: riov1.StackSpec{
 			Build: &riov1.StackBuild{
 				Repo:     c.CLI.Args()[0],
@@ -96,7 +96,7 @@ func (u *Up) setBuild(c *clicontext.CLIContext) error {
 		},
 	})
 
-	existing, err := c.Rio.Stacks(c.GetSetNamespace()).Get(u.Name, metav1.GetOptions{})
+	existing, err := c.Rio.Stacks(c.GetSetNamespace()).Get(u.N_Name, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return c.Create(s)
@@ -188,9 +188,9 @@ func (u *Up) up(content string, answers map[string]string, s *riov1.Stack, c *cl
 
 // ensureStack creates one if one does not exist
 func (u *Up) ensureStack(c *clicontext.CLIContext) (*riov1.Stack, error) {
-	s := riov1.NewStack(c.GetSetNamespace(), u.Name, riov1.Stack{})
+	s := riov1.NewStack(c.GetSetNamespace(), u.N_Name, riov1.Stack{})
 
-	existing, err := c.Rio.Stacks(c.GetSetNamespace()).Get(u.Name, metav1.GetOptions{})
+	existing, err := c.Rio.Stacks(c.GetSetNamespace()).Get(u.N_Name, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			stack, err := c.Rio.Stacks(c.GetSetNamespace()).Create(s)
