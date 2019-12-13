@@ -11,6 +11,7 @@ import (
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/deploymentstatus"
 	"github.com/rancher/rio/cli/pkg/progress"
+	"github.com/rancher/rio/cli/pkg/up/questions"
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	config2 "github.com/rancher/rio/pkg/config"
 	"github.com/rancher/rio/pkg/constants"
@@ -19,6 +20,7 @@ import (
 	"github.com/rancher/rio/pkg/version"
 	"github.com/rancher/wrangler/pkg/kv"
 	"github.com/rancher/wrangler/pkg/slice"
+	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,6 +32,8 @@ type Install struct {
 	EnableDebug     bool     `desc:"Enable debug logging in controller"`
 	IPAddress       []string `desc:"Manually specify IP addresses to generate rdns domain, supports comma separated values" name:"ip-address"`
 	Yaml            bool     `desc:"Only print out k8s yaml manifest"`
+	Email           string   `desc:"Provide email for Let's Encrypt account registration"`
+	NoEmail         bool     `desc:"Do not provide Let's Encrypt email"`
 }
 
 var (
@@ -79,11 +83,11 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		return err
 	}
 
-	if err := i.preConfigure(ctx, false); err != nil {
-		return err
-	}
-
 	if !i.Check {
+		if err := i.preConfigure(ctx, false); err != nil {
+			return err
+		}
+
 		if err := i.configureNamespace(ctx, controllerStack); err != nil {
 			return err
 		}
@@ -199,6 +203,36 @@ func (i *Install) getConfigMap(ctx *clicontext.CLIContext, ignoreCluster bool) (
 			cfg, err = config2.FromConfigMap(config)
 			if err != nil {
 				return cfg, nil, err
+			}
+		}
+	}
+
+	// configure letsencrypts email
+	if !i.NoEmail && !i.Check && !slice.ContainsString(i.DisableFeatures, "letsencrypt") {
+		if i.Email != "" {
+			cfg.LetsEncrypt.Email = i.Email
+		} else {
+			msg := "Please provide your Let's Encrypt email\n\n"
+			options := []string{
+				"[1]: Provide an Email address.\n\tThis is used to send you important notifications and certificate expiration warnings.\n\tIt will never be shared with Rancher.\n",
+				"[2]: Use Let's Encrypt with no email address.\n\tThis is strongly discouraged and lack of notifications may cause you to lose access to your certificates.\n",
+				"[3]: Do not use Let's Encrypt at all.\n\tCert-manager will not be deployed and no certificates will be automatically issued for you.\n\tYou will not be able to use dashboard unless you configure custom cluster domain and wildcard certificates.\n",
+			}
+
+			num, err := questions.PromptOptions(msg, -1, options...)
+			if err != nil {
+				return cfg, nil, err
+			}
+			if num == 0 {
+				email, err := questions.Prompt("Please enter your email address:\n", "your@company.com")
+				if err != nil {
+					return cfg, nil, err
+				}
+				cfg.LetsEncrypt.Email = email
+			} else if num == 1 {
+				logrus.Warnf("No email is provided. This is strongly discouraged and lack of notifications may cause you to lose access to your certificates.")
+			} else if num == 2 {
+				i.DisableFeatures = append(i.DisableFeatures, "letsencrypt")
 			}
 		}
 	}
