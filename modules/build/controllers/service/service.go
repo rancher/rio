@@ -360,7 +360,7 @@ func generateImageNamePath(registry, namespace, name string, build *riov1.ImageB
 	if build.PushRegistry != "" {
 		registry = build.PushRegistry
 	}
-	imageName := namespace + "-" + name
+	imageName := namespace + "/" + name
 	if build.ImageName != "" {
 		imageName = build.ImageName
 		if strings.Contains(imageName, ":") {

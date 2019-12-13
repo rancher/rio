@@ -8,6 +8,7 @@ import (
 	"github.com/rancher/rio/pkg/features"
 	adminv1 "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
+	corev1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/pkg/slice"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -28,11 +29,12 @@ func Register(ctx context.Context, rContext *types.Context) error {
 	}
 
 	fh := &featureHandler{
-		key:       fmt.Sprintf("%s/%s", rContext.Namespace, config.ConfigName),
-		infos:     rContext.Admin.Admin().V1().RioInfo(),
-		rContext:  rContext,
-		ctx:       ctx,
-		namespace: rContext.Namespace,
+		key:        fmt.Sprintf("%s/%s", rContext.Namespace, config.ConfigName),
+		infos:      rContext.Admin.Admin().V1().RioInfo(),
+		rContext:   rContext,
+		ctx:        ctx,
+		namespace:  rContext.Namespace,
+		configmaps: rContext.Core.Core().V1().ConfigMap(),
 	}
 
 	rContext.Core.Core().V1().ConfigMap().OnChange(ctx, "config", fh.onChange)
@@ -45,6 +47,7 @@ type featureHandler struct {
 	rContext     *types.Context
 	featureState sets.String
 	infos        adminv1.RioInfoClient
+	configmaps   corev1controller.ConfigMapClient
 	namespace    string
 }
 
@@ -167,5 +170,41 @@ func (f *featureHandler) onChange(key string, obj *corev1.ConfigMap) (*corev1.Co
 			return obj, err
 		}
 	}
+
+	if err := f.updateConfigMap(obj); err != nil {
+		return obj, err
+	}
 	return obj, f.rContext.Start(f.ctx)
+}
+
+func (f *featureHandler) updateConfigMap(obj *corev1.ConfigMap) error {
+	conf, err := config.FromConfigMap(obj)
+	if err != nil {
+		return err
+	}
+	if conf.Features == nil {
+		conf.Features = map[string]config.FeatureConfig{}
+	}
+
+	state := f.featureState
+
+	t := true
+	for _, feature := range features.GetFeatures() {
+		f := conf.Features[feature.Name()]
+		if state.Has(feature.Name()) {
+			f.Enabled = &t
+		} else {
+			f.Enabled = new(bool)
+		}
+		conf.Features[feature.Name()] = f
+	}
+	cm, err := config.SetConfig(obj, conf)
+	if err != nil {
+		return err
+	}
+
+	if _, err := f.configmaps.Update(cm); err != nil {
+		return err
+	}
+	return nil
 }

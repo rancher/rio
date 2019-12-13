@@ -7,15 +7,14 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/urfave/cli"
-
-	"github.com/rancher/wrangler/pkg/kv"
-
+	"github.com/rancher/rio/cli/pkg/build"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/localbuilder"
 	"github.com/rancher/rio/cli/pkg/tables"
 	"github.com/rancher/rio/pkg/constants"
+	"github.com/rancher/wrangler/pkg/kv"
 	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -49,6 +48,10 @@ func (i *Images) Customize(cmd *cli.Command) {
 }
 
 func (i *Images) Run(ctx *clicontext.CLIContext) error {
+	if err := build.EnableBuildAndWait(ctx); err != nil {
+		logrus.Warn(err)
+	}
+
 	pods, err := ctx.Core.Pods(ctx.SystemNamespace).List(metav1.ListOptions{})
 	if err != nil {
 		return err

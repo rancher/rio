@@ -18,9 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type Uninstall struct {
-	Namespace string `desc:"namespace to install system resources" default:"rio-system"`
-}
+type Uninstall struct{}
 
 func (u Uninstall) Run(ctx *clicontext.CLIContext) error {
 	if ctx.K8s == nil {
@@ -31,17 +29,6 @@ func (u Uninstall) Run(ctx *clicontext.CLIContext) error {
 		if err := u.uninstallLinkerd(ctx); err != nil {
 			return err
 		}
-	}
-
-	var systemNamespace string
-	rioInfo, err := ctx.Project.RioInfos().Get("rio", metav1.GetOptions{})
-	if err != nil && !errors.IsNotFound(err) {
-		return err
-	}
-	if rioInfo.Status.SystemNamespace != "" {
-		systemNamespace = rioInfo.Status.SystemNamespace
-	} else {
-		systemNamespace = u.Namespace
 	}
 
 	fmt.Println("Cleaning up CRDs...")
@@ -89,8 +76,8 @@ func (u Uninstall) Run(ctx *clicontext.CLIContext) error {
 		}
 	}
 
-	fmt.Printf("Deleting System Namespace %s...\n", systemNamespace)
-	if err := ctx.Core.Namespaces().Delete(systemNamespace, &metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
+	fmt.Printf("Deleting System Namespace %s...\n", ctx.SystemNamespace)
+	if err := ctx.Core.Namespaces().Delete(ctx.SystemNamespace, &metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
 		return err
 	}
 
@@ -144,7 +131,7 @@ func matchRioServiceGVK(annotations map[string]string) bool {
 func (u Uninstall) uninstallLinkerd(ctx *clicontext.CLIContext) error {
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:    u.Namespace,
+			Namespace:    ctx.SystemNamespace,
 			GenerateName: "linkerd-uninstall-",
 		},
 		Spec: batchv1.JobSpec{
@@ -171,14 +158,14 @@ func (u Uninstall) uninstallLinkerd(ctx *clicontext.CLIContext) error {
 			},
 		},
 	}
-	existingJob, err := ctx.K8s.BatchV1().Jobs(u.Namespace).Create(job)
+	existingJob, err := ctx.K8s.BatchV1().Jobs(ctx.SystemNamespace).Create(job)
 	if err != nil {
 		return err
 	}
 	startTime := time.Now()
 	fmt.Println("Waiting for linkerd uninstall job to be finished")
 	for {
-		job, err := ctx.K8s.BatchV1().Jobs(u.Namespace).Get(existingJob.Name, metav1.GetOptions{})
+		job, err := ctx.K8s.BatchV1().Jobs(ctx.SystemNamespace).Get(existingJob.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
