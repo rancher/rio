@@ -81,7 +81,7 @@ require (
 	github.com/rancher/rdns-server v0.5.7-0.20190927164127-7128efe7d065
 	github.com/rancher/wrangler v0.2.1-0.20191109002915-2a833f7e410d
 	github.com/rancher/wrangler-api v0.2.1-0.20191025043713-b1ca9c21825a
-	github.com/sclevine/spec v1.3.0
+	github.com/sclevine/spec v1.4.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/solo-io/gloo v1.0.0
 	github.com/solo-io/go-utils v0.10.21 // indirect
