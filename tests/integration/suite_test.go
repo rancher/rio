@@ -19,7 +19,6 @@ func TestSuite(t *testing.T) {
 	suite := spec.New("integration suite", spec.Report(report.Terminal{}), spec.Parallel())
 	specs := map[string]func(t *testing.T, when spec.G, it spec.S){
 		"attach":          attachTests,
-		"autoscale":       autoscaleTests,
 		"build":           buildTests,
 		"config":          configTests,
 		"domain":          domainTests,
