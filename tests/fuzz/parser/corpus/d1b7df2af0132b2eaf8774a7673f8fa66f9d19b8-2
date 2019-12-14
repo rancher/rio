@@ -1,0 +1,51 @@
+ex:
+  o:
+f: 
+s:
+o:
+ s:
+      - t: 
+        o:
+t: 
+ o
+services:
+  p: 
+    o:
+      y: 
+      s: 
+      s: 
+    e: 
+    y: 
+    t:
+     0
+  3:
+    p: 
+    o:
+      y: 
+      s: 
+      s: 
+    e: 
+    u: 
+    t:
+     0
+    s: 
+    n: 
+    t: 
+kubernetes:
+ manifest: |
+  n
+  e:
+kub:
+      l:
+      p: 
+      s: 
+      e:
+        a:
+        s:
+        p: 
+        c:
+        s:
+            - e: 
+              e: 
+              s:
+kube:

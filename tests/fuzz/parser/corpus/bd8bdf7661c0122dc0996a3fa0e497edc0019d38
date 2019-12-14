@@ -1,0 +1,18 @@
+configs:
+ f:
+  l: |-
+      <!DOCTYPE html>
+      <html>
+      <body>
+
+      <h1>Hello World</h1>
+
+      </body>
+      </html>
+services:
+ x:
+    e: x
+    port:
+    - 8/http
+    config:
+    - f/l:/

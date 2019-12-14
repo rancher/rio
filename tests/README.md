@@ -84,10 +84,11 @@ $ docker run --rm -e test=integration -e INSTALL_RIO_VERSION=v0.6.0-rc2 rio-test
 
 ### Fuzzing
 
-We fuzz inputs to the system using [go-fuzz](https://github.com/dvyukov/go-fuzz).
+We fuzz inputs to the system using [go-fuzz](https://github.com/dvyukov/go-fuzz), see that for install instructions and how to deal with crashes.
 
 ```
 cd tests/fuzz/parser
 go-fuzz-build
-go-fuzz -bin=./{generated_zip_file}
+go-fuzz -bin=./riofile-fuzz.zip
 ```
+That will run forever. With a large enough corpus and a long enough run we should find any issues.

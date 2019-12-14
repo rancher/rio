@@ -1,0 +1,84 @@
+rnalservices:
+  es-bar:
+    ipAddresses:
+      - 1.1.1.1
+  es-foo:
+    fqdn: www.example.com
+routers:
+  route-foo:
+    routes:
+      - match:
+          path:
+            exact: /v0
+        to:
+          - app: export-test-image
+            version: v0
+      - match:
+          path:
+            exact: /v8
+        to:
+          - app: export-test-image
+            version: v3
+services:
+  export-test-image:
+    app: export-test-image
+    autoscale:
+      concurrency: 10
+      maxReplicas: 10
+      minReplicas
+:v1
+ent
+ts:
+80"
+: 1
+ v0
+100
+v3:
+“ge
+le:
+ 10
+ 10
+: 1
+:v3
+ent
+ts:
+80"
+: 1
+ v3
+100
+es:
+ |-
+ v1
+ice
+ta:
+inx
+ls:
+inx
+end
+ter
+ec:
+ts:
+ 80
+ 80
+or:
+inx
+end
+ter
+ --
+ent
+ta:
+ent
+ec:
+or:
+ls:
+inx
+ e:
+ta:
+ls:
+inx
+ec:
+rs:
+inx
+7.9
+ts:
+   

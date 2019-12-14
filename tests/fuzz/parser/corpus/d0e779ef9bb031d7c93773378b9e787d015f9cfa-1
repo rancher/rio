@@ -1,0 +1,3 @@
+services:
+ x:
+  ports: 80//index.html:/usr/share/nginx/html/index.html

@@ -1,0 +1,84 @@
+externalservices:
+  es-bar:
+   ipAddresses:
+    - 1.1.1.1
+  es-foouters:
+  route-foo:
+   routes:
+      - match:
+         path:
+          exact: /v0
+        to:
+          - app: export-test-image
+            version: v0
+      - match:
+         path:
+          exact: /v3
+        to:
+          - app: export-test-image
+            version: v3
+services:
+  export-test-image:
+    app: export-test-image
+    autoscale:
+      concurrency: 
+      maxReplicas: 
+      minReplicas: 
+    image: ibuildthecloud/demo:v1
+    imagePullPolicy: IfNotPresent
+    ports:
+     - "80"
+    replicas: 
+    version: v0
+    weight: 
+  export-test-image-v3:
+    app: export-test-image
+    autoscale:
+      concurrency: 
+      maxReplicas: 
+      minReplicas: 
+    image: ibuildthecloud/demo:v3
+    imagePullPolicy: IfNotPresent
+    ports:
+     - "80"
+    replicas: 
+    version: v3
+    weight: 
+kubernetes:
+ manifest: |
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: nginx
+      labels:
+       app: nginx
+       tier: backend
+       role: master
+    spec:
+      ports:
+      - port: 80
+        targetPort: 80
+      selector:
+        app: nginx
+        tier: backend
+        role: master
+    ---
+    apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+    kind: Deployment
+    metadata:
+      name: nginx-deployment
+    spec:
+      selector:
+        matchLabels:
+          app: nginx
+      replicas: 2ployment to run 2 pods matching the template
+      template:
+        metadata:
+          labels:
+            app: nginx
+        spec:
+          containers:
+            - name: nginx
+              image: nginx:1.7.9
+              ports:
+                - containerPort: 80

@@ -1,0 +1,5 @@
+services:
+ n    concurrency: 
+    image: nginx
+    imagePullPolicy: Always
+    ports: ""

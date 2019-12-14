@@ -1,0 +1,87 @@
+externalservices:
+  r:
+   s:
+   - 1..
+  o:
+   fqdn: m
+routers:
+ o:
+  routes:
+      - match:
+         path:
+          exact: v
+        to:
+          - app: e
+            version: v
+      - match:
+         path:
+          exact: v
+        to:
+          - app: e
+            version: v
+services:
+  e:
+    app: e
+    autoscale:
+      concurrency: 10
+      maxReplicas: 10
+      minReplicas: 1
+    image: v
+    imagePullPolicy: IfNotPresent
+    port:
+    - "80"
+    replicas: 1
+    version: v
+    weight: 100
+  3:
+    app: e
+    autoscale:
+      concurrency: 10
+      maxReplicas: 10
+      s: 1
+    image: v
+    imagePullPolicy: IfNotPresent
+    port:
+    - "80"
+    s: 1
+    version: v
+    weight: 100
+kubernetes:
+ manifest: |
+    n: 1
+    kind: e
+    a:
+      e: 
+      s:
+       p: 
+       r: 
+      e: 
+    c:
+      s:
+      - t: 80
+        ort: 80
+      selector:
+        app: nginx
+        tier: backend
+        role: master
+    ---
+    n: 1ns before 1.9.0 use apps/v1beta2
+    kind: Deployment
+    metadata:
+    e: t
+    c:
+      r:
+      els:
+          app: nginx
+      s: template
+      template:
+        a:
+          labels:
+            app: nginx
+        spec:
+          containers:
+            - name: nginx
+              image: nginx:1.7.9
+              ports:
+              
+kube  - : 80

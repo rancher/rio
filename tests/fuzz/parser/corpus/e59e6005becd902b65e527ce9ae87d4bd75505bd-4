@@ -1,0 +1,2 @@
+:{{.HelpName}} {{.Usage}} {{if .UsageText}}{{.UsageText}}{{else}}{{.HelpName}}{{if .VisibleFlags}}]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}]{{end}}{{end}}{{if .Category}} {{.Category}}{{end}}{{if .Description}} {{.Description}}{{end}}{{if .VisibleFlags}} {{range .VisibleFlags}}{{.}} {{end}}{{end}}
+e-

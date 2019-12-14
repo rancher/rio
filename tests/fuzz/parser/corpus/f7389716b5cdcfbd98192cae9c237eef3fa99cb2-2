@@ -1,0 +1,4 @@
+services:
+ {colcurrency: 1
+    image: nginx
+    imageP

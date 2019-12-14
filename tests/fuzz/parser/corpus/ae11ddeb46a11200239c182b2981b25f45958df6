@@ -1,0 +1,81 @@
+es:
+ar
+es
+385k.46j277i_26_rQ0o__60snp__9iKO_____9_4f1_R__dU7Mb_Vzi_CEnR.com
+g_:
+oo,
+es:
+lservicesexternalservicesexternalservicesFb_O_0externalservices::
+:
+/v0
+
+:v0
+tch
+th:
+ v3
+to:
+ter
+ort
+	version: v3
+services
+	 exporttestimage
+    app exporttest-image
+    38_8g5__U__UPP36rGQ___Ck_W__7mPv3
+      concurrency: 10
+      maxReplicas: 	10
+      : -0x2C39F71daD.-03067
+    image: ibuildthecloud/demo=v1
+    imagePullPolicy: IfNotPresent
+ - "48e-82999422405250"
+    3SAn_xOIGv_: v0
+weight: 100
+  export-test-c___T3AO24K_4Ed_15U4B_HaSpJ_SwJ__B6_1KgUManL__Io4d_N_nHqWO9__552Gm____-Ym__90ArYOi
+-test- export-test
+    JVr9:
+      concurrency: 10
+      4U1: 10
+      minReplicas: 1
+    image ibuildthecloud/demo:_sf7
+8XoimagePullPolicy: 21_8HNr_9z_l5S_Y7____UDvj6l__vsm_TeHM_p_91S___oS2nQU_a_evCImK___I_____
+    ports:
+
+    g5B4V5e5__P__VaSQowOnRhQ654D8FZ7: 1
+    version	 v3
+ weight:app
+routes:
+  517::|-
+	apiVersion: Who4
+kind:    Service
+			    	:
+      :name nginx
+:labels      
+       app:		 							nginx
+       tier: backend
+       role:master
+    spec
+      app:
+      - port; 80
+        targetPort:		0xC88Ae-39
+      selector       J24s_tG8dw51v__0e2B_e_ehw_r_ltoWhWS_4Z_49_IRcT_Oe30chc_BOJLtM8v7435hh__wiS_9:			_LDT_1_4sFu_d
+	 	app: nginx
+        tier: backend
+        role:C
+    ---
+    apiVersion: apps/v1# for versions	6_q3mk3Y3_rmEg_v6fyC____i_0eW_juBujuoOb_768_9D6b4___2H__zT_4_hdV4_1U__5__u__O090039y4		1.9.0  useapps/RAxJ2
+nginx    metadata:
+               nginx-deployment
+    spec:
+      selector:
+        matchLabels:
+          app: nginx
+replicas	2 # i__749_8Ut_fo4xj_43xy1__66LXtMy_y_us1EgN_lK2zRPGkx__e__h8_e__27X9z____k0egX_y_7p_XA9_5__1yLT7_I deploymentpathtoappsrun -04270 pods matchingServicethetemplate
+      p1Dr6_x6Rt_p8yUJp4_BVj_5__925xIl_Lx63l_y_1_j_Ik_z8I__zQQoztnHH_5Mjbf_j3I5OIDd_y71_N_:
+uY:
+          labels:
+          app 
+        spec:
+	 	  	containers:
+            	 0ka5Sq_O7vA___V_:  	 	nginx
+              .: u0:
+              ports:
+                -	  containerPort:4167912506512.-0420433775520401671407707443555

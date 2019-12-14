@@ -1,0 +1,5 @@
+{ {{.e}}{{if .e}} {{.e}}{{end}} {{if .t}}{{.t}}{{else}}{{.e}} {{if .s}}]{{end}}{{if .s}}]{{end}} {{if .e}}{{.e}}{{else}}]{{end}}{{end}}{{if .n}}{{if not .n}} {{.n}}{{end}}{{end}}{{if .n}} {{.n}}{{end}}{{if le .s}}R{{with $length := le .s}}{{if ne $length}}S{{end}}{{end}} {{range $index, $author := .s}}{{if $index}} {{end}}{{$author}}{{end}}{{end}}{{if .s}}:{{range .s}}{{if .e}} {{.e}}:{{range .s}} {{join .s ""}}{{""}}{{.e}}{{end}}{{else}}{{range .s}} {{join}}{{if .s}} {{range $index, $option := .s}}{{if $index}} {{end}}{{$option}}{{end}}{{end}}{{if .t}} {{.t}}{}{{""}}{{.e}}{{end}}{{end}}{{end}}{{end}}{{if .s}} {{range $index, $option := .s}}{{if $index}} {{end}}{{$option}}{{end}}{{end}}{{if .t}}
+
+COPYRIGHT:
+   {{.Copyright}}{{end}}
+4203922																{{- 
