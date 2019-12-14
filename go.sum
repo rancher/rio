@@ -865,6 +865,8 @@ github.com/rancher/rdns-server v0.5.7-0.20190927164127-7128efe7d065 h1:K2/79Jdw0
 github.com/rancher/rdns-server v0.5.7-0.20190927164127-7128efe7d065/go.mod h1:/yw1tSnAWDSDSmhKpYNA/FBA49fbbtNfh/IHT31v7jE=
 github.com/rancher/stern v0.0.0-20191203174401-30397523f082 h1:rDHE/uQXR2tjyik9kkVI8SN3eSliuqbjouC427M8VUM=
 github.com/rancher/stern v0.0.0-20191203174401-30397523f082/go.mod h1:aaP5eLMmFcyJUsZB6FwAO+0eILWeBKvupuHeeEuY0qQ=
+github.com/rancher/stern v0.0.0-20191213223518-59c2bf84f705 h1:LD7T78U5A4/tAZ+3jMRy6c6iJhhb+TARG29DdCtWF2Y=
+github.com/rancher/stern v0.0.0-20191213223518-59c2bf84f705/go.mod h1:aaP5eLMmFcyJUsZB6FwAO+0eILWeBKvupuHeeEuY0qQ=
 github.com/rancher/wrangler v0.1.4/go.mod h1:EYP7cqpg42YqElaCm+U9ieSrGQKAXxUH5xsr+XGpWyE=
 github.com/rancher/wrangler v0.1.7-0.20190824203417-e7b6ecb74e90/go.mod h1:TLc4vXF21FWz2MYNHny5zDwFwBqvgBViU5n9CHrJRQ0=
 github.com/rancher/wrangler v0.2.1-0.20191015042916-f2a6ecca4f20/go.mod h1:w9jivI6vlBZmqzizNQM0Li/ZwoNTBeDpIv+NtBoFiMI=
