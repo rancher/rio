@@ -53,7 +53,7 @@ You can setup Rio to watch for Riofile changes in a Github repository and deploy
 $ rio up https://github.com/username/repo
 ```
 
-By default, Rio will poll the branch in 15 second intervals, but this can be configured to use a webhook instead. See [Webhook docs](./webhooks.md) for info.
+By default, Rio will poll the branch in 30 second intervals, but this can be configured to use a webhook instead. See [Webhook docs](./webhooks.md) for info.
 
 ## Riofile Reference
 
@@ -115,6 +115,9 @@ services:
       webhookSecretName: secretGithub # Specify the github secret name. Used to create Github webhook, the secret key has to be `accessToken`
       cloneSecretName: secretGit # Specify secret name for checking our git resources
       pr: true # Enable pull request feature. Defaults to false
+      tag: false # Optionally enable to build off every tag release in the repo
+      tagInclude: ^v # If tag is true, only use tags matching this pattern
+      tagExclude: rc # If tag is true, exclude any tags with this pattern
       timeout: 10 # build timeout setting in seconds
     command: # Container entrypoint, not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided.
     - echo

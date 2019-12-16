@@ -1,6 +1,7 @@
 package create
 
 import (
+	"errors"
 	"time"
 
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
@@ -9,6 +10,15 @@ import (
 
 func (c *Create) setBuildOrImage(imageName string, spec *riov1.ServiceSpec) error {
 	if services.IsRepo(imageName) {
+		if c.BuildTag == true {
+			if c.BuildBranch != "master" {
+				return errors.New("build-branch and build-tag cannot both be set, as build-tag will deploy tags from every branch")
+			}
+			if c.BuildWebhookSecret == "" {
+				return errors.New("build-tag requires webhook")
+			}
+		}
+
 		spec.ImageBuild = &riov1.ImageBuildSpec{
 			Branch:                 c.BuildBranch,
 			Dockerfile:             c.BuildDockerfile,
@@ -21,6 +31,9 @@ func (c *Create) setBuildOrImage(imageName string, spec *riov1.ServiceSpec) erro
 			PushRegistrySecretName: c.BuildDockerPushSecret,
 			Repo:                   imageName,
 			PR:                     c.BuildPr,
+			Tag:                    c.BuildTag,
+			TagIncludeRegexp:       c.BuildTagInclude,
+			TagExcludeRegexp:       c.BuildTagExclude,
 		}
 
 		if c.BuildTimeout != "" {

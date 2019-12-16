@@ -20,12 +20,16 @@ func (h Handler) onChangeStack(key string, obj *webhookv1.GitCommit, gitWatcher 
 		return obj, nil
 	}
 
-	if obj.Spec.Commit == "" {
+	ref := obj.Spec.Commit
+	if ref == "" {
+		ref = obj.Spec.Tag
+	}
+	if ref == "" {
 		return obj, nil
 	}
 
-	if stack.Status.Revision != obj.Spec.Commit {
-		stack.Status.Revision = obj.Spec.Commit
+	if stack.Status.Revision != ref {
+		stack.Status.Revision = ref
 		if _, err := h.stacks.UpdateStatus(stack); err != nil {
 			return nil, err
 		}

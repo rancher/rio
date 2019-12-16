@@ -14,8 +14,12 @@ import (
 )
 
 func (h Handler) onChangeService(key string, obj *webhookv1.GitCommit, gitWatcher *webhookv1.GitWatcher) (*webhookv1.GitCommit, error) {
-	if obj.Spec.Commit == "" {
+	if obj.Spec.Commit == "" && obj.Spec.Tag == "" {
 		return obj, nil
+	}
+	ref := obj.Spec.Commit
+	if ref == "" {
+		ref = obj.Spec.Tag
 	}
 
 	baseService, err := h.services.Cache().Get(obj.Namespace, gitWatcher.Annotations[constants.ServiceLabel])
@@ -46,17 +50,17 @@ func (h Handler) onChangeService(key string, obj *webhookv1.GitCommit, gitWatche
 			return obj, nil
 		}
 
-		serviceName := serviceName(baseService, obj)
+		serviceName := serviceName(baseService, obj, ref)
 		if baseService.Status.ContainerRevision == nil {
 			baseService.Status.ContainerRevision = map[string]riov1.BuildRevision{}
 		}
 		revision := baseService.Status.ContainerRevision[containerName]
-		revision.Commits = append(revision.Commits, obj.Spec.Commit)
+		revision.Commits = append(revision.Commits, ref)
 		baseService.Status.ContainerRevision[containerName] = revision
 		baseService.Status.GitCommits = append(baseService.Status.GitCommits, obj.Name)
 
 		if obj.Spec.PR != "" && (obj.Spec.Merged || obj.Spec.Closed) {
-			logrus.Infof("PR %s is merged/closed, deleting revision, name: %s, namespace: %s, revision: %s", obj.Spec.PR, serviceName, baseService.Namespace, obj.Spec.Commit)
+			logrus.Infof("PR %s is merged/closed, deleting revision, name: %s, namespace: %s, revision: %s", obj.Spec.PR, serviceName, baseService.Namespace, ref)
 			if baseService.Status.ShouldClean == nil {
 				baseService.Status.ShouldClean = map[string]bool{}
 			}
@@ -76,15 +80,15 @@ func (h Handler) onChangeService(key string, obj *webhookv1.GitCommit, gitWatche
 			if obj.Spec.Branch != "" && obj.Spec.Branch != baseService.Spec.ImageBuild.Branch {
 				return obj, nil
 			}
-			if baseService.Spec.ImageBuild.Revision != obj.Spec.Commit {
-				baseService.Spec.ImageBuild.Revision = obj.Spec.Commit
+			if baseService.Spec.ImageBuild.Revision != ref {
+				baseService.Spec.ImageBuild.Revision = ref
 				update = true
 			}
 		} else {
 			for i, con := range baseService.Spec.Sidecars {
 				if con.Name == containerName {
-					if baseService.Spec.Sidecars[i].ImageBuild.Revision != obj.Spec.Commit {
-						baseService.Spec.Sidecars[i].ImageBuild.Revision = obj.Spec.Commit
+					if baseService.Spec.Sidecars[i].ImageBuild.Revision != ref {
+						baseService.Spec.Sidecars[i].ImageBuild.Revision = ref
 						update = true
 					}
 				}
@@ -116,12 +120,12 @@ func (h Handler) scaleDownRevisions(namespace, name string) error {
 	return nil
 }
 
-func serviceName(service *riov1.Service, obj *webhookv1.GitCommit) string {
+func serviceName(service *riov1.Service, obj *webhookv1.GitCommit, ref string) string {
 	n := name.SafeConcatName(service.Name, name.Hex(obj.Spec.RepositoryURL, 7))
 	if obj.Spec.PR != "" {
 		n = name.SafeConcatName(n, "pr"+obj.Spec.PR)
 	} else {
-		n = name.SafeConcatName(n, name.Hex(obj.Spec.Commit, 5))
+		n = name.SafeConcatName(n, name.Hex(ref, 5))
 	}
 	return n
 }

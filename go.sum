@@ -434,6 +434,7 @@ github.com/google/go-cmp v0.2.0/go.mod h1:oXzfMopK8JAjlY9xF4vHSVASa0yLyX7SntLO5a
 github.com/google/go-cmp v0.3.0/go.mod h1:8QqcDgzrUqlUb/G2PQTWiueGozuR1884gddMywk6iLU=
 github.com/google/go-cmp v0.3.1 h1:Xye71clBPdm5HgqGwUkwhbynsUJZhDbS20FvLhQ2izg=
 github.com/google/go-cmp v0.3.1/go.mod h1:8QqcDgzrUqlUb/G2PQTWiueGozuR1884gddMywk6iLU=
+github.com/google/go-containerregistry v0.0.0-20190617215043-876b8855d23c/go.mod h1:yZAFP63pRshzrEYLXLGPmUt0Ay+2zdjmMN1loCnRLUk=
 github.com/google/go-containerregistry v0.0.0-20191023194145-7683b4ee5f61 h1:E+vY20wiXrLcGIhghmnJZSC0opEy38qk/6RVzzU7U+Y=
 github.com/google/go-containerregistry v0.0.0-20191023194145-7683b4ee5f61/go.mod h1:9kIomAeXUmwhqeYS2zoEuQ0sc2GOVmNW7t3y9aNQL1o=
 github.com/google/go-github v17.0.0+incompatible h1:N0LgJ1j65A7kfXrZnUDaYCs/Sf4rEjNlfyDHW9dolSY=
@@ -613,6 +614,7 @@ github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+o
 github.com/klauspost/cpuid v1.2.0/go.mod h1:Pj4uuM528wm8OyEC2QMXAi2YiTZ96dNQPGgoMS4s3ek=
 github.com/knative/build v0.6.0/go.mod h1:/sU74ZQkwlYA5FwYDJhYTy61i/Kn+5eWfln2jDbw3Qo=
 github.com/knative/pkg v0.0.0-20190514205332-5e4512dcb2ca/go.mod h1:7Ijfhw7rfB+H9VtosIsDYvZQ+qYTz7auK3fHW/5z4ww=
+github.com/knative/serving v0.6.1/go.mod h1:ljvMfwQy2qanaM/8xnBSK4Mz3Vv2NawC2fo5kFRJS1A=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/konsorten/go-windows-terminal-sequences v1.0.2 h1:DB17ag19krx9CFsz4o3enTrPXyIXCl+2iCXH/aMAp9s=
 github.com/konsorten/go-windows-terminal-sequences v1.0.2/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
@@ -827,6 +829,8 @@ github.com/rancher/cert-manager v0.5.1-0.20191021233300-3a070253aeda h1:o8QdcpXJ
 github.com/rancher/cert-manager v0.5.1-0.20191021233300-3a070253aeda/go.mod h1:GisP3XX8Kr7jt/idFkYU62z6jTdEu6ZtUZvEiz7zSyw=
 github.com/rancher/gitwatcher v0.4.1 h1:zvRg2cWIwjQ63QVRRGSchRpI8yHFC/Up4bTrjI3qlm0=
 github.com/rancher/gitwatcher v0.4.1/go.mod h1:ewWLamldgMOOTm6ySgbekkbutk3xH1WkjKIOQ2L4p/s=
+github.com/rancher/gitwatcher v0.4.4 h1:jmgrp0cyLtuMWkfjYJVe+UEQ9ZxAxcXXtZFAu43MzHI=
+github.com/rancher/gitwatcher v0.4.4/go.mod h1:8dIsBtlsH0PrnBb9IoLbZaOEus/FnIGXm2QUAVpl2W8=
 github.com/rancher/kubernetes v1.16.2-k3s.1 h1:+oJEecXgQDkEOD/X8z2YUdYVonbXZtGzXsmtKDPYesg=
 github.com/rancher/kubernetes v1.16.2-k3s.1/go.mod h1:SmhGgKfQ30imqjFVj8AI+iW+zSyFsswNErKYeTfgoH0=
 github.com/rancher/kubernetes/staging/src/k8s.io/api v1.16.2-k3s.1 h1:2kK5KD6MU86txBYKG+tM6j5zbey02DaIDtwpG5JsfnI=
@@ -874,6 +878,7 @@ github.com/rancher/wrangler v0.2.1-0.20191025041946-1fd360590735/go.mod h1:zmXTO
 github.com/rancher/wrangler v0.2.1-0.20191109002915-2a833f7e410d h1:lz9Aef0JEy2xmJhbU0jMfQ3Mh3pUFM9AP00pgUsQAlk=
 github.com/rancher/wrangler v0.2.1-0.20191109002915-2a833f7e410d/go.mod h1:zmXTOSzU0vhumCyl0+Acq2FEP5WJOJRqnCQDegknyWA=
 github.com/rancher/wrangler-api v0.1.4/go.mod h1:Mc8bNN5rNxpQ7am2orUbonahw4xJ6ztF+fUTSku8KnE=
+github.com/rancher/wrangler-api v0.2.1-0.20191015045805-d3635aa0853a/go.mod h1:Z6EJS8Z3aaptGHvr96E2FPTkRL6UgOURCR4YZbz8D5Q=
 github.com/rancher/wrangler-api v0.2.1-0.20191025043713-b1ca9c21825a h1:dH3D71jzKuYRY7qLe9AKuwz8DKO6G9PCfkeafETMmZo=
 github.com/rancher/wrangler-api v0.2.1-0.20191025043713-b1ca9c21825a/go.mod h1:U4nfgObQ7EERMwljGhCfQIbh2ql/t8suINX8/VfWiko=
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
@@ -963,6 +968,7 @@ github.com/syndtr/gocapability v0.0.0-20160928074757-e7cb7fa329f4/go.mod h1:hkRG
 github.com/syndtr/gocapability v0.0.0-20180916011248-d98352740cb2 h1:b6uOv7YOFK0TYG7HtkIgExQo+2RdLuwRft63jn2HWj8=
 github.com/syndtr/gocapability v0.0.0-20180916011248-d98352740cb2/go.mod h1:hkRG7XYTFWNJGYcbNJQlaLq0fg1yr4J4t/NcTQtrfww=
 github.com/technosophos/moniker v0.0.0-20180509230615-a5dbd03a2245/go.mod h1:O1c8HleITsZqzNZDjSNzirUGsMT0oGu9LhHKoJrqO+A=
+github.com/tektoncd/pipeline v0.4.0/go.mod h1:IZzJdiX9EqEMuUcgdnElozdYYRh0/ZRC+NKMLj1K3Yw=
 github.com/tektoncd/pipeline v0.8.0 h1:jWEF93SRnvpihdWupwLxMpcyzhD7ogiZAE9GSK1tFno=
 github.com/tektoncd/pipeline v0.8.0/go.mod h1:IZzJdiX9EqEMuUcgdnElozdYYRh0/ZRC+NKMLj1K3Yw=
 github.com/tent/http-link-go v0.0.0-20130702225549-ac974c61c2f9/go.mod h1:RHkNRtSLfOK7qBTHaeSX1D6BNpI3qw7NTxsmNr4RvN8=

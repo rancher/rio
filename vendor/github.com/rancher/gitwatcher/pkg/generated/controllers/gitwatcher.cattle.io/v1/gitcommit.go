@@ -20,13 +20,17 @@ package v1
 
 import (
 	"context"
+	"time"
 
 	v1 "github.com/rancher/gitwatcher/pkg/apis/gitwatcher.cattle.io/v1"
 	clientset "github.com/rancher/gitwatcher/pkg/generated/clientset/versioned/typed/gitwatcher.cattle.io/v1"
 	informers "github.com/rancher/gitwatcher/pkg/generated/informers/externalversions/gitwatcher.cattle.io/v1"
 	listers "github.com/rancher/gitwatcher/pkg/generated/listers/gitwatcher.cattle.io/v1"
+	"github.com/rancher/wrangler/pkg/apply"
+	"github.com/rancher/wrangler/pkg/condition"
 	"github.com/rancher/wrangler/pkg/generic"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -40,20 +44,15 @@ import (
 type GitCommitHandler func(string, *v1.GitCommit) (*v1.GitCommit, error)
 
 type GitCommitController interface {
+	generic.ControllerMeta
 	GitCommitClient
 
 	OnChange(ctx context.Context, name string, sync GitCommitHandler)
 	OnRemove(ctx context.Context, name string, sync GitCommitHandler)
 	Enqueue(namespace, name string)
+	EnqueueAfter(namespace, name string, duration time.Duration)
 
 	Cache() GitCommitCache
-
-	Informer() cache.SharedIndexInformer
-	GroupVersionKind() schema.GroupVersionKind
-
-	AddGenericHandler(ctx context.Context, name string, handler generic.Handler)
-	AddGenericRemoveHandler(ctx context.Context, name string, handler generic.Handler)
-	Updater() generic.Updater
 }
 
 type GitCommitClient interface {
@@ -118,26 +117,21 @@ func (c *gitCommitController) Updater() generic.Updater {
 	}
 }
 
-func UpdateGitCommitOnChange(updater generic.Updater, handler GitCommitHandler) GitCommitHandler {
-	return func(key string, obj *v1.GitCommit) (*v1.GitCommit, error) {
-		if obj == nil {
-			return handler(key, nil)
-		}
-
-		copyObj := obj.DeepCopy()
-		newObj, err := handler(key, copyObj)
-		if newObj != nil {
-			copyObj = newObj
-		}
-		if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
-			newObj, err := updater(copyObj)
-			if newObj != nil && err == nil {
-				copyObj = newObj.(*v1.GitCommit)
-			}
-		}
-
-		return copyObj, err
+func UpdateGitCommitDeepCopyOnChange(client GitCommitClient, obj *v1.GitCommit, handler func(obj *v1.GitCommit) (*v1.GitCommit, error)) (*v1.GitCommit, error) {
+	if obj == nil {
+		return obj, nil
 	}
+
+	copyObj := obj.DeepCopy()
+	newObj, err := handler(copyObj)
+	if newObj != nil {
+		copyObj = newObj
+	}
+	if obj.ResourceVersion == copyObj.ResourceVersion && !equality.Semantic.DeepEqual(obj, copyObj) {
+		return client.Update(copyObj)
+	}
+
+	return copyObj, err
 }
 
 func (c *gitCommitController) AddGenericHandler(ctx context.Context, name string, handler generic.Handler) {
@@ -160,6 +154,10 @@ func (c *gitCommitController) OnRemove(ctx context.Context, name string, sync Gi
 
 func (c *gitCommitController) Enqueue(namespace, name string) {
 	c.controllerManager.Enqueue(c.gvk, c.informer.Informer(), namespace, name)
+}
+
+func (c *gitCommitController) EnqueueAfter(namespace, name string, duration time.Duration) {
+	c.controllerManager.EnqueueAfter(c.gvk, c.informer.Informer(), namespace, name, duration)
 }
 
 func (c *gitCommitController) Informer() cache.SharedIndexInformer {
@@ -239,4 +237,104 @@ func (c *gitCommitCache) GetByIndex(indexName, key string) (result []*v1.GitComm
 		result = append(result, obj.(*v1.GitCommit))
 	}
 	return result, nil
+}
+
+type GitCommitStatusHandler func(obj *v1.GitCommit, status v1.GitCommitStatus) (v1.GitCommitStatus, error)
+
+type GitCommitGeneratingHandler func(obj *v1.GitCommit, status v1.GitCommitStatus) ([]runtime.Object, v1.GitCommitStatus, error)
+
+func RegisterGitCommitStatusHandler(ctx context.Context, controller GitCommitController, condition condition.Cond, name string, handler GitCommitStatusHandler) {
+	statusHandler := &gitCommitStatusHandler{
+		client:    controller,
+		condition: condition,
+		handler:   handler,
+	}
+	controller.AddGenericHandler(ctx, name, FromGitCommitHandlerToHandler(statusHandler.sync))
+}
+
+func RegisterGitCommitGeneratingHandler(ctx context.Context, controller GitCommitController, apply apply.Apply,
+	condition condition.Cond, name string, handler GitCommitGeneratingHandler, opts *generic.GeneratingHandlerOptions) {
+	statusHandler := &gitCommitGeneratingHandler{
+		GitCommitGeneratingHandler: handler,
+		apply:                      apply,
+		name:                       name,
+		gvk:                        controller.GroupVersionKind(),
+	}
+	if opts != nil {
+		statusHandler.opts = *opts
+	}
+	RegisterGitCommitStatusHandler(ctx, controller, condition, name, statusHandler.Handle)
+}
+
+type gitCommitStatusHandler struct {
+	client    GitCommitClient
+	condition condition.Cond
+	handler   GitCommitStatusHandler
+}
+
+func (a *gitCommitStatusHandler) sync(key string, obj *v1.GitCommit) (*v1.GitCommit, error) {
+	if obj == nil {
+		return obj, nil
+	}
+
+	status := obj.Status
+	obj = obj.DeepCopy()
+	newStatus, err := a.handler(obj, obj.Status)
+	if err != nil {
+		// Revert to old status on error
+		newStatus = *status.DeepCopy()
+	}
+
+	if a.condition != "" {
+		if errors.IsConflict(err) {
+			a.condition.SetError(obj, "", nil)
+		} else {
+			a.condition.SetError(obj, "", err)
+		}
+	}
+	if !equality.Semantic.DeepEqual(status, newStatus) {
+		var newErr error
+		obj.Status = newStatus
+		obj, newErr = a.client.UpdateStatus(obj)
+		if err == nil {
+			err = newErr
+		}
+	}
+	return obj, err
+}
+
+type gitCommitGeneratingHandler struct {
+	GitCommitGeneratingHandler
+	apply apply.Apply
+	opts  generic.GeneratingHandlerOptions
+	gvk   schema.GroupVersionKind
+	name  string
+}
+
+func (a *gitCommitGeneratingHandler) Handle(obj *v1.GitCommit, status v1.GitCommitStatus) (v1.GitCommitStatus, error) {
+	objs, newStatus, err := a.GitCommitGeneratingHandler(obj, status)
+	if err != nil {
+		return newStatus, err
+	}
+
+	apply := a.apply
+
+	if !a.opts.DynamicLookup {
+		apply = apply.WithStrictCaching()
+	}
+
+	if !a.opts.AllowCrossNamespace && !a.opts.AllowClusterScoped {
+		apply = apply.WithSetOwnerReference(true, false).
+			WithDefaultNamespace(obj.GetNamespace()).
+			WithListerNamespace(obj.GetNamespace())
+	}
+
+	if !a.opts.AllowClusterScoped {
+		apply = apply.WithRestrictClusterScoped()
+	}
+
+	return newStatus, apply.
+		WithOwner(obj).
+		WithSetID(a.name).
+		ApplyObjects(objs...)
 }
