@@ -14,8 +14,8 @@ func (c *Create) setBuildOrImage(imageName string, spec *riov1.ServiceSpec) erro
 			if c.BuildBranch != "master" {
 				return errors.New("build-branch and build-tag cannot both be set, as build-tag will deploy tags from every branch")
 			}
-			if c.BuildWebhookSecret == "" {
-				return errors.New("build-tag requires webhook")
+			if c.BuildPr == true {
+				return errors.New("build-tag and build-pr cannot both be turned on")
 			}
 		}
 
