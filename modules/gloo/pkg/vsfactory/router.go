@@ -24,10 +24,6 @@ func (f *VirtualServiceFactory) ForRouter(router *riov1.Router) ([]*solov1.Virtu
 		return nil, err
 	}
 
-	if err := f.InjectACME(vs); err != nil {
-		return nil, err
-	}
-
 	result := []*solov1.VirtualService{
 		vs,
 	}
@@ -40,8 +36,29 @@ func (f *VirtualServiceFactory) ForRouter(router *riov1.Router) ([]*solov1.Virtu
 	for hostname, tls := range tls {
 		result = append(result, tlsCopy(hostname, f.systemNamespace, tls, vs))
 	}
+	configureHTTPSRedirect(router, result)
+
+	if err := f.InjectACME(vs); err != nil {
+		return nil, err
+	}
 
 	return result, nil
+}
+
+// Have to reconfigure HTTPS redirect since we only want to set redirect on http virtualservice
+func configureHTTPSRedirect(router *riov1.Router, vss []*solov1.VirtualService) {
+	for _, vs := range vss {
+		if vs.Spec.SslConfig == nil {
+			for i, r := range router.Spec.Routes {
+				if vs.Spec.VirtualHost != nil && len(vs.Spec.VirtualHost.Routes) <= i {
+					continue
+				}
+				if r.Redirect != nil && r.Redirect.ToHTTPS {
+					addRedirect(r, vs.Spec.VirtualHost.Routes[i])
+				}
+			}
+		}
+	}
 }
 
 func vsForRouter(router *riov1.Router) (*solov1.VirtualService, error) {
@@ -223,10 +240,6 @@ func addRedirect(route riov1.RouteSpec, gatewayRoute *gatewayv1.Route) {
 		},
 	}
 	if route.Redirect.Path != "" {
-		ra.RedirectAction.PathRewriteSpecifier = &gloov1.RedirectAction_PathRedirect{
-			PathRedirect: route.Redirect.Path,
-		}
-	} else if route.Redirect.Prefix != "" {
 		ra.RedirectAction.PathRewriteSpecifier = &gloov1.RedirectAction_PathRedirect{
 			PathRedirect: route.Redirect.Path,
 		}

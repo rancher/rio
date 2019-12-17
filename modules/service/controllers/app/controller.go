@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"sort"
 
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
@@ -77,14 +78,21 @@ func (h *handler) onRioServiceChange(key string, svc *riov1.Service) (*riov1.Ser
 		return svc, err
 	}
 
-	_, err = h.services.Cache().Get(svc.Namespace, appName)
+	existingSvc, err := h.services.Cache().Get(svc.Namespace, appName)
 	if err == nil {
+		ports := portsForService(revisions)
+		if !reflect.DeepEqual(existingSvc, ports) {
+			existingSvc.Spec.Ports = ports
+			if _, err := h.services.Update(existingSvc); err != nil {
+				return svc, err
+			}
+			return svc, nil
+		}
 		// Already Exists
 		return svc, nil
 	}
 
 	appService := newService(svc.Namespace, appName, revisions)
-
 	_, err = h.services.Create(appService)
 	if errors.IsAlreadyExists(err) {
 		// Already Exists

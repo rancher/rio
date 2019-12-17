@@ -35,10 +35,18 @@ Creating a route with path-based matching supports: exact match: `foo`; prefix m
 $ rio route add $name/path to $target
 
 # to add prefix
-$ rio route add $name/path* to $target
+$ rio route add $name/path'*' to $target
 
 # to add regular expression match
-$ rio route add $name/regexp(foo.*) to $target
+$ rio route add $name/regexp'(foo[1-9])' to $target
+```
+
+Try to access the routes you just created to test if routes are configured properly
+
+```bash
+$ curl https://route.xxx.on-rio.io/path
+$ curl https://route.xxx.on-rio.io/path-test
+$ curl https://route.xxx.on-rio.io/foo1 
 ```
 ##
 
@@ -54,7 +62,17 @@ $ rio route add $name to $target,port=8080
 
 Creating a route with header-based matching supports: exact match: `foo`; prefix match: `foo*`; and regular expression match: `regexp(foo.*)`. 
 ```bash
-$ rio route add --header USER=VALUE $name to $target
+$ rio route add --header USER=test $name to $target
+$ rio route add --header USER=test'*' $name to $target
+$ rio route add --header USER=regexp'(test[1-9])' $name to $target
+```
+
+Access url to test if routes are configured properly
+
+```bash
+$ curl -H'USER: test' https://route.xxx.on-rio.io
+$ curl -H'USER: test-foo' https://route.xxx.on-rio.io
+$ curl -H'USER: test1' https://route.xxx.on-rio.io
 ```
 ##
 
@@ -62,7 +80,14 @@ $ rio route add --header USER=VALUE $name to $target
 
 Create route based on HTTP method:
 ```bash
-$ rio route add --method GET $name to $target
+$ rio route add --method POST $name to $target
+```
+
+Sending POST requests to get traffic go through. Instead, GET request will get 404.
+
+```bash
+$ curl -i -X POST https://route.xxx.on-rio.io
+$ curl -i -X GET https://route.xxx.on-rio.io
 ```
 ##
 
@@ -76,19 +101,12 @@ $ rio route add --remove-header FOO=BAR $name to $target
 ```
 ##
 
-#### Mirror traffic
-
-Mirror traffic:
-```bash
-$ rio route add $name mirror $target
-```
-##
-
 #### Rewrite to host/path
 
 Rewrite host header and path:
 ```bash
-$ rio route add $name rewrite $rewrite_host/$rewrite_path
+$ rio route add --rewrite-host foo $name to $target
+$ rio route add --rewrite-path /path $name to $target
 ```
 ##
 
@@ -97,6 +115,17 @@ $ rio route add $name rewrite $rewrite_host/$rewrite_path
 Redirect to another service:
 ```bash
 $ rio route add $name redirect $target_service/path
+```
+
+To add a https redirect 
+```bash
+$ rio route add --https-redirect $name to $target
+```
+
+If you want to https redirect on your public domain, register domain to this router
+
+```bash
+$ rio domain add foo.bar $name 
 ```
 ##
 
@@ -120,7 +149,7 @@ $ rio route add --fault-httpcode 502 --fault-delay-milli-seconds 1000 --fault-pe
 
 Add retry logic:
 ```bash
-$ rio route add --retry-attempts 5 --retry-timeout-seconds 1s $name to $target
+$ rio route add --retry-attempts 5 --retry-timeout-seconds 1 $name to $target
 ```
 ##
 
