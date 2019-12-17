@@ -1,6 +1,7 @@
 package up
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/rancher/rio/cli/pkg/build"
@@ -11,7 +12,7 @@ import (
 	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/wrangler/pkg/gvk"
 	"github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/api/errors"
+	coreErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -40,6 +41,12 @@ const (
 func (u *Up) Run(c *clicontext.CLIContext) error {
 	if u.N_Name == "" {
 		u.N_Name = up.GetCurrentDir()
+	}
+
+	if u.BuildTag == true {
+		if u.Branch != "master" {
+			return errors.New("branch and build-tag cannot both be set, as build-tag will deploy tags from every branch")
+		}
 	}
 
 	stack, err := u.ensureStack(c)
@@ -104,7 +111,7 @@ func (u *Up) setBuild(c *clicontext.CLIContext) error {
 
 	existing, err := c.Rio.Stacks(c.GetSetNamespace()).Get(u.N_Name, metav1.GetOptions{})
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if coreErrors.IsNotFound(err) {
 			return c.Create(s)
 		}
 	}
@@ -198,7 +205,7 @@ func (u *Up) ensureStack(c *clicontext.CLIContext) (*riov1.Stack, error) {
 
 	existing, err := c.Rio.Stacks(c.GetSetNamespace()).Get(u.N_Name, metav1.GetOptions{})
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if coreErrors.IsNotFound(err) {
 			stack, err := c.Rio.Stacks(c.GetSetNamespace()).Create(s)
 			if err != nil {
 				return nil, err
