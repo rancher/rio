@@ -44,7 +44,11 @@ type handler struct {
 }
 
 func (h *handler) generate(service *riov1.Service, status riov1.ServiceStatus) ([]runtime.Object, riov1.ServiceStatus, error) {
-	if skip(service) {
+	skip, err := h.skip(service)
+	if err != nil {
+		return nil, status, err
+	}
+	if skip {
 		return nil, status, generic.ErrSkip
 	}
 
@@ -139,12 +143,20 @@ func (h *handler) scaleDownRevisions(namespace, name, excludedService string) er
 	return nil
 }
 
-func skip(service *riov1.Service) bool {
+func (h *handler) skip(service *riov1.Service) (bool, error) {
+	fromPR, err := h.generatedFromPR(service)
+	if err != nil {
+		return false, err
+	}
+	if fromPR {
+		return false, nil
+	}
 	if !service.Spec.Template || len(service.Status.ContainerRevision) == 0 || service.Status.ShouldGenerate == "" {
-		return true
+		return true, nil
 	}
 	needed := 0
 	has := 0
+	// Revision empty is a template
 	if service.Spec.ImageBuild != nil && service.Spec.ImageBuild.Revision == "" {
 		needed++
 	}
@@ -159,8 +171,7 @@ func skip(service *riov1.Service) bool {
 			has++
 		}
 	}
-
-	return needed != has
+	return needed != has, nil
 }
 
 func setPullSecrets(spec *riov1.ServiceSpec) {

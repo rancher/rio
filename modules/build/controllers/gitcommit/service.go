@@ -44,7 +44,9 @@ func (h Handler) onChangeService(key string, obj *webhookv1.GitCommit, gitWatche
 	}
 
 	baseService = baseService.DeepCopy()
-	if baseService.Spec.Template {
+
+	// if its a template service, or an incoming PR commit
+	if baseService.Spec.Template || (gitWatcher.Spec.PR && obj.Spec.PR != "") {
 		// if git commit is from different branch do no-op
 		if obj.Spec.Branch != "" && obj.Spec.Branch != imageBuild.Branch {
 			return obj, nil
