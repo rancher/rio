@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/rancher/rio/pkg/generated/clientset/versioned/scheme"
-	"github.com/rancher/wrangler/pkg/kubeconfig"
 	appv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,12 +19,7 @@ import (
 	"k8s.io/kubectl/pkg/cmd/portforward"
 )
 
-func PortForward(k8s *kubernetes.Clientset, port, targetPort string, pod v1.Pod, stdOutAndErr bool, readyChan, stopChan chan struct{}) error {
-	loader := kubeconfig.GetInteractiveClientConfig(os.Getenv("KUBECONFIG"))
-	restConfig, err := loader.ClientConfig()
-	if err != nil {
-		return err
-	}
+func PortForward(restConfig *rest.Config, k8s *kubernetes.Clientset, port, targetPort string, pod v1.Pod, stdOutAndErr bool, readyChan, stopChan chan struct{}) error {
 	if err := setConfigDefaults(restConfig); err != nil {
 		return err
 	}

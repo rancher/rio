@@ -21,6 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 var (
@@ -38,8 +39,9 @@ type RuntimeBuilder interface {
 	Build(ctx context.Context, spec riov1.ImageBuildSpec) (string, error)
 }
 
-func NewLocalBuilder(ctx context.Context, systemNamespace string, apply apply.Apply, k8s *kubernetes.Clientset) (LocalBuilder, error) {
+func NewLocalBuilder(ctx context.Context, restConfig *rest.Config, systemNamespace string, apply apply.Apply, k8s *kubernetes.Clientset) (LocalBuilder, error) {
 	builder := &localBuilder{
+		restConfig:      restConfig,
 		k8s:             k8s,
 		apply:           apply,
 		buildkitPort:    generateRandomPort(),
@@ -52,6 +54,7 @@ func NewLocalBuilder(ctx context.Context, systemNamespace string, apply apply.Ap
 }
 
 type localBuilder struct {
+	restConfig      *rest.Config
 	apply           apply.Apply
 	k8s             *kubernetes.Clientset
 	runtimeBuilder  RuntimeBuilder
@@ -118,7 +121,7 @@ func (l localBuilder) setupPortforwarding(ctx context.Context) error {
 				break
 			}
 		}
-		if err := PortForward(l.k8s, l.buildkitPort, "8080", pod, false, readyChan, ChanWrapper(ctx.Done())); err != nil {
+		if err := PortForward(l.restConfig, l.k8s, l.buildkitPort, "8080", pod, false, readyChan, ChanWrapper(ctx.Done())); err != nil {
 			logrus.Fatal(err)
 		}
 	}()

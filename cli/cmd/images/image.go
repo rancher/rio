@@ -61,7 +61,7 @@ func (i *Images) Run(ctx *clicontext.CLIContext) error {
 		if strings.HasPrefix(pod.Name, constants.BuildkitdService) {
 			readyChan := make(chan struct{})
 			go func() {
-				if err := localbuilder.PortForward(ctx.K8s, portForward, registryPort, pod, false, readyChan, localbuilder.ChanWrapper(ctx.Ctx.Done())); err != nil {
+				if err := localbuilder.PortForward(ctx.RestConfig, ctx.K8s, portForward, registryPort, pod, false, readyChan, localbuilder.ChanWrapper(ctx.Ctx.Done())); err != nil {
 					logrus.Fatal(err)
 				}
 			}()
