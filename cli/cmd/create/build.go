@@ -2,6 +2,7 @@ package create
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
@@ -14,6 +15,12 @@ func (c *Create) setBuildOrImage(imageName string, spec *riov1.ServiceSpec) erro
 			if c.BuildBranch != "master" {
 				return errors.New("build-branch and build-tag cannot both be set, as build-tag will deploy tags from every branch")
 			}
+			if c.BuildWebhookSecret == "" {
+				fmt.Println("Warning: tag mode only works with a webhook")
+			}
+		}
+		if c.BuildPr == true && c.Template == false {
+			return errors.New("build-pr is only compatible with template mode")
 		}
 
 		spec.ImageBuild = &riov1.ImageBuildSpec{
