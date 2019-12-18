@@ -68,7 +68,7 @@ func (h handler) generate(obj *v1beta1.Ingress, status v1beta1.IngressStatus) ([
 			}
 		}
 		if pd.Spec.TargetRouter != "" {
-			h.routers.Enqueue(pd.Spec.TargetNamespace, pd.Spec.TargetApp)
+			h.routers.Enqueue(pd.Spec.TargetNamespace, pd.Spec.TargetRouter)
 		}
 	}
 	return nil, status, nil

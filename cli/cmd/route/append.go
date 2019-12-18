@@ -19,7 +19,6 @@ var (
 		"to":       true,
 		"mirror":   true,
 		"redirect": true,
-		"rewrite":  true,
 	}
 )
 
@@ -40,6 +39,9 @@ type Add struct {
 	RetryTimeoutSeconds    int               `desc:"Timeout per retry in seconds"`
 	TimeoutSeconds         int               `desc:"Timeout in seconds for all requests"`
 	Method                 []string          `desc:"Match HTTP method, support comma-separated values"`
+	RewriteHost            string            `desc:"Rewrite Hostname"`
+	RewritePath            string            `desc:"Rewrite Path"`
+	HTTPSRedirect          bool              `desc:"Redirect http to https endpoint" name:"https-redirect"`
 }
 
 type Action interface {
@@ -158,7 +160,7 @@ func (a *Add) buildRouteSpec(ctx *clicontext.CLIContext, args []string) (*riov1.
 	}
 	a.addMirror(routeSpec, action, destinations)
 	a.addRedirect(routeSpec, action, args[2])
-	a.addRewrite(routeSpec, action, args[2])
+	a.addRewrite(routeSpec)
 	a.addTo(routeSpec, action, destinations)
 	a.addTimeout(routeSpec)
 	a.addRetry(routeSpec)
@@ -175,6 +177,11 @@ func (a *Add) addTo(routeSpec *riov1.RouteSpec, action string, dests []riov1.Wei
 }
 
 func (a *Add) addRedirect(routeSpec *riov1.RouteSpec, action string, dest string) {
+	if a.HTTPSRedirect {
+		routeSpec.Redirect = &riov1.Redirect{
+			ToHTTPS: true,
+		}
+	}
 	if action != "redirect" {
 		return
 	}
@@ -189,18 +196,12 @@ func (a *Add) addRedirect(routeSpec *riov1.RouteSpec, action string, dest string
 	}
 }
 
-func (a *Add) addRewrite(routeSpec *riov1.RouteSpec, action string, dest string) {
-	if action != "rewrite" {
-		return
-	}
-
-	host, path := kv.Split(dest, "/")
-	if path != "" {
-		path = "/" + path
-	}
-	routeSpec.Rewrite = &riov1.Rewrite{
-		Path: path,
-		Host: host,
+func (a *Add) addRewrite(routeSpec *riov1.RouteSpec) {
+	if a.RewriteHost != "" || a.RewritePath != "" {
+		routeSpec.Rewrite = &riov1.Rewrite{
+			Path: a.RewritePath,
+			Host: a.RewriteHost,
+		}
 	}
 }
 
@@ -225,15 +226,15 @@ func (a *Add) addFault(routeSpec *riov1.RouteSpec) error {
 		Percentage: a.FaultPercentage,
 	}
 
-	if a.FaultDelayMilliSeconds != 0 {
-		f.DelayMillis = a.FaultDelayMilliSeconds
-		return nil
-	}
-
 	if a.FaultHTTPCode != 0 {
 		f.AbortHTTPStatus = a.FaultHTTPCode
 	}
 
+	if a.FaultDelayMilliSeconds != 0 {
+		f.DelayMillis = a.FaultDelayMilliSeconds
+	}
+
+	routeSpec.Fault = f
 	return nil
 }
 
@@ -252,6 +253,9 @@ func (a *Add) addMatch(ctx *clicontext.CLIContext, matchString string, routeSpec
 			path = "/" + path
 		}
 		match.Path = objectmappers.ParseStringMatch(path)
+	}
+	if match.Path != nil && match.Path.Regexp != "" {
+		match.Path.Regexp = "/" + match.Path.Regexp
 	}
 
 	if len(a.Method) > 0 {

@@ -247,7 +247,6 @@ func (m Match) MaybeString() interface{} {
 type Redirect struct {
 	Host    string `json:"host,omitempty"`
 	Path    string `json:"path,omitempty"`
-	Prefix  string `json:"prefix,omitempty"`
 	ToHTTPS bool   `json:"toHTTPS,omitempty"`
 }
 
