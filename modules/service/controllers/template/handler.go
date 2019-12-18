@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	webhookv1controller "github.com/rancher/gitwatcher/pkg/generated/controllers/gitwatcher.cattle.io/v1"
+	"github.com/rancher/rio/cli/cmd/weight"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
@@ -74,7 +75,7 @@ func (h *handler) generate(service *riov1.Service, status riov1.ServiceStatus) (
 		if err := h.scaleDownRevisions(service.Namespace, app, name); err != nil {
 			return nil, status, nil
 		}
-		spec.Weight = &[]int{100}[0]
+		spec.Weight = &[]int{weight.PromoteWeight}[0]
 	}
 
 	if status.ShouldClean[name] || status.GeneratedServices[name] {
