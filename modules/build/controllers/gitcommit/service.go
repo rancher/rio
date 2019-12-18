@@ -56,9 +56,6 @@ func (h Handler) onChangeService(key string, obj *webhookv1.GitCommit, gitWatche
 		if baseService.Status.ContainerRevision == nil {
 			baseService.Status.ContainerRevision = map[string]riov1.BuildRevision{}
 		}
-		revision := baseService.Status.ContainerRevision[containerName]
-		revision.Commits = append(revision.Commits, ref)
-		baseService.Status.ContainerRevision[containerName] = revision
 		baseService.Status.GitCommits = append(baseService.Status.GitCommits, obj.Name)
 
 		if obj.Spec.PR != "" && (obj.Spec.Merged || obj.Spec.Closed) {
@@ -68,6 +65,9 @@ func (h Handler) onChangeService(key string, obj *webhookv1.GitCommit, gitWatche
 			}
 			baseService.Status.ShouldClean[serviceName] = true
 		} else {
+			revision := baseService.Status.ContainerRevision[containerName]
+			revision.Commits = append(revision.Commits, ref)
+			baseService.Status.ContainerRevision[containerName] = revision
 			baseService.Status.ShouldGenerate = serviceName
 		}
 

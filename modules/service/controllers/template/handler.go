@@ -144,6 +144,9 @@ func (h *handler) scaleDownRevisions(namespace, name, excludedService string) er
 }
 
 func (h *handler) skip(service *riov1.Service) (bool, error) {
+	if service.Status.ShouldGenerate == "" {
+		return true, nil
+	}
 	fromPR, err := h.generatedFromPR(service)
 	if err != nil {
 		return false, err
@@ -151,7 +154,7 @@ func (h *handler) skip(service *riov1.Service) (bool, error) {
 	if fromPR {
 		return false, nil
 	}
-	if !service.Spec.Template || len(service.Status.ContainerRevision) == 0 || service.Status.ShouldGenerate == "" {
+	if !service.Spec.Template || len(service.Status.ContainerRevision) == 0 {
 		return true, nil
 	}
 	needed := 0
