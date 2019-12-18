@@ -48,7 +48,7 @@ func Build(builds map[stack.ContainerBuildKey]riov1.ImageBuildSpec, c *clicontex
 		logrus.Warn(err)
 	}
 
-	localBuilder, err := localbuilder.NewLocalBuilder(c.Ctx, c.SystemNamespace, c.Apply, c.K8s)
+	localBuilder, err := localbuilder.NewLocalBuilder(c.Ctx, c.RestConfig, c.SystemNamespace, c.Apply, c.K8s)
 	if err != nil {
 		return nil, err
 	}
