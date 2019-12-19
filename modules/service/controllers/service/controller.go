@@ -57,12 +57,12 @@ type serviceHandler struct {
 }
 
 func (s *serviceHandler) populate(service *riov1.Service, status riov1.ServiceStatus) ([]runtime.Object, riov1.ServiceStatus, error) {
-	if service.Spec.Template {
-		return nil, status, generic.ErrSkip
-	}
-
 	if err := s.ensureFeatures(service); err != nil {
 		return nil, status, err
+	}
+
+	if service.Spec.Template {
+		return nil, status, generic.ErrSkip
 	}
 
 	os := objectset.NewObjectSet()
