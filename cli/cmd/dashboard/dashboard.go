@@ -140,9 +140,14 @@ func waitDashboard(ctx *clicontext.CLIContext) (string, error) {
 			return "", err
 		}
 
-		if !svc.Status.DeploymentReady ||
-			len(svc.Status.AppEndpoints) == 0 ||
-			!strings.HasPrefix(svc.Status.AppEndpoints[0], "https://") {
+		foundHTTPS := false
+		for _, endpoint := range svc.Status.AppEndpoints {
+			if strings.HasPrefix(endpoint, "https://") {
+				foundHTTPS = true
+				break
+			}
+		}
+		if !svc.Status.DeploymentReady || !foundHTTPS {
 			continue
 		}
 
