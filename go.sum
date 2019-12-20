@@ -139,6 +139,7 @@ github.com/blang/semver v3.5.0+incompatible/go.mod h1:kRBLl5iJ+tD4TcOOxsy/0fnweb
 github.com/bluekeyes/hatpear v0.0.0-20180714193905-ffb42d5bb417/go.mod h1:D+WOahrNtu6OK0KiVoXY9h5j7IcEs5LYke+zJkMBsKg=
 github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 h1:DDGfHa7BWjL4YnC6+E63dPcxHo2sUxDIu8g3QgEJdRY=
 github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869/go.mod h1:Ekp36dRnpXw/yCqJaO+ZrUyxD+3VXMFFr56k5XYrpB4=
+github.com/boltdb/bolt v1.3.1 h1:JQmyP4ZBrce+ZQu0dY660FMfatumYDLun9hBCUVIkF4=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
 github.com/bradleyfalzon/ghinstallation v0.1.2/go.mod h1:VQsLlCoNa54/CNXcc2DuCfNZrZxqQcyPeqKUugF/2h8=
 github.com/briandowns/spinner v0.0.0-20190212173954-5cf08d0ac778/go.mod h1:hw/JEQBIE+c/BLI4aKM8UU8v+ZqrD3h7HC27kKt8JQU=
@@ -827,8 +828,6 @@ github.com/radovskyb/watcher v1.0.7 h1:AYePLih6dpmS32vlHfhCeli8127LzkIgwJGcwwe8t
 github.com/radovskyb/watcher v1.0.7/go.mod h1:78okwvY5wPdzcb1UYnip1pvrZNIVEIh/Cm+ZuvsUYIg=
 github.com/rancher/cert-manager v0.5.1-0.20191021233300-3a070253aeda h1:o8QdcpXJ/3PYThmGJw7PgQ8Kt0VS2Rxxe7SbqwSeOMs=
 github.com/rancher/cert-manager v0.5.1-0.20191021233300-3a070253aeda/go.mod h1:GisP3XX8Kr7jt/idFkYU62z6jTdEu6ZtUZvEiz7zSyw=
-github.com/rancher/gitwatcher v0.4.1 h1:zvRg2cWIwjQ63QVRRGSchRpI8yHFC/Up4bTrjI3qlm0=
-github.com/rancher/gitwatcher v0.4.1/go.mod h1:ewWLamldgMOOTm6ySgbekkbutk3xH1WkjKIOQ2L4p/s=
 github.com/rancher/gitwatcher v0.4.4 h1:jmgrp0cyLtuMWkfjYJVe+UEQ9ZxAxcXXtZFAu43MzHI=
 github.com/rancher/gitwatcher v0.4.4/go.mod h1:8dIsBtlsH0PrnBb9IoLbZaOEus/FnIGXm2QUAVpl2W8=
 github.com/rancher/kubernetes v1.16.2-k3s.1 h1:+oJEecXgQDkEOD/X8z2YUdYVonbXZtGzXsmtKDPYesg=
@@ -867,17 +866,12 @@ github.com/rancher/norman v0.0.0-20191114233102-966e8db9e670 h1:EM5VxDfLyKFTEPVV
 github.com/rancher/norman v0.0.0-20191114233102-966e8db9e670/go.mod h1:zOBq0bQmo9slllyM1kcKpKr1RH5IWodjySaffLKSOx0=
 github.com/rancher/rdns-server v0.5.7-0.20190927164127-7128efe7d065 h1:K2/79Jdw0viw+ryWSJQcIMYJf2vc5yQXlEHPTbpVPVs=
 github.com/rancher/rdns-server v0.5.7-0.20190927164127-7128efe7d065/go.mod h1:/yw1tSnAWDSDSmhKpYNA/FBA49fbbtNfh/IHT31v7jE=
-github.com/rancher/stern v0.0.0-20191203174401-30397523f082 h1:rDHE/uQXR2tjyik9kkVI8SN3eSliuqbjouC427M8VUM=
-github.com/rancher/stern v0.0.0-20191203174401-30397523f082/go.mod h1:aaP5eLMmFcyJUsZB6FwAO+0eILWeBKvupuHeeEuY0qQ=
 github.com/rancher/stern v0.0.0-20191213223518-59c2bf84f705 h1:LD7T78U5A4/tAZ+3jMRy6c6iJhhb+TARG29DdCtWF2Y=
 github.com/rancher/stern v0.0.0-20191213223518-59c2bf84f705/go.mod h1:aaP5eLMmFcyJUsZB6FwAO+0eILWeBKvupuHeeEuY0qQ=
-github.com/rancher/wrangler v0.1.4/go.mod h1:EYP7cqpg42YqElaCm+U9ieSrGQKAXxUH5xsr+XGpWyE=
-github.com/rancher/wrangler v0.1.7-0.20190824203417-e7b6ecb74e90/go.mod h1:TLc4vXF21FWz2MYNHny5zDwFwBqvgBViU5n9CHrJRQ0=
 github.com/rancher/wrangler v0.2.1-0.20191015042916-f2a6ecca4f20/go.mod h1:w9jivI6vlBZmqzizNQM0Li/ZwoNTBeDpIv+NtBoFiMI=
 github.com/rancher/wrangler v0.2.1-0.20191025041946-1fd360590735/go.mod h1:zmXTOSzU0vhumCyl0+Acq2FEP5WJOJRqnCQDegknyWA=
 github.com/rancher/wrangler v0.2.1-0.20191109002915-2a833f7e410d h1:lz9Aef0JEy2xmJhbU0jMfQ3Mh3pUFM9AP00pgUsQAlk=
 github.com/rancher/wrangler v0.2.1-0.20191109002915-2a833f7e410d/go.mod h1:zmXTOSzU0vhumCyl0+Acq2FEP5WJOJRqnCQDegknyWA=
-github.com/rancher/wrangler-api v0.1.4/go.mod h1:Mc8bNN5rNxpQ7am2orUbonahw4xJ6ztF+fUTSku8KnE=
 github.com/rancher/wrangler-api v0.2.1-0.20191015045805-d3635aa0853a/go.mod h1:Z6EJS8Z3aaptGHvr96E2FPTkRL6UgOURCR4YZbz8D5Q=
 github.com/rancher/wrangler-api v0.2.1-0.20191025043713-b1ca9c21825a h1:dH3D71jzKuYRY7qLe9AKuwz8DKO6G9PCfkeafETMmZo=
 github.com/rancher/wrangler-api v0.2.1-0.20191025043713-b1ca9c21825a/go.mod h1:U4nfgObQ7EERMwljGhCfQIbh2ql/t8suINX8/VfWiko=
@@ -900,8 +894,6 @@ github.com/ryanuber/columnize v0.0.0-20160712163229-9b3edd62028f/go.mod h1:sm1tb
 github.com/ryanuber/go-glob v1.0.0 h1:iQh3xXAumdQ+4Ufa5b25cRpC5TYKlno6hsv6Cb3pkBk=
 github.com/ryanuber/go-glob v1.0.0/go.mod h1:807d1WSdnB0XRJzKNil9Om6lcp/3a0v4qIHxIXzX/Yc=
 github.com/satori/go.uuid v1.2.0/go.mod h1:dA0hQrYB0VpLJoorglMZABFdXlWrHn1NEOzdhQKdks0=
-github.com/sclevine/spec v1.3.0 h1:iTB51CYlnju5oRh0/l67fg1+RlQ2nqmFecwdvN+5TrI=
-github.com/sclevine/spec v1.3.0/go.mod h1:W4J29eT/Kzv7/b9IWLB055Z+qvVC9vt0Arko24q7p+U=
 github.com/sclevine/spec v1.4.0 h1:z/Q9idDcay5m5irkZ28M7PtQM4aOISzOpj4bUPkDee8=
 github.com/sclevine/spec v1.4.0/go.mod h1:LvpgJaFyvQzRvc1kaDs0bulYwzC70PbiYjC4QnFHkOM=
 github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 h1:nn5Wsu0esKSJiIVhscUtVbo7ada43DJhG55ua/hjS5I=
@@ -1268,7 +1260,6 @@ honnef.co/go/tools v0.0.1-2019.2.3/go.mod h1:a3bituU0lyd329TUQxRnasdCoJDkEUEAqEt
 istio.io/gogo-genproto v0.0.0-20190614210408-e88dc8b0e4db/go.mod h1:eIDJ6jNk/IeJz6ODSksHl5Aiczy5JUq6vFhJWI5OtiI=
 k8s.io/gengo v0.0.0-20190116091435-f8a0810f38af/go.mod h1:ezvh/TsK7cY6rbqRK0oQQ8IAqLxYwwyPxAX1Pzy0ii0=
 k8s.io/gengo v0.0.0-20190128074634-0689ccc1d7d6/go.mod h1:ezvh/TsK7cY6rbqRK0oQQ8IAqLxYwwyPxAX1Pzy0ii0=
-k8s.io/gengo v0.0.0-20190327210449-e17681d19d3a/go.mod h1:ezvh/TsK7cY6rbqRK0oQQ8IAqLxYwwyPxAX1Pzy0ii0=
 k8s.io/gengo v0.0.0-20190822140433-26a664648505 h1:ZY6yclUKVbZ+SdWnkfY+Je5vrMpKOxmGeKRbsXVmqYM=
 k8s.io/gengo v0.0.0-20190822140433-26a664648505/go.mod h1:ezvh/TsK7cY6rbqRK0oQQ8IAqLxYwwyPxAX1Pzy0ii0=
 k8s.io/heapster v1.2.0-beta.1/go.mod h1:h1uhptVXMwC8xtZBYsPXKVi8fpdlYkTs6k949KozGrM=

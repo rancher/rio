@@ -7,7 +7,7 @@ services:
     - '* autoscale.rio.cattle.io/servicescalerecommendations'
     - '* rio.cattle.io/services'
     - '* rio.cattle.io/services/status'
-    image: rancher/rio-autoscaler:v0.1.5
+    image: rancher/rio-autoscaler:v0.1.6
     imagePullPolicy: always
     env:
     - NAMESPACE=${NAMESPACE}
