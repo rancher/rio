@@ -34,7 +34,7 @@ type Create struct {
 	BuildImageName         string            `desc:"Specify custom image name to push"`
 	BuildRegistry          string            `desc:"Specify to push image to"`
 	BuildRevision          string            `desc:"Build a specific git commit or tag"`
-	BuildPr                bool              `desc:"Enable builds on new pull requests"`
+	BuildPr                bool              `desc:"Enable builds on new pull requests. Can only be used when template and webhook are set"`
 	BuildTag               bool              `desc:"Enable builds on any new tags instead of new commits on a branch, requires webhook, does not support polling"`
 	BuildTagInclude        string            `desc:"Pattern that tags must match"`
 	BuildTagExclude        string            `desc:"Pattern that excludes tags"`
