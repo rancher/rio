@@ -53,8 +53,9 @@ type Address struct {
 }
 
 type FeatureConfig struct {
-	Enabled *bool             `json:"enabled,omitempty"`
-	Options map[string]string `json:"options,omitempty"`
+	Enabled     *bool             `json:"enabled,omitempty"`
+	Description string            `json:"description,omitempty"`
+	Options     map[string]string `json:"options,omitempty"`
 }
 
 func FromConfigMap(cm *v1.ConfigMap) (result Config, err error) {
