@@ -2,6 +2,9 @@ package vsfactory
 
 import (
 	"net"
+	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 
 	rioadminv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
@@ -18,9 +21,15 @@ import (
 )
 
 const (
-	rioNameHeader      = "X-Rio-ServiceName"
-	rioNamespaceHeader = "X-Rio-Namespace"
+	rioNameHeader         = "X-Rio-ServiceName"
+	rioNamespaceHeader    = "X-Rio-Namespace"
+	scaleFromZeroAttempts = 10
 )
+
+// Retry configuration for the envoy gateway (Gloo)  https://www.envoyproxy.io/learn/automatic-retries
+// for services scaled to zero
+var overallTimeout = time.Second * 30
+var perTryTimeout = time.Second * 2
 
 type VirtualServiceFactory struct {
 	clusterDomainCache rioadminv1controller.ClusterDomainCache
@@ -145,8 +154,15 @@ func single(target target) *soloapiv1.Route_RouteAction {
 
 func newRoutePlugin(targets ...target) *v1.RouteOptions {
 	for _, t := range targets {
+		// use envoy to retry the connection if the service is being scaled up and increase envoy timeout
 		if t.ScaleIsZero {
 			return &v1.RouteOptions{
+				Timeout: &overallTimeout,
+				Retries: &retries.RetryPolicy{
+					RetryOn:       "5xx",
+					NumRetries:    scaleFromZeroAttempts,
+					PerTryTimeout: &perTryTimeout,
+				},
 				HeaderManipulation: &headers.HeaderManipulation{
 					RequestHeadersToAdd: []*headers.HeaderValueOption{
 						{
