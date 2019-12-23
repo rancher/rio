@@ -3,6 +3,8 @@
 By default, Rio will automatically poll the git repo and check if code has changed.
 You can also configure a webhook to automatically push any events to Rio to trigger the build.
 
+Note: Webhooks are currently only supported with Github.
+
 1. Set up the GitHub webhook token.
 ```
 $ rio secret add --github-webhook
