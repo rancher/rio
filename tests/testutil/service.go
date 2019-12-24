@@ -224,14 +224,34 @@ func (ts *TestService) Weight(weightSpec int, args ...string) {
 
 // Call "rio stage --image={source} ns/name:{version}", this will return a new TestService
 func (ts *TestService) Stage(source, version string) TestService {
-	_, err := RioCmdWithRetry([]string{"stage", "--image", source, ts.Name, version})
+	_, err := RioCmdWithRetry([]string{"stage", "--image", source, ts.App, version})
 	if err != nil {
 		ts.T.Fatalf("stage command failed:  %v", err.Error())
 	}
 	stagedService := TestService{
 		T:       ts.T,
-		App:     ts.Name,
+		App:     ts.App,
 		Name:    fmt.Sprintf("%s@%s", ts.Name, version),
+		Version: version,
+	}
+	err = stagedService.waitForReadyService()
+	if err != nil {
+		ts.T.Fatalf(err.Error())
+	}
+	return stagedService
+}
+
+// Executes a faux stage with run: "rio run -n ng@v3 --weight 50 nginx"
+func (ts *TestService) RunStage(source, version, port, weight string) TestService {
+	stageName := fmt.Sprintf("%s@%s", ts.App, version)
+	_, err := RioCmdWithRetry([]string{"run", "-n", stageName, "--weight", "50", "-p", port, "ibuildthecloud/demo:v1"})
+	if err != nil {
+		ts.T.Fatalf("stage command failed:  %v", err.Error())
+	}
+	stagedService := TestService{
+		T:       ts.T,
+		App:     ts.App,
+		Name:    stageName,
 		Version: version,
 	}
 	err = stagedService.waitForReadyService()
@@ -381,9 +401,20 @@ func (ts *TestService) GetImage() string {
 	return ts.Service.Spec.Image
 }
 
+// Return RolloutDuration in seconds
+func (ts *TestService) GetRolloutDuration() float64 {
+	if ts.Service.Spec.RolloutDuration != nil {
+		return ts.Service.Spec.RolloutDuration.Duration.Seconds()
+	}
+	return 0
+}
+
 // IsReady gets whether the service is created successfully and able to be used or not
 func (ts *TestService) IsReady() bool {
 	ts.reload()
+	if ts.Service.Spec.Template {
+		return true
+	}
 	if ts.Service.Spec.Autoscale != nil {
 		return ts.Service.Status.DeploymentReady && ts.GetAvailableReplicas() >= int(*ts.Service.Spec.Autoscale.MinReplicas)
 	}
@@ -687,6 +718,9 @@ func (ts *TestService) waitForBuild() error {
 	f := wait.ConditionFunc(func() (bool, error) {
 		err := ts.reloadBuild()
 		if err == nil {
+			if ts.Service.Spec.Template {
+				return true, nil
+			}
 			if ts.Build.Status.GetCondition(apis.ConditionSucceeded) != nil && ts.Build.Status.GetCondition(apis.ConditionSucceeded).IsTrue() {
 				return true, nil
 			}

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	webhookv1controller "github.com/rancher/gitwatcher/pkg/generated/controllers/gitwatcher.cattle.io/v1"
-	"github.com/rancher/rio/cli/cmd/weight"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/constants"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"
@@ -72,10 +71,23 @@ func (h *handler) generate(service *riov1.Service, status riov1.ServiceStatus) (
 		return nil, status, err
 	}
 	if !service.Spec.StageOnly && !generatedFromPR {
-		if err := h.scaleDownRevisions(service.Namespace, app, name); err != nil {
+		svcs, err := h.services.Cache().GetByIndex(indexes.ServiceByApp, fmt.Sprintf("%s/%s", service.Namespace, app))
+		if err != nil {
+			return nil, status, err
+		}
+		duration := services.DefaultRolloutDuration
+		if spec.RolloutDuration != nil {
+			duration = spec.RolloutDuration.Duration
+		}
+		newWeight, rc, err := services.GenerateWeightAndRolloutConfig(service, svcs, 100, duration, false)
+		if err != nil {
+			return nil, status, err
+		}
+		spec.Weight = &newWeight
+		spec.RolloutConfig = rc
+		if err := h.scaleDownRevisions(service.Namespace, app, name, rc); err != nil {
 			return nil, status, nil
 		}
-		spec.Weight = &[]int{weight.PromoteWeight}[0]
 	}
 
 	if status.ShouldClean[name] || status.GeneratedServices[name] {
@@ -119,7 +131,7 @@ func (h *handler) cleanup(service *riov1.Service) error {
 	return nil
 }
 
-func (h *handler) scaleDownRevisions(namespace, name, excludedService string) error {
+func (h *handler) scaleDownRevisions(namespace, name, excludedService string, rc *riov1.RolloutConfig) error {
 	revisions, err := h.services.Cache().GetByIndex(indexes.ServiceByApp, fmt.Sprintf("%s/%s", namespace, name))
 	if err != nil {
 		return err
@@ -136,6 +148,7 @@ func (h *handler) scaleDownRevisions(namespace, name, excludedService string) er
 			continue
 		}
 		deepcopy.Spec.Weight = &[]int{0}[0]
+		deepcopy.Spec.RolloutConfig = rc
 		if _, err := h.services.Update(deepcopy); err != nil {
 			return err
 		}

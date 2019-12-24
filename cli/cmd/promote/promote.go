@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rancher/rio/cli/pkg/table"
-
+	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/cmd/weight"
 	"github.com/rancher/rio/cli/pkg/clicontext"
+	"github.com/rancher/rio/cli/pkg/table"
+	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/services"
 )
 
 type Promote struct {
@@ -31,7 +33,12 @@ func (p *Promote) Run(ctx *clicontext.CLIContext) error {
 	if err != nil {
 		return err
 	}
-	promoteWeight, rolloutConfig, err := weight.GenerateWeightAndRolloutConfig(ctx, resource, 100, duration, p.Pause)
+	svcs, err := util.ListAppServicesFromAppName(ctx, resource.Namespace, resource.App)
+	if err != nil {
+		return err
+	}
+	svc := resource.Object.(*riov1.Service)
+	promoteWeight, rolloutConfig, err := services.GenerateWeightAndRolloutConfig(svc, svcs, 100, duration, p.Pause)
 	if err != nil {
 		return err
 	}

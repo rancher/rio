@@ -46,4 +46,13 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, "Listening on 8002", service.GetAppEndpointResponse())
 		})
 	}, spec.Parallel())
+
+	when("run a template service", func() {
+		it("should have a base template", func() {
+			service.Create(t, "-p", "8080", "--template", "--rollout-duration", "10s", "https://github.com/rancher/rio-demo")
+			assert.Equal(t, true, service.Service.Spec.Template, "should be a template service")
+			assert.Equal(t, 10.0, service.GetRolloutDuration(), "should have correct rolloutduration")
+		})
+	}, spec.Parallel())
+
 }

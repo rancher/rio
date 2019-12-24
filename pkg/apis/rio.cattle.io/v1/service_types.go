@@ -42,7 +42,7 @@ type RolloutConfig struct {
 	Increment int `json:"increment,omitempty"`
 
 	// Interval between each Rollout in seconds
-	IntervalSeconds int `json:"intervalSeconds,omitempty" mapper:"duration,alias=interval"`
+	IntervalSeconds int `json:"intervalSeconds,omitempty" mapper:"alias=interval"`
 
 	// Pause if true the rollout will stop in place until set to false.
 	Pause bool `json:"pause,omitempty"`
@@ -101,6 +101,9 @@ type ServiceSpec struct {
 
 	// Autoscale the replicas based on the amount of traffic received by this service
 	Autoscale *AutoscaleConfig `json:"autoscale,omitempty"`
+
+	// RolloutDuration specifies time for template service to reach 100% weight, used to set rollout config
+	RolloutDuration *metav1.Duration `json:"rolloutDuration,omitempty" mapper:"duration"`
 
 	// RolloutConfig controls how each service is allocated ComputedWeight
 	RolloutConfig *RolloutConfig `json:"rollout,omitempty"`

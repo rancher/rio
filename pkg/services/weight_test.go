@@ -1,4 +1,4 @@
-package weight
+package services
 
 import (
 	"testing"

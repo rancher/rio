@@ -3,14 +3,15 @@ package create
 import (
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rancher/rio/cli/cmd/util"
 	"github.com/rancher/rio/cli/cmd/weight"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/riofile/stringers"
+	"github.com/rancher/rio/pkg/services"
 	"github.com/rancher/wrangler/pkg/kv"
 	"gopkg.in/inf.v0"
 	v1 "k8s.io/api/core/v1"
@@ -72,7 +73,7 @@ type Create struct {
 	P_Ports                []string          `desc:"Publish a container's port(s) (format: svcport:containerport/protocol)"`
 	Privileged             bool              `desc:"Run container with privilege"`
 	ReadOnly               bool              `desc:"Mount the container's root filesystem as read only"`
-	RolloutDuration        string            `desc:"How long the rollout should take.  An approximation, actual time may fluctuate" default:"0s"`
+	RolloutDuration        string            `desc:"How long the rollout should take. An approximation, actual time may fluctuate. Affects template services, but not weight or promote commands." default:"0s"`
 	RequestTimeoutSeconds  int               `desc:"Set request timeout in seconds"`
 	Scale                  string            `desc:"The number of replicas to run or a range for autoscaling (example 1-10)"`
 	Secret                 []string          `desc:"Secrets to inject to the service (format: name[/key]:target)"`
@@ -206,19 +207,19 @@ func (c *Create) ToService(ctx *clicontext.CLIContext, args []string) (*riov1.Se
 	if c.Weight > 100 {
 		return nil, fmt.Errorf("weight cannot exceed 100")
 	}
-
+	duration, err := stringers.ParseDuration(c.RolloutDuration)
+	if err != nil {
+		return nil, err
+	}
+	if c.Template {
+		spec.RolloutDuration = &duration
+	}
 	if c.Weight > 0 {
-		duration, err := time.ParseDuration(c.RolloutDuration)
+		svcs, err := util.ListAppServicesFromAppName(ctx, r.Namespace, r.App)
 		if err != nil {
 			return nil, err
 		}
-		tempResource := types.Resource{
-			Name:      name,
-			App:       r.App,
-			Version:   r.Version,
-			Namespace: r.Namespace,
-		}
-		newWeight, rc, err := weight.GenerateWeightAndRolloutConfig(ctx, tempResource, c.Weight, duration, false)
+		newWeight, rc, err := services.GenerateWeightAndRolloutConfig(&riov1.Service{}, svcs, c.Weight, duration.Duration, false)
 		if err != nil {
 			return nil, err
 		}
