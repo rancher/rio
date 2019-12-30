@@ -244,7 +244,7 @@ func (ts *TestService) Stage(source, version string) TestService {
 // Executes a faux stage with run: "rio run -n ng@v3 --weight 50 nginx"
 func (ts *TestService) RunStage(source, version, port, weight string) TestService {
 	stageName := fmt.Sprintf("%s@%s", ts.App, version)
-	_, err := RioCmdWithRetry([]string{"run", "-n", stageName, "--weight", "50", "-p", port, "ibuildthecloud/demo:v1"})
+	_, err := RioCmdWithRetry([]string{"run", "-n", stageName, "--weight", weight, "-p", port, source})
 	if err != nil {
 		ts.T.Fatalf("stage command failed:  %v", err.Error())
 	}
