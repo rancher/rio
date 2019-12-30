@@ -602,69 +602,69 @@ rio run [OPTIONS] IMAGE [COMMAND] [ARG...]
 
 ##### Options
 
-| flag                             | aliases  | description                                                                                                  | default                |
-|----------------------------------|----------|--------------------------------------------------------------------------------------------------------------|------------------------|
-| --add-host value                 |          | Add a custom host-to-IP mapping (host=ip)                                                                    |                        |
-| --annotations value              |          | Annotations to attach to this service                                                                        |                        |
-| --build-branch value             |          | Build repository branch                                                                                      | master                 |
-| --build-dockerfile value         |          | Set Dockerfile name                                                                                          | defaults to Dockerfile |
-| --build-context value            |          | Set build context                                                                                            | .                      |
-| --build-webhook-secret value     |          | Set GitHub webhook secret name                                                                               |                        |
-| --build-docker-push-secret value |          | Set docker push secret name                                                                                  |                        |
-| --build-clone-secret value       |          | Set git clone secret name                                                                                    |                        |
-| --build-image-name value         |          | Specify custom image name to push                                                                            |                        |
-| --build-registry value           |          | Specify to push image to                                                                                     |                        |
-| --build-revision value           |          | Build git commit or tag                                                                                      |                        |
-| --build-pr                       |          | Enable builds on new pull requests                                                                           |                        |
-| --build-tag                      |          | Enable builds on any new tags instead of new commits on a branch, requires webhook, does not support polling |                        |
-| --build-tag-include              |          | Pattern that tags must match                                                                                 |                        |
-| --build-tag-exclude              |          | Pattern that excludes tags                                                                                   |                        |
-| --build-timeout value            |          | Timeout for build, ( (ms/s/m/h))                                                                             | 10m                    |
-| --command value                  |          | Overwrite the default ENTRYPOINT of the image                                                                |                        |
-| --config value                   |          | Configs to expose to the service (format: name[/key]:target)                                                 |                        |
-| --concurrency value              |          | The maximum concurrent request a container can handle (autoscaling)                                          | 10                     |
-| --cpus value                     |          | Number of CPUs                                                                                               |                        |
-| --dns value                      |          | Set custom DNS servers                                                                                       |                        |
-| --dnsoption value                |          | Set DNS options (format: key:value or key)                                                                   |                        |
-| --dnssearch value                |          | Set custom DNS search domains                                                                                |                        |
-| --env value                      | -e value | Set environment variables                                                                                    |                        |
-| --env-file value                 |          | Read in a file of environment variables                                                                      |                        |
-| --global-permission value        |          | Permissions to grant to container's service account for all namespaces                                       |                        |
-| --group value                    |          | The GID to run the entrypoint of the container process                                                       |                        |
-| --health-cmd value               |          | Command to run to check health                                                                               |                        |
-| --health-failure-threshold value |          | Consecutive failures needed to report unhealthy                                                              | 0                      |
-| --health-header value            |          | HTTP Headers to send in GET request for healthcheck                                                          |                        |
-| --health-initial-delay value     |          | Start period for the container to initialize before starting healthchecks ( (ms/s/m/h))                      | "0s"                   |
-| --health-interval value          |          | Time between running the check ( (ms/s/m/h))                                                                 | "0s"                   |
-| --health-success-threshold value |          | Consecutive successes needed to report healthy                                                               | 0                      |
-| --health-timeout value           |          | Maximum time to allow one check to run ( (ms/s/m/h))                                                         | "0s"                   |
-| --health-url value               |          | URL to hit to check health (example: http://:8080/ping)                                                      |                        |
-| --host-dns                       |          | Use the host level DNS and not the cluster level DNS                                                         |                        |
-| --hostname value                 |          | Container host name                                                                                          |                        |
-| --image-pull-policy value        |          | Behavior determining when to pull the image (never/always/not-present)                                       | "not-present"          |
-| --image-pull-secrets value       |          | Specify image pull secrets                                                                                   |                        |
-| --interactive                    | -i       | Keep STDIN open even if not attached                                                                         |                        |
-| --label-file value               |          | Read in a line delimited file of labels                                                                      |                        |
-| --label value                    | -l value | Set meta data on a container                                                                                 |                        |
-| --memory value                   | -m value | Memory reservation (format: <number>[<unit>], where unit = b, k, m or g)                                     |                        |
-| --name value                     | -n value | Assign a name to the container. Use format [namespace:]name[@version]                                        |                        |
-| --net value                      |          | Set network mode (host)                                                                                      |                        |
-| --no-mesh                        |          | Disable service mesh                                                                                         |                        |
-| --permission value               |          | Permissions to grant to container's service account in current namespace                                     |                        |
-| --ports value                    | -p value | Publish a container's port(s) (format: svcport:containerport/protocol)                                       |                        |
-| --privileged                     |          | Run container with privilege                                                                                 |                        |
-| --read-only                      |          | Mount the container's root filesystem as read only                                                           |                        |
-| --rollout-duration value         |          | How long the rollout should take. An approximation, actual time may fluctuate                                | "0s"                   |
-| --request-timeout-seconds value  |          | Set request timeout in seconds                                                                               | 0                      |
-| --scale value                    |          | The number of replicas to run or a range for autoscaling (example 1-10)                                      |                        |
-| --secret value                   |          | Secrets to inject to the service (format: name[/key]:target)                                                 |                        |
-| --stage-only                     |          | Only stage service when generating new services. Can only be used when template is true                      |                        |
-| --template                       |          | If true new version is created per git commit. If false update in-place                                      |                        |
-| --tty                            | -t       | Allocate a pseudo-TTY                                                                                        |                        |
-| --user value                     | -u value | UID[:GID] Sets the UID used and optionally GID for entrypoint process (format: <uid>[:<gid>])                |                        |
-| --volume value                   | -v value | Specify volumes for for services                                                                             |                        |
-| --weight value                   |          | Specify the weight for the services                                                                          | 0                      |
-| --workdir value                  | -w value | Working directory inside the container                                                                       |                        |
+| flag                             | aliases  | description                                                                                                                                   | default                |
+|----------------------------------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------|------------------------|
+| --add-host value                 |          | Add a custom host-to-IP mapping (host=ip)                                                                                                     |                        |
+| --annotations value              |          | Annotations to attach to this service                                                                                                         |                        |
+| --build-branch value             |          | Build repository branch                                                                                                                       | master                 |
+| --build-dockerfile value         |          | Set Dockerfile name                                                                                                                           | defaults to Dockerfile |
+| --build-context value            |          | Set build context                                                                                                                             | .                      |
+| --build-webhook-secret value     |          | Set GitHub webhook secret name                                                                                                                |                        |
+| --build-docker-push-secret value |          | Set docker push secret name                                                                                                                   |                        |
+| --build-clone-secret value       |          | Set git clone secret name                                                                                                                     |                        |
+| --build-image-name value         |          | Specify custom image name to push                                                                                                             |                        |
+| --build-registry value           |          | Specify to push image to                                                                                                                      |                        |
+| --build-revision value           |          | Build git commit or tag                                                                                                                       |                        |
+| --build-pr                       |          | Enable builds on new pull requests                                                                                                            |                        |
+| --build-tag                      |          | Enable builds on any new tags instead of new commits on a branch, requires webhook, does not support polling                                  |                        |
+| --build-tag-include              |          | Pattern that tags must match                                                                                                                  |                        |
+| --build-tag-exclude              |          | Pattern that excludes tags                                                                                                                    |                        |
+| --build-timeout value            |          | Timeout for build, ( (ms/s/m/h))                                                                                                              | 10m                    |
+| --command value                  |          | Overwrite the default ENTRYPOINT of the image                                                                                                 |                        |
+| --config value                   |          | Configs to expose to the service (format: name[/key]:target)                                                                                  |                        |
+| --concurrency value              |          | The maximum concurrent request a container can handle (autoscaling)                                                                           | 10                     |
+| --cpus value                     |          | Number of CPUs                                                                                                                                |                        |
+| --dns value                      |          | Set custom DNS servers                                                                                                                        |                        |
+| --dnsoption value                |          | Set DNS options (format: key:value or key)                                                                                                    |                        |
+| --dnssearch value                |          | Set custom DNS search domains                                                                                                                 |                        |
+| --env value                      | -e value | Set environment variables                                                                                                                     |                        |
+| --env-file value                 |          | Read in a file of environment variables                                                                                                       |                        |
+| --global-permission value        |          | Permissions to grant to container's service account for all namespaces                                                                        |                        |
+| --group value                    |          | The GID to run the entrypoint of the container process                                                                                        |                        |
+| --health-cmd value               |          | Command to run to check health                                                                                                                |                        |
+| --health-failure-threshold value |          | Consecutive failures needed to report unhealthy                                                                                               | 0                      |
+| --health-header value            |          | HTTP Headers to send in GET request for healthcheck                                                                                           |                        |
+| --health-initial-delay value     |          | Start period for the container to initialize before starting healthchecks ( (ms/s/m/h))                                                       | "0s"                   |
+| --health-interval value          |          | Time between running the check ( (ms/s/m/h))                                                                                                  | "0s"                   |
+| --health-success-threshold value |          | Consecutive successes needed to report healthy                                                                                                | 0                      |
+| --health-timeout value           |          | Maximum time to allow one check to run ( (ms/s/m/h))                                                                                          | "0s"                   |
+| --health-url value               |          | URL to hit to check health (example: http://:8080/ping)                                                                                       |                        |
+| --host-dns                       |          | Use the host level DNS and not the cluster level DNS                                                                                          |                        |
+| --hostname value                 |          | Container host name                                                                                                                           |                        |
+| --image-pull-policy value        |          | Behavior determining when to pull the image (never/always/not-present)                                                                        | "not-present"          |
+| --image-pull-secrets value       |          | Specify image pull secrets                                                                                                                    |                        |
+| --interactive                    | -i       | Keep STDIN open even if not attached                                                                                                          |                        |
+| --label-file value               |          | Read in a line delimited file of labels                                                                                                       |                        |
+| --label value                    | -l value | Set meta data on a container                                                                                                                  |                        |
+| --memory value                   | -m value | Memory reservation (format: <number>[<unit>], where unit = b, k, m or g)                                                                      |                        |
+| --name value                     | -n value | Assign a name to the container. Use format [namespace:]name[@version]                                                                         |                        |
+| --net value                      |          | Set network mode (host)                                                                                                                       |                        |
+| --no-mesh                        |          | Disable service mesh                                                                                                                          |                        |
+| --permission value               |          | Permissions to grant to container's service account in current namespace                                                                      |                        |
+| --ports value                    | -p value | Publish a container's port(s) (format: svcport:containerport/protocol)                                                                        |                        |
+| --privileged                     |          | Run container with privilege                                                                                                                  |                        |
+| --read-only                      |          | Mount the container's root filesystem as read only                                                                                            |                        |
+| --rollout-duration value         |          | How long the rollout should take. An approximation, actual time may fluctuate. Affects template services, but not weight or promote commands. | "0s"                   |
+| --request-timeout-seconds value  |          | Set request timeout in seconds                                                                                                                | 0                      |
+| --scale value                    |          | The number of replicas to run or a range for autoscaling (example 1-10)                                                                       |                        |
+| --secret value                   |          | Secrets to inject to the service (format: name[/key]:target)                                                                                  |                        |
+| --stage-only                     |          | Only stage service when generating new services. Can only be used when template is true                                                       |                        |
+| --template                       |          | If true new version is created per git commit. If false update in-place                                                                       |                        |
+| --tty                            | -t       | Allocate a pseudo-TTY                                                                                                                         |                        |
+| --user value                     | -u value | UID[:GID] Sets the UID used and optionally GID for entrypoint process (format: <uid>[:<gid>])                                                 |                        |
+| --volume value                   | -v value | Specify volumes for for services                                                                                                              |                        |
+| --weight value                   |          | Specify the weight for the services                                                                                                           | 0                      |
+| --workdir value                  | -w value | Working directory inside the container                                                                                                        |                        |
 
 ##### Examples
 

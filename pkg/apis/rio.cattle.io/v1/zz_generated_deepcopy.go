@@ -23,6 +23,7 @@ package v1
 import (
 	genericcondition "github.com/rancher/wrangler/pkg/genericcondition"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	intstr "k8s.io/apimachinery/pkg/util/intstr"
@@ -1020,6 +1021,11 @@ func (in *ServiceSpec) DeepCopyInto(out *ServiceSpec) {
 		in, out := &in.Autoscale, &out.Autoscale
 		*out = new(AutoscaleConfig)
 		(*in).DeepCopyInto(*out)
+	}
+	if in.RolloutDuration != nil {
+		in, out := &in.RolloutDuration, &out.RolloutDuration
+		*out = new(metav1.Duration)
+		**out = **in
 	}
 	if in.RolloutConfig != nil {
 		in, out := &in.RolloutConfig, &out.RolloutConfig

@@ -13,9 +13,10 @@ func stageTests(t *testing.T, when spec.G, it spec.S) {
 
 	var service testutil.TestService
 	var stagedService testutil.TestService
-	var stageVersion string
 
 	when("a running service has a version staged", func() {
+		var stageVersion string
+
 		it.Before(func() {
 			service.Create(t, "--weight", "100", "--label", "x=y", "--annotations", "a=b", "ibuildthecloud/demo:v1")
 			stageVersion = "v3"
@@ -44,6 +45,26 @@ func stageTests(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, testutil.GetHostname(stagedService.GetEndpointURLs()[0]), testutil.GetHostname(stagedService.GetKubeEndpointURLs()[0]))
 			assert.Equal(t, testutil.GetHostname(service.GetAppEndpointURLs()[0]), testutil.GetHostname(service.GetKubeAppEndpointURLs()[0]))
 			assert.Equal(t, testutil.GetHostname(service.GetAppEndpointURLs()[0]), testutil.GetHostname(stagedService.GetAppEndpointURLs()[0]))
+		})
+	}, spec.Parallel())
+
+	when("a running service has a version staged with the run command", func() {
+
+		it.Before(func() {
+			service.Create(t, "ibuildthecloud/demo:v1")
+		})
+
+		it.After(func() {
+			service.Remove()
+			stagedService.Remove()
+		})
+
+		it("should have proper fields assigned", func() {
+			stagedService = service.RunStage("ibuildthecloud/demo:v3", "v3", "80", "50")
+			stageName := fmt.Sprintf("%s@%s", service.App, "v3")
+			assert.Equal(t, stageName, stagedService.Name, "should have correct name")
+			assert.Equal(t, service.App, stagedService.App, "should have same app")
+			assert.Equal(t, 10000, stagedService.GetSpecWeight(), "should have weight set") // 10k is to match other 10k at 50%
 		})
 	}, spec.Parallel())
 }

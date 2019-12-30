@@ -10,7 +10,6 @@ import (
 	"github.com/aokoli/goutils"
 	"github.com/rancher/rio/cli/cmd/edit/edit"
 	"github.com/rancher/rio/cli/cmd/util"
-	"github.com/rancher/rio/cli/cmd/weight"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
@@ -158,7 +157,7 @@ func (r *Stage) updatePreviousServiceWeights(ctx *clicontext.CLIContext, service
 				if s.Spec.Weight == nil {
 					s.Spec.Weight = new(int)
 				}
-				*s.Spec.Weight = weight.PromoteWeight
+				*s.Spec.Weight = services.PromoteWeight
 				return nil
 			})
 			allErrors = append(allErrors, err)
