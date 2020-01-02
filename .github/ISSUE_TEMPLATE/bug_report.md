@@ -31,7 +31,7 @@ Type:
 
 ```
 **Additional context**
-`rio systemlogs`
+`rio system logs`
 output:
 ```
 

@@ -196,6 +196,7 @@ func (f *featureHandler) updateConfigMap(obj *corev1.ConfigMap) error {
 		} else {
 			f.Enabled = new(bool)
 		}
+		f.Description = feature.Spec().Description
 		conf.Features[feature.Name()] = f
 	}
 	cm, err := config.SetConfig(obj, conf)

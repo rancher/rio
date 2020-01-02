@@ -35,8 +35,7 @@ import (
 	"github.com/rancher/rio/cli/cmd/secrets"
 	"github.com/rancher/rio/cli/cmd/stacks"
 	"github.com/rancher/rio/cli/cmd/stage"
-	"github.com/rancher/rio/cli/cmd/systemconfig"
-	"github.com/rancher/rio/cli/cmd/systemlogs"
+	"github.com/rancher/rio/cli/cmd/system"
 	"github.com/rancher/rio/cli/cmd/uninstall"
 	"github.com/rancher/rio/cli/cmd/up"
 	"github.com/rancher/rio/cli/cmd/weight"
@@ -123,6 +122,7 @@ func main() {
 		route.Route(app),
 		secrets.Secrets(app),
 		stacks.Stacks(app),
+		system.System(app),
 
 		builder.Command(&attach.Attach{},
 			"Attach to a running process in a container",
@@ -214,16 +214,6 @@ func main() {
 		builder.Command(&stage.Stage{},
 			"Stage a new revision of a service",
 			appName+" stage [OPTIONS] SERVICE NEW_REVISION",
-			""),
-
-		builder.Command(&systemlogs.SystemLogs{},
-			"View system log for Rio management plane",
-			appName+" systemlogs",
-			""),
-
-		builder.Command(&systemconfig.SystemConfig{},
-			"View/Edit system configuration",
-			appName+" systemconfig",
 			""),
 
 		builder.Command(&uninstall.Uninstall{},

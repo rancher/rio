@@ -772,28 +772,28 @@ rio stage --edit demo v2
 
 ---
 
-## systemlogs
+## system logs
 
 Print the logs from the Rio management plane
 
 ##### Usage
 ```
-rio systemlogs
+rio system logs
 ```
 
 ---
 
-## systemconfig
+## system feature
 
-View/Edit system configuration
+View/Edit system feature/configuration
 
 ##### Uasge
 ```bash
-# view system config
-rio systemconfig
+# view system feature
+rio system feature
 
-# edit system config
-rio systemconfig --edit
+# edit system feature/configuration
+rio system feature --edit
 ```
 
 ---
