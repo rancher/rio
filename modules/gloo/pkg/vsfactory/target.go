@@ -38,7 +38,7 @@ func getTarget(obj *riov1.Service, systemNamespace string) (result target, err e
 	app, version := services.AppAndVersion(obj)
 	result.Name = name.SafeConcatName(app, version)
 	result.Namespace = obj.Namespace
-	if obj.Spec.RolloutConfig != nil && obj.Status.ComputedWeight != nil {
+	if obj.Status.ComputedWeight != nil {
 		result.Weight = *obj.Status.ComputedWeight
 	} else if obj.Spec.Weight != nil {
 		result.Weight = *obj.Spec.Weight
