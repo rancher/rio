@@ -30,9 +30,7 @@ func buildTests(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, "hello world: v1", service.GetEndpointResponse())
 			assert.Equal(t, 1, stagedService.GetAvailableReplicas(), "should have one available replica")
 			assert.Equal(t, "hello world: v2", stagedService.GetEndpointResponse())
-			assert.Equal(t, "hello world: v1", stagedService.GetAppEndpointResponse())
-			stagedService.Promote()
-			assert.Equal(t, "hello world: v2", stagedService.GetAppEndpointResponse())
+			assert.Equal(t, testutil.GetHostname(service.GetAppEndpointURLs()[0]), testutil.GetHostname(stagedService.GetAppEndpointURLs()[0]))
 		})
 	}, spec.Parallel())
 }

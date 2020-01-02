@@ -48,6 +48,15 @@ func (td *TestDomain) UnRegister() {
 }
 
 // GetDomain returns standard format non-namespaced domain, ex: "foo.bar"
+func (td *TestDomain) GetTargetApp() string {
+	err := td.reload()
+	if err != nil {
+		td.T.Fatalf("failed to fetch domain: %v", err.Error())
+	}
+	return td.PublicDomain.Spec.TargetApp
+}
+
+// GetDomain returns standard format non-namespaced domain, ex: "foo.bar"
 func (td *TestDomain) GetDomain() string {
 	err := td.reload()
 	if err != nil {
@@ -94,6 +103,7 @@ func (td *TestDomain) waitForDomain() error {
 		err := td.reload()
 		if err == nil {
 			if td.PublicDomain.Spec.TargetApp != "" {
+				time.Sleep(2 * time.Second) // sleep 2 seconds here to ensure the app endpoint is available as well
 				return true, nil
 			}
 		}
