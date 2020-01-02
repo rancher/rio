@@ -8,7 +8,7 @@ For example:
 
 * **1a)** If you enabled rdns feature, Setup a CNAME record from your domain to the Rio cluster domain. You should be able to see the cluster domain when running `rio info`.
 
-        myproduction.com -----> CNAME -------> xxxxxx.on-rio.io
+        www.myproduction.com -----> CNAME -------> xxxxxx.on-rio.io
 
 * **1b)** If you disabled rdns feature, you won't be able to get `xxxxxx.on-rio.io` domain. Instead, create A record to IP of API gateway
     
@@ -20,7 +20,7 @@ For example:
 
     Create DNS record
 
-        myproduction.com -----> A -------> IP
+        www.myproduction.com -----> A -------> IP
 
 2. Register the domain in rio
 
