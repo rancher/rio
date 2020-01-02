@@ -42,7 +42,7 @@ services:
     - get,list pods
     - create,get,list /pods/log
     - secrets
-    image: rancher/gitwatcher:v0.4.4
+    image: rancher/gitwatcher:v0.4.5-rc1
     args:
     - gitwatcher
     - --listen-address

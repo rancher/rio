@@ -18,7 +18,7 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("run a service with liveness check", func() {
-		it("should come become available", func() {
+		it("should become available", func() {
 			service.Create(t, "-p", "80", "--health-url", "http://:80", "--health-initial-delay", "1s", "--health-interval", "1s", "--health-failure-threshold", "1", "--health-timeout", "1s", "ibuildthecloud/demo:v1")
 			assert.Equal(t, 1, service.GetAvailableReplicas(), "should have one available replica")
 			assert.Equal(t, "Hello World", service.GetAppEndpointResponse())
@@ -26,7 +26,7 @@ func runTests(t *testing.T, when spec.G, it spec.S) {
 	}, spec.Parallel())
 
 	when("run a service from a public github repository", func() {
-		it("should come become available", func() {
+		it("should become available", func() {
 			service.Create(t, "-p", "8080", "https://github.com/rancher/rio-demo")
 			assert.Equal(t, 1, service.GetAvailableReplicas(), "should have one available replica")
 			assert.Equal(t, "Hi there, I'm running in Rio", service.GetAppEndpointResponse())
