@@ -28,8 +28,9 @@ func domainTests(t *testing.T, when spec.G, it spec.S) {
 			domain.RegisterDomain(t, randomDomain, service.Name)
 			assert.Equal(t, randomDomain, domain.GetDomain())
 			assert.Equal(t, randomDomain, domain.GetKubeDomain())
-			appEndpoints := service.GetAppEndpointURLs()
-			assert.Contains(t, appEndpoints, "http://"+randomDomain)
+			assert.Equal(t, domain.GetTargetApp(), service.Name)
+			assert.Nil(t, service.WaitForDomain(randomDomain))
+			assert.Contains(t, service.GetAppEndpointURLs(), "http://"+randomDomain)
 		})
 	}, spec.Parallel())
 }

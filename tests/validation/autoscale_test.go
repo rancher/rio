@@ -25,7 +25,7 @@ func autoscaleTests(t *testing.T, when spec.G, it spec.S) {
 		it("should autoscale down to 0", func() {
 			// Precondition
 			assert.True(t, service.IsReady())
-			assert.Equal(t, "Hello World", service.GetAppEndpointResponse())
+			assert.Equal(t, "Hi there, I am rio:production6", service.GetAppEndpointResponse())
 
 			// When no requests happen for a while, it should scale to 0
 			service.WaitForScaleDown()

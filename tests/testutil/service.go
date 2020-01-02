@@ -491,18 +491,18 @@ func (ts *TestService) GenerateLoad(timeIncrements string, concurrency int) {
 			minReplicas = int(*ts.Service.Spec.Autoscale.MinReplicas)
 		}
 		if maxReplicas > 0 {
-			HeyCmd(GetHostname(ts.GetEndpointURLs()...), timeIncrements, concurrency)
+			HeyCmd("http://"+GetHostname(ts.GetEndpointURLs()...), timeIncrements, concurrency)
 			ts.reload()
 			if ts.GetAvailableReplicas() > minReplicas {
 				return true, nil
 			}
 
 		} else {
-			HeyCmd(GetHostname(ts.GetEndpointURLs()...), timeIncrements, concurrency)
+			HeyCmd("http://"+GetHostname(ts.GetEndpointURLs()...), timeIncrements, concurrency)
 		}
 		return false, nil
 	})
-	wait.Poll(dur, 240*time.Second, f)
+	wait.Poll(dur, 120*time.Second, f)
 }
 
 // GetEndpointURLs returns the URLs for this service
@@ -628,6 +628,26 @@ func (ts *TestService) WaitForScaleDown() error {
 	err := wait.Poll(5*time.Second, 300*time.Second, f)
 	if err != nil {
 		return fmt.Errorf("service %v failed to scale down after 5 minutes", ts.Name)
+	}
+	return nil
+}
+
+// WaitForDomain waits until either 1 minute has passed or the given domain is an available endpoint on the service or app
+func (ts *TestService) WaitForDomain(domain string) error {
+	f := wait.ConditionFunc(func() (bool, error) {
+		err := ts.reload()
+		if err == nil {
+			for _, ep := range append(ts.Service.Status.Endpoints, ts.Service.Status.AppEndpoints...) {
+				if ep == "http://"+domain {
+					return true, nil
+				}
+			}
+		}
+		return false, nil
+	})
+	err := wait.Poll(2*time.Second, 60*time.Second, f)
+	if err != nil {
+		return fmt.Errorf("domain %v never added to service endpoints", domain)
 	}
 	return nil
 }
@@ -778,7 +798,7 @@ func (ts *TestService) waitForWeight(target int) error {
 		}
 		return false, nil
 	})
-	err := wait.Poll(2*time.Second, 60*time.Second, f)
+	err := wait.Poll(2*time.Second, 120*time.Second, f)
 	if err != nil {
 		return errors.New("service revision never reached goal weight")
 	}
