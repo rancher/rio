@@ -111,7 +111,7 @@ services:
       imageName: myname/image:tag # Specify custom image name(excluding registry name). Default name: $namespace/name:$revision_digest
       pushRegistry: docker.io # Specify push registry. Example: docker.io, gcr.io. Defaults to localhost registry.
       pushRegistrySecretName: secretDocker # Specify secret name for pushing to docker registry. [link](#set-custom-build-arguments-and-docker-registry)
-      stageOnly: true # If set, newly created revision will get any traffic. Defaults to false.
+      stageOnly: true # If set, newly created revision will not get any traffic. Defaults to false.
       webhookSecretName: secretGithub # Specify the github secret name. Used to create Github webhook, the secret key has to be `accessToken`
       cloneSecretName: secretGit # Specify secret name for checking our git resources
       pr: true # Enable pull request feature. Defaults to false
