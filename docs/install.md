@@ -182,7 +182,9 @@ Rio manages features in a configMap called `rio-config` in `rio-system` namespac
       "enabled": true
     }
   },
-  "letsEncrypt": {},
+  "letsEncrypt": {
+    "email": "your@email.here"
+  },
   "gateway": {
     "serviceName": "gateway-proxy",
     "serviceNamespace": "rio-system"
@@ -193,5 +195,5 @@ Rio manages features in a configMap called `rio-config` in `rio-system` namespac
 To edit the configMap, run 
 
 ```bash
-rio -s edit configmap/rio-config 
+rio system feature --edit
 ```
