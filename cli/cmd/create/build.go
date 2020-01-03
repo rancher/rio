@@ -19,8 +19,13 @@ func (c *Create) setBuildOrImage(imageName string, spec *riov1.ServiceSpec) erro
 				fmt.Println("Warning: tag mode only works with a webhook")
 			}
 		}
-		if c.BuildPr == true && c.Template == false {
-			return errors.New("build-pr is only compatible with template mode")
+		if c.BuildPr == true {
+			if c.Template == false {
+				return errors.New("build-pr is only compatible with template mode")
+			}
+			if c.BuildWebhookSecret == "" {
+				fmt.Println("Warning: build-pr only works with a webhook")
+			}
 		}
 
 		spec.ImageBuild = &riov1.ImageBuildSpec{
