@@ -61,6 +61,11 @@ func ValidationPreCheck() {
 // Example: args=["run", "-n", "test", "nginx"] would run: "rio --namespace testing-namespace run -n test nginx"
 func RioCmd(args []string, envs ...string) (string, error) {
 	args = append([]string{"--namespace", TestingNamespace}, args...)
+	return RioExecute(args, envs...)
+}
+
+// RioExecute executes rio CLI commands with arguments, use RioCmd unless you have to use a non-testing namespace
+func RioExecute(args []string, envs ...string) (string, error) {
 	cmd := exec.Command("rio", args...)
 	cmd.Env = envs
 	stdOutErr, err := cmd.CombinedOutput()
@@ -81,7 +86,7 @@ func RioCmdWithRetry(args []string, envs ...string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("%s: %s", err.Error(), out)
 	}
-	return string(out), nil
+	return out, nil
 }
 
 // RioCmdWithTail executes rio CLI commands that tail output with your arguments in testing namespace.

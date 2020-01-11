@@ -130,7 +130,7 @@ func (r *Stage) stageService(ctx *clicontext.CLIContext, service types.Resource,
 // if no weight is set on this app's svcs (ignoring new staged service) then assign them all equally to PromoteWeight
 func (r *Stage) updatePreviousServiceWeights(ctx *clicontext.CLIContext, service types.Resource, version string) error {
 	var allErrors []error
-	svcs, err := util.ListAppServicesFromServiceName(ctx, service.Name)
+	svcs, err := util.ListAppServicesFromAppName(ctx, service.Namespace, service.App)
 	if err != nil {
 		return err
 	}

@@ -7,19 +7,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func ListAppServicesFromServiceName(ctx *clicontext.CLIContext, serviceName string) ([]*riov1.Service, error) {
-	namespace := ctx.GetSetNamespace()
-	service, err := ctx.ByID(serviceName)
-	if err != nil {
-		return nil, err
-	}
-
-	svc := service.Object.(*riov1.Service)
-	app, _ := services.AppAndVersion(svc)
-	return ListAppServicesFromAppName(ctx, namespace, app)
-
-}
-
 func ListAppServicesFromAppName(ctx *clicontext.CLIContext, namespace, appName string) ([]*riov1.Service, error) {
 	svcs, err := ctx.Rio.Services(namespace).List(metav1.ListOptions{})
 	if err != nil {
