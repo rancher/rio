@@ -3,7 +3,8 @@
 ## Table of Contents
 
 - [Install Rio](./install.md)
-- [Rio Concepts](./concept.md)
+- [Rio Concepts](./concepts.md)
+- [Deployment Flows](./flows.md)
 - [Quick Start](./quick-start.md)
 - [Running Workloads](./workloads.md)
 - [Configuring Router](./router.md)
