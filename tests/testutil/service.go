@@ -228,33 +228,37 @@ func (ts *TestService) Stage(source, version string) TestService {
 	if err != nil {
 		ts.T.Fatalf("stage command failed:  %v", err.Error())
 	}
+	return ts.stageCheck(version)
+}
+
+// Same as stage but uses the colon style namespacing
+func (ts *TestService) StageExec(source, version string) TestService {
+	nsName := fmt.Sprintf("%s:%s", TestingNamespace, ts.App)
+	_, err := RioExecute([]string{"stage", "--image", "ibuildthecloud/demo:v3", nsName, version})
+	if err != nil {
+		ts.T.Fatalf("stage command failed:  %v", err.Error())
+	}
+	return ts.stageCheck(version)
+}
+
+// Executes a faux stage with run: "rio run -n ng@v3 --weight 50 nginx"
+func (ts *TestService) StageRun(source, version, port, weight string) TestService {
+	stageName := fmt.Sprintf("%s@%s", ts.App, version)
+	_, err := RioCmdWithRetry([]string{"run", "-n", stageName, "--weight", weight, "-p", port, source})
+	if err != nil {
+		ts.T.Fatalf("stage command failed:  %v", err.Error())
+	}
+	return ts.stageCheck(version)
+}
+
+func (ts *TestService) stageCheck(version string) TestService {
 	stagedService := TestService{
 		T:       ts.T,
 		App:     ts.App,
 		Name:    fmt.Sprintf("%s@%s", ts.Name, version),
 		Version: version,
 	}
-	err = stagedService.waitForReadyService()
-	if err != nil {
-		ts.T.Fatalf(err.Error())
-	}
-	return stagedService
-}
-
-// Executes a faux stage with run: "rio run -n ng@v3 --weight 50 nginx"
-func (ts *TestService) RunStage(source, version, port, weight string) TestService {
-	stageName := fmt.Sprintf("%s@%s", ts.App, version)
-	_, err := RioCmdWithRetry([]string{"run", "-n", stageName, "--weight", weight, "-p", port, source})
-	if err != nil {
-		ts.T.Fatalf("stage command failed:  %v", err.Error())
-	}
-	stagedService := TestService{
-		T:       ts.T,
-		App:     ts.App,
-		Name:    stageName,
-		Version: version,
-	}
-	err = stagedService.waitForReadyService()
+	err := stagedService.waitForReadyService()
 	if err != nil {
 		ts.T.Fatalf(err.Error())
 	}
