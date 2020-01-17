@@ -693,6 +693,8 @@ rio run --build-branch dev --build-dockerfile Dockerfile.production --build-cont
 # run a service that deploy on any new tag matching '^v' and not match 'alpha'
 rio run -p 8080 -n tag-demo --build-webhook-secret=githubtoken --build-tag=true --build-tag-include="^v" --build-tag-exclude="alpha" https://github.com/rancher/rio-demo
 
+# run a service which has an env var in the container spec set to the pod name, see riofile docs for more options
+rio run -e "POD_NAME=\$(self/name)" -p 80 nginx
 ```
 
 ---
