@@ -62,7 +62,7 @@ ${namespace}-${name}.you.company.com
      To get gateway IP run:
 
     ```bash
-    kubectl get svc gateway-proxy-v2 -n rio-system  -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+    kubectl get svc gateway-proxy -n rio-system  -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
     ```
 
     Also you are responsible for updating dns record if load balancer IP has changed.

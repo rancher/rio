@@ -15,7 +15,7 @@ For example:
     Get the ip of the service loadbalancer that points to API gateway
 
     ```bash
-      kubectl get svc gateway-proxy-v2 -n rio-system  -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+      kubectl get svc gateway-proxy -n rio-system  -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
     ```
 
     Create DNS record
