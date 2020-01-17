@@ -279,6 +279,10 @@ func (ts *TestService) Promote(args ...string) {
 		ts.T.Fatalf(err.Error())
 	}
 	time.Sleep(5 * time.Second)
+	err = ts.waitForAppMatchesService()
+	if err != nil {
+		ts.T.Fatalf(err.Error())
+	}
 }
 
 // Logs calls "rio logs ns/service" on this service
@@ -848,4 +852,22 @@ func (ts *TestService) waitForAppEndpointDNS() ([]string, error) {
 		return nil, errors.New("app endpoint never created")
 	}
 	return ts.Service.Status.AppEndpoints, nil
+}
+
+func (ts *TestService) waitForAppMatchesService() error {
+	ts.reload()
+	f := wait.ConditionFunc(func() (bool, error) {
+		err := ts.reload()
+		if err == nil {
+			if ts.GetAppEndpointResponse() == ts.GetEndpointResponse() {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
+	err := wait.Poll(2*time.Second, 60*time.Second, f)
+	if err != nil {
+		return errors.New("app endpoint response did not match service endpoint response")
+	}
+	return nil
 }
