@@ -4,10 +4,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
-
 	rioadminv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/types"
+	corev1 "github.com/rancher/wrangler-api/pkg/generated/controllers/core/v1"
 	extensionsv1beta1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/extensions/v1beta1"
 	"github.com/rancher/wrangler/pkg/name"
 	soloapiv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -16,6 +15,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -35,6 +35,7 @@ type VirtualServiceFactory struct {
 	clusterDomainCache rioadminv1controller.ClusterDomainCache
 	publicDomainCache  rioadminv1controller.PublicDomainCache
 	ingresses          extensionsv1beta1controller.IngressCache
+	endpoints          corev1.EndpointsCache
 	systemNamespace    string
 }
 
@@ -44,6 +45,7 @@ func New(rContext *types.Context) *VirtualServiceFactory {
 		publicDomainCache:  rContext.Admin.Admin().V1().PublicDomain().Cache(),
 		systemNamespace:    rContext.Namespace,
 		ingresses:          rContext.K8sNetworking.Extensions().V1beta1().Ingress().Cache(),
+		endpoints:          rContext.Core.Core().V1().Endpoints().Cache(),
 	}
 }
 
