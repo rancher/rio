@@ -9,11 +9,11 @@ import (
 func Stacks(app *cli.App) cli.Command {
 	ls := builder.Command(&ls{},
 		"List stacks",
-		app.Name+" stack ls [OPTIONS] $Name",
+		app.Name+" stack ls",
 		"")
 	info := builder.Command(&info{},
 		"describe general information for stack",
-		app.Name+" stack info $NAME",
+		app.Name+" stack info NAME",
 		"")
 	update := builder.Command(&update{},
 		"Update stack answers and images",

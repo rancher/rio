@@ -18,7 +18,7 @@ func History(app *cli.App) cli.Command {
 		"")
 	return cli.Command{
 		Name:   "build-history",
-		Usage:  "Show build-history",
+		Usage:  "Show build history",
 		Action: clicontext.DefaultAction(hist.Action),
 		Flags:  table.WriterFlags(),
 	}

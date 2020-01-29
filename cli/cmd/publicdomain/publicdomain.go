@@ -13,12 +13,12 @@ func PublicDomain(app *cli.App) cli.Command {
 		"")
 	register := builder.Command(&Register{},
 		"Register public domains",
-		app.Name+" domain register $NAME $NAMESPACE/$SERVICE",
+		app.Name+" domain register NAME [NAMESPACE:]SERVICE",
 		"Example: run `rio domain register foo.bar [namespace:][service_or_router][@version]`")
 	unregister := builder.Command(&Unregister{},
-		"Unregister public domains",
-		app.Name+" domain unregister $NAME",
-		"")
+		"Unregister public domains.",
+		app.Name+" domain unregister TYPE/NAME",
+		"Example: run `rio domain unregister publicdomain/foo.bar`")
 	return cli.Command{
 		Name:      "domains",
 		ShortName: "domain",
