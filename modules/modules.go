@@ -11,6 +11,7 @@ import (
 	"github.com/rancher/rio/modules/ingress"
 	"github.com/rancher/rio/modules/letsencrypt"
 	"github.com/rancher/rio/modules/linkerd"
+	"github.com/rancher/rio/modules/metrics"
 	"github.com/rancher/rio/modules/rdns"
 	"github.com/rancher/rio/modules/service"
 	"github.com/rancher/rio/modules/smi"
@@ -52,6 +53,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		return err
 	}
 	if err := ingress.Register(ctx, rContext); err != nil {
+		return err
+	}
+	if err := metrics.Register(ctx, rContext); err != nil {
 		return err
 	}
 	return nil

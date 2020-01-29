@@ -137,7 +137,7 @@ func isK8SYaml(contents []byte) (bool, []runtime.Object, error) {
 // Parse converts a textfile into a Riofile struct
 func Parse(contents []byte, answers template.AnswerCallback) (*Riofile, error) {
 	k8s, objs, err := isK8SYaml(contents)
-	if err != nil {
+	if err != nil { //TODO why do we have an error check here when we NEVER return an err
 		return nil, err
 	}
 

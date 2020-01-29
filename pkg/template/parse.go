@@ -93,7 +93,7 @@ func (t *Template) afterTemplate(content []byte) []byte {
 func (t *Template) readTemplate() (*templateFile, error) {
 	content, err := gotemplate.Apply(t.afterTemplate(t.Content), nil)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 
 	return t.readTemplateFile(content)

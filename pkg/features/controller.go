@@ -21,7 +21,7 @@ type FeatureSpec struct {
 
 type FeatureController struct {
 	FeatureName  string
-	System       bool
+	System       bool //TODO unused, consider removal
 	FeatureSpec  FeatureSpec
 	Controllers  []ControllerRegister
 	OnStop       func() error
