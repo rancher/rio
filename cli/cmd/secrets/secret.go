@@ -24,7 +24,7 @@ func Secrets(app *cli.App) cli.Command {
 		Flags:     create.Flags,
 		Category:  "SUB COMMANDS",
 		Subcommands: []cli.Command{
-      ls,
+			ls,
 			create,
 		},
 	}

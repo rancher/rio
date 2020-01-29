@@ -153,7 +153,7 @@ func main() {
 			"Export a namespace or service",
 			appName+" export [TYPE/]RESOURCE_OR_SERVICE_NAME",
 			"Example: `rio export postgresql@3d0f6e23`\n"+
-      "         `rio export configmap/test`"),
+				"         `rio export configmap/test`"),
 
 		builder.Command(&images.Images{},
 			"List images built from local registry",

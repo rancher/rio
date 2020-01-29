@@ -34,9 +34,9 @@ func Config(app *cli.App) cli.Command {
 				"Create a config from a file or stdin (with `-` argument)",
 				app.Name+" config create [-k KEY] [NAMESPACE:]NAME FILE|-",
 				"Example: Set key `hostname` in config map `webapp` to output of command:\n"+
-        "         `echo example.com | rio config create -k hostname webapp -`\n"+
-        "         Set key `json_config` of config map `app` to content of config.json file:\n"+
-        "         `rio config create -k json_config app ./config.json`"),
+					"         `echo example.com | rio config create -k hostname webapp -`\n"+
+					"         Set key `json_config` of config map `app` to content of config.json file:\n"+
+					"         `rio config create -k json_config app ./config.json`"),
 			builder.Command(&Ls{},
 				"List configs",
 				app.Name+" config ls",
