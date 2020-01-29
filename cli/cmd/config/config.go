@@ -13,7 +13,7 @@ func NewCatCommand(sub string, app *cli.App) cli.Command {
 	return builder.Command(&Cat{},
 		"Print the contents of a config",
 		app.Name+sub+" cat [OPTIONS] [NAME...]",
-		fmt.Sprintf("To cat all keys, run `rio cat [NAMESPACE:]configmap/NAME. To cat specific keys, run `rio cat --key foo --key bar configmap/NAME"))
+		fmt.Sprintf("To cat all keys, run `rio cat [NAMESPACE:]configmap/NAME`. To cat specific keys, run `rio cat --key foo --key bar configmap/NAME`"))
 }
 
 func Config(app *cli.App) cli.Command {
@@ -48,7 +48,7 @@ func Config(app *cli.App) cli.Command {
 			builder.Command(&Update{},
 				"Update a config",
 				app.Name+" config update [-k KEY] [NAMESPACE:]TYPE/NAME FILE|-",
-				"Example: run `rio config update configmap/mysql"),
+				"Example: run `rio config update configmap/mysql`"),
 		},
 	}
 }
