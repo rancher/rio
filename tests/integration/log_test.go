@@ -34,5 +34,5 @@ func logTests(t *testing.T, when spec.G, it spec.S) {
 				}
 			}
 		})
-	}, spec.Parallel())
+	}, spec.Sequential())
 }

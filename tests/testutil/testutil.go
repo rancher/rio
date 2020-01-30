@@ -79,7 +79,17 @@ func RioExecute(args []string, envs ...string) (string, error) {
 	return string(stdOutErr), nil
 }
 
-// RioCmdWithRetry executes rio CLI commands with your arguments in testing namespace
+// RioExecuteWithRetry executes rio CLI commands with your arguments
+// Example: args=["run", "-n", "test", "nginx"] would run: "rio run -n test nginx"
+func RioExecuteWithRetry(args []string, envs ...string) (string, error) {
+	out, err := retry(5, 1, RioExecute, args, envs...)
+	if err != nil {
+		return "", fmt.Errorf("%s: %s", err.Error(), out)
+	}
+	return out, nil
+}
+
+// RioCmdWithRetry executes rio CLI commands with your arguments
 // Example: args=["run", "-n", "test", "nginx"] would run: "rio --namespace testing-namespace run -n test nginx"
 func RioCmdWithRetry(args []string, envs ...string) (string, error) {
 	out, err := retry(5, 1, RioCmd, args, envs...)

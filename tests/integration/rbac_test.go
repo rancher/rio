@@ -59,13 +59,13 @@ func rbacTests(t *testing.T, when spec.G, it spec.S) {
 			testService.Kubeconfig = adminUser.Kubeconfig
 			testService.Create(t, "--no-mesh", "--privileged", "nginx")
 			assert.True(t, testService.IsReady())
-		})
+		}, spec.Sequential())
 
 		it("rio-privileged user should be able to create disabled service-mesh and privileged services", func() {
 			testService.Kubeconfig = privilegedUser.Kubeconfig
 			testService.Create(t, "--no-mesh", "--privileged", "nginx")
 			assert.True(t, testService.IsReady())
-		})
+		}, spec.Sequential())
 
 		it("rio-standard should not be able to create disabled service-mesh services", func() {
 			var testService testutil.TestService
@@ -134,19 +134,19 @@ func rbacTests(t *testing.T, when spec.G, it spec.S) {
 			testService.Kubeconfig = standardUser.Kubeconfig
 			testService.Create(t, "--permission", "list rio.cattle.io/services", "nginx")
 			assert.True(t, testService.IsReady())
-		})
+		}, spec.Sequential())
 
 		it("rio-standard user should be able to create privileges it already has 2", func() {
 			testService.Kubeconfig = standardUser.Kubeconfig
 			testService.Create(t, "--permission", "watch rio.cattle.io/services", "nginx")
 			assert.True(t, testService.IsReady())
-		})
+		}, spec.Sequential())
 
 		it("rio-admin user should be to create stacks with permissions", func() {
 			riofile.Kubeconfig = adminUser.Kubeconfig
 			err := riofile.UpWithRepo(t, "https://github.com/rancher/rio-demo", "", "--permission", "update apps/deployments")
 			assert.NoError(t, err)
-		})
+		}, spec.Sequential())
 
 		it("rio-standard user should not be able to create stacks with permissions it doesn't have in the current namespace", func() {
 			riofile.Kubeconfig = standardUser.Kubeconfig
@@ -154,5 +154,5 @@ func rbacTests(t *testing.T, when spec.G, it spec.S) {
 			assert.Error(t, err, "rio-standard should not be able to create privileges it doesn't have")
 			assert.Contains(t, err.Error(), insuffienctPrivilegesMsg)
 		})
-	}, spec.Parallel(), spec.Flat())
+	}, spec.Parallel())
 }

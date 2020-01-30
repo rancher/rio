@@ -32,5 +32,5 @@ func domainTests(t *testing.T, when spec.G, it spec.S) {
 			assert.Nil(t, service.WaitForDomain(randomDomain))
 			assert.Contains(t, service.GetAppEndpointURLs(), "http://"+randomDomain)
 		})
-	}, spec.Parallel())
+	}, spec.Sequential())
 }
