@@ -6,7 +6,7 @@ import (
 )
 
 func (f *VirtualServiceFactory) ForApp(namespace, appName string, svcs []*riov1.Service) ([]*solov1.VirtualService, error) {
-	hostnames, targets, err := getTargetsForApp(svcs, f.systemNamespace)
+	hostnames, targets, err := f.getTargetsForApp(svcs, f.systemNamespace)
 	if err != nil {
 		return nil, err
 	}

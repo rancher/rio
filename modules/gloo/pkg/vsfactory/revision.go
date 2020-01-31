@@ -12,7 +12,7 @@ import (
 func (f *VirtualServiceFactory) ForRevision(svc *riov1.Service) ([]*solov1.VirtualService, error) {
 	app, version := services.AppAndVersion(svc)
 
-	target, err := getTarget(svc, f.systemNamespace)
+	target, err := f.getTarget(svc, f.systemNamespace)
 	if err != nil || !target.valid() {
 		return nil, err
 	}
