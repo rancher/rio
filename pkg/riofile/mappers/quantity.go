@@ -1,10 +1,10 @@
 package mappers
 
 import (
-	"github.com/rancher/norman/pkg/data"
-	"github.com/rancher/norman/pkg/types"
-	"github.com/rancher/norman/pkg/types/mapper"
 	"github.com/rancher/rio/pkg/riofile/stringers"
+	"github.com/rancher/wrangler/pkg/data"
+	types "github.com/rancher/wrangler/pkg/schemas"
+	mapper "github.com/rancher/wrangler/pkg/schemas/mappers"
 )
 
 type QuantityMapper struct {

@@ -10,11 +10,11 @@ import (
 
 	"github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty"
 	"github.com/pkg/errors"
-	"github.com/rancher/norman/pkg/parse/builder"
-	"github.com/rancher/norman/pkg/types"
-	"github.com/rancher/norman/pkg/types/convert"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/wrangler/pkg/data/convert"
 	"github.com/rancher/wrangler/pkg/kv"
+	"github.com/rancher/wrangler/pkg/schemas"
+	"github.com/rancher/wrangler/pkg/schemas/validation"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -221,7 +221,7 @@ func (q *question) prompt() (string, error) {
 }
 
 func validate(val string, q v1.Question) error {
-	field := &types.Field{}
+	field := &schemas.Field{}
 	err := convert.ToObj(q, field)
 	if err != nil {
 		return err
@@ -231,12 +231,12 @@ func validate(val string, q v1.Question) error {
 		field.Type = "string"
 	}
 
-	converted, err := builder.ConvertSimple(field.Type, val, builder.Create)
+	converted, err := validation.ConvertSimple(field.Type, val)
 	if err != nil {
 		return err
 	}
 
-	return builder.CheckFieldCriteria(q.Variable, *field, converted)
+	return validation.CheckFieldCriteria(q.Variable, *field, converted)
 }
 
 type condition struct {

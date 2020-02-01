@@ -3,14 +3,13 @@ package mappers
 import (
 	"strings"
 
-	"github.com/rancher/norman/pkg/types/mapper"
-
-	"github.com/rancher/norman/pkg/data"
-	"github.com/rancher/norman/pkg/types"
+	"github.com/rancher/wrangler/pkg/data"
+	types "github.com/rancher/wrangler/pkg/schemas"
+	"github.com/rancher/wrangler/pkg/schemas/mappers"
 )
 
 type LabelCleaner struct {
-	mapper.DefaultMapper
+	mappers.DefaultMapper
 }
 
 func (d LabelCleaner) FromInternal(data data.Object) {

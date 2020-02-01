@@ -3,10 +3,10 @@ package stacks
 import (
 	"fmt"
 
-	"github.com/rancher/norman/pkg/types/convert"
 	"github.com/rancher/rio/cli/pkg/clicontext"
 	"github.com/rancher/rio/cli/pkg/table"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/wrangler/pkg/data/convert"
 )
 
 type info struct {

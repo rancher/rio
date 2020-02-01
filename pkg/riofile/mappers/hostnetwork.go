@@ -1,8 +1,8 @@
 package mappers
 
 import (
-	"github.com/rancher/norman/pkg/data"
-	"github.com/rancher/norman/pkg/types"
+	"github.com/rancher/wrangler/pkg/data"
+	types "github.com/rancher/wrangler/pkg/schemas"
 )
 
 type HostNetwork struct {
