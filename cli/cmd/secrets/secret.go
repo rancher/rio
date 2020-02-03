@@ -9,12 +9,12 @@ import (
 func Secrets(app *cli.App) cli.Command {
 	create := builder.Command(&Create{},
 		"Create Secrets",
-		app.Name+" secrets create [OPTIONS] $Name",
+		app.Name+" secrets create [OPTIONS] NAME",
 		"")
 	create.Aliases = []string{"add"}
 	ls := builder.Command(&Ls{},
 		"List Secrets",
-		app.Name+" secrets ls [OPTIONS] $Name",
+		app.Name+" secrets ls",
 		"")
 	return cli.Command{
 		Name:      "secrets",
@@ -24,6 +24,7 @@ func Secrets(app *cli.App) cli.Command {
 		Flags:     create.Flags,
 		Category:  "SUB COMMANDS",
 		Subcommands: []cli.Command{
+			ls,
 			create,
 		},
 	}

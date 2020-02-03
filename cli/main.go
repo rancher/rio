@@ -146,13 +146,14 @@ func main() {
 
 		builder.Command(&exec.Exec{},
 			"Run a command in a running container",
-			appName+" exec [OPTIONS] CONTAINER COMMAND [ARG...]",
+			appName+" exec [OPTIONS] SERVICE COMMAND [ARG...]",
 			""),
 
 		builder.Command(&export.Export{},
 			"Export a namespace or service",
-			appName+" export [TYPE/]NAMESPACE_OR_SERVICE",
-			""),
+			appName+" export [TYPE/]RESOURCE_OR_SERVICE_NAME",
+			"Example: `rio export postgresql@3d0f6e23`\n"+
+				"         `rio export configmap/test`"),
 
 		builder.Command(&images.Images{},
 			"List images built from local registry",
@@ -173,7 +174,7 @@ func main() {
 
 		builder.Command(&kill.Kill{},
 			"Kill pods individually or all pods belonging to a service",
-			appName+" kill [SERVICE_NAME/POD_NAME]",
+			appName+" kill SERVICE_NAME[/POD_NAME]",
 			"Specify a SERVICE_NAME to kill all pods belonging to that service. Otherwise specify a POD_NAME"),
 
 		builder.Command(&linkerd.Linkerd{},
@@ -218,7 +219,7 @@ func main() {
 
 		builder.Command(&uninstall.Uninstall{},
 			"Uninstall rio",
-			appName+" uninstall [OPTIONS]",
+			appName+" uninstall",
 			""),
 
 		builder.Command(&up.Up{},

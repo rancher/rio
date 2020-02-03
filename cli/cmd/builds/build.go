@@ -20,7 +20,7 @@ func Builds(app *cli.App) cli.Command {
 	build := builder.Command(&Build{},
 		"Build docker image using buildkitd",
 		app.Name+" build [OPTIONS] PATH",
-		"")
+		"Example: run `rio build .` in a directory containing Dockerfile")
 	return build
 }
 
