@@ -76,7 +76,7 @@ func (es *TestExternalService) GetFQDN() string {
 
 // GetKubeIPAddress retrieves the external service IP Address value using the kubernetes clientset
 func (es *TestExternalService) GetKubeFirstIPAddress() string {
-	clientset := GetKubeClient()
+	clientset := GetKubeClient(es.T)
 	endpointsList, err := clientset.CoreV1().
 		Endpoints(TestingNamespace).
 		List(metav1.ListOptions{FieldSelector: "metadata.name=" + es.ExternalService.Name})
@@ -93,7 +93,7 @@ func (es *TestExternalService) GetKubeFirstIPAddress() string {
 
 // GetKubeFQDN retrieves the external service FQDN value using the kubernetes clientset
 func (es *TestExternalService) GetKubeFQDN() string {
-	clientset := GetKubeClient()
+	clientset := GetKubeClient(es.T)
 	serviceList, err := clientset.CoreV1().
 		Services(TestingNamespace).
 		List(metav1.ListOptions{LabelSelector: "rio.cattle.io/service=" + es.ExternalService.Name})

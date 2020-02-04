@@ -518,7 +518,6 @@ func (ts *TestService) GetEndpointURLs() []string {
 	endpoints, err := ts.waitForEndpointDNS()
 	if err != nil {
 		ts.T.Fatalf("Failed to get the endpoint url:  %v", err.Error())
-		return []string{}
 	}
 	return endpoints
 }
@@ -528,7 +527,6 @@ func (ts *TestService) GetAppEndpointURLs() []string {
 	endpoints, err := ts.waitForAppEndpointDNS()
 	if err != nil {
 		ts.T.Fatalf("Failed to get the endpoint url:  %v", err.Error())
-		return []string{}
 	}
 	return endpoints
 }
@@ -538,7 +536,6 @@ func (ts *TestService) GetKubeEndpointURLs() []string {
 	_, err := ts.waitForEndpointDNS()
 	if err != nil {
 		ts.T.Fatalf("Failed waiting for DNS:  %v", err.Error())
-		return []string{}
 	}
 	args := []string{"get", "service.rio.cattle.io",
 		"-n", TestingNamespace,
@@ -547,21 +544,20 @@ func (ts *TestService) GetKubeEndpointURLs() []string {
 	urls, err := KubectlCmd(args)
 	if err != nil {
 		ts.T.Fatalf("Failed to get endpoint urls:  %v", err.Error())
-		return []string{}
 	}
 	return strings.Split(urls[1:len(urls)-1], " ")
 }
 
 // GetKubeFirstClusterDomain returns first cluster domain
-func (ts *TestService) GetKubeFirstClusterDomain() string {
+func (ts *TestService) GetKubeFirstClusterDomain() (string, string) {
 	args := []string{"get", "clusterdomains",
-		"-o", `jsonpath="{.items[0].metadata.name}"`}
+		"-o", `jsonpath='{.items[0].metadata.name}{"\t"}{.items[0].spec.addresses[0].ip}'`}
 	clusterDomain, err := KubectlCmd(args)
 	if err != nil {
 		ts.T.Fatalf("Failed to get the first Cluster Domain:  %v", err.Error())
-		return ""
 	}
-	return strings.Trim(clusterDomain, "\"")
+	result := strings.Split(strings.Trim(clusterDomain, "'"), "\t")
+	return strings.Trim(result[0], "\""), strings.Trim(result[1], "\"")
 }
 
 // GetKubeAppEndpointURLs returns the endpoint URL of the service's app
@@ -570,7 +566,6 @@ func (ts *TestService) GetKubeAppEndpointURLs() []string {
 	_, err := ts.waitForAppEndpointDNS()
 	if err != nil {
 		ts.T.Fatalf("Failed waiting for DNS:  %v", err.Error())
-		return []string{}
 	}
 	args := []string{"get", "service.rio.cattle.io",
 		"-n", TestingNamespace,
@@ -579,7 +574,6 @@ func (ts *TestService) GetKubeAppEndpointURLs() []string {
 	urls, err := KubectlCmd(args)
 	if err != nil {
 		ts.T.Fatalf("Failed to get app endpoint urls:  %v", err.Error())
-		return []string{}
 	}
 	return strings.Split(urls[1:len(urls)-1], " ")
 }
@@ -607,7 +601,7 @@ func (ts *TestService) PodsResponsesMatchAvailableReplicas(path string, numberOf
 // GetKubeAvailableReplicas get the app number of ready replicasets with a clientset
 // and returns true if that value match the scale given
 func (ts *TestService) GetKubeAvailableReplicas() int {
-	clientset := GetKubeClient()
+	clientset := GetKubeClient(ts.T)
 	replicaSetList, err := clientset.AppsV1().
 		ReplicaSets(TestingNamespace).
 		List(metav1.ListOptions{LabelSelector: "app=" + ts.App})
@@ -814,6 +808,7 @@ func (ts *TestService) waitForWeight(target int) error {
 }
 
 func (ts *TestService) waitForEndpointDNS() ([]string, error) {
+	ts.reload()
 	if len(ts.Service.Status.Endpoints) > 0 {
 		return ts.Service.Status.Endpoints, nil
 	}

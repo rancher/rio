@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -82,6 +84,36 @@ func (td *TestDomain) GetKubeDomain() string {
 	return getStandardFormatDomain(results)
 }
 
+//ApplyClusterDomain creates and applies a custom clusterdomain
+func (td *TestDomain) ApplyClusterDomain(ip string) {
+	valToApply := []byte(`apiVersion: admin.rio.cattle.io/v1
+kind: ClusterDomain
+metadata:
+  name: ` + GetAInfo() + `
+spec:
+  addresses:
+  - ip: ` + ip + `
+  secretName: ` + GetAInfo() + `-tls 
+  httpPort: 80
+  httpsPort: 443
+status:
+  assignedSecretName: ` + GetAInfo() + `-tls
+  httpsSupported: true`)
+	err := ioutil.WriteFile("testclusterdomain.yaml", valToApply, 0777)
+	if err != nil {
+		td.T.Fatalf("Could not write clusterdomain file due to error:  %v", err.Error())
+	}
+	defer os.Remove("testclusterdomain.yaml")
+	_, err = KubectlCmd([]string{"apply", "-f", "testclusterdomain.yaml"})
+	if err != nil {
+		td.T.Fatalf("failed to apply custom clusterdomain due to error: %v", err)
+	}
+	err = td.waitForClusterDomain()
+	if err != nil {
+		td.T.Fatalf(err.Error())
+	}
+}
+
 //////////////////
 // Private methods
 //////////////////
@@ -104,6 +136,24 @@ func (td *TestDomain) waitForDomain() error {
 		if err == nil {
 			if td.PublicDomain.Spec.TargetApp != "" {
 				time.Sleep(2 * time.Second) // sleep 2 seconds here to ensure the app endpoint is available as well
+				return true, nil
+			}
+		}
+		return false, nil
+	})
+	err := wait.Poll(2*time.Second, 60*time.Second, f)
+	if err != nil {
+		return errors.New("domain not successfully created")
+	}
+	return nil
+}
+
+func (td *TestDomain) waitForClusterDomain() error {
+	f := wait.ConditionFunc(func() (bool, error) {
+		out, err := RioExecuteWithRetry([]string{"info"})
+		if err == nil {
+			if strings.Contains(out, GetAInfo()) {
+				time.Sleep(5 * time.Second) // sleep 5 seconds here to ensure all definitely endpoints are available
 				return true, nil
 			}
 		}

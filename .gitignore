@@ -16,3 +16,5 @@ __pycache__
 /tests/.idea
 /tests/MANIFEST
 main
+*.pem
+testclusterdomain.yaml

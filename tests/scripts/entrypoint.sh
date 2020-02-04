@@ -7,7 +7,7 @@ elif [ "${CLUSTER}" == "gke" ]; then
 elif [ "${CLUSTER}" == "rke" ]; then
   source ./tests/scripts/install_rke.sh
 else
-  echo "Using given cluster with given kubeconfig..."
+  echo "Using cluster with given kubeconfig..."
 fi
 
 # Get rio binary
@@ -17,7 +17,7 @@ if [ "${RIO_VERSION}" == "master" ]; then
   go build -ldflags " -X github.com/rancher/rio/pkg/constants.ControllerImage=${REPO}/rio-controller -X github.com/rancher/rio/pkg/constants.ControllerImageTag=${TAG}" -i -o bin/rio cli/main.go
   cp ./bin/rio /usr/local/bin/
 else
-  curl -sfL https://get.rio.io | sh - > /dev/null 2>&1
+  curl -sfL https://get.rio.io | INSTALL_RIO_VERSION="${RIO_VERSION}" sh - > /dev/null 2>&1
 fi
 
 # Install rio if it isn't already installed
