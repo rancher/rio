@@ -23,5 +23,5 @@ func configTests(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, testText, config.GetContent())
 			assert.Equal(t, testText, config.GetKubeContent())
 		})
-	}, spec.Parallel())
+	}, spec.Sequential())
 }

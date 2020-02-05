@@ -3,10 +3,17 @@ package testutil
 import (
 	"bufio"
 	"context"
+	cryptRand "crypto/rand"
+	"crypto/rsa"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"math/big"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -15,6 +22,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/docker/docker/pkg/namesgenerator"
@@ -79,7 +87,17 @@ func RioExecute(args []string, envs ...string) (string, error) {
 	return string(stdOutErr), nil
 }
 
-// RioCmdWithRetry executes rio CLI commands with your arguments in testing namespace
+// RioExecuteWithRetry executes rio CLI commands with your arguments
+// Example: args=["run", "-n", "test", "nginx"] would run: "rio run -n test nginx"
+func RioExecuteWithRetry(args []string, envs ...string) (string, error) {
+	out, err := retry(5, 1, RioExecute, args, envs...)
+	if err != nil {
+		return "", fmt.Errorf("%s: %s", err.Error(), out)
+	}
+	return out, nil
+}
+
+// RioCmdWithRetry executes rio CLI commands with your arguments
 // Example: args=["run", "-n", "test", "nginx"] would run: "rio --namespace testing-namespace run -n test nginx"
 func RioCmdWithRetry(args []string, envs ...string) (string, error) {
 	out, err := retry(5, 1, RioCmd, args, envs...)
@@ -187,7 +205,11 @@ func WaitForNoResponse(endpoint string) (string, error) {
 // GetURL performs an HTTP.Get on a endpoint and returns an error if the resp is not 200
 func GetURL(url string) (string, error) {
 	var body string
-	response, err := http.Get(url)
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	response, err := client.Get(url)
 	if err != nil {
 		return body, err
 	}
@@ -243,14 +265,13 @@ func stringInSlice(a string, list []string) bool {
 
 // GetKubeClient returns the kubernetes clientset for querying its API, defaults to
 // KUBECONFIG env value
-func GetKubeClient() *kubernetes.Clientset {
+func GetKubeClient(t *testing.T) *kubernetes.Clientset {
 	kubeConfigENV := os.Getenv("KUBECONFIG")
 	if kubeConfigENV == "" {
 		if home := homeDir(); home != "" {
 			kubeConfigENV = filepath.Join(home, ".kube", "config")
 		} else {
-			fmt.Fprintln(os.Stderr, "an error occurred please set the KUBECONFIG environment variable")
-			os.Exit(1)
+			t.Fatalf("An error occurred when retrieving the kubectl client. Please set your KUBECONFIG environment variable.")
 		}
 	}
 	kubeConfig, _ := clientcmd.BuildConfigFromFlags("", kubeConfigENV)
@@ -266,22 +287,82 @@ func homeDir() string {
 	return os.Getenv("USERPROFILE") // windows
 }
 
-// CreateCNAME creates a CNAME if it doesn't exist or update if it exist already in the DNS Zone
+// CreateSelfSignedCert creates public and private keys for a self signed certificate
+func CreateSelfSignedCert(t *testing.T) {
+	key, err := rsa.GenerateKey(cryptRand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("Private key cannot be created. %v\n", err.Error())
+	}
+	// Generate a pem block with the private key
+	keyPemFile, _ := os.Create("testkey.pem")
+	var pemKey = &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(key),
+	}
+	_ = pem.Encode(keyPemFile, pemKey)
+	_ = keyPemFile.Close()
+
+	tml := x509.Certificate{
+		// you can add any attr that you need
+		NotBefore: time.Now(),
+		NotAfter:  time.Now().AddDate(1, 0, 0),
+		// you have to generate a different serial number each execution
+		SerialNumber: big.NewInt(123123),
+		Subject: pkix.Name{
+			CommonName:   "Rio Test Automation",
+			Organization: []string{"Rancher - Rio QA"},
+		},
+		BasicConstraintsValid: true,
+	}
+	cert, err := x509.CreateCertificate(cryptRand.Reader, &tml, &tml, &key.PublicKey, key)
+	if err != nil {
+		t.Fatalf("Certificate cannot be created. %v\n", err.Error())
+	}
+	// Generate a pem block with the certificate
+	certPemFile, _ := os.Create("testcert.pem")
+	var pemCert = &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: cert,
+	}
+	_ = pem.Encode(certPemFile, pemCert)
+	_ = certPemFile.Close()
+}
+
+// DeleteSelfSignedCert deletes the generated cert files
+func DeleteSelfSignedCert() {
+	_ = os.Remove("testkey.pem")
+	_ = os.Remove("testcert.pem")
+}
+
+// CreateRoute53DNS creates a CNAME if it doesn't exist or update if it exist already in the DNS Zone
 // We use AWS Route53 as DNS provider.
-func CreateCNAME(clusterDomain string) *route53.ChangeResourceRecordSetsOutput {
+func CreateRoute53DNS(t *testing.T, recordType, clusterDomain string) *route53.ChangeResourceRecordSetsOutput {
+	params := SetRoute53Params(t, recordType, clusterDomain)
 	sess, err := session.NewSession()
 	if err != nil {
-		fmt.Println("failed to create session make sure to add credentials to ~/.aws/credentials,", err)
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
-	cname := GetCNAMEInfo()
-	zoneID := getZoneIDInfo()
-	if cname == "" || clusterDomain == "" || zoneID == "" {
-		fmt.Println(fmt.Errorf("incomplete information: d: %s, t: %s, z: %s", cname, clusterDomain, zoneID))
-		os.Exit(1)
+		t.Fatalf("Failed to create session. Make sure to add credentials to ~/.aws/credentials or pass in required environment variables %v\n", err.Error())
 	}
 	svc := route53.New(sess)
+	resp, err := svc.ChangeResourceRecordSets(params)
+	if err != nil {
+		t.Fatalf("Failed to create Route53 DNS: %v\n", err.Error())
+	}
+	return resp
+}
+
+// SetRoute53Params creates a CNAME if it doesn't exist or update if it exist already in the DNS Zone
+// We use AWS Route53 as DNS provider.
+func SetRoute53Params(t *testing.T, recordType, ipOrDNS string) *route53.ChangeResourceRecordSetsInput {
+	var recordName string
+	if recordType == "A" {
+		recordName = "*." + GetAInfo()
+	} else if recordType == "CNAME" {
+		recordName = GetCNAMEInfo()
+	}
+	zoneID := getZoneIDInfo()
+	if recordName == "" || ipOrDNS == "" || zoneID == "" {
+		t.Fatal("incomplete information supplied to create a Route53 record.")
+	}
 
 	params := &route53.ChangeResourceRecordSetsInput{
 		ChangeBatch: &route53.ChangeBatch{
@@ -289,33 +370,27 @@ func CreateCNAME(clusterDomain string) *route53.ChangeResourceRecordSetsOutput {
 				{
 					Action: aws.String("UPSERT"),
 					ResourceRecordSet: &route53.ResourceRecordSet{
-						Name: aws.String(cname),
-						Type: aws.String("CNAME"),
+						Name: aws.String(recordName),
+						Type: aws.String(recordType),
 						ResourceRecords: []*route53.ResourceRecord{
 							{
-								Value: aws.String(clusterDomain),
+								Value: aws.String(ipOrDNS),
 							},
 						},
 						TTL: aws.Int64(10),
 					},
 				},
 			},
-			Comment: aws.String("Add CNAME to Rio Cluster Domain"),
+			Comment: aws.String("DNS for custom record in Rio Cluster Domains"),
 		},
 		HostedZoneId: aws.String(zoneID),
 	}
-	resp, err := svc.ChangeResourceRecordSets(params)
-
-	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
-	return resp
+	return params
 }
 
-// DeleteCNAME deletes a CNAME we provide as ENV var
+// DeleteRoute53DNS deletes a CNAME we provide as ENV var
 // We use AWS Route53 as DNS provider.
-func DeleteCNAME(clusterDomain string) *route53.ChangeResourceRecordSetsOutput {
+func DeleteRoute53DNS(clusterDomain string) *route53.ChangeResourceRecordSetsOutput {
 	sess, err := session.NewSession()
 	if err != nil {
 		fmt.Println("failed to create session make sure to add credentials to ~/.aws/credentials,", err)
@@ -360,9 +435,17 @@ func DeleteCNAME(clusterDomain string) *route53.ChangeResourceRecordSetsOutput {
 // GetCNAMEInfo retrieves the RIO_CNAME environment variable
 func GetCNAMEInfo() string {
 	if os.Getenv("RIO_CNAME") == "" {
-		return "riotestautomation." + os.Getenv("RIO_ROUTE53_ZONENAME")
+		return "riotestautocname." + os.Getenv("RIO_ROUTE53_ZONENAME")
 	}
 	return os.Getenv("RIO_CNAME")
+}
+
+// GetAInfo retrieves the RIO_A_RECORD environment variable
+func GetAInfo() string {
+	if os.Getenv("RIO_A_RECORD") == "" {
+		return "riotestautoa." + os.Getenv("RIO_ROUTE53_ZONENAME")
+	}
+	return os.Getenv("RIO_A_RECORD")
 }
 
 // getZoneIDInfo retrieves the RIO_CNAME environment variable
