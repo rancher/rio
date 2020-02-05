@@ -71,6 +71,7 @@ func main() {
 	app.Name = appName
 	app.Usage = "Containers made simple, as they should be"
 	app.Version = fmt.Sprintf("%s (%s)", version.Version, version.GitCommit)
+	app.EnableBashCompletion = true
 	cli.VersionPrinter = func(c *cli.Context) {
 		fmt.Printf("%s version %s\n", app.Name, app.Version)
 	}
