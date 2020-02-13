@@ -46,7 +46,7 @@ add_k3s_agents() {
   for ((i=1; i<=$1; i++))
   do
     ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $SSH_KEY_NAME.key root@$(echo ${DO_RESULT_NODES[$i]} | jq -r .droplet.networks.v4[0].ip_address) /bin/bash <<- EOF
-      curl -sfL https://get.k3s.io | K3S_URL=https://$(echo ${DO_RESULT_NODES[$i]} | jq -r .droplet.networks.v4[0].ip_address):6443 K3S_TOKEN="$(echo $NODE_TOKEN)" sh -
+      curl -sfL https://get.k3s.io | K3S_URL=https://$(echo ${DO_RESULT_NODES[0]} | jq -r .droplet.networks.v4[0].ip_address):6443 K3S_TOKEN="$(echo $NODE_TOKEN)" sh -
 EOF
   done
 }
@@ -59,6 +59,7 @@ install_k3s_on_master
 # Extract NODE_TOKEN and KUBECONFIG from master node
 NODE_TOKEN=$(ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $SSH_KEY_NAME.key root@$(echo ${DO_RESULT_NODES[0]} | jq -r .droplet.networks.v4[0].ip_address) "cat /var/lib/rancher/k3s/server/node-token")
 LOCAL_CONFIG=$(ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $SSH_KEY_NAME.key root@$(echo ${DO_RESULT_NODES[0]} | jq -r .droplet.networks.v4[0].ip_address) "kubectl config view --flatten -o json")
+mkdir -p .kube
 echo "${LOCAL_CONFIG//127.0.0.1/$(echo ${DO_RESULT_NODES[0]} | jq -r .droplet.networks.v4[0].ip_address)}" > .kube/config
 
 add_k3s_agents NUM_WORKERS
