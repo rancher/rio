@@ -146,7 +146,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 
 		fmt.Printf("rio controller version %s (%s) installed into namespace %s\n", version.Version, version.GitCommit, info.Status.SystemNamespace)
 
-		fmt.Println("Controller logs are available from `rio systemlogs`")
+		fmt.Println("Controller logs are available from `rio system logs`")
 		fmt.Println("")
 		fmt.Println("Welcome to Rio!")
 		fmt.Println("")
