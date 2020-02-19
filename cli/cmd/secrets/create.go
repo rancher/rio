@@ -16,6 +16,7 @@ import (
 )
 
 type Create struct {
+	N_Name        string   `desc:"Assign a name to the secret. Use format [namespace:]name"`
 	T_Type        string   `desc:"Create type" default:"Opaque"`
 	F_FromFile    []string `desc:"Creating secrets from files"`
 	D_Data        []string `desc:"Creating secrets from key-pair data"`
@@ -30,6 +31,13 @@ const (
 )
 
 func (s *Create) Run(ctx *clicontext.CLIContext) error {
+	name := s.N_Name
+	if name != "" {
+		r := ctx.ParseID(fmt.Sprintf("secret/%s", name))
+		if _, err := ctx.Core.Secrets(r.Namespace).Get(r.Name, metav1.GetOptions{}); err == nil {
+			fmt.Printf("Warning: %s already exists\n", r)
+		}
+	}
 	if s.GithubWebhook {
 		var err error
 		var accessToken, ns string
@@ -38,11 +46,18 @@ func (s *Create) Run(ctx *clicontext.CLIContext) error {
 			return err
 		}
 
-		secret, err := ctx.Core.Secrets(ns).Get(constants.DefaultGithubCrendential, metav1.GetOptions{})
+		if name == "" {
+			name, err = questions.Prompt(fmt.Sprintf("Name[%s]: ", constants.DefaultGithubCrendential), constants.DefaultGithubCrendential)
+			if err != nil {
+				return err
+			}
+		}
+
+		secret, err := ctx.Core.Secrets(ns).Get(name, metav1.GetOptions{})
 		if err == nil {
 			accessToken = string(secret.Data["accessToken"])
 		} else {
-			secret = constructors.NewSecret(ns, constants.DefaultGithubCrendential, v1.Secret{})
+			secret = constructors.NewSecret(ns, name, v1.Secret{})
 		}
 		setDefaults(secret, v1.SecretTypeOpaque)
 
@@ -62,6 +77,13 @@ func (s *Create) Run(ctx *clicontext.CLIContext) error {
 			return err
 		}
 
+		if name == "" {
+			name, err = questions.Prompt(fmt.Sprintf("Name[%s]: ", constants.DefaultDockerCrendential), constants.DefaultDockerCrendential)
+			if err != nil {
+				return err
+			}
+		}
+
 		url, err = questions.Prompt(fmt.Sprintf("Registry URL[%s]: ", defaultDockerRegistry), defaultDockerRegistry)
 		if err != nil {
 			return err
@@ -78,7 +100,7 @@ func (s *Create) Run(ctx *clicontext.CLIContext) error {
 		}
 
 		generator := generateversioned.SecretForDockerRegistryGeneratorV1{
-			Name:     constants.DefaultDockerCrendential,
+			Name:     name,
 			Username: username,
 			Password: password,
 			Server:   url,
@@ -104,13 +126,20 @@ func (s *Create) Run(ctx *clicontext.CLIContext) error {
 			return err
 		}
 
-		secret, err := ctx.Core.Secrets(ns).Get(constants.DefaultGitCrendential, metav1.GetOptions{})
+		if name == "" {
+			name, err = questions.Prompt(fmt.Sprintf("Name[%s]: ", constants.DefaultGitCrendential), constants.DefaultGitCrendential)
+			if err != nil {
+				return err
+			}
+		}
+
+		secret, err := ctx.Core.Secrets(ns).Get(name, metav1.GetOptions{})
 		if err == nil {
 			url = secret.Annotations["tekton.dev/git-0"]
 			username = string(secret.Data["username"])
 			password = string(secret.Data["password"])
 		} else {
-			secret = constructors.NewSecret(ns, constants.DefaultGitCrendential, v1.Secret{})
+			secret = constructors.NewSecret(ns, name, v1.Secret{})
 		}
 		setDefaults(secret, v1.SecretTypeBasicAuth)
 
@@ -143,11 +172,18 @@ func (s *Create) Run(ctx *clicontext.CLIContext) error {
 			return err
 		}
 
-		secret, err := ctx.Core.Secrets(ns).Get(constants.DefaultGitCrendentialSSH, metav1.GetOptions{})
+		if name == "" {
+			name, err = questions.Prompt(fmt.Sprintf("Name[%s]: ", constants.DefaultGitCrendentialSSH), constants.DefaultGitCrendentialSSH)
+			if err != nil {
+				return err
+			}
+		}
+
+		secret, err := ctx.Core.Secrets(ns).Get(name, metav1.GetOptions{})
 		if err == nil {
 			url = secret.Annotations["tekton.dev/git-0"]
 		} else {
-			secret = constructors.NewSecret(ns, constants.DefaultGitCrendentialSSH, v1.Secret{})
+			secret = constructors.NewSecret(ns, name, v1.Secret{})
 			secret.Type = v1.SecretTypeSSHAuth
 		}
 		setDefaults(secret, v1.SecretTypeSSHAuth)
