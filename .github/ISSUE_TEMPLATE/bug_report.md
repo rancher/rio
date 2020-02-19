@@ -7,13 +7,17 @@ assignees: ''
 
 ---
 
+<!--
 Note: Please add dashboard specific bugs to the dashboard repo: https://github.com/rancher/dashboard/issues
+-->
 
 **Describe the bug**
-A clear and concise description of what the bug is.
+<!--A clear and concise description of what the bug is.-->
+
+
 
 **To Reproduce**
-Steps to reproduce the behavior:
+<!--Steps to reproduce the behavior:-->
 1. 
 
 
@@ -36,3 +40,5 @@ output:
 ```
 
 ```
+<!--Please provide any additional information that may be helpful in debugging. 
+For example: `rio logs taskrun/demo-v0jhl5r-ccd11-cd2cf` for a failed build-->
