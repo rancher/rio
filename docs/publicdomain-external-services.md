@@ -67,7 +67,7 @@ $ rio domain register  myproductionsite.com router/prod
 To unregister a domain:
 
 ```bash
-$ rio unregister publicdomain/myproductionsite.com 
+$ rio domain unregister publicdomain/myproductionsite.com 
 ```
 
 ## ExternalService
