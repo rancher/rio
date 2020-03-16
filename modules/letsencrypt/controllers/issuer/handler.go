@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/rancher/rio/pkg/constants"
+
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	certmanagerv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/rancher/rio/pkg/config"
-	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/types"
 	"github.com/rancher/wrangler/pkg/apply"
 	v1 "k8s.io/api/core/v1"
@@ -97,13 +98,17 @@ func constructIssuer(namespace, issuerType string, config config.Config) *certma
 		},
 	}
 
+	rdnsURL := config.RdnsURL
+	if rdnsURL == "" {
+		rdnsURL = constants.RDNSURL
+	}
 	if issuerType == "dns" {
 		issuer.Name = RioDNSIssuer
 		issuer.Spec.ACME.Solvers = []cmacme.ACMEChallengeSolver{
 			{
 				DNS01: &cmacme.ACMEChallengeSolverDNS01{
 					RDNS: &cmacme.ACMEIssuerDNS01ProviderRDNS{
-						APIEndpoint: constants.RDNSURL,
+						APIEndpoint: rdnsURL,
 						ClientToken: cmmeta.SecretKeySelector{
 							Key: "token",
 							LocalObjectReference: cmmeta.LocalObjectReference{
