@@ -80,7 +80,7 @@ func (rh *rolloutHandler) rollout(key string, svc *riov1.Service) (*riov1.Servic
 
 	for _, s := range svcs {
 		// If pause is on, or if any revision is not ready but has weight allocated, return
-		if blocksRollout(s.Spec.RolloutConfig) == true || (!s.Status.DeploymentReady && s.Spec.Weight != nil && *s.Spec.Weight > 0) {
+		if blocksRollout(s.Spec.RolloutConfig) || (!s.Status.DeploymentReady && s.Spec.Weight != nil && *s.Spec.Weight > 0) {
 			err = rh.updateServices(svcs, updatedNeeded)
 			if err != nil {
 				return svc, err
@@ -155,7 +155,7 @@ func serviceKey(s *riov1.Service) string {
 
 // Is pause true
 func blocksRollout(rc *riov1.RolloutConfig) bool {
-	return rc != nil && rc.Pause == true
+	return rc != nil && rc.Pause
 }
 
 // incrementalRollout returns whether we want to perform intervaled or immediate rollout

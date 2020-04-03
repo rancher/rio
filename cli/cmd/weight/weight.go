@@ -82,7 +82,7 @@ func PromoteService(ctx *clicontext.CLIContext, resource types.Resource, rollout
 	}
 	for _, s := range svcs {
 		app, version := services.AppAndVersion(s)
-		if (version == resource.Version && promotedSvcNeedsUpdate(s, promoteWeight, rolloutConfig) == true) || (version != resource.Version && s.Status.ComputedWeight != nil && *s.Status.ComputedWeight > 0) {
+		if (version == resource.Version && promotedSvcNeedsUpdate(s, promoteWeight, rolloutConfig)) || (version != resource.Version && s.Status.ComputedWeight != nil && *s.Status.ComputedWeight > 0) {
 			err := ctx.UpdateResource(types.Resource{
 				Namespace: s.Namespace,
 				Name:      s.Name,

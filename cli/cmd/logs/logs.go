@@ -66,7 +66,7 @@ func (l *Logs) setupConfig(ctx *clicontext.CLIContext) (*stern.Config, error) {
 			return nil, errors.New("No object found")
 		}
 		if svc, ok := obj.Object.(*riov1.Service); ok {
-			if svc.Status.DeploymentReady == true && svc.Status.ScaleStatus != nil && svc.Status.ScaleStatus.Available == 0 {
+			if svc.Status.DeploymentReady && svc.Status.ScaleStatus != nil && svc.Status.ScaleStatus.Available == 0 {
 				fmt.Println("Waiting for pods...")
 			}
 		}
@@ -98,7 +98,7 @@ func (l *Logs) setupConfig(ctx *clicontext.CLIContext) (*stern.Config, error) {
 	}
 
 	config.ExcludeContainerQuery = nil
-	if l.A_All == false {
+	if !l.A_All {
 		excludeContainer, err := regexp.Compile("linkerd-proxy|linkerd-init")
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to compile regular expression for exclude container query")
@@ -173,7 +173,7 @@ func (l *Logs) Output(ctx *clicontext.CLIContext, conf *stern.Config) error {
 			existing := tails[id]
 			tailsMutex.RUnlock()
 			if existing != nil {
-				if existing.Active == true {
+				if existing.Active {
 					continue
 				} else { // cleanup failed tail to restart
 					tailsMutex.Lock()
