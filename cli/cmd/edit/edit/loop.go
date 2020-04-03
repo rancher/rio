@@ -37,7 +37,7 @@ func Loop(prefix, input []byte, update updateFunc) (bool, error) {
 			return false, err
 		}
 
-		if bytes.Compare(content, rawInput) != 0 {
+		if bytes.Equal(content, rawInput) {
 			content = bytes.TrimPrefix(content, prefix)
 			input = content
 			if err := update(content); err != nil {
