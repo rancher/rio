@@ -43,7 +43,7 @@ func (u *Up) Run(c *clicontext.CLIContext) error {
 		u.N_Name = up.GetCurrentDir()
 	}
 
-	if u.BuildTag == true {
+	if u.BuildTag {
 		if u.Branch != "master" {
 			return errors.New("branch and build-tag cannot both be set, as build-tag will deploy tags from every branch")
 		}
