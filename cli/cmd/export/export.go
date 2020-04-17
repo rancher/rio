@@ -146,12 +146,12 @@ func collectObjectsFromStack(ctx *clicontext.CLIContext, stack *riov1.Stack) ([]
 				// From here down we only want to export non-rio created objects which would already be exported above
 				stackObj := true
 				for k, v := range item.GetAnnotations() {
-					if stackObj == true && k == "objectset.rio.cattle.io/owner-gvk" && v != "rio.cattle.io/v1, Kind=Stack" {
+					if stackObj && k == "objectset.rio.cattle.io/owner-gvk" && v != "rio.cattle.io/v1, Kind=Stack" {
 						stackObj = false
 						break
 					}
 				}
-				if stackObj == true {
+				if stackObj {
 					objects = append(objects, item.DeepCopyObject())
 				}
 			}

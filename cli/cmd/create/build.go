@@ -11,7 +11,7 @@ import (
 
 func (c *Create) setBuildOrImage(imageName string, spec *riov1.ServiceSpec) error {
 	if services.IsRepo(imageName) {
-		if c.BuildTag == true {
+		if c.BuildTag {
 			if c.BuildBranch != "master" {
 				return errors.New("build-branch and build-tag cannot both be set, as build-tag will deploy tags from every branch")
 			}
@@ -19,8 +19,8 @@ func (c *Create) setBuildOrImage(imageName string, spec *riov1.ServiceSpec) erro
 				fmt.Println("Warning: tag mode only works with a webhook")
 			}
 		}
-		if c.BuildPr == true {
-			if c.Template == false {
+		if c.BuildPr {
+			if !c.Template {
 				return errors.New("build-pr is only compatible with template mode")
 			}
 			if c.BuildWebhookSecret == "" {
