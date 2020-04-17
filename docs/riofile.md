@@ -99,7 +99,7 @@ services:
     # Container configuration
     image: nginx # Container image. Required if not setting build
     imagePullPolicy: always # Image pull policy. Options: (always/never/ifNotProsent), defaults to ifNotProsent.
-    build: # Setting build parameters. Set if you want to build image for source
+    build: # Setting build parameters. Set if you want to build image from source
       repo: https://github.com/rancher/rio # Git repository to build. Required
       branch: master # Git repository branch. Required
       revision: v0.1.0 # Revision digest to build. If set, image will be built based on this revision. Otherwise it will take head revision in repo. Also if revision is not set, it will be served as the base revision to watch any change in repo and create new revision based changes from repo.
