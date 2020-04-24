@@ -1,0 +1,332 @@
+# notemplating
+kubernetes:
+  manifest: |-
+    ---
+    # Source: smi-metrics/templates/apiservice.yaml
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      labels:
+        app.kubernetes.io/name: smi-metrics
+        helm.sh/chart: smi-metrics-0.2.0
+        app.kubernetes.io/instance: metrics
+        app.kubernetes.io/managed-by: Helm
+      name: metrics-smi-metrics
+    type: kubernetes.io/tls
+    data:
+      tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURJekNDQWd1Z0F3SUJBZ0lRYVdJRWtZSHIyY0trL0loOC9FMDFYakFOQmdrcWhraUc5dzBCQVFzRkFEQXQKTVNzd0tRWURWUVFERXlKdFpYUnlhV056TFhOdGFTMXRaWFJ5YVdOekxuSnBieTF6ZVhOMFpXMHVjM1pqTUI0WApEVEl3TURFeU5ESXlOVEl5TTFvWERUSXhNREV5TXpJeU5USXlNMW93TFRFck1Da0dBMVVFQXhNaWJXVjBjbWxqCmN5MXpiV2t0YldWMGNtbGpjeTV5YVc4dGMzbHpkR1Z0TG5OMll6Q0NBU0l3RFFZSktvWklodmNOQVFFQkJRQUQKZ2dFUEFEQ0NBUW9DZ2dFQkFMaDViWURPSnZIRUhOL1hRMkRhTE0xODdLK3BZWmdJUXh1TmR6cGdSU2VRZDRkMApqUHRRdkxkV29zSUhzeXJMYlhzbW1SbVZ0VkljYzVqcDYzTG8zTjhVejVhY3JmTjNSY04yU3NFV1Q0UkRzMS9NCjhzSVNWL3pFR05YbTNVZXlPQmFsOWViL0RkRFdzZEN1cisza21KaUZ0cC9DVFFkYU9laWw2aFJHNmdtdlJURWkKbXUvcy9Kekc4T1Y0VzF2cmZiU0RCcHhoN0QwdnlWblU5d1Z1SVRVZ1lqMUlOYmlMVEJjbnlPcWUwcWRYbkY1dgpsNmNmMFVwVktOampSbjZxM25BUExQN09qaTZObVU4ek1yK3dpTXVpZEtSZWUxVkhvRGVhUWVzaWNNN2NnT0ZvCmxXdjV6ZjM5S2svcUtWZE5XUEw3SWtDclo4eGtMVmxLMFdqWFFha0NBd0VBQWFNL01EMHdEZ1lEVlIwUEFRSC8KQkFRREFnV2dNQjBHQTFVZEpRUVdNQlFHQ0NzR0FRVUZCd01CQmdnckJnRUZCUWNEQWpBTUJnTlZIUk1CQWY4RQpBakFBTUEwR0NTcUdTSWIzRFFFQkN3VUFBNElCQVFDSFV2MnVsMER5YkhHK0JMZmlTZE1mQUZ3R21vQnhTZkpRCnVqZUcvK3E4SlRVQnJYZTJNVVF0Y3NOMncyOGpPUENMeXlwRWZZdy9vejdIdzREeXUvcWhqZHY1ZHRtaFZUcXoKT2FBQ081QitNQmUvdHc1VkpjRzVUYS9hbi9XWVFxL254RStSRno1TXZwSUZGNDlTUWN6ZS9rYk1uemRJMERCOApsWnpDQnhjV05BckFEd0Zza0h5QWFvc0JMbFdDL045RnhzcUowTlpTWmZQWEpmdUUrQ0xFYmd2MTFqYXdRaEpOCjNhMWZiY1k2ZHN6Z0l2ZG9IS3ByTVRpWmFNQmtzcmZkRHZsc05udklkYWxxWHhzK3ZZOUdvMzkzMExGeTJNbFMKT2VlSXB0Um1INjdTeW93czVsWEZaNWlibE14aDhMUzJSV2hUQW9WMlpNMzR0VXhBM2ZrVgotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+      tls.key: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBdUhsdGdNNG04Y1FjMzlkRFlOb3N6WHpzcjZsaG1BaERHNDEzT21CRko1QjNoM1NNCisxQzh0MWFpd2dlektzdHRleWFaR1pXMVVoeHptT25yY3VqYzN4VFBscHl0ODNkRnczWkt3UlpQaEVPelg4enkKd2hKWC9NUVkxZWJkUjdJNEZxWDE1djhOME5heDBLNnY3ZVNZbUlXMm44Sk5CMW81NktYcUZFYnFDYTlGTVNLYQo3K3o4bk1idzVYaGJXK3Q5dElNR25HSHNQUy9KV2RUM0JXNGhOU0JpUFVnMXVJdE1GeWZJNnA3U3AxZWNYbStYCnB4L1JTbFVvMk9OR2ZxcmVjQThzL3M2T0xvMlpUek15djdDSXk2SjBwRjU3VlVlZ041cEI2eUp3enR5QTRXaVYKYS9uTi9mMHFUK29wVjAxWTh2c2lRS3RuekdRdFdVclJhTmRCcVFJREFRQUJBb0lCQURVQ0w0VWp0KzBnL1dzVQo0RGVrZWR0U1duRGZxenVVcERQMm9wd1RyY3VBcDlnMGxZNWgxTmlaL0lya3k0Y3dqWFVsMGppWDNGS0wrbXVtClRCSG8rQTdpWEFSYllXRGtsUmRsbG5XRmc3UHVBRTAzQjByZEdvdDNqZXRwTzR5dW1ZOW9nUkN2bWJpNCtMK08KY3Q5WklNQXpMQmNjTGlZK3R3VXpKK0JMd0ZTbm04WDdDVy93M1BnY0JJQXYzbVRWN3p3RUFaQjJ0aXdwalBPZQp6R0FLWmFNelVJcitTTnR4ZkRvaHJab3hnOVNVeTM3Y2lrSWRub1NXNzllb2tBWHkrMGZjR3VqS1d1RERKcHl5CnRkSXdSc2xMcWFJdldCeS9VbmszUDFrY1ByZTVRSzJBN28yOTkrcTdPeWNWL2g2TEw4b2ZQY1R5UXY4V2ZVdFkKYmtqcm8wRUNnWUVBMldXZWV4OHQyWjFFMXBGemVoQU5sZVdidVdZZHRzK092c2xDSnNvYWQ4a3FrTndSbTAwRwpYSTBHMlJuaVRVaWNvT3liTUQ5R0hSZjd0RmlKRmpkSlRYUnhZNkU5TG12QnJTaTBRL3RPTUljVTRvWm5JODA3CkdObVNVbE5xUVI5b2J0TmEyeW5XNklQR0JlWWIycXFENXB3cnRiSDFWNGRJczRmVmJvNE9lNThDZ1lFQTJUczQKT1ZUWkQ3eGxPSnpTcUFlREp0dDVmdldPU1dZODNjdzZFcFh1NFpIbXdtVWs3dVZsdW9kVVlUQ3F0bkZSZmgwYwp0VW9wdkc2Ris1YmJ0eVovV08vOUE4Nlk3OUJPK2RybFY0bGJzcDVaSE9ta3hNVklrZWlxU3lmN3VSZSsvcHI1CkhsUE5INlpUVm1oRWpzYkN1Z3JxU1h1U0VWYlFSUEN6ZGZuNFBiY0NnWUVBbTgzSmhDSDNZVVBtUndVZFJyamsKazY1b0ticDJ4MEwvNGRvcGo5VStuT1RPbmQwcXZTdTV5SERHSEtnQldUUVdGUHNkeWJrL1RiQ1hrMHYwaTdoNQp6NG9KamNiTUswM05FNFhkays4eXZYTENWQXJSTm9acXVVZU5KM1ZpN0dOUEhFWmJra0R0SmR6eStkMU56eXh2CnRjSHRUWjNKNEw0ekszL0pSaCtIWDY4Q2dZQms1Y1N2bkdGVmxjUE9EOGtva3BTd0w3QzI3NGN2UUhWMDc2N3AKZ3dwNWF6TXJoNThuOXhUUkZwcHlxaEFndlhHRWlqRVRZMmNQUnFha3ZPVkFwSGp4N2tZdXhuN3lwR2FLVnNtLwpadVZZaVlRS2tkc2VLaVFTNFdaM2toS3hYZjR3Yy9yUncwcTdNSjMwdkdsYmg2WmFrMGRPNmo1bUgxU05NTitxCkpIalE4UUtCZ1FETWNtV1l0bWNZL01CSThzYTJGM3BUcTNDTGVxMHdLWm9hcjNNajhkMHptTW1uQkpMTWhUQnkKMkZaNk5Lby9YTTJzTXFqMExTU05Jb1dNQlVMTi9TZEczcTJxakZ4SDVVUDM5eDFkVDM3UWNGSjZscWZpcGpGbQplb0NmT08wTWtrbXJsMXNzL1hOTlF6RUd3ZU1odENFZ1p3Q29qTGppcGtYMmd1OW13aXh0c1E9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo=
+    ---
+    # Source: smi-metrics/templates/config.yaml
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      labels:
+        app.kubernetes.io/name: smi-metrics
+        helm.sh/chart: smi-metrics-0.2.0
+        app.kubernetes.io/instance: metrics
+        app.kubernetes.io/managed-by: Helm
+      name: metrics-smi-metrics
+    data:
+      config.yml: |
+        mesh: linkerd
+        log-level: debug
+        linkerd:
+          prometheusUrl: http://linkerd-prometheus.linkerd.svc.cluster.local:9090
+          resourceQueries:
+            p99_response_latency : |-
+              histogram_quantile(
+                                0.99,
+                                sum(
+                                  irate(
+                                    response_latency_ms_bucket{
+                                      namespace=~"{{default ".+" .namespace }}",
+                                      {{lower .kind}}=~"{{default ".+" .name }}"
+                                    }[{{.window}}]
+                                  )
+                                ) by (
+                                  {{lower .kind}},
+                                  namespace,
+                                  le
+                                )
+                              )
+            p90_response_latency : |-
+              histogram_quantile(
+                                0.90,
+                                sum(
+                                  irate(
+                                    response_latency_ms_bucket{
+                                      namespace=~"{{default ".+" .namespace }}",
+                                      {{lower .kind}}=~"{{default ".+" .name }}"
+                                    }[{{.window}}]
+                                  )
+                                ) by (
+                                  {{lower .kind}},
+                                  namespace,
+                                  le
+                                )
+                              )
+            p50_response_latency : |-
+              histogram_quantile(
+                                0.50,
+                                sum(
+                                  irate(
+                                    response_latency_ms_bucket{
+                                      namespace=~"{{default ".+" .namespace }}",
+                                      {{lower .kind}}=~"{{default ".+" .name }}"
+                                    }[{{.window}}]
+                                  )
+                                ) by (
+                                  {{lower .kind}},
+                                  namespace,
+                                  le
+                                )
+                              )
+            success_count : |-
+              sum(
+                        increase(
+                          response_total{
+                            classification="success",
+                            namespace=~"{{default ".+" .namespace }}",
+                            {{lower .kind}}=~"{{default ".+" .name }}"
+                          }[{{.window}}]
+                        )
+                      ) by (
+                        {{lower .kind}},
+                        namespace
+                      )
+            failure_count : |-
+              sum(
+                        increase(
+                          response_total{
+                            classification="failure",
+                            namespace=~"{{default ".+" .namespace }}",
+                            {{lower .kind}}=~"{{default ".+" .name }}"
+                          }[{{.window}}]
+                        )
+                      ) by (
+                        {{lower .kind}},
+                        namespace
+                      )
+          edgeQueries:
+            p99_response_latency : |-
+              histogram_quantile(
+                                0.99,
+                                sum(
+                                  irate(
+                                    response_latency_ms_bucket{
+                                      namespace=~"{{.namespace}}",
+                                      {{lower .kind}}=~"{{default ".+" .fromName}}",
+                                      dst_{{lower .kind}}=~"{{default ".+" .toName}}"
+                                    }[{{.window}}]
+                                  )
+                                ) by (
+                                  {{lower .kind}},
+                                  dst_{{lower .kind}},
+                                  namespace,
+                                  dst_namespace,
+                                  le
+                                )
+                              )
+            p90_response_latency : |-
+              histogram_quantile(
+                                0.90,
+                                sum(
+                                  irate(
+                                    response_latency_ms_bucket{
+                                      namespace=~"{{.namespace}}",
+                                      {{lower .kind}}=~"{{default ".+" .fromName}}",
+                                      dst_{{lower .kind}}=~"{{default ".+" .toName}}"
+                                    }[{{.window}}]
+                                  )
+                                ) by (
+                                  {{lower .kind}},
+                                  dst_{{lower .kind}},
+                                  namespace,
+                                  dst_namespace,
+                                  le
+                                )
+                              )
+            p50_response_latency : |-
+              histogram_quantile(
+                                0.50,
+                                sum(
+                                  irate(
+                                    response_latency_ms_bucket{
+                                      namespace=~"{{.namespace}}",
+                                      {{lower .kind}}=~"{{default ".+" .fromName}}",
+                                      dst_{{lower .kind}}=~"{{default ".+" .toName}}"
+                                    }[{{.window}}]
+                                  )
+                                ) by (
+                                  {{lower .kind}},
+                                  dst_{{lower .kind}},
+                                  namespace,
+                                  dst_namespace,
+                                  le
+                                )
+                              )
+            success_count : |-
+              sum(
+                        increase(
+                          response_total{
+                            classification="success",
+                            namespace=~"{{.namespace}}",
+                            {{lower .kind}}=~"{{default ".+" .fromName}}",
+                            dst_{{lower .kind}}=~"{{default ".+" .toName}}"
+                          }[{{.window}}]
+                        )
+                      ) by (
+                        {{lower .kind}},
+                        dst_{{lower .kind}},
+                        namespace,
+                        dst_namespace
+                      )
+            failure_count : |-
+              sum(
+                        increase(
+                          response_total{
+                            classification="failure",
+                            namespace=~"{{.namespace}}",
+                            {{lower .kind}}=~"{{default ".+" .fromName}}",
+                            dst_{{lower .kind}}=~"{{default ".+" .toName}}"
+                          }[{{.window}}]
+                        )
+                      ) by (
+                        {{lower .kind}},
+                        dst_{{lower .kind}},
+                        namespace,
+                        dst_namespace
+                      )
+    ---
+    # Source: smi-metrics/templates/rbac.yaml
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      labels:
+        app.kubernetes.io/name: smi-metrics
+        helm.sh/chart: smi-metrics-0.2.0
+        app.kubernetes.io/instance: metrics
+        app.kubernetes.io/managed-by: Helm
+      name: metrics-smi-metrics
+    ---
+    # Source: smi-metrics/templates/rbac.yaml
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      labels:
+        app.kubernetes.io/name: smi-metrics
+        helm.sh/chart: smi-metrics-0.2.0
+        app.kubernetes.io/instance: metrics
+        app.kubernetes.io/managed-by: Helm
+      name: metrics-smi-metrics
+      namespace: kube-system
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: Role
+      name: extension-apiserver-authentication-reader
+    subjects:
+    - kind: ServiceAccount
+      name: metrics-smi-metrics
+      namespace: rio-system
+    ---
+    # Source: smi-metrics/templates/service.yaml
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: metrics-smi-metrics
+      labels:
+        app.kubernetes.io/name: smi-metrics
+        helm.sh/chart: smi-metrics-0.2.0
+        app.kubernetes.io/instance: metrics
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      ports:
+        - port: 443
+          targetPort: api
+          protocol: TCP
+      selector:
+        app.kubernetes.io/name: smi-metrics
+        app.kubernetes.io/instance: metrics
+    ---
+    # Source: smi-metrics/templates/deployment.yaml
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: metrics-smi-metrics
+      labels:
+        app.kubernetes.io/name: smi-metrics
+        helm.sh/chart: smi-metrics-0.2.0
+        app.kubernetes.io/instance: metrics
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app.kubernetes.io/name: smi-metrics
+          app.kubernetes.io/instance: metrics
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: smi-metrics
+            app.kubernetes.io/instance: metrics
+        spec:
+          serviceAccountName: metrics-smi-metrics
+          containers:
+            - name: shim
+              image: deislabs/smi-metrics:v0.2.0
+              imagePullPolicy: IfNotPresent
+
+              command:
+                - /smi-metrics
+                - --config=/config.yml
+
+              ports:
+                - containerPort: 8080
+                  name: api
+                  protocol: TCP
+                - containerPort: 8081
+                  name: admin
+                  protocol: TCP
+
+              volumeMounts:
+                - name: config
+                  mountPath: /config.yml
+                  subPath: config.yml
+                - mountPath: /var/run/smi-metrics
+                  name: tls
+                  readOnly: true
+
+
+              resources:
+                {}
+
+          volumes:
+            - name: config
+              configMap:
+                name: metrics-smi-metrics
+            - name: tls
+              secret:
+                secretName: metrics-smi-metrics
+    ---
+    # Source: smi-metrics/templates/apiservice.yaml
+    apiVersion: apiregistration.k8s.io/v1beta1
+    kind: APIService
+    metadata:
+      labels:
+        app.kubernetes.io/name: smi-metrics
+        helm.sh/chart: smi-metrics-0.2.0
+        app.kubernetes.io/instance: metrics
+        app.kubernetes.io/managed-by: Helm
+      name: v1alpha1.metrics.smi-spec.io
+    spec:
+      service:
+        name: metrics-smi-metrics
+        namespace: rio-system
+      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURKakNDQWc2Z0F3SUJBZ0lRR2hoWGdleWNNUjc0RkFEbmRIWW5nakFOQmdrcWhraUc5dzBCQVFzRkFEQXQKTVNzd0tRWURWUVFERXlKdFpYUnlhV056TFhOdGFTMXRaWFJ5YVdOekxuSnBieTF6ZVhOMFpXMHVjM1pqTUI0WApEVEl3TURFeU5ESXlOVEl5TTFvWERUSXhNREV5TXpJeU5USXlNMW93TFRFck1Da0dBMVVFQXhNaWJXVjBjbWxqCmN5MXpiV2t0YldWMGNtbGpjeTV5YVc4dGMzbHpkR1Z0TG5OMll6Q0NBU0l3RFFZSktvWklodmNOQVFFQkJRQUQKZ2dFUEFEQ0NBUW9DZ2dFQkFNTUJ1dTFFS24rblYzSks5eGF5blFSaUZTUHZuVEhTZks4cHdBbEZEbmdLZnBKTQorZVdRLzdaV2c4bmhjbld3ZG1YRVpGb3ZXd0pZWWJhc2h5OXRIcVJIdGlBa1pNTVN6aTZkLzVaVzlCdWtaOXVvCnFJZmZkVVZVUlJwOU8ra2RURjlDVXM4WXJQQWNOSER2U1hVZlNZT1krRi94WEVMSHp6aGUrR05nRzg3OE96YXAKQlErYkcxbzcxN3YzNkVDb2llb0pialljaHFicmZiNWxUQ2dtc010K3prUDltYm5Mek9xaW1RTkxUcjVPRlpQZwo5Rm1qUzI1VStVODJxK3QzTmpvNUtlTkthUTFqb2l5eDl3SmlVRXNHd0JPRXpMSnJXTThJNHM0M244MGZmT0hvCktkamNiUkdyK1lhVW5qNmVnZ05lNHlQSktMUElxRlR5MXBqT3ViY0NBd0VBQWFOQ01FQXdEZ1lEVlIwUEFRSC8KQkFRREFnS2tNQjBHQTFVZEpRUVdNQlFHQ0NzR0FRVUZCd01CQmdnckJnRUZCUWNEQWpBUEJnTlZIUk1CQWY4RQpCVEFEQVFIL01BMEdDU3FHU0liM0RRRUJDd1VBQTRJQkFRQW1aOVlIa3QrMzhNeGN4NTN5SzNiK3VFV2UzbnFmClorL2wyYjkrTm9Eb3ZLOTBHVDdSbk1nR2VBcDZVYXJHVDJzTFVEZE9xKzhHNHBORmVRb3dYSnR1dTNZbkkraTAKU0t6eEVncnV4bFFIY3dBajR6Vkk0VE9kczlmZm91Ymlhdk1lUTdhdUI0cTRCc09pdXlLQ0d2eW1jRGluSFM5MAp1NlNEMk8yOGpneTNZd0xOTzZzNEtNcU9iMGlwRktNNUQzTS84T2g1R0dlVDA2VWlxVmhFU0pXU1pQd2cvbVppCkcyTTZtSDhjYXk3dW13NjVXbWtDeHp4NG9KV0ZnbnFHNTVHNmZrYVBrMm9zMnRJaGthTi9XWThUNWFKS2ZmRUsKRERZQmtaQnJQWE5vNW03RXFMaEJicjBaNi9mVmQrU296YWRJUVdTTllLRUFDSEdOOTJWY1pXeUgKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+      group: metrics.smi-spec.io
+      version: v1alpha1
+      insecureSkipTLSVerify: false
+      groupPriorityMinimum: 100
+      versionPriority: 100
+    ---
