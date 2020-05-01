@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rancher/rio/pkg/constants"
+
 	approuter "github.com/rancher/rdns-server/client"
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/config"
-	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/types"
 	corev1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/core/v1"
 	v1beta12 "github.com/rancher/wrangler-api/pkg/generated/controllers/extensions/v1beta1"
@@ -22,10 +23,22 @@ import (
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
+	cm, err := rContext.Core.Core().V1().ConfigMap().Get(rContext.Namespace, config.ConfigName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	cf, err := config.FromConfigMap(cm)
+	if err != nil {
+		return err
+	}
+
 	rDNSClient := approuter.NewClient(rContext.Core.Core().V1().Secret(),
 		rContext.Core.Core().V1().Secret().Cache(),
 		rContext.Namespace)
-	rDNSClient.SetBaseURL(constants.RDNSURL)
+	if cf.RdnsURL == "" {
+		cf.RdnsURL = constants.RDNSURL
+	}
+	rDNSClient.SetBaseURL(cf.RdnsURL)
 
 	h := handler{
 		ctx:             ctx,

@@ -34,6 +34,7 @@ type Install struct {
 	Yaml            bool     `desc:"Only print out k8s yaml manifest"`
 	Email           string   `desc:"Provide email for Let's Encrypt account registration"`
 	NoEmail         bool     `desc:"Do not provide Let's Encrypt email"`
+	RdnsURL         string   `desc:"Rancher DNS api endpoint to provision DNS record" default:"https://api.on-rio.io/v1"`
 }
 
 var (
@@ -206,6 +207,8 @@ func (i *Install) getConfigMap(ctx *clicontext.CLIContext, ignoreCluster bool) (
 			}
 		}
 	}
+
+	cfg.RdnsURL = i.RdnsURL
 
 	// configure letsencrypts email
 	if !i.NoEmail && !i.Check && !slice.ContainsString(i.DisableFeatures, "letsencrypt") {

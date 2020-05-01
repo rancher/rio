@@ -29,6 +29,7 @@ type ControllerConfig struct {
 type Config struct {
 	Features    map[string]FeatureConfig `json:"features,omitempty"`
 	LetsEncrypt LetsEncrypt              `json:"letsEncrypt,omitempty"`
+	RdnsURL     string                   `json:"rdnsUrl,omitempty"`
 	Gateway     Gateway                  `json:"gateway,omitempty"`
 }
 
