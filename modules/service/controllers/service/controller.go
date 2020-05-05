@@ -14,8 +14,16 @@ import (
 	corev1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/pkg/generic"
 	"github.com/rancher/wrangler/pkg/objectset"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+)
+
+const (
+	ownerreferenceGVK       = "objectset.rio.cattle.io/owner-gvk"
+	ownerreferenceName      = "objectset.rio.cattle.io/owner-name"
+	ownerreferenceNamespace = "objectset.rio.cattle.io/owner-namespace"
 )
 
 func Register(ctx context.Context, rContext *types.Context) error {
@@ -24,6 +32,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		namespace:          rContext.Namespace,
 		publicDomainCache:  rContext.Admin.Admin().V1().PublicDomain().Cache(),
 		clusterDomainCache: rContext.Admin.Admin().V1().ClusterDomain().Cache(),
+		pvcCache:           rContext.Core.Core().V1().PersistentVolumeClaim().Cache(),
 		configmaps:         rContext.Core.Core().V1().ConfigMap(),
 	}
 
@@ -53,6 +62,7 @@ type serviceHandler struct {
 
 	clusterDomainCache adminv1.ClusterDomainCache
 	publicDomainCache  adminv1.PublicDomainCache
+	pvcCache           corev1controller.PersistentVolumeClaimCache
 	configmaps         corev1controller.ConfigMapClient
 }
 
@@ -70,7 +80,25 @@ func (s *serviceHandler) populate(service *riov1.Service, status riov1.ServiceSt
 		return nil, status, err
 	}
 
-	return os.All(), status, nil
+	// filter all persistentvolume and don't add persistentvolume that already existed
+	result := objectset.NewObjectSet()
+	for _, object := range os.All() {
+		switch object.(type) {
+		case *v1.PersistentVolumeClaim:
+			pvc, err := s.pvcCache.Get(object.(*v1.PersistentVolumeClaim).Namespace, object.(*v1.PersistentVolumeClaim).Name)
+			if errors.IsNotFound(err) || (err == nil && isPvcOwnedByService(pvc, service)) {
+				result.Add(object)
+			}
+		default:
+			result.Add(object)
+		}
+	}
+
+	return result.All(), status, nil
+}
+
+func isPvcOwnedByService(pvc *v1.PersistentVolumeClaim, service *riov1.Service) bool {
+	return pvc.Annotations[ownerreferenceGVK] == "rio.cattle.io/v1, Kind=Service" && pvc.Annotations[ownerreferenceName] == service.Name && pvc.Annotations[ownerreferenceNamespace] == service.Namespace
 }
 
 func (s *serviceHandler) ensureFeatures(service *riov1.Service) error {
