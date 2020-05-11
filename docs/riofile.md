@@ -84,6 +84,12 @@ services:
     template: false # Set this service as a template to build service versions from instead of overwriting on each build, false by default. See https://github.com/rancher/rio/blob/master/docs/continuous-deployment.md#automatic-versioning
     weight: 80 # Percentage of weight assigned to this revision. Defaults to 100.
 
+    annotations: # Set annotations for the deployment and pods
+      foo: bar
+    labels: # Set labels for the deployment and pods
+      foo: bar
+
+
     # To enable autoscaling:
     autoscale:
       concurrency: 10 # specify concurrent request each pod can handle(soft limit, used to scale service)

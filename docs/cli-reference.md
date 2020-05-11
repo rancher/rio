@@ -335,13 +335,14 @@ rio install [OPTIONS]
 
 ##### Options
 
-| flag                     | aliases | description                                                                            | default |
-|--------------------------|---------|----------------------------------------------------------------------------------------|---------|
-| --check                  |         | Only check status, don't deploy controller                                             |         |
-| --disable-features value |         | Manually specify features to disable, supports comma separated values                  |         |
-| --enable-debug           |         | Enable debug logging in controller                                                     |         |
-| --ip-address value       |         | Manually specify IP addresses to generate rdns domain, supports comma separated values |         |
-| --yaml                   |         | Only print out k8s yaml manifest                                                       |         |
+| flag                     | aliases | description                                                                            | default                         |
+|--------------------------|---------|----------------------------------------------------------------------------------------|---------------------------------|
+| --check                  |         | Only check status, don't deploy controller                                             |                                 |
+| --disable-features value |         | Manually specify features to disable, supports comma separated values                  |                                 |
+| --enable-debug           |         | Enable debug logging in controller                                                     |                                 |
+| --ip-address value       |         | Manually specify IP addresses to generate rdns domain, supports comma separated values |                                 |
+| --yaml                   |         | Only print out k8s yaml manifest                                                       |                                 |
+| --rdns-url               |         | Specify Rdns server url to use                                                         | https://api.on-rio.io/v1        |
 
 
 **--check**
