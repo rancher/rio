@@ -2,10 +2,10 @@ package mappers
 
 import (
 	"github.com/mattn/go-shellwords"
-	"github.com/rancher/norman/pkg/data"
-	"github.com/rancher/norman/pkg/types"
-	"github.com/rancher/norman/pkg/types/convert"
-	"github.com/rancher/norman/pkg/types/mapper"
+	"github.com/rancher/wrangler/pkg/data"
+	"github.com/rancher/wrangler/pkg/data/convert"
+	types "github.com/rancher/wrangler/pkg/schemas"
+	mapper "github.com/rancher/wrangler/pkg/schemas/mappers"
 )
 
 type Shlex struct {

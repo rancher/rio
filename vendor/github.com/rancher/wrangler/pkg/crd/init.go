@@ -34,6 +34,8 @@ type CRD struct {
 	Columns      []v1beta1.CustomResourceColumnDefinition
 	Status       bool
 	Scale        bool
+	Categories   []string
+	ShortNames   []string
 }
 
 func (c CRD) WithSchema(schema *v1beta1.JSONSchemaProps) CRD {
@@ -53,6 +55,16 @@ func (c CRD) WithStatus() CRD {
 
 func (c CRD) WithScale() CRD {
 	c.Scale = true
+	return c
+}
+
+func (c CRD) WithCategories(categories ...string) CRD {
+	c.Categories = categories
+	return c
+}
+
+func (c CRD) WithShortNames(shortNames ...string) CRD {
+	c.ShortNames = shortNames
 	return c
 }
 
@@ -80,8 +92,10 @@ func (c CRD) ToCustomResourceDefinition() apiext.CustomResourceDefinition {
 				},
 			},
 			Names: apiext.CustomResourceDefinitionNames{
-				Plural: plural,
-				Kind:   c.GVK.Kind,
+				Plural:     plural,
+				Kind:       c.GVK.Kind,
+				Categories: c.Categories,
+				ShortNames: c.ShortNames,
 			},
 		},
 	}

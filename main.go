@@ -13,8 +13,7 @@ import (
 	"os"
 
 	"github.com/rancher/rio/pkg/config"
-
-	"github.com/rancher/norman/pkg/debug"
+	"github.com/rancher/rio/pkg/debug"
 	"github.com/rancher/rio/pkg/server"
 	"github.com/rancher/rio/pkg/version"
 	"github.com/rancher/wrangler/pkg/signals"

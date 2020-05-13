@@ -499,22 +499,10 @@ github.com/rancher/gitwatcher/pkg/generated/informers/externalversions/gitwatche
 github.com/rancher/gitwatcher/pkg/generated/informers/externalversions/gitwatcher.cattle.io/v1
 github.com/rancher/gitwatcher/pkg/generated/informers/externalversions/internalinterfaces
 github.com/rancher/gitwatcher/pkg/generated/listers/gitwatcher.cattle.io/v1
-# github.com/rancher/norman v0.0.0-20191114233102-966e8db9e670
-github.com/rancher/norman/pkg/data
-github.com/rancher/norman/pkg/debug
-github.com/rancher/norman/pkg/httperror
-github.com/rancher/norman/pkg/openapi
-github.com/rancher/norman/pkg/parse/builder
-github.com/rancher/norman/pkg/types
-github.com/rancher/norman/pkg/types/convert
-github.com/rancher/norman/pkg/types/definition
-github.com/rancher/norman/pkg/types/mapper
-github.com/rancher/norman/pkg/types/slice
-github.com/rancher/norman/pkg/types/values
 # github.com/rancher/rdns-server v0.5.7-0.20190927164127-7128efe7d065
 github.com/rancher/rdns-server/client
 github.com/rancher/rdns-server/model
-# github.com/rancher/wrangler v0.2.1-0.20191109002915-2a833f7e410d
+# github.com/rancher/wrangler v0.4.1
 github.com/rancher/wrangler/pkg/apply
 github.com/rancher/wrangler/pkg/apply/injectors
 github.com/rancher/wrangler/pkg/cleanup
@@ -523,6 +511,8 @@ github.com/rancher/wrangler/pkg/controller-gen
 github.com/rancher/wrangler/pkg/controller-gen/args
 github.com/rancher/wrangler/pkg/controller-gen/generators
 github.com/rancher/wrangler/pkg/crd
+github.com/rancher/wrangler/pkg/data
+github.com/rancher/wrangler/pkg/data/convert
 github.com/rancher/wrangler/pkg/generic
 github.com/rancher/wrangler/pkg/genericcondition
 github.com/rancher/wrangler/pkg/gvk
@@ -533,6 +523,11 @@ github.com/rancher/wrangler/pkg/merr
 github.com/rancher/wrangler/pkg/name
 github.com/rancher/wrangler/pkg/objectset
 github.com/rancher/wrangler/pkg/relatedresource
+github.com/rancher/wrangler/pkg/schemas
+github.com/rancher/wrangler/pkg/schemas/definition
+github.com/rancher/wrangler/pkg/schemas/mappers
+github.com/rancher/wrangler/pkg/schemas/openapi
+github.com/rancher/wrangler/pkg/schemas/validation
 github.com/rancher/wrangler/pkg/schemes
 github.com/rancher/wrangler/pkg/signals
 github.com/rancher/wrangler/pkg/slice
@@ -721,6 +716,8 @@ github.com/tonistiigi/fsutil/types
 github.com/tonistiigi/units
 # github.com/urfave/cli v1.22.2
 github.com/urfave/cli
+# github.com/urfave/cli/v2 v2.1.1
+github.com/urfave/cli/v2
 # github.com/wercker/stern v1.11.0 => github.com/rancher/stern v0.0.0-20191213223518-59c2bf84f705
 github.com/wercker/stern/kubernetes
 github.com/wercker/stern/stern
@@ -873,7 +870,7 @@ gotest.tools/assert/cmp
 gotest.tools/internal/difflib
 gotest.tools/internal/format
 gotest.tools/internal/source
-# k8s.io/api v0.0.0 => github.com/rancher/kubernetes/staging/src/k8s.io/api v1.16.2-k3s.1
+# k8s.io/api v0.17.0 => github.com/rancher/kubernetes/staging/src/k8s.io/api v1.16.2-k3s.1
 k8s.io/api/admission/v1
 k8s.io/api/admission/v1beta1
 k8s.io/api/admissionregistration/v1
@@ -915,7 +912,7 @@ k8s.io/api/settings/v1alpha1
 k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
-# k8s.io/apiextensions-apiserver v0.0.0 => github.com/rancher/kubernetes/staging/src/k8s.io/apiextensions-apiserver v1.16.2-k3s.1
+# k8s.io/apiextensions-apiserver v0.17.0 => github.com/rancher/kubernetes/staging/src/k8s.io/apiextensions-apiserver v1.16.2-k3s.1
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1
@@ -933,7 +930,7 @@ k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions/apiextensio
 k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions/internalinterfaces
 k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1
 k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1beta1
-# k8s.io/apimachinery v0.0.0 => github.com/rancher/kubernetes/staging/src/k8s.io/apimachinery v1.16.2-k3s.1
+# k8s.io/apimachinery v0.17.0 => github.com/rancher/kubernetes/staging/src/k8s.io/apimachinery v1.16.2-k3s.1
 k8s.io/apimachinery/pkg/api/equality
 k8s.io/apimachinery/pkg/api/errors
 k8s.io/apimachinery/pkg/api/meta
@@ -1228,7 +1225,7 @@ k8s.io/client-go/util/jsonpath
 k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/retry
 k8s.io/client-go/util/workqueue
-# k8s.io/code-generator v0.0.0 => github.com/rancher/kubernetes/staging/src/k8s.io/code-generator v1.16.2-k3s.1
+# k8s.io/code-generator v0.17.0 => github.com/rancher/kubernetes/staging/src/k8s.io/code-generator v1.16.2-k3s.1
 k8s.io/code-generator/cmd/client-gen/args
 k8s.io/code-generator/cmd/client-gen/generators
 k8s.io/code-generator/cmd/client-gen/generators/fake
@@ -1243,7 +1240,7 @@ k8s.io/code-generator/cmd/lister-gen/args
 k8s.io/code-generator/cmd/lister-gen/generators
 k8s.io/code-generator/pkg/namer
 k8s.io/code-generator/pkg/util
-# k8s.io/gengo v0.0.0-20190822140433-26a664648505
+# k8s.io/gengo v0.0.0-20191120174120-e74f70b9b27e
 k8s.io/gengo/args
 k8s.io/gengo/examples/deepcopy-gen/generators
 k8s.io/gengo/examples/set-gen/sets

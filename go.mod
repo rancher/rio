@@ -1,6 +1,6 @@
 module github.com/rancher/rio
 
-go 1.12
+go 1.13
 
 replace (
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.2.0+incompatible
@@ -77,9 +77,8 @@ require (
 	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4 // indirect
 	github.com/radovskyb/watcher v1.0.7 // indirect
 	github.com/rancher/gitwatcher v0.4.4
-	github.com/rancher/norman v0.0.0-20191114233102-966e8db9e670
 	github.com/rancher/rdns-server v0.5.7-0.20190927164127-7128efe7d065
-	github.com/rancher/wrangler v0.2.1-0.20191109002915-2a833f7e410d
+	github.com/rancher/wrangler v0.4.1
 	github.com/rancher/wrangler-api v0.2.1-0.20191025043713-b1ca9c21825a
 	github.com/sclevine/spec v1.4.0
 	github.com/sirupsen/logrus v1.4.2
@@ -89,15 +88,16 @@ require (
 	github.com/stretchr/testify v1.4.0
 	github.com/tektoncd/pipeline v0.8.0
 	github.com/urfave/cli v1.22.2
+	github.com/urfave/cli/v2 v2.1.1
 	github.com/wercker/stern v1.11.0
 	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 	gopkg.in/inf.v0 v0.9.1
 	gopkg.in/yaml.v2 v2.2.4
 	gotest.tools v2.2.0+incompatible
-	k8s.io/api v0.0.0
-	k8s.io/apiextensions-apiserver v0.0.0
-	k8s.io/apimachinery v0.0.0
+	k8s.io/api v0.17.0
+	k8s.io/apiextensions-apiserver v0.17.0
+	k8s.io/apimachinery v0.17.0
 	k8s.io/apiserver v0.0.0
 	k8s.io/cli-runtime v0.0.0
 	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible

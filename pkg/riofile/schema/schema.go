@@ -1,11 +1,11 @@
 package schema
 
 import (
-	"github.com/rancher/norman/pkg/types"
-	"github.com/rancher/norman/pkg/types/mapper"
 	v1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	m "github.com/rancher/rio/pkg/riofile/mappers"
 	"github.com/rancher/rio/pkg/riofile/stringers"
+	types "github.com/rancher/wrangler/pkg/schemas"
+	mapper "github.com/rancher/wrangler/pkg/schemas/mappers"
 	corev1 "k8s.io/api/core/v1"
 )
 

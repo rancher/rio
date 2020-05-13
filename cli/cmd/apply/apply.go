@@ -3,8 +3,8 @@ package apply
 import (
 	"os"
 
-	"github.com/rancher/norman/pkg/types/convert"
 	"github.com/rancher/rio/cli/cmd/util"
+	"github.com/rancher/wrangler/pkg/data/convert"
 	"github.com/rancher/wrangler/pkg/yaml"
 )
 
