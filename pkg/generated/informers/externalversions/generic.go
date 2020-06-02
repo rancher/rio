@@ -21,9 +21,11 @@ package externalversions
 import (
 	"fmt"
 
+	v1alpha1 "github.com/deislabs/smi-sdk-go/pkg/apis/split/v1alpha1"
 	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	v3 "github.com/rancher/rio/pkg/apis/management.cattle.io/v3"
 	riocattleiov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	v1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -55,6 +57,8 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=admin.rio.cattle.io, Version=v1
+	case v1.SchemeGroupVersion.WithResource("certificates"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Admin().V1().Certificates().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("clusterdomains"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Admin().V1().ClusterDomains().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("publicdomains"):
@@ -70,6 +74,22 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	case v3.SchemeGroupVersion.WithResource("users"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Management().V3().Users().Informer()}, nil
 
+		// Group=networking.istio.io, Version=v1alpha3
+	case v1alpha3.SchemeGroupVersion.WithResource("destinationrules"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Networking().V1alpha3().DestinationRules().Informer()}, nil
+	case v1alpha3.SchemeGroupVersion.WithResource("envoyfilters"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Networking().V1alpha3().EnvoyFilters().Informer()}, nil
+	case v1alpha3.SchemeGroupVersion.WithResource("gateways"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Networking().V1alpha3().Gateways().Informer()}, nil
+	case v1alpha3.SchemeGroupVersion.WithResource("serviceentries"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Networking().V1alpha3().ServiceEntries().Informer()}, nil
+	case v1alpha3.SchemeGroupVersion.WithResource("sidecars"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Networking().V1alpha3().Sidecars().Informer()}, nil
+	case v1alpha3.SchemeGroupVersion.WithResource("virtualservices"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Networking().V1alpha3().VirtualServices().Informer()}, nil
+	case v1alpha3.SchemeGroupVersion.WithResource("workloadentries"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Networking().V1alpha3().WorkloadEntries().Informer()}, nil
+
 		// Group=rio.cattle.io, Version=v1
 	case riocattleiov1.SchemeGroupVersion.WithResource("externalservices"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rio().V1().ExternalServices().Informer()}, nil
@@ -79,6 +99,10 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rio().V1().Services().Informer()}, nil
 	case riocattleiov1.SchemeGroupVersion.WithResource("stacks"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rio().V1().Stacks().Informer()}, nil
+
+		// Group=split.smi-spec.io, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithResource("trafficsplits"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Split().V1alpha1().TrafficSplits().Informer()}, nil
 
 	}
 

@@ -19,9 +19,11 @@ limitations under the License.
 package fake
 
 import (
+	splitv1alpha1 "github.com/deislabs/smi-sdk-go/pkg/apis/split/v1alpha1"
 	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	managementv3 "github.com/rancher/rio/pkg/apis/management.cattle.io/v3"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -35,7 +37,9 @@ var parameterCodec = runtime.NewParameterCodec(scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
 	adminv1.AddToScheme,
 	managementv3.AddToScheme,
+	networkingv1alpha3.AddToScheme,
 	riov1.AddToScheme,
+	splitv1alpha1.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition

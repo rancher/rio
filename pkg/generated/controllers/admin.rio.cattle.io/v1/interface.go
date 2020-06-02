@@ -26,6 +26,7 @@ import (
 )
 
 type Interface interface {
+	Certificate() CertificateController
 	ClusterDomain() ClusterDomainController
 	PublicDomain() PublicDomainController
 	RioInfo() RioInfoController
@@ -47,6 +48,9 @@ type version struct {
 	client            clientset.AdminV1Interface
 }
 
+func (c *version) Certificate() CertificateController {
+	return NewCertificateController(v1.SchemeGroupVersion.WithKind("Certificate"), c.controllerManager, c.client, c.informers.Certificates())
+}
 func (c *version) ClusterDomain() ClusterDomainController {
 	return NewClusterDomainController(v1.SchemeGroupVersion.WithKind("ClusterDomain"), c.controllerManager, c.client, c.informers.ClusterDomains())
 }

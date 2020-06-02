@@ -23,7 +23,9 @@ import (
 
 	adminv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/admin.rio.cattle.io/v1"
 	managementv3 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/management.cattle.io/v3"
+	networkingv1alpha3 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/networking/v1alpha3"
 	riov1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/rio.cattle.io/v1"
+	splitv1alpha1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/split/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -33,16 +35,20 @@ type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	AdminV1() adminv1.AdminV1Interface
 	ManagementV3() managementv3.ManagementV3Interface
+	NetworkingV1alpha3() networkingv1alpha3.NetworkingV1alpha3Interface
 	RioV1() riov1.RioV1Interface
+	SplitV1alpha1() splitv1alpha1.SplitV1alpha1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	adminV1      *adminv1.AdminV1Client
-	managementV3 *managementv3.ManagementV3Client
-	rioV1        *riov1.RioV1Client
+	adminV1            *adminv1.AdminV1Client
+	managementV3       *managementv3.ManagementV3Client
+	networkingV1alpha3 *networkingv1alpha3.NetworkingV1alpha3Client
+	rioV1              *riov1.RioV1Client
+	splitV1alpha1      *splitv1alpha1.SplitV1alpha1Client
 }
 
 // AdminV1 retrieves the AdminV1Client
@@ -55,9 +61,19 @@ func (c *Clientset) ManagementV3() managementv3.ManagementV3Interface {
 	return c.managementV3
 }
 
+// NetworkingV1alpha3 retrieves the NetworkingV1alpha3Client
+func (c *Clientset) NetworkingV1alpha3() networkingv1alpha3.NetworkingV1alpha3Interface {
+	return c.networkingV1alpha3
+}
+
 // RioV1 retrieves the RioV1Client
 func (c *Clientset) RioV1() riov1.RioV1Interface {
 	return c.rioV1
+}
+
+// SplitV1alpha1 retrieves the SplitV1alpha1Client
+func (c *Clientset) SplitV1alpha1() splitv1alpha1.SplitV1alpha1Interface {
+	return c.splitV1alpha1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -89,7 +105,15 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
+	cs.networkingV1alpha3, err = networkingv1alpha3.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 	cs.rioV1, err = riov1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
+	cs.splitV1alpha1, err = splitv1alpha1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +131,9 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
 	cs.adminV1 = adminv1.NewForConfigOrDie(c)
 	cs.managementV3 = managementv3.NewForConfigOrDie(c)
+	cs.networkingV1alpha3 = networkingv1alpha3.NewForConfigOrDie(c)
 	cs.rioV1 = riov1.NewForConfigOrDie(c)
+	cs.splitV1alpha1 = splitv1alpha1.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
@@ -118,7 +144,9 @@ func New(c rest.Interface) *Clientset {
 	var cs Clientset
 	cs.adminV1 = adminv1.New(c)
 	cs.managementV3 = managementv3.New(c)
+	cs.networkingV1alpha3 = networkingv1alpha3.New(c)
 	cs.rioV1 = riov1.New(c)
+	cs.splitV1alpha1 = splitv1alpha1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs
