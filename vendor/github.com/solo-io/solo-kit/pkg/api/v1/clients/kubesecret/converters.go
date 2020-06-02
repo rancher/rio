@@ -3,8 +3,8 @@ package kubesecret
 import (
 	"context"
 
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
@@ -33,7 +33,7 @@ func (p *plainSecret) FromKubeSecret(ctx context.Context, rc *ResourceClient, se
 		resourceMap[k] = string(v)
 	}
 	if err := protoutils.UnmarshalMap(resourceMap, resource); err != nil {
-		return nil, errors.Wrapf(err, "reading secret data into %v", rc.Kind())
+		return nil, eris.Wrapf(err, "reading secret data into %v", rc.Kind())
 	}
 	resource.SetMetadata(kubeutils.FromKubeMeta(secret.ObjectMeta))
 	return resource, nil
@@ -42,7 +42,7 @@ func (p *plainSecret) FromKubeSecret(ctx context.Context, rc *ResourceClient, se
 func (p *plainSecret) ToKubeSecret(ctx context.Context, rc *ResourceClient, resource resources.Resource) (*v1.Secret, error) {
 	resourceMap, err := protoutils.MarshalMapEmitZeroValues(resource)
 	if err != nil {
-		return nil, errors.Wrapf(err, "marshalling resource as map")
+		return nil, eris.Wrapf(err, "marshalling resource as map")
 	}
 	kubeSecretData := make(map[string][]byte)
 	for k, v := range resourceMap {

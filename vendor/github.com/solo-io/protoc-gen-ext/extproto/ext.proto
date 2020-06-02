@@ -1,0 +1,22 @@
+syntax = "proto2";
+package extproto;
+
+option go_package = "github.com/solo-io/protoc-gen-ext/extproto";
+
+import "google/protobuf/descriptor.proto";
+
+// Validation rules applied at the message level
+extend google.protobuf.FileOptions {
+    // Disabled nullifies any validation rules for this message, including any
+    // message fields associated with it that do support validation.
+    optional bool hash_all = 10071;
+
+    optional bool equal_all = 10072;
+}
+
+// Validation rules applied at the field level
+extend google.protobuf.FieldOptions {
+    // Rules specify the validations to be performed on this field. By default,
+    // no validation is performed against a field.
+    optional bool skip_hashing = 10071;
+}

@@ -21,35 +21,59 @@ import (
 	"time"
 
 	"github.com/tektoncd/pipeline/pkg/apis/config"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"github.com/tektoncd/pipeline/pkg/contexts"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
 )
 
+var _ apis.Defaultable = (*TaskRun)(nil)
+
+const managedByLabelKey = "app.kubernetes.io/managed-by"
+
 func (tr *TaskRun) SetDefaults(ctx context.Context) {
-	tr.Spec.SetDefaults(ctx)
+	ctx = apis.WithinParent(ctx, tr.ObjectMeta)
+	tr.Spec.SetDefaults(apis.WithinSpec(ctx))
+
+	// If the TaskRun doesn't have a managed-by label, apply the default
+	// specified in the config.
+	cfg := config.FromContextOrDefaults(ctx)
+	if tr.ObjectMeta.Labels == nil {
+		tr.ObjectMeta.Labels = map[string]string{}
+	}
+	if _, found := tr.ObjectMeta.Labels[managedByLabelKey]; !found {
+		tr.ObjectMeta.Labels[managedByLabelKey] = cfg.Defaults.DefaultManagedByLabelValue
+	}
 }
 
 func (trs *TaskRunSpec) SetDefaults(ctx context.Context) {
+	if contexts.IsUpgradeViaDefaulting(ctx) {
+		v := v1beta1.TaskRunSpec{}
+		if trs.ConvertTo(ctx, &v) == nil {
+			alpha := TaskRunSpec{}
+			if alpha.ConvertFrom(ctx, &v) == nil {
+				*trs = alpha
+			}
+		}
+	}
+
 	cfg := config.FromContextOrDefaults(ctx)
 	if trs.TaskRef != nil && trs.TaskRef.Kind == "" {
 		trs.TaskRef.Kind = NamespacedTaskKind
 	}
 
 	if trs.Timeout == nil {
-		var timeout *metav1.Duration
-		if IsUpgradeViaDefaulting(ctx) {
-			// This case is for preexisting `TaskRun` before 0.5.0, so let's
-			// add the old default timeout.
-			// Most likely those TaskRun passing here are already done and/or already running
-			timeout = &metav1.Duration{Duration: config.DefaultTimeoutMinutes * time.Minute}
-		} else {
-			timeout = &metav1.Duration{Duration: time.Duration(cfg.Defaults.DefaultTimeoutMinutes) * time.Minute}
-		}
-		trs.Timeout = timeout
+		trs.Timeout = &metav1.Duration{Duration: time.Duration(cfg.Defaults.DefaultTimeoutMinutes) * time.Minute}
 	}
 
 	defaultSA := cfg.Defaults.DefaultServiceAccount
 	if trs.ServiceAccountName == "" && defaultSA != "" {
 		trs.ServiceAccountName = defaultSA
+	}
+
+	defaultPodTemplate := cfg.Defaults.DefaultPodTemplate
+	if trs.PodTemplate == nil {
+		trs.PodTemplate = defaultPodTemplate
 	}
 
 	// If this taskrun has an embedded task, apply the usual task defaults

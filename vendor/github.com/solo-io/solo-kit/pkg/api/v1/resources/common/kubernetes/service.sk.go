@@ -3,6 +3,10 @@
 package kubernetes
 
 import (
+	"encoding/binary"
+	"hash"
+	"hash/fnv"
+	"log"
 	"sort"
 
 	github_com_solo_io_solo_kit_api_external_kubernetes_service "github.com/solo-io/solo-kit/api/external/kubernetes/service"
@@ -40,14 +44,27 @@ func (r *Service) Clone() resources.Resource {
 	return &Service{Service: *r.Service.Clone()}
 }
 
-func (r *Service) Hash() uint64 {
+func (r *Service) Hash(hasher hash.Hash64) (uint64, error) {
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
 	clone := r.Service.Clone()
-
 	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
 		meta.ResourceVersion = ""
 	})
+	err := binary.Write(hasher, binary.LittleEndian, hashutils.HashAll(clone))
+	if err != nil {
+		return 0, err
+	}
+	return hasher.Sum64(), nil
+}
 
-	return hashutils.HashAll(clone)
+func (r *Service) MustHash() uint64 {
+	hashVal, err := r.Hash(nil)
+	if err != nil {
+		log.Panicf("error while hashing: (%s) this should never happen", err)
+	}
+	return hashVal
 }
 
 func (r *Service) GroupVersionKind() schema.GroupVersionKind {

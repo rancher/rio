@@ -21,9 +21,9 @@ import (
 	"strconv"
 	"sync/atomic"
 
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_api_v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
+	any "github.com/golang/protobuf/ptypes/any"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -116,13 +116,13 @@ func createResponse(resp *cache.Response, typeURL string) (*v2.DiscoveryResponse
 	if resp == nil {
 		return nil, errors.New("missing response")
 	}
-	resources := make([]types.Any, len(resp.Resources))
+	resources := make([]*any.Any, len(resp.Resources))
 	for i := 0; i < len(resp.Resources); i++ {
 		data, err := proto.Marshal(resp.Resources[i].ResourceProto())
 		if err != nil {
 			return nil, err
 		}
-		resources[i] = types.Any{
+		resources[i] = &any.Any{
 			TypeUrl: typeURL,
 			Value:   data,
 		}
@@ -181,7 +181,7 @@ func (s *server) process(stream Stream, reqCh <-chan *v2.DiscoveryRequest, defau
 	responses := make(chan TypedResponse)
 
 	// node may only be set on the first discovery request
-	var node = &core.Node{}
+	var node = &envoy_api_v2_core.Node{}
 	for {
 		select {
 		// config watcher can send the requested resources types in any order

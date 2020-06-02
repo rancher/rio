@@ -19,30 +19,35 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strings"
 
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"github.com/tektoncd/pipeline/pkg/apis/validate"
+	"github.com/tektoncd/pipeline/pkg/substitution"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"knative.dev/pkg/apis"
 )
 
+var _ apis.Validatable = (*Task)(nil)
+
 func (t *Task) Validate(ctx context.Context) *apis.FieldError {
-	if err := validateObjectMetadata(t.GetObjectMeta()); err != nil {
+	if err := validate.ObjectMetadata(t.GetObjectMeta()); err != nil {
 		return err.ViaField("metadata")
 	}
 	return t.Spec.Validate(ctx)
 }
 
 func (ts *TaskSpec) Validate(ctx context.Context) *apis.FieldError {
-	if equality.Semantic.DeepEqual(ts, &TaskSpec{}) {
-		return apis.ErrMissingField(apis.CurrentField)
-	}
 
 	if len(ts.Steps) == 0 {
 		return apis.ErrMissingField("steps")
 	}
 	if err := ValidateVolumes(ts.Volumes).ViaField("volumes"); err != nil {
+		return err
+	}
+	if err := validateDeclaredWorkspaces(ts.Workspaces, ts.Steps, ts.StepTemplate); err != nil {
 		return err
 	}
 	mergedSteps, err := MergeStepsWithStepTemplate(ts.StepTemplate, ts.Steps)
@@ -57,9 +62,32 @@ func (ts *TaskSpec) Validate(ctx context.Context) *apis.FieldError {
 		return err
 	}
 
+	if ts.Inputs != nil {
+		if len(ts.Inputs.Params) > 0 && len(ts.Params) > 0 {
+			return apis.ErrMultipleOneOf("inputs.params", "params")
+		}
+		if ts.Resources != nil && len(ts.Resources.Inputs) > 0 && len(ts.Inputs.Resources) > 0 {
+			return apis.ErrMultipleOneOf("inputs.resources", "resources.inputs")
+		}
+	}
+	if ts.Outputs != nil {
+		if ts.Resources != nil && len(ts.Resources.Outputs) > 0 && len(ts.Outputs.Resources) > 0 {
+			return apis.ErrMultipleOneOf("outputs.resources", "resources.outputs")
+		}
+	}
+
+	// Validate Resources declaration
+	if err := ts.Resources.Validate(ctx); err != nil {
+		return err
+	}
+	// Validate that the parameters type are correct
+	if err := v1beta1.ValidateParameterTypes(ts.Params); err != nil {
+		return err
+	}
+
 	// A task doesn't have to have inputs or outputs, but if it does they must be valid.
 	// A task can't duplicate input or output names.
-
+	// Deprecated
 	if ts.Inputs != nil {
 		for _, resource := range ts.Inputs.Resources {
 			if err := validateResourceType(resource, fmt.Sprintf("taskspec.Inputs.Resources.%s.Type", resource.Name)); err != nil {
@@ -73,6 +101,7 @@ func (ts *TaskSpec) Validate(ctx context.Context) *apis.FieldError {
 			return err
 		}
 	}
+	// Deprecated
 	if ts.Outputs != nil {
 		for _, resource := range ts.Outputs.Resources {
 			if err := validateResourceType(resource, fmt.Sprintf("taskspec.Outputs.Resources.%s.Type", resource.Name)); err != nil {
@@ -95,11 +124,59 @@ func (ts *TaskSpec) Validate(ctx context.Context) *apis.FieldError {
 		}
 	}
 
-	if err := validateInputParameterVariables(ts.Steps, ts.Inputs); err != nil {
+	if err := v1beta1.ValidateParameterVariables(ts.Steps, ts.Params); err != nil {
 		return err
 	}
-	if err := validateResourceVariables(ts.Steps, ts.Inputs, ts.Outputs); err != nil {
+	// Deprecated
+	if err := validateInputParameterVariables(ts.Steps, ts.Inputs, ts.Params); err != nil {
 		return err
+	}
+
+	if err := v1beta1.ValidateResourcesVariables(ts.Steps, ts.Resources); err != nil {
+		return err
+	}
+	// Deprecated
+	if err := validateResourceVariables(ts.Steps, ts.Inputs, ts.Outputs, ts.Resources); err != nil {
+		return err
+	}
+	return nil
+}
+
+// validateDeclaredWorkspaces will make sure that the declared workspaces do not try to use
+// a mount path which conflicts with any other declared workspaces, with the explicitly
+// declared volume mounts, or with the stepTemplate. The names must also be unique.
+func validateDeclaredWorkspaces(workspaces []WorkspaceDeclaration, steps []Step, stepTemplate *corev1.Container) *apis.FieldError {
+	mountPaths := map[string]struct{}{}
+	for _, step := range steps {
+		for _, vm := range step.VolumeMounts {
+			mountPaths[filepath.Clean(vm.MountPath)] = struct{}{}
+		}
+	}
+	if stepTemplate != nil {
+		for _, vm := range stepTemplate.VolumeMounts {
+			mountPaths[filepath.Clean(vm.MountPath)] = struct{}{}
+		}
+	}
+
+	wsNames := map[string]struct{}{}
+	for _, w := range workspaces {
+		// Workspace names must be unique
+		if _, ok := wsNames[w.Name]; ok {
+			return &apis.FieldError{
+				Message: fmt.Sprintf("workspace name %q must be unique", w.Name),
+				Paths:   []string{"workspaces.name"},
+			}
+		}
+		wsNames[w.Name] = struct{}{}
+		// Workspaces must not try to use mount paths that are already used
+		mountPath := filepath.Clean(w.GetMountPath())
+		if _, ok := mountPaths[mountPath]; ok {
+			return &apis.FieldError{
+				Message: fmt.Sprintf("workspace mount path %q must be unique", mountPath),
+				Paths:   []string{"workspaces.mountpath"},
+			}
+		}
+		mountPaths[mountPath] = struct{}{}
 	}
 	return nil
 }
@@ -122,18 +199,42 @@ func ValidateVolumes(volumes []corev1.Volume) *apis.FieldError {
 func validateSteps(steps []Step) *apis.FieldError {
 	// Task must not have duplicate step names.
 	names := map[string]struct{}{}
-	for _, s := range steps {
+	for idx, s := range steps {
 		if s.Image == "" {
 			return apis.ErrMissingField("Image")
 		}
 
-		if s.Name == "" {
-			continue
+		if s.Script != "" {
+			if len(s.Command) > 0 {
+				return &apis.FieldError{
+					Message: fmt.Sprintf("step %d script cannot be used with command", idx),
+					Paths:   []string{"script"},
+				}
+			}
 		}
-		if _, ok := names[s.Name]; ok {
-			return apis.ErrInvalidValue(s.Name, "name")
+
+		if s.Name != "" {
+			if _, ok := names[s.Name]; ok {
+				return apis.ErrInvalidValue(s.Name, "name")
+			}
+			names[s.Name] = struct{}{}
 		}
-		names[s.Name] = struct{}{}
+
+		for _, vm := range s.VolumeMounts {
+			if strings.HasPrefix(vm.MountPath, "/tekton/") &&
+				!strings.HasPrefix(vm.MountPath, "/tekton/home") {
+				return &apis.FieldError{
+					Message: fmt.Sprintf("step %d volumeMount cannot be mounted under /tekton/ (volumeMount %q mounted at %q)", idx, vm.Name, vm.MountPath),
+					Paths:   []string{"volumeMounts.mountPath"},
+				}
+			}
+			if strings.HasPrefix(vm.Name, "tekton-internal-") {
+				return &apis.FieldError{
+					Message: fmt.Sprintf(`step %d volumeMount name %q cannot start with "tekton-internal-"`, idx, vm.Name),
+					Paths:   []string{"volumeMounts.name"},
+				}
+			}
+		}
 	}
 	return nil
 }
@@ -166,10 +267,17 @@ func validateInputParameterTypes(inputs *Inputs) *apis.FieldError {
 	return nil
 }
 
-func validateInputParameterVariables(steps []Step, inputs *Inputs) *apis.FieldError {
+func validateInputParameterVariables(steps []Step, inputs *Inputs, params []v1beta1.ParamSpec) *apis.FieldError {
 	parameterNames := map[string]struct{}{}
 	arrayParameterNames := map[string]struct{}{}
 
+	for _, p := range params {
+		parameterNames[p.Name] = struct{}{}
+		if p.Type == ParamTypeArray {
+			arrayParameterNames[p.Name] = struct{}{}
+		}
+	}
+	// Deprecated
 	if inputs != nil {
 		for _, p := range inputs.Params {
 			parameterNames[p.Name] = struct{}{}
@@ -185,21 +293,26 @@ func validateInputParameterVariables(steps []Step, inputs *Inputs) *apis.FieldEr
 	return validateArrayUsage(steps, "params", arrayParameterNames)
 }
 
-func validateResourceVariables(steps []Step, inputs *Inputs, outputs *Outputs) *apis.FieldError {
+func validateResourceVariables(steps []Step, inputs *Inputs, outputs *Outputs, resources *v1beta1.TaskResources) *apis.FieldError {
 	resourceNames := map[string]struct{}{}
+	if resources != nil {
+		for _, r := range resources.Inputs {
+			resourceNames[r.Name] = struct{}{}
+		}
+		for _, r := range resources.Outputs {
+			resourceNames[r.Name] = struct{}{}
+		}
+	}
+	// Deprecated
 	if inputs != nil {
 		for _, r := range inputs.Resources {
 			resourceNames[r.Name] = struct{}{}
 		}
 	}
+	// Deprecated
 	if outputs != nil {
 		for _, r := range outputs.Resources {
 			resourceNames[r.Name] = struct{}{}
-			if r.Type == PipelineResourceTypeImage {
-				if r.OutputImageDir == "" {
-					return apis.ErrMissingField("OutputImageDir")
-				}
-			}
 		}
 	}
 	return validateVariables(steps, "resources", resourceNames)
@@ -288,15 +401,15 @@ func validateVariables(steps []Step, prefix string, vars map[string]struct{}) *a
 }
 
 func validateTaskVariable(name, value, prefix string, vars map[string]struct{}) *apis.FieldError {
-	return ValidateVariable(name, value, prefix, "(?:inputs|outputs).", "step", "taskspec.steps", vars)
+	return substitution.ValidateVariable(name, value, "(?:inputs|outputs)."+prefix, "step", "taskspec.steps", vars)
 }
 
 func validateTaskNoArrayReferenced(name, value, prefix string, arrayNames map[string]struct{}) *apis.FieldError {
-	return ValidateVariableProhibited(name, value, prefix, "(?:inputs|outputs).", "step", "taskspec.steps", arrayNames)
+	return substitution.ValidateVariableProhibited(name, value, "(?:inputs|outputs)."+prefix, "step", "taskspec.steps", arrayNames)
 }
 
 func validateTaskArraysIsolated(name, value, prefix string, arrayNames map[string]struct{}) *apis.FieldError {
-	return ValidateVariableIsolated(name, value, prefix, "(?:inputs|outputs).", "step", "taskspec.steps", arrayNames)
+	return substitution.ValidateVariableIsolated(name, value, "(?:inputs|outputs)."+prefix, "step", "taskspec.steps", arrayNames)
 }
 
 func checkForDuplicates(resources []TaskResource, path string) *apis.FieldError {

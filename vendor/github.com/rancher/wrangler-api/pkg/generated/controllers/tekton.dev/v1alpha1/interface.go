@@ -19,13 +19,14 @@ limitations under the License.
 package v1alpha1
 
 import (
-	clientset "github.com/rancher/wrangler-api/pkg/generated/clientset/versioned/typed/pipeline/v1alpha1"
-	informers "github.com/rancher/wrangler-api/pkg/generated/informers/externalversions/pipeline/v1alpha1"
 	"github.com/rancher/wrangler/pkg/generic"
 	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	clientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/typed/pipeline/v1alpha1"
+	informers "github.com/tektoncd/pipeline/pkg/client/informers/externalversions/pipeline/v1alpha1"
 )
 
 type Interface interface {
+	Task() TaskController
 	TaskRun() TaskRunController
 }
 
@@ -44,6 +45,9 @@ type version struct {
 	client            clientset.TektonV1alpha1Interface
 }
 
+func (c *version) Task() TaskController {
+	return NewTaskController(v1alpha1.SchemeGroupVersion.WithKind("Task"), c.controllerManager, c.client, c.informers.Tasks())
+}
 func (c *version) TaskRun() TaskRunController {
 	return NewTaskRunController(v1alpha1.SchemeGroupVersion.WithKind("TaskRun"), c.controllerManager, c.client, c.informers.TaskRuns())
 }

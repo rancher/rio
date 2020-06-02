@@ -402,11 +402,6 @@ func (list InputResourceList) AsResourceList() ResourceList {
 	return resources
 }
 
-type HashableResource interface {
-	Resource
-	Hash() uint64
-}
-
 type CloneableResource interface {
 	Resource
 	Clone() Resource

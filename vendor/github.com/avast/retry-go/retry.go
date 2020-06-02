@@ -77,11 +77,11 @@ func Do(retryableFunc RetryableFunc, opts ...Option) error {
 	var n uint
 
 	//default
-	config := &config{
+	config := &Config{
 		attempts:      10,
 		delay:         100 * time.Millisecond,
 		onRetry:       func(n uint, err error) {},
-		retryIf:       func(err error) bool { return true },
+		retryIf:       IsRecoverable,
 		delayType:     BackOffDelay,
 		lastErrorOnly: false,
 	}
@@ -91,18 +91,25 @@ func Do(retryableFunc RetryableFunc, opts ...Option) error {
 		opt(config)
 	}
 
-	errorLog := make(Error, config.attempts)
+	var errorLog Error
+	if !config.lastErrorOnly {
+		errorLog = make(Error, config.attempts)
+	} else {
+		errorLog = make(Error, 1)
+	}
 
+	lastErrIndex := n
 	for n < config.attempts {
 		err := retryableFunc()
 
 		if err != nil {
-			config.onRetry(n, err)
-			errorLog[n] = err
+			errorLog[lastErrIndex] = unpackUnrecoverable(err)
 
 			if !config.retryIf(err) {
 				break
 			}
+
+			config.onRetry(n, err)
 
 			// if this is last attempt - don't wait
 			if n == config.attempts-1 {
@@ -116,10 +123,13 @@ func Do(retryableFunc RetryableFunc, opts ...Option) error {
 		}
 
 		n++
+		if !config.lastErrorOnly {
+			lastErrIndex = n
+		}
 	}
 
 	if config.lastErrorOnly {
-		return errorLog[n]
+		return errorLog[lastErrIndex]
 	}
 	return errorLog
 }
@@ -156,4 +166,27 @@ func lenWithoutNil(e Error) (count int) {
 // `retry.Error` can be used with that library.
 func (e Error) WrappedErrors() []error {
 	return e
+}
+
+type unrecoverableError struct {
+	error
+}
+
+// Unrecoverable wraps an error in `unrecoverableError` struct
+func Unrecoverable(err error) error {
+	return unrecoverableError{err}
+}
+
+// IsRecoverable checks if error is an instance of `unrecoverableError`
+func IsRecoverable(err error) bool {
+	_, isUnrecoverable := err.(unrecoverableError)
+	return !isUnrecoverable
+}
+
+func unpackUnrecoverable(err error) error {
+	if unrecoverable, isUnrecoverable := err.(unrecoverableError); isUnrecoverable {
+		return unrecoverable.error
+	}
+
+	return err
 }

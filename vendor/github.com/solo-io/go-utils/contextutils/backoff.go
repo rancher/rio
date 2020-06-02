@@ -2,9 +2,10 @@ package contextutils
 
 import (
 	"context"
-	"errors"
 	"math/rand"
 	"time"
+
+	"github.com/rotisserie/eris"
 )
 
 const (
@@ -69,7 +70,7 @@ func (e *exponentioalBackoff) Backoff(ctx context.Context, f func(ctx context.Co
 		}
 		LoggerFrom(ctx).Debugf("error in exponential backoff: %v", err)
 		if e.MaxRetries != 0 && retries > e.MaxRetries {
-			return errors.New("max retries exceeded")
+			return eris.New("max retries exceeded")
 		}
 		timetosleep := e.calcTimeToSleep(retries)
 		retries++

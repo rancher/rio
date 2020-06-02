@@ -19,10 +19,10 @@ limitations under the License.
 package tekton
 
 import (
-	clientset "github.com/rancher/wrangler-api/pkg/generated/clientset/versioned"
 	v1alpha1 "github.com/rancher/wrangler-api/pkg/generated/controllers/tekton.dev/v1alpha1"
-	informers "github.com/rancher/wrangler-api/pkg/generated/informers/externalversions/pipeline"
 	"github.com/rancher/wrangler/pkg/generic"
+	clientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
+	informers "github.com/tektoncd/pipeline/pkg/client/informers/externalversions/pipeline"
 )
 
 type Interface interface {

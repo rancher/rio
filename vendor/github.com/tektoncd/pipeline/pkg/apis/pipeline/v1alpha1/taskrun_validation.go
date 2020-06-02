@@ -21,13 +21,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/tektoncd/pipeline/pkg/apis/validate"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
 )
 
+var _ apis.Validatable = (*TaskRun)(nil)
+
 // Validate taskrun
 func (tr *TaskRun) Validate(ctx context.Context) *apis.FieldError {
-	if err := validateObjectMetadata(tr.GetObjectMeta()).ViaField("metadata"); err != nil {
+	if err := validate.ObjectMetadata(tr.GetObjectMeta()).ViaField("metadata"); err != nil {
 		return err
 	}
 	return tr.Spec.Validate(ctx)
@@ -56,13 +59,31 @@ func (ts *TaskRunSpec) Validate(ctx context.Context) *apis.FieldError {
 		}
 	}
 
+	// Deprecated
 	// check for input resources
-	if err := ts.Inputs.Validate(ctx, "spec.Inputs"); err != nil {
+	if ts.Inputs != nil {
+		if err := ts.Inputs.Validate(ctx, "spec.Inputs"); err != nil {
+			return err
+		}
+	}
+
+	// Deprecated
+	// check for output resources
+	if ts.Outputs != nil {
+		if err := ts.Outputs.Validate(ctx, "spec.Outputs"); err != nil {
+			return err
+		}
+	}
+
+	// Validate Resources
+	if err := ts.Resources.Validate(ctx); err != nil {
 		return err
 	}
 
-	// check for output resources
-	if err := ts.Outputs.Validate(ctx, "spec.Outputs"); err != nil {
+	if err := validateWorkspaceBindings(ctx, ts.Workspaces); err != nil {
+		return err
+	}
+	if err := validateParameters(ts.Params); err != nil {
 		return err
 	}
 
@@ -87,6 +108,23 @@ func (o TaskRunOutputs) Validate(ctx context.Context, path string) *apis.FieldEr
 	return validatePipelineResources(ctx, o.Resources, fmt.Sprintf("%s.Resources.Name", path))
 }
 
+// validateWorkspaceBindings makes sure the volumes provided for the Task's declared workspaces make sense.
+func validateWorkspaceBindings(ctx context.Context, wb []WorkspaceBinding) *apis.FieldError {
+	seen := map[string]struct{}{}
+	for _, w := range wb {
+		if _, ok := seen[w.Name]; ok {
+			return apis.ErrMultipleOneOf("spec.workspaces.name")
+		}
+		seen[w.Name] = struct{}{}
+
+		if err := w.Validate(ctx); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // validatePipelineResources validates that
 //	1. resource is not declared more than once
 //	2. if both resource reference and resource spec is defined at the same time
@@ -101,11 +139,11 @@ func validatePipelineResources(ctx context.Context, resources []TaskResourceBind
 		}
 		encountered[name] = struct{}{}
 		// Check that both resource ref and resource Spec are not present
-		if r.ResourceRef.Name != "" && r.ResourceSpec != nil {
+		if r.ResourceRef != nil && r.ResourceSpec != nil {
 			return apis.ErrDisallowedFields(fmt.Sprintf("%s.ResourceRef", path), fmt.Sprintf("%s.ResourceSpec", path))
 		}
 		// Check that one of resource ref and resource Spec is present
-		if r.ResourceRef.Name == "" && r.ResourceSpec == nil {
+		if (r.ResourceRef == nil || r.ResourceRef.Name == "") && r.ResourceSpec == nil {
 			return apis.ErrMissingField(fmt.Sprintf("%s.ResourceRef", path), fmt.Sprintf("%s.ResourceSpec", path))
 		}
 		if r.ResourceSpec != nil && r.ResourceSpec.Validate(ctx) != nil {
