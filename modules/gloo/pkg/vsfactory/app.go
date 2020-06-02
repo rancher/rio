@@ -4,9 +4,12 @@ import (
 	"sort"
 	"time"
 
+	"strings"
+
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	solov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	istiov1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
 )
 
 func (f *VirtualServiceFactory) ForApp(namespace, appName string, svcs []*riov1.Service) ([]*solov1.VirtualService, error) {
@@ -19,7 +22,7 @@ func (f *VirtualServiceFactory) ForApp(namespace, appName string, svcs []*riov1.
 		return nil, nil
 	}
 
-	vs := newVirtualService(namespace, appName, hostnames, targets...)
+	vs := newGlooVirtualService(namespace, appName, hostnames, targets...)
 	sort.Slice(svcs, func(i, j int) bool {
 		if svcs[i].Spec.Weight == nil || svcs[j].Spec.Weight == nil {
 			return false
@@ -35,9 +38,7 @@ func (f *VirtualServiceFactory) ForApp(namespace, appName string, svcs []*riov1.
 		vs.Spec.VirtualHost.Routes[0].Options.Timeout = &t
 	}
 
-	if err := f.InjectACME(vs); err != nil {
-		return nil, err
-	}
+	f.InjectACME(vs)
 
 	result := []*solov1.VirtualService{
 		vs,
@@ -49,8 +50,38 @@ func (f *VirtualServiceFactory) ForApp(namespace, appName string, svcs []*riov1.
 	}
 
 	for hostname, tls := range tls {
-		result = append(result, tlsCopy(hostname, f.systemNamespace, tls, vs))
+		if _, err := f.secretCache.Get(f.systemNamespace, tls); err == nil {
+			result = append(result, tlsCopy(hostname, f.systemNamespace, tls, vs))
+		}
 	}
 
 	return result, nil
+}
+
+func (f *VirtualServiceFactory) ForAppIstio(namespace, appName string, svcs []*riov1.Service) (*istiov1alpha3.VirtualService, *istiov1alpha3.DestinationRule, error) {
+	hostnames, targets, err := f.getTargetsForApp(svcs, f.systemNamespace)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if len(hostnames) == 0 {
+		return nil, nil, nil
+	}
+
+	vs := newIstioVirtualService(namespace, appName, stripPorts(hostnames), targets...)
+	f.InjectACMEIstio(vs)
+	dest := newIstioDestinationRule(namespace, appName, targets...)
+	return vs, dest, nil
+}
+
+func stripPorts(hostnames []string) (result []string) {
+	seen := map[string]bool{}
+	for _, hostname := range hostnames {
+		host := strings.SplitN(hostname, ":", 2)[0]
+		if !seen[host] {
+			seen[host] = true
+			result = append(result, host)
+		}
+	}
+	return result
 }

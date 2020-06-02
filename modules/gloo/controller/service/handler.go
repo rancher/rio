@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/rancher/rio/modules/gloo/pkg/vsfactory"
-
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	rioadminv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	riov1controller "github.com/rancher/rio/pkg/generated/controllers/rio.cattle.io/v1"

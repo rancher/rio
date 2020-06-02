@@ -23,7 +23,8 @@ func getCRDs() []crd.CRD {
 
 	crds = append(crds,
 		newClusterCRD("ClusterDomain.admin.rio.cattle.io/v1", rioadminv1.ClusterDomain{}),
-		newClusterCRD("PublicDomain.admin.rio.cattle.io/v1", rioadminv1.PublicDomain{}))
+		newClusterCRD("PublicDomain.admin.rio.cattle.io/v1", rioadminv1.PublicDomain{}),
+		newClusterCRD("Certificate.admin.rio.cattle.io/v1", rioadminv1.Certificate{}))
 
 	crds = append(crds, crd.NonNamespacedTypes(
 		"RioInfo.admin.rio.cattle.io/v1",

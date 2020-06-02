@@ -5,12 +5,11 @@ import (
 	"io"
 	"os"
 
-	v3 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/management.cattle.io/v3"
-
 	"github.com/pkg/errors"
 	webhookv1 "github.com/rancher/gitwatcher/pkg/generated/clientset/versioned/typed/gitwatcher.cattle.io/v1"
 	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	projectv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/admin.rio.cattle.io/v1"
+	v3 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/management.cattle.io/v3"
 	riov1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/rio.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/kubeconfig"

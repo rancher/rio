@@ -11,11 +11,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rancher/wrangler/pkg/condition"
+
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	tektonv1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	apis "knative.dev/pkg/apis"
 )
 
 type TestService struct {
@@ -743,7 +744,7 @@ func (ts *TestService) waitForBuild() error {
 			if ts.Service.Spec.Template {
 				return true, nil
 			}
-			if ts.Build.Status.GetCondition(apis.ConditionSucceeded) != nil && ts.Build.Status.GetCondition(apis.ConditionSucceeded).IsTrue() {
+			if condition.Cond("Succeeded").IsTrue(&ts.Build) {
 				return true, nil
 			}
 		}

@@ -156,6 +156,9 @@ type Match struct {
 	//    regex: "value" for ECMAscript style regex-based match
 	Path *StringMatch `json:"path,omitempty"`
 
+	// Schema defines schema based match
+	Schema *StringMatch `json:"schema,omitempty"`
+
 	// HTTP Method values are case-sensitive and formatted as follows:
 	//
 	//    exact: "value" for exact string match

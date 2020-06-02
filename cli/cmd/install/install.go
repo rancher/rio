@@ -55,6 +55,7 @@ func (i *Install) Run(ctx *clicontext.CLIContext) error {
 		"RIO_DEBUG":         strconv.FormatBool(i.EnableDebug),
 		"IMAGE":             fmt.Sprintf("%s:%s", constants.ControllerImage, constants.ControllerImageTag),
 		"RUN_API_VALIDATOR": "\"TRUE\"",
+		"MESH_MODE":         "linkerd",
 	}
 	bootstrapStack.WithAnswer(answers)
 	controllerStack.WithAnswer(answers)
@@ -293,7 +294,7 @@ func (i *Install) configureNamespace(ctx *clicontext.CLIContext, systemStack *st
 var checkFeatures = map[string][]string{
 	"gloo":        {"gateway", "gateway-proxy", "gloo"},
 	"build":       {"buildkitd", "webhook", "tekton-pipelines/tekton-pipelines-webhook", "tekton-pipelines/tekton-pipelines-controller"},
-	"letsencrypt": {"cert-manager"},
+	"letsencrypt": {},
 	"autoscaling": {"autoscaler"},
 	"linkerd":     {"linkerd/linkerd-identity", "linkerd/linkerd-tap", "linkerd/linkerd-sp-validator", "linkerd/linkerd-proxy-injector", "linkerd/linkerd-controller", "linkerd/linkerd-grafana", "linkerd/linkerd-web", "linkerd/linkerd-destination", "linkerd/linkerd-prometheus"},
 }

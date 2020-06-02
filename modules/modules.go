@@ -3,6 +3,8 @@ package modules
 import (
 	"context"
 
+	"github.com/rancher/rio/modules/istio"
+
 	"github.com/rancher/rio/modules/autoscale"
 	"github.com/rancher/rio/modules/build"
 	"github.com/rancher/rio/modules/dashboard"
@@ -52,6 +54,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		return err
 	}
 	if err := ingress.Register(ctx, rContext); err != nil {
+		return err
+	}
+	if err := istio.Register(ctx, rContext); err != nil {
 		return err
 	}
 	return nil

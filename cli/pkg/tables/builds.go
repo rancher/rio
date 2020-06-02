@@ -65,7 +65,7 @@ func findRevision(data interface{}) (string, error) {
 	if !ok {
 		return "", nil
 	}
-	for _, param := range m.Spec.Inputs.Resources[0].ResourceSpec.Params {
+	for _, param := range m.Spec.Resources.Inputs[0].PipelineResourceBinding.ResourceSpec.Params {
 		if param.Name == "revision" {
 			return param.Value, nil
 		}

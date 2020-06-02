@@ -1,59 +1,77 @@
 package vsfactory
 
 import (
-	"strings"
+	"fmt"
 
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rio/pkg/constants"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	solov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"k8s.io/apimachinery/pkg/labels"
+	"istio.io/api/networking/v1alpha3"
+	istiov1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
 )
 
-func (f *VirtualServiceFactory) InjectACME(vs *solov1.VirtualService) error {
+func (f *VirtualServiceFactory) InjectACME(vs *solov1.VirtualService) {
 	for _, domain := range vs.Spec.VirtualHost.Domains {
-		ingresses, err := f.ingresses.List(f.systemNamespace, labels.Everything())
-		if err != nil {
-			return err
-		}
-		for _, ing := range ingresses {
-			if len(ing.OwnerReferences) > 0 && strings.HasPrefix(ing.OwnerReferences[0].Name, domain) && len(ing.Spec.Rules) > 0 {
-				if len(ing.Spec.Rules) > 0 && ing.Spec.Rules[0].HTTP != nil && len(ing.Spec.Rules[0].HTTP.Paths) > 0 {
-					logrus.Infof("injecting acme http-01 path for domain %s", domain)
-					vs.Spec.VirtualHost.Routes = append([]*gatewayv1.Route{
+		if _, err := f.publicDomainCache.Get(domain); err == nil {
+			vs.Spec.VirtualHost.Routes = append([]*gatewayv1.Route{
+				{
+					Matchers: []*matchers.Matcher{
 						{
-							Matchers: []*matchers.Matcher{
-								{
-									PathSpecifier: &matchers.Matcher_Exact{
-										Exact: ing.Spec.Rules[0].HTTP.Paths[0].Path,
-									},
-								},
+							PathSpecifier: &matchers.Matcher_Prefix{
+								Prefix: "/.well-known/acme-challenge",
 							},
-							Action: &gatewayv1.Route_RouteAction{
-								RouteAction: &v1.RouteAction{
-									Destination: &v1.RouteAction_Single{
-										Single: &v1.Destination{
-											DestinationType: &v1.Destination_Kube{
-												Kube: &v1.KubernetesServiceDestination{
-													Ref: core.ResourceRef{
-														Name:      ing.Spec.Rules[0].HTTP.Paths[0].Backend.ServiceName,
-														Namespace: ing.Namespace,
-													},
-													Port: uint32(ing.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal),
-												},
+						},
+					},
+					Action: &gatewayv1.Route_RouteAction{
+						RouteAction: &v1.RouteAction{
+							Destination: &v1.RouteAction_Single{
+								Single: &v1.Destination{
+									DestinationType: &v1.Destination_Kube{
+										Kube: &v1.KubernetesServiceDestination{
+											Ref: core.ResourceRef{
+												Name:      constants.AcmeSolverServicName,
+												Namespace: f.systemNamespace,
 											},
+											Port: 8080,
 										},
 									},
 								},
 							},
 						},
-					}, vs.Spec.VirtualHost.Routes...)
-				}
-
-			}
+					},
+				},
+			}, vs.Spec.VirtualHost.Routes...)
 		}
 	}
-	return nil
+	return
+}
+
+func (f *VirtualServiceFactory) InjectACMEIstio(vs *istiov1alpha3.VirtualService) {
+	for _, domain := range vs.Spec.Hosts {
+		if _, err := f.publicDomainCache.Get(domain); err == nil {
+			vs.Spec.Http = append([]*v1alpha3.HTTPRoute{
+				{
+					Match: []*v1alpha3.HTTPMatchRequest{
+						{
+							Uri: &v1alpha3.StringMatch{
+								MatchType: &v1alpha3.StringMatch_Prefix{
+									Prefix: "/.well-known/acme-challenge",
+								},
+							},
+						},
+					},
+					Route: []*v1alpha3.HTTPRouteDestination{
+						{
+							Destination: &v1alpha3.Destination{
+								Host: fmt.Sprintf("%s.%s.svc.cluster.local", constants.AcmeSolverServicName, f.systemNamespace),
+							},
+						},
+					},
+				},
+			}, vs.Spec.Http...)
+		}
+	}
 }

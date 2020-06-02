@@ -1,7 +1,6 @@
 package stack
 
 import (
-	adminv1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	adminv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/riofile"
 	"github.com/rancher/rio/pkg/template"
@@ -9,7 +8,6 @@ import (
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/objectset"
 	"github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
@@ -31,17 +29,19 @@ func NewSystemStack(apply apply.Apply, stacks adminv1controller.SystemStackClien
 		name:   name,
 		Stack:  Stack{},
 	}
-	if stacks != nil {
-		stack, err := stacks.Get(name, metav1.GetOptions{})
-		if errors.IsNotFound(err) {
-			stack, _ = stacks.Create(&adminv1.SystemStack{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: name,
-				},
-			})
-		}
-		s.apply = s.apply.WithSetOwnerReference(true, true).WithOwner(stack)
-	}
+	// todo: figure out owner reference doesn't work with tekton and k8s 1.17
+	//if stacks != nil {
+	//	stack, err := stacks.Get(name, metav1.GetOptions{})
+	//	if errors.IsNotFound(err) {
+	//		stack, _ = stacks.Create(&adminv1.SystemStack{
+	//			ObjectMeta: metav1.ObjectMeta{
+	//				Name: name,
+	//			},
+	//		})
+	//	}
+	//
+	//	s.apply = s.apply.WithSetOwnerReference(true, true).WithOwner(stack)
+	//}
 	contents, err := s.content()
 	if err != nil {
 		logrus.Fatal(err)

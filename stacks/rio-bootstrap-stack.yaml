@@ -201,6 +201,12 @@ kubernetes:
       - podsecuritypolicies
       verbs:
       - use
+    - apiGroups:
+      - networking.istio.io
+      resources:
+      - '*'
+      verbs:
+      - '*'
     ---
     apiVersion: rbac.authorization.k8s.io/v1
     kind: ClusterRoleBinding
@@ -238,6 +244,20 @@ kubernetes:
         port: 443
         protocol: TCP
         targetPort: 443
+      selector:
+        rio-controller: "true"
+    ---
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: rio-acme-solver
+      namespace: ${NAMESPACE}
+    spec:
+      ports:
+      - name: http-8080
+        port: 8080
+        protocol: TCP
+        targetPort: 8080
       selector:
         rio-controller: "true"
     ---
@@ -307,6 +327,12 @@ kubernetes:
       - "*"
       verbs:
       - "*"
+    - apiGroups:
+      - networking.istio.io
+      resources:
+      - '*'
+      verbs:
+      - '*'
     ---
     apiVersion: rbac.authorization.k8s.io/v1
     kind: ClusterRole

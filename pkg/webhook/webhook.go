@@ -8,12 +8,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rancher/rio/pkg/config"
-
 	"github.com/linkerd/linkerd2/controller/k8s"
 	"github.com/linkerd/linkerd2/controller/webhook"
 	"github.com/linkerd/linkerd2/pkg/tls"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
+	"github.com/rancher/rio/pkg/config"
 	"github.com/rancher/rio/pkg/constants"
 	"github.com/rancher/rio/types"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"

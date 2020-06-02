@@ -24,6 +24,8 @@ type target struct {
 	Hosts          []string
 	Port           int32
 	Name           string
+	App            string
+	Version        string
 	Namespace      string
 	Weight         int
 	ScaleIsZero    bool
@@ -42,6 +44,8 @@ func (f *VirtualServiceFactory) getTarget(obj *riov1.Service, systemNamespace st
 	app, version := services.AppAndVersion(obj)
 	result.Name = name.SafeConcatName(app, version)
 	result.Namespace = obj.Namespace
+	result.Version = version
+	result.App = app
 	if obj.Status.ComputedWeight != nil {
 		result.Weight = *obj.Status.ComputedWeight
 	} else if obj.Spec.Weight != nil {
@@ -77,7 +81,6 @@ func (f *VirtualServiceFactory) getTarget(obj *riov1.Service, systemNamespace st
 			result.Name = constants.AutoscalerServiceName
 			result.Namespace = systemNamespace
 		}
-
 	}
 
 	return
@@ -149,11 +152,10 @@ func (f *VirtualServiceFactory) getTargetsForApp(svcs []*riov1.Service, systemNa
 				return nil, nil, err
 			}
 			hostname := u.Host
-			if seen[hostname] {
-				continue
+			if !seen[hostname] {
+				seen[hostname] = true
+				hostnames = append(hostnames, hostname)
 			}
-			seen[hostname] = true
-			hostnames = append(hostnames, hostname)
 		}
 		if target.Weight != 0 {
 			weightSet = true
@@ -164,6 +166,20 @@ func (f *VirtualServiceFactory) getTargetsForApp(svcs []*riov1.Service, systemNa
 	if !weightSet {
 		for i := range targets {
 			targets[i].Weight = 1
+		}
+	} else {
+		totalWeight := 0
+		for i := range targets {
+			totalWeight += targets[i].Weight
+		}
+		addedWeight := 0
+		for i := range targets {
+			if i == len(targets)-1 {
+				targets[i].Weight = 100 - addedWeight
+				break
+			}
+			targets[i].Weight = int(float64(targets[i].Weight) / float64(totalWeight) * 100)
+			addedWeight += targets[i].Weight
 		}
 	}
 

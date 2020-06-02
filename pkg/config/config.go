@@ -24,6 +24,8 @@ type ControllerConfig struct {
 	WebhookHost            string
 	IPAddresses            string
 	Features               string
+	MeshMode               string
+	Gateway                Gateway
 }
 
 type Config struct {

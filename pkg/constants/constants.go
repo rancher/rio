@@ -4,6 +4,9 @@ const (
 	AuthWebhookSecretName  = "rio-api-validator"
 	AuthWebhookServiceName = "rio-api-validator"
 
+	IstioRioGateway      = "rio-gateway"
+	IstioSystemNamespace = "istio-system"
+
 	DevWebhookPort   = ":7443"
 	RegistryService  = "localhost:80"
 	LocalRegistry    = "localhost:5442"
@@ -23,6 +26,10 @@ const (
 
 	GitCommitLabel = "gitwatcher.rio.cattle.io/git-commit"
 	LogTokenLabel  = "gitwatcher.rio.cattle.io/log-token"
+
+	LetsEncryptAccountSecretName = "letsencrypt-account"
+
+	AcmeSolverServicName = "rio-acme-solver"
 )
 
 var (
