@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Tekton Authors
+Copyright 2019-2020 The Tekton Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,15 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
-	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 )
-
-// Check that Task may be validated and defaulted.
-var _ apis.Validatable = (*Condition)(nil)
-var _ apis.Defaultable = (*Condition)(nil)
 
 // +genclient
 // +genclient:noStatus
@@ -45,29 +40,22 @@ type Condition struct {
 }
 
 // ConditionCheckStatus defines the observed state of ConditionCheck
-type ConditionCheckStatus struct {
-	duckv1beta1.Status `json:",inline"`
+type ConditionCheckStatus = v1beta1.ConditionCheckStatus
 
-	// PodName is the name of the pod responsible for executing this condition check.
-	PodName string `json:"podName"`
-
-	// StartTime is the time the check is actually started.
-	// +optional
-	StartTime *metav1.Time `json:"startTime,omitempty"`
-
-	// CompletionTime is the time the check pod completed.
-	// +optional
-	CompletionTime *metav1.Time `json:"completionTime,omitempty"`
-
-	// Check describes the state of the check container.
-	// +optional
-	Check corev1.ContainerState `json:"check,omitempty"`
-}
+// ConditionCheckStatusFields holds the fields of ConfigurationCheck's status.
+// This is defined separately and inlined so that other types can readily
+// consume these fields via duck typing.
+type ConditionCheckStatusFields = v1beta1.ConditionCheckStatusFields
 
 // ConditionSpec defines the desired state of the Condition
 type ConditionSpec struct {
 	// Check declares container whose exit code determines where a condition is true or false
-	Check corev1.Container `json:"check,omitempty"`
+	Check Step `json:"check,omitempty"`
+
+	// Description is a user-facing description of the condition that may be
+	// used to populate a UI.
+	// +optional
+	Description string `json:"description,omitempty"`
 
 	// Params is an optional set of parameters which must be supplied by the user when a Condition
 	// is evaluated

@@ -29,15 +29,11 @@ func (in *Resource) DeepCopyInto(out *Resource) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
-	out.Status = in.Status
+	in.Status.DeepCopyInto(&out.Status)
 	if in.Spec != nil {
 		in, out := &in.Spec, &out.Spec
-		if *in == nil {
-			*out = nil
-		} else {
-			x := (*in).DeepCopy()
-			*out = &x
-		}
+		x := (*in).DeepCopy()
+		*out = &x
 	}
 	return
 }
@@ -64,7 +60,7 @@ func (in *Resource) DeepCopyObject() runtime.Object {
 func (in *ResourceList) DeepCopyInto(out *ResourceList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Resource, len(*in))

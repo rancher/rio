@@ -27,7 +27,9 @@ import (
 	adminriocattleio "github.com/rancher/rio/pkg/generated/informers/externalversions/admin.rio.cattle.io"
 	internalinterfaces "github.com/rancher/rio/pkg/generated/informers/externalversions/internalinterfaces"
 	managementcattleio "github.com/rancher/rio/pkg/generated/informers/externalversions/management.cattle.io"
+	networking "github.com/rancher/rio/pkg/generated/informers/externalversions/networking"
 	riocattleio "github.com/rancher/rio/pkg/generated/informers/externalversions/rio.cattle.io"
+	split "github.com/rancher/rio/pkg/generated/informers/externalversions/split"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -176,7 +178,9 @@ type SharedInformerFactory interface {
 
 	Admin() adminriocattleio.Interface
 	Management() managementcattleio.Interface
+	Networking() networking.Interface
 	Rio() riocattleio.Interface
+	Split() split.Interface
 }
 
 func (f *sharedInformerFactory) Admin() adminriocattleio.Interface {
@@ -187,6 +191,14 @@ func (f *sharedInformerFactory) Management() managementcattleio.Interface {
 	return managementcattleio.New(f, f.namespace, f.tweakListOptions)
 }
 
+func (f *sharedInformerFactory) Networking() networking.Interface {
+	return networking.New(f, f.namespace, f.tweakListOptions)
+}
+
 func (f *sharedInformerFactory) Rio() riocattleio.Interface {
 	return riocattleio.New(f, f.namespace, f.tweakListOptions)
+}
+
+func (f *sharedInformerFactory) Split() split.Interface {
+	return split.New(f, f.namespace, f.tweakListOptions)
 }

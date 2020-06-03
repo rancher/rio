@@ -85,7 +85,7 @@ now implement via functions produces Options (aka `retry.OnRetry`)
 #### func  BackOffDelay
 
 ```go
-func BackOffDelay(n uint, config *config) time.Duration
+func BackOffDelay(n uint, config *Config) time.Duration
 ```
 BackOffDelay is a DelayType which increases delay between consecutive retries
 
@@ -98,14 +98,36 @@ func Do(retryableFunc RetryableFunc, opts ...Option) error
 #### func  FixedDelay
 
 ```go
-func FixedDelay(_ uint, config *config) time.Duration
+func FixedDelay(_ uint, config *Config) time.Duration
 ```
 FixedDelay is a DelayType which keeps delay the same through all iterations
+
+#### func  IsRecoverable
+
+```go
+func IsRecoverable(err error) bool
+```
+IsRecoverable checks if error is an instance of `unrecoverableError`
+
+#### func  Unrecoverable
+
+```go
+func Unrecoverable(err error) unrecoverableError
+```
+Unrecoverable wraps an error in `unrecoverableError` struct
+
+#### type Config
+
+```go
+type Config struct {
+}
+```
+
 
 #### type DelayTypeFunc
 
 ```go
-type DelayTypeFunc func(n uint, config *config) time.Duration
+type DelayTypeFunc func(n uint, config *Config) time.Duration
 ```
 
 
@@ -146,7 +168,7 @@ Function signature of OnRetry function n = count of attempts
 #### type Option
 
 ```go
-type Option func(*config)
+type Option func(*Config)
 ```
 
 Option represents an option for retry.
@@ -171,6 +193,14 @@ Delay set delay between retry default is 100ms
 func DelayType(delayType DelayTypeFunc) Option
 ```
 DelayType set type of the delay between retries default is BackOff
+
+#### func  LastErrorOnly
+
+```go
+func LastErrorOnly(lastErrorOnly bool) Option
+```
+return the direct last error that came from the retried function default is
+false (return wrapped errors with everything)
 
 #### func  OnRetry
 
@@ -210,6 +240,15 @@ skip retry if special error example:
     		}
     		return true
     	})
+    )
+
+The default RetryIf stops execution if the error is wrapped using
+`retry.Unrecoverable`, so above example may also be shortened to:
+
+    retry.Do(
+    	func() error {
+    		return retry.Unrecoverable(errors.New("special error"))
+    	}
     )
 
 #### type RetryIfFunc

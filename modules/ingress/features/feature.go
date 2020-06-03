@@ -25,7 +25,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 
 	// if running in arm or gloo feature is not enabled, enable ingress
 	enabled := false
-	if !arch.IsAmd64() || (cfg.Features["gloo"].Enabled != nil && !*cfg.Features["gloo"].Enabled) {
+	if !arch.IsAmd64() || (!featureEnabled(cfg, "gloo") && !featureEnabled(cfg, "istio")) {
 		enabled = true
 	}
 	feature := &features.FeatureController{
@@ -40,4 +40,11 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		},
 	}
 	return feature.Register()
+}
+
+func featureEnabled(cfg config.Config, name string) bool {
+	if cfg.Features[name].Enabled != nil {
+		return *cfg.Features[name].Enabled
+	}
+	return false
 }

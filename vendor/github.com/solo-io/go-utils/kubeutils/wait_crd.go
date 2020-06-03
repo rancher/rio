@@ -4,7 +4,8 @@ import (
 	"time"
 
 	"github.com/avast/retry-go"
-	"github.com/solo-io/go-utils/errors"
+	"github.com/pkg/errors"
+	"github.com/rotisserie/eris"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,7 +29,7 @@ func WaitForCrdActive(apiexts apiexts.Interface, crdName string) error {
 		}
 
 		if !established {
-			return errors.Errorf("crd %v exists but not yet established by kube", crdName)
+			return eris.Errorf("crd %v exists but not yet established by kube", crdName)
 		}
 
 		return nil

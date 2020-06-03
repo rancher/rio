@@ -17,12 +17,13 @@ package client
 import (
 	"context"
 
-	google_rpc "github.com/gogo/googleapis/google/rpc"
+	status "google.golang.org/genproto/googleapis/rpc/status"
+	"google.golang.org/grpc/codes"
 
 	"github.com/gogo/protobuf/proto"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_api_v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 
@@ -68,12 +69,12 @@ type Client interface {
 }
 
 type client struct {
-	nodeinfo *core.Node
+	nodeinfo *envoy_api_v2_core.Node
 	rtype    TypeRecord
 	apply    func(cache.Resources) error
 }
 
-func NewClient(nodeinfo *core.Node, rtype TypeRecord, apply func(cache.Resources) error) Client {
+func NewClient(nodeinfo *envoy_api_v2_core.Node, rtype TypeRecord, apply func(cache.Resources) error) Client {
 	return &client{
 		nodeinfo: nodeinfo,
 		rtype:    rtype,
@@ -129,13 +130,14 @@ func (c *client) Start(ctx context.Context, cc *grpc.ClientConn) error {
 		}
 		// If we have an error, don't update version info to signal NACK.
 		if err != nil {
-			dr.ErrorDetail = &google_rpc.Status{
-				Code:    int32(google_rpc.INVALID_ARGUMENT),
+			dr.ErrorDetail = &status.Status{
+				Code:    int32(codes.InvalidArgument),
 				Message: err.Error(),
 			}
 		} else if err = c.apply(resources); err != nil {
-			dr.ErrorDetail = &google_rpc.Status{
-				Code:    int32(google_rpc.UNKNOWN),
+
+			dr.ErrorDetail = &status.Status{
+				Code:    int32(codes.Unknown),
 				Message: err.Error(),
 			}
 		} else {

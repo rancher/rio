@@ -5,19 +5,19 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 )
 
 var (
 	apiVersionRegexp *regexp.Regexp
 
 	MalformedVersionError = func(version string) error {
-		return errors.Errorf("Failed to parse kubernetes api version from %v", version)
+		return eris.Errorf("Failed to parse kubernetes api version from %v", version)
 	}
 
-	InvalidMajorVersionError = errors.New("Major version cannot be zero")
+	InvalidMajorVersionError = eris.New("Major version cannot be zero")
 
-	InvalidPrereleaseVersionError = errors.New("Prerelease version cannot be zero")
+	InvalidPrereleaseVersionError = eris.New("Prerelease version cannot be zero")
 )
 
 type PrereleaseModifier int

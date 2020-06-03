@@ -74,20 +74,30 @@ func configureFeature(rioContext *types.Context, systemNamespace string) error {
 	if conf.Features == nil {
 		conf.Features = map[string]config.FeatureConfig{}
 	}
-	t := true
 	if config.ConfigController.Features == "*" {
-		f := conf.Features["*"]
-		f.Enabled = &t
-		conf.Features["*"] = f
+		setFeature(&conf, "*", true)
 	} else {
 		for _, feature := range strings.Split(config.ConfigController.Features, ",") {
 			if feature == "" {
 				continue
 			}
-			f := conf.Features[feature]
-			f.Enabled = &t
-			conf.Features[feature] = f
+			setFeature(&conf, feature, true)
 		}
+	}
+
+	if config.ConfigController.MeshMode == "istio" {
+		setFeature(&conf, "istio", true)
+		setFeature(&conf, "gloo", false)
+		setFeature(&conf, "linkerd", false)
+	} else if config.ConfigController.MeshMode == "linkerd" {
+		setFeature(&conf, "istio", false)
+		setFeature(&conf, "gloo", true)
+		setFeature(&conf, "linkerd", true)
+	}
+
+	if config.ConfigController.Gateway.ServiceName != "" && config.ConfigController.Gateway.ServiceNamespace != "" {
+		conf.Gateway.ServiceName = config.ConfigController.Gateway.ServiceName
+		conf.Gateway.ServiceNamespace = config.ConfigController.Gateway.ServiceNamespace
 	}
 
 	featureConfig, err := config.SetConfig(constructors.NewConfigMap(systemNamespace, config.ConfigName, v1.ConfigMap{}), conf)
@@ -104,6 +114,12 @@ func configureFeature(rioContext *types.Context, systemNamespace string) error {
 		return err
 	}
 	return err
+}
+
+func setFeature(conf *config.Config, featureName string, enabled bool) {
+	f := conf.Features[featureName]
+	f.Enabled = &enabled
+	conf.Features[featureName] = f
 }
 
 func Types(ctx context.Context, config *rest.Config) error {

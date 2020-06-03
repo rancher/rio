@@ -28,6 +28,10 @@ type FakeAdminV1 struct {
 	*testing.Fake
 }
 
+func (c *FakeAdminV1) Certificates() v1.CertificateInterface {
+	return &FakeCertificates{c}
+}
+
 func (c *FakeAdminV1) ClusterDomains() v1.ClusterDomainInterface {
 	return &FakeClusterDomains{c}
 }

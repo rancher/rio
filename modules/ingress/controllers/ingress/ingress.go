@@ -36,6 +36,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		"ingress-services",
 		h.generateFromService,
 		nil)
+
 	return nil
 }
 

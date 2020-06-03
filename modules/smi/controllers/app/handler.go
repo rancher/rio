@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 
 	"github.com/deislabs/smi-sdk-go/pkg/apis/split/v1alpha1"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
@@ -77,10 +78,10 @@ func (h *handler) getSplit(namespace string, svcs []*riov1.Service) *v1alpha1.Tr
 
 		app, version := services.AppAndVersion(svc)
 		service = app
-		quantity := resource.NewQuantity(int64(*svc.Status.ComputedWeight), resource.BinarySI)
+		q := resource.MustParse(strconv.Itoa(*svc.Status.ComputedWeight))
 		backends = append(backends, v1alpha1.TrafficSplitBackend{
 			Service: fmt.Sprintf("%s-%s", app, version),
-			Weight:  *quantity,
+			Weight:  q,
 		})
 	}
 

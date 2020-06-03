@@ -22,6 +22,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
+var (
+	httpPortMap = map[string]string{
+		"istio":   "http2",
+		"linkerd": "http",
+	}
+)
+
 func Register(ctx context.Context, rContext *types.Context) error {
 	cm, err := rContext.Core.Core().V1().ConfigMap().Get(rContext.Namespace, config.ConfigName, metav1.GetOptions{})
 	if err != nil {
@@ -180,13 +187,13 @@ func (h *handler) generateFromService(svc *corev1.Service, status corev1.Service
 
 	for _, port := range svc.Spec.Ports {
 		portNum := 0
-		if nodePort {
+		if nodePort && config.ConfigController.MeshMode == "linkerd" {
 			portNum = int(port.NodePort)
 		} else {
 			portNum = int(port.Port)
 		}
 
-		if port.Name == "http" {
+		if port.Name == httpPortMap[config.ConfigController.MeshMode] {
 			clusterDomain.Spec.HTTPPort = portNum
 		} else if port.Name == "https" {
 			clusterDomain.Spec.HTTPSPort = portNum

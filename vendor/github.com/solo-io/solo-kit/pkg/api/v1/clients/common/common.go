@@ -1,6 +1,8 @@
 package common
 
 import (
+	"time"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -58,14 +60,23 @@ func KubeResourceWatch(cache cache.Cache, listFunc ResourceListFunc, namespace s
 		defer close(errs)
 
 		// watch should open up with an initial read
+		timer := time.NewTicker(time.Second)
+		defer timer.Stop()
+
 		updateResourceList()
+		update := false
 		for {
 			select {
 			case _, ok := <-watch:
 				if !ok {
 					return
 				}
-				updateResourceList()
+				update = true
+			case <-timer.C:
+				if update {
+					updateResourceList()
+					update = false
+				}
 			case <-opts.Ctx.Done():
 				return
 			}

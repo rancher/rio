@@ -3,6 +3,10 @@
 package kubernetes
 
 import (
+	"encoding/binary"
+	"hash"
+	"hash/fnv"
+	"log"
 	"sort"
 
 	github_com_solo_io_solo_kit_api_external_kubernetes_namespace "github.com/solo-io/solo-kit/api/external/kubernetes/namespace"
@@ -40,14 +44,27 @@ func (r *KubeNamespace) Clone() resources.Resource {
 	return &KubeNamespace{KubeNamespace: *r.KubeNamespace.Clone()}
 }
 
-func (r *KubeNamespace) Hash() uint64 {
+func (r *KubeNamespace) Hash(hasher hash.Hash64) (uint64, error) {
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
 	clone := r.KubeNamespace.Clone()
-
 	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
 		meta.ResourceVersion = ""
 	})
+	err := binary.Write(hasher, binary.LittleEndian, hashutils.HashAll(clone))
+	if err != nil {
+		return 0, err
+	}
+	return hasher.Sum64(), nil
+}
 
-	return hashutils.HashAll(clone)
+func (r *KubeNamespace) MustHash() uint64 {
+	hashVal, err := r.Hash(nil)
+	if err != nil {
+		log.Panicf("error while hashing: (%s) this should never happen", err)
+	}
+	return hashVal
 }
 
 func (r *KubeNamespace) GroupVersionKind() schema.GroupVersionKind {

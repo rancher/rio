@@ -369,8 +369,13 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 		defer close(errs)
 
 		// Perform an initial list operation
-		updateResourceList()
 
+		timer := time.NewTicker(time.Second)
+		defer timer.Stop()
+
+		// watch should open up with an initial read
+		updateResourceList()
+		update := false
 		for {
 			select {
 			case resource := <-cacheUpdated:
@@ -378,7 +383,12 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 				// Only notify watchers if the updated resource is in the watched
 				// namespace and its kind matches the one of the resource clientz
 				if matchesTargetNamespace(watchedNamespace, resource.ObjectMeta.Namespace) && rc.matchesClientGVK(resource) {
+					update = true
+				}
+			case <-timer.C:
+				if update {
 					updateResourceList()
+					update = false
 				}
 			case <-ctx.Done():
 				return

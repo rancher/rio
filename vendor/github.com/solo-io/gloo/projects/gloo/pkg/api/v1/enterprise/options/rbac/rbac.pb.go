@@ -10,6 +10,7 @@ import (
 
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
+	_ "github.com/solo-io/protoc-gen-ext/extproto"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -23,194 +24,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// A JWT principal. To use this, JWT option MUST be enabled.
-type JWTPrincipal struct {
-	// Set of claims that make up this principal. Commonly, the 'iss' and 'sub' or 'email' claims are used.
-	// all claims must be present on the JWT.
-	Claims map[string]string `protobuf:"bytes,1,rep,name=claims,proto3" json:"claims,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// Verify that the JWT came from a specific provider. This usually can be left empty
-	// and a provider will be chosen automatically.
-	Provider             string   `protobuf:"bytes,2,opt,name=provider,proto3" json:"provider,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *JWTPrincipal) Reset()         { *m = JWTPrincipal{} }
-func (m *JWTPrincipal) String() string { return proto.CompactTextString(m) }
-func (*JWTPrincipal) ProtoMessage()    {}
-func (*JWTPrincipal) Descriptor() ([]byte, []int) {
-	return fileDescriptor_b3e839952ea61f0e, []int{0}
-}
-func (m *JWTPrincipal) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_JWTPrincipal.Unmarshal(m, b)
-}
-func (m *JWTPrincipal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_JWTPrincipal.Marshal(b, m, deterministic)
-}
-func (m *JWTPrincipal) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_JWTPrincipal.Merge(m, src)
-}
-func (m *JWTPrincipal) XXX_Size() int {
-	return xxx_messageInfo_JWTPrincipal.Size(m)
-}
-func (m *JWTPrincipal) XXX_DiscardUnknown() {
-	xxx_messageInfo_JWTPrincipal.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_JWTPrincipal proto.InternalMessageInfo
-
-func (m *JWTPrincipal) GetClaims() map[string]string {
-	if m != nil {
-		return m.Claims
-	}
-	return nil
-}
-
-func (m *JWTPrincipal) GetProvider() string {
-	if m != nil {
-		return m.Provider
-	}
-	return ""
-}
-
-// An RBAC principal - the identity entity (usually a user or a service account).
-type Principal struct {
-	JwtPrincipal         *JWTPrincipal `protobuf:"bytes,1,opt,name=jwt_principal,json=jwtPrincipal,proto3" json:"jwt_principal,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
-	XXX_unrecognized     []byte        `json:"-"`
-	XXX_sizecache        int32         `json:"-"`
-}
-
-func (m *Principal) Reset()         { *m = Principal{} }
-func (m *Principal) String() string { return proto.CompactTextString(m) }
-func (*Principal) ProtoMessage()    {}
-func (*Principal) Descriptor() ([]byte, []int) {
-	return fileDescriptor_b3e839952ea61f0e, []int{1}
-}
-func (m *Principal) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Principal.Unmarshal(m, b)
-}
-func (m *Principal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Principal.Marshal(b, m, deterministic)
-}
-func (m *Principal) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Principal.Merge(m, src)
-}
-func (m *Principal) XXX_Size() int {
-	return xxx_messageInfo_Principal.Size(m)
-}
-func (m *Principal) XXX_DiscardUnknown() {
-	xxx_messageInfo_Principal.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Principal proto.InternalMessageInfo
-
-func (m *Principal) GetJwtPrincipal() *JWTPrincipal {
-	if m != nil {
-		return m.JwtPrincipal
-	}
-	return nil
-}
-
-// What permissions should be granted. An empty field means allow-all.
-// If more than one field is added, all of them need to match.
-type Permissions struct {
-	// Paths that have this prefix will be allowed.
-	PathPrefix string `protobuf:"bytes,1,opt,name=path_prefix,json=pathPrefix,proto3" json:"path_prefix,omitempty"`
-	// What http methods (GET, POST, ...) are allowed.
-	Methods              []string `protobuf:"bytes,2,rep,name=methods,proto3" json:"methods,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Permissions) Reset()         { *m = Permissions{} }
-func (m *Permissions) String() string { return proto.CompactTextString(m) }
-func (*Permissions) ProtoMessage()    {}
-func (*Permissions) Descriptor() ([]byte, []int) {
-	return fileDescriptor_b3e839952ea61f0e, []int{2}
-}
-func (m *Permissions) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Permissions.Unmarshal(m, b)
-}
-func (m *Permissions) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Permissions.Marshal(b, m, deterministic)
-}
-func (m *Permissions) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Permissions.Merge(m, src)
-}
-func (m *Permissions) XXX_Size() int {
-	return xxx_messageInfo_Permissions.Size(m)
-}
-func (m *Permissions) XXX_DiscardUnknown() {
-	xxx_messageInfo_Permissions.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Permissions proto.InternalMessageInfo
-
-func (m *Permissions) GetPathPrefix() string {
-	if m != nil {
-		return m.PathPrefix
-	}
-	return ""
-}
-
-func (m *Permissions) GetMethods() []string {
-	if m != nil {
-		return m.Methods
-	}
-	return nil
-}
-
-type Policy struct {
-	// Principals in this policy.
-	Principals []*Principal `protobuf:"bytes,1,rep,name=principals,proto3" json:"principals,omitempty"`
-	// Permissions granted to the principals.
-	Permissions          *Permissions `protobuf:"bytes,2,opt,name=permissions,proto3" json:"permissions,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
-	XXX_unrecognized     []byte       `json:"-"`
-	XXX_sizecache        int32        `json:"-"`
-}
-
-func (m *Policy) Reset()         { *m = Policy{} }
-func (m *Policy) String() string { return proto.CompactTextString(m) }
-func (*Policy) ProtoMessage()    {}
-func (*Policy) Descriptor() ([]byte, []int) {
-	return fileDescriptor_b3e839952ea61f0e, []int{3}
-}
-func (m *Policy) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Policy.Unmarshal(m, b)
-}
-func (m *Policy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Policy.Marshal(b, m, deterministic)
-}
-func (m *Policy) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Policy.Merge(m, src)
-}
-func (m *Policy) XXX_Size() int {
-	return xxx_messageInfo_Policy.Size(m)
-}
-func (m *Policy) XXX_DiscardUnknown() {
-	xxx_messageInfo_Policy.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Policy proto.InternalMessageInfo
-
-func (m *Policy) GetPrincipals() []*Principal {
-	if m != nil {
-		return m.Principals
-	}
-	return nil
-}
-
-func (m *Policy) GetPermissions() *Permissions {
-	if m != nil {
-		return m.Permissions
-	}
-	return nil
-}
-
+// Global RBAC settings
 type Settings struct {
 	// Require RBAC for all virtual hosts. A vhost without an RBAC policy set will fallback to a deny-all policy.
 	RequireRbac          bool     `protobuf:"varint,1,opt,name=require_rbac,json=requireRbac,proto3" json:"require_rbac,omitempty"`
@@ -223,7 +37,7 @@ func (m *Settings) Reset()         { *m = Settings{} }
 func (m *Settings) String() string { return proto.CompactTextString(m) }
 func (*Settings) ProtoMessage()    {}
 func (*Settings) Descriptor() ([]byte, []int) {
-	return fileDescriptor_b3e839952ea61f0e, []int{4}
+	return fileDescriptor_b3e839952ea61f0e, []int{0}
 }
 func (m *Settings) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Settings.Unmarshal(m, b)
@@ -250,6 +64,7 @@ func (m *Settings) GetRequireRbac() bool {
 	return false
 }
 
+// RBAC settings for Virtual Hosts and Routes
 type ExtensionSettings struct {
 	// Disable RBAC checks on this resource (default false). This is useful to allow access to static resources/login page without RBAC checks.
 	// If provided on a route, all route settings override any vhost settings
@@ -265,7 +80,7 @@ func (m *ExtensionSettings) Reset()         { *m = ExtensionSettings{} }
 func (m *ExtensionSettings) String() string { return proto.CompactTextString(m) }
 func (*ExtensionSettings) ProtoMessage()    {}
 func (*ExtensionSettings) Descriptor() ([]byte, []int) {
-	return fileDescriptor_b3e839952ea61f0e, []int{5}
+	return fileDescriptor_b3e839952ea61f0e, []int{1}
 }
 func (m *ExtensionSettings) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ExtensionSettings.Unmarshal(m, b)
@@ -299,15 +114,203 @@ func (m *ExtensionSettings) GetPolicies() map[string]*Policy {
 	return nil
 }
 
+type Policy struct {
+	// Principals in this policy.
+	Principals []*Principal `protobuf:"bytes,1,rep,name=principals,proto3" json:"principals,omitempty"`
+	// Permissions granted to the principals.
+	Permissions          *Permissions `protobuf:"bytes,2,opt,name=permissions,proto3" json:"permissions,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
+	XXX_unrecognized     []byte       `json:"-"`
+	XXX_sizecache        int32        `json:"-"`
+}
+
+func (m *Policy) Reset()         { *m = Policy{} }
+func (m *Policy) String() string { return proto.CompactTextString(m) }
+func (*Policy) ProtoMessage()    {}
+func (*Policy) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b3e839952ea61f0e, []int{2}
+}
+func (m *Policy) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Policy.Unmarshal(m, b)
+}
+func (m *Policy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Policy.Marshal(b, m, deterministic)
+}
+func (m *Policy) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Policy.Merge(m, src)
+}
+func (m *Policy) XXX_Size() int {
+	return xxx_messageInfo_Policy.Size(m)
+}
+func (m *Policy) XXX_DiscardUnknown() {
+	xxx_messageInfo_Policy.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Policy proto.InternalMessageInfo
+
+func (m *Policy) GetPrincipals() []*Principal {
+	if m != nil {
+		return m.Principals
+	}
+	return nil
+}
+
+func (m *Policy) GetPermissions() *Permissions {
+	if m != nil {
+		return m.Permissions
+	}
+	return nil
+}
+
+// An RBAC principal - the identity entity (usually a user or a service account).
+type Principal struct {
+	JwtPrincipal         *JWTPrincipal `protobuf:"bytes,1,opt,name=jwt_principal,json=jwtPrincipal,proto3" json:"jwt_principal,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
+	XXX_unrecognized     []byte        `json:"-"`
+	XXX_sizecache        int32         `json:"-"`
+}
+
+func (m *Principal) Reset()         { *m = Principal{} }
+func (m *Principal) String() string { return proto.CompactTextString(m) }
+func (*Principal) ProtoMessage()    {}
+func (*Principal) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b3e839952ea61f0e, []int{3}
+}
+func (m *Principal) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Principal.Unmarshal(m, b)
+}
+func (m *Principal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Principal.Marshal(b, m, deterministic)
+}
+func (m *Principal) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Principal.Merge(m, src)
+}
+func (m *Principal) XXX_Size() int {
+	return xxx_messageInfo_Principal.Size(m)
+}
+func (m *Principal) XXX_DiscardUnknown() {
+	xxx_messageInfo_Principal.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Principal proto.InternalMessageInfo
+
+func (m *Principal) GetJwtPrincipal() *JWTPrincipal {
+	if m != nil {
+		return m.JwtPrincipal
+	}
+	return nil
+}
+
+// A JWT principal. To use this, JWT option MUST be enabled.
+type JWTPrincipal struct {
+	// Set of claims that make up this principal. Commonly, the 'iss' and 'sub' or 'email' claims are used.
+	// all claims must be present on the JWT.
+	Claims map[string]string `protobuf:"bytes,1,rep,name=claims,proto3" json:"claims,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// Verify that the JWT came from a specific provider. This usually can be left empty
+	// and a provider will be chosen automatically.
+	Provider             string   `protobuf:"bytes,2,opt,name=provider,proto3" json:"provider,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *JWTPrincipal) Reset()         { *m = JWTPrincipal{} }
+func (m *JWTPrincipal) String() string { return proto.CompactTextString(m) }
+func (*JWTPrincipal) ProtoMessage()    {}
+func (*JWTPrincipal) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b3e839952ea61f0e, []int{4}
+}
+func (m *JWTPrincipal) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_JWTPrincipal.Unmarshal(m, b)
+}
+func (m *JWTPrincipal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_JWTPrincipal.Marshal(b, m, deterministic)
+}
+func (m *JWTPrincipal) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_JWTPrincipal.Merge(m, src)
+}
+func (m *JWTPrincipal) XXX_Size() int {
+	return xxx_messageInfo_JWTPrincipal.Size(m)
+}
+func (m *JWTPrincipal) XXX_DiscardUnknown() {
+	xxx_messageInfo_JWTPrincipal.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_JWTPrincipal proto.InternalMessageInfo
+
+func (m *JWTPrincipal) GetClaims() map[string]string {
+	if m != nil {
+		return m.Claims
+	}
+	return nil
+}
+
+func (m *JWTPrincipal) GetProvider() string {
+	if m != nil {
+		return m.Provider
+	}
+	return ""
+}
+
+// What permissions should be granted. An empty field means allow-all.
+// If more than one field is added, all of them need to match.
+type Permissions struct {
+	// Paths that have this prefix will be allowed.
+	PathPrefix string `protobuf:"bytes,1,opt,name=path_prefix,json=pathPrefix,proto3" json:"path_prefix,omitempty"`
+	// What http methods (GET, POST, ...) are allowed.
+	Methods              []string `protobuf:"bytes,2,rep,name=methods,proto3" json:"methods,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Permissions) Reset()         { *m = Permissions{} }
+func (m *Permissions) String() string { return proto.CompactTextString(m) }
+func (*Permissions) ProtoMessage()    {}
+func (*Permissions) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b3e839952ea61f0e, []int{5}
+}
+func (m *Permissions) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Permissions.Unmarshal(m, b)
+}
+func (m *Permissions) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Permissions.Marshal(b, m, deterministic)
+}
+func (m *Permissions) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Permissions.Merge(m, src)
+}
+func (m *Permissions) XXX_Size() int {
+	return xxx_messageInfo_Permissions.Size(m)
+}
+func (m *Permissions) XXX_DiscardUnknown() {
+	xxx_messageInfo_Permissions.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Permissions proto.InternalMessageInfo
+
+func (m *Permissions) GetPathPrefix() string {
+	if m != nil {
+		return m.PathPrefix
+	}
+	return ""
+}
+
+func (m *Permissions) GetMethods() []string {
+	if m != nil {
+		return m.Methods
+	}
+	return nil
+}
+
 func init() {
-	proto.RegisterType((*JWTPrincipal)(nil), "rbac.options.gloo.solo.io.JWTPrincipal")
-	proto.RegisterMapType((map[string]string)(nil), "rbac.options.gloo.solo.io.JWTPrincipal.ClaimsEntry")
-	proto.RegisterType((*Principal)(nil), "rbac.options.gloo.solo.io.Principal")
-	proto.RegisterType((*Permissions)(nil), "rbac.options.gloo.solo.io.Permissions")
-	proto.RegisterType((*Policy)(nil), "rbac.options.gloo.solo.io.Policy")
 	proto.RegisterType((*Settings)(nil), "rbac.options.gloo.solo.io.Settings")
 	proto.RegisterType((*ExtensionSettings)(nil), "rbac.options.gloo.solo.io.ExtensionSettings")
 	proto.RegisterMapType((map[string]*Policy)(nil), "rbac.options.gloo.solo.io.ExtensionSettings.PoliciesEntry")
+	proto.RegisterType((*Policy)(nil), "rbac.options.gloo.solo.io.Policy")
+	proto.RegisterType((*Principal)(nil), "rbac.options.gloo.solo.io.Principal")
+	proto.RegisterType((*JWTPrincipal)(nil), "rbac.options.gloo.solo.io.JWTPrincipal")
+	proto.RegisterMapType((map[string]string)(nil), "rbac.options.gloo.solo.io.JWTPrincipal.ClaimsEntry")
+	proto.RegisterType((*Permissions)(nil), "rbac.options.gloo.solo.io.Permissions")
 }
 
 func init() {
@@ -315,171 +318,40 @@ func init() {
 }
 
 var fileDescriptor_b3e839952ea61f0e = []byte{
-	// 477 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x93, 0xc1, 0x6e, 0xd3, 0x30,
-	0x18, 0xc7, 0x95, 0x56, 0x74, 0xed, 0xe7, 0x4e, 0x02, 0x6b, 0x87, 0xd0, 0x03, 0x74, 0x11, 0x82,
-	0x5e, 0xe6, 0x88, 0xec, 0x00, 0xec, 0x08, 0x4c, 0xaa, 0x00, 0x41, 0x14, 0x10, 0x08, 0x0e, 0x54,
-	0x49, 0x6a, 0x52, 0x77, 0x69, 0x6c, 0x6c, 0xb7, 0x5b, 0xdf, 0x84, 0x47, 0xe0, 0xcc, 0x23, 0x21,
-	0xf1, 0x1e, 0xc8, 0x4e, 0x9a, 0x06, 0x01, 0x5d, 0x2f, 0x91, 0xff, 0x9f, 0xfd, 0xfb, 0xeb, 0xef,
-	0x2f, 0x9f, 0xe1, 0x4d, 0xc6, 0xf4, 0x6c, 0x99, 0x90, 0x94, 0x2f, 0x7c, 0xc5, 0x73, 0x7e, 0xc2,
-	0xb8, 0x9f, 0xe5, 0x9c, 0xfb, 0x42, 0xf2, 0x39, 0x4d, 0xb5, 0x2a, 0x55, 0x2c, 0x98, 0xbf, 0x7a,
-	0xe8, 0xd3, 0x42, 0x53, 0x29, 0x24, 0x53, 0xd4, 0xe7, 0x42, 0x33, 0x5e, 0x28, 0x5f, 0x26, 0x71,
-	0x6a, 0x3f, 0x44, 0x48, 0xae, 0x39, 0xbe, 0x6d, 0xd7, 0xd5, 0x2e, 0x31, 0x30, 0x31, 0xbe, 0x84,
-	0xf1, 0xc1, 0x51, 0xc6, 0x33, 0x6e, 0x4f, 0xf9, 0x66, 0x55, 0x02, 0xde, 0x0f, 0x07, 0xfa, 0x2f,
-	0x3e, 0xbc, 0x0b, 0x25, 0x2b, 0x52, 0x26, 0xe2, 0x1c, 0xbf, 0x84, 0x4e, 0x9a, 0xc7, 0x6c, 0xa1,
-	0x5c, 0x67, 0xd8, 0x1e, 0xa1, 0xe0, 0x94, 0xfc, 0xd7, 0x92, 0x34, 0x41, 0xf2, 0xcc, 0x52, 0xe7,
-	0x85, 0x96, 0xeb, 0xa8, 0xb2, 0xc0, 0x03, 0xe8, 0x0a, 0xc9, 0x57, 0x6c, 0x4a, 0xa5, 0xdb, 0x1a,
-	0x3a, 0xa3, 0x5e, 0x54, 0xeb, 0xc1, 0x13, 0x40, 0x0d, 0x04, 0xdf, 0x84, 0xf6, 0x05, 0x5d, 0xbb,
-	0x8e, 0x3d, 0x65, 0x96, 0xf8, 0x08, 0x6e, 0xac, 0xe2, 0x7c, 0x49, 0x2b, 0xb2, 0x14, 0x67, 0xad,
-	0xc7, 0x8e, 0xf7, 0x11, 0x7a, 0xdb, 0xc0, 0xaf, 0xe0, 0x70, 0x7e, 0xa9, 0x27, 0x62, 0x53, 0xb0,
-	0x16, 0x28, 0x78, 0xb0, 0x67, 0xee, 0xa8, 0x3f, 0xbf, 0xd4, 0xb5, 0xf2, 0xc6, 0x80, 0x42, 0x2a,
-	0x17, 0x4c, 0x29, 0x83, 0xe1, 0xbb, 0x80, 0x44, 0xac, 0x67, 0x13, 0x21, 0xe9, 0x17, 0x76, 0x55,
-	0xa5, 0x03, 0x53, 0x0a, 0x6d, 0x05, 0xbb, 0x70, 0xb0, 0xa0, 0x7a, 0xc6, 0xa7, 0xca, 0x6d, 0x0d,
-	0xdb, 0xa3, 0x5e, 0xb4, 0x91, 0xde, 0x37, 0x07, 0x3a, 0x21, 0xcf, 0x59, 0xba, 0xc6, 0xcf, 0x01,
-	0xea, 0x78, 0x9b, 0xbe, 0xde, 0xdb, 0x91, 0x6f, 0x1b, 0xae, 0xc1, 0xe1, 0x31, 0x20, 0xb1, 0x8d,
-	0x66, 0xbb, 0x82, 0x82, 0xfb, 0xbb, 0x6c, 0xb6, 0xa7, 0xa3, 0x26, 0xea, 0x9d, 0x40, 0xf7, 0x2d,
-	0xd5, 0x9a, 0x15, 0x99, 0xc2, 0xc7, 0xd0, 0x97, 0xf4, 0xeb, 0x92, 0x49, 0x3a, 0x31, 0x4e, 0xf6,
-	0x8a, 0xdd, 0x08, 0x55, 0xb5, 0x28, 0x89, 0x53, 0xef, 0x97, 0x03, 0xb7, 0xce, 0xaf, 0x34, 0x2d,
-	0x0c, 0x5d, 0x83, 0x2e, 0x1c, 0x4c, 0x99, 0x8a, 0x93, 0x9c, 0x56, 0xcc, 0x46, 0xe2, 0xf7, 0xd0,
-	0x15, 0xe6, 0xe2, 0x8c, 0x96, 0x4d, 0x41, 0xc1, 0xd9, 0x8e, 0x94, 0x7f, 0x39, 0x93, 0xb0, 0x82,
-	0xcb, 0x59, 0xaa, 0xbd, 0x06, 0x9f, 0xe1, 0xf0, 0x8f, 0xad, 0x7f, 0xcc, 0xcc, 0xa3, 0xe6, 0xcc,
-	0xa0, 0xe0, 0x78, 0x57, 0x77, 0xec, 0xbf, 0x69, 0x8c, 0xd5, 0xd3, 0xd7, 0xdf, 0x7f, 0xde, 0x71,
-	0x3e, 0x8d, 0xf7, 0x7b, 0x93, 0xe2, 0x22, 0xbb, 0xe6, 0x5d, 0x26, 0x1d, 0xfb, 0xc4, 0x4e, 0x7f,
-	0x07, 0x00, 0x00, 0xff, 0xff, 0x99, 0x35, 0x5f, 0x04, 0xe6, 0x03, 0x00, 0x00,
+	// 489 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x53, 0xc1, 0x6e, 0xd3, 0x40,
+	0x10, 0xd5, 0xb6, 0x10, 0xe2, 0x71, 0x2a, 0xc1, 0xaa, 0x07, 0xe3, 0x03, 0xa4, 0x16, 0x82, 0x5c,
+	0x6a, 0x8b, 0xf4, 0x00, 0xf4, 0x08, 0x54, 0x8a, 0x00, 0x89, 0x6a, 0x41, 0x20, 0x38, 0x10, 0xd9,
+	0xce, 0xe2, 0x6c, 0xea, 0x78, 0x96, 0xdd, 0x4d, 0x9a, 0xfc, 0x09, 0x9f, 0xc0, 0x99, 0x13, 0xdf,
+	0x83, 0xc4, 0x27, 0x70, 0x47, 0x5e, 0x3b, 0xae, 0x11, 0x10, 0x7a, 0xb1, 0x66, 0xde, 0xcc, 0x7b,
+	0x33, 0xe3, 0xd9, 0x81, 0x97, 0x99, 0x30, 0xd3, 0x45, 0x12, 0xa6, 0x38, 0x8f, 0x34, 0xe6, 0x78,
+	0x28, 0x30, 0xca, 0x72, 0xc4, 0x48, 0x2a, 0x9c, 0xf1, 0xd4, 0xe8, 0xca, 0x8b, 0xa5, 0x88, 0x96,
+	0xf7, 0x23, 0x5e, 0x18, 0xae, 0xa4, 0x12, 0x9a, 0x47, 0x28, 0x8d, 0xc0, 0x42, 0x47, 0x2a, 0x89,
+	0x53, 0xfb, 0x09, 0xa5, 0x42, 0x83, 0xf4, 0xa6, 0xb5, 0xeb, 0x68, 0x58, 0x92, 0xc3, 0x52, 0x37,
+	0x14, 0xe8, 0xef, 0x67, 0x98, 0xa1, 0xcd, 0x8a, 0x4a, 0xab, 0x22, 0xf8, 0x94, 0xaf, 0x4c, 0x05,
+	0xf2, 0x95, 0xa9, 0xb0, 0xe0, 0x10, 0xba, 0xaf, 0xb8, 0x31, 0xa2, 0xc8, 0x34, 0x3d, 0x80, 0x9e,
+	0xe2, 0x9f, 0x16, 0x42, 0xf1, 0x71, 0x29, 0xed, 0x91, 0x3e, 0x19, 0x74, 0x99, 0x5b, 0x63, 0x2c,
+	0x89, 0xd3, 0xe0, 0x07, 0x81, 0x1b, 0x27, 0x2b, 0xc3, 0x0b, 0x2d, 0xb0, 0x68, 0x88, 0x1e, 0x5c,
+	0x9b, 0x08, 0x1d, 0x27, 0x39, 0xaf, 0x39, 0x1b, 0x97, 0xbe, 0x81, 0xae, 0xc4, 0x5c, 0xa4, 0x82,
+	0x6b, 0x6f, 0xa7, 0xbf, 0x3b, 0x70, 0x87, 0xc7, 0xe1, 0x3f, 0xdb, 0x0e, 0xff, 0x50, 0x0e, 0x4f,
+	0x6b, 0xf2, 0x49, 0x61, 0xd4, 0x9a, 0x35, 0x5a, 0xfe, 0x07, 0xd8, 0xfb, 0x2d, 0x44, 0xaf, 0xc3,
+	0xee, 0x19, 0x5f, 0xdb, 0xf2, 0x0e, 0x2b, 0x4d, 0xfa, 0x00, 0xae, 0x2e, 0xe3, 0x7c, 0xc1, 0xbd,
+	0x9d, 0x3e, 0x19, 0xb8, 0xc3, 0x83, 0x2d, 0x75, 0xad, 0xd4, 0x9a, 0x55, 0xf9, 0xc7, 0x3b, 0x0f,
+	0x49, 0xf0, 0x99, 0x40, 0xa7, 0x42, 0xe9, 0x53, 0x00, 0xa9, 0x44, 0x91, 0x0a, 0x19, 0xe7, 0xda,
+	0x23, 0x76, 0x88, 0x3b, 0xdb, 0xc4, 0x36, 0xc9, 0xac, 0xc5, 0xa3, 0x23, 0x70, 0x25, 0x57, 0x73,
+	0xa1, 0xcb, 0xf1, 0x74, 0xdd, 0xd3, 0xdd, 0x6d, 0x32, 0x17, 0xd9, 0xac, 0x4d, 0x0d, 0xde, 0x81,
+	0xd3, 0x94, 0xa0, 0x2f, 0x60, 0x6f, 0x76, 0x6e, 0xc6, 0x4d, 0x21, 0xfb, 0x03, 0xdc, 0xe1, 0xbd,
+	0x2d, 0xc2, 0xcf, 0xde, 0xbe, 0xbe, 0x68, 0xb1, 0x37, 0x3b, 0x37, 0x8d, 0x17, 0x7c, 0x25, 0xd0,
+	0x6b, 0x87, 0xe9, 0x73, 0xe8, 0xa4, 0x79, 0x2c, 0xe6, 0x9b, 0xb9, 0x8f, 0x2e, 0xa9, 0x1b, 0x3e,
+	0xb1, 0xac, 0x6a, 0x6b, 0xb5, 0x04, 0xf5, 0xa1, 0x2b, 0x15, 0x2e, 0xc5, 0x84, 0x2b, 0x3b, 0xbf,
+	0xc3, 0x1a, 0xdf, 0x7f, 0x04, 0x6e, 0x8b, 0xf2, 0x97, 0x6d, 0xee, 0xb7, 0xb7, 0xe9, 0xb4, 0x57,
+	0x35, 0x02, 0xb7, 0xf5, 0xaf, 0xe8, 0x6d, 0x70, 0x65, 0x6c, 0xa6, 0x63, 0xa9, 0xf8, 0x47, 0xb1,
+	0xaa, 0x25, 0xa0, 0x84, 0x4e, 0x2d, 0x52, 0x3e, 0xd6, 0x39, 0x37, 0x53, 0x9c, 0x54, 0x2f, 0xd2,
+	0x61, 0x1b, 0xf7, 0x31, 0xfb, 0xf6, 0xf3, 0x0a, 0xf9, 0xf2, 0xfd, 0x16, 0x79, 0x3f, 0xba, 0xdc,
+	0xad, 0xca, 0xb3, 0xec, 0x3f, 0xf7, 0x9a, 0x74, 0xec, 0x99, 0x1d, 0xfd, 0x0a, 0x00, 0x00, 0xff,
+	0xff, 0xe6, 0x4e, 0x82, 0xa2, 0xfe, 0x03, 0x00, 0x00,
 }
 
-func (this *JWTPrincipal) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*JWTPrincipal)
-	if !ok {
-		that2, ok := that.(JWTPrincipal)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if len(this.Claims) != len(that1.Claims) {
-		return false
-	}
-	for i := range this.Claims {
-		if this.Claims[i] != that1.Claims[i] {
-			return false
-		}
-	}
-	if this.Provider != that1.Provider {
-		return false
-	}
-	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
-		return false
-	}
-	return true
-}
-func (this *Principal) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Principal)
-	if !ok {
-		that2, ok := that.(Principal)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !this.JwtPrincipal.Equal(that1.JwtPrincipal) {
-		return false
-	}
-	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
-		return false
-	}
-	return true
-}
-func (this *Permissions) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Permissions)
-	if !ok {
-		that2, ok := that.(Permissions)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.PathPrefix != that1.PathPrefix {
-		return false
-	}
-	if len(this.Methods) != len(that1.Methods) {
-		return false
-	}
-	for i := range this.Methods {
-		if this.Methods[i] != that1.Methods[i] {
-			return false
-		}
-	}
-	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
-		return false
-	}
-	return true
-}
-func (this *Policy) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Policy)
-	if !ok {
-		that2, ok := that.(Policy)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if len(this.Principals) != len(that1.Principals) {
-		return false
-	}
-	for i := range this.Principals {
-		if !this.Principals[i].Equal(that1.Principals[i]) {
-			return false
-		}
-	}
-	if !this.Permissions.Equal(that1.Permissions) {
-		return false
-	}
-	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
-		return false
-	}
-	return true
-}
 func (this *Settings) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -534,6 +406,138 @@ func (this *ExtensionSettings) Equal(that interface{}) bool {
 	}
 	for i := range this.Policies {
 		if !this.Policies[i].Equal(that1.Policies[i]) {
+			return false
+		}
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
+func (this *Policy) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Policy)
+	if !ok {
+		that2, ok := that.(Policy)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Principals) != len(that1.Principals) {
+		return false
+	}
+	for i := range this.Principals {
+		if !this.Principals[i].Equal(that1.Principals[i]) {
+			return false
+		}
+	}
+	if !this.Permissions.Equal(that1.Permissions) {
+		return false
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
+func (this *Principal) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Principal)
+	if !ok {
+		that2, ok := that.(Principal)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.JwtPrincipal.Equal(that1.JwtPrincipal) {
+		return false
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
+func (this *JWTPrincipal) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*JWTPrincipal)
+	if !ok {
+		that2, ok := that.(JWTPrincipal)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Claims) != len(that1.Claims) {
+		return false
+	}
+	for i := range this.Claims {
+		if this.Claims[i] != that1.Claims[i] {
+			return false
+		}
+	}
+	if this.Provider != that1.Provider {
+		return false
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
+func (this *Permissions) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Permissions)
+	if !ok {
+		that2, ok := that.(Permissions)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.PathPrefix != that1.PathPrefix {
+		return false
+	}
+	if len(this.Methods) != len(that1.Methods) {
+		return false
+	}
+	for i := range this.Methods {
+		if this.Methods[i] != that1.Methods[i] {
 			return false
 		}
 	}

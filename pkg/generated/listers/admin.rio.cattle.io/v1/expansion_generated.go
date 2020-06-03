@@ -18,6 +18,10 @@ limitations under the License.
 
 package v1
 
+// CertificateListerExpansion allows custom methods to be added to
+// CertificateLister.
+type CertificateListerExpansion interface{}
+
 // ClusterDomainListerExpansion allows custom methods to be added to
 // ClusterDomainLister.
 type ClusterDomainListerExpansion interface{}

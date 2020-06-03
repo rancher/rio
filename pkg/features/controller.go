@@ -3,6 +3,8 @@ package features
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/api/errors"
+
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/stack"
 	"github.com/rancher/rio/types"
@@ -68,7 +70,7 @@ func (f *FeatureController) Stop() error {
 
 	var errs []error
 	for _, ss := range f.SystemStacks {
-		if err := ss.Remove(); err != nil {
+		if err := ss.Remove(); err != nil && !errors.IsNotFound(err) {
 			errs = append(errs, err)
 		}
 	}

@@ -9,7 +9,7 @@ import (
 )
 
 func (f *VirtualServiceFactory) ForIngress(ingress *v1beta1.Ingress) ([]runtime.Object, error) {
-	vs := newVirtualService(ingress.Namespace, ingress.Name, nil)
+	vs := newGlooVirtualService(ingress.Namespace, ingress.Name, nil)
 	vs.Spec.VirtualHost.Routes = nil
 	for _, rule := range ingress.Spec.Rules {
 		vs.Spec.VirtualHost.Domains = append(vs.Spec.VirtualHost.Domains, rule.Host)

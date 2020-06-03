@@ -30,6 +30,8 @@ kubernetes:
             {{- if eq .Values.RIO_DEBUG "true" }}
             - --debug
             {{- end}}
+            - --mesh-mode
+            - ${MESH_MODE}
             - --features
             - ""
             env:
@@ -50,3 +52,4 @@ template:
     description: "namespace to deploy to"
   - variable: RIO_DEBUG
   - variable: RUN_API_VALIDATOR
+  - variable: MESH_MODE

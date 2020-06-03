@@ -5,7 +5,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/go-utils/versionutils/kubeapi"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
@@ -24,15 +24,15 @@ var (
 	registry *crdRegistry
 
 	VersionExistsError = func(version string) error {
-		return errors.Errorf("tried adding version %s, but it already exists")
+		return eris.Errorf("tried adding version %s, but it already exists", version)
 	}
 
 	NotFoundError = func(id string) error {
-		return errors.Errorf("could not find the combined crd for %v", id)
+		return eris.Errorf("could not find the combined crd for %v", id)
 	}
 
 	InvalidGVKError = func(gvk schema.GroupVersionKind) error {
-		return errors.Errorf("the following gvk %v does not correspond to a crd in the combined crd object", gvk)
+		return eris.Errorf("the following gvk %v does not correspond to a crd in the combined crd object", gvk)
 	}
 )
 

@@ -16,7 +16,8 @@ import (
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/name"
 	"github.com/rancher/wrangler/pkg/objectset"
-	tektonv1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	resource "github.com/tektoncd/pipeline/pkg/apis/resource/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -44,7 +45,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 			rContext.RBAC.Rbac().V1().Role(),
 			rContext.RBAC.Rbac().V1().RoleBinding(),
 		),
-		"BuildDeployed",
+		"",
 		"stack-service-build",
 		p.populate,
 		nil)
@@ -142,49 +143,23 @@ func (p populator) populateBuild(stack *riov1.Stack, systemNamespace string, os 
 	rbacs := populateRbac(stack, sa.Name, p.systemNamespace, pod.Name)
 	os.Add(rbacs...)
 
-	build := constructors.NewTaskRun(stack.Namespace, trName, tektonv1alpha1.TaskRun{
+	build := constructors.NewTaskRun(stack.Namespace, trName, tektonv1beta1.TaskRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
 				"stack-name":      stack.Name,
 				"stack-namespace": stack.Namespace,
 			},
 		},
-		Spec: tektonv1alpha1.TaskRunSpec{
+		Spec: tektonv1beta1.TaskRunSpec{
 			ServiceAccountName: sa.Name,
-			TaskSpec: &tektonv1alpha1.TaskSpec{
-				Inputs: &tektonv1alpha1.Inputs{
-					Resources: []tektonv1alpha1.TaskResource{
-						{
-							ResourceDeclaration: tektonv1alpha1.ResourceDeclaration{
-								Name: "source",
-								Type: tektonv1alpha1.PipelineResourceTypeGit,
-							},
-						},
-					},
-				},
-				Steps: []tektonv1alpha1.Step{
+			Resources: &tektonv1beta1.TaskRunResources{
+				Inputs: []tektonv1beta1.TaskResourceBinding{
 					{
-						Container: corev1.Container{
-							Name:            "rio-up",
-							Image:           fmt.Sprintf("%s:%s", constants.ControllerImage, constants.ControllerImageTag),
-							ImagePullPolicy: corev1.PullAlways,
-							WorkingDir:      "/workspace/source",
-							Command: []string{
-								"rio",
-							},
-							Args: rioUpArgs,
-						},
-					},
-				},
-			},
-			Inputs: tektonv1alpha1.TaskRunInputs{
-				Resources: []tektonv1alpha1.TaskResourceBinding{
-					{
-						PipelineResourceBinding: tektonv1alpha1.PipelineResourceBinding{
+						PipelineResourceBinding: tektonv1beta1.PipelineResourceBinding{
 							Name: "source",
-							ResourceSpec: &tektonv1alpha1.PipelineResourceSpec{
-								Type: tektonv1alpha1.PipelineResourceTypeGit,
-								Params: []tektonv1alpha1.ResourceParam{
+							ResourceSpec: &resource.PipelineResourceSpec{
+								Type: tektonv1beta1.PipelineResourceTypeGit,
+								Params: []tektonv1beta1.ResourceParam{
 									{
 										Name:  "url",
 										Value: stack.Spec.Build.Repo,
@@ -195,6 +170,22 @@ func (p populator) populateBuild(stack *riov1.Stack, systemNamespace string, os 
 									},
 								},
 							},
+						},
+					},
+				},
+			},
+			TaskSpec: &tektonv1beta1.TaskSpec{
+				Steps: []tektonv1beta1.Step{
+					{
+						Container: corev1.Container{
+							Name:            "rio-up",
+							Image:           fmt.Sprintf("%s:%s", constants.ControllerImage, constants.ControllerImageTag),
+							ImagePullPolicy: corev1.PullAlways,
+							WorkingDir:      "/workspace/source",
+							Command: []string{
+								"rio",
+							},
+							Args: rioUpArgs,
 						},
 					},
 				},

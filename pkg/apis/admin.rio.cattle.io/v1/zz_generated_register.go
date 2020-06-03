@@ -28,6 +28,7 @@ import (
 )
 
 var (
+	CertificateResourceName   = "certificates"
 	ClusterDomainResourceName = "clusterdomains"
 	PublicDomainResourceName  = "publicdomains"
 	RioInfoResourceName       = "rioinfos"
@@ -55,6 +56,8 @@ var (
 // Adds the list of known types to Scheme.
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
+		&Certificate{},
+		&CertificateList{},
 		&ClusterDomain{},
 		&ClusterDomainList{},
 		&PublicDomain{},

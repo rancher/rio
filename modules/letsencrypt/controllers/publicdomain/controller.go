@@ -3,14 +3,15 @@ package publicdomain
 import (
 	"context"
 
-	certmanagerv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/rancher/rio/modules/letsencrypt/controllers/issuer"
+	"github.com/rancher/wrangler/pkg/condition"
+	"k8s.io/apimachinery/pkg/api/errors"
+
 	v1 "github.com/rancher/rio/pkg/apis/admin.rio.cattle.io/v1"
 	adminv1controller "github.com/rancher/rio/pkg/generated/controllers/admin.rio.cattle.io/v1"
 	"github.com/rancher/rio/pkg/indexes"
 	"github.com/rancher/rio/types"
 	corev1controller "github.com/rancher/wrangler-api/pkg/generated/controllers/core/v1"
+	"github.com/rancher/wrangler/pkg/generic"
 	name2 "github.com/rancher/wrangler/pkg/name"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -23,10 +24,11 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		secretsCache:           rContext.Core.Core().V1().Secret().Cache(),
 		publicDomainCache:      rContext.Admin.Admin().V1().PublicDomain().Cache(),
 		publicDomainController: rContext.Admin.Admin().V1().PublicDomain(),
+		certificateCache:       rContext.Admin.Admin().V1().Certificate().Cache(),
 	}
 
 	apply := rContext.Apply.
-		WithCacheTypes(rContext.CertManager.Certmanager().V1alpha2().Certificate())
+		WithCacheTypes(rContext.Admin.Admin().V1().Certificate())
 
 	adminv1controller.RegisterPublicDomainGeneratingHandler(ctx,
 		rContext.Admin.Admin().V1().PublicDomain(),
@@ -34,7 +36,9 @@ func Register(ctx context.Context, rContext *types.Context) error {
 		"LetsencryptCertificateDeployed",
 		"letsencrypt-publicdomain",
 		fh.Handle,
-		nil)
+		&generic.GeneratingHandlerOptions{
+			AllowClusterScoped: true,
+		})
 
 	rContext.Core.Core().V1().Secret().OnChange(ctx, "letsencrypt", fh.onSecretChange)
 
@@ -46,6 +50,7 @@ type certsHandler struct {
 	secretsCache           corev1controller.SecretCache
 	publicDomainCache      adminv1controller.PublicDomainCache
 	publicDomainController adminv1controller.PublicDomainController
+	certificateCache       adminv1controller.CertificateCache
 }
 
 func (f *certsHandler) onSecretChange(key string, obj *corev1.Secret) (*corev1.Secret, error) {
@@ -66,13 +71,19 @@ func (f *certsHandler) Handle(obj *v1.PublicDomain, status v1.PublicDomainStatus
 	}
 
 	cert := certificateHTTP(f.namespace, obj.Name)
-	status.AssignedSecretName = cert.Spec.SecretName
+	status.AssignedSecretName = cert.Spec.SecretRef.Name
 
 	if status.AssignedSecretName == "" {
 		status.HTTPSSupported = false
 	} else {
-		_, err := f.secretsCache.Get(f.namespace, status.AssignedSecretName)
-		status.HTTPSSupported = err == nil
+		cert, err := f.certificateCache.Get(status.AssignedSecretName)
+		if errors.IsNotFound(err) {
+			status.HTTPSSupported = false
+		} else if err != nil {
+			return nil, status, err
+		} else {
+			status.HTTPSSupported = condition.Cond("CertificateDeployed").IsTrue(cert)
+		}
 	}
 
 	return []runtime.Object{
@@ -80,21 +91,17 @@ func (f *certsHandler) Handle(obj *v1.PublicDomain, status v1.PublicDomainStatus
 	}, status, nil
 }
 
-func certificateHTTP(namespace, domain string) *certmanagerv1alpha2.Certificate {
+func certificateHTTP(namespace, domain string) *v1.Certificate {
 	name := name2.SafeConcatName(domain, "tls")
-	return &certmanagerv1alpha2.Certificate{
+	return &v1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      name,
-			Annotations: map[string]string{
-				"cert-manager.io/issue-temporary-certificate": "true",
-			},
 		},
-		Spec: certmanagerv1alpha2.CertificateSpec{
-			SecretName: name,
-			IssuerRef: cmmeta.ObjectReference{
-				Kind: "Issuer",
-				Name: issuer.RioHTTPIssuer,
+		Spec: v1.CertificateSpec{
+			SecretRef: corev1.SecretReference{
+				Name:      name,
+				Namespace: namespace,
 			},
 			DNSNames: []string{
 				domain,

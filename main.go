@@ -73,6 +73,24 @@ func main() {
 			Destination: &config.ConfigController.Features,
 			Value:       "autoscaling,build",
 		},
+		cli.StringFlag{
+			Name:        "mesh-mode",
+			Usage:       "Specify which mesh-mode to use(linkerd/istio)",
+			Destination: &config.ConfigController.MeshMode,
+			Value:       "istio",
+		},
+		cli.StringFlag{
+			Name:        "gateway-service-name",
+			Usage:       "Specify which external gateway service name",
+			Destination: &config.ConfigController.Gateway.ServiceName,
+			Value:       "",
+		},
+		cli.StringFlag{
+			Name:        "gateway-service-namespace",
+			Usage:       "Specify which external gateway service namespace",
+			Destination: &config.ConfigController.Gateway.ServiceNamespace,
+			Value:       "",
+		},
 	}
 	app.Flags = append(app.Flags, debug.Flags(&debugConfig)...)
 	app.Action = run

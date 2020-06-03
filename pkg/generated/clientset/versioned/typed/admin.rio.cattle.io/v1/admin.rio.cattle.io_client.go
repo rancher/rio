@@ -26,6 +26,7 @@ import (
 
 type AdminV1Interface interface {
 	RESTClient() rest.Interface
+	CertificatesGetter
 	ClusterDomainsGetter
 	PublicDomainsGetter
 	RioInfosGetter
@@ -35,6 +36,10 @@ type AdminV1Interface interface {
 // AdminV1Client is used to interact with features provided by the admin.rio.cattle.io group.
 type AdminV1Client struct {
 	restClient rest.Interface
+}
+
+func (c *AdminV1Client) Certificates() CertificateInterface {
+	return newCertificates(c)
 }
 
 func (c *AdminV1Client) ClusterDomains() ClusterDomainInterface {

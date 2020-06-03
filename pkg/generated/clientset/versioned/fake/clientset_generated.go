@@ -24,8 +24,12 @@ import (
 	fakeadminv1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/admin.rio.cattle.io/v1/fake"
 	managementv3 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/management.cattle.io/v3"
 	fakemanagementv3 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/management.cattle.io/v3/fake"
+	networkingv1alpha3 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/networking/v1alpha3"
+	fakenetworkingv1alpha3 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/networking/v1alpha3/fake"
 	riov1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/rio.cattle.io/v1"
 	fakeriov1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/rio.cattle.io/v1/fake"
+	splitv1alpha1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/split/v1alpha1"
+	fakesplitv1alpha1 "github.com/rancher/rio/pkg/generated/clientset/versioned/typed/split/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -90,7 +94,17 @@ func (c *Clientset) ManagementV3() managementv3.ManagementV3Interface {
 	return &fakemanagementv3.FakeManagementV3{Fake: &c.Fake}
 }
 
+// NetworkingV1alpha3 retrieves the NetworkingV1alpha3Client
+func (c *Clientset) NetworkingV1alpha3() networkingv1alpha3.NetworkingV1alpha3Interface {
+	return &fakenetworkingv1alpha3.FakeNetworkingV1alpha3{Fake: &c.Fake}
+}
+
 // RioV1 retrieves the RioV1Client
 func (c *Clientset) RioV1() riov1.RioV1Interface {
 	return &fakeriov1.FakeRioV1{Fake: &c.Fake}
+}
+
+// SplitV1alpha1 retrieves the SplitV1alpha1Client
+func (c *Clientset) SplitV1alpha1() splitv1alpha1.SplitV1alpha1Interface {
+	return &fakesplitv1alpha1.FakeSplitV1alpha1{Fake: &c.Fake}
 }

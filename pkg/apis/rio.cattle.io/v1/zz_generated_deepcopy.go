@@ -504,6 +504,11 @@ func (in *Match) DeepCopyInto(out *Match) {
 		*out = new(StringMatch)
 		**out = **in
 	}
+	if in.Schema != nil {
+		in, out := &in.Schema, &out.Schema
+		*out = new(StringMatch)
+		**out = **in
+	}
 	if in.Methods != nil {
 		in, out := &in.Methods, &out.Methods
 		*out = make([]string, len(*in))

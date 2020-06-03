@@ -2,7 +2,7 @@ package constructors
 
 import (
 	splitv1alpha1 "github.com/deislabs/smi-sdk-go/pkg/apis/split/v1alpha1"
-	tektonv1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
@@ -103,7 +103,7 @@ func NewEndpoints(namespace, name string, obj v1.Endpoints) *v1.Endpoints {
 	return &obj
 }
 
-func NewTaskRun(namespace, name string, obj tektonv1alpha1.TaskRun) *tektonv1alpha1.TaskRun {
+func NewTaskRun(namespace, name string, obj tektonv1beta1.TaskRun) *tektonv1beta1.TaskRun {
 	obj.APIVersion = "tekton.dev/v1alpha1"
 	obj.Kind = "TaskRun"
 	obj.Name = name

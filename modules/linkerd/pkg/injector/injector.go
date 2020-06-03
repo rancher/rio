@@ -1,16 +1,17 @@
 package injector
 
 import (
+	"github.com/rancher/rio/pkg/config"
 	"github.com/rancher/wrangler/pkg/apply/injectors"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func RegisterInjector() {
-	injectors.Register("mesh", addLinkerdLabel)
+	injectors.Register("mesh", addServiceMeshLabel)
 }
 
-func addLinkerdLabel(objs []runtime.Object) ([]runtime.Object, error) {
+func addServiceMeshLabel(objs []runtime.Object) ([]runtime.Object, error) {
 	for _, obj := range objs {
 		switch o := obj.(type) {
 		case *appsv1.Deployment:
@@ -25,11 +26,16 @@ func addLinkerdLabel(objs []runtime.Object) ([]runtime.Object, error) {
 }
 
 func setAnnotations(annotation map[string]string) {
-	if annotation["rio.cattle.io/mesh"] != "true" {
-		return
-	}
 	if annotation == nil {
 		annotation = map[string]string{}
 	}
-	annotation["linkerd.io/inject"] = "enabled"
+	if annotation["rio.cattle.io/mesh"] != "true" {
+		if config.ConfigController.MeshMode == "istio" {
+			annotation["sidecar.istio.io/inject"] = "disabled"
+		}
+		return
+	}
+	if config.ConfigController.MeshMode == "linkerd" {
+		annotation["linkerd.io/inject"] = "enabled"
+	}
 }

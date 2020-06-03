@@ -18,8 +18,13 @@ package v1alpha1
 
 import (
 	"context"
-	"fmt"
+
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"github.com/tektoncd/pipeline/pkg/contexts"
+	"knative.dev/pkg/apis"
 )
+
+var _ apis.Defaultable = (*Task)(nil)
 
 func (t *Task) SetDefaults(ctx context.Context) {
 	t.Spec.SetDefaults(ctx)
@@ -27,14 +32,17 @@ func (t *Task) SetDefaults(ctx context.Context) {
 
 // SetDefaults set any defaults for the task spec
 func (ts *TaskSpec) SetDefaults(ctx context.Context) {
-	if ts.Outputs != nil && len(ts.Outputs.Resources) > 0 {
-		for i, o := range ts.Outputs.Resources {
-			if o.Type == PipelineResourceTypeImage {
-				if o.OutputImageDir == "" {
-					ts.Outputs.Resources[i].OutputImageDir = fmt.Sprintf("%s/%s", TaskOutputImageDefaultDir, o.Name)
-				}
+	if contexts.IsUpgradeViaDefaulting(ctx) {
+		v := v1beta1.TaskSpec{}
+		if ts.ConvertTo(ctx, &v) == nil {
+			alpha := TaskSpec{}
+			if alpha.ConvertFrom(ctx, &v) == nil {
+				*ts = alpha
 			}
 		}
+	}
+	for i := range ts.Params {
+		ts.Params[i].SetDefaults(ctx)
 	}
 	if ts.Inputs != nil {
 		ts.Inputs.SetDefaults(ctx)

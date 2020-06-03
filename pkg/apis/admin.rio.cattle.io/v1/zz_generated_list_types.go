@@ -91,3 +91,20 @@ func NewSystemStack(namespace, name string, obj SystemStack) *SystemStack {
 	obj.Namespace = namespace
 	return &obj
 }
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// CertificateList is a list of Certificate resources
+type CertificateList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []Certificate `json:"items"`
+}
+
+func NewCertificate(namespace, name string, obj Certificate) *Certificate {
+	obj.APIVersion, obj.Kind = SchemeGroupVersion.WithKind("Certificate").ToAPIVersionAndKind()
+	obj.Name = name
+	obj.Namespace = namespace
+	return &obj
+}

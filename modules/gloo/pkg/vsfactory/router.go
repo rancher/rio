@@ -1,8 +1,9 @@
 package vsfactory
 
 import (
-	"net/url"
 	"time"
+
+	"github.com/rancher/rio/modules/istio/controller/pkg"
 
 	"github.com/gogo/protobuf/types"
 	riov1 "github.com/rancher/rio/pkg/apis/rio.cattle.io/v1"
@@ -14,7 +15,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
-	solovcorev1 "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -38,9 +39,7 @@ func (f *VirtualServiceFactory) ForRouter(router *riov1.Router) ([]*solov1.Virtu
 	}
 	configureHTTPSRedirect(router, result)
 
-	if err := f.InjectACME(vs); err != nil {
-		return nil, err
-	}
+	f.InjectACME(vs)
 
 	return result, nil
 }
@@ -72,7 +71,7 @@ func vsForRouter(router *riov1.Router) (*solov1.VirtualService, error) {
 		},
 	}
 
-	domains, err := domains(router)
+	domains, err := pkg.Domains(router)
 	if err != nil {
 		return nil, err
 	}
@@ -84,25 +83,6 @@ func vsForRouter(router *riov1.Router) (*solov1.VirtualService, error) {
 	}
 
 	return vs, nil
-}
-
-func domains(router *riov1.Router) (result []string, err error) {
-	seen := map[string]bool{}
-	for _, endpoint := range router.Status.Endpoints {
-		u, err := url.Parse(endpoint)
-		if err != nil {
-			return nil, err
-		}
-
-		if seen[u.Host] {
-			continue
-		}
-		seen[u.Host] = true
-
-		result = append(result, u.Host)
-	}
-
-	return
 }
 
 func headersToHeaders(hs *riov1.HeaderOperations) *headers.HeaderManipulation {
@@ -228,7 +208,7 @@ func addSingleDestination(namespace string, route riov1.RouteSpec, gatewayRoute 
 
 func addMirror(namespace string, route riov1.RouteSpec, gatewayRoute *gatewayv1.Route) {
 	gatewayRoute.Action = &gatewayv1.Route_DelegateAction{
-		DelegateAction: destinationToRef(namespace, route.Mirror),
+		DelegateAction: destinationToAction(namespace, route.Mirror),
 	}
 }
 
@@ -281,12 +261,23 @@ func addRetry(route riov1.RouteSpec, gatewayRoute *gatewayv1.Route) {
 	}
 }
 
-func destinationToRef(namespace string, dest *riov1.Destination) *solovcorev1.ResourceRef {
+func destinationToAction(namespace string, dest *riov1.Destination) *gatewayv1.DelegateAction {
 	name := dest.App
 	if dest.Version != "" {
 		name = name2.SafeConcatName(name + "-" + dest.Version)
 	}
-	return &solovcorev1.ResourceRef{
+	return &gatewayv1.DelegateAction{
+		Name:      name,
+		Namespace: namespace,
+	}
+}
+
+func destinationToRef(namespace string, dest *riov1.Destination) *core.ResourceRef {
+	name := dest.App
+	if dest.Version != "" {
+		name = name2.SafeConcatName(name + "-" + dest.Version)
+	}
+	return &core.ResourceRef{
 		Name:      name,
 		Namespace: namespace,
 	}

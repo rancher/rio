@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/rancher/rio/cli/cmd/edit/edit"
 	"github.com/rancher/rio/cli/pkg/builder"
@@ -129,6 +130,9 @@ func (s *Feature) Run(ctx *clicontext.CLIContext) error {
 			Description: feature.Description,
 		})
 	}
+	sort.Slice(data, func(i, j int) bool {
+		return data[i].Name < data[j].Name
+	})
 	writer := tables.NewFeatures(ctx)
 	defer writer.TableWriter().Close()
 	for _, obj := range data {

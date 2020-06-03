@@ -343,14 +343,15 @@ func (a *{{.lowerName}}StatusHandler) sync(key string, obj *{{.version}}.{{.type
 		return obj, nil
 	}
 
-	status := obj.Status
+	origStatus := obj.Status
 	obj = obj.DeepCopy()
 	newStatus, err := a.handler(obj, obj.Status)
 	if err != nil {
 		// Revert to old status on error
-		newStatus = *status.DeepCopy()
+		newStatus = *origStatus.DeepCopy()
 	}
 
+	obj.Status = newStatus
 	if a.condition != "" {
 		if errors.IsConflict(err) {
 			a.condition.SetError(obj, "", nil)
@@ -358,9 +359,8 @@ func (a *{{.lowerName}}StatusHandler) sync(key string, obj *{{.version}}.{{.type
 			a.condition.SetError(obj, "", err)
 		}
 	}
-	if !equality.Semantic.DeepEqual(status, newStatus) {
+	if !equality.Semantic.DeepEqual(origStatus, obj.Status) {
 		var newErr error
-		obj.Status = newStatus
 		obj, newErr = a.client.UpdateStatus(obj)
 		if err == nil {
 			err = newErr

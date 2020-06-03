@@ -21,7 +21,8 @@ import (
 	"github.com/rancher/wrangler/pkg/name"
 	"github.com/rancher/wrangler/pkg/objectset"
 	"github.com/rancher/wrangler/pkg/relatedresource"
-	tektonv1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	resource "github.com/tektoncd/pipeline/pkg/apis/resource/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -168,8 +169,11 @@ func (p populator) populateBuild(buildKey, namespace string, build *riov1.ImageB
 	}
 
 	dir, fileName := filepath.Join(build.Context, filepath.Dir(build.Dockerfile)), filepath.Base(build.Dockerfile)
-	taskrun := constructors.NewTaskRun(namespace, trName, tektonv1alpha1.TaskRun{
+	taskrun := constructors.NewTaskRun(namespace, trName, tektonv1beta1.TaskRun{
 		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				"sidecar.istio.io/inject": "false",
+			},
 			Labels: map[string]string{
 				constants.ContainerLabel: buildKey,
 				constants.ServiceLabel:   svc.Name,
@@ -177,38 +181,44 @@ func (p populator) populateBuild(buildKey, namespace string, build *riov1.ImageB
 				constants.LogTokenLabel:  status.BuildLogToken,
 			},
 		},
-		Spec: tektonv1alpha1.TaskRunSpec{
+		Spec: tektonv1beta1.TaskRunSpec{
 			ServiceAccountName: sa.Name,
 			Timeout:            timeout,
-			TaskSpec: &tektonv1alpha1.TaskSpec{
-				Inputs: &tektonv1alpha1.Inputs{
-					Params: []tektonv1alpha1.ParamSpec{
+			TaskSpec: &tektonv1beta1.TaskSpec{
+				Resources: &tektonv1beta1.TaskResources{
+					Inputs: []tektonv1beta1.TaskResource{
 						{
-							Name:        "image",
-							Type:        tektonv1alpha1.ParamTypeString,
-							Description: "Where to publish the resulting image",
-						},
-						{
-							Name:        "docker-context",
-							Type:        tektonv1alpha1.ParamTypeString,
-							Description: "The context of the build",
-						},
-						{
-							Name:        "insecure-registry",
-							Type:        tektonv1alpha1.ParamTypeString,
-							Description: "Whether to use insecure registry",
-						},
-					},
-					Resources: []tektonv1alpha1.TaskResource{
-						{
-							ResourceDeclaration: tektonv1alpha1.ResourceDeclaration{
+							ResourceDeclaration: resource.ResourceDeclaration{
 								Name: "source",
-								Type: tektonv1alpha1.PipelineResourceTypeGit,
+								Type: resource.PipelineResourceTypeGit,
 							},
 						},
 					},
 				},
-				Steps: []tektonv1alpha1.Step{
+				Params: []tektonv1beta1.ParamSpec{
+					{
+						Name: "image",
+						Default: &tektonv1beta1.ArrayOrString{
+							Type:      tektonv1beta1.ParamTypeString,
+							StringVal: ImageName(namespace, buildKey, build),
+						},
+					},
+					{
+						Name: "insecure-registry",
+						Default: &tektonv1beta1.ArrayOrString{
+							Type:      tektonv1beta1.ParamTypeString,
+							StringVal: strconv.FormatBool(build.PushRegistry == ""),
+						},
+					},
+					{
+						Name: "docker-context",
+						Default: &tektonv1beta1.ArrayOrString{
+							Type:      tektonv1beta1.ParamTypeString,
+							StringVal: build.Context,
+						},
+					},
+				},
+				Steps: []tektonv1beta1.Step{
 					{
 						Container: corev1.Container{
 							Name:       "build-and-push",
@@ -224,45 +234,22 @@ func (p populator) populateBuild(buildKey, namespace string, build *riov1.ImageB
 								"--progress=plain",
 								"--frontend=dockerfile.v0",
 								"--opt", fmt.Sprintf("filename=%s", fileName),
-								"--local", "context=$(inputs.params.docker-context)",
+								"--local", "context=$(params.docker-context)",
 								"--local", fmt.Sprintf("dockerfile=%s", dir),
-								"--output", "type=image,name=$(inputs.params.image),push=true,registry.insecure=$(inputs.params.insecure-registry)",
+								"--output", "type=image,name=$(params.image),push=true,registry.insecure=$(params.insecure-registry)",
 							},
 						},
 					},
 				},
 			},
-			Inputs: tektonv1alpha1.TaskRunInputs{
-				Params: []tektonv1alpha1.Param{
+			Resources: &tektonv1beta1.TaskRunResources{
+				Inputs: []tektonv1beta1.TaskResourceBinding{
 					{
-						Name: "image",
-						Value: tektonv1alpha1.ArrayOrString{
-							Type:      tektonv1alpha1.ParamTypeString,
-							StringVal: ImageName(namespace, buildKey, build),
-						},
-					},
-					{
-						Name: "insecure-registry",
-						Value: tektonv1alpha1.ArrayOrString{
-							Type:      tektonv1alpha1.ParamTypeString,
-							StringVal: strconv.FormatBool(build.PushRegistry == ""),
-						},
-					},
-					{
-						Name: "docker-context",
-						Value: tektonv1alpha1.ArrayOrString{
-							Type:      tektonv1alpha1.ParamTypeString,
-							StringVal: build.Context,
-						},
-					},
-				},
-				Resources: []tektonv1alpha1.TaskResourceBinding{
-					{
-						PipelineResourceBinding: tektonv1alpha1.PipelineResourceBinding{
+						PipelineResourceBinding: tektonv1beta1.PipelineResourceBinding{
 							Name: "source",
-							ResourceSpec: &tektonv1alpha1.PipelineResourceSpec{
-								Type: tektonv1alpha1.PipelineResourceTypeGit,
-								Params: []tektonv1alpha1.ResourceParam{
+							ResourceSpec: &resource.PipelineResourceSpec{
+								Type: tektonv1beta1.PipelineResourceTypeGit,
+								Params: []tektonv1beta1.ResourceParam{
 									{
 										Name:  "url",
 										Value: build.Repo,

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -69,12 +70,9 @@ func (r *reconciler) syncResource(ctx context.Context, desired resources.Resourc
 		// default transition policy: only perform an update if the Hash has changed
 		if transition == nil {
 			transition = func(original, desired resources.Resource) (b bool, e error) {
-				originalHasher, ok1 := original.(resources.HashableResource)
-				desiredHasher, ok2 := desired.(resources.HashableResource)
-
-				// both are hashable
-				if ok1 && ok2 {
-					return originalHasher.Hash() != desiredHasher.Hash(), nil
+				equal, ok := hashutils.HashableEqual(original, desired)
+				if ok {
+					return !equal, nil
 				}
 
 				// default behavior: perform the update if one if the objects are not hashable

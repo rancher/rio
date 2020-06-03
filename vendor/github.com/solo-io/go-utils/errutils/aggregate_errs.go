@@ -3,7 +3,7 @@ package errutils
 import (
 	"context"
 
-	"github.com/solo-io/go-utils/errors"
+	"github.com/pkg/errors"
 )
 
 func AggregateErrs(ctx context.Context, dest chan error, src <-chan error, srcInfo string) {

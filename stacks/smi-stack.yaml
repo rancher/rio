@@ -7,7 +7,10 @@ kubernetes:
       name: trafficsplits.split.smi-spec.io
     spec:
       group: split.smi-spec.io
-      version: v1alpha1
+      versions:
+      - name: v1alpha1
+        storage: true
+        served: true
       scope: Namespaced
       names:
         kind: TrafficSplit
