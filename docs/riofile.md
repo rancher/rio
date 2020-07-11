@@ -387,7 +387,7 @@ template:
 
 #### How to use Rio to deploy an application with arbitary YAML
 
-In this example we will see how to define both a normal Rio service and arbitary Kubernetse manifests and deploy both of these with Rio. Follow the quickstart to get Rio installed into your cluster and ensure the output of `rio info` looks similar to this:
+In this example we will see how to define both a normal Rio service and arbitary Kubernetes manifests and deploy both of these with Rio. Follow the quickstart to get Rio installed into your cluster and ensure the output of `rio info` looks similar to this:
 ```
 Rio Version:  >=0.6.0
 Rio CLI Version: >=0.6.0
