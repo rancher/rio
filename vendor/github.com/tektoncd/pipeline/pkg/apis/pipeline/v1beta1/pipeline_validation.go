@@ -41,16 +41,18 @@ func (p *Pipeline) Validate(ctx context.Context) *apis.FieldError {
 	return p.Spec.Validate(ctx)
 }
 
-func validateDeclaredResources(ps *PipelineSpec) error {
+// validateDeclaredResources ensures that the specified resources have unique names and
+// validates that all the resources referenced by pipeline tasks are declared in the pipeline
+func validateDeclaredResources(resources []PipelineDeclaredResource, tasks []PipelineTask, finalTasks []PipelineTask) error {
 	encountered := map[string]struct{}{}
-	for _, r := range ps.Resources {
+	for _, r := range resources {
 		if _, ok := encountered[r.Name]; ok {
 			return fmt.Errorf("resource with name %q appears more than once", r.Name)
 		}
 		encountered[r.Name] = struct{}{}
 	}
 	required := []string{}
-	for _, t := range ps.Tasks {
+	for _, t := range tasks {
 		if t.Resources != nil {
 			for _, input := range t.Resources.Inputs {
 				required = append(required, input.Resource)
@@ -66,9 +68,19 @@ func validateDeclaredResources(ps *PipelineSpec) error {
 			}
 		}
 	}
+	for _, t := range finalTasks {
+		if t.Resources != nil {
+			for _, input := range t.Resources.Inputs {
+				required = append(required, input.Resource)
+			}
+			for _, output := range t.Resources.Outputs {
+				required = append(required, output.Resource)
+			}
+		}
+	}
 
-	provided := make([]string, 0, len(ps.Resources))
-	for _, resource := range ps.Resources {
+	provided := make([]string, 0, len(resources))
+	for _, resource := range resources {
 		provided = append(provided, resource.Name)
 	}
 	missing := list.DiffLeft(required, provided)
@@ -89,7 +101,7 @@ func isOutput(outputs []PipelineTaskOutputResource, resource string) bool {
 
 // validateFrom ensures that the `from` values make sense: that they rely on values from Tasks
 // that ran previously, and that the PipelineResource is actually an output of the Task it should come from.
-func validateFrom(tasks []PipelineTask) error {
+func validateFrom(tasks []PipelineTask) *apis.FieldError {
 	taskOutputs := map[string][]PipelineTaskOutputResource{}
 	for _, task := range tasks {
 		var to []PipelineTaskOutputResource
@@ -113,10 +125,12 @@ func validateFrom(tasks []PipelineTask) error {
 			for _, pt := range rd.From {
 				outputs, found := taskOutputs[pt]
 				if !found {
-					return fmt.Errorf("expected resource %s to be from task %s, but task %s doesn't exist", rd.Resource, pt, pt)
+					return apis.ErrInvalidValue(fmt.Sprintf("expected resource %s to be from task %s, but task %s doesn't exist", rd.Resource, pt, pt),
+						"spec.tasks.resources.inputs.from")
 				}
 				if !isOutput(outputs, rd.Resource) {
-					return fmt.Errorf("the resource %s from %s must be an output but is an input", rd.Resource, pt)
+					return apis.ErrInvalidValue(fmt.Sprintf("the resource %s from %s must be an output but is an input", rd.Resource, pt),
+						"spec.tasks.resources.inputs.from")
 				}
 			}
 		}
@@ -141,56 +155,20 @@ func (ps *PipelineSpec) Validate(ctx context.Context) *apis.FieldError {
 		return apis.ErrGeneric("expected at least one, got none", "spec.description", "spec.params", "spec.resources", "spec.tasks", "spec.workspaces")
 	}
 
-	// Names cannot be duplicated
-	taskNames := map[string]struct{}{}
-	for i, t := range ps.Tasks {
-		if errs := validation.IsDNS1123Label(t.Name); len(errs) > 0 {
-			return &apis.FieldError{
-				Message: fmt.Sprintf("invalid value %q", t.Name),
-				Paths:   []string{fmt.Sprintf("spec.tasks[%d].name", i)},
-				Details: "Pipeline Task name must be a valid DNS Label. For more info refer to https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names",
-			}
-		}
-		// can't have both taskRef and taskSpec at the same time
-		if (t.TaskRef != nil && t.TaskRef.Name != "") && t.TaskSpec != nil {
-			return apis.ErrMultipleOneOf(fmt.Sprintf("spec.tasks[%d].taskRef", i), fmt.Sprintf("spec.tasks[%d].taskSpec", i))
-		}
-		// Check that one of TaskRef and TaskSpec is present
-		if (t.TaskRef == nil || (t.TaskRef != nil && t.TaskRef.Name == "")) && t.TaskSpec == nil {
-			return apis.ErrMissingOneOf(fmt.Sprintf("spec.tasks[%d].taskRef", i), fmt.Sprintf("spec.tasks[%d].taskSpec", i))
-		}
-		// Validate TaskSpec if it's present
-		if t.TaskSpec != nil {
-			if err := t.TaskSpec.Validate(ctx); err != nil {
-				return err
-			}
-		}
-		if t.TaskRef != nil && t.TaskRef.Name != "" {
-			// Task names are appended to the container name, which must exist and
-			// must be a valid k8s name
-			if errSlice := validation.IsQualifiedName(t.Name); len(errSlice) != 0 {
-				return apis.ErrInvalidValue(strings.Join(errSlice, ","), fmt.Sprintf("spec.tasks[%d].name", i))
-			}
-			// TaskRef name must be a valid k8s name
-			if errSlice := validation.IsQualifiedName(t.TaskRef.Name); len(errSlice) != 0 {
-				return apis.ErrInvalidValue(strings.Join(errSlice, ","), fmt.Sprintf("spec.tasks[%d].taskRef.name", i))
-			}
-			if _, ok := taskNames[t.Name]; ok {
-				return apis.ErrMultipleOneOf(fmt.Sprintf("spec.tasks[%d].name", i))
-			}
-			taskNames[t.Name] = struct{}{}
-		}
+	// PipelineTask must have a valid unique label and at least one of taskRef or taskSpec should be specified
+	if err := validatePipelineTasks(ctx, ps.Tasks, ps.Finally); err != nil {
+		return err
 	}
 
 	// All declared resources should be used, and the Pipeline shouldn't try to use any resources
 	// that aren't declared
-	if err := validateDeclaredResources(ps); err != nil {
+	if err := validateDeclaredResources(ps.Resources, ps.Tasks, ps.Finally); err != nil {
 		return apis.ErrInvalidValue(err.Error(), "spec.resources")
 	}
 
 	// The from values should make sense
 	if err := validateFrom(ps.Tasks); err != nil {
-		return apis.ErrInvalidValue(err.Error(), "spec.tasks.resources.inputs.from")
+		return err
 	}
 
 	// Validate the pipeline task graph
@@ -207,8 +185,12 @@ func (ps *PipelineSpec) Validate(ctx context.Context) *apis.FieldError {
 		return err
 	}
 
+	if err := validatePipelineParameterVariables(ps.Finally, ps.Params); err != nil {
+		return err
+	}
+
 	// Validate the pipeline's workspaces.
-	if err := validatePipelineWorkspaces(ps.Workspaces, ps.Tasks); err != nil {
+	if err := validatePipelineWorkspaces(ps.Workspaces, ps.Tasks, ps.Finally); err != nil {
 		return err
 	}
 
@@ -217,10 +199,80 @@ func (ps *PipelineSpec) Validate(ctx context.Context) *apis.FieldError {
 		return apis.ErrInvalidValue(err.Error(), "spec.tasks.params.value")
 	}
 
+	if err := validateTasksAndFinallySection(ps); err != nil {
+		return err
+	}
+
+	if err := validateFinalTasks(ps.Finally); err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func validatePipelineWorkspaces(wss []WorkspacePipelineDeclaration, pts []PipelineTask) *apis.FieldError {
+// validatePipelineTasks ensures that pipeline tasks has unique label, pipeline tasks has specified one of
+// taskRef or taskSpec, and in case of a pipeline task with taskRef, it has a reference to a valid task (task name)
+func validatePipelineTasks(ctx context.Context, tasks []PipelineTask, finalTasks []PipelineTask) *apis.FieldError {
+	// Names cannot be duplicated
+	taskNames := map[string]struct{}{}
+	var err *apis.FieldError
+	for i, t := range tasks {
+		if err = validatePipelineTaskName(ctx, "spec.tasks", i, t, taskNames); err != nil {
+			return err
+		}
+	}
+	for i, t := range finalTasks {
+		if err = validatePipelineTaskName(ctx, "spec.finally", i, t, taskNames); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validatePipelineTaskName(ctx context.Context, prefix string, i int, t PipelineTask, taskNames map[string]struct{}) *apis.FieldError {
+	if errs := validation.IsDNS1123Label(t.Name); len(errs) > 0 {
+		return &apis.FieldError{
+			Message: fmt.Sprintf("invalid value %q", t.Name),
+			Paths:   []string{fmt.Sprintf(prefix+"[%d].name", i)},
+			Details: "Pipeline Task name must be a valid DNS Label." +
+				"For more info refer to https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names",
+		}
+	}
+	// can't have both taskRef and taskSpec at the same time
+	if (t.TaskRef != nil && t.TaskRef.Name != "") && t.TaskSpec != nil {
+		return apis.ErrMultipleOneOf(fmt.Sprintf(prefix+"[%d].taskRef", i), fmt.Sprintf(prefix+"[%d].taskSpec", i))
+	}
+	// Check that one of TaskRef and TaskSpec is present
+	if (t.TaskRef == nil || (t.TaskRef != nil && t.TaskRef.Name == "")) && t.TaskSpec == nil {
+		return apis.ErrMissingOneOf(fmt.Sprintf(prefix+"[%d].taskRef", i), fmt.Sprintf(prefix+"[%d].taskSpec", i))
+	}
+	// Validate TaskSpec if it's present
+	if t.TaskSpec != nil {
+		if err := t.TaskSpec.Validate(ctx); err != nil {
+			return err
+		}
+	}
+	if t.TaskRef != nil && t.TaskRef.Name != "" {
+		// Task names are appended to the container name, which must exist and
+		// must be a valid k8s name
+		if errSlice := validation.IsQualifiedName(t.Name); len(errSlice) != 0 {
+			return apis.ErrInvalidValue(strings.Join(errSlice, ","), fmt.Sprintf(prefix+"[%d].name", i))
+		}
+		// TaskRef name must be a valid k8s name
+		if errSlice := validation.IsQualifiedName(t.TaskRef.Name); len(errSlice) != 0 {
+			return apis.ErrInvalidValue(strings.Join(errSlice, ","), fmt.Sprintf(prefix+"[%d].taskRef.name", i))
+		}
+		if _, ok := taskNames[t.Name]; ok {
+			return apis.ErrMultipleOneOf(fmt.Sprintf(prefix+"[%d].name", i))
+		}
+		taskNames[t.Name] = struct{}{}
+	}
+	return nil
+}
+
+// validatePipelineWorkspaces validates the specified workspaces, ensuring having unique name without any empty string,
+// and validates that all the referenced workspaces (by pipeline tasks) are specified in the pipeline
+func validatePipelineWorkspaces(wss []PipelineWorkspaceDeclaration, pts []PipelineTask, finalTasks []PipelineTask) *apis.FieldError {
 	// Workspace names must be non-empty and unique.
 	wsTable := make(map[string]struct{})
 	for i, ws := range wss {
@@ -235,12 +287,22 @@ func validatePipelineWorkspaces(wss []WorkspacePipelineDeclaration, pts []Pipeli
 
 	// Any workspaces used in PipelineTasks should have their name declared in the Pipeline's
 	// Workspaces list.
-	for ptIdx, pt := range pts {
-		for wsIdx, ws := range pt.Workspaces {
+	for i, pt := range pts {
+		for j, ws := range pt.Workspaces {
 			if _, ok := wsTable[ws.Workspace]; !ok {
 				return apis.ErrInvalidValue(
 					fmt.Sprintf("pipeline task %q expects workspace with name %q but none exists in pipeline spec", pt.Name, ws.Workspace),
-					fmt.Sprintf("spec.tasks[%d].workspaces[%d]", ptIdx, wsIdx),
+					fmt.Sprintf("spec.tasks[%d].workspaces[%d]", i, j),
+				)
+			}
+		}
+	}
+	for i, t := range finalTasks {
+		for j, ws := range t.Workspaces {
+			if _, ok := wsTable[ws.Workspace]; !ok {
+				return apis.ErrInvalidValue(
+					fmt.Sprintf("pipeline task %q expects workspace with name %q but none exists in pipeline spec", t.Name, ws.Workspace),
+					fmt.Sprintf("spec.finally[%d].workspaces[%d]", i, j),
 				)
 			}
 		}
@@ -248,6 +310,9 @@ func validatePipelineWorkspaces(wss []WorkspacePipelineDeclaration, pts []Pipeli
 	return nil
 }
 
+// validatePipelineParameterVariables validates parameters with those specified by each pipeline task,
+// (1) it validates the type of parameter is either string or array (2) parameter default value matches
+// with the type of that param (3) ensures that the referenced param variable is defined is part of the param declarations
 func validatePipelineParameterVariables(tasks []PipelineTask, params []ParamSpec) *apis.FieldError {
 	parameterNames := map[string]struct{}{}
 	arrayParameterNames := map[string]struct{}{}
@@ -276,6 +341,9 @@ func validatePipelineParameterVariables(tasks []PipelineTask, params []ParamSpec
 			}
 		}
 
+		if _, ok := parameterNames[p.Name]; ok {
+			return apis.ErrGeneric("parameter appears more than once", fmt.Sprintf("spec.params.%s", p.Name))
+		}
 		// Add parameter name to parameterNames, and to arrayParameterNames if type is array.
 		parameterNames[p.Name] = struct{}{}
 		if p.Type == ParamTypeArray {
@@ -323,7 +391,7 @@ func validatePipelineArraysIsolated(name, value, prefix string, vars map[string]
 	return substitution.ValidateVariableIsolated(name, value, prefix, "task parameter", "pipelinespec.params", vars)
 }
 
-// validateParamResults ensure that task result variables are properly configured
+// validateParamResults ensures that task result variables are properly configured
 func validateParamResults(tasks []PipelineTask) error {
 	for _, task := range tasks {
 		for _, param := range task.Params {
@@ -352,7 +420,7 @@ func filter(arr []string, cond func(string) bool) []string {
 	return result
 }
 
-// validatePipelineResults ensure that task result variables are properly configured
+// validatePipelineResults ensure that pipeline result variables are properly configured
 func validatePipelineResults(results []PipelineResult) error {
 	for _, result := range results {
 		expressions, ok := GetVarSubstitutionExpressionsForPipelineResult(result)
@@ -363,6 +431,65 @@ func validatePipelineResults(results []PipelineResult) error {
 				if len(expressions) != len(resultRefs) {
 					return fmt.Errorf("expected all of the expressions %v to be result expressions but only %v were", expressions, resultRefs)
 				}
+			}
+		}
+	}
+	return nil
+}
+
+func validateTasksAndFinallySection(ps *PipelineSpec) *apis.FieldError {
+	if len(ps.Finally) != 0 && len(ps.Tasks) == 0 {
+		return apis.ErrInvalidValue(fmt.Sprintf("spec.tasks is empty but spec.finally has %d tasks", len(ps.Finally)), "spec.finally")
+	}
+	return nil
+}
+
+func validateFinalTasks(finalTasks []PipelineTask) *apis.FieldError {
+	for _, f := range finalTasks {
+		if len(f.RunAfter) != 0 {
+			return apis.ErrInvalidValue(fmt.Sprintf("no runAfter allowed under spec.finally, final task %s has runAfter specified", f.Name), "spec.finally")
+		}
+		if len(f.Conditions) != 0 {
+			return apis.ErrInvalidValue(fmt.Sprintf("no conditions allowed under spec.finally, final task %s has conditions specified", f.Name), "spec.finally")
+		}
+	}
+
+	if err := validateTaskResultReferenceNotUsed(finalTasks); err != nil {
+		return err
+	}
+
+	if err := validateTasksInputFrom(finalTasks); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func validateTaskResultReferenceNotUsed(tasks []PipelineTask) *apis.FieldError {
+	for _, t := range tasks {
+		for _, p := range t.Params {
+			expressions, ok := GetVarSubstitutionExpressionsForParam(p)
+			if ok {
+				if LooksLikeContainsResultRefs(expressions) {
+					return apis.ErrInvalidValue(fmt.Sprintf("no task result allowed under params,"+
+						"final task param %s has set task result as its value", p.Name), "spec.finally.task.params")
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func validateTasksInputFrom(tasks []PipelineTask) *apis.FieldError {
+	for _, t := range tasks {
+		inputResources := []PipelineTaskInputResource{}
+		if t.Resources != nil {
+			inputResources = append(inputResources, t.Resources.Inputs...)
+		}
+		for _, rd := range inputResources {
+			if len(rd.From) != 0 {
+				return apis.ErrDisallowedFields(fmt.Sprintf("no from allowed under inputs,"+
+					" final task %s has from specified", rd.Name), "spec.finally.task.resources.inputs")
 			}
 		}
 	}

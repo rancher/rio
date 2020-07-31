@@ -72,10 +72,6 @@ const (
 	// TaskRunSpecStatusCancelled indicates that the user wants to cancel the task,
 	// if not already cancelled or terminated
 	TaskRunSpecStatusCancelled = "TaskRunCancelled"
-
-	// TaskRunReasonCancelled indicates that the TaskRun has been cancelled
-	// because it was requested so by the user
-	TaskRunReasonCancelled = "TaskRunCancelled"
 )
 
 // TaskRunInputs holds the input values that this task was invoked with.
@@ -84,17 +80,6 @@ type TaskRunInputs struct {
 	Resources []TaskResourceBinding `json:"resources,omitempty"`
 	// +optional
 	Params []Param `json:"params,omitempty"`
-}
-
-// TaskResourceBinding points to the PipelineResource that
-// will be used for the Task input or output called Name.
-type TaskResourceBinding struct {
-	PipelineResourceBinding `json:",inline"`
-	// Paths will probably be removed in #1284, and then PipelineResourceBinding can be used instead.
-	// The optional Path field corresponds to a path on disk at which the Resource can be found
-	// (used when providing the resource via mounted volume, overriding the default logic to fetch the Resource).
-	// +optional
-	Paths []string `json:"paths,omitempty"`
 }
 
 // TaskRunOutputs holds the output values that this task was invoked with.
@@ -113,6 +98,43 @@ type TaskRunStatus struct {
 	TaskRunStatusFields `json:",inline"`
 }
 
+// TaskRunReason is an enum used to store all TaskRun reason for
+// the Succeeded condition that are controlled by the TaskRun itself. Failure
+// reasons that emerge from underlying resources are not included here
+type TaskRunReason string
+
+const (
+	// TaskRunReasonStarted is the reason set when the TaskRun has just started
+	TaskRunReasonStarted TaskRunReason = "Started"
+	// TaskRunReasonRunning is the reason set when the TaskRun is running
+	TaskRunReasonRunning TaskRunReason = "Running"
+	// TaskRunReasonSuccessful is the reason set when the TaskRun completed successfully
+	TaskRunReasonSuccessful TaskRunReason = "Succeeded"
+	// TaskRunReasonFailed is the reason set when the TaskRun completed with a failure
+	TaskRunReasonFailed TaskRunReason = "Failed"
+	// TaskRunReasonCancelled is the reason set when the Taskrun is cancelled by the user
+	TaskRunReasonCancelled TaskRunReason = "TaskRunCancelled"
+	// TaskRunReasonTimedOut is the reason set when the Taskrun has timed out
+	TaskRunReasonTimedOut TaskRunReason = "TaskRunTimeout"
+)
+
+func (t TaskRunReason) String() string {
+	return string(t)
+}
+
+// GetStartedReason returns the reason set to the "Succeeded" condition when
+// InitializeConditions is invoked
+func (trs *TaskRunStatus) GetStartedReason() string {
+	return TaskRunReasonStarted.String()
+}
+
+// GetRunningReason returns the reason set to the "Succeeded" condition when
+// the RunsToCompletion starts running. This is used indicate that the resource
+// could be validated is starting to perform its job.
+func (trs *TaskRunStatus) GetRunningReason() string {
+	return TaskRunReasonRunning.String()
+}
+
 // MarkResourceNotConvertible adds a Warning-severity condition to the resource noting
 // that it cannot be converted to a higher version.
 func (trs *TaskRunStatus) MarkResourceNotConvertible(err *CannotConvertError) {
@@ -127,11 +149,11 @@ func (trs *TaskRunStatus) MarkResourceNotConvertible(err *CannotConvertError) {
 
 // MarkResourceFailed sets the ConditionSucceeded condition to ConditionFalse
 // based on an error that occurred and a reason
-func (trs *TaskRunStatus) MarkResourceFailed(reason string, err error) {
+func (trs *TaskRunStatus) MarkResourceFailed(reason TaskRunReason, err error) {
 	taskRunCondSet.Manage(trs).SetCondition(apis.Condition{
 		Type:    apis.ConditionSucceeded,
 		Status:  corev1.ConditionFalse,
-		Reason:  reason,
+		Reason:  reason.String(),
 		Message: err.Error(),
 	})
 }
@@ -196,6 +218,11 @@ func (tr *TaskRun) GetOwnerReference() metav1.OwnerReference {
 	return *metav1.NewControllerRef(tr, taskRunGroupVersionKind)
 }
 
+// GetStatusCondition returns the task run status as a ConditionAccessor
+func (tr *TaskRun) GetStatusCondition() apis.ConditionAccessor {
+	return &tr.Status
+}
+
 // GetCondition returns the Condition matching the given type.
 func (trs *TaskRunStatus) GetCondition(t apis.ConditionType) *apis.Condition {
 	return taskRunCondSet.Manage(trs).GetCondition(t)
@@ -204,10 +231,19 @@ func (trs *TaskRunStatus) GetCondition(t apis.ConditionType) *apis.Condition {
 // InitializeConditions will set all conditions in taskRunCondSet to unknown for the TaskRun
 // and set the started time to the current time
 func (trs *TaskRunStatus) InitializeConditions() {
+	started := false
 	if trs.StartTime.IsZero() {
 		trs.StartTime = &metav1.Time{Time: time.Now()}
+		started = true
 	}
-	taskRunCondSet.Manage(trs).InitializeConditions()
+	conditionManager := taskRunCondSet.Manage(trs)
+	conditionManager.InitializeConditions()
+	// Ensure the started reason is set for the "Succeeded" condition
+	if started {
+		initialCondition := conditionManager.GetCondition(apis.ConditionSucceeded)
+		initialCondition.Reason = TaskRunReasonStarted.String()
+		conditionManager.SetCondition(*initialCondition)
+	}
 }
 
 // SetCondition sets the condition, unsetting previous conditions with the same
@@ -220,18 +256,18 @@ func (trs *TaskRunStatus) SetCondition(newCond *apis.Condition) {
 
 // StepState reports the results of running a step in a Task.
 type StepState struct {
-	corev1.ContainerState
-	Name          string `json:"name,omitempty"`
-	ContainerName string `json:"container,omitempty"`
-	ImageID       string `json:"imageID,omitempty"`
+	corev1.ContainerState `json:",inline"`
+	Name                  string `json:"name,omitempty"`
+	ContainerName         string `json:"container,omitempty"`
+	ImageID               string `json:"imageID,omitempty"`
 }
 
 // SidecarState reports the results of running a sidecar in a Task.
 type SidecarState struct {
-	corev1.ContainerState
-	Name          string `json:"name,omitempty"`
-	ContainerName string `json:"container,omitempty"`
-	ImageID       string `json:"imageID,omitempty"`
+	corev1.ContainerState `json:",inline"`
+	Name                  string `json:"name,omitempty"`
+	ContainerName         string `json:"container,omitempty"`
+	ImageID               string `json:"imageID,omitempty"`
 }
 
 // CloudEventDelivery is the target of a cloud event along with the state of
@@ -270,6 +306,7 @@ type CloudEventDeliveryState struct {
 }
 
 // +genclient
+// +genreconciler
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // TaskRun represents a single execution of a Task. TaskRuns are how the steps

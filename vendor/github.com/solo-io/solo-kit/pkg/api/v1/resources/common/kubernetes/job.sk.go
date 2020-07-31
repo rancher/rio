@@ -73,13 +73,10 @@ func (r *Job) GroupVersionKind() schema.GroupVersionKind {
 
 type JobList []*Job
 
-// namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list JobList) Find(namespace, name string) (*Job, error) {
 	for _, job := range list {
-		if job.GetMetadata().Name == name {
-			if namespace == "" || job.GetMetadata().Namespace == namespace {
-				return job, nil
-			}
+		if job.GetMetadata().Name == name && job.GetMetadata().Namespace == namespace {
+			return job, nil
 		}
 	}
 	return nil, errors.Errorf("list did not find job %v.%v", namespace, name)

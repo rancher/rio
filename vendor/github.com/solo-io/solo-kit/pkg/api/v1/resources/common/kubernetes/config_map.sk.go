@@ -73,13 +73,10 @@ func (r *ConfigMap) GroupVersionKind() schema.GroupVersionKind {
 
 type ConfigMapList []*ConfigMap
 
-// namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list ConfigMapList) Find(namespace, name string) (*ConfigMap, error) {
 	for _, configMap := range list {
-		if configMap.GetMetadata().Name == name {
-			if namespace == "" || configMap.GetMetadata().Namespace == namespace {
-				return configMap, nil
-			}
+		if configMap.GetMetadata().Name == name && configMap.GetMetadata().Namespace == namespace {
+			return configMap, nil
 		}
 	}
 	return nil, errors.Errorf("list did not find configMap %v.%v", namespace, name)

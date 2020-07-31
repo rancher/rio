@@ -73,13 +73,10 @@ func (r *Service) GroupVersionKind() schema.GroupVersionKind {
 
 type ServiceList []*Service
 
-// namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list ServiceList) Find(namespace, name string) (*Service, error) {
 	for _, service := range list {
-		if service.GetMetadata().Name == name {
-			if namespace == "" || service.GetMetadata().Namespace == namespace {
-				return service, nil
-			}
+		if service.GetMetadata().Name == name && service.GetMetadata().Namespace == namespace {
+			return service, nil
 		}
 	}
 	return nil, errors.Errorf("list did not find service %v.%v", namespace, name)

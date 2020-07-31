@@ -84,6 +84,17 @@ type TaskRunResources struct {
 	Outputs []TaskResourceBinding `json:"outputs,omitempty"`
 }
 
+// TaskResourceBinding points to the PipelineResource that
+// will be used for the Task input or output called Name.
+type TaskResourceBinding struct {
+	PipelineResourceBinding `json:",inline"`
+	// Paths will probably be removed in #1284, and then PipelineResourceBinding can be used instead.
+	// The optional Path field corresponds to a path on disk at which the Resource can be found
+	// (used when providing the resource via mounted volume, overriding the default logic to fetch the Resource).
+	// +optional
+	Paths []string `json:"paths,omitempty"`
+}
+
 // ResourceDeclaration defines an input or output PipelineResource declared as a requirement
 // by another type such as a Task or Condition. The Name field will be used to refer to these
 // PipelineResources within the type's definition, and when provided as an Input, the Name will be the
@@ -109,8 +120,11 @@ type PipelineResourceBinding struct {
 
 // PipelineResourceResult used to export the image name and digest as json
 type PipelineResourceResult struct {
-	Key         string              `json:"key"`
-	Value       string              `json:"value"`
+	Key          string `json:"key"`
+	Value        string `json:"value"`
+	ResourceName string `json:"resourceName,omitempty"`
+	// This field should be deprecated and removed in the next API version.
+	// See https://github.com/tektoncd/pipeline/issues/2694 for more information.
 	ResourceRef PipelineResourceRef `json:"resourceRef,omitempty"`
 	ResultType  ResultType          `json:"type,omitempty"`
 }
@@ -125,6 +139,23 @@ type PipelineResourceRef struct {
 	// API version of the referent
 	// +optional
 	APIVersion string `json:"apiVersion,omitempty"`
+}
+
+// PipelineResourceInterface interface to be implemented by different PipelineResource types
+type PipelineResourceInterface interface {
+	// GetName returns the name of this PipelineResource instance.
+	GetName() string
+	// GetType returns the type of this PipelineResource (often a super type, e.g. in the case of storage).
+	GetType() PipelineResourceType
+	// Replacements returns all the attributes that this PipelineResource has that
+	// can be used for variable replacement.
+	Replacements() map[string]string
+	// GetOutputTaskModifier returns the TaskModifier instance that should be used on a Task
+	// in order to add this kind of resource when it is being used as an output.
+	GetOutputTaskModifier(ts *TaskSpec, path string) (TaskModifier, error)
+	// GetInputTaskModifier returns the TaskModifier instance that should be used on a Task
+	// in order to add this kind of resource when it is being used as an input.
+	GetInputTaskModifier(ts *TaskSpec, path string) (TaskModifier, error)
 }
 
 // TaskModifier is an interface to be implemented by different PipelineResources

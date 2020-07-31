@@ -73,13 +73,10 @@ func (r *Pod) GroupVersionKind() schema.GroupVersionKind {
 
 type PodList []*Pod
 
-// namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list PodList) Find(namespace, name string) (*Pod, error) {
 	for _, pod := range list {
-		if pod.GetMetadata().Name == name {
-			if namespace == "" || pod.GetMetadata().Namespace == namespace {
-				return pod, nil
-			}
+		if pod.GetMetadata().Name == name && pod.GetMetadata().Namespace == namespace {
+			return pod, nil
 		}
 	}
 	return nil, errors.Errorf("list did not find pod %v.%v", namespace, name)

@@ -43,6 +43,7 @@ replace (
 	k8s.io/sample-apiserver => github.com/rancher/kubernetes/staging/src/k8s.io/sample-apiserver v1.16.2-k3s.1
 	k8s.io/sample-cli-plugin => github.com/rancher/kubernetes/staging/src/k8s.io/sample-cli-plugin v1.16.2-k3s.1
 	k8s.io/sample-controller => github.com/rancher/kubernetes/staging/src/k8s.io/sample-controller v1.16.2-k3s.1
+	k8s.io/utils => k8s.io/utils v0.0.0-20190801114015-581e00157fb1
 )
 
 require (
@@ -50,12 +51,12 @@ require (
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/ahmetb/gen-crd-api-reference-docs v0.1.5
 	github.com/aokoli/goutils v1.1.0
-	github.com/aws/aws-sdk-go v1.27.1
+	github.com/aws/aws-sdk-go v1.30.16
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/chai2010/gettext-go v0.0.0-20170215093142-bf70f2a70fb1 // indirect
 	github.com/containerd/cgroups v0.0.0-20191011165608-5fbad35c2a7e // indirect
 	github.com/containerd/console v0.0.0-20181022165439-0650fd9eeb50
-	github.com/containerd/containerd v1.3.0
+	github.com/containerd/containerd v1.3.3
 	github.com/containerd/fifo v0.0.0-20190816180239-bda0ff6ed73c // indirect
 	github.com/containerd/ttrpc v0.0.0-20191025122922-cf7f4d5f2d61 // indirect
 	github.com/davecgh/go-spew v1.1.1
@@ -65,19 +66,16 @@ require (
 	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c // indirect
 	github.com/docker/go-units v0.4.0
 	github.com/drone/envsubst v1.0.2
-	github.com/fatih/color v1.7.0
+	github.com/fatih/color v1.9.0
 	github.com/go-acme/lego v2.5.0+incompatible
 	github.com/go-acme/lego/v3 v3.1.0
 	github.com/go-bindata/go-bindata v3.1.2+incompatible
-	github.com/go-openapi/spec v0.19.6 // indirect
-	github.com/go-openapi/swag v0.19.7 // indirect
 	github.com/gogo/protobuf v1.3.1
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
 	github.com/hashicorp/vault/api v1.0.5-0.20200117231345-460d63e36490 // indirect
 	github.com/hashicorp/vault/sdk v0.1.14-0.20200121232954-73f411823aa0 // indirect
 	github.com/linkerd/linkerd2 v0.0.0-20191010175117-1039d8254738
-	github.com/mattn/go-shellwords v1.0.5
-	github.com/mitchellh/reflectwalk v1.0.1 // indirect
+	github.com/mattn/go-shellwords v1.0.9
 	github.com/moby/buildkit v0.6.2
 	github.com/onsi/ginkgo v1.11.0
 	github.com/opentracing/opentracing-go v1.1.0 // indirect
@@ -90,17 +88,17 @@ require (
 	github.com/rancher/wrangler-api v0.2.1-0.20191015045805-d3635aa0853a
 	github.com/sclevine/spec v1.4.0
 	github.com/sirupsen/logrus v1.4.2
-	github.com/solo-io/gloo v1.3.3
-	github.com/solo-io/solo-kit v0.13.0
+	github.com/solo-io/gloo v1.4.6
+	github.com/solo-io/solo-kit v0.13.8
 	github.com/stretchr/testify v1.5.1
-	github.com/tektoncd/pipeline v0.12.1
+	github.com/tektoncd/pipeline v0.14.3
 	github.com/urfave/cli v1.22.2
 	github.com/wercker/stern v1.11.0
-	golang.org/x/crypto v0.0.0-20200206161412-a0c6ece9d31a
-	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
+	golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59
+	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
 	gopkg.in/inf.v0 v0.9.1
 	gopkg.in/square/go-jose.v2 v2.4.1 // indirect
-	gopkg.in/yaml.v2 v2.2.8
+	gopkg.in/yaml.v2 v2.3.0
 	gotest.tools v2.2.0+incompatible
 	istio.io/api v0.0.0-20200518203817-6d29a38039bd
 	istio.io/client-go v0.0.0-20200528222059-5465d5e00a32
@@ -108,11 +106,10 @@ require (
 	k8s.io/apiextensions-apiserver v0.18.0
 	k8s.io/apimachinery v0.18.1
 	k8s.io/apiserver v0.0.0
-	k8s.io/cli-runtime v0.0.0
-	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
-	k8s.io/gengo v0.0.0-20191120174120-e74f70b9b27e // indirect
+	k8s.io/cli-runtime v0.17.3
+	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
 	k8s.io/klog v1.0.0
-	k8s.io/kubectl v0.0.0
-	k8s.io/kubernetes v1.16.2
-	sigs.k8s.io/yaml v1.1.0
+	k8s.io/kubectl v0.17.2
+	k8s.io/kubernetes v1.17.1
+	sigs.k8s.io/yaml v1.2.0
 )
