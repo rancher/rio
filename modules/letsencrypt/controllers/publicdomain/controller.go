@@ -32,7 +32,7 @@ func Register(ctx context.Context, rContext *types.Context) error {
 
 	adminv1controller.RegisterPublicDomainGeneratingHandler(ctx,
 		rContext.Admin.Admin().V1().PublicDomain(),
-		apply,
+		apply.WithSetOwnerReference(true, false),
 		"LetsencryptCertificateDeployed",
 		"letsencrypt-publicdomain",
 		fh.Handle,
