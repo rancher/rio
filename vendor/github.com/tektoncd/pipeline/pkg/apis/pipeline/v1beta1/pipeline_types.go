@@ -67,10 +67,14 @@ type PipelineSpec struct {
 	// Workspaces declares a set of named workspaces that are expected to be
 	// provided by a PipelineRun.
 	// +optional
-	Workspaces []WorkspacePipelineDeclaration `json:"workspaces,omitempty"`
+	Workspaces []PipelineWorkspaceDeclaration `json:"workspaces,omitempty"`
 	// Results are values that this pipeline can output once run
 	// +optional
 	Results []PipelineResult `json:"results,omitempty"`
+	// Finally declares the list of Tasks that execute just before leaving the Pipeline
+	// i.e. either after all Tasks are finished executing successfully
+	// or after a failure which would result in ending the Pipeline
+	Finally []PipelineTask `json:"finally,omitempty"`
 }
 
 // PipelineResult used to describe the results of a pipeline

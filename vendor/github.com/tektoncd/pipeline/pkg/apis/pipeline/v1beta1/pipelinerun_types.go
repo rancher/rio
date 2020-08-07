@@ -38,6 +38,7 @@ var (
 )
 
 // +genclient
+// +genreconciler
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // PipelineRun represents a single execution of a Pipeline. PipelineRuns are how
@@ -72,6 +73,11 @@ func (pr *PipelineRun) GetTaskRunRef() corev1.ObjectReference {
 	}
 }
 
+// GetStatusCondition returns the task run status as a ConditionAccessor
+func (pr *PipelineRun) GetStatusCondition() apis.ConditionAccessor {
+	return &pr.Status
+}
+
 // GetOwnerReference gets the pipeline run as owner reference for any related objects
 func (pr *PipelineRun) GetOwnerReference() metav1.OwnerReference {
 	return *metav1.NewControllerRef(pr, groupVersionKind)
@@ -100,6 +106,11 @@ func (pr *PipelineRun) GetRunKey() string {
 
 // IsTimedOut returns true if a pipelinerun has exceeded its spec.Timeout based on its status.Timeout
 func (pr *PipelineRun) IsTimedOut() bool {
+	return pr.HasTimedOut()
+}
+
+// HasTimedOut returns true if a pipelinerun has exceeded its spec.Timeout based on its status.Timeout
+func (pr *PipelineRun) HasTimedOut() bool {
 	pipelineTimeout := pr.Spec.Timeout
 	startTime := pr.Status.StartTime
 
@@ -168,6 +179,9 @@ type PipelineRunSpec struct {
 	// with those declared in the pipeline.
 	// +optional
 	Workspaces []WorkspaceBinding `json:"workspaces,omitempty"`
+	// TaskRunSpecs holds a set of runtime specs
+	// +optional
+	TaskRunSpecs []PipelineTaskRunSpec `json:"taskRunSpecs,omitempty"`
 }
 
 // PipelineRunSpecStatus defines the pipelinerun spec status the user can provide
@@ -197,6 +211,35 @@ type PipelineRunStatus struct {
 	PipelineRunStatusFields `json:",inline"`
 }
 
+// PipelineRunReason represents a reason for the pipeline run "Succeeded" condition
+type PipelineRunReason string
+
+const (
+	// PipelineRunReasonStarted is the reason set when the PipelineRun has just started
+	PipelineRunReasonStarted PipelineRunReason = "Started"
+	// PipelineRunReasonRunning is the reason set when the PipelineRun is running
+	PipelineRunReasonRunning PipelineRunReason = "Running"
+	// PipelineRunReasonSuccessful is the reason set when the PipelineRun completed successfully
+	PipelineRunReasonSuccessful PipelineRunReason = "Succeeded"
+	// PipelineRunReasonCompleted is the reason set when the PipelineRun completed successfully with one or more skipped Tasks
+	PipelineRunReasonCompleted PipelineRunReason = "Completed"
+	// PipelineRunReasonFailed is the reason set when the PipelineRun completed with a failure
+	PipelineRunReasonFailed PipelineRunReason = "Failed"
+	// PipelineRunReasonCancelled is the reason set when the PipelineRun cancelled by the user
+	// This reason may be found with a corev1.ConditionFalse status, if the cancellation was processed successfully
+	// This reason may be found with a corev1.ConditionUnknown status, if the cancellation is being processed or failed
+	PipelineRunReasonCancelled PipelineRunReason = "Cancelled"
+	// PipelineRunReasonTimedOut is the reason set when the PipelineRun has timed out
+	PipelineRunReasonTimedOut PipelineRunReason = "PipelineRunTimeout"
+	// ReasonStopping indicates that no new Tasks will be scheduled by the controller, and the
+	// pipeline will stop once all running tasks complete their work
+	PipelineRunReasonStopping PipelineRunReason = "PipelineRunStopping"
+)
+
+func (t PipelineRunReason) String() string {
+	return string(t)
+}
+
 var pipelineRunCondSet = apis.NewBatchConditionSet()
 
 // GetCondition returns the Condition matching the given type.
@@ -207,13 +250,22 @@ func (pr *PipelineRunStatus) GetCondition(t apis.ConditionType) *apis.Condition 
 // InitializeConditions will set all conditions in pipelineRunCondSet to unknown for the PipelineRun
 // and set the started time to the current time
 func (pr *PipelineRunStatus) InitializeConditions() {
+	started := false
 	if pr.TaskRuns == nil {
 		pr.TaskRuns = make(map[string]*PipelineRunTaskRunStatus)
 	}
 	if pr.StartTime.IsZero() {
 		pr.StartTime = &metav1.Time{Time: time.Now()}
+		started = true
 	}
-	pipelineRunCondSet.Manage(pr).InitializeConditions()
+	conditionManager := pipelineRunCondSet.Manage(pr)
+	conditionManager.InitializeConditions()
+	// Ensure the started reason is set for the "Succeeded" condition
+	if started {
+		initialCondition := conditionManager.GetCondition(apis.ConditionSucceeded)
+		initialCondition.Reason = PipelineRunReasonStarted.String()
+		conditionManager.SetCondition(*initialCondition)
+	}
 }
 
 // SetCondition sets the condition, unsetting previous conditions with the same
@@ -222,6 +274,25 @@ func (pr *PipelineRunStatus) SetCondition(newCond *apis.Condition) {
 	if newCond != nil {
 		pipelineRunCondSet.Manage(pr).SetCondition(*newCond)
 	}
+}
+
+// MarkSucceeded changes the Succeeded condition to True with the provided reason and message.
+func (pr *PipelineRunStatus) MarkSucceeded(reason, messageFormat string, messageA ...interface{}) {
+	pipelineRunCondSet.Manage(pr).MarkTrueWithReason(apis.ConditionSucceeded, reason, messageFormat, messageA...)
+	succeeded := pr.GetCondition(apis.ConditionSucceeded)
+	pr.CompletionTime = &succeeded.LastTransitionTime.Inner
+}
+
+// MarkFailed changes the Succeeded condition to False with the provided reason and message.
+func (pr *PipelineRunStatus) MarkFailed(reason, messageFormat string, messageA ...interface{}) {
+	pipelineRunCondSet.Manage(pr).MarkFalse(apis.ConditionSucceeded, reason, messageFormat, messageA...)
+	succeeded := pr.GetCondition(apis.ConditionSucceeded)
+	pr.CompletionTime = &succeeded.LastTransitionTime.Inner
+}
+
+// MarkRunning changes the Succeeded condition to Unknown with the provided reason and message.
+func (pr *PipelineRunStatus) MarkRunning(reason, messageFormat string, messageA ...interface{}) {
+	pipelineRunCondSet.Manage(pr).MarkUnknown(apis.ConditionSucceeded, reason, messageFormat, messageA...)
 }
 
 // MarkResourceNotConvertible adds a Warning-severity condition to the resource noting
@@ -312,4 +383,26 @@ type PipelineRunList struct {
 // and produces logs.
 type PipelineTaskRun struct {
 	Name string `json:"name,omitempty"`
+}
+
+// PipelineTaskRunSpec  can be used to configure specific
+// specs for a concrete Task
+type PipelineTaskRunSpec struct {
+	PipelineTaskName       string       `json:"pipelineTaskName,omitempty"`
+	TaskServiceAccountName string       `json:"taskServiceAccountName,omitempty"`
+	TaskPodTemplate        *PodTemplate `json:"taskPodTemplate,omitempty"`
+}
+
+// GetTaskRunSpecs returns the task specific spec for a given
+// PipelineTask if configured, otherwise it returns the PipelineRun's default.
+func (pr *PipelineRun) GetTaskRunSpecs(pipelineTaskName string) (string, *PodTemplate) {
+	serviceAccountName := pr.GetServiceAccountName(pipelineTaskName)
+	taskPodTemplate := pr.Spec.PodTemplate
+	for _, task := range pr.Spec.TaskRunSpecs {
+		if task.PipelineTaskName == pipelineTaskName {
+			taskPodTemplate = task.TaskPodTemplate
+			serviceAccountName = task.TaskServiceAccountName
+		}
+	}
+	return serviceAccountName, taskPodTemplate
 }

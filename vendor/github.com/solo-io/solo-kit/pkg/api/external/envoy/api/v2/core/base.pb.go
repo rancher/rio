@@ -27,8 +27,8 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// Envoy supports :ref:`upstream priority routing
-// <arch_overview_http_routing_priority>` both at the route and the virtual
+// Envoy supports `upstream priority routing
+// (arch_overview_http_routing_priority)` both at the route and the virtual
 // cluster level. The current priority implementation uses different connection
 // pool and circuit breaking settings for each priority level. This means that
 // even for HTTP/2 requests, two physical connections will be used to an
@@ -174,11 +174,11 @@ func (SocketOption_SocketState) EnumDescriptor() ([]byte, []int) {
 
 // Identifies location of where either Envoy runs or where upstream hosts run.
 type Locality struct {
-	// Region this :ref:`zone <envoy_api_field_core.Locality.zone>` belongs to.
+	// Region this `zone (envoy_api_field_core.Locality.zone)` belongs to.
 	Region string `protobuf:"bytes,1,opt,name=region,proto3" json:"region,omitempty"`
 	// Defines the local service zone where Envoy is running. Though optional, it
 	// should be set if discovery service routing is used and the discovery
-	// service exposes :ref:`zone data <envoy_api_field_endpoint.LocalityLbEndpoints.locality>`,
+	// service exposes `zone data (envoy_api_field_endpoint.LocalityLbEndpoints.locality)`,
 	// either in this message or via :option:`--service-zone`. The meaning of zone
 	// is context dependent, e.g. `Availability Zone (AZ)
 	// <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html>`_
@@ -245,21 +245,21 @@ func (m *Locality) GetSubZone() string {
 type Node struct {
 	// An opaque node identifier for the Envoy node. This also provides the local
 	// service node name. It should be set if any of the following features are
-	// used: :ref:`statsd <arch_overview_statistics>`, :ref:`CDS
-	// <config_cluster_manager_cds>`, and :ref:`HTTP tracing
-	// <arch_overview_tracing>`, either in this message or via
+	// used: `statsd (arch_overview_statistics)`, `CDS
+	// (config_cluster_manager_cds)`, and `HTTP tracing
+	// (arch_overview_tracing)`, either in this message or via
 	// :option:`--service-node`.
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// Defines the local service cluster name where Envoy is running. Though
 	// optional, it should be set if any of the following features are used:
-	// :ref:`statsd <arch_overview_statistics>`, :ref:`health check cluster
-	// verification <envoy_api_field_core.HealthCheck.HttpHealthCheck.service_name>`,
-	// :ref:`runtime override directory <envoy_api_msg_config.bootstrap.v2.Runtime>`,
-	// :ref:`user agent addition
-	// <envoy_api_field_config.filter.network.http_connection_manager.v2.HttpConnectionManager.add_user_agent>`,
-	// :ref:`HTTP global rate limiting <config_http_filters_rate_limit>`,
-	// :ref:`CDS <config_cluster_manager_cds>`, and :ref:`HTTP tracing
-	// <arch_overview_tracing>`, either in this message or via
+	// `statsd (arch_overview_statistics)`, `health check cluster
+	// verification (envoy_api_field_core.HealthCheck.HttpHealthCheck.service_name)`,
+	// `runtime override directory (envoy_api_msg_config.bootstrap.v2.Runtime)`,
+	// `user agent addition
+	// (envoy_api_field_config.filter.network.http_connection_manager.v2.HttpConnectionManager.add_user_agent)`,
+	// `HTTP global rate limiting (config_http_filters_rate_limit)`,
+	// `CDS (config_cluster_manager_cds)`, and `HTTP tracing
+	// (arch_overview_tracing)`, either in this message or via
 	// :option:`--service-cluster`.
 	Cluster string `protobuf:"bytes,2,opt,name=cluster,proto3" json:"cluster,omitempty"`
 	// Opaque metadata extending the node identifier. Envoy will pass this
@@ -502,8 +502,8 @@ type HeaderValue struct {
 	Key string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 	// Header value.
 	//
-	// The same :ref:`format specifier <config_access_log_format>` as used for
-	// :ref:`HTTP access logging <config_access_log>` applies here, however
+	// The same `format specifier (config_access_log_format)` as used for
+	// `HTTP access logging (config_access_log)` applies here, however
 	// unknown header values are replaced with the empty string instead of `-`.
 	Value                string   `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -858,8 +858,8 @@ func (*AsyncDataSource) XXX_OneofWrappers() []interface{} {
 	}
 }
 
-// Configuration for transport socket in :ref:`listeners <config_listeners>` and
-// :ref:`clusters <envoy_api_msg_Cluster>`. If the configuration is
+// Configuration for transport socket in `listeners (config_listeners)` and
+// `clusters (envoy_api_msg_Cluster)`. If the configuration is
 // empty, a default transport socket implementation and configuration will be
 // chosen based on the platform and existence of tls_context.
 type TransportSocket struct {

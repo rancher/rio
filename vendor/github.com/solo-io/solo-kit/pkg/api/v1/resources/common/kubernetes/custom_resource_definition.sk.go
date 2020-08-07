@@ -73,13 +73,10 @@ func (r *CustomResourceDefinition) GroupVersionKind() schema.GroupVersionKind {
 
 type CustomResourceDefinitionList []*CustomResourceDefinition
 
-// namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list CustomResourceDefinitionList) Find(namespace, name string) (*CustomResourceDefinition, error) {
 	for _, customResourceDefinition := range list {
-		if customResourceDefinition.GetMetadata().Name == name {
-			if namespace == "" || customResourceDefinition.GetMetadata().Namespace == namespace {
-				return customResourceDefinition, nil
-			}
+		if customResourceDefinition.GetMetadata().Name == name && customResourceDefinition.GetMetadata().Namespace == namespace {
+			return customResourceDefinition, nil
 		}
 	}
 	return nil, errors.Errorf("list did not find customResourceDefinition %v.%v", namespace, name)

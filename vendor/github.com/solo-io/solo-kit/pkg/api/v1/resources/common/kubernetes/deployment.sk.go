@@ -73,13 +73,10 @@ func (r *Deployment) GroupVersionKind() schema.GroupVersionKind {
 
 type DeploymentList []*Deployment
 
-// namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list DeploymentList) Find(namespace, name string) (*Deployment, error) {
 	for _, deployment := range list {
-		if deployment.GetMetadata().Name == name {
-			if namespace == "" || deployment.GetMetadata().Namespace == namespace {
-				return deployment, nil
-			}
+		if deployment.GetMetadata().Name == name && deployment.GetMetadata().Namespace == namespace {
+			return deployment, nil
 		}
 	}
 	return nil, errors.Errorf("list did not find deployment %v.%v", namespace, name)

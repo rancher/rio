@@ -18,6 +18,10 @@ func WithLoggerValues(ctx context.Context, meta ...interface{}) context.Context 
 	return withLogger(ctx, fromContext(ctx).With(meta...))
 }
 
+func WithExistingLogger(ctx context.Context, logger *zap.SugaredLogger) context.Context {
+	return withLogger(ctx, logger)
+}
+
 func LoggerFrom(ctx context.Context) *zap.SugaredLogger {
 	return fromContext(ctx)
 }

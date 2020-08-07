@@ -11,6 +11,10 @@ import (
 
 // GetConfig gets the kubernetes client config
 func GetConfig(masterURL, kubeconfigPath string) (*rest.Config, error) {
+	return GetConfigWithContext(masterURL, kubeconfigPath, "")
+}
+
+func GetConfigWithContext(masterURL, kubeconfigPath, context string) (*rest.Config, error) {
 	envVarName := clientcmd.RecommendedConfigPathEnvVar
 	if kubeconfigPath == "" && masterURL == "" && os.Getenv(envVarName) == "" {
 		// Neither kubeconfig nor master URL nor envVarName(KUBECONFIG) was specified. Using the inClusterConfig.
@@ -31,7 +35,9 @@ func GetConfig(masterURL, kubeconfigPath string) (*rest.Config, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	loadingRules.ExplicitPath = kubeconfigPath
 	configOverrides := &clientcmd.ConfigOverrides{ClusterInfo: clientcmdapi.Cluster{Server: masterURL}}
-
+	if context != "" {
+		configOverrides.CurrentContext = context
+	}
 	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides).ClientConfig()
 }
 

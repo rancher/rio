@@ -3,6 +3,8 @@ package reconcile
 import (
 	"context"
 
+	"k8s.io/client-go/util/retry"
+
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -54,43 +56,80 @@ func (r *reconciler) Reconcile(namespace string, desiredResources resources.Reso
 }
 
 func (r *reconciler) syncResource(ctx context.Context, desired resources.Resource, originalResources resources.ResourceList, transition TransitionResourcesFunc) error {
-	var overwriteExisting bool
 	original := findResource(desired.GetMetadata().Namespace, desired.GetMetadata().Name, originalResources)
-	if original != nil {
-		// if this is an update,
-		// update resource version
-		// set status to 0, needs to be re-processed
-		overwriteExisting = true
-		resources.UpdateMetadata(desired, func(meta *core.Metadata) {
-			meta.ResourceVersion = original.GetMetadata().ResourceVersion
-		})
-		if desiredInput, ok := desired.(resources.InputResource); ok {
-			desiredInput.SetStatus(core.Status{})
-		}
-		// default transition policy: only perform an update if the Hash has changed
-		if transition == nil {
-			transition = func(original, desired resources.Resource) (b bool, e error) {
-				equal, ok := hashutils.HashableEqual(original, desired)
-				if ok {
-					return !equal, nil
-				}
+	return errors.RetryOnConflict(retry.DefaultBackoff, func() error {
+		var err error
+		original, err = attemptSyncResource(ctx, desired, original, r.rc, transition)
+		return err
+	})
+}
 
-				// default behavior: perform the update if one if the objects are not hashable
-				return true, nil
-			}
+func attemptSyncResource(ctx context.Context, desired, original resources.Resource, client clients.ResourceClient, transition TransitionResourcesFunc) (resources.Resource, error) {
+	err := writeDesiredResource(ctx, desired, original, client, transition)
+	if err == nil {
+		return original, nil
+	}
+
+	updatedOriginal, readErr := refreshOriginalResource(ctx, client, desired)
+	if readErr != nil {
+		if errors.IsResourceVersion(err) {
+			// we don't want to return the unwrapped resource version writeErr if we also had a read error
+			// otherwise we could get into infinite retry loop if reads repeatedly failed (e.g., no read RBAC)
+			return original, errors.Wrapf(err, "unable to read updated resource, no reason to retry resource version conflict; readErr: %v", readErr)
 		}
-		if transition != nil {
-			needsUpdate, err := transition(original, desired)
-			if err != nil {
-				return err
-			}
-			if !needsUpdate {
-				return nil
-			}
+		return original, err
+	}
+
+	return updatedOriginal, err
+}
+
+func writeDesiredResource(ctx context.Context, desired, original resources.Resource, client clients.ResourceClient, transition TransitionResourcesFunc) error {
+	if original != nil {
+		// this is an update: update resource version, set status to 0, needs to be re-processed
+		desired = updateDesiredResourceVersionAndStatus(desired, original)
+		if transition == nil {
+			transition = defaultTransition
+		}
+		needsUpdate, err := transition(original, desired)
+		if err != nil {
+			return err // default transition will never error
+		}
+		if !needsUpdate {
+			return nil
 		}
 	}
-	_, err := r.rc.Write(desired, clients.WriteOpts{Ctx: ctx, OverwriteExisting: overwriteExisting})
-	return err
+	_, writeErr := client.Write(desired, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+	return writeErr
+}
+
+func updateDesiredResourceVersionAndStatus(desired, original resources.Resource) resources.Resource {
+	resources.UpdateMetadata(desired, func(meta *core.Metadata) {
+		meta.ResourceVersion = original.GetMetadata().ResourceVersion
+	})
+	if desiredInput, ok := desired.(resources.InputResource); ok {
+		desiredInput.SetStatus(core.Status{})
+	}
+	return desired
+}
+
+// default transition policy: only perform an update if the Hash has changed
+func defaultTransition(original, desired resources.Resource) (b bool, e error) {
+	equal, ok := hashutils.HashableEqual(original, desired)
+	if ok {
+		return !equal, nil
+	}
+
+	// default behavior: perform the update if one if the objects are not hashable
+	return true, nil
+}
+
+func refreshOriginalResource(ctx context.Context, client clients.ResourceClient, desired resources.Resource) (resources.Resource, error) {
+	updatedOriginal, err := client.Read(desired.GetMetadata().Namespace, desired.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
+	if err != nil {
+		contextutils.LoggerFrom(ctx).Warnf("unable to read updated resource %v to get updated resource version; %v", desired.GetMetadata().Ref(), err.Error())
+		return nil, err
+	}
+	return updatedOriginal, nil
 }
 
 func deleteStaleResource(ctx context.Context, rc clients.ResourceClient, original resources.Resource) error {

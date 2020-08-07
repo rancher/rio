@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
+
 	"github.com/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -89,4 +92,9 @@ func IsResourceVersion(err error) bool {
 		return true
 	}
 	return false
+}
+
+// RetryOnConflict executes the function function repeatedly, retrying if the server returns a conflicting
+func RetryOnConflict(backoff wait.Backoff, fn func() error) error {
+	return retry.OnError(backoff, IsResourceVersion, fn)
 }

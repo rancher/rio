@@ -73,13 +73,10 @@ func (r *KubeNamespace) GroupVersionKind() schema.GroupVersionKind {
 
 type KubeNamespaceList []*KubeNamespace
 
-// namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list KubeNamespaceList) Find(namespace, name string) (*KubeNamespace, error) {
 	for _, kubeNamespace := range list {
-		if kubeNamespace.GetMetadata().Name == name {
-			if namespace == "" || kubeNamespace.GetMetadata().Namespace == namespace {
-				return kubeNamespace, nil
-			}
+		if kubeNamespace.GetMetadata().Name == name && kubeNamespace.GetMetadata().Namespace == namespace {
+			return kubeNamespace, nil
 		}
 	}
 	return nil, errors.Errorf("list did not find kubeNamespace %v.%v", namespace, name)

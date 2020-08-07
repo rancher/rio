@@ -66,6 +66,20 @@ func (m *ListenerOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if h, ok := interface{}(m.GetPerConnectionBufferLimitBytes()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetPerConnectionBufferLimitBytes(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	return hasher.Sum64(), nil
 }
 
@@ -172,6 +186,76 @@ func (m *HttpListenerOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	} else {
 		if val, err := hashstructure.Hash(m.GetWasm(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetExtauth()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetExtauth(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetRatelimitServer()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetRatelimitServer(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetGzip()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetGzip(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetProxyLatency()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetProxyLatency(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetBuffer()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetBuffer(), nil); err != nil {
 			return 0, err
 		} else {
 			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
@@ -400,6 +484,34 @@ func (m *VirtualHostOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	} else {
 		if val, err := hashstructure.Hash(m.GetDlp(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetBufferPerRoute()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetBufferPerRoute(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetStagedTransformations()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetStagedTransformations(), nil); err != nil {
 			return 0, err
 		} else {
 			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
@@ -694,6 +806,34 @@ func (m *RouteOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if h, ok := interface{}(m.GetBufferPerRoute()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetBufferPerRoute(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetStagedTransformations()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetStagedTransformations(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	switch m.HostRewriteType.(type) {
 
 	case *RouteOptions_HostRewrite:
@@ -868,6 +1008,34 @@ func (m *WeightedDestinationOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	} else {
 		if val, err := hashstructure.Hash(m.GetExtauth(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetBufferPerRoute()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetBufferPerRoute(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetStagedTransformations()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetStagedTransformations(), nil); err != nil {
 			return 0, err
 		} else {
 			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
