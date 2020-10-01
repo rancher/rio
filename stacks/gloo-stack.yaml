@@ -666,7 +666,7 @@ kubernetes:
                   fieldRef:
                     fieldPath: metadata.labels
           containers:
-          - image: quay.io/solo-io/gloo:1.4.6
+          - image: quay.io/solo-io/gloo:1.4.15
             imagePullPolicy: IfNotPresent
             name: gloo
             resources:
@@ -734,7 +734,7 @@ kubernetes:
         spec:
           serviceAccountName: gateway
           containers:
-          - image: quay.io/solo-io/gateway:1.4.6
+          - image: quay.io/solo-io/gateway:1.4.15
             imagePullPolicy: IfNotPresent
             name: gateway
     
@@ -798,7 +798,7 @@ kubernetes:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-            image: quay.io/solo-io/gloo-envoy-wrapper:1.4.6
+            image: quay.io/solo-io/gloo-envoy-wrapper:1.4.15
             imagePullPolicy: IfNotPresent
             name: gateway-proxy
             securityContext:
