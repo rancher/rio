@@ -13,7 +13,7 @@ replace (
 	github.com/hashicorp/vault => github.com/hashicorp/vault v1.3.2
 	github.com/jaguilar/vt100 => github.com/tonistiigi/vt100 v0.0.0-20190402012908-ad4c4a574305
 	github.com/jetstack/cert-manager v0.11.0 => github.com/rancher/cert-manager v0.5.1-0.20191021233300-3a070253aeda
-	github.com/linkerd/linkerd2 => github.com/StrongMonkey/linkerd2 v0.0.0-20191021165729-976fad67457a
+	github.com/linkerd/linkerd2 => github.com/StrongMonkey/linkerd2 v0.5.1-0.20201008181831-07ef85ee9b6f
 	github.com/pseudomuto/protoc-gen-doc => github.com/pseudomuto/protoc-gen-doc v1.0.0
 	github.com/wercker/stern v1.11.0 => github.com/rancher/stern v0.0.0-20191213223518-59c2bf84f705
 	golang.org/x/crypto v0.0.0-20190129210102-0709b304e793 => golang.org/x/crypto v0.0.0-20180904163835-0709b304e793

@@ -101,7 +101,7 @@ func CreateRootCA(
 	if ip := net.ParseIP(name); ip != nil {
 		t.IPAddresses = []net.IP{ip}
 	} else {
-		t.Subject = pkix.Name{CommonName: name}
+		t.DNSNames = []string{name}
 	}
 
 	t.IsCA = true

@@ -178,6 +178,8 @@ github.com/StrongMonkey/linkerd2 v0.0.0-20191021165729-976fad67457a h1:kvyMlzSGU
 github.com/StrongMonkey/linkerd2 v0.0.0-20191021165729-976fad67457a/go.mod h1:C+pkr4rp/oOlvvsQMOZGHWRaZJfXxsLXIHL8MALgJjA=
 github.com/StrongMonkey/linkerd2 v0.5.1-0.20200529213430-ec8d2bb70324 h1:BYRNQzPquUfZza1P4kMF/rc9tjcsQFb4cprWYWQFsfo=
 github.com/StrongMonkey/linkerd2 v0.5.1-0.20200529213430-ec8d2bb70324/go.mod h1:5xd7QHQsrFsLXzXcAPViEO3RFCB4cHEFOYCXaCOo5oA=
+github.com/StrongMonkey/linkerd2 v0.5.1-0.20201008181831-07ef85ee9b6f h1:iLaecQC5bW1RFpLNdLLMAmPA/lyZbikXwbOx212y17I=
+github.com/StrongMonkey/linkerd2 v0.5.1-0.20201008181831-07ef85ee9b6f/go.mod h1:C+pkr4rp/oOlvvsQMOZGHWRaZJfXxsLXIHL8MALgJjA=
 github.com/ahmetb/gen-crd-api-reference-docs v0.1.5 h1:OU+AFpBEhyclrQGx4I6zpCx5WvXiKqvFeeOASOmhKCY=
 github.com/ahmetb/gen-crd-api-reference-docs v0.1.5/go.mod h1:P/XzJ+c2+khJKNKABcm2biRwk2QAuwbLf8DlXuaL7WM=
 github.com/airbrake/gobrake v3.6.1+incompatible/go.mod h1:wM4gu3Cn0W0K7GUuVWnlXZU11AGBXMILnrdOU8Kn00o=
