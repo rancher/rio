@@ -15,10 +15,6 @@ Functional params like port are omitted for brevity.
 
 - Action to shift traffic: `rio weight demo@v2=100`
 
-#### Manual
-
-todo
-
 ### Automatic flows
 
 Flows below default to update-in-place. Use the ` --template` flag to create an additional service each time from the original service template.

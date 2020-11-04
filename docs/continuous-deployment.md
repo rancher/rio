@@ -82,7 +82,8 @@ You can do this with Git Basic Auth or SSH Auth:
 
 
 #### Private Docker Registry
-1. Configure the Docker credential secret.
+
+Configure the Docker credential secret.
 
 ```bash
 $ rio secret create --docker
@@ -92,7 +93,7 @@ username[]: $(your docker username)
 password[******]: $(your docker password)
 ```
 
-2. Push your image to docker registry:
+Push your image to docker registry:
 
 ```bash
 rio run --image-pull-secrets dockerconfig --build-docker-push-secret dockerconfig -p 8080 --build-registry index.docker.io --build-image-name $username/repo https://github.com/example/example.git
