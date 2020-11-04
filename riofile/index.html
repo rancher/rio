@@ -1,0 +1,1411 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="shortcut icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-6.1.2">
+    
+    
+      
+        <title>Using Riofile - Rio - Application Deployment Engine for Kubernetes</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.19190aaf.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.24b84193.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#00bdd6">
+        
+      
+    
+    
+    
+      
+        
+        <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Work+Sans:300,400,400i,700%7C&display=fallback">
+        <style>body,input{font-family:"Work Sans",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"",SFMono-Regular,Consolas,Menlo,monospace}</style>
+      
+    
+    
+    
+    
+      
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="cyan" data-md-color-accent="">
+      
+  
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#riofile" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid" aria-label="Header">
+    <a href=".." title="Rio - Application Deployment Engine for Kubernetes" class="md-header-nav__button md-logo" aria-label="Rio - Application Deployment Engine for Kubernetes">
+      
+  <img src="../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header-nav__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header-nav__title" data-md-component="header-title">
+      
+        <div class="md-header-nav__ellipsis">
+          <span class="md-header-nav__topic md-ellipsis">
+            Rio - Application Deployment Engine for Kubernetes
+          </span>
+          <span class="md-header-nav__topic md-ellipsis">
+            
+              Using Riofile
+            
+          </span>
+        </div>
+      
+    </div>
+    
+      <label class="md-header-nav__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" data-md-state="active">
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <button type="reset" class="md-search__icon md-icon" aria-label="Clear" data-md-component="search-reset" tabindex="-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header-nav__source">
+        
+<a href="https://github.com/rancher/rio/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Rio - Application Deployment Engine for Kubernetes" class="md-nav__button md-logo" aria-label="Rio - Application Deployment Engine for Kubernetes">
+      
+  <img src="../assets/logo.svg" alt="logo">
+
+    </a>
+    Rio - Application Deployment Engine for Kubernetes
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/rancher/rio/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href=".." class="md-nav__link">
+      Home
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../install/" class="md-nav__link">
+      Install Rio
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../concepts/" class="md-nav__link">
+      Rio concept
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../quick-start/" class="md-nav__link">
+      Quick Start
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../workloads/" class="md-nav__link">
+      Running workloads
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../router/" class="md-nav__link">
+      Configuring Router
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../publicdomain-external-services/" class="md-nav__link">
+      Configuring PublicDomain and ExternalService
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Using Riofile
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+    
+    <a href="./" class="md-nav__link md-nav__link--active">
+      Using Riofile
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    Table of Contents
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#intro" class="md-nav__link">
+    Intro
+  </a>
+  
+    <nav class="md-nav" aria-label="Intro">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#watching-a-riofile" class="md-nav__link">
+    Watching a Riofile
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#riofile-reference" class="md-nav__link">
+    Riofile Reference
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#templating" class="md-nav__link">
+    Templating
+  </a>
+  
+    <nav class="md-nav" aria-label="Templating">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#using-answer-file" class="md-nav__link">
+    Using answer file
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-environment-substitution" class="md-nav__link">
+    Using environment substitution
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    Examples
+  </a>
+  
+    <nav class="md-nav" aria-label="Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-to-use-rio-to-deploy-an-application-with-arbitary-yaml" class="md-nav__link">
+    How to use Rio to deploy an application with arbitary YAML
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-to-watch-a-repo" class="md-nav__link">
+    How to watch a repo
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../webhooks/" class="md-nav__link">
+      Webhooks
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../monitoring/" class="md-nav__link">
+      Monitoring Workloads
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../autoscaling/" class="md-nav__link">
+      Using AutoScaling
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../rbac/" class="md-nav__link">
+      Configuring Rio with RBAC
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../continuous-deployment/" class="md-nav__link">
+      Continuous Delivery with Rio
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../developing-application-using-rio/" class="md-nav__link">
+      Using Rio for Developing Your Application
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../flows/" class="md-nav__link">
+      Deployment Flow
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../dashboard/" class="md-nav__link">
+      Using Dashboard
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../cli-reference/" class="md-nav__link">
+      CLI Reference
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../api-docs/" class="md-nav__link">
+      API Reference
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../faq/" class="md-nav__link">
+      Troubleshooting
+    </a>
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    Table of Contents
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#intro" class="md-nav__link">
+    Intro
+  </a>
+  
+    <nav class="md-nav" aria-label="Intro">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#watching-a-riofile" class="md-nav__link">
+    Watching a Riofile
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#riofile-reference" class="md-nav__link">
+    Riofile Reference
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#templating" class="md-nav__link">
+    Templating
+  </a>
+  
+    <nav class="md-nav" aria-label="Templating">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#using-answer-file" class="md-nav__link">
+    Using answer file
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-environment-substitution" class="md-nav__link">
+    Using environment substitution
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    Examples
+  </a>
+  
+    <nav class="md-nav" aria-label="Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-to-use-rio-to-deploy-an-application-with-arbitary-yaml" class="md-nav__link">
+    How to use Rio to deploy an application with arbitary YAML
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-to-watch-a-repo" class="md-nav__link">
+    How to watch a repo
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/rancher/rio/edit/master/docs/riofile.md" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+                  </a>
+                
+                
+                <h1 id="riofile">Riofile<a class="headerlink" href="#riofile" title="Permanent link">&para;</a></h1>
+<h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="#intro">Intro</a></li>
+<li><a href="#watching-a-riofile">Watching a Riofile</a></li>
+<li><a href="#riofile-reference">Reference</a></li>
+<li><a href="#templating">Templating</a></li>
+<li><a href="#using-answer-file">Using answer file</a></li>
+<li><a href="#using-environment-substitution">Using environment substitution</a></li>
+<li><a href="#examples">Examples</a></li>
+<li><a href="#How-to-use-Rio-to-deploy-an-application-with-arbitary-YAML">How to use Rio to deploy an application with arbitary YAML</a></li>
+<li><a href="#How-to-watch-a-repo">How to watch a repo</a></li>
+</ul>
+<h2 id="intro">Intro<a class="headerlink" href="#intro" title="Permanent link">&para;</a></h2>
+<p>Rio works with standard Kubernetes YAML files. Rio additionally supports a more user-friendly <code>docker-compose</code>-style config file called <code>Riofile</code>.
+This allows you define rio services, routes, external services, configs, and secrets.</p>
+<p>For example, here is an nginx application:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">configs</span><span class="p">:</span>
+  <span class="nt">conf</span><span class="p">:</span>
+    <span class="nt">index.html</span><span class="p">:</span> <span class="p p-Indicator">|-</span>
+      <span class="no">&lt;!DOCTYPE html&gt;</span>
+      <span class="no">&lt;html&gt;</span>
+      <span class="no">&lt;body&gt;</span>
+
+      <span class="no">&lt;h1&gt;Hello World&lt;/h1&gt;</span>
+
+      <span class="no">&lt;/body&gt;</span>
+      <span class="no">&lt;/html&gt;</span>
+<span class="nt">services</span><span class="p">:</span>
+  <span class="nt">nginx</span><span class="p">:</span>
+    <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">nginx</span>
+    <span class="nt">ports</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">80/http</span>
+    <span class="nt">configs</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">conf/index.html:/usr/share/nginx/html/index.html</span>
+</code></pre></div>
+
+<p>Once you have defined <code>Riofile</code>, simply run <code>rio up</code>.
+If you made any change to the <code>Riofile</code>, re-run <code>rio up</code> to pick up the change.
+To use a file not named "Riofile" use <code>rio up -f nginx.yaml</code>.</p>
+<h4 id="watching-a-riofile">Watching a Riofile<a class="headerlink" href="#watching-a-riofile" title="Permanent link">&para;</a></h4>
+<p>You can setup Rio to watch for Riofile changes in a Github repository and deploy Riofile changes automatically. For example:</p>
+<div class="codehilite"><pre><span></span><code>$ rio up https://github.com/username/repo
+</code></pre></div>
+
+<p>By default, Rio will poll the branch in 30 second intervals, but this can be configured to use a webhook instead. See <a href="../webhooks/">Webhook docs</a> for info.</p>
+<h2 id="riofile-reference">Riofile Reference<a class="headerlink" href="#riofile-reference" title="Permanent link">&para;</a></h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Configmap</span>
+<span class="nt">configs</span><span class="p">:</span>
+  <span class="nt">config-foo</span><span class="p">:</span>     <span class="c1"># specify name in the section</span>
+    <span class="nt">key1</span><span class="p">:</span> <span class="p p-Indicator">|-</span>      <span class="c1"># specify key and data in the section</span>
+      <span class="no">config1</span>
+    <span class="nt">key2</span><span class="p">:</span> <span class="p p-Indicator">|-</span>
+      <span class="no">config2</span>
+
+<span class="c1"># Externalservices</span>
+<span class="nt">externalservices</span><span class="p">:</span>
+  <span class="nt">foo</span><span class="p">:</span>
+    <span class="nt">ipAddresses</span><span class="p">:</span> <span class="c1"># Pointing to external IP addresses</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">1.1.1.1</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">2.2.2.2</span>
+    <span class="nt">fqdn</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">www.foo.bar</span> <span class="c1"># Pointing to fqdn</span>
+    <span class="nt">service</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">$namespace/$name</span> <span class="c1"># Pointing to services in another namespace</span>
+
+<span class="c1"># Service</span>
+<span class="nt">services</span><span class="p">:</span>
+  <span class="nt">service-foo</span><span class="p">:</span>
+    <span class="nt">app</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-app</span> <span class="c1"># Specify app name. Defaults to service name. This is used to aggregate services that belongs to the same app.</span>
+    <span class="nt">version</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v0</span> <span class="c1"># Specify the version of app this service represents. Defaults to v0. Displayed as app@version, unless version is v0 where it will be omitted.</span>
+    <span class="nt">scale</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span> <span class="c1"># Specify scale of the service, defaults to 1. Use this to have service come up with the specified number of pods.</span>
+    <span class="nt">template</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span> <span class="c1"># Set this service as a template to build service versions from instead of overwriting on each build, false by default. See https://github.com/rancher/rio/blob/master/docs/continuous-deployment.md#automatic-versioning</span>
+    <span class="nt">weight</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">80</span> <span class="c1"># Percentage of weight assigned to this revision. Defaults to 100.</span>
+
+    <span class="nt">annotations</span><span class="p">:</span> <span class="c1"># Set annotations for the deployment and pods</span>
+      <span class="nt">foo</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">bar</span>
+    <span class="nt">labels</span><span class="p">:</span> <span class="c1"># Set labels for the deployment and pods</span>
+      <span class="nt">foo</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">bar</span>
+
+
+    <span class="c1"># To enable autoscaling:</span>
+    <span class="nt">autoscale</span><span class="p">:</span>
+      <span class="nt">concurrency</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span> <span class="c1"># specify concurrent request each pod can handle(soft limit, used to scale service)</span>
+      <span class="nt">maxReplicas</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span>
+      <span class="nt">minReplicas</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+
+    <span class="c1"># Traffic rollout config. Optional</span>
+    <span class="nt">rollout</span><span class="p">:</span>
+      <span class="nt">increment</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span> <span class="c1"># traffic percentage increment(%) for each interval.</span>
+      <span class="nt">interval</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span> <span class="c1"># traffic increment interval(seconds).</span>
+      <span class="nt">pause</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span> <span class="c1"># whether to perform rollout or not</span>
+
+    <span class="c1"># Container configuration</span>
+    <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">nginx</span> <span class="c1"># Container image. Required if not setting build</span>
+    <span class="nt">imagePullPolicy</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">always</span> <span class="c1"># Image pull policy. Options: (always/never/ifNotProsent), defaults to ifNotProsent.</span>
+    <span class="nt">build</span><span class="p">:</span> <span class="c1"># Setting build parameters. Set if you want to build image from source</span>
+      <span class="nt">repo</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">https://github.com/rancher/rio</span> <span class="c1"># Git repository to build. Required</span>
+      <span class="nt">branch</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">master</span> <span class="c1"># Git repository branch. Required</span>
+      <span class="nt">revision</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v0.1.0</span> <span class="c1"># Revision digest to build. If set, image will be built based on this revision. Otherwise it will take head revision in repo. Also if revision is not set, it will be served as the base revision to watch any change in repo and create new revision based changes from repo.</span>
+      <span class="nt">args</span><span class="p">:</span> <span class="c1"># Build arguments to pass to buildkit https://docs.docker.com/engine/reference/builder/#understand-how-arg-and-from-interact. Optional</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">foo=bar</span>
+      <span class="nt">dockerfile</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Dockerfile</span> <span class="c1"># The name of Dockerfile to look for.  This is the full path relative to the repo root. Defaults to `Dockerfile`.</span>
+      <span class="nt">context</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">./</span>  <span class="c1"># Docker build context. Defaults to .</span>
+      <span class="nt">noCache</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span> <span class="c1"># Build without cache. Defaults to false.</span>
+      <span class="nt">imageName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">myname/image:tag</span> <span class="c1"># Specify custom image name(excluding registry name). Default name: $namespace/name:$revision_digest</span>
+      <span class="nt">pushRegistry</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">docker.io</span> <span class="c1"># Specify push registry. Example: docker.io, gcr.io. Defaults to localhost registry.</span>
+      <span class="nt">pushRegistrySecretName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">secretDocker</span> <span class="c1"># Specify secret name for pushing to docker registry. [link](#set-custom-build-arguments-and-docker-registry)</span>
+      <span class="nt">stageOnly</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span> <span class="c1"># If set, newly created revision will not get any traffic. Defaults to false.</span>
+      <span class="nt">webhookSecretName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">secretGithub</span> <span class="c1"># Specify the github secret name. Used to create Github webhook, the secret key has to be `accessToken`</span>
+      <span class="nt">cloneSecretName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">secretGit</span> <span class="c1"># Specify secret name for checking our git resources</span>
+      <span class="nt">pr</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span> <span class="c1"># Enable pull request feature. Defaults to false</span>
+      <span class="nt">tag</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span> <span class="c1"># Optionally enable to build off every tag release in the repo</span>
+      <span class="nt">tagInclude</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">^v</span> <span class="c1"># If tag is true, only use tags matching this pattern</span>
+      <span class="nt">tagExclude</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">rc</span> <span class="c1"># If tag is true, exclude any tags with this pattern</span>
+      <span class="nt">timeout</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span> <span class="c1"># build timeout setting in seconds</span>
+    <span class="nt">command</span><span class="p">:</span> <span class="c1"># Container entrypoint, not executed within a shell. The docker image&#39;s ENTRYPOINT is used if this is not provided.</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">echo</span>
+    <span class="nt">args</span><span class="p">:</span> <span class="c1"># Arguments to the entrypoint. The docker image&#39;s CMD is used if this is not provided.</span>
+    <span class="p p-Indicator">-</span> <span class="s">&quot;hello</span><span class="nv"> </span><span class="s">world&quot;</span>
+    <span class="nt">workingDir</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/home</span> <span class="c1"># Container working directory</span>
+    <span class="nt">ports</span><span class="p">:</span> <span class="c1"># Container ports, format: `$(servicePort:)containerPort/protocol`. Required if user wants to expose service through gateway</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">8080:80/http,web</span> <span class="c1"># Service port 8080 will be mapped to container port 80 with protocol http, named `web`</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">8080/http,admin,internal=true</span> <span class="c1"># Service port 8080 will be mapped to container port 8080 with protocol http, named `admin`, internal port(will not be exposed through gateway)</span>
+    <span class="nt">env</span><span class="p">:</span> <span class="c1"># Specify environment variable</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">POD_NAME=$(self/name)</span> <span class="c1"># Mapped to &quot;metadata.name&quot;</span>
+    <span class="c1">#</span>
+    <span class="c1"># &quot;self/name&quot;:           &quot;metadata.name&quot;,</span>
+    <span class="c1"># &quot;self/namespace&quot;:      &quot;metadata.namespace&quot;,</span>
+    <span class="c1"># &quot;self/labels&quot;:         &quot;metadata.labels&quot;,</span>
+    <span class="c1"># &quot;self/annotations&quot;:    &quot;metadata.annotations&quot;,</span>
+    <span class="c1"># &quot;self/node&quot;:           &quot;spec.nodeName&quot;,</span>
+    <span class="c1"># &quot;self/serviceAccount&quot;: &quot;spec.serviceAccountName&quot;,</span>
+    <span class="c1"># &quot;self/hostIp&quot;:         &quot;status.hostIP&quot;,</span>
+    <span class="c1"># &quot;self/nodeIp&quot;:         &quot;status.hostIP&quot;,</span>
+    <span class="c1"># &quot;self/ip&quot;:             &quot;status.podIP&quot;,</span>
+    <span class="c1">#</span>
+    <span class="nt">cpus</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100m</span> <span class="c1"># Cpu request, format 0.5 or 500m. 500m = 0.5 core. If not set, cpu request will not be set. https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</span>
+    <span class="nt">memory</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100Mi</span> <span class="c1"># Memory request. 100Mi, available options. If not set, memory request will not be set. https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</span>
+    <span class="nt">secrets</span><span class="p">:</span> <span class="c1"># Specify secret to mount. Format: `$name/$key:/path/to/file`. Secret has to be pre-created in the same namespace</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">foo/bar:/my/password</span>
+    <span class="nt">configs</span><span class="p">:</span> <span class="c1"># Specify configmap to mount. Format: `$name/$key:/path/to/file`.</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">foo/bar:/my/config</span>
+    <span class="nt">livenessProbe</span><span class="p">:</span> <span class="c1"># LivenessProbe setting. https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/</span>
+      <span class="nt">httpGet</span><span class="p">:</span>
+        <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/ping</span>
+        <span class="nt">port</span><span class="p">:</span> <span class="s">&quot;9997&quot;</span> <span class="c1"># port must be string</span>
+      <span class="nt">initialDelaySeconds</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span>
+    <span class="nt">readinessProbe</span><span class="p">:</span> <span class="c1"># ReadinessProbe https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/</span>
+      <span class="nt">failureThreshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">7</span>
+      <span class="nt">httpGet</span><span class="p">:</span>
+        <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/ready</span>
+        <span class="nt">port</span><span class="p">:</span> <span class="s">&quot;9997&quot;</span> <span class="c1"># port must be string</span>
+    <span class="nt">stdin</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span> <span class="c1"># Whether this container should allocate a buffer for stdin in the container runtime</span>
+    <span class="nt">stdinOnce</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span> <span class="c1"># Whether the container runtime should close the stdin channel after it has been opened by a single attach. When stdin is true the stdin stream will remain open across multiple attach sessions.</span>
+    <span class="nt">tty</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span> <span class="c1"># Whether this container should allocate a TTY for itself</span>
+    <span class="nt">runAsUser</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1000</span> <span class="c1"># The UID to run the entrypoint of the container process.</span>
+    <span class="nt">runAsGroup</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1000</span> <span class="c1"># The GID to run the entrypoint of the container process</span>
+    <span class="nt">readOnlyRootFilesystem</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span> <span class="c1"># Whether this container has a read-only root filesystem</span>
+    <span class="nt">privileged</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span> <span class="c1"># Run container in privileged mode.</span>
+
+    <span class="nt">nodeAffinity</span><span class="p">:</span> <span class="c1"># Describes node affinity scheduling rules for the pod.</span>
+    <span class="nt">podAffinity</span><span class="p">:</span>  <span class="c1"># Describes pod affinity scheduling rules (e.g. co-locate this pod in the same node, zone, etc. as some other pod(s)).</span>
+    <span class="nt">podAntiAffinity</span><span class="p">:</span> <span class="c1"># Describes pod anti-affinity scheduling rules (e.g. avoid putting this pod in the same node, zone, etc. as some other pod(s)).</span>
+
+    <span class="nt">hostAliases</span><span class="p">:</span> <span class="c1"># Hostname alias</span>
+      <span class="p p-Indicator">-</span> <span class="nt">ip</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">127.0.0.1</span>
+        <span class="nt">hostnames</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">example.com</span>
+    <span class="nt">hostNetwork</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span> <span class="c1"># Use host networking, defaults to False. If this option is set, the ports that will be used must be specified.</span>
+    <span class="nt">imagePullSecrets</span><span class="p">:</span> <span class="c1"># Image pull secret https://kubernetes.io/docs/concepts/containers/images#specifying-imagepullsecrets-on-a-pod</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">secret1</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">secret2</span>
+
+    <span class="c1"># Containers: Specify sidecars. Other options are available in container section above, this is limited example</span>
+    <span class="nt">containers</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">init</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span> <span class="c1"># Init container</span>
+      <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-init</span>
+      <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ubuntu</span>
+      <span class="nt">args</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="s">&quot;echo&quot;</span>
+      <span class="p p-Indicator">-</span> <span class="s">&quot;hello</span><span class="nv"> </span><span class="s">world&quot;</span>
+
+
+    <span class="c1"># Permission for service</span>
+    <span class="c1">#</span>
+    <span class="c1">#   global_permissions:</span>
+    <span class="c1">#   - &#39;create,get,list certmanager.k8s.io/*&#39;</span>
+    <span class="c1">#</span>
+    <span class="c1">#   this will give workload abilities to **create, get, list** **all** resources in api group **certmanager.k8s.io**.</span>
+    <span class="c1">#</span>
+    <span class="c1">#   If you want to hook up with an existing role:</span>
+    <span class="c1">#</span>
+    <span class="c1">#</span>
+    <span class="c1">#   global_permissions:</span>
+    <span class="c1">#   - &#39;role=cluster-admin&#39;</span>
+    <span class="c1">#</span>
+    <span class="c1">#</span>
+    <span class="c1">#   - `permisions`: Specify current namespace permission of workload</span>
+    <span class="c1">#</span>
+    <span class="c1">#   Example:</span>
+    <span class="c1">#</span>
+    <span class="c1">#   permissions:</span>
+    <span class="c1">#   - &#39;create,get,list certmanager.k8s.io/*&#39;</span>
+    <span class="c1">#</span>
+    <span class="c1">#</span>
+    <span class="c1">#   This will give workload abilities to **create, get, list** **all** resources in api group **certmanager.k8s.io** in **current** namespace.</span>
+    <span class="c1">#</span>
+    <span class="c1">#   Example:</span>
+    <span class="c1">#</span>
+    <span class="c1">#   permissions:</span>
+    <span class="c1">#   - &#39;create,get,list /node/proxy&#39;</span>
+    <span class="c1">#</span>
+    <span class="c1">#    This will give subresource for node/proxy</span>
+
+    <span class="c1"># Optional, will created and mount serviceAccountToken into pods with corresponding permissions</span>
+    <span class="nt">global_permissions</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="s">&#39;create,get,list</span><span class="nv"> </span><span class="s">certmanager.k8s.io/*&#39;</span>
+    <span class="nt">permissions</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="s">&#39;create,get,list</span><span class="nv"> </span><span class="s">certmanager.k8s.io/*&#39;</span>
+
+<span class="c1"># Router</span>
+<span class="nt">routers</span><span class="p">:</span>
+  <span class="nt">foo</span><span class="p">:</span>
+    <span class="nt">routes</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">match</span><span class="p">:</span> <span class="c1"># Match rules, the first rule matching an incoming request is used</span>
+          <span class="nt">path</span><span class="p">:</span> <span class="c1"># Match path, can specify regxp, prefix or exact match</span>
+            <span class="nt">exact</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/v0</span>
+          <span class="c1"># prefix: /bar</span>
+          <span class="c1"># regxp: /bar.*</span>
+          <span class="nt">methods</span><span class="p">:</span>
+          <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">GET</span>
+          <span class="nt">headers</span><span class="p">:</span>
+            <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">FOO</span>
+              <span class="nt">value</span><span class="p">:</span>
+                <span class="nt">regxp</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/bar.*</span>
+                <span class="c1">#prefix: /bar</span>
+                <span class="c1">#exact: /bar</span>
+        <span class="nt">to</span><span class="p">:</span>  <span class="c1"># Specify destination</span>
+          <span class="p p-Indicator">-</span> <span class="nt">app</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">myapp</span>
+            <span class="nt">version</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v1</span>
+            <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">80</span>
+            <span class="nt">namespace</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">default</span>
+            <span class="nt">weight</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">50</span>
+          <span class="p p-Indicator">-</span> <span class="nt">app</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">myapp</span>
+            <span class="nt">version</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v2</span>
+            <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">80</span>
+            <span class="nt">namespace</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">default</span>
+            <span class="nt">weight</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">50</span>
+        <span class="nt">redirect</span><span class="p">:</span> <span class="c1"># Specify redirect rule</span>
+          <span class="nt">host</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">www.foo.bar</span>
+          <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/redirect</span>
+        <span class="nt">rewrite</span><span class="p">:</span>
+          <span class="nt">host</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">www.foo.bar</span>
+          <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/rewrite</span>
+        <span class="nt">headers</span><span class="p">:</span> <span class="c1"># Header operations</span>
+          <span class="nt">add</span><span class="p">:</span>
+            <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">foo</span>
+              <span class="nt">value</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">bar</span>
+          <span class="nt">set</span><span class="p">:</span>
+            <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">foo</span>
+              <span class="nt">value</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">bar</span>
+          <span class="nt">remove</span><span class="p">:</span>
+          <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">foo</span>
+        <span class="nt">fault</span><span class="p">:</span>
+          <span class="nt">percentage</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">80</span> <span class="c1"># Inject fault percentage(%)</span>
+          <span class="nt">delayMillis</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span> <span class="c1"># Adding delay before injecting fault (millseconds)</span>
+          <span class="nt">abortHTTPStatus</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">502</span> <span class="c1"># Injecting http code</span>
+        <span class="nt">mirror</span><span class="p">:</span>   <span class="c1"># Sending mirror traffic</span>
+          <span class="nt">app</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">q</span>
+          <span class="nt">version</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v0</span>
+          <span class="nt">namespace</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">default</span>
+        <span class="nt">timeoutSeconds</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span> <span class="c1"># Setting request timeout (milli-seconds)</span>
+        <span class="nt">retry</span><span class="p">:</span>
+          <span class="nt">attempts</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span> <span class="c1"># Retry attempts</span>
+          <span class="nt">timeoutSeconds</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span> <span class="c1"># Retry timeout (milli-seconds)</span>
+
+<span class="c1"># Use Riofile&#39;s answer/question templating</span>
+<span class="c1"># When you define NAMESPACE and REVISION variables in questions section rio will automatically inject their values.</span>
+<span class="nt">template</span><span class="p">:</span>
+  <span class="nt">goTemplate</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span> <span class="c1"># use go templating</span>
+  <span class="nt">envSubst</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span> <span class="c1"># use ENV vars during templating</span>
+  <span class="nt">questions</span><span class="p">:</span>  <span class="c1"># now make some questions that we provide answers too</span>
+  <span class="p p-Indicator">-</span> <span class="nt">variable</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">FOO</span> <span class="c1"># This will be available with go templates in the field `.Values.FOO`</span>
+    <span class="nt">description</span><span class="p">:</span> <span class="s">&quot;Some</span><span class="nv"> </span><span class="s">question</span><span class="nv"> </span><span class="s">we</span><span class="nv"> </span><span class="s">want</span><span class="nv"> </span><span class="s">an</span><span class="nv"> </span><span class="s">answer</span><span class="nv"> </span><span class="s">to.&quot;</span>
+
+<span class="c1"># Supply arbitrary kubernetes manifest yaml</span>
+<span class="nt">kubernetes</span><span class="p">:</span>
+  <span class="nt">manifest</span><span class="p">:</span> <span class="p p-Indicator">|-</span>
+    <span class="no">apiVersion: apps/v1</span>
+    <span class="no">kind: Deployment</span>
+    <span class="no">....</span>
+</code></pre></div>
+
+<h2 id="templating">Templating<a class="headerlink" href="#templating" title="Permanent link">&para;</a></h2>
+<h4 id="using-answer-file">Using answer file<a class="headerlink" href="#using-answer-file" title="Permanent link">&para;</a></h4>
+<p>Rio allows the user to leverage an answer file to customize <code>Riofile</code>.
+Go template and <a href="https://github.com/drone/envsubst">envSubst</a> can be used to apply answers. By default, the <code>NAMESPACE</code> and <code>REVISION</code> variables are available when defined in the template questions.</p>
+<p>Answer file is a yaml manifest with key-value pairs:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">FOO</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">BAR</span>
+</code></pre></div>
+
+<p>For example, to use go templating to apply a service when provided with the above answers file and running in the <code>test</code> namespace:</p>
+<ol>
+<li>Create Riofile</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="p p-Indicator">{{</span><span class="nv">- if (and (eq .Values.NAMESPACE test) (eq .Values.FOO BAR))</span> <span class="p p-Indicator">}}</span>
+<span class="nt">services</span><span class="p">:</span>
+  <span class="nt">demo</span><span class="p">:</span>
+    <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ibuildthecloud/demo:v1</span>
+    <span class="nt">ports</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">80</span>
+<span class="p p-Indicator">{{</span><span class="nv">- end</span><span class="p p-Indicator">}}</span>
+
+<span class="nt">template</span><span class="p">:</span>
+  <span class="nt">goTemplate</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span> <span class="c1"># use go templating</span>
+  <span class="nt">envSubst</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span> <span class="c1"># use ENV vars during templating</span>
+  <span class="nt">questions</span><span class="p">:</span>  <span class="c1"># now make some questions that we provide answers too</span>
+  <span class="p p-Indicator">-</span> <span class="nt">variable</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">FOO</span>
+    <span class="nt">description</span><span class="p">:</span> <span class="s">&quot;My</span><span class="nv"> </span><span class="s">custom</span><span class="nv"> </span><span class="s">thing&quot;</span>
+  <span class="p p-Indicator">-</span> <span class="nt">variable</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">NAMESPACE</span>
+    <span class="nt">description</span><span class="p">:</span> <span class="s">&quot;The</span><span class="nv"> </span><span class="s">namespace&quot;</span>
+</code></pre></div>
+
+<ol>
+<li><code>kubectl create namespace test</code></li>
+<li><code>cd /path/to/Riofile &amp;&amp; rio -n test up --answers answers.yaml</code></li>
+</ol>
+<p>Rio also supports a bash style envsubst replacement, with the following format:</p>
+<div class="codehilite"><pre><span></span><code><span class="l l-Scalar l-Scalar-Plain">${var^}</span>
+<span class="l l-Scalar l-Scalar-Plain">${var^^}</span>
+<span class="l l-Scalar l-Scalar-Plain">${var,}</span>
+<span class="l l-Scalar l-Scalar-Plain">${var,,}</span>
+<span class="l l-Scalar l-Scalar-Plain">${var:position}</span>
+<span class="l l-Scalar l-Scalar-Plain">${var:position:length}</span>
+<span class="l l-Scalar l-Scalar-Plain">${var#substring}</span>
+<span class="l l-Scalar l-Scalar-Plain">${var##substring}</span>
+<span class="l l-Scalar l-Scalar-Plain">${var%substring}</span>
+<span class="l l-Scalar l-Scalar-Plain">${var%%substring}</span>
+<span class="l l-Scalar l-Scalar-Plain">${var/substring/replacement}</span>
+<span class="l l-Scalar l-Scalar-Plain">${var//substring/replacement}</span>
+<span class="l l-Scalar l-Scalar-Plain">${var/#substring/replacement}</span>
+<span class="l l-Scalar l-Scalar-Plain">${var/%substring/replacement}</span>
+<span class="l l-Scalar l-Scalar-Plain">${var=default}</span>
+<span class="l l-Scalar l-Scalar-Plain">${var:=default}</span>
+<span class="l l-Scalar l-Scalar-Plain">${var:-default}</span>
+</code></pre></div>
+
+<h4 id="using-environment-substitution">Using environment substitution<a class="headerlink" href="#using-environment-substitution" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+  <span class="nt">demo</span><span class="p">:</span>
+    <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ibuilthecloud/demo:v1</span>
+    <span class="nt">env</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">FOO=${FOO}</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">MYNAMESPACE=${NAMESPACE}</span>
+
+<span class="nt">template</span><span class="p">:</span>
+  <span class="nt">goTemplate</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span> <span class="c1"># use go templating</span>
+  <span class="nt">envSubst</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span> <span class="c1"># use ENV vars during templating  </span>
+  <span class="nt">questions</span><span class="p">:</span>  <span class="c1"># now make some questions that we provide answers too</span>
+  <span class="p p-Indicator">-</span> <span class="nt">variable</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">FOO</span>
+    <span class="nt">description</span><span class="p">:</span> <span class="s">&quot;My</span><span class="nv"> </span><span class="s">custom</span><span class="nv"> </span><span class="s">thing&quot;</span>
+</code></pre></div>
+
+<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
+<h4 id="how-to-use-rio-to-deploy-an-application-with-arbitary-yaml">How to use Rio to deploy an application with arbitary YAML<a class="headerlink" href="#how-to-use-rio-to-deploy-an-application-with-arbitary-yaml" title="Permanent link">&para;</a></h4>
+<p>In this example we will see how to define both a normal Rio service and arbitary Kubernetes manifests and deploy both of these with Rio. Follow the quickstart to get Rio installed into your cluster and ensure the output of <code>rio info</code> looks similar to this:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Rio</span> <span class="k">Version</span><span class="p">:</span>  <span class="o">&gt;=</span><span class="mi">0</span><span class="p">.</span><span class="mi">6</span><span class="p">.</span><span class="mi">0</span>
+<span class="n">Rio</span> <span class="n">CLI</span> <span class="k">Version</span><span class="p">:</span> <span class="o">&gt;=</span><span class="mi">0</span><span class="p">.</span><span class="mi">6</span><span class="p">.</span><span class="mi">0</span>
+<span class="k">Cluster</span> <span class="k">Domain</span><span class="p">:</span> <span class="n">enu90s</span><span class="p">.</span><span class="k">on</span><span class="o">-</span><span class="n">rio</span><span class="p">.</span><span class="n">io</span>
+<span class="k">Cluster</span> <span class="k">Domain</span> <span class="n">IPs</span><span class="p">:</span> <span class="o">&lt;</span><span class="k">cluster</span> <span class="k">domain</span> <span class="n">ip</span><span class="o">&gt;</span>
+<span class="k">System</span> <span class="n">Namespace</span><span class="p">:</span> <span class="n">rio</span><span class="o">-</span><span class="k">system</span>
+<span class="k">System</span> <span class="n">Ready</span> <span class="k">State</span><span class="p">:</span> <span class="k">true</span>
+<span class="n">Wildcard</span> <span class="n">certificates</span><span class="p">:</span> <span class="k">true</span>
+
+<span class="k">System</span> <span class="n">Components</span><span class="p">:</span>
+<span class="n">gateway</span><span class="o">-</span><span class="n">v2</span> <span class="n">status</span><span class="p">:</span> <span class="n">Ready</span>
+<span class="n">rio</span><span class="o">-</span><span class="n">controller</span> <span class="n">status</span><span class="p">:</span> <span class="n">Ready</span>
+</code></pre></div>
+
+<p>First, lets use a Riofile to define a a basic Rio service.</p>
+<div class="codehilite"><pre><span></span><code>configs:
+  conf:
+    index.html: |-
+      <span class="cp">&lt;!DOCTYPE html&gt;</span>
+      <span class="p">&lt;</span><span class="nt">html</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">body</span><span class="p">&gt;</span>
+
+      <span class="p">&lt;</span><span class="nt">h1</span><span class="p">&gt;</span>Hello World<span class="p">&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span>
+
+      <span class="p">&lt;/</span><span class="nt">body</span><span class="p">&gt;</span>
+      <span class="p">&lt;/</span><span class="nt">html</span><span class="p">&gt;</span>
+services:
+  nginx:
+    image: nginx
+    ports:
+    - 80/http
+    configs:
+    - conf/index.html:/usr/share/nginx/html/index.html
+</code></pre></div>
+
+<p>Next, we can augment this service with the Kubernetes <a href="https://kubernetes.io/docs/tutorials/stateless-application/guestbook/">sample guestbook</a></p>
+<div class="codehilite"><pre><span></span><code><span class="nt">configs</span><span class="p">:</span>
+    <span class="nt">conf</span><span class="p">:</span>
+        <span class="nt">index.html</span><span class="p">:</span> <span class="p p-Indicator">|-</span>
+            <span class="no">&lt;!DOCTYPE html&gt;</span>
+            <span class="no">&lt;html&gt;</span>
+            <span class="no">&lt;body&gt;</span>
+
+            <span class="no">&lt;h1&gt;Hello World&lt;/h1&gt;</span>
+
+            <span class="no">&lt;/body&gt;</span>
+            <span class="no">&lt;/html&gt;</span>
+<span class="nt">services</span><span class="p">:</span>
+    <span class="nt">nginx</span><span class="p">:</span>
+        <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">nginx</span>
+        <span class="nt">ports</span><span class="p">:</span>
+            <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">80/http</span>
+        <span class="nt">configs</span><span class="p">:</span>
+            <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">conf/index.html:/usr/share/nginx/html/index.html</span>
+
+<span class="nt">kubernetes</span><span class="p">:</span>
+    <span class="nt">manifest</span><span class="p">:</span> <span class="p p-Indicator">|-</span>
+      <span class="no">apiVersion: v1</span>
+      <span class="no">kind: Service</span>
+      <span class="no">metadata:</span>
+        <span class="no">name: redis-master</span>
+        <span class="no">labels:</span>
+          <span class="no">app: redis</span>
+          <span class="no">tier: backend</span>
+          <span class="no">role: master</span>
+      <span class="no">spec:</span>
+        <span class="no">ports:</span>
+        <span class="no">- port: 6379</span>
+          <span class="no">targetPort: 6379</span>
+        <span class="no">selector:</span>
+          <span class="no">app: redis</span>
+          <span class="no">tier: backend</span>
+          <span class="no">role: master</span>
+      <span class="no">---</span>
+      <span class="no">apiVersion: apps/v1 #  for k8s versions before 1.9.0 use apps/v1beta2  and before 1.8.0 use extensions/v1beta1</span>
+      <span class="no">kind: Deployment</span>
+      <span class="no">metadata:</span>
+        <span class="no">name: redis-master</span>
+      <span class="no">spec:</span>
+        <span class="no">selector:</span>
+          <span class="no">matchLabels:</span>
+            <span class="no">app: redis</span>
+            <span class="no">role: master</span>
+            <span class="no">tier: backend</span>
+        <span class="no">replicas: 1</span>
+        <span class="no">template:</span>
+          <span class="no">metadata:</span>
+            <span class="no">labels:</span>
+              <span class="no">app: redis</span>
+              <span class="no">role: master</span>
+              <span class="no">tier: backend</span>
+          <span class="no">spec:</span>
+            <span class="no">containers:</span>
+            <span class="no">- name: master</span>
+              <span class="no">image: k8s.gcr.io/redis:e2e  # or just image: redis</span>
+              <span class="no">resources:</span>
+                <span class="no">requests:</span>
+                  <span class="no">cpu: 100m</span>
+                  <span class="no">memory: 100Mi</span>
+              <span class="no">ports:</span>
+              <span class="no">- containerPort: 6379</span>
+      <span class="no">---</span>
+      <span class="no">apiVersion: v1</span>
+      <span class="no">kind: Service</span>
+      <span class="no">metadata:</span>
+        <span class="no">name: redis-slave</span>
+        <span class="no">labels:</span>
+          <span class="no">app: redis</span>
+          <span class="no">tier: backend</span>
+          <span class="no">role: slave</span>
+      <span class="no">spec:</span>
+        <span class="no">ports:</span>
+        <span class="no">- port: 6379</span>
+        <span class="no">selector:</span>
+          <span class="no">app: redis</span>
+          <span class="no">tier: backend</span>
+          <span class="no">role: slave</span>
+      <span class="no">---</span>
+      <span class="no">apiVersion: apps/v1 #  for k8s versions before 1.9.0 use apps/v1beta2  and before 1.8.0 use extensions/v1beta1</span>
+      <span class="no">kind: Deployment</span>
+      <span class="no">metadata:</span>
+        <span class="no">name: redis-slave</span>
+      <span class="no">spec:</span>
+        <span class="no">selector:</span>
+          <span class="no">matchLabels:</span>
+            <span class="no">app: redis</span>
+            <span class="no">role: slave</span>
+            <span class="no">tier: backend</span>
+        <span class="no">replicas: 2</span>
+        <span class="no">template:</span>
+          <span class="no">metadata:</span>
+            <span class="no">labels:</span>
+              <span class="no">app: redis</span>
+              <span class="no">role: slave</span>
+              <span class="no">tier: backend</span>
+          <span class="no">spec:</span>
+            <span class="no">containers:</span>
+            <span class="no">- name: slave</span>
+              <span class="no">image: gcr.io/google_samples/gb-redisslave:v1</span>
+              <span class="no">resources:</span>
+                <span class="no">requests:</span>
+                  <span class="no">cpu: 100m</span>
+                  <span class="no">memory: 100Mi</span>
+              <span class="no">env:</span>
+              <span class="no">- name: GET_HOSTS_FROM</span>
+                <span class="no">value: dns</span>
+                <span class="no"># If your cluster config does not include a dns service, then to</span>
+                <span class="no"># instead access an environment variable to find the master</span>
+                <span class="no"># service&#39;s host, comment out the &#39;value: dns&#39; line above, and</span>
+                <span class="no"># uncomment the line below:</span>
+                <span class="no"># value: env</span>
+              <span class="no">ports:</span>
+              <span class="no">- containerPort: 6379</span>
+      <span class="no">---</span>
+      <span class="no">apiVersion: v1</span>
+      <span class="no">kind: Service</span>
+      <span class="no">metadata:</span>
+        <span class="no">name: frontend</span>
+        <span class="no">labels:</span>
+          <span class="no">app: guestbook</span>
+          <span class="no">tier: frontend</span>
+      <span class="no">spec:</span>
+        <span class="no"># if your cluster supports it, uncomment the following to automatically create</span>
+        <span class="no"># an external load-balanced IP for the frontend service.</span>
+        <span class="no"># type: LoadBalancer</span>
+        <span class="no">ports:</span>
+        <span class="no">- port: 80</span>
+        <span class="no">selector:</span>
+          <span class="no">app: guestbook</span>
+          <span class="no">tier: frontend</span>
+      <span class="no">---</span>
+      <span class="no">apiVersion: apps/v1 #  for k8s versions before 1.9.0 use apps/v1beta2  and before 1.8.0 use extensions/v1beta1</span>
+      <span class="no">kind: Deployment</span>
+      <span class="no">metadata:</span>
+        <span class="no">name: frontend</span>
+      <span class="no">spec:</span>
+        <span class="no">selector:</span>
+          <span class="no">matchLabels:</span>
+            <span class="no">app: guestbook</span>
+            <span class="no">tier: frontend</span>
+        <span class="no">replicas: 3</span>
+        <span class="no">template:</span>
+          <span class="no">metadata:</span>
+            <span class="no">labels:</span>
+              <span class="no">app: guestbook</span>
+              <span class="no">tier: frontend</span>
+          <span class="no">spec:</span>
+            <span class="no">containers:</span>
+            <span class="no">- name: php-redis</span>
+              <span class="no">image: gcr.io/google-samples/gb-frontend:v4</span>
+              <span class="no">resources:</span>
+                <span class="no">requests:</span>
+                  <span class="no">cpu: 100m</span>
+                  <span class="no">memory: 100Mi</span>
+              <span class="no">env:</span>
+              <span class="no">- name: GET_HOSTS_FROM</span>
+                <span class="no">value: dns</span>
+                <span class="no"># If your cluster config does not include a dns service, then to</span>
+                <span class="no"># instead access environment variables to find service host</span>
+                <span class="no"># info, comment out the &#39;value: dns&#39; line above, and uncomment the</span>
+                <span class="no"># line below:</span>
+                <span class="no"># value: env</span>
+              <span class="no">ports:</span>
+              <span class="no">- containerPort: 80</span>
+</code></pre></div>
+
+<p>Typically you would track your Riofile with some form of VCS but for now simply save it in a local directory.</p>
+<p>Next, run <code>rio up</code> in that directory.</p>
+<p>You can watch Rio service come up with <code>rio ps</code> and the Kubernetes deployments with <code>kubectl get deployments -w</code>.</p>
+<p>You can check that the sample service came up by going to the endpoint given by <code>rio ps</code></p>
+<div class="codehilite"><pre><span></span><code><span class="err">NAME      IMAGE     ENDPOINT                                          SCALE     APP       VERSION    WEIGHT    CREATED       DETAIL</span>
+<span class="err">nginx     nginx     https://nginx-2c21baa1-default.enu90s.on-rio.io   1         nginx     2c21baa1   100%      4 hours ago</span>
+</code></pre></div>
+
+<p>We can use Rio to expose the service and provision a LetsEncrypt certificate for it.</p>
+<p><code>rio router add guestbook to frontend,port=80</code></p>
+<p>This will create a route to the service and create an endpoint.</p>
+<div class="codehilite"><pre><span></span><code><span class="err">rio endpoints</span>
+<span class="err">NAME        ENDPOINTS</span>
+<span class="err">nginx       https://nginx-default.enu90s.on-rio.io</span>
+<span class="err">guestbook   https://guestbook-default.enu90s.on-rio.io</span>
+</code></pre></div>
+
+<p>We can now access this endpoint over encrypted https!</p>
+<h4 id="how-to-watch-a-repo">How to watch a repo<a class="headerlink" href="#how-to-watch-a-repo" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="nv">namespace</span><span class="o">=</span>something
+kubectl create namespace <span class="si">${</span><span class="nv">namespace</span><span class="si">}</span>
+<span class="c1"># based on your situation, you may have application level secrets to be created</span>
+<span class="c1"># kubectl apply -f deployments/secrets</span>
+<span class="c1"># if you have a private git repo, docker registry, you can use the above approach or you can create them using rio itself</span>
+<span class="c1"># if you have build instructions and want to push to a private registry</span>
+<span class="c1"># rio secrets create --docker</span>
+<span class="c1"># since you wish to watch a repo for changes on the stack definition, rio must have the ability to create a webhook in your repository</span>
+<span class="c1"># rio secrets create --github-webhook </span>
+<span class="c1"># try rio secrets create --help to see other options.</span>
+<span class="c1"># make sure you pass --build-clone-secret gitcredential if you are having a private git repo</span>
+<span class="c1"># see a nodejs example here https://github.com/lucidprogrammer/rio-samples.git</span>
+
+rio -n <span class="si">${</span><span class="nv">namespace</span><span class="si">}</span> up --name somename  --push-registry-secret dockerconfig <span class="se">\</span>
+    --file deployments/my-stack.yaml --build-webhook-secret githubtoken<span class="se">\</span>
+    --answers deployments/values-my-stack.json https://github.com/lucidprogrammer/rio-samples.git
+
+<span class="c1"># you should be able to see the autoscaling in action with the following</span>
+
+hey -z 600s -c <span class="m">60</span> endpointurlofweb1service
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="nt">template</span><span class="p">:</span>
+  <span class="nt">goTemplate</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+  <span class="nt">envSubst</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+  <span class="nt">questions</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">variable</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">NAMESPACE</span>
+      <span class="nt">description</span><span class="p">:</span> <span class="s">&quot;namespace</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">deploy</span><span class="nv"> </span><span class="s">to&quot;</span>
+    <span class="p p-Indicator">-</span> <span class="nt">variable</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">REVISION</span>
+      <span class="nt">description</span><span class="p">:</span> <span class="s">&quot;Current</span><span class="nv"> </span><span class="s">commit&quot;</span>
+    <span class="c1"># make sure you respect the type of the variable used.</span>
+    <span class="p p-Indicator">-</span> <span class="nt">variable</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MAX_SCALE</span>
+      <span class="nt">type</span><span class="p">:</span> <span class="s">&quot;int&quot;</span>
+      <span class="nt">description</span><span class="p">:</span> <span class="s">&quot;maximum</span><span class="nv"> </span><span class="s">scale</span><span class="nv"> </span><span class="s">number&quot;</span>
+<span class="nt">services</span><span class="p">:</span>
+  <span class="nt">web1</span><span class="p">:</span>
+    <span class="nt">version</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v0</span>
+    <span class="nt">weight</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
+    <span class="nt">stageOnly</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+    <span class="nt">autoscale</span><span class="p">:</span>
+      <span class="nt">concurrency</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span>
+      <span class="nt">maxReplicas</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">${MAX_SCALE}</span>
+      <span class="nt">minReplicas</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+    <span class="nt">ports</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">80:3000/http</span>
+    <span class="nt">env</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">NAMESPACE=${NAMESPACE}</span>
+    <span class="c1"># say you want to have a way to show the version/commit in your application.</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">REVISION=${REVISION}</span>
+    <span class="c1"># let&#39;s say you want to access a super secret as env, you may do as follows</span>
+    <span class="c1"># - REDIS_PASSWORD=secret://spec/REDIS_PASSWORD</span>
+    <span class="nt">build</span><span class="p">:</span>
+      <span class="nt">branch</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">master</span>
+      <span class="nt">context</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">./src/web1</span>
+      <span class="nt">pushRegistry</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">docker.io</span>
+      <span class="c1"># everytime you do a push to the repo, REVISION will match the specific commit hash and an image is created and pushed.</span>
+      <span class="nt">imageName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">lucidprogrammer/web1:${REVISION}</span>
+
+  <span class="c1"># an example to use init containers</span>
+  <span class="nt">web2</span><span class="p">:</span>
+    <span class="nt">version</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v0</span>
+    <span class="nt">weight</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
+    <span class="nt">ports</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">80:80/http</span>
+    <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">nginx:alpine</span>
+    <span class="nt">volumes</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">html</span>
+      <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/usr/share/nginx/html</span>
+    <span class="nt">containers</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">init</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+      <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">web2-init</span>
+      <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">busybox</span>
+      <span class="nt">volumes</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">html</span>
+        <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/work-dir</span>
+      <span class="nt">command</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">wget</span>
+        <span class="p p-Indicator">-</span> <span class="s">&quot;-O&quot;</span>
+        <span class="p p-Indicator">-</span> <span class="s">&quot;/work-dir/index.html&quot;</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">http://kubernetes.io</span>
+</code></pre></div>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid" aria-label="Footer">
+        
+          <a href="../publicdomain-external-services/" class="md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+            </div>
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Configuring PublicDomain and ExternalService
+              </div>
+            </div>
+          </a>
+        
+        
+          <a href="../webhooks/" class="md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                Webhooks
+              </div>
+            </div>
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+        Made with
+        <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+          Material for MkDocs
+        </a>
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    
+      <script src="../assets/javascripts/vendor.7e0ee788.min.js"></script>
+      <script src="../assets/javascripts/bundle.c1ccee15.min.js"></script><script id="__lang" type="application/json">{"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}</script>
+      
+      <script>
+        app = initialize({
+          base: "..",
+          features: [],
+          search: Object.assign({
+            worker: "../assets/javascripts/worker/search.4ac00218.min.js"
+          }, typeof search !== "undefined" && search)
+        })
+      </script>
+      
+    
+  </body>
+</html>

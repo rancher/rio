@@ -1,0 +1,1947 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="shortcut icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-6.1.2">
+    
+    
+      
+        <title>CLI Reference - Rio - Application Deployment Engine for Kubernetes</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.19190aaf.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.24b84193.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#00bdd6">
+        
+      
+    
+    
+    
+      
+        
+        <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Work+Sans:300,400,400i,700%7C&display=fallback">
+        <style>body,input{font-family:"Work Sans",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"",SFMono-Regular,Consolas,Menlo,monospace}</style>
+      
+    
+    
+    
+    
+      
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="cyan" data-md-color-accent="">
+      
+  
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cli-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid" aria-label="Header">
+    <a href=".." title="Rio - Application Deployment Engine for Kubernetes" class="md-header-nav__button md-logo" aria-label="Rio - Application Deployment Engine for Kubernetes">
+      
+  <img src="../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header-nav__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header-nav__title" data-md-component="header-title">
+      
+        <div class="md-header-nav__ellipsis">
+          <span class="md-header-nav__topic md-ellipsis">
+            Rio - Application Deployment Engine for Kubernetes
+          </span>
+          <span class="md-header-nav__topic md-ellipsis">
+            
+              CLI Reference
+            
+          </span>
+        </div>
+      
+    </div>
+    
+      <label class="md-header-nav__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" data-md-state="active">
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <button type="reset" class="md-search__icon md-icon" aria-label="Clear" data-md-component="search-reset" tabindex="-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header-nav__source">
+        
+<a href="https://github.com/rancher/rio/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Rio - Application Deployment Engine for Kubernetes" class="md-nav__button md-logo" aria-label="Rio - Application Deployment Engine for Kubernetes">
+      
+  <img src="../assets/logo.svg" alt="logo">
+
+    </a>
+    Rio - Application Deployment Engine for Kubernetes
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/rancher/rio/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href=".." class="md-nav__link">
+      Home
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../install/" class="md-nav__link">
+      Install Rio
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../concepts/" class="md-nav__link">
+      Rio concept
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../quick-start/" class="md-nav__link">
+      Quick Start
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../workloads/" class="md-nav__link">
+      Running workloads
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../router/" class="md-nav__link">
+      Configuring Router
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../publicdomain-external-services/" class="md-nav__link">
+      Configuring PublicDomain and ExternalService
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../riofile/" class="md-nav__link">
+      Using Riofile
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../webhooks/" class="md-nav__link">
+      Webhooks
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../monitoring/" class="md-nav__link">
+      Monitoring Workloads
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../autoscaling/" class="md-nav__link">
+      Using AutoScaling
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../rbac/" class="md-nav__link">
+      Configuring Rio with RBAC
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../continuous-deployment/" class="md-nav__link">
+      Continuous Delivery with Rio
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../developing-application-using-rio/" class="md-nav__link">
+      Using Rio for Developing Your Application
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../flows/" class="md-nav__link">
+      Deployment Flow
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../dashboard/" class="md-nav__link">
+      Using Dashboard
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        CLI Reference
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+    
+    <a href="./" class="md-nav__link md-nav__link--active">
+      CLI Reference
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    Table of Contents
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#attach" class="md-nav__link">
+    attach
+  </a>
+  
+    <nav class="md-nav" aria-label="attach">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    Usage
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options" class="md-nav__link">
+    Options
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#build-history" class="md-nav__link">
+    build-history
+  </a>
+  
+    <nav class="md-nav" aria-label="build-history">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage_1" class="md-nav__link">
+    Usage
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options_1" class="md-nav__link">
+    Options
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples_1" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../api-docs/" class="md-nav__link">
+      API Reference
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../faq/" class="md-nav__link">
+      Troubleshooting
+    </a>
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    Table of Contents
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#attach" class="md-nav__link">
+    attach
+  </a>
+  
+    <nav class="md-nav" aria-label="attach">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    Usage
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options" class="md-nav__link">
+    Options
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#build-history" class="md-nav__link">
+    build-history
+  </a>
+  
+    <nav class="md-nav" aria-label="build-history">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage_1" class="md-nav__link">
+    Usage
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options_1" class="md-nav__link">
+    Options
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples_1" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/rancher/rio/edit/master/docs/cli-reference.md" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+                  </a>
+                
+                
+                <h1 id="cli-reference">CLI Reference<a class="headerlink" href="#cli-reference" title="Permanent link">&para;</a></h1>
+<h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="#attach">attach</a></li>
+<li><a href="#build">build</a></li>
+<li><a href="#build-history">build-history</a></li>
+<li><a href="#cat">cat</a></li>
+<li><a href="#dashboard">dashboard</a></li>
+<li><a href="#edit">edit</a></li>
+<li><a href="#exec">exec</a></li>
+<li><a href="#export">export</a></li>
+<li><a href="#image">image</a></li>
+<li><a href="#info">info</a></li>
+<li><a href="#inspect">inspect</a></li>
+<li><a href="#install">install</a></li>
+<li><a href="#kill">kill</a></li>
+<li><a href="#logs">logs</a></li>
+<li><a href="#promote">promote</a></li>
+<li><a href="#ps">ps</a></li>
+<li><a href="#router">router</a></li>
+<li><a href="#run">run</a></li>
+<li><a href="#rm">rm</a></li>
+<li><a href="#scale">scale</a></li>
+<li><a href="#stage">stage</a></li>
+<li><a href="#system-logs">system-logs</a></li>
+<li><a href="#system-feature">system-features</a></li>
+<li><a href="#uninstall">uninstall</a></li>
+<li><a href="#up">up</a></li>
+<li><a href="#weight">weight</a></li>
+</ul>
+<h2 id="attach">attach<a class="headerlink" href="#attach" title="Permanent link">&para;</a></h2>
+<p>Attach to a process running in a container</p>
+<h5 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h5>
+<div class="codehilite"><pre><span></span><code><span class="n">rio</span><span class="w"> </span><span class="n">attach</span><span class="w"> </span><span class="o">[</span><span class="n">OPTIONS</span><span class="o">]</span><span class="w"> </span><span class="n">CONTAINER</span><span class="w"></span>
+</code></pre></div>
+
+<h5 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h5>
+<table>
+<thead>
+<tr>
+<th>flag</th>
+<th>aliases</th>
+<th>description</th>
+<th>default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>--timeout value</td>
+<td></td>
+<td>Timeout waiting for the container to be created to attach to</td>
+<td>1m</td>
+</tr>
+<tr>
+<td>--pod value</td>
+<td></td>
+<td>Specify pod, default is first pod found</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h5 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h5>
+<p>```shell script
+rio attach demo</p>
+<p>rio attach --timeout 30s --pod mydemopod demo</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">---</span>
+
+<span class="o">##</span> <span class="n">build</span>
+
+<span class="n">Build</span> <span class="n">a</span> <span class="n">docker</span> <span class="n">image</span> <span class="k">using</span> <span class="n">buildkitd</span>
+
+<span class="o">#####</span> <span class="k">Usage</span>
+</code></pre></div>
+
+<p>rio build command [command options] [arguments...]</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">##### Options</span>
+
+<span class="o">|</span> <span class="n">flag</span>         <span class="o">|</span> <span class="n">aliases</span> <span class="o">|</span> <span class="n">description</span>                                                             <span class="o">|</span> <span class="n">default</span> <span class="o">|</span>
+<span class="o">|--------------|---------|-------------------------------------------------------------------------|---------|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">file</span> <span class="n">value</span> <span class="o">|</span> <span class="o">-</span><span class="n">f</span>      <span class="o">|</span> <span class="n">Name</span> <span class="n">of</span> <span class="n">the</span> <span class="n">file</span> <span class="n">to</span> <span class="n">look</span> <span class="k">for</span> <span class="n">build</span><span class="p">,</span> <span class="n">support</span> <span class="n">both</span> <span class="n">Riofile</span> <span class="ow">and</span> <span class="n">Dockerfile</span> <span class="o">|</span>         <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">tag</span> <span class="n">value</span>  <span class="o">|</span> <span class="o">-</span><span class="n">t</span>      <span class="o">|</span> <span class="n">Name</span> <span class="ow">and</span> <span class="n">optionally</span> <span class="n">a</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">the</span> <span class="s1">&#39;name:tag&#39;</span> <span class="n">format</span>                      <span class="o">|</span>         <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">build</span><span class="o">-</span><span class="n">arg</span>  <span class="o">|</span>         <span class="o">|</span> <span class="n">Set</span> <span class="n">build</span><span class="o">-</span><span class="n">time</span> <span class="n">variables</span>                                                <span class="o">|</span>         <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">no</span><span class="o">-</span><span class="n">cache</span>   <span class="o">|</span>         <span class="o">|</span> <span class="n">Do</span> <span class="ow">not</span> <span class="n">use</span> <span class="n">cache</span> <span class="n">when</span> <span class="n">building</span> <span class="n">the</span> <span class="n">image</span>                                <span class="o">|</span>         <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">help</span>       <span class="o">|</span> <span class="o">-</span><span class="n">h</span>      <span class="o">|</span> <span class="n">show</span> <span class="n">help</span>                                                               <span class="o">|</span>         <span class="o">|</span>
+
+
+<span class="c1">##### Examples</span>
+
+<span class="err">```</span><span class="n">shell</span> <span class="n">script</span>
+
+<span class="c1"># Navigate to directory with Dockerfile and build it into local registry</span>
+<span class="n">rio</span> <span class="n">build</span> <span class="o">-</span><span class="n">t</span> <span class="n">test</span><span class="p">:</span><span class="n">v1</span>
+
+<span class="c1"># See image that was build</span>
+<span class="n">rio</span> <span class="n">image</span>
+
+<span class="c1"># Build from riofile insted</span>
+<span class="n">rio</span> <span class="n">build</span> <span class="o">-</span><span class="n">t</span> <span class="n">test</span><span class="p">:</span><span class="n">v1</span> <span class="o">--</span><span class="n">no</span><span class="o">-</span><span class="n">cache</span> <span class="o">-</span><span class="n">f</span> <span class="n">Riofile</span><span class="o">.</span><span class="n">yaml</span>
+
+<span class="c1"># Now run the image</span>
+<span class="n">rio</span> <span class="n">run</span> <span class="o">-</span><span class="n">n</span> <span class="n">test</span> <span class="o">-</span><span class="n">p</span> <span class="mi">8080</span> <span class="n">localhost</span><span class="p">:</span><span class="mi">5442</span><span class="o">/</span><span class="n">default</span><span class="o">/</span><span class="n">test</span><span class="p">:</span><span class="n">v1</span>
+
+<span class="c1"># Build the image again with new tag</span>
+<span class="n">rio</span> <span class="n">build</span> <span class="o">-</span><span class="n">t</span> <span class="n">test</span><span class="p">:</span><span class="n">v2</span>
+
+<span class="c1"># Now stage the 2nd image</span>
+<span class="n">rio</span> <span class="n">stage</span> <span class="o">--</span><span class="n">image</span> <span class="n">localhost</span><span class="p">:</span><span class="mi">5442</span><span class="o">/</span><span class="n">default</span><span class="o">/</span><span class="n">test</span><span class="p">:</span><span class="n">v2</span> <span class="n">test</span> <span class="n">v2</span>
+</code></pre></div>
+
+<hr />
+<h2 id="build-history">build-history<a class="headerlink" href="#build-history" title="Permanent link">&para;</a></h2>
+<p>Show previous builds</p>
+<h5 id="usage_1">Usage<a class="headerlink" href="#usage_1" title="Permanent link">&para;</a></h5>
+<div class="codehilite"><pre><span></span><code><span class="n">rio</span> <span class="n">build</span><span class="o">-</span><span class="n">history</span> <span class="p">[</span><span class="n">command</span> <span class="n">options</span><span class="p">]</span> <span class="p">[</span><span class="n">arguments</span><span class="p">...]</span>
+</code></pre></div>
+
+<h5 id="options_1">Options<a class="headerlink" href="#options_1" title="Permanent link">&para;</a></h5>
+<table>
+<thead>
+<tr>
+<th>flag</th>
+<th>aliases</th>
+<th>description</th>
+<th>default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>--quiet</td>
+<td>-q</td>
+<td>Only display Names</td>
+<td></td>
+</tr>
+<tr>
+<td>--format value</td>
+<td></td>
+<td>'json' or 'yaml' or Custom format: '{{.Obj.Name}}' [$FORMAT]</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h5 id="examples_1">Examples<a class="headerlink" href="#examples_1" title="Permanent link">&para;</a></h5>
+<p>```shell script</p>
+<h1 id="see-previous-builds-from-stacks-or-workloads">see previous builds from stacks or workloads<a class="headerlink" href="#see-previous-builds-from-stacks-or-workloads" title="Permanent link">&para;</a></h1>
+<p>rio build-history</p>
+<h1 id="custom-output-format">custom output format<a class="headerlink" href="#custom-output-format" title="Permanent link">&para;</a></h1>
+<p>rio build-history --format {{.Obj.Name}}</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">---</span>
+
+<span class="o">##</span> <span class="n">cat</span>
+
+<span class="n">Print</span> <span class="n">the</span> <span class="n">contents</span> <span class="k">of</span> <span class="n">a</span> <span class="n">config</span>
+
+<span class="o">#####</span> <span class="k">Usage</span>
+</code></pre></div>
+
+<p>rio cat [OPTIONS] [NAME...]</p>
+<div class="codehilite"><pre><span></span><code><span class="o">#####</span> <span class="k">Options</span>
+
+<span class="o">|</span> <span class="n">flag</span>  <span class="o">|</span> <span class="n">aliases</span> <span class="o">|</span> <span class="n">description</span>             <span class="o">|</span> <span class="k">default</span> <span class="o">|</span>
+<span class="o">|</span><span class="c1">-------|---------|-------------------------|---------|</span>
+<span class="o">|</span> <span class="c1">--key | -k      | The values which to cat |         |</span>
+
+<span class="o">#####</span> <span class="n">Examples</span>
+
+<span class="o">```</span><span class="n">shell</span> <span class="n">script</span>
+<span class="o">#</span> <span class="n">cat</span> <span class="n">a</span> <span class="n">configmap</span>
+<span class="n">rio</span> <span class="n">cat</span> <span class="n">configmap</span><span class="o">/</span><span class="n">config</span><span class="o">-</span><span class="n">foo</span>
+
+<span class="o">#</span> <span class="n">cat</span> <span class="n">a</span> <span class="k">key</span> <span class="k">from</span> <span class="n">a</span> <span class="n">configmap</span>
+<span class="n">rio</span> <span class="n">cat</span> <span class="c1">--key=a configmap/config-foo</span>
+</code></pre></div>
+
+<hr />
+<h2 id="dashboard">dashboard<a class="headerlink" href="#dashboard" title="Permanent link">&para;</a></h2>
+<p>Open the dashboard in a browser</p>
+<h5 id="usage_2">Usage<a class="headerlink" href="#usage_2" title="Permanent link">&para;</a></h5>
+<div class="codehilite"><pre><span></span><code><span class="n">rio</span><span class="w"> </span><span class="n">dashboard</span><span class="w"> </span><span class="o">[</span><span class="n">OPTIONS</span><span class="o">]</span><span class="w"></span>
+</code></pre></div>
+
+<h5 id="options_2">Options<a class="headerlink" href="#options_2" title="Permanent link">&para;</a></h5>
+<table>
+<thead>
+<tr>
+<th>flag</th>
+<th>aliases</th>
+<th>description</th>
+<th>default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>--reset-admin</td>
+<td></td>
+<td>Reset admin password</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h5 id="examples_2">Examples<a class="headerlink" href="#examples_2" title="Permanent link">&para;</a></h5>
+<p>```shell script</p>
+<h1 id="reset-admin-pw">reset admin pw<a class="headerlink" href="#reset-admin-pw" title="Permanent link">&para;</a></h1>
+<p>rio dashboard --reset-admin </p>
+<div class="codehilite"><pre><span></span><code><span class="c1">---</span>
+
+<span class="o">##</span> <span class="n">edit</span>
+
+<span class="n">Edit</span> <span class="n">resources</span>
+
+<span class="o">#####</span> <span class="k">Usage</span>
+</code></pre></div>
+
+<p>rio edit [TYPE/]RESOURCE_NAME</p>
+<div class="codehilite"><pre><span></span><code><span class="err">#####</span><span class="w"> </span><span class="n">Options</span><span class="w"></span>
+
+<span class="o">|</span><span class="w"> </span><span class="n">flag</span><span class="w">  </span><span class="o">|</span><span class="w"> </span><span class="n">aliases</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">description</span><span class="w">                                           </span><span class="o">|</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="o">|-------|---------|-------------------------------------------------------|---------|</span><span class="w"></span>
+<span class="o">|</span><span class="w"> </span><span class="o">--</span><span class="n">raw</span><span class="w"> </span><span class="o">|</span><span class="w">         </span><span class="o">|</span><span class="w"> </span><span class="n">Edit</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">raw</span><span class="w"> </span><span class="n">API</span><span class="w"> </span><span class="k">object</span><span class="p">,</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">pretty</span><span class="w"> </span><span class="n">formatted</span><span class="w"> </span><span class="n">one</span><span class="w"> </span><span class="o">|</span><span class="w">         </span><span class="o">|</span><span class="w"></span>
+
+
+<span class="err">#####</span><span class="w"> </span><span class="n">Examples</span><span class="w"></span>
+
+<span class="err">```</span><span class="n">shell</span><span class="w"> </span><span class="n">script</span><span class="w"></span>
+<span class="n">rio</span><span class="w"> </span><span class="n">edit</span><span class="w"> </span><span class="n">demo</span><span class="nv">@v4</span><span class="w"></span>
+
+<span class="n">rio</span><span class="w"> </span><span class="n">edit</span><span class="w"> </span><span class="n">router</span><span class="o">/</span><span class="n">myrouter</span><span class="w"></span>
+</code></pre></div>
+
+<hr />
+<h2 id="exec">exec<a class="headerlink" href="#exec" title="Permanent link">&para;</a></h2>
+<p>Run a command in a running container</p>
+<h5 id="usage_3">Usage<a class="headerlink" href="#usage_3" title="Permanent link">&para;</a></h5>
+<div class="codehilite"><pre><span></span><code><span class="n">rio</span><span class="w"> </span><span class="k">exec</span><span class="w"> </span><span class="o">[</span><span class="n">OPTIONS</span><span class="o">]</span><span class="w"> </span><span class="n">CONTAINER</span><span class="w"> </span><span class="n">COMMAND</span><span class="w"> </span><span class="o">[</span><span class="n">ARG...</span><span class="o">]</span><span class="w"></span>
+</code></pre></div>
+
+<h5 id="options_3">Options<a class="headerlink" href="#options_3" title="Permanent link">&para;</a></h5>
+<table>
+<thead>
+<tr>
+<th>flag</th>
+<th>aliases</th>
+<th>description</th>
+<th>default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>--stdin</td>
+<td>-i</td>
+<td>Pass stdin to the container</td>
+<td></td>
+</tr>
+<tr>
+<td>--tty</td>
+<td>-t</td>
+<td>Stdin is a TTY</td>
+<td></td>
+</tr>
+<tr>
+<td>--container value</td>
+<td>-c value</td>
+<td>Specify container in pod, default is first container</td>
+<td></td>
+</tr>
+<tr>
+<td>--pod value</td>
+<td></td>
+<td>Specify pod, default is first pod found</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h5 id="examples_3">Examples<a class="headerlink" href="#examples_3" title="Permanent link">&para;</a></h5>
+<p>```shell script</p>
+<h1 id="ssh-into-running-container">ssh into running container<a class="headerlink" href="#ssh-into-running-container" title="Permanent link">&para;</a></h1>
+<p>rio exec -it demo sh</p>
+<h1 id="this-is-equivalent-of-doing">this is equivalent of doing<a class="headerlink" href="#this-is-equivalent-of-doing" title="Permanent link">&para;</a></h1>
+<p>rio exec --tty --stdin demo sh</p>
+<h1 id="choose-pod-and-container">choose pod and container<a class="headerlink" href="#choose-pod-and-container" title="Permanent link">&para;</a></h1>
+<p>rio exec -it --pod mypod --container server demo sh</p>
+<div class="codehilite"><pre><span></span><code><span class="o">---</span>
+
+<span class="c1">## export</span>
+
+<span class="n">Export</span> <span class="n">a</span> <span class="n">namespace</span> <span class="ow">or</span> <span class="n">service</span>
+
+<span class="c1">##### Usage</span>
+</code></pre></div>
+
+<p>rio export [TYPE/]NAMESPACE_OR_SERVICE</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">##### Options</span>
+
+<span class="o">|</span> <span class="n">flag</span>           <span class="o">|</span> <span class="n">aliases</span> <span class="o">|</span> <span class="n">description</span>                                        <span class="o">|</span> <span class="n">default</span> <span class="o">|</span>
+<span class="o">|----------------|---------|----------------------------------------------------|---------|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">format</span> <span class="n">value</span> <span class="o">|</span>         <span class="o">|</span> <span class="n">Specify</span> <span class="n">output</span> <span class="n">format</span><span class="p">,</span> <span class="n">yaml</span><span class="o">/</span><span class="n">json</span><span class="o">.</span> <span class="n">Defaults</span> <span class="n">to</span> <span class="n">yaml</span> <span class="o">|</span> <span class="n">yaml</span>    <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">riofile</span>      <span class="o">|</span>         <span class="o">|</span> <span class="n">Export</span> <span class="n">riofile</span> <span class="n">format</span>                              <span class="o">|</span>         <span class="o">|</span>
+
+
+<span class="c1">##### Examples</span>
+
+<span class="err">```</span><span class="n">shell</span> <span class="n">script</span>
+<span class="c1"># export a service</span>
+<span class="n">rio</span> <span class="k">export</span> <span class="n">demo</span>
+
+<span class="c1"># export a namespace in riofile format</span>
+<span class="n">rio</span> <span class="k">export</span> <span class="o">--</span><span class="n">riofile</span> <span class="n">namespace</span><span class="o">/</span><span class="n">default</span>
+</code></pre></div>
+
+<hr />
+<h2 id="image">image<a class="headerlink" href="#image" title="Permanent link">&para;</a></h2>
+<p>List images built from the local registry</p>
+<h5 id="usage_4">Usage<a class="headerlink" href="#usage_4" title="Permanent link">&para;</a></h5>
+<div class="codehilite"><pre><span></span><code><span class="err">rio image</span>
+</code></pre></div>
+
+<hr />
+<h2 id="info">info<a class="headerlink" href="#info" title="Permanent link">&para;</a></h2>
+<p>Show system info</p>
+<h5 id="usage_5">Usage<a class="headerlink" href="#usage_5" title="Permanent link">&para;</a></h5>
+<div class="codehilite"><pre><span></span><code><span class="err">rio info</span>
+</code></pre></div>
+
+<hr />
+<h2 id="inspect">inspect<a class="headerlink" href="#inspect" title="Permanent link">&para;</a></h2>
+<p>Inspect resources</p>
+<h5 id="usage_6">Usage<a class="headerlink" href="#usage_6" title="Permanent link">&para;</a></h5>
+<div class="codehilite"><pre><span></span><code><span class="err">rio inspect [TYPE/][NAMESPACE/]SERVICE_NAME</span>
+</code></pre></div>
+
+<h5 id="options_4">Options<a class="headerlink" href="#options_4" title="Permanent link">&para;</a></h5>
+<table>
+<thead>
+<tr>
+<th>flag</th>
+<th>aliases</th>
+<th>description</th>
+<th>default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>--format</td>
+<td></td>
+<td>Edit the raw API object, not the pretty formatted one</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h5 id="examples_4">Examples<a class="headerlink" href="#examples_4" title="Permanent link">&para;</a></h5>
+<p>```shell script
+rio inspect svc@v2</p>
+<h1 id="inspect-a-build">inspect a build<a class="headerlink" href="#inspect-a-build" title="Permanent link">&para;</a></h1>
+<p>rio inspect taskrun/affectionate-mirzakhani-mfp5q-ee709-4e40c</p>
+<div class="codehilite"><pre><span></span><code><span class="o">---</span>
+
+<span class="cp">## install</span>
+
+<span class="n">Install</span> <span class="n">the</span> <span class="n">Rio</span> <span class="n">management</span> <span class="n">plane</span>
+
+<span class="n">See</span> <span class="n">the</span> <span class="p">[</span><span class="n">install</span> <span class="n">docs</span><span class="p">](</span><span class="n">install</span><span class="p">.</span><span class="n">md</span><span class="p">)</span> <span class="k">for</span> <span class="n">more</span> <span class="n">info</span><span class="p">.</span>
+
+<span class="cp">##### Usage</span>
+</code></pre></div>
+
+<p>rio install [OPTIONS]</p>
+<div class="codehilite"><pre><span></span><code><span class="cp">##### Options</span>
+
+<span class="o">|</span> <span class="n">flag</span>                     <span class="o">|</span> <span class="n">aliases</span> <span class="o">|</span> <span class="n">description</span>                                                                            <span class="o">|</span> <span class="k">default</span>                         <span class="o">|</span>
+<span class="o">|--------------------------|---------|----------------------------------------------------------------------------------------|---------------------------------|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">check</span>                  <span class="o">|</span>         <span class="o">|</span> <span class="n">Only</span> <span class="n">check</span> <span class="n">status</span><span class="p">,</span> <span class="n">don</span><span class="err">&#39;</span><span class="n">t</span> <span class="n">deploy</span> <span class="n">controller</span>                                             <span class="o">|</span>                                 <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">disable</span><span class="o">-</span><span class="n">features</span> <span class="n">value</span> <span class="o">|</span>         <span class="o">|</span> <span class="n">Manually</span> <span class="n">specify</span> <span class="n">features</span> <span class="n">to</span> <span class="n">disable</span><span class="p">,</span> <span class="n">supports</span> <span class="n">comma</span> <span class="n">separated</span> <span class="n">values</span>                  <span class="o">|</span>                                 <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">enable</span><span class="o">-</span><span class="n">debug</span>           <span class="o">|</span>         <span class="o">|</span> <span class="n">Enable</span> <span class="n">debug</span> <span class="n">logging</span> <span class="k">in</span> <span class="n">controller</span>                                                     <span class="o">|</span>                                 <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">ip</span><span class="o">-</span><span class="n">address</span> <span class="n">value</span>       <span class="o">|</span>         <span class="o">|</span> <span class="n">Manually</span> <span class="n">specify</span> <span class="n">IP</span> <span class="n">addresses</span> <span class="n">to</span> <span class="n">generate</span> <span class="n">rdns</span> <span class="n">domain</span><span class="p">,</span> <span class="n">supports</span> <span class="n">comma</span> <span class="n">separated</span> <span class="n">values</span> <span class="o">|</span>                                 <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">yaml</span>                   <span class="o">|</span>         <span class="o">|</span> <span class="n">Only</span> <span class="n">print</span> <span class="k">out</span> <span class="n">k8s</span> <span class="n">yaml</span> <span class="n">manifest</span>                                                       <span class="o">|</span>                                 <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">rdns</span><span class="o">-</span><span class="n">url</span>               <span class="o">|</span>         <span class="o">|</span> <span class="n">Specify</span> <span class="n">Rdns</span> <span class="n">server</span> <span class="n">url</span> <span class="n">to</span> <span class="n">use</span>                                                         <span class="o">|</span> <span class="nl">https</span><span class="p">:</span><span class="c1">//api.on-rio.io/v1        |</span>
+
+
+<span class="o">**--</span><span class="n">check</span><span class="o">**</span>
+
+<span class="n">Check</span> <span class="k">if</span> <span class="n">Rio</span> <span class="n">is</span> <span class="n">installed</span> <span class="k">in</span> <span class="n">the</span> <span class="n">current</span> <span class="n">cluster</span> <span class="n">without</span> <span class="n">deploying</span> <span class="n">the</span> <span class="n">Rio</span> <span class="n">controller</span><span class="p">.</span>
+<span class="n">If</span> <span class="n">Rio</span> <span class="n">has</span> <span class="n">not</span> <span class="n">been</span> <span class="n">installed</span><span class="p">,</span> <span class="n">this</span> <span class="n">command</span> <span class="n">might</span> <span class="n">hang</span> <span class="n">on</span> <span class="err">`</span><span class="n">Waiting</span> <span class="k">for</span> <span class="n">rio</span> <span class="n">controller</span> <span class="n">to</span> <span class="n">initialize</span><span class="err">`</span><span class="p">.</span>
+
+<span class="o">**--</span><span class="n">disable</span><span class="o">-</span><span class="n">features</span><span class="o">**</span>
+
+<span class="n">Choose</span> <span class="n">features</span> <span class="n">to</span> <span class="n">be</span> <span class="n">disabled</span> <span class="n">when</span> <span class="n">starting</span> <span class="n">the</span> <span class="n">Rio</span> <span class="n">control</span> <span class="n">plane</span><span class="p">.</span> <span class="n">Below</span> <span class="n">are</span> <span class="n">a</span> <span class="n">list</span> <span class="n">of</span> <span class="n">available</span> <span class="n">features</span>
+
+<span class="o">|</span> <span class="n">Feature</span>     <span class="o">|</span> <span class="n">Description</span>                                       <span class="o">|</span>
+<span class="o">|-------------|---------------------------------------------------|</span>
+<span class="o">|</span> <span class="n">autoscaling</span> <span class="o">|</span> <span class="n">Auto</span><span class="o">-</span><span class="n">scaling</span> <span class="n">services</span> <span class="n">based</span> <span class="n">on</span> <span class="k">in</span><span class="o">-</span><span class="n">flight</span> <span class="n">requests</span> <span class="o">|</span>
+<span class="o">|</span> <span class="n">build</span>       <span class="o">|</span> <span class="n">Rio</span> <span class="n">Build</span><span class="p">,</span> <span class="n">from</span> <span class="n">source</span> <span class="n">code</span> <span class="n">to</span> <span class="n">deployment</span>         <span class="o">|</span>
+<span class="o">|</span> <span class="n">gloo</span>        <span class="o">|</span> <span class="n">API</span> <span class="n">gateway</span> <span class="n">backed</span> <span class="n">by</span> <span class="n">gloo</span>                        <span class="o">|</span>
+<span class="o">|</span> <span class="n">linkerd</span>     <span class="o">|</span> <span class="n">Linkerd</span> <span class="n">service</span> <span class="n">mesh</span>                              <span class="o">|</span>
+<span class="o">|</span> <span class="n">letsencrypt</span> <span class="o">|</span> <span class="n">Let</span><span class="err">&#39;</span><span class="n">s</span> <span class="n">Encrypt</span>                                     <span class="o">|</span>
+<span class="o">|</span> <span class="n">rdns</span>        <span class="o">|</span> <span class="n">Acquire</span> <span class="n">DNS</span> <span class="n">from</span> <span class="n">public</span> <span class="n">Rancher</span> <span class="n">DNS</span> <span class="n">service</span>       <span class="o">|</span>
+<span class="o">|</span> <span class="n">dashboard</span>   <span class="o">|</span> <span class="n">Rio</span> <span class="n">UI</span>                                            <span class="o">|</span>
+
+<span class="o">**--</span><span class="n">ip</span><span class="o">-</span><span class="n">address</span><span class="o">**</span>
+
+<span class="n">Manually</span> <span class="n">specify</span> <span class="n">IPAddress</span> <span class="k">for</span> <span class="n">API</span> <span class="n">gateway</span> <span class="n">services</span><span class="p">.</span> <span class="n">The</span> <span class="n">IP</span> <span class="n">will</span> <span class="n">be</span> <span class="n">used</span> <span class="n">to</span> <span class="n">generate</span> <span class="n">a</span> <span class="n">record</span> <span class="k">for</span> <span class="n">the</span> <span class="n">cluster</span> <span class="n">domain</span><span class="p">.</span>
+<span class="n">By</span> <span class="k">default</span><span class="p">,</span> <span class="k">if</span> <span class="n">this</span> <span class="n">flag</span> <span class="n">is</span> <span class="n">not</span> <span class="n">specified</span><span class="p">,</span> <span class="n">Rio</span> <span class="n">will</span> <span class="n">use</span> <span class="n">the</span> <span class="n">IP</span> <span class="n">of</span> <span class="p">[</span><span class="n">Service</span> <span class="n">Loadbalancer</span><span class="p">](</span><span class="nl">https</span><span class="p">:</span><span class="c1">//kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/) that points to API gateway.</span>
+
+<span class="nl">Note</span><span class="p">:</span> <span class="n">If</span> <span class="n">service</span> <span class="n">loadbalancer</span> <span class="n">cannot</span> <span class="n">be</span> <span class="n">provisioned</span><span class="p">,</span> <span class="p">[</span><span class="n">Nodeport</span><span class="p">](</span><span class="nl">https</span><span class="p">:</span><span class="c1">//kubernetes.io/docs/concepts/services-networking/service/#nodeport) is used to expose API gateway.</span>
+
+<span class="cp">##### Examples</span>
+
+<span class="err">```</span><span class="n">shell</span> <span class="n">script</span>
+<span class="cp"># basic install</span>
+<span class="n">rio</span> <span class="n">install</span>
+
+<span class="cp"># install with debug and disable some features</span>
+<span class="n">rio</span> <span class="n">install</span> <span class="o">--</span><span class="n">enable</span><span class="o">-</span><span class="n">debug</span> <span class="o">--</span><span class="n">disable</span><span class="o">-</span><span class="n">features</span> <span class="n">linkerd</span><span class="p">,</span><span class="n">gloo</span>
+
+<span class="cp"># print yaml to run manually, with custom ip-address</span>
+<span class="n">rio</span> <span class="n">install</span> <span class="o">--</span><span class="n">yaml</span> <span class="o">--</span><span class="n">ip</span><span class="o">-</span><span class="n">address</span> <span class="mf">127.0.0.1</span>
+</code></pre></div>
+
+<hr />
+<h2 id="kill">kill<a class="headerlink" href="#kill" title="Permanent link">&para;</a></h2>
+<p>Kill pods individually or all pods belonging to a service</p>
+<h5 id="usage_7">Usage<a class="headerlink" href="#usage_7" title="Permanent link">&para;</a></h5>
+<div class="codehilite"><pre><span></span><code><span class="err">rio kill [SERVICE_NAME/POD_NAME]</span>
+</code></pre></div>
+
+<h5 id="examples_5">Examples<a class="headerlink" href="#examples_5" title="Permanent link">&para;</a></h5>
+<p>```shell script</p>
+<h1 id="kill-a-service">kill a service<a class="headerlink" href="#kill-a-service" title="Permanent link">&para;</a></h1>
+<p>rio kill demo</p>
+<h1 id="kill-individual-pods">kill individual pods<a class="headerlink" href="#kill-individual-pods" title="Permanent link">&para;</a></h1>
+<p>rio pods # first get pod name
+rio kill pod/demo-v042dxp-5fb7d8f677-f9xgn</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">---</span>
+
+
+<span class="o">##</span> <span class="n">logs</span>
+
+<span class="n">Print</span> <span class="n">logs</span> <span class="k">from</span> <span class="n">services</span> <span class="k">or</span> <span class="n">containers</span>
+
+<span class="o">#####</span> <span class="k">Usage</span>
+</code></pre></div>
+
+<p>rio logs [OPTIONS] SERVICE/BUILD</p>
+<div class="codehilite"><pre><span></span><code><span class="o">#####</span> <span class="k">Options</span>
+
+<span class="o">|</span> <span class="n">flag</span>              <span class="o">|</span> <span class="n">aliases</span>  <span class="o">|</span> <span class="n">description</span>                                                                                       <span class="o">|</span> <span class="k">default</span> <span class="o">|</span>
+<span class="o">|</span><span class="c1">-------------------|----------|---------------------------------------------------------------------------------------------------|---------|</span>
+<span class="o">|</span> <span class="c1">--since value     | -s value | Logs since a certain time, either duration (5s, 2m, 3h) or RFC3339                                | &quot;24h&quot;   |</span>
+<span class="o">|</span> <span class="c1">--timestamps      | -t       | Print the logs with timestamp                                                                     |         |</span>
+<span class="o">|</span> <span class="c1">--tail value      | -n value | Number of recent lines to print, -1 for all                                                       | 200     |</span>
+<span class="o">|</span> <span class="c1">--container value | -c value | Print the logs of a specific container, use -a for system containers                              |         |</span>
+<span class="o">|</span> <span class="c1">--previous        | -p       | Print the logs for the previous instance of the container in a pod if it exists, excludes running |         |</span>
+<span class="o">|</span> <span class="c1">--init-containers |          | Include or exclude init containers                                                                |         |</span>
+<span class="o">|</span> <span class="c1">--all             | -a       | Include hidden or systems logs when logging                                                       |         |</span>
+<span class="o">|</span> <span class="c1">--no-color        | --nc     | Dont show color when logging                                                                      |         |</span>
+<span class="o">|</span> <span class="c1">--output value    | -o value | Output format: [default, raw, json]                                                               | default |</span>
+
+
+<span class="o">#####</span> <span class="n">Examples</span>
+
+<span class="o">```</span><span class="n">shell</span> <span class="n">script</span>
+<span class="o">#</span> <span class="k">get</span> <span class="n">logs</span> <span class="k">from</span> <span class="n">a</span> <span class="n">service</span>
+<span class="n">rio</span> <span class="n">logs</span> <span class="n">demo</span>
+
+<span class="o">#</span> <span class="k">Get</span> <span class="n">logs</span> <span class="k">from</span> <span class="n">a</span> <span class="n">build</span>
+<span class="n">rio</span> <span class="n">build</span><span class="o">-</span><span class="n">history</span>
+<span class="n">rio</span> <span class="n">logs</span> <span class="n">taskrun</span><span class="o">/</span><span class="n">affectionate</span><span class="o">-</span><span class="n">mirzakhani</span><span class="o">-</span><span class="n">mfp5q</span><span class="o">-</span><span class="n">ee709</span><span class="o">-</span><span class="mi">4</span><span class="n">e40c</span>
+
+<span class="o">#</span> <span class="k">get</span> <span class="mi">1</span> <span class="n">previous</span> <span class="n">log</span> <span class="n">line</span> <span class="k">for</span> <span class="n">the</span> <span class="n">linkerd</span><span class="o">-</span><span class="n">proxy</span> <span class="k">in</span> <span class="n">demo</span> <span class="n">service</span>
+<span class="n">rio</span> <span class="n">logs</span> <span class="c1">--tail 1 --container linkerd-proxy -a demo</span>
+
+<span class="o">#</span> <span class="k">ignore</span> <span class="n">init</span><span class="o">-</span><span class="n">containers</span> <span class="k">and</span> <span class="n">filter</span> <span class="k">to</span> <span class="n">waiting</span> <span class="k">or</span> <span class="n">terminated</span> <span class="n">pods</span><span class="p">,</span> <span class="n">include</span> <span class="n">timestamps</span>
+<span class="n">rio</span> <span class="n">logs</span> <span class="c1">--container-state &quot;terminated,waiting&quot; --init-containers=false --timestamps demo</span>
+
+<span class="o">#</span> <span class="n">target</span> <span class="n">terminated</span> <span class="n">pods</span> <span class="k">of</span> <span class="k">all</span> <span class="n">kinds</span><span class="p">,</span> <span class="n">format</span> <span class="k">as</span> <span class="n">json</span>
+<span class="n">rio</span> <span class="n">logs</span> <span class="o">-</span><span class="n">p</span> <span class="o">-</span><span class="n">a</span>  <span class="c1">--output json demo</span>
+</code></pre></div>
+
+<hr />
+<h2 id="promote">Promote<a class="headerlink" href="#promote" title="Permanent link">&para;</a></h2>
+<p>Send 100% of traffic to an app version and scale down other versions. See also weight. </p>
+<h5 id="usage_8">Usage<a class="headerlink" href="#usage_8" title="Permanent link">&para;</a></h5>
+<div class="codehilite"><pre><span></span><code><span class="n">rio</span><span class="w"> </span><span class="n">promote</span><span class="w"> </span><span class="o">[</span><span class="n">OPTIONS</span><span class="o">]</span><span class="w"> </span><span class="n">SERVICE_NAME</span><span class="w"></span>
+</code></pre></div>
+
+<h5 id="options_5">Options<a class="headerlink" href="#options_5" title="Permanent link">&para;</a></h5>
+<table>
+<thead>
+<tr>
+<th>flag</th>
+<th>aliases</th>
+<th>description</th>
+<th>default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>--duration</td>
+<td>none</td>
+<td>How long the rollout should take. An approximation, actual time may fluctuate</td>
+<td>0s</td>
+</tr>
+<tr>
+<td>--pause</td>
+<td>none</td>
+<td>Whether to pause all rollouts on current app</td>
+<td>false</td>
+</tr>
+</tbody>
+</table>
+<h5 id="examples_6">Examples<a class="headerlink" href="#examples_6" title="Permanent link">&para;</a></h5>
+<p>```shell script</p>
+<h1 id="promote-nv2">promote n@v2<a class="headerlink" href="#promote-nv2" title="Permanent link">&para;</a></h1>
+<p>rio promote n@v2</p>
+<h1 id="promote-nv2-over-1-hour">promote n@v2 over 1 hour<a class="headerlink" href="#promote-nv2-over-1-hour" title="Permanent link">&para;</a></h1>
+<p>rio promote --duration=1h n@v2</p>
+<h1 id="pause-last-command">pause last command<a class="headerlink" href="#pause-last-command" title="Permanent link">&para;</a></h1>
+<p>rio promote --pause=true n@v2</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">---</span>
+
+<span class="o">##</span> <span class="n">ps</span>
+
+<span class="n">List</span> <span class="n">services</span>
+
+<span class="o">#####</span> <span class="k">Usage</span>
+</code></pre></div>
+
+<p>rio ps [OPTIONS]</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">##### Options</span>
+
+<span class="o">|</span> <span class="n">flag</span>        <span class="o">|</span> <span class="n">aliases</span> <span class="o">|</span> <span class="n">description</span>                                                            <span class="o">|</span> <span class="n">default</span> <span class="o">|</span>
+<span class="o">|-------------|---------|------------------------------------------------------------------------|---------|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">quiet</span>     <span class="o">|</span> <span class="o">-</span><span class="n">q</span>      <span class="o">|</span> <span class="n">Only</span> <span class="n">display</span> <span class="n">Names</span>                                                     <span class="o">|</span>         <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">format</span>    <span class="o">|</span>         <span class="o">|</span> <span class="s1">&#39;json&#39;</span> <span class="ow">or</span> <span class="s1">&#39;yaml&#39;</span> <span class="ow">or</span> <span class="n">Custom</span> <span class="n">format</span><span class="p">:</span> <span class="s1">&#39;{{.Name}} {{.Obj.Name}}&#39;</span> <span class="p">[</span><span class="o">$</span><span class="n">FORMAT</span><span class="p">]</span> <span class="o">|</span>         <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">all</span>       <span class="o">|</span> <span class="o">-</span><span class="n">a</span>      <span class="o">|</span> <span class="nb">print</span> <span class="n">all</span> <span class="n">resources</span><span class="p">,</span> <span class="n">including</span> <span class="n">router</span> <span class="ow">and</span> <span class="n">externalservice</span>              <span class="o">|</span>         <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">workloads</span> <span class="o">|</span> <span class="o">-</span><span class="n">w</span>      <span class="o">|</span> <span class="n">include</span> <span class="n">apps</span><span class="o">/</span><span class="n">v1</span> <span class="n">Deployments</span> <span class="ow">and</span> <span class="n">DaemonSets</span> <span class="ow">in</span> <span class="n">output</span>                   <span class="o">|</span>         <span class="o">|</span>
+
+
+<span class="c1">##### Examples</span>
+
+<span class="err">```</span><span class="n">shell</span> <span class="n">script</span>
+<span class="c1"># show services and workloads</span>
+<span class="n">rio</span> <span class="n">ps</span> <span class="o">-</span><span class="n">w</span>
+
+<span class="c1"># output json</span>
+<span class="n">rio</span> <span class="n">ps</span> <span class="o">--</span><span class="n">format</span> <span class="n">json</span>
+
+<span class="c1"># display name and weight in custom format</span>
+<span class="n">rio</span> <span class="n">ps</span> <span class="o">--</span><span class="n">format</span> <span class="p">{{</span><span class="o">.</span><span class="n">Obj</span><span class="o">.</span><span class="n">Name</span><span class="p">}}</span> <span class="o">-&gt;</span> <span class="p">{{</span><span class="o">.</span><span class="n">Data</span><span class="o">.</span><span class="n">Weight</span><span class="p">}}</span>
+</code></pre></div>
+
+<hr />
+<h2 id="router">router<a class="headerlink" href="#router" title="Permanent link">&para;</a></h2>
+<p>Route traffic across the mesh</p>
+<h5 id="usage_9">Usage<a class="headerlink" href="#usage_9" title="Permanent link">&para;</a></h5>
+<div class="codehilite"><pre><span></span><code><span class="n">rio</span> <span class="n">routers</span> <span class="n">command</span> <span class="p">[</span><span class="n">command</span> <span class="n">options</span><span class="p">]</span> <span class="p">[</span><span class="n">arguments</span><span class="p">...]</span>
+</code></pre></div>
+
+<h5 id="options_6">Options<a class="headerlink" href="#options_6" title="Permanent link">&para;</a></h5>
+<table>
+<thead>
+<tr>
+<th>flag</th>
+<th>aliases</th>
+<th>description</th>
+<th>default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>--quiet</td>
+<td>-q</td>
+<td>Only display Names</td>
+<td></td>
+</tr>
+<tr>
+<td>--format</td>
+<td></td>
+<td>'json' or 'yaml' or Custom format: '{{.Name}} {{.Obj.Name}}' [$FORMAT]</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h5 id="examples_7">Examples<a class="headerlink" href="#examples_7" title="Permanent link">&para;</a></h5>
+<p>```shell script</p>
+<h1 id="show-existing-routers">show existing routers<a class="headerlink" href="#show-existing-routers" title="Permanent link">&para;</a></h1>
+<p>rio route</p>
+<div class="codehilite"><pre><span></span><code><span class="err">####</span><span class="w"> </span><span class="k">add</span><span class="o">/</span><span class="k">create</span><span class="w"></span>
+
+<span class="k">Create</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">router</span><span class="p">.</span><span class="w"> </span><span class="k">By</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="n">appends</span><span class="w"> </span><span class="k">at</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="k">end</span><span class="p">.</span><span class="w"></span>
+
+<span class="n">Services</span><span class="w"> </span><span class="n">specified</span><span class="w"> </span><span class="k">without</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">version</span><span class="w"> </span><span class="k">are</span><span class="w"> </span><span class="n">assumed</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="n">apps</span><span class="p">.</span><span class="w"> </span><span class="k">For</span><span class="w"> </span><span class="n">example</span><span class="w"> </span><span class="err">`</span><span class="n">rio</span><span class="w"> </span><span class="n">route</span><span class="w"> </span><span class="k">add</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">svc</span><span class="err">`</span><span class="w"> </span><span class="n">would</span><span class="w"> </span><span class="n">target</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">svc</span><span class="w"> </span><span class="n">app</span><span class="w"> </span><span class="n">endpoint</span><span class="p">,</span><span class="w"></span>
+<span class="ow">not</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="err">`</span><span class="n">svc</span><span class="nv">@v0</span><span class="err">`</span><span class="w"> </span><span class="n">version</span><span class="p">.</span><span class="w"></span>
+
+<span class="err">#####</span><span class="w"> </span><span class="k">Usage</span><span class="w"></span>
+</code></pre></div>
+
+<p>rio router create/add MATCH ACTION [TARGET...]</p>
+<div class="codehilite"><pre><span></span><code><span class="err">#####</span><span class="w"> </span><span class="n">Options</span><span class="w"></span>
+
+<span class="o">|</span><span class="w"> </span><span class="n">flag</span><span class="w">                              </span><span class="o">|</span><span class="w"> </span><span class="n">aliases</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">description</span><span class="w">                                          </span><span class="o">|</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="o">|-----------------------------------|---------|------------------------------------------------------|---------|</span><span class="w"></span>
+<span class="o">|</span><span class="w"> </span><span class="o">--</span><span class="k">insert</span><span class="w">                          </span><span class="o">|</span><span class="w">         </span><span class="o">|</span><span class="w"> </span><span class="k">Insert</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="k">rule</span><span class="w"> </span><span class="k">at</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">beginning</span><span class="w"> </span><span class="n">instead</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="k">end</span><span class="w">  </span><span class="o">|</span><span class="w">         </span><span class="o">|</span><span class="w"></span>
+<span class="o">|</span><span class="w"> </span><span class="o">--</span><span class="n">header</span><span class="w"> </span><span class="k">value</span><span class="w">                    </span><span class="o">|</span><span class="w">         </span><span class="o">|</span><span class="w"> </span><span class="k">Match</span><span class="w"> </span><span class="n">HTTP</span><span class="w"> </span><span class="n">header</span><span class="w"> </span><span class="p">(</span><span class="nf">format</span><span class="w"> </span><span class="k">key</span><span class="o">=</span><span class="k">value</span><span class="p">,</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="n">optional</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w">         </span><span class="o">|</span><span class="w"></span>
+<span class="o">|</span><span class="w"> </span><span class="o">--</span><span class="n">fault</span><span class="o">-</span><span class="n">percentage</span><span class="w"> </span><span class="k">value</span><span class="w">          </span><span class="o">|</span><span class="w">         </span><span class="o">|</span><span class="w"> </span><span class="n">Percentage</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="n">matching</span><span class="w"> </span><span class="n">requests</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">fault</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="mi">0</span><span class="w">       </span><span class="o">|</span><span class="w"></span>
+<span class="o">|</span><span class="w"> </span><span class="o">--</span><span class="n">fault</span><span class="o">-</span><span class="n">delay</span><span class="o">-</span><span class="n">milli</span><span class="o">-</span><span class="n">seconds</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="o">|</span><span class="w">         </span><span class="o">|</span><span class="w"> </span><span class="n">Inject</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">delay</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">fault</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">milliseconds</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="mi">0</span><span class="w">       </span><span class="o">|</span><span class="w"></span>
+<span class="o">|</span><span class="w"> </span><span class="o">--</span><span class="n">fault</span><span class="o">-</span><span class="n">httpcode</span><span class="w"> </span><span class="k">value</span><span class="w">            </span><span class="o">|</span><span class="w">         </span><span class="o">|</span><span class="w"> </span><span class="n">HTTP</span><span class="w"> </span><span class="n">code</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">send</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">fault</span><span class="w"> </span><span class="n">injection</span><span class="w">                </span><span class="o">|</span><span class="w"> </span><span class="mi">0</span><span class="w">       </span><span class="o">|</span><span class="w"></span>
+<span class="o">|</span><span class="w"> </span><span class="o">--</span><span class="k">add</span><span class="o">-</span><span class="n">header</span><span class="w"> </span><span class="k">value</span><span class="w">                </span><span class="o">|</span><span class="w">         </span><span class="o">|</span><span class="w"> </span><span class="k">Add</span><span class="w"> </span><span class="n">HTTP</span><span class="w"> </span><span class="n">header</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">request</span><span class="w"> </span><span class="p">(</span><span class="nf">format</span><span class="w"> </span><span class="k">key</span><span class="o">=</span><span class="k">value</span><span class="p">)</span><span class="w">        </span><span class="o">|</span><span class="w">         </span><span class="o">|</span><span class="w"></span>
+<span class="o">|</span><span class="w"> </span><span class="o">--</span><span class="k">set</span><span class="o">-</span><span class="n">header</span><span class="w"> </span><span class="k">value</span><span class="w">                </span><span class="o">|</span><span class="w">         </span><span class="o">|</span><span class="w"> </span><span class="n">Override</span><span class="w"> </span><span class="n">HTTP</span><span class="w"> </span><span class="n">header</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">request</span><span class="w"> </span><span class="p">(</span><span class="nf">format</span><span class="w"> </span><span class="k">key</span><span class="o">=</span><span class="k">value</span><span class="p">)</span><span class="w">   </span><span class="o">|</span><span class="w">         </span><span class="o">|</span><span class="w"></span>
+<span class="o">|</span><span class="w"> </span><span class="o">--</span><span class="n">remove</span><span class="o">-</span><span class="n">header</span><span class="w"> </span><span class="k">value</span><span class="w">             </span><span class="o">|</span><span class="w">         </span><span class="o">|</span><span class="w"> </span><span class="n">Remove</span><span class="w"> </span><span class="n">HTTP</span><span class="w"> </span><span class="n">header</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">request</span><span class="w"> </span><span class="p">(</span><span class="nf">format</span><span class="w"> </span><span class="k">key</span><span class="o">=</span><span class="k">value</span><span class="p">)</span><span class="w">     </span><span class="o">|</span><span class="w">         </span><span class="o">|</span><span class="w"></span>
+<span class="o">|</span><span class="w"> </span><span class="o">--</span><span class="n">retry</span><span class="o">-</span><span class="n">attempts</span><span class="w"> </span><span class="k">value</span><span class="w">            </span><span class="o">|</span><span class="w">         </span><span class="o">|</span><span class="w"> </span><span class="n">How</span><span class="w"> </span><span class="n">many</span><span class="w"> </span><span class="n">times</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">retry</span><span class="w">                              </span><span class="o">|</span><span class="w"> </span><span class="mi">0</span><span class="w">       </span><span class="o">|</span><span class="w"></span>
+<span class="o">|</span><span class="w"> </span><span class="o">--</span><span class="n">retry</span><span class="o">-</span><span class="n">timeout</span><span class="o">-</span><span class="n">seconds</span><span class="w"> </span><span class="k">value</span><span class="w">     </span><span class="o">|</span><span class="w">         </span><span class="o">|</span><span class="w"> </span><span class="n">Timeout</span><span class="w"> </span><span class="n">per</span><span class="w"> </span><span class="n">retry</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">seconds</span><span class="w">                         </span><span class="o">|</span><span class="w"> </span><span class="mi">0</span><span class="w">       </span><span class="o">|</span><span class="w"></span>
+<span class="o">|</span><span class="w"> </span><span class="o">--</span><span class="n">timeout</span><span class="o">-</span><span class="n">seconds</span><span class="w"> </span><span class="k">value</span><span class="w">           </span><span class="o">|</span><span class="w">         </span><span class="o">|</span><span class="w"> </span><span class="n">Timeout</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">seconds</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="ow">all</span><span class="w"> </span><span class="n">requests</span><span class="w">                  </span><span class="o">|</span><span class="w"> </span><span class="mi">0</span><span class="w">       </span><span class="o">|</span><span class="w"></span>
+<span class="o">|</span><span class="w"> </span><span class="o">--</span><span class="k">method</span><span class="w"> </span><span class="k">value</span><span class="w">                    </span><span class="o">|</span><span class="w">         </span><span class="o">|</span><span class="w"> </span><span class="k">Match</span><span class="w"> </span><span class="n">HTTP</span><span class="w"> </span><span class="k">method</span><span class="p">,</span><span class="w"> </span><span class="n">support</span><span class="w"> </span><span class="n">comma</span><span class="o">-</span><span class="n">separated</span><span class="w"> </span><span class="k">values</span><span class="w">    </span><span class="o">|</span><span class="w">         </span><span class="o">|</span><span class="w"></span>
+
+<span class="err">#####</span><span class="w"> </span><span class="n">Examples</span><span class="w"></span>
+
+<span class="err">```</span><span class="n">shell</span><span class="w"> </span><span class="n">script</span><span class="w"></span>
+
+<span class="err">#</span><span class="w"> </span><span class="n">route</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">demo</span><span class="w"> </span><span class="n">app</span><span class="w"> </span><span class="n">endpoint</span><span class="w"></span>
+<span class="n">rio</span><span class="w"> </span><span class="n">route</span><span class="w"> </span><span class="k">add</span><span class="w"> </span><span class="n">myroute</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">demo</span><span class="w"></span>
+
+<span class="err">#</span><span class="w"> </span><span class="n">route</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">specific</span><span class="w"> </span><span class="k">path</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">demo</span><span class="w"> </span><span class="n">app</span><span class="err">&#39;</span><span class="n">s</span><span class="w"> </span><span class="n">version</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="k">insert</span><span class="w"> </span><span class="k">into</span><span class="w"> </span><span class="k">first</span><span class="w"> </span><span class="n">slot</span><span class="w"></span>
+<span class="n">rio</span><span class="w"> </span><span class="n">route</span><span class="w"> </span><span class="k">add</span><span class="w"> </span><span class="c1">--insert myroute/name.html to demo@v0</span>
+</code></pre></div>
+
+<p>See the <a href="../router/">routers readme</a> for advanced example usage.</p>
+<hr />
+<h2 id="run">run<a class="headerlink" href="#run" title="Permanent link">&para;</a></h2>
+<p>Create and run a new service</p>
+<h5 id="usage_10">Usage<a class="headerlink" href="#usage_10" title="Permanent link">&para;</a></h5>
+<div class="codehilite"><pre><span></span><code><span class="n">rio</span><span class="w"> </span><span class="n">run</span><span class="w"> </span><span class="o">[</span><span class="n">OPTIONS</span><span class="o">]</span><span class="w"> </span><span class="nc">IMAGE</span><span class="w"> </span><span class="o">[</span><span class="n">COMMAND</span><span class="o">]</span><span class="w"> </span><span class="o">[</span><span class="n">ARG...</span><span class="o">]</span><span class="w"></span>
+</code></pre></div>
+
+<h5 id="options_7">Options<a class="headerlink" href="#options_7" title="Permanent link">&para;</a></h5>
+<table>
+<thead>
+<tr>
+<th>flag</th>
+<th>aliases</th>
+<th>description</th>
+<th>default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>--add-host value</td>
+<td></td>
+<td>Add a custom host-to-IP mapping (host=ip)</td>
+<td></td>
+</tr>
+<tr>
+<td>--annotations value</td>
+<td></td>
+<td>Annotations to attach to this service</td>
+<td></td>
+</tr>
+<tr>
+<td>--build-branch value</td>
+<td></td>
+<td>Build repository branch</td>
+<td>master</td>
+</tr>
+<tr>
+<td>--build-dockerfile value</td>
+<td></td>
+<td>Set Dockerfile name</td>
+<td>defaults to Dockerfile</td>
+</tr>
+<tr>
+<td>--build-context value</td>
+<td></td>
+<td>Set build context</td>
+<td>.</td>
+</tr>
+<tr>
+<td>--build-webhook-secret value</td>
+<td></td>
+<td>Set GitHub webhook secret name</td>
+<td></td>
+</tr>
+<tr>
+<td>--build-docker-push-secret value</td>
+<td></td>
+<td>Set docker push secret name</td>
+<td></td>
+</tr>
+<tr>
+<td>--build-clone-secret value</td>
+<td></td>
+<td>Set git clone secret name</td>
+<td></td>
+</tr>
+<tr>
+<td>--build-image-name value</td>
+<td></td>
+<td>Specify custom image name to push</td>
+<td></td>
+</tr>
+<tr>
+<td>--build-registry value</td>
+<td></td>
+<td>Specify to push image to</td>
+<td></td>
+</tr>
+<tr>
+<td>--build-revision value</td>
+<td></td>
+<td>Build git commit or tag</td>
+<td></td>
+</tr>
+<tr>
+<td>--build-pr</td>
+<td></td>
+<td>Enable builds on new pull requests</td>
+<td></td>
+</tr>
+<tr>
+<td>--build-tag</td>
+<td></td>
+<td>Enable builds on any new tags instead of new commits on a branch, requires webhook, does not support polling</td>
+<td></td>
+</tr>
+<tr>
+<td>--build-tag-include</td>
+<td></td>
+<td>Pattern that tags must match</td>
+<td></td>
+</tr>
+<tr>
+<td>--build-tag-exclude</td>
+<td></td>
+<td>Pattern that excludes tags</td>
+<td></td>
+</tr>
+<tr>
+<td>--build-timeout value</td>
+<td></td>
+<td>Timeout for build, ( (ms/s/m/h))</td>
+<td>10m</td>
+</tr>
+<tr>
+<td>--command value</td>
+<td></td>
+<td>Overwrite the default ENTRYPOINT of the image</td>
+<td></td>
+</tr>
+<tr>
+<td>--config value</td>
+<td></td>
+<td>Configs to expose to the service (format: name[/key]:target)</td>
+<td></td>
+</tr>
+<tr>
+<td>--concurrency value</td>
+<td></td>
+<td>The maximum concurrent request a container can handle (autoscaling)</td>
+<td>10</td>
+</tr>
+<tr>
+<td>--cpus value</td>
+<td></td>
+<td>Number of CPUs</td>
+<td></td>
+</tr>
+<tr>
+<td>--dns value</td>
+<td></td>
+<td>Set custom DNS servers</td>
+<td></td>
+</tr>
+<tr>
+<td>--dnsoption value</td>
+<td></td>
+<td>Set DNS options (format: key:value or key)</td>
+<td></td>
+</tr>
+<tr>
+<td>--dnssearch value</td>
+<td></td>
+<td>Set custom DNS search domains</td>
+<td></td>
+</tr>
+<tr>
+<td>--env value</td>
+<td>-e value</td>
+<td>Set environment variables</td>
+<td></td>
+</tr>
+<tr>
+<td>--env-file value</td>
+<td></td>
+<td>Read in a file of environment variables</td>
+<td></td>
+</tr>
+<tr>
+<td>--global-permission value</td>
+<td></td>
+<td>Permissions to grant to container's service account for all namespaces</td>
+<td></td>
+</tr>
+<tr>
+<td>--group value</td>
+<td></td>
+<td>The GID to run the entrypoint of the container process</td>
+<td></td>
+</tr>
+<tr>
+<td>--health-cmd value</td>
+<td></td>
+<td>Command to run to check health</td>
+<td></td>
+</tr>
+<tr>
+<td>--health-failure-threshold value</td>
+<td></td>
+<td>Consecutive failures needed to report unhealthy</td>
+<td>0</td>
+</tr>
+<tr>
+<td>--health-header value</td>
+<td></td>
+<td>HTTP Headers to send in GET request for healthcheck</td>
+<td></td>
+</tr>
+<tr>
+<td>--health-initial-delay value</td>
+<td></td>
+<td>Start period for the container to initialize before starting healthchecks ( (ms/s/m/h))</td>
+<td>"0s"</td>
+</tr>
+<tr>
+<td>--health-interval value</td>
+<td></td>
+<td>Time between running the check ( (ms/s/m/h))</td>
+<td>"0s"</td>
+</tr>
+<tr>
+<td>--health-success-threshold value</td>
+<td></td>
+<td>Consecutive successes needed to report healthy</td>
+<td>0</td>
+</tr>
+<tr>
+<td>--health-timeout value</td>
+<td></td>
+<td>Maximum time to allow one check to run ( (ms/s/m/h))</td>
+<td>"0s"</td>
+</tr>
+<tr>
+<td>--health-url value</td>
+<td></td>
+<td>URL to hit to check health (example: http://:8080/ping)</td>
+<td></td>
+</tr>
+<tr>
+<td>--host-dns</td>
+<td></td>
+<td>Use the host level DNS and not the cluster level DNS</td>
+<td></td>
+</tr>
+<tr>
+<td>--hostname value</td>
+<td></td>
+<td>Container host name</td>
+<td></td>
+</tr>
+<tr>
+<td>--image-pull-policy value</td>
+<td></td>
+<td>Behavior determining when to pull the image (never/always/not-present)</td>
+<td>"not-present"</td>
+</tr>
+<tr>
+<td>--image-pull-secrets value</td>
+<td></td>
+<td>Specify image pull secrets</td>
+<td></td>
+</tr>
+<tr>
+<td>--interactive</td>
+<td>-i</td>
+<td>Keep STDIN open even if not attached</td>
+<td></td>
+</tr>
+<tr>
+<td>--label-file value</td>
+<td></td>
+<td>Read in a line delimited file of labels</td>
+<td></td>
+</tr>
+<tr>
+<td>--label value</td>
+<td>-l value</td>
+<td>Set meta data on a container</td>
+<td></td>
+</tr>
+<tr>
+<td>--memory value</td>
+<td>-m value</td>
+<td>Memory reservation (format: <number>[<unit>], where unit = b, k, m or g)</td>
+<td></td>
+</tr>
+<tr>
+<td>--name value</td>
+<td>-n value</td>
+<td>Assign a name to the container. Use format [namespace:]name[@version]</td>
+<td></td>
+</tr>
+<tr>
+<td>--net value</td>
+<td></td>
+<td>Set network mode (host)</td>
+<td></td>
+</tr>
+<tr>
+<td>--no-mesh</td>
+<td></td>
+<td>Disable service mesh</td>
+<td></td>
+</tr>
+<tr>
+<td>--permission value</td>
+<td></td>
+<td>Permissions to grant to container's service account in current namespace</td>
+<td></td>
+</tr>
+<tr>
+<td>--ports value</td>
+<td>-p value</td>
+<td>Publish a container's port(s) (format: svcport:containerport/protocol)</td>
+<td></td>
+</tr>
+<tr>
+<td>--privileged</td>
+<td></td>
+<td>Run container with privilege</td>
+<td></td>
+</tr>
+<tr>
+<td>--read-only</td>
+<td></td>
+<td>Mount the container's root filesystem as read only</td>
+<td></td>
+</tr>
+<tr>
+<td>--rollout-duration value</td>
+<td></td>
+<td>How long the rollout should take. An approximation, actual time may fluctuate. Affects template services, but not weight or promote commands.</td>
+<td>"0s"</td>
+</tr>
+<tr>
+<td>--request-timeout-seconds value</td>
+<td></td>
+<td>Set request timeout in seconds</td>
+<td>0</td>
+</tr>
+<tr>
+<td>--scale value</td>
+<td></td>
+<td>The number of replicas to run or a range for autoscaling (example 1-10)</td>
+<td></td>
+</tr>
+<tr>
+<td>--secret value</td>
+<td></td>
+<td>Secrets to inject to the service (format: name[/key]:target)</td>
+<td></td>
+</tr>
+<tr>
+<td>--stage-only</td>
+<td></td>
+<td>Only stage service when generating new services. Can only be used when template is true</td>
+<td></td>
+</tr>
+<tr>
+<td>--template</td>
+<td></td>
+<td>If true new version is created per git commit. If false update in-place</td>
+<td></td>
+</tr>
+<tr>
+<td>--tty</td>
+<td>-t</td>
+<td>Allocate a pseudo-TTY</td>
+<td></td>
+</tr>
+<tr>
+<td>--user value</td>
+<td>-u value</td>
+<td>UID[:GID] Sets the UID used and optionally GID for entrypoint process (format: <uid>[:<gid>])</td>
+<td></td>
+</tr>
+<tr>
+<td>--volume value</td>
+<td>-v value</td>
+<td>Specify volumes for for services</td>
+<td></td>
+</tr>
+<tr>
+<td>--weight value</td>
+<td></td>
+<td>Specify the weight for the services</td>
+<td>0</td>
+</tr>
+<tr>
+<td>--workdir value</td>
+<td>-w value</td>
+<td>Working directory inside the container</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h5 id="examples_8">Examples<a class="headerlink" href="#examples_8" title="Permanent link">&para;</a></h5>
+<p>```shell script</p>
+<h1 id="basic-run">basic run<a class="headerlink" href="#basic-run" title="Permanent link">&para;</a></h1>
+<p>rio run -p 80 nginx</p>
+<h1 id="run-a-named-service-with-set-scale-concurrency-and-ports-build-an-image-from-a-github-repo">run a named service with set scale, concurrency and ports. Build an image from a github repo<a class="headerlink" href="#run-a-named-service-with-set-scale-concurrency-and-ports-build-an-image-from-a-github-repo" title="Permanent link">&para;</a></h1>
+<p>rio run -n mysvc --scale 5-10 --concurrency 5 -p 80:8080/http https://github.com/rancher/rio-demo</p>
+<h1 id="add-a-version-to-service">add a version to service<a class="headerlink" href="#add-a-version-to-service" title="Permanent link">&para;</a></h1>
+<p>rio run --weight 50 -n mysvc@v2 -p 80 nginx</p>
+<h1 id="set-custom-readiness-probe">set custom readiness probe<a class="headerlink" href="#set-custom-readiness-probe" title="Permanent link">&para;</a></h1>
+<p>rio run --health-url http://:8080/status --health-initial-delay 10s --health-interval 5s --health-failure-threshold 5 --health-timeout 5s -p 8080 cbron/mybusybox:dev</p>
+<h1 id="set-permission-for-containers-by-setting-permissions-rio-will-assign-a-serviceaccount-to-the-pod-which-will-have-the-corresponding-permissions-global-permission-means-permissions-across-all-namespaces">set permission for containers. By setting permissions, rio will assign a serviceaccount to the pod which will have the corresponding permissions. Global permission means permissions across all namespaces.<a class="headerlink" href="#set-permission-for-containers-by-setting-permissions-rio-will-assign-a-serviceaccount-to-the-pod-which-will-have-the-corresponding-permissions-global-permission-means-permissions-across-all-namespaces" title="Permanent link">&para;</a></h1>
+<p>rio run --global-permission "create,update,delete services" --permission "* apps/deployments" nginx</p>
+<h1 id="set-hostip-entry-in-container">set host:ip entry in container<a class="headerlink" href="#set-hostip-entry-in-container" title="Permanent link">&para;</a></h1>
+<p>rio run --add-host db=1.2.3.4 nginx</p>
+<h1 id="set-build-parameters">set build parameters<a class="headerlink" href="#set-build-parameters" title="Permanent link">&para;</a></h1>
+<p>rio run --build-branch dev --build-dockerfile Dockerfile.production --build-context . --build-webhook-secret webhook https://github.com/example/exmaple </p>
+<h1 id="run-a-service-that-deploy-on-any-new-tag-matching-v-and-not-match-alpha">run a service that deploy on any new tag matching '^v' and not match 'alpha'<a class="headerlink" href="#run-a-service-that-deploy-on-any-new-tag-matching-v-and-not-match-alpha" title="Permanent link">&para;</a></h1>
+<p>rio run -p 8080 -n tag-demo --build-webhook-secret=githubtoken --build-tag=true --build-tag-include="^v" --build-tag-exclude="alpha" https://github.com/rancher/rio-demo</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">---</span>
+
+<span class="o">##</span> <span class="n">rm</span>
+
+<span class="k">Delete</span> <span class="n">resources</span>
+
+<span class="o">#####</span> <span class="k">Usage</span>
+</code></pre></div>
+
+<p>rio rm [TYPE/]RESOURCE_NAME</p>
+<div class="codehilite"><pre><span></span><code><span class="o">#####</span> <span class="n">Examples</span>
+
+<span class="o">```</span><span class="n">shell</span> <span class="n">script</span>
+<span class="o">#</span> <span class="k">delete</span> <span class="n">service</span> <span class="n">foo</span>
+<span class="n">rio</span> <span class="n">rm</span> <span class="n">foo</span>
+
+<span class="o">#</span> <span class="k">delete</span> <span class="n">multiple</span> <span class="n">resources</span> <span class="k">of</span> <span class="n">different</span> <span class="n">types</span>
+<span class="n">rio</span> <span class="n">rm</span> <span class="n">svc1</span> <span class="n">svc2</span> <span class="n">router</span><span class="o">/</span><span class="n">route1</span> <span class="n">externalservice</span><span class="o">/</span><span class="n">foo</span>
+</code></pre></div>
+
+<hr />
+<h2 id="scale">scale<a class="headerlink" href="#scale" title="Permanent link">&para;</a></h2>
+<p>Scale a service to a desired number, or set autoscaling params</p>
+<h5 id="usage_11">Usage<a class="headerlink" href="#usage_11" title="Permanent link">&para;</a></h5>
+<div class="codehilite"><pre><span></span><code><span class="err">rio scale [SERVICE=NUMBER_OR_MIN-MAX...]</span>
+</code></pre></div>
+
+<h5 id="examples_9">Examples<a class="headerlink" href="#examples_9" title="Permanent link">&para;</a></h5>
+<p>```shell script
+rio scale foo=5</p>
+<h1 id="autoscaling">autoscaling<a class="headerlink" href="#autoscaling" title="Permanent link">&para;</a></h1>
+<p>rio scale foo=1-5</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">---</span>
+
+<span class="o">##</span> <span class="n">stage</span>
+
+<span class="n">Stage</span> <span class="n">a</span> <span class="k">new</span> <span class="n">revision</span> <span class="k">of</span> <span class="n">a</span> <span class="n">service</span>
+
+<span class="n">Note</span> <span class="n">that</span> <span class="k">when</span> <span class="k">using</span> <span class="o">`</span><span class="c1">--edit` certain values (like `spec.weight`) will be overwritten, and other flags (like `--env`) won&#39;t take effect.</span>
+
+<span class="o">#####</span> <span class="k">Usage</span>
+</code></pre></div>
+
+<p>rio stage [OPTIONS] SERVICE NEW_REVISION</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">##### Options</span>
+
+<span class="o">|</span> <span class="n">flag</span>             <span class="o">|</span> <span class="n">aliases</span>  <span class="o">|</span> <span class="n">description</span>                                        <span class="o">|</span> <span class="n">default</span> <span class="o">|</span>
+<span class="o">|------------------|----------|----------------------------------------------------|---------|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">image</span> <span class="n">value</span>    <span class="o">|</span>          <span class="o">|</span> <span class="n">Runtime</span> <span class="n">image</span> <span class="p">(</span><span class="n">Docker</span> <span class="n">image</span><span class="o">/</span><span class="n">OCI</span> <span class="n">image</span><span class="p">)</span>             <span class="o">|</span>         <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">edit</span>           <span class="o">|</span>          <span class="o">|</span> <span class="n">Edit</span> <span class="n">the</span> <span class="n">config</span> <span class="n">to</span> <span class="n">change</span> <span class="n">the</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">new</span> <span class="n">revision</span> <span class="o">|</span>         <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">env</span> <span class="n">value</span>      <span class="o">|</span> <span class="o">-</span><span class="n">e</span> <span class="n">value</span> <span class="o">|</span> <span class="n">Set</span> <span class="n">environment</span> <span class="n">variables</span>                          <span class="o">|</span>         <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">env</span><span class="o">-</span><span class="n">file</span> <span class="n">value</span> <span class="o">|</span>          <span class="o">|</span> <span class="n">Read</span> <span class="ow">in</span> <span class="n">a</span> <span class="n">file</span> <span class="n">of</span> <span class="n">environment</span> <span class="n">variables</span>            <span class="o">|</span>         <span class="o">|</span>
+
+<span class="c1">##### Examples</span>
+
+<span class="err">```</span><span class="n">shell</span> <span class="n">script</span>
+<span class="c1"># stage an image (tag v3) to the 2nd version of the demo service</span>
+<span class="n">rio</span> <span class="n">stage</span> <span class="o">--</span><span class="n">image</span> <span class="n">ibuildthecloud</span><span class="o">/</span><span class="n">demo</span><span class="p">:</span><span class="n">v3</span> <span class="n">demo</span> <span class="n">v2</span>
+
+<span class="c1"># stage the same image with different env variables</span>
+<span class="n">rio</span> <span class="n">stage</span> <span class="o">-</span><span class="n">e</span> <span class="n">abc</span><span class="o">=</span><span class="n">xyz</span> <span class="n">demo</span> <span class="n">v2</span>
+
+<span class="c1"># stage but edit first</span>
+<span class="n">rio</span> <span class="n">stage</span> <span class="o">--</span><span class="n">edit</span> <span class="n">demo</span> <span class="n">v2</span>
+</code></pre></div>
+
+<hr />
+<h2 id="system-logs">system logs<a class="headerlink" href="#system-logs" title="Permanent link">&para;</a></h2>
+<p>Print the logs from the Rio management plane</p>
+<h5 id="usage_12">Usage<a class="headerlink" href="#usage_12" title="Permanent link">&para;</a></h5>
+<div class="codehilite"><pre><span></span><code><span class="err">rio system logs</span>
+</code></pre></div>
+
+<hr />
+<h2 id="system-feature">system feature<a class="headerlink" href="#system-feature" title="Permanent link">&para;</a></h2>
+<p>View/Edit system feature/configuration</p>
+<h5 id="uasge">Uasge<a class="headerlink" href="#uasge" title="Permanent link">&para;</a></h5>
+<div class="codehilite"><pre><span></span><code><span class="c1"># view system feature</span>
+rio system feature
+
+<span class="c1"># edit system feature/configuration</span>
+rio system feature --edit
+</code></pre></div>
+
+<hr />
+<h2 id="uninstall">uninstall<a class="headerlink" href="#uninstall" title="Permanent link">&para;</a></h2>
+<p>Uninstall rio</p>
+<h5 id="usage_13">Usage<a class="headerlink" href="#usage_13" title="Permanent link">&para;</a></h5>
+<div class="codehilite"><pre><span></span><code><span class="n">rio</span><span class="w"> </span><span class="n">uninstall</span><span class="w"> </span><span class="o">[</span><span class="n">OPTIONS</span><span class="o">]</span><span class="w"></span>
+</code></pre></div>
+
+<h5 id="options_8">Options<a class="headerlink" href="#options_8" title="Permanent link">&para;</a></h5>
+<table>
+<thead>
+<tr>
+<th>flag</th>
+<th>aliases</th>
+<th>description</th>
+<th>default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>--namespace value</td>
+<td></td>
+<td>namespace to install system resources</td>
+<td>"rio-system"</td>
+</tr>
+</tbody>
+</table>
+<h5 id="examples_10">Examples<a class="headerlink" href="#examples_10" title="Permanent link">&para;</a></h5>
+<p>```shell script
+rio uninstall</p>
+<p>rio uninstall --namespace alt-namespace</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">---</span>
+
+
+<span class="o">##</span> <span class="n">up</span>
+
+<span class="n">Apply</span> <span class="n">a</span> <span class="n">Riofile</span>
+
+<span class="o">#####</span> <span class="k">Usage</span>
+</code></pre></div>
+
+<p>rio up [OPTIONS]</p>
+<div class="codehilite"><pre><span></span><code><span class="p">#####</span> <span class="n">Options</span>
+
+<span class="o">|</span> <span class="n">flag</span>                         <span class="o">|</span> <span class="n">aliases</span>  <span class="o">|</span> <span class="n">description</span>                                                                                                  <span class="o">|</span> <span class="k">default</span> <span class="o">|</span>
+<span class="o">|------------------------------|----------|--------------------------------------------------------------------------------------------------------------|---------|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">name</span> <span class="n">value</span>                 <span class="o">|</span> <span class="o">-</span><span class="n">n</span>       <span class="o">|</span> <span class="n">Set</span> <span class="n">stack</span> <span class="n">name</span><span class="p">,</span> <span class="n">defaults</span> <span class="n">to</span> <span class="n">current</span> <span class="n">directory</span> <span class="n">name</span>                                                           <span class="o">|</span>         <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">answers</span> <span class="n">value</span>              <span class="o">|</span>          <span class="o">|</span> <span class="n">Set</span> <span class="n">answer</span> <span class="n">file</span>                                                                                              <span class="o">|</span>         <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">file</span> <span class="n">value</span>                 <span class="o">|</span> <span class="o">-</span><span class="n">f</span> <span class="n">value</span> <span class="o">|</span> <span class="n">Set</span> <span class="n">rio</span> <span class="n">file</span>                                                                                                 <span class="o">|</span>         <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">parallel</span>                   <span class="o">|</span> <span class="o">-</span><span class="n">p</span>       <span class="o">|</span> <span class="n">Run</span> <span class="n">builds</span> <span class="n">in</span> <span class="n">parallel</span>                                                                                       <span class="o">|</span>         <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">branch</span> <span class="n">value</span>               <span class="o">|</span>          <span class="o">|</span> <span class="n">Set</span> <span class="n">branch</span> <span class="n">when</span> <span class="n">pointing</span> <span class="n">stack</span> <span class="n">to</span> <span class="n">git</span> <span class="n">repo</span>                                                                   <span class="o">|</span> <span class="n">master</span>  <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">revision</span> <span class="n">value</span>             <span class="o">|</span>          <span class="o">|</span> <span class="n">Use</span> <span class="n">a</span> <span class="n">specific</span> <span class="n">commit</span> <span class="n">hash</span>                                                                                   <span class="o">|</span>         <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">build</span><span class="o">-</span><span class="n">webhook</span><span class="o">-</span><span class="n">secret</span> <span class="n">value</span> <span class="o">|</span>          <span class="o">|</span> <span class="n">Set</span> <span class="n">GitHub</span> <span class="n">webhook</span> <span class="n">secret</span> <span class="n">name</span>                                                                               <span class="o">|</span>         <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">build</span><span class="o">-</span><span class="n">tag</span>                  <span class="o">|</span>          <span class="o">|</span> <span class="n">Enable</span> <span class="n">builds</span> <span class="n">on</span> <span class="n">any</span> <span class="n">new</span> <span class="n">tags</span> <span class="n">instead</span> <span class="n">of</span> <span class="n">new</span> <span class="n">commits</span> <span class="n">on</span> <span class="n">a</span> <span class="n">branch</span><span class="p">,</span> <span class="n">requires</span> <span class="n">webhook</span><span class="p">,</span> <span class="n">does</span> <span class="k">not</span> <span class="n">support</span> <span class="n">polling</span> <span class="o">|</span>         <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">build</span><span class="o">-</span><span class="n">tag</span><span class="o">-</span><span class="n">include</span>          <span class="o">|</span>          <span class="o">|</span> <span class="n">Pattern</span> <span class="n">that</span> <span class="n">tags</span> <span class="n">must</span> <span class="n">match</span>                                                                                 <span class="o">|</span>         <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">build</span><span class="o">-</span><span class="n">tag</span><span class="o">-</span><span class="n">exclude</span>          <span class="o">|</span>          <span class="o">|</span> <span class="n">Pattern</span> <span class="n">that</span> <span class="n">excludes</span> <span class="n">tags</span>                                                                                   <span class="o">|</span>         <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">build</span><span class="o">-</span><span class="n">clone</span><span class="o">-</span><span class="n">secret</span> <span class="n">value</span>   <span class="o">|</span>          <span class="o">|</span> <span class="n">Set</span> <span class="n">name</span> <span class="n">of</span> <span class="n">secret</span> <span class="n">to</span> <span class="n">use</span> <span class="n">with</span> <span class="n">git</span> <span class="n">clone</span>                                                                     <span class="o">|</span>         <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">push</span><span class="o">-</span><span class="n">registry</span><span class="o">-</span><span class="n">secret</span> <span class="n">value</span> <span class="o">|</span>          <span class="o">|</span> <span class="n">Set</span> <span class="n">secret</span> <span class="k">for</span> <span class="n">pushing</span> <span class="n">to</span> <span class="n">custom</span> <span class="n">registry</span>                                                                    <span class="o">|</span>         <span class="o">|</span>
+<span class="o">|</span> <span class="o">--</span><span class="n">permission</span> <span class="n">value</span>           <span class="o">|</span>          <span class="o">|</span> <span class="n">Permissions</span> <span class="n">to</span> <span class="n">grant</span> <span class="n">to</span> <span class="n">container</span><span class="p">&#39;</span><span class="n">s</span> <span class="n">service</span> <span class="n">account</span> <span class="n">in</span> <span class="n">current</span> <span class="n">namespace</span>                                     <span class="o">|</span>         <span class="o">|</span>
+
+<span class="p">#####</span> <span class="n">Examples</span>
+
+<span class="err">``</span><span class="no">`shell</span> <span class="n">script</span>
+<span class="p">#</span> <span class="n">apply</span> <span class="n">a</span> <span class="n">file</span> <span class="n">named</span> <span class="p">&#39;</span><span class="n">Riofile</span><span class="p">&#39;</span> <span class="n">in</span> <span class="n">current</span> <span class="n">directory</span>
+<span class="n">rio</span> <span class="n">up</span>
+
+<span class="p">#</span> <span class="n">apply</span> <span class="n">stack</span><span class="p">.</span><span class="n">yaml</span> <span class="n">as</span> <span class="n">a</span> <span class="n">stack</span> <span class="n">named</span> <span class="n">mystack</span> <span class="n">as</span> <span class="mh">2</span><span class="n">nd</span> <span class="n">revision</span>
+<span class="n">rio</span> <span class="n">up</span> <span class="o">--</span><span class="n">name</span> <span class="n">mystack</span> <span class="o">-</span><span class="n">f</span> <span class="n">stack</span><span class="p">.</span><span class="n">yaml</span> <span class="o">-</span><span class="n">p</span>
+
+<span class="p">#</span> <span class="n">apply</span> <span class="n">a</span> <span class="n">riofile</span> <span class="n">from</span> <span class="n">git</span> <span class="n">repo</span><span class="p">,</span> <span class="n">from</span> <span class="n">a</span> <span class="n">specific</span> <span class="n">branch</span> <span class="k">and</span> <span class="n">commit</span><span class="p">,</span> <span class="n">using</span> <span class="n">a</span> <span class="n">secret</span><span class="p">,</span> <span class="k">and</span> <span class="n">setup</span> <span class="n">webhook</span><span class="p">.</span>
+<span class="n">rio</span> <span class="n">up</span> <span class="o">--</span><span class="n">branch</span> <span class="n">branchname</span> <span class="o">--</span><span class="n">build</span><span class="o">-</span><span class="n">webhook</span><span class="o">-</span><span class="n">secret</span><span class="o">=</span><span class="n">githubtoken</span> <span class="o">--</span><span class="n">build</span><span class="o">-</span><span class="n">clone</span><span class="o">-</span><span class="n">secret</span><span class="o">=</span><span class="n">mysecret</span> <span class="o">--</span><span class="n">revision</span> <span class="p">{</span><span class="n">commit_sha</span><span class="p">}</span>  <span class="nl">https:</span><span class="c1">//github.com/exmaple/example</span>
+
+<span class="p">#</span> <span class="n">Set</span> <span class="n">custom</span> <span class="n">permissions</span> <span class="n">to</span> <span class="n">give</span> <span class="n">the</span> <span class="n">stack</span><span class="p">,</span> <span class="k">and</span> <span class="n">supply</span> <span class="n">answers</span> <span class="n">to</span> <span class="n">riofile</span> <span class="n">questions</span>
+<span class="n">rio</span> <span class="n">up</span>  <span class="o">--</span><span class="n">permissions</span> <span class="p">&#39;</span><span class="o">*</span> <span class="n">configmaps</span><span class="p">&#39;</span> <span class="o">--</span><span class="n">answers</span> <span class="n">answerfile</span><span class="p">.</span><span class="n">yaml</span>
+</code></pre></div>
+
+<hr />
+<h2 id="weight">weight<a class="headerlink" href="#weight" title="Permanent link">&para;</a></h2>
+<p>Set the percentage of traffic to allocate to a given service version. See also promote. </p>
+<p>Defaults to an immediate rollout, set duration to perform a gradual rollout</p>
+<p>Note that once a service version is set to 100% of weight, you must assign weight to other services in order to route traffic to them.
+For instance if you have svc-a and svc-b, and you set svc-a=100% and then svc-a=50%, svc-b will still have 0% weight and svc-a will still have 100%. You must set svc-b=50% to give it weight.</p>
+<h5 id="usage_14">Usage<a class="headerlink" href="#usage_14" title="Permanent link">&para;</a></h5>
+<div class="codehilite"><pre><span></span><code><span class="n">rio</span><span class="w"> </span><span class="n">weight</span><span class="w"> </span><span class="o">[</span><span class="n">OPTIONS</span><span class="o">]</span><span class="w"> </span><span class="n">SERVICE_NAME</span><span class="o">=</span><span class="n">PERCENTAGE</span><span class="w"></span>
+</code></pre></div>
+
+<h5 id="options_9">Options<a class="headerlink" href="#options_9" title="Permanent link">&para;</a></h5>
+<table>
+<thead>
+<tr>
+<th>flag</th>
+<th>aliases</th>
+<th>description</th>
+<th>default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>--duration</td>
+<td></td>
+<td>How long the rollout should take. An approximation, actual time may fluctuate</td>
+<td>0s</td>
+</tr>
+<tr>
+<td>--pause</td>
+<td></td>
+<td>Whether to pause all rollouts on current app</td>
+<td>false</td>
+</tr>
+</tbody>
+</table>
+<h5 id="examples_11">Examples<a class="headerlink" href="#examples_11" title="Permanent link">&para;</a></h5>
+<p>```shell script</p>
+<h1 id="immediately-shift-100-of-traffic-to-app-nv0">immediately shift 100% of traffic to app n@v0<a class="headerlink" href="#immediately-shift-100-of-traffic-to-app-nv0" title="Permanent link">&para;</a></h1>
+<p>rio weight n=100 </p>
+<h1 id="shift-nv2-to-50-of-traffic-gradually-over-5m">shift n@v2 to 50% of traffic gradually over 5m<a class="headerlink" href="#shift-nv2-to-50-of-traffic-gradually-over-5m" title="Permanent link">&para;</a></h1>
+<p>rio weight --duration=5m n@v2=50 </p>
+<h1 id="pause-last-command-at-current-state-will-pause-all-rollouts-on-versions-in-app">Pause last command at current state, will pause all rollouts on versions in app<a class="headerlink" href="#pause-last-command-at-current-state-will-pause-all-rollouts-on-versions-in-app" title="Permanent link">&para;</a></h1>
+<p>rio weight --pause=true n@v2=50
+```</p>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid" aria-label="Footer">
+        
+          <a href="../dashboard/" class="md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+            </div>
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Using Dashboard
+              </div>
+            </div>
+          </a>
+        
+        
+          <a href="../api-docs/" class="md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                API Reference
+              </div>
+            </div>
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+        Made with
+        <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+          Material for MkDocs
+        </a>
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    
+      <script src="../assets/javascripts/vendor.7e0ee788.min.js"></script>
+      <script src="../assets/javascripts/bundle.c1ccee15.min.js"></script><script id="__lang" type="application/json">{"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}</script>
+      
+      <script>
+        app = initialize({
+          base: "..",
+          features: [],
+          search: Object.assign({
+            worker: "../assets/javascripts/worker/search.4ac00218.min.js"
+          }, typeof search !== "undefined" && search)
+        })
+      </script>
+      
+    
+  </body>
+</html>

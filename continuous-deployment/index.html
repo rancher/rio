@@ -1,0 +1,822 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="shortcut icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-6.1.2">
+    
+    
+      
+        <title>Continuous Delivery with Rio - Rio - Application Deployment Engine for Kubernetes</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.19190aaf.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.24b84193.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#00bdd6">
+        
+      
+    
+    
+    
+      
+        
+        <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Work+Sans:300,400,400i,700%7C&display=fallback">
+        <style>body,input{font-family:"Work Sans",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"",SFMono-Regular,Consolas,Menlo,monospace}</style>
+      
+    
+    
+    
+    
+      
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="cyan" data-md-color-accent="">
+      
+  
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#continuous-deployment" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid" aria-label="Header">
+    <a href=".." title="Rio - Application Deployment Engine for Kubernetes" class="md-header-nav__button md-logo" aria-label="Rio - Application Deployment Engine for Kubernetes">
+      
+  <img src="../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header-nav__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header-nav__title" data-md-component="header-title">
+      
+        <div class="md-header-nav__ellipsis">
+          <span class="md-header-nav__topic md-ellipsis">
+            Rio - Application Deployment Engine for Kubernetes
+          </span>
+          <span class="md-header-nav__topic md-ellipsis">
+            
+              Continuous Delivery with Rio
+            
+          </span>
+        </div>
+      
+    </div>
+    
+      <label class="md-header-nav__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" data-md-state="active">
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <button type="reset" class="md-search__icon md-icon" aria-label="Clear" data-md-component="search-reset" tabindex="-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header-nav__source">
+        
+<a href="https://github.com/rancher/rio/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Rio - Application Deployment Engine for Kubernetes" class="md-nav__button md-logo" aria-label="Rio - Application Deployment Engine for Kubernetes">
+      
+  <img src="../assets/logo.svg" alt="logo">
+
+    </a>
+    Rio - Application Deployment Engine for Kubernetes
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/rancher/rio/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href=".." class="md-nav__link">
+      Home
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../install/" class="md-nav__link">
+      Install Rio
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../concepts/" class="md-nav__link">
+      Rio concept
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../quick-start/" class="md-nav__link">
+      Quick Start
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../workloads/" class="md-nav__link">
+      Running workloads
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../router/" class="md-nav__link">
+      Configuring Router
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../publicdomain-external-services/" class="md-nav__link">
+      Configuring PublicDomain and ExternalService
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../riofile/" class="md-nav__link">
+      Using Riofile
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../webhooks/" class="md-nav__link">
+      Webhooks
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../monitoring/" class="md-nav__link">
+      Monitoring Workloads
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../autoscaling/" class="md-nav__link">
+      Using AutoScaling
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../rbac/" class="md-nav__link">
+      Configuring Rio with RBAC
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Continuous Delivery with Rio
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+    
+    <a href="./" class="md-nav__link md-nav__link--active">
+      Continuous Delivery with Rio
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#basic-example" class="md-nav__link">
+    Basic Example
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-usage" class="md-nav__link">
+    Advanced Usage
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pull-request-builds" class="md-nav__link">
+    Pull Request Builds
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#automatic-versioning" class="md-nav__link">
+    Automatic Versioning
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#private-github-repo" class="md-nav__link">
+    Private Github Repo
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#private-docker-registry" class="md-nav__link">
+    Private Docker Registry
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#useful-options" class="md-nav__link">
+    Useful Options
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../developing-application-using-rio/" class="md-nav__link">
+      Using Rio for Developing Your Application
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../flows/" class="md-nav__link">
+      Deployment Flow
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../dashboard/" class="md-nav__link">
+      Using Dashboard
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../cli-reference/" class="md-nav__link">
+      CLI Reference
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../api-docs/" class="md-nav__link">
+      API Reference
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../faq/" class="md-nav__link">
+      Troubleshooting
+    </a>
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#basic-example" class="md-nav__link">
+    Basic Example
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-usage" class="md-nav__link">
+    Advanced Usage
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pull-request-builds" class="md-nav__link">
+    Pull Request Builds
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#automatic-versioning" class="md-nav__link">
+    Automatic Versioning
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#private-github-repo" class="md-nav__link">
+    Private Github Repo
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#private-docker-registry" class="md-nav__link">
+    Private Docker Registry
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#useful-options" class="md-nav__link">
+    Useful Options
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/rancher/rio/edit/master/docs/continuous-deployment.md" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+                  </a>
+                
+                
+                <h1 id="continuous-deployment">Continuous Deployment<a class="headerlink" href="#continuous-deployment" title="Permanent link">&para;</a></h1>
+<p>Rio enables continuous deployment with GitHub by default.
+This allows developers to streamline their focus on their git repository and worry less about their deploys.</p>
+<p>The most versatile use case is in <a href="#pull-request-builds">this example</a>.</p>
+<h3 id="basic-example">Basic Example<a class="headerlink" href="#basic-example" title="Permanent link">&para;</a></h3>
+<p>Deploy a workload with Rio from a public GitHub repository that you have push access to:</p>
+<div class="codehilite"><pre><span></span><code>rio run -n cd-demo -p <span class="m">8080</span> https://github.com/rancher/rio-demo
+</code></pre></div>
+
+<p>Make a commit to the master branch of the repo. 
+You should notice that within 15 seconds, Rio rebuilds your workload (<code>rio build-history</code>) and updates it to match the committed changes.</p>
+<h3 id="advanced-usage">Advanced Usage<a class="headerlink" href="#advanced-usage" title="Permanent link">&para;</a></h3>
+<h4 id="pull-request-builds">Pull Request Builds<a class="headerlink" href="#pull-request-builds" title="Permanent link">&para;</a></h4>
+<p>This feature uses a webhook to create a deployment when submitting a Pull Request to your tracked branch (master by default).
+A new workload version will be staged in Rio, associated to the same app that was initially created. 
+You can view the endpoint results directly from the PR by clicking "View deployment" in GitHub. 
+If the pull request is merged, it will then update the app endpoint in Rio to point to this new version.</p>
+<p>It only takes 2 steps:</p>
+<ol>
+<li><a href="../webhooks/">Configure Webhook</a> for your repository. For this example, you only need to set the webhook up.</li>
+<li>Run</li>
+</ol>
+<div class="codehilite"><pre><span></span><code>rio run -p <span class="m">8080</span> -n example-cd --build-webhook-secret<span class="o">=</span>githubtoken --build-pr --template https://github.com/example/example-repo
+</code></pre></div>
+
+<p>NOTE: if your repository is private, you will also need to <a href="#private-github-repo">create a credentials secret</a> and use the correct additional flags when running your workload.</p>
+<h4 id="automatic-versioning">Automatic Versioning<a class="headerlink" href="#automatic-versioning" title="Permanent link">&para;</a></h4>
+<p>Notice the <code>--template</code> flag specified in the <a href="#pull-request-builds">Pull Request Builds</a> scenario.
+With this flag set, Rio will automatically configure versions for this workload when new commits are pushed to the GitHub repo.
+As soon as the workload is ready, it will promote that version to have 100% of the app endpoint weight.
+The only case where it won't automatically promote is when using the <code>--build-pr</code> flag as well and the build is from the PR branch.</p>
+<p>If the <code>--template</code> flag is not set, then every subsequent build will overwrite the current version, including builds from the PR branch with <code>--build-pr</code> flag set.</p>
+<h4 id="private-github-repo">Private Github Repo<a class="headerlink" href="#private-github-repo" title="Permanent link">&para;</a></h4>
+<p>You can do this with Git Basic Auth or SSH Auth:
+- Git Basic Auth:
+    1. Configure git basic auth credential secrets:</p>
+<div class="codehilite"><pre><span></span><code><span class="w">    </span><span class="err">```</span><span class="n">bash</span><span class="w"></span>
+<span class="w">    </span><span class="err">$</span><span class="w"> </span><span class="n">rio</span><span class="w"> </span><span class="n">secret</span><span class="w"> </span><span class="k">create</span><span class="w"> </span><span class="o">--</span><span class="n">git</span><span class="o">-</span><span class="n">basic</span><span class="o">-</span><span class="n">auth</span><span class="w"></span>
+<span class="w">    </span><span class="k">Select</span><span class="w"> </span><span class="n">namespace</span><span class="o">[</span><span class="n">default</span><span class="o">]</span><span class="err">:</span><span class="w"> </span><span class="err">$</span><span class="p">(</span><span class="n">put</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">same</span><span class="w"> </span><span class="n">namespace</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="n">your</span><span class="w"> </span><span class="n">workload</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">git</span><span class="w"> </span><span class="n">url</span><span class="err">[]:</span><span class="w"> </span><span class="err">$</span><span class="p">(</span><span class="k">for</span><span class="w"> </span><span class="nl">example</span><span class="p">:</span><span class="w"> </span><span class="nl">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="p">.</span><span class="n">com</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">username</span><span class="err">[]:</span><span class="w"> </span><span class="err">$</span><span class="p">(</span><span class="n">your</span><span class="w"> </span><span class="n">GH</span><span class="w"> </span><span class="n">username</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">password</span><span class="o">[</span><span class="n">******</span><span class="o">]</span><span class="err">:</span><span class="w"> </span><span class="err">$</span><span class="p">(</span><span class="n">your</span><span class="w"> </span><span class="n">GH</span><span class="w"> </span><span class="n">password</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="err">```</span><span class="w"></span>
+
+<span class="mf">2.</span><span class="w"> </span><span class="n">Rio</span><span class="w"> </span><span class="n">will</span><span class="w"> </span><span class="n">automatically</span><span class="w"> </span><span class="k">use</span><span class="w"> </span><span class="n">this</span><span class="w"> </span><span class="n">secret</span><span class="w"> </span><span class="n">now</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">doing</span><span class="w"> </span><span class="n">standard</span><span class="w"> </span><span class="n">git</span><span class="w"> </span><span class="n">checkout</span><span class="p">,</span><span class="w"> </span><span class="n">so</span><span class="w"> </span><span class="k">no</span><span class="w"> </span><span class="n">additional</span><span class="w"> </span><span class="n">flags</span><span class="w"> </span><span class="n">need</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="n">passed</span><span class="p">.</span><span class="w"> </span><span class="k">For</span><span class="w"> </span><span class="nl">example</span><span class="p">:</span><span class="w"></span>
+
+<span class="w">   </span><span class="err">```</span><span class="n">bash</span><span class="w"></span>
+<span class="w">   </span><span class="n">rio</span><span class="w"> </span><span class="n">run</span><span class="w"> </span><span class="o">-</span><span class="n">p</span><span class="w"> </span><span class="mi">8080</span><span class="w"> </span><span class="nl">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="p">.</span><span class="n">com</span><span class="o">/</span><span class="n">example</span><span class="o">/</span><span class="n">example</span><span class="o">-</span><span class="n">private</span><span class="o">-</span><span class="n">repo</span><span class="w"></span>
+<span class="w">   </span><span class="err">```</span><span class="w"></span>
+</code></pre></div>
+
+<ul>
+<li>
+<p>SSH Auth:</p>
+<ol>
+<li>
+<p>Configure git sshkey auth credential secrets. This should use a key that does not have a password associated to it:</p>
+<p><code>bash
+$ rio secret create --git-sshkey-auth
+Select namespace[default]: $(put the same namespace with your workload)
+git url[]: $(put your github url. Leave out http/https. Example: github.com)
+ssh_key_path[]: $(type the path to your ssh private key)</code></p>
+</li>
+<li>
+<p>Tell rio to do ssh checkout from git. For example:</p>
+</li>
+</ol>
+<p><code>bash
+   rio run --build-clone-secret gitcredential-ssh -p 8080 git@github.com:example/example.git</code></p>
+</li>
+</ul>
+<h4 id="private-docker-registry">Private Docker Registry<a class="headerlink" href="#private-docker-registry" title="Permanent link">&para;</a></h4>
+<p>Configure the Docker credential secret.</p>
+<div class="codehilite"><pre><span></span><code>$ rio secret create --docker
+Select namespace<span class="o">[</span>default<span class="o">]</span>: <span class="k">$(</span>put the same namespace with your workload<span class="k">)</span>
+Registry URL<span class="o">[</span>https://index.docker.io/v1/<span class="o">]</span>: <span class="k">$(</span>found with <span class="s2">&quot;docker info | grep Registry&quot;</span><span class="k">)</span>
+username<span class="o">[]</span>: <span class="k">$(</span>your docker username<span class="k">)</span>
+password<span class="o">[</span>******<span class="o">]</span>: <span class="k">$(</span>your docker password<span class="k">)</span>
+</code></pre></div>
+
+<p>Push your image to docker registry:</p>
+<div class="codehilite"><pre><span></span><code>rio run --image-pull-secrets dockerconfig --build-docker-push-secret dockerconfig -p <span class="m">8080</span> --build-registry index.docker.io --build-image-name <span class="nv">$username</span>/repo https://github.com/example/example.git
+</code></pre></div>
+
+<h3 id="useful-options">Useful Options<a class="headerlink" href="#useful-options" title="Permanent link">&para;</a></h3>
+<p>There are many options available for use when running workloads in Rio. These are just a few that are useful for CD:</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--build-branch</code></td>
+<td>string</td>
+<td>Build repository branch (default: "master")</td>
+</tr>
+<tr>
+<td><code>--build-dockerfile</code></td>
+<td>string</td>
+<td>Set Dockerfile name, defaults to Dockerfile</td>
+</tr>
+<tr>
+<td><code>--build-context</code></td>
+<td>string</td>
+<td>Set build context, defaults to .</td>
+</tr>
+<tr>
+<td><code>--build-webhook-secret</code></td>
+<td>string</td>
+<td>Set GitHub webhook secret name</td>
+</tr>
+<tr>
+<td><code>--build-clone-secret</code></td>
+<td>string</td>
+<td>Set git clone secret name</td>
+</tr>
+<tr>
+<td><code>--build-image-name</code></td>
+<td>string</td>
+<td>Specify custom image name to push</td>
+</tr>
+<tr>
+<td><code>--build-pr</code></td>
+<td>boolean</td>
+<td>Enable pull request builds</td>
+</tr>
+<tr>
+<td><code>--build-timeout</code></td>
+<td>string</td>
+<td>Timeout for build, default to 10m (ms</td>
+</tr>
+<tr>
+<td><code>--image-pull-secrets</code></td>
+<td>string</td>
+<td>Specify image pull secrets</td>
+</tr>
+<tr>
+<td><code>--template</code></td>
+<td>boolean</td>
+<td>If true new version is created per git commit. If false update in-place</td>
+</tr>
+</tbody>
+</table>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid" aria-label="Footer">
+        
+          <a href="../rbac/" class="md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+            </div>
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Configuring Rio with RBAC
+              </div>
+            </div>
+          </a>
+        
+        
+          <a href="../developing-application-using-rio/" class="md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                Using Rio for Developing Your Application
+              </div>
+            </div>
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+        Made with
+        <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+          Material for MkDocs
+        </a>
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    
+      <script src="../assets/javascripts/vendor.7e0ee788.min.js"></script>
+      <script src="../assets/javascripts/bundle.c1ccee15.min.js"></script><script id="__lang" type="application/json">{"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}</script>
+      
+      <script>
+        app = initialize({
+          base: "..",
+          features: [],
+          search: Object.assign({
+            worker: "../assets/javascripts/worker/search.4ac00218.min.js"
+          }, typeof search !== "undefined" && search)
+        })
+      </script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,1009 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="shortcut icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-6.1.2">
+    
+    
+      
+        <title>Install Rio - Rio - Application Deployment Engine for Kubernetes</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.19190aaf.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.24b84193.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#00bdd6">
+        
+      
+    
+    
+    
+      
+        
+        <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Work+Sans:300,400,400i,700%7C&display=fallback">
+        <style>body,input{font-family:"Work Sans",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"",SFMono-Regular,Consolas,Menlo,monospace}</style>
+      
+    
+    
+    
+    
+      
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="cyan" data-md-color-accent="">
+      
+  
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#install-rio" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid" aria-label="Header">
+    <a href=".." title="Rio - Application Deployment Engine for Kubernetes" class="md-header-nav__button md-logo" aria-label="Rio - Application Deployment Engine for Kubernetes">
+      
+  <img src="../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header-nav__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header-nav__title" data-md-component="header-title">
+      
+        <div class="md-header-nav__ellipsis">
+          <span class="md-header-nav__topic md-ellipsis">
+            Rio - Application Deployment Engine for Kubernetes
+          </span>
+          <span class="md-header-nav__topic md-ellipsis">
+            
+              Install Rio
+            
+          </span>
+        </div>
+      
+    </div>
+    
+      <label class="md-header-nav__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" data-md-state="active">
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <button type="reset" class="md-search__icon md-icon" aria-label="Clear" data-md-component="search-reset" tabindex="-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header-nav__source">
+        
+<a href="https://github.com/rancher/rio/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Rio - Application Deployment Engine for Kubernetes" class="md-nav__button md-logo" aria-label="Rio - Application Deployment Engine for Kubernetes">
+      
+  <img src="../assets/logo.svg" alt="logo">
+
+    </a>
+    Rio - Application Deployment Engine for Kubernetes
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/rancher/rio/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href=".." class="md-nav__link">
+      Home
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Install Rio
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+    
+    <a href="./" class="md-nav__link md-nav__link--active">
+      Install Rio
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    Table of Contents
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    Introduction
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#options" class="md-nav__link">
+    Options
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clusters-and-providers" class="md-nav__link">
+    Clusters and Providers
+  </a>
+  
+    <nav class="md-nav" aria-label="Clusters and Providers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#internal-vs-external-ip-address" class="md-nav__link">
+    Internal vs external IP address
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#k3s" class="md-nav__link">
+    K3s
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#eks" class="md-nav__link">
+    EKS
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    Features
+  </a>
+  
+    <nav class="md-nav" aria-label="Features">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#autoscaling" class="md-nav__link">
+    Autoscaling
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#build" class="md-nav__link">
+    Build
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gloo" class="md-nav__link">
+    Gloo
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linkerd" class="md-nav__link">
+    Linkerd
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#letsencrypt" class="md-nav__link">
+    Letsencrypt
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rdns" class="md-nav__link">
+    Rdns
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dashboard" class="md-nav__link">
+    Dashboard
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#disabling-features-on-install" class="md-nav__link">
+    Disabling Features on Install
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#flipping-features-after-installation" class="md-nav__link">
+    Flipping features after installation
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../concepts/" class="md-nav__link">
+      Rio concept
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../quick-start/" class="md-nav__link">
+      Quick Start
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../workloads/" class="md-nav__link">
+      Running workloads
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../router/" class="md-nav__link">
+      Configuring Router
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../publicdomain-external-services/" class="md-nav__link">
+      Configuring PublicDomain and ExternalService
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../riofile/" class="md-nav__link">
+      Using Riofile
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../webhooks/" class="md-nav__link">
+      Webhooks
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../monitoring/" class="md-nav__link">
+      Monitoring Workloads
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../autoscaling/" class="md-nav__link">
+      Using AutoScaling
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../rbac/" class="md-nav__link">
+      Configuring Rio with RBAC
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../continuous-deployment/" class="md-nav__link">
+      Continuous Delivery with Rio
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../developing-application-using-rio/" class="md-nav__link">
+      Using Rio for Developing Your Application
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../flows/" class="md-nav__link">
+      Deployment Flow
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../dashboard/" class="md-nav__link">
+      Using Dashboard
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../cli-reference/" class="md-nav__link">
+      CLI Reference
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../api-docs/" class="md-nav__link">
+      API Reference
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../faq/" class="md-nav__link">
+      Troubleshooting
+    </a>
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    Table of Contents
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    Introduction
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#options" class="md-nav__link">
+    Options
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clusters-and-providers" class="md-nav__link">
+    Clusters and Providers
+  </a>
+  
+    <nav class="md-nav" aria-label="Clusters and Providers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#internal-vs-external-ip-address" class="md-nav__link">
+    Internal vs external IP address
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#k3s" class="md-nav__link">
+    K3s
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#eks" class="md-nav__link">
+    EKS
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    Features
+  </a>
+  
+    <nav class="md-nav" aria-label="Features">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#autoscaling" class="md-nav__link">
+    Autoscaling
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#build" class="md-nav__link">
+    Build
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gloo" class="md-nav__link">
+    Gloo
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linkerd" class="md-nav__link">
+    Linkerd
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#letsencrypt" class="md-nav__link">
+    Letsencrypt
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rdns" class="md-nav__link">
+    Rdns
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dashboard" class="md-nav__link">
+    Dashboard
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#disabling-features-on-install" class="md-nav__link">
+    Disabling Features on Install
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#flipping-features-after-installation" class="md-nav__link">
+    Flipping features after installation
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/rancher/rio/edit/master/docs/install.md" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+                  </a>
+                
+                
+                <h1 id="install-rio">Install Rio<a class="headerlink" href="#install-rio" title="Permanent link">&para;</a></h1>
+<h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="#introduction">Intro</a></li>
+<li><a href="#options">Options</a></li>
+<li><a href="#clusters-and-providers">Clusters &amp; Providers</a><ul>
+<li><a href="#internal-vs-external-ip-address">Internal vs. External IP</a></li>
+<li><a href="#k3s">k3s</a></li>
+<li><a href="#eks">EKS</a></li>
+</ul>
+</li>
+<li><a href="#features">Features</a><ul>
+<li><a href="#autoscaling">Autoscaling</a></li>
+<li><a href="#build">Build</a></li>
+<li><a href="#gloo">Gloo</a></li>
+<li><a href="#linkerd">Linkerd</a></li>
+<li><a href="#letsencrypt">Let's Encrypt</a></li>
+<li><a href="#rdns">RDNS</a></li>
+<li><a href="#dashboard">Dashboard</a></li>
+<li><a href="#disabling-features-on-install">Example Disabling Features</a></li>
+<li><a href="#flipping-features-after-installation">Example Enabling Features</a></li>
+</ul>
+</li>
+</ul>
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h2>
+<p>Rio can be installed from both the CLI or a Kubernetes manifest.</p>
+<ol>
+<li>Download the latest release. </li>
+</ol>
+<div class="codehilite"><pre><span></span><code>$ curl -sfL https://get.rio.io <span class="p">|</span> sh - 
+</code></pre></div>
+
+<p>Note: by default the script will only download the latest release from GitHub. To test a pre-release or alpha build, run.</p>
+<div class="codehilite"><pre><span></span><code>$ curl -sfL https://get.rio.io <span class="p">|</span> <span class="nv">INSTALL_RIO_VERSION</span><span class="o">=</span><span class="si">${</span><span class="nv">version</span><span class="si">}</span> sh - 
+</code></pre></div>
+
+<ol>
+<li>
+<p>Prepare a Kubernetes cluster, see <a href="#clusters-and-providers">Clusters and Providers</a>. Set the KUBECONFIG environment variable to point to your Kubernetes cluster.</p>
+</li>
+<li>
+<p>Run </p>
+</li>
+</ol>
+<div class="codehilite"><pre><span></span><code>$ rio install
+</code></pre></div>
+
+<p>Note: to install Rio with a Kubernetes manifest, run <code>rio install --yaml</code>. It will print out the Kubernetes manifest instead of 
+installing Rio directly, so that you can apply the manifest later.</p>
+<h2 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h2>
+<p>See the <a href="../cli-reference/#install">CLI install reference docs</a> for complete list of options.</p>
+<p>To lower footprint of rio, use the <code>disable-features</code> flag. Just be aware that you are disabling features of Rio. Check <a href="#features">here</a>.</p>
+<h2 id="clusters-and-providers">Clusters and Providers<a class="headerlink" href="#clusters-and-providers" title="Permanent link">&para;</a></h2>
+<p>A 1.15 or higher version of Kubernetes is recommended.</p>
+<p>See the Kubernetes <a href="https://kubernetes.io/docs/setup/">getting started guide</a> to help choose a cluster type.</p>
+<h4 id="internal-vs-external-ip-address">Internal vs external IP address<a class="headerlink" href="#internal-vs-external-ip-address" title="Permanent link">&para;</a></h4>
+<p>Some cloud providers will use an internal IP address by default and Rio will use that for its cluster domain.
+You can override this during cluster setup by configuring external IP's, or by using a cloud-provider to setup a load balancer which will have an external IP.</p>
+<p>For an example of installing a cluster with a cloud provider on Linode using Rancher, see <a href="https://www.linode.com/docs/kubernetes/how-to-deploy-kubernetes-on-linode-with-rancher-2-x/#provision-a-cluster">step #8 on this doc</a>.</p>
+<h4 id="k3s">K3s<a class="headerlink" href="#k3s" title="Permanent link">&para;</a></h4>
+<p>When installing a K3s cluster, use the <code>--no-deploy traefik</code> flag if you would like Rio to provision load balancing for you. If you would like to keep this for ingresses, you can disable Gloo when installing rio.</p>
+<h4 id="eks">EKS<a class="headerlink" href="#eks" title="Permanent link">&para;</a></h4>
+<p>Ensure you are running enough nodes with proper instance types to allow for the Rio and Kubernetes systems to run at least 45 pods.
+See the docs to help determine proper sizes:</p>
+<ul>
+<li>Guide: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-eni.html#AvailableIpPerENI</li>
+<li>Total limits: https://github.com/awslabs/amazon-eks-ami/blob/master/files/eni-max-pods.txt</li>
+</ul>
+<p>For example: you have a workload that requires 15 pods and you want to run 2 nodes.
+15+45 is a 60 pod minimum requirement, so running 2 t3.large nodes (2*35=70) would be just enough.</p>
+<h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
+<p>Rio contains several independent components that are responsible for different functions, including service mesh, source code to deployment, autoscaling and advanced API gateway. 
+By default it will install the bare minimum components to allow for the most basic rio functionality, including running services and canary deployments.</p>
+<p>Autoscaling and Build features are not enabled by default during <code>rio install</code>, but are automatically enabled when a service is created that wants to use these, i.e <code>rio run --scale 0-4 -p 8080 https://github.com/rancher/rio-demo</code>.
+Linkerd is not enabled by default on clusters with less than 3GB of memory. See <a href="#flipping-features-after-installation">Flipping features after installation</a> to learn how to enable this and other features.</p>
+<p>If you have limited capacities in your cluster and don't want enable some of features, you can disable features to make footprint of Rio smaller.</p>
+<p>Here is the list of features:</p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>autoscaling</td>
+<td>Auto-scaling services based on in-flight requests</td>
+</tr>
+<tr>
+<td>build</td>
+<td>Rio Build, from source code to deployment</td>
+</tr>
+<tr>
+<td>gloo</td>
+<td>API gateway backed by gloo</td>
+</tr>
+<tr>
+<td>linkerd</td>
+<td>Linkerd service mesh</td>
+</tr>
+<tr>
+<td>letsencrypt</td>
+<td>Let's Encrypt</td>
+</tr>
+<tr>
+<td>rdns</td>
+<td>Acquire DNS from public Rancher DNS service</td>
+</tr>
+<tr>
+<td>dashboard</td>
+<td>Rio UI</td>
+</tr>
+</tbody>
+</table>
+<p>The core functionality of Rio includes Rio CLI UX and Riofile UX, which is built-in and doesn't rely on any of these features. Beside core functionality, here is a list of advanced features.</p>
+<h4 id="autoscaling">Autoscaling<a class="headerlink" href="#autoscaling" title="Permanent link">&para;</a></h4>
+<p>Manages autoscaling services in Rio. It deploys a pod inside cluster, watches the autoscaling config for each service, and scrapes metrics from pods. It will then make decisions to scale pods up and down based on those real-time metrics and autoscaling configs.</p>
+<p><strong>NOTE:</strong> The metrics are scraped from Linkerd, so if that feature is disabled, autoscaling will not work.</p>
+<h4 id="build">Build<a class="headerlink" href="#build" title="Permanent link">&para;</a></h4>
+<p>Build is responsible for building images from source code, which allows you to run deployment directly from source code with a Dockerfile. Build is also responsible for setting up webhook to watch your source code change and trigger automatic builds.</p>
+<h4 id="gloo">Gloo<a class="headerlink" href="#gloo" title="Permanent link">&para;</a></h4>
+<p>Gloo is the default API gateway Rio deploys to manage ingress traffic outside of cluster. It uses <a href="https://www.envoyproxy.io/">Envoy</a> under the hood to provide rate limiting, circuit breaking, retries and other advanced routing features. Rio router programs Gloo virtualservices.</p>
+<h4 id="linkerd">Linkerd<a class="headerlink" href="#linkerd" title="Permanent link">&para;</a></h4>
+<p>Linkerd is a service mesh for Kubernetes and other frameworks. It makes running services easier and safer by giving you runtime debugging, observability, reliability, and security—all without requiring any changes to your code. By default Rio ships with Linkerd and enables its service mesh within Rio services</p>
+<h4 id="letsencrypt">Letsencrypt<a class="headerlink" href="#letsencrypt" title="Permanent link">&para;</a></h4>
+<p>Letsencrypt is default CA that Rio uses to provision and sign certificates and use that to provide TLS traffic for your workloads. You easily swap certificates to your own certs. Under the hood it deploys <a href="https://github.com/rancher/cert-manager/tree/rdns-provider">cert-manager</a> to manage certificate provisioning.</p>
+<h4 id="rdns">Rdns<a class="headerlink" href="#rdns" title="Permanent link">&para;</a></h4>
+<p>Rdns is public DNS service hosted by Rancher. Each cluster with Rio installed will get a unique cluster domain (xxxxxx.on-rio.io). Rio registers this domain to Loadbalancer IP of API gateway service, which will eventually point to your service. Rdns will keep DNS record up-to-date if loadbalancer IP has changed.
+If you disabled this feature, you are responsible for updating your own DNS record if the loadbalancer IP changes.</p>
+<h4 id="dashboard">Dashboard<a class="headerlink" href="#dashboard" title="Permanent link">&para;</a></h4>
+<p>Dashboard is a built-in web UI for Rio that runs within the cluster. It can be used as an alternative to the Rio CLI. </p>
+<h4 id="disabling-features-on-install">Disabling Features on Install<a class="headerlink" href="#disabling-features-on-install" title="Permanent link">&para;</a></h4>
+<p><strong>Note</strong>: If You have limited cpu and memory in your k8s cluster, we recommend you to disable features that you don't need in order to keep footprint of Rio smaller.</p>
+<p>To disable linkerd service mesh:</p>
+<div class="codehilite"><pre><span></span><code>$ rio install --disable-features linkerd 
+</code></pre></div>
+
+<p>If you would like to use your own cluster domain and certificates instead of rdns and letsencrypt, you can disable these two features:</p>
+<div class="codehilite"><pre><span></span><code>$ rio install --disable-features rdns,letsencrypt 
+</code></pre></div>
+
+<p>And follow docs in <a href="../faq/">here</a> to see how to bring your own cluster domain and certs.</p>
+<h2 id="flipping-features-after-installation">Flipping features after installation<a class="headerlink" href="#flipping-features-after-installation" title="Permanent link">&para;</a></h2>
+<p>Rio manages features in a configMap called <code>rio-config</code> in <code>rio-system</code> namespace. It follows the format: </p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+  <span class="nt">&quot;features&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;autoscaling&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">true</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;build&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">true</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;dashboard&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">true</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;linkerd&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+      <span class="nt">&quot;options&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;upgrade&quot;</span><span class="p">:</span> <span class="s2">&quot;true&quot;</span>
+      <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;gloo&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">true</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;rdns&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">true</span>
+    <span class="p">}</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;letsEncrypt&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;email&quot;</span><span class="p">:</span> <span class="s2">&quot;your@email.here&quot;</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;gateway&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;serviceName&quot;</span><span class="p">:</span> <span class="s2">&quot;gateway-proxy&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;serviceNamespace&quot;</span><span class="p">:</span> <span class="s2">&quot;rio-system&quot;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>To edit the configMap, run </p>
+<div class="codehilite"><pre><span></span><code>rio system feature --edit
+</code></pre></div>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid" aria-label="Footer">
+        
+          <a href=".." class="md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+            </div>
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Home
+              </div>
+            </div>
+          </a>
+        
+        
+          <a href="../concepts/" class="md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                Rio concept
+              </div>
+            </div>
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+        Made with
+        <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+          Material for MkDocs
+        </a>
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    
+      <script src="../assets/javascripts/vendor.7e0ee788.min.js"></script>
+      <script src="../assets/javascripts/bundle.c1ccee15.min.js"></script><script id="__lang" type="application/json">{"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}</script>
+      
+      <script>
+        app = initialize({
+          base: "..",
+          features: [],
+          search: Object.assign({
+            worker: "../assets/javascripts/worker/search.4ac00218.min.js"
+          }, typeof search !== "undefined" && search)
+        })
+      </script>
+      
+    
+  </body>
+</html>
