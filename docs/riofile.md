@@ -62,9 +62,9 @@ By default, Rio will poll the branch in 30 second intervals, but this can be con
 configs:
   config-foo:     # specify name in the section
     key1: |-      # specify key and data in the section
-      {{ config1 }}
+      config1
     key2: |-
-      {{ config2 }}
+      config2
 
 # Externalservices
 externalservices:
@@ -321,13 +321,13 @@ For example, to use go templating to apply a service when provided with the abov
 
 1. Create Riofile
 ```yaml
-{{- if (and (eq .Values.NAMESPACE "test") (eq .Values.FOO "BAR")) }}
+{{ "{{- if (and (eq .Values.NAMESPACE test) (eq .Values.FOO BAR)) }}" }}
 services:
   demo:
     image: ibuildthecloud/demo:v1
     ports:
     - 80
-{{- end}}
+{{ "{{- end}}" }}
 
 template:
   goTemplate: true # use go templating
@@ -358,7 +358,6 @@ ${var/substring/replacement}
 ${var//substring/replacement}
 ${var/#substring/replacement}
 ${var/%substring/replacement}
-${#var}
 ${var=default}
 ${var:=default}
 ${var:-default}

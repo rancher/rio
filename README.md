@@ -10,7 +10,7 @@ Rio is currently in Beta.
 Connect with us on the #rio channel on the [rancher slack](https://slack.rancher.io/)
 
 ## Documentation
-See the [docs folder](https://github.com/rancher/rio/tree/v0.6.0/docs) for detailed documentation and guides.
+See [here](https://rio.rancher.io) for detailed documentation and guides.
 
 ## Quick Start
 

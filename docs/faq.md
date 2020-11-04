@@ -49,13 +49,13 @@ if you have configured your own cluster domain you will get endpoint like:
 ${namespace}-${name}.you.company.com
 ```
 
-1. Run `rio info`. 
+Run `rio info`. 
 
-* 1a) If you enabled rdns feature, you can take the cluster domain and create a CNAME record from your own wildcard domain to rio cluster domain.
+* If you enabled rdns feature, you can take the cluster domain and create a CNAME record from your own wildcard domain to rio cluster domain.
 
         *.your.company.com -----> CNAME ------> xxx.on-rio.io 
 
-* 1b) If you disabled rdns feature, you won't be able to get `xxxxxx.on-rio.io` domain. Create A record from your domain to gateway IP.
+* If you disabled rdns feature, you won't be able to get `xxxxxx.on-rio.io` domain. Create A record from your domain to gateway IP.
 
         *.your.company.com -----> A ------> IP
 
@@ -67,13 +67,13 @@ ${namespace}-${name}.you.company.com
 
     Also you are responsible for updating dns record if load balancer IP has changed.
 
-2. Create a wildcard TLS secret for your own domain.
+Create a wildcard TLS secret for your own domain.
 
 ```bash
 kubectl -n rio-system create secret tls your.company.com-tls --cert=/path/to/your.cert --key=/path/to/your.key
 ```
 
-3. Create a clusterDomain.yaml and `kubectl apply -f ./clusterDomain.yaml`
+Create a clusterDomain.yaml and `kubectl apply -f ./clusterDomain.yaml`
 
 ```yaml
 apiVersion: admin.rio.cattle.io/v1
@@ -86,4 +86,4 @@ spec:
   httpsPort: 443
 ```
 
-4. Rio will serve your own wildcard domain and your own certs now.
+Rio will serve your own wildcard domain and your own certs now.

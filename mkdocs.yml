@@ -1,0 +1,41 @@
+site_name: Rio - Application Deployment Engine for Kubernetes
+repo_url: https://github.com/rancher/rio
+# Set to false for local docs development
+strict: true
+theme:
+  name: material
+  palette:
+    primary: cyan
+  font:
+    text: 'Work Sans'
+  logo: 'assets/logo.svg'
+  #favicon: 'assets/favicon-32x32.png'
+#google_analytics:
+plugins:
+  - search
+  - markdownextradata: {}
+markdown_extensions:
+  - codehilite
+  - admonition
+  - toc:
+      permalink: true
+nav:
+  - index.md
+  - Install Rio: install.md
+  - Rio concept: concepts.md
+  - Quick Start: quick-start.md
+  - Running workloads: workloads.md
+  - Configuring Router: router.md
+  - Configuring PublicDomain and ExternalService: publicdomain-external-services.md
+  - Using Riofile: riofile.md
+  - Webhooks: webhooks.md
+  - Monitoring Workloads: monitoring.md
+  - Using AutoScaling: autoscaling.md
+  - Configuring Rio with RBAC: rbac.md
+  - Continuous Delivery with Rio: continuous-deployment.md
+  - Using Rio for Developing Your Application: developing-application-using-rio.md
+  - Deployment Flow: flows.md
+  - Using Dashboard: dashboard.md
+  - CLI Reference: cli-reference.md
+  - API Reference: api-docs.md
+  - Troubleshooting: faq.md

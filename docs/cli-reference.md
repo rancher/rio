@@ -118,7 +118,7 @@ rio build-history [command options] [arguments...]
 | flag           | aliases | description                                                  | default |
 |----------------|---------|--------------------------------------------------------------|---------|
 | --quiet        | -q      | Only display Names                                           |         |
-| --format value |         | 'json' or 'yaml' or Custom format: '{{.Obj.Name}}' [$FORMAT] |         |
+| --format value |         | 'json' or 'yaml' or Custom format: {{ "'{{.Obj.Name}}'" }} [$FORMAT] |         |
 
 
 ##### Examples
@@ -128,7 +128,7 @@ rio build-history [command options] [arguments...]
 rio build-history
 
 # custom output format
-rio build-history --format "{{.Obj.Name}}"
+rio build-history --format {{ "{{.Obj.Name}}" }}
 ```
 
 ---
@@ -503,7 +503,7 @@ rio ps [OPTIONS]
 | flag        | aliases | description                                                            | default |
 |-------------|---------|------------------------------------------------------------------------|---------|
 | --quiet     | -q      | Only display Names                                                     |         |
-| --format    |         | 'json' or 'yaml' or Custom format: '{{.Name}} {{.Obj.Name}}' [$FORMAT] |         |
+| --format    |         | 'json' or 'yaml' or Custom format: {{ "'{{.Name}} {{.Obj.Name}}'" }} [$FORMAT] |         |
 | --all       | -a      | print all resources, including router and externalservice              |         |
 | --workloads | -w      | include apps/v1 Deployments and DaemonSets in output                   |         |
 
@@ -518,7 +518,7 @@ rio ps -w
 rio ps --format json
 
 # display name and weight in custom format
-rio ps --format "{{.Obj.Name}} -> {{.Data.Weight}}" 
+rio ps --format {{ "{{.Obj.Name}} -> {{.Data.Weight}}" }}
 ```
 
 ---
@@ -537,7 +537,7 @@ rio routers command [command options] [arguments...]
 | flag        | aliases | description                                                            | default |
 |-------------|---------|------------------------------------------------------------------------|---------|
 | --quiet     | -q      | Only display Names                                                     |         |
-| --format    |         | 'json' or 'yaml' or Custom format: '{{.Name}} {{.Obj.Name}}' [$FORMAT] |         |
+| --format    |         | 'json' or 'yaml' or Custom format: {{ "'{{.Name}} {{.Obj.Name}}'" }} [$FORMAT] |         |
 
 
 ##### Examples
