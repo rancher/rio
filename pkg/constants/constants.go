@@ -39,7 +39,7 @@ var (
 	Prometheus = "prometheus"
 	RDNSURL    = "https://api.on-rio.io/v1"
 
-	LinkerdInstallImage = "rancher/linkerd-install:stable-2.8.1"
+	LinkerdInstallImage = "rancher/linkerd-install:stable-2.9.0"
 
 	RegistryStorageSize = "20Gi"
 )
