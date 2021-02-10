@@ -111,7 +111,7 @@ type ServiceSpec struct {
 	// Place one pod per node that matches the scheduling rules
 	Global bool `json:"global,omitempty"`
 
-	// Whether to disable Service mesh for the Service. If true, no mesh sidecar will be deployed along with the Service
+	// Whether to disable Service mesh for the Service. If false, no mesh sidecar will be deployed along with the Service
 	ServiceMesh *bool `json:"serviceMesh,omitempty"`
 
 	// RequestTimeoutSeconds specifies the timeout set on api gateway for each individual service
