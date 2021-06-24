@@ -1,3 +1,5 @@
+Thanks for all your interest in this project. At present time, this project is on hold and the repo will be archived until we're ready to pick it up again!
+
 # Rio [Beta]
 
 [![Build Status](https://drone-publish.rancher.io/api/badges/rancher/rio/status.svg?branch=master)](https://drone-publish.rancher.io/rancher/rio)
