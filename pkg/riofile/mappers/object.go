@@ -1,8 +1,8 @@
 package mappers
 
 import (
-	"github.com/rancher/norman/pkg/types"
-	"github.com/rancher/norman/pkg/types/mapper"
+	types "github.com/rancher/wrangler/pkg/schemas"
+	mapper "github.com/rancher/wrangler/pkg/schemas/mappers"
 )
 
 func NewObject(kind, apiVersion string) types.Mapper {
