@@ -54,9 +54,9 @@ require (
 	github.com/aws/aws-sdk-go v1.30.16
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/chai2010/gettext-go v0.0.0-20170215093142-bf70f2a70fb1 // indirect
-	github.com/containerd/cgroups v0.0.0-20191011165608-5fbad35c2a7e // indirect
+	github.com/containerd/cgroups v1.0.3 // indirect
 	github.com/containerd/console v0.0.0-20181022165439-0650fd9eeb50
-	github.com/containerd/containerd v1.3.3
+	github.com/containerd/containerd v1.4.13
 	github.com/containerd/fifo v0.0.0-20190816180239-bda0ff6ed73c // indirect
 	github.com/containerd/ttrpc v0.0.0-20191025122922-cf7f4d5f2d61 // indirect
 	github.com/davecgh/go-spew v1.1.1
@@ -70,7 +70,7 @@ require (
 	github.com/go-acme/lego v2.5.0+incompatible
 	github.com/go-acme/lego/v3 v3.1.0
 	github.com/go-bindata/go-bindata v3.1.2+incompatible
-	github.com/gogo/protobuf v1.3.1
+	github.com/gogo/protobuf v1.3.2
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
 	github.com/hashicorp/vault/api v1.0.5-0.20200117231345-460d63e36490 // indirect
 	github.com/hashicorp/vault/sdk v0.1.14-0.20200121232954-73f411823aa0 // indirect
@@ -87,19 +87,20 @@ require (
 	github.com/rancher/wrangler v0.2.1-0.20191205190617-661f00f286d2
 	github.com/rancher/wrangler-api v0.2.1-0.20191015045805-d3635aa0853a
 	github.com/sclevine/spec v1.4.0
-	github.com/sirupsen/logrus v1.4.2
+	github.com/sirupsen/logrus v1.8.1
 	github.com/solo-io/gloo v1.4.6
 	github.com/solo-io/solo-kit v0.13.8
-	github.com/stretchr/testify v1.5.1
+	github.com/stretchr/testify v1.7.0
 	github.com/tektoncd/pipeline v0.14.3
 	github.com/urfave/cli v1.22.2
 	github.com/wercker/stern v1.11.0
-	golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59
-	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	gopkg.in/inf.v0 v0.9.1
 	gopkg.in/square/go-jose.v2 v2.4.1 // indirect
 	gopkg.in/yaml.v2 v2.3.0
 	gotest.tools v2.2.0+incompatible
+	gotest.tools/v3 v3.1.0 // indirect
 	istio.io/api v0.0.0-20200518203817-6d29a38039bd
 	istio.io/client-go v0.0.0-20200528222059-5465d5e00a32
 	k8s.io/api v0.18.1
