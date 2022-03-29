@@ -70,7 +70,7 @@ require (
 	github.com/go-acme/lego v2.5.0+incompatible
 	github.com/go-acme/lego/v3 v3.1.0
 	github.com/go-bindata/go-bindata v3.1.2+incompatible
-	github.com/gogo/protobuf v1.3.1
+	github.com/gogo/protobuf v1.3.2
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
 	github.com/hashicorp/vault/api v1.0.5-0.20200117231345-460d63e36490 // indirect
 	github.com/hashicorp/vault/sdk v0.1.14-0.20200121232954-73f411823aa0 // indirect
@@ -94,8 +94,8 @@ require (
 	github.com/tektoncd/pipeline v0.14.3
 	github.com/urfave/cli v1.22.2
 	github.com/wercker/stern v1.11.0
-	golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59
-	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
+	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	gopkg.in/inf.v0 v0.9.1
 	gopkg.in/square/go-jose.v2 v2.4.1 // indirect
 	gopkg.in/yaml.v2 v2.3.0
